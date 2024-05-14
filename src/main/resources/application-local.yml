@@ -1,0 +1,13 @@
+spring:
+  docker:
+    compose:
+      enabled: true
+      file: compose.yaml
+  datasource:
+    url: "jdbc:postgresql://localhost:5434/issuer_db"
+    username: "oid4vc_user"
+    password: "secret"
+    driver-class-name: org.postgresql.Driver
+
+springdoc:
+  show-actuator: true

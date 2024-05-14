@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: oid4vci
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
