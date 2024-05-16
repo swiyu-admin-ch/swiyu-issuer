@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres
     environment:
-      POSTGRES_USER: "oid4vci_user"
+      POSTGRES_USER: "issuer_mgmt_user"
       POSTGRES_PASSWORD: "secret"
       POSTGRES_DB: "issuer_db"
     ports:

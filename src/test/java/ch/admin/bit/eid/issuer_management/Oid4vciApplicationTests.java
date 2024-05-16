@@ -1,10 +1,10 @@
-package ch.admin.bit.eid.oid4vci;
+package ch.admin.bit.eid.issuer_management;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class Oid4vciApplicationTests {
+class IssuerManagementApplicationTests {
 
 	@Test
 	void contextLoads() {

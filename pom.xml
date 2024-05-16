@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>ch.admin.bit.eid</groupId>
-	<artifactId>oid4vci</artifactId>
+	<artifactId>issuer_management</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>oid4vci</name>
-	<description>OID4VCI Service for public beta</description>
+	<name>issuer_management</name>
+	<description>Issuer management Service for public beta</description>
 	<properties>
 		<java.version>21</java.version>
 	</properties>

@@ -1,4 +1,4 @@
-package ch.admin.bit.eid.oid4vci.config;
+package ch.admin.bit.eid.issuer_management.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;
@@ -8,8 +8,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "OID4VCI service",
-                description = "Generic Issuer OID4VCI service",
+                title = "Issuer management service",
+                description = "Generic Issuer management service",
                 contact = @Contact(
                         email = "eid@bit.admin.ch",
                         name = "eID",

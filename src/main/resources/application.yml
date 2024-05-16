@@ -1,6 +1,6 @@
 spring:
   application:
-    name: oid4vci
+    name: issuer_management
   flyway:
     enabled: true
     locations: classpath:db/migration
