@@ -76,6 +76,10 @@
 			<version>2.5.0</version>
 			<optional>true</optional>
 		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>

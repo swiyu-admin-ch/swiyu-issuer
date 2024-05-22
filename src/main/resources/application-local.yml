@@ -11,3 +11,6 @@ spring:
 
 springdoc:
   show-actuator: true
+
+application:
+  external-url: "http://localhost:8080/"
