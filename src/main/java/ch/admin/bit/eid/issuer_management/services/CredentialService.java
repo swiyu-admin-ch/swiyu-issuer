@@ -100,7 +100,7 @@ public class CredentialService {
         grants.put("urn:ietf:params:oauth:grant-type:pre-authorized_code", new Object() {
             // TODO check what this value is and where it should be stored
             @JsonProperty("pre-authorized_code")
-            final UUID preAuthorizedCode = credential.getAccessToken();
+            final UUID preAuthorizedCode = credential.getId();
         });
 
         CredentialOffer credentialOffer = CredentialOffer.builder()
