@@ -1,0 +1,1 @@
+ALTER TABLE credential_offer ALTER COLUMN offer_data text;

@@ -1,5 +1,6 @@
 package ch.admin.bit.eid.issuer_management.it;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.DisplayName;
@@ -8,16 +9,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
 @Nested
 @DisplayName("Create Offer")
-public class CredentialOfferIt extends BaseIt {
+public class CredentialOfferCreateIt extends BaseIt {
 
-    private static final String BASE_URL = "/credentials";
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     void testCreateOffer_thenSuccess() throws Exception {
@@ -63,13 +63,18 @@ public class CredentialOfferIt extends BaseIt {
     }
 
     @Test
-    void testGetOfferStatus_thenSuccess() throws Exception {
-        // todo check issues with {}
-        // String minPayloadWithEmptySubject = String.format("{\"metadata_credential_supported_id\": \"%s\", \"credential_subject_data\": {}}", RandomStringUtils.random(10));
+    void testGetOfferData_thenSuccess() throws Exception {
+        record OfferData(String test) { }
 
-        String minPayloadWithEmptySubject = String.format("{\"metadata_credential_supported_id\": \"%s\", \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}}", RandomStringUtils.random(10));
+        //TODO use more random approach
+        //OfferData offer = new OfferData(RandomStringUtils.random(10));
+        OfferData offer = new OfferData("test");
 
-        MvcResult result = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
+        String offerDataString = objectMapper.writeValueAsString(offer);
+
+        String jsonPayload = this.createOfferRequestJson(RandomStringUtils.random(10), offerDataString);
+
+        MvcResult result = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -77,6 +82,10 @@ public class CredentialOfferIt extends BaseIt {
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Offered"));
+                .andExpect(content().string(offerDataString));
+    }
+
+    private String createOfferRequestJson(String metadataCredentialSupportedId, String credentialSubjectData) {
+        return String.format("{\"metadata_credential_supported_id\": \"%s\", \"credential_subject_data\": %s}", metadataCredentialSupportedId, credentialSubjectData);
     }
 }

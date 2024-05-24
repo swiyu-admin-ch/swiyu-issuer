@@ -1,9 +1,9 @@
 package ch.admin.bit.eid.issuer_management.controllers;
 
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
-import ch.admin.bit.eid.issuer_management.exceptions.NotImplementedError;
 import ch.admin.bit.eid.issuer_management.models.dto.CreateCredentialRequestDto;
 import ch.admin.bit.eid.issuer_management.models.dto.CredentialWithDeeplinkResponseDto;
+import ch.admin.bit.eid.issuer_management.models.dto.UpdateStatusResponseDto;
 import ch.admin.bit.eid.issuer_management.models.entities.CredentialOfferEntity;
 import ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper;
 import ch.admin.bit.eid.issuer_management.services.CredentialService;
@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 import static ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper.credentialToCredentialResponseDto;
+import static ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper.credentialToUpdateStatusResponseDto;
 
 // TODO add prefix
 @RestController
@@ -29,6 +30,7 @@ public class CredentialsController {
     public CredentialWithDeeplinkResponseDto createCredential(
             @Validated @RequestBody CreateCredentialRequestDto requestDto) {
         CredentialOfferEntity credential = this.credentialService.createCredential(requestDto);
+
         String offerLinkString = this.credentialService.getOfferDeeplinkFromCredential(credential);
 
         return CredentialOfferMapper.credentialToCredentialResponseDto(credential, offerLinkString);
@@ -56,38 +58,11 @@ public class CredentialsController {
     }
 
     @PatchMapping("/{credentialId}/status")
-    public void updateCredentialStatus(@PathVariable UUID credentialId) {
-        /**
-         *     management = load_management_object(credential_management_id, session)
-         *     if db_credential.CredentialStatus.is_post_holder_interaction(management.credential_status):
-         *         _update_credential_status_for_processed_vcs(
-         *             session=session, config=config, key_conf=key_conf, management=management, credential_status=credential_status, purpose=purpose.lower()
-         *         )
-         *     elif db_credential.CredentialStatus.is_during_holder_interaction(management.credential_status):
-         *         _reset_offer(management)
-         *     else:
-         *         _update_credential_status_for_unprocessed_vcs(management, credential_status)
-         *
-         *     session.commit()
-         *     return VcManagementInfo.model_validate(management, from_attributes=True)
-         */
+    public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
+                                                          @RequestParam("credentialStatus") CredentialStatusEnum credentialStatus) {
 
-        CredentialOfferEntity credential = this.credentialService.getCredential(credentialId);
+        CredentialOfferEntity credential = this.credentialService.updateCredentialStatus(credentialId, credentialStatus);
 
-        if (credential.getCredentialStatus().isPostHolderInteraction()) {
-            /*
-              _update_credential_status_for_processed_vcs(
-            session=session, config=config, key_conf=key_conf, management=management, credential_status=credential_status, purpose=purpose.lower()
-        )
-             */
-            throw new NotImplementedError();
-
-        } else if (credential.getCredentialStatus().isDuringHolderInteraction()) {
-            // TODO Check
-            credential.setCredentialStatus(CredentialStatusEnum.OFFERED);
-            throw new NotImplementedError();
-        } else {
-            throw new NotImplementedError();
-        }
+        return credentialToUpdateStatusResponseDto(credential);
     }
 }
