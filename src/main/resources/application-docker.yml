@@ -4,8 +4,8 @@ spring:
       enabled: true
       file: compose.yaml
   datasource:
-    url: "jdbc:postgresql://localhost:5434/issuer_db"
-    username: "oid4vc_user"
+    url: "jdbc:postgresql://issuer-db-local:5432/issuer-service-local"
+    username: "postgres"
     password: "secret"
     driver-class-name: org.postgresql.Driver
 
