@@ -9,6 +9,7 @@ import ch.admin.bit.eid.issuer_management.models.PreAuthGrantType;
 import ch.admin.bit.eid.issuer_management.models.dto.CreateCredentialRequestDto;
 import ch.admin.bit.eid.issuer_management.models.entities.CredentialOfferEntity;
 import ch.admin.bit.eid.issuer_management.repositories.CredentialOfferRepository;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.constraints.NotNull;
@@ -96,8 +97,11 @@ public class CredentialService {
     public String getOfferDeeplinkFromCredential(CredentialOfferEntity credential) {
 
         Map<String, Object> grants = new HashMap<>();
-        grants.put("urn:ietf:params:oauth:grant-type:pre-authorized_code", PreAuthGrantType.builder()
-                .preAuthorizedCode(credential.getAccessToken()).build());
+        grants.put("urn:ietf:params:oauth:grant-type:pre-authorized_code", new Object() {
+            // TODO check what this value is and where it should be stored
+            @JsonProperty("pre-authorized_code")
+            final UUID preAuthorizedCode = credential.getAccessToken();
+        });
 
         CredentialOffer credentialOffer = CredentialOffer.builder()
                 .credential_issuer(config.getExternalUrl())

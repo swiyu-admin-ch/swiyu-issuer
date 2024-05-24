@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -36,11 +35,11 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiError.getDetail(), apiError.getStatus());
     }
 
-    @ExceptionHandler
+    /*@ExceptionHandler
     public ResponseEntity<Object> handle(final Exception exception, final WebRequest request) {
         final ApiError apiError = new ApiError(INTERNAL_SERVER_ERROR);
         // TODO add log
 
         return new ResponseEntity<>(apiError, apiError.getStatus());
-    }
+    }*/
 }
