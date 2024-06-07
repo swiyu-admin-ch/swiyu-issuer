@@ -5,7 +5,6 @@ import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
 import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
 import ch.admin.bit.eid.issuer_management.exceptions.ResourceNotFoundException;
 import ch.admin.bit.eid.issuer_management.models.CredentialOffer;
-import ch.admin.bit.eid.issuer_management.models.PreAuthGrantType;
 import ch.admin.bit.eid.issuer_management.models.dto.CreateCredentialRequestDto;
 import ch.admin.bit.eid.issuer_management.models.entities.CredentialOfferEntity;
 import ch.admin.bit.eid.issuer_management.repositories.CredentialOfferRepository;
@@ -16,11 +15,14 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+
+import static java.util.Objects.nonNull;
 
 
 @Service
@@ -41,9 +43,11 @@ public class CredentialService {
     }
 
     public CredentialOfferEntity createCredential(CreateCredentialRequestDto requestDto) {
-        // todo move to mapper
-        Instant expiration = Instant.now().plusSeconds(requestDto.getOffer_validity_seconds());
+        Instant expiration = Instant.now().plusSeconds(nonNull(requestDto.getOffer_validity_seconds())
+                ? requestDto.getOffer_validity_seconds()
+                : config.getOfferValidity());
 
+        // todo move to mapper
         CredentialOfferEntity entity = CredentialOfferEntity.builder()
                 .credentialStatus(CredentialStatusEnum.OFFERED)
                 .metadataCredentialSupportedId(requestDto.getMetadata_credential_supported_id())
@@ -112,7 +116,7 @@ public class CredentialService {
         String credentialOfferString = null;
 
         try {
-            credentialOfferString = objectMapper.writeValueAsString(credentialOffer);
+            credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOffer), Charset.defaultCharset());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
