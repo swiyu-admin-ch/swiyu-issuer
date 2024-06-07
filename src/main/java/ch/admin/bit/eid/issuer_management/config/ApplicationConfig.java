@@ -14,4 +14,7 @@ public class ApplicationConfig {
 
     @NotNull
     private String externalUrl;
+
+    @NotNull
+    private Long offerValidity;
 }
