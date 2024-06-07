@@ -4,14 +4,14 @@ spring:
       enabled: true
       file: compose.yaml
   datasource:
-    url: "jdbc:postgresql://issuer-db-local:5432/issuer-service-local"
-    username: "postgres"
-    password: "secret"
+    url: "${POSTGRES_JDBC}"
+    username: "${POSTGRES_USER}"
+    password: "${POSTGRES_PASSWORD}"
     driver-class-name: org.postgresql.Driver
 
 springdoc:
   show-actuator: true
 
 application:
-  external-url: "http://localhost:8080/"
-  offer-validity: 2592000 # 60 * 60 * 24 * 30 => 30 days;
+  external-url: "${EXTERNAL_URL}"
+  offer-validity: ${OFFER_VALIDITY_SECONDS}
