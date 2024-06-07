@@ -15,3 +15,4 @@ spring:
 
 application:
   external-url: "http://localhost:8080/test/"
+  offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
