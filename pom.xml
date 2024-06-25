@@ -14,7 +14,7 @@
 	<name>issuer_management</name>
 	<description>Issuer management Service for public beta</description>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>17</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
