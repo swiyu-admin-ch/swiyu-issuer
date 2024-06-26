@@ -13,7 +13,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addConverter(new StringToEnumConverter());
     }
 
-    class StringToEnumConverter implements Converter<String, CredentialStatusEnum> {
+    static class StringToEnumConverter implements Converter<String, CredentialStatusEnum> {
         @Override
         public CredentialStatusEnum convert(String source) {
             return CredentialStatusEnum.valueOf(source.toUpperCase());
