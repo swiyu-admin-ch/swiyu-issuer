@@ -1,6 +1,36 @@
 spring:
   application:
     name: issuer_management
+  jpa:
+    database: postgresql
+    show-sql: false
+    generate-ddl: false
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        temp:
+          # https://stackoverflow.com/questions/10075081/hibernate-slow-to-acquire-postgres-connection
+          use_jdbc_metadata_defaults: false
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:db/migration/common, classpath:db/migration/postgresql
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: org.postgresql.Driver
+    url: "${POSTGRES_JDBC}"
+    username: "${POSTGRES_USER}"
+    password: "${POSTGRES_PASSWORD}"
+  data:
+    jpa:
+      repositories:
+        # Avoid hangs on startup, see https://github.com/spring-projects/spring-framework/issues/25111
+        bootstrap_mode: default
+
+springdoc:
+  show-actuator: true
+
+application:
+  external-url: "${EXTERNAL_URL}"
+  offer-validity: ${OFFER_VALIDITY_SECONDS}
