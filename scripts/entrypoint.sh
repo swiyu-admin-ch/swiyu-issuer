@@ -14,9 +14,11 @@ else
 fi
 
 java -Duser.timezone=Europe/Zurich \
--Dspring.config.location=classpath:application.yml \
+-Dspring.config.location=classpath:application.yml,file:/vault/secrets/database-credentials.yml \
 -Dfile.encoding=UTF-8 \
 -Dspring.profiles.active=${STAGE} \
+-Djavax.net.ssl.trustStore=/app/truststore-dev.jks \
+-Djavax.net.ssl.trustStorePassword=changeit \
 -Djavax.net.ssl.trustStore=/usr/local/openjdk/lib/security/cacerts \
 -Djavax.net.ssl.trustStorePassword=changeit \
 -Dhttp.proxyHost=${HTTP_PROXY} \
