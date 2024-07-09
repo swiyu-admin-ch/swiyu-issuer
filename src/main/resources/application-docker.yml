@@ -14,4 +14,4 @@ springdoc:
 
 application:
   external-url: "${EXTERNAL_URL}"
-  offer-validity: "${OFFER_VALIDITY_SECONDS}"
+  offer-validity: 2592000
