@@ -64,15 +64,10 @@ public class CredentialOfferCreateIt extends BaseIt {
 
     @Test
     void testGetOfferData_thenSuccess() throws Exception {
-        record OfferData(String test) { }
 
-        //TODO use more random approach
-        //OfferData offer = new OfferData(RandomStringUtils.random(10));
-        OfferData offer = new OfferData("test");
+        String offer = "{\"test\"}";
 
-        String offerDataString = objectMapper.writeValueAsString(offer);
-
-        String jsonPayload = this.createOfferRequestJson(RandomStringUtils.random(10), offerDataString);
+        String jsonPayload = this.createOfferRequestJson(RandomStringUtils.random(10), offer);
 
         MvcResult result = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isOk())
@@ -82,7 +77,7 @@ public class CredentialOfferCreateIt extends BaseIt {
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(offerDataString));
+                .andExpect(content().string(offer));
     }
 
     private String createOfferRequestJson(String metadataCredentialSupportedId, String credentialSubjectData) {
