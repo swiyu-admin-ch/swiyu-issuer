@@ -44,15 +44,15 @@ public class CredentialService {
     }
 
     public CredentialOfferEntity createCredential(CreateCredentialRequestDto requestDto) {
-        Instant expiration = Instant.now().plusSeconds(nonNull(requestDto.getOffer_validity_seconds())
-                ? requestDto.getOffer_validity_seconds()
+        Instant expiration = Instant.now().plusSeconds(nonNull(requestDto.getOfferValiditySeconds())
+                ? requestDto.getOfferValiditySeconds()
                 : config.getOfferValidity());
 
         // todo move to mapper
         CredentialOfferEntity entity = CredentialOfferEntity.builder()
                 .credentialStatus(CredentialStatusEnum.OFFERED)
-                .metadataCredentialSupportedId(requestDto.getMetadata_credential_supported_id())
-                .offerData(requestDto.getCredential_subject_data())
+                .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
+                .offerData(requestDto.getCredentialSubjectData())
                 .offerExpirationTimestamp(expiration.getEpochSecond())
                 .holderBindingNonce(UUID.randomUUID())
                 // TODO check if needs to be set on start

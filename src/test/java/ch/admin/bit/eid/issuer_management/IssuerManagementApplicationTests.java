@@ -21,19 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class IssuerManagementApplicationTests {
+public class IssuerManagementApplicationTests {
 
 	@Autowired
 	private CredentialsController credentialsController;
 
-	@Test
-	void contextLoads() {
-		assertThat(credentialsController).isNotNull();
-	}
-
-	@Test
-	void dummyTest() throws JOSEException {
-		String privateKey = """
+	public static final String privateKey = """
       	{
 			"kty":"EC",
 			"d":"L5IOdH7GqpjqxeXRaQZvYNFs2qPdMVdNR1ohV0gjYVc",
@@ -42,6 +35,15 @@ class IssuerManagementApplicationTests {
 			"x":"_gHQsZT-CB_KvIfpvJsDxVSXkuwRJsuof-oMihcupQU",
 			"y":"71y_zEPAglUXBghaBxypTAzlNx57KNY9lv8LTbPkmZA"
 		 }""";
+
+	@Test
+	void contextLoads() {
+		assertThat(credentialsController).isNotNull();
+	}
+
+	@Test
+	void dummyTest() throws JOSEException {
+
 		String testdata = """
 				{
 				   "keys":[
