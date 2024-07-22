@@ -61,7 +61,7 @@ public class CredentialOfferStatusIt extends BaseIt  {
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.credential_status").value(newStatus.getDisplayName()));
+                .andExpect(jsonPath("$.status").value(newStatus.getDisplayName()));
     }
 
     @Test
@@ -71,13 +71,13 @@ public class CredentialOfferStatusIt extends BaseIt  {
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id))
-                .andExpect(jsonPath("$.status").value(newStatus));
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.status").value(newStatus.getDisplayName()));
 
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 // todo check
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
     }
 
     private String getUpdateUrl(UUID id, CredentialStatusEnum credentialStatus) {

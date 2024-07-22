@@ -37,7 +37,7 @@ public class ApplicationConfig {
      */
     private String authenticationJwks;
 
-    public JWKSet getWhitelistedKeySet() throws ParseException {
+    public JWKSet getAllowedKeySet() throws ParseException {
         return JWKSet.parse(authenticationJwks);
     }
 }

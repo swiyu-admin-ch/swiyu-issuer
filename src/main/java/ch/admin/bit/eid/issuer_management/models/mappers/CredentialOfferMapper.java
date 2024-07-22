@@ -24,7 +24,7 @@ public class CredentialOfferMapper {
     public static UpdateStatusResponseDto credentialToUpdateStatusResponseDto(CredentialOfferEntity credential) {
         return UpdateStatusResponseDto.builder()
                 .id(credential.getId())
-                .credential_status(credential.getCredentialStatus().getDisplayName())
+                .credentialStatus(credential.getCredentialStatus().getDisplayName())
                 .build();
     }
 }
