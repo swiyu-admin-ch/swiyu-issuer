@@ -37,6 +37,15 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiError.getDetail(), apiError.getStatus());
     }
 
+    @ExceptionHandler(ConfigurationException.class)
+    public ResponseEntity<Object> handleConfigurationException(final Exception exception, final WebRequest request) {
+        final ApiError apiError = new ApiError(INTERNAL_SERVER_ERROR);
+        apiError.setDetail(exception.getMessage());
+        log.info("Configuration Exception intercepted", exception);
+
+        return new ResponseEntity<>(apiError.getDetail(), apiError.getStatus());
+    }
+
     @ExceptionHandler
     public ResponseEntity<Object> handle(final Exception exception, final WebRequest request) {
         final ApiError apiError = new ApiError(INTERNAL_SERVER_ERROR);
