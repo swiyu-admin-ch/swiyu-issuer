@@ -5,20 +5,26 @@ import ch.admin.bit.eid.issuer_management.models.dto.UpdateStatusResponseDto;
 import ch.admin.bit.eid.issuer_management.models.entities.CredentialOfferEntity;
 import lombok.experimental.UtilityClass;
 
+import java.util.Map;
+
 @UtilityClass
 public class CredentialOfferMapper {
 
     public static CredentialWithDeeplinkResponseDto credentialToCredentialResponseDto(CredentialOfferEntity credential,
-                                                                                      String offer_deeplinkString) {
+                                                                                      String offerDeeplinkString) {
 
         return CredentialWithDeeplinkResponseDto.builder()
                 .management_id(credential.getId())
-                .offer_deeplink(offer_deeplinkString)
+                .offer_deeplink(offerDeeplinkString)
                 .build();
     }
 
     public static Object credentialToCredentialResponseDto(CredentialOfferEntity credential) {
-        return credential.getOfferData();
+        Map<String, Object> offerData = credential.getOfferData();
+        if (offerData != null && offerData.containsKey("data")) {
+            return offerData.get("data");
+        }
+        return offerData;
     }
 
     public static UpdateStatusResponseDto credentialToUpdateStatusResponseDto(CredentialOfferEntity credential) {

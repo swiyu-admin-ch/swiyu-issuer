@@ -6,10 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.validation.annotation.Validated;
 
 import java.time.Instant;
-import java.util.Map;
 
 import static ch.admin.bit.eid.issuer_management.util.DateTimeUtils.ISO8601_FORMAT;
 
@@ -29,7 +27,7 @@ public class CreateCredentialRequestDto {
      **/
     @NotNull(message = "'credential_subject_data' must be set")
     @JsonProperty(value = "credential_subject_data")
-    private Map<String, Object> credentialSubjectData;
+    private Object credentialSubjectData;
 
     /**
      Validitiy how long the offer should be usable.

@@ -1,6 +1,8 @@
 package ch.admin.bit.eid.issuer_management.models.entities;
 
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
+import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
+import com.google.gson.GsonBuilder;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,6 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,4 +45,20 @@ public class CredentialOfferEntity {
     private Instant credentialValidFrom;
 
     private Instant credentialValidUntil;
+
+    public static class CredentialOfferEntityBuilder {
+        public CredentialOfferEntityBuilder offerData(Object offerData){
+            Map<String, Object> metadata = new LinkedHashMap<>();
+            if (offerData instanceof String) {
+                metadata.put("data", offerData);
+                metadata.put("data_integrity", "jwt");
+            }else if (offerData instanceof Map) {
+                metadata.put("data", new GsonBuilder().create().toJson(offerData));
+            } else {
+                throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
+            }
+            this.offerData = metadata;
+            return this;
+        }
+    }
 }
