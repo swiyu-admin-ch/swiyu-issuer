@@ -124,8 +124,6 @@ public class CredentialService {
             throw new RuntimeException(e);
         }
 
-        // TODO check was macht "validated = vc.CredentialOfferParameters.model_validate(credential_offer)"
-
         return String.format("openid-credential-offer://?credential_offer=%s", credentialOfferString);
     }
 }
