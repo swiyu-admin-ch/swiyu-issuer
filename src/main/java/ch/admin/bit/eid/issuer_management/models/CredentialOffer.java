@@ -1,5 +1,6 @@
 package ch.admin.bit.eid.issuer_management.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,11 +16,13 @@ public class CredentialOffer {
 
     /*credential_offer = {
        "credential_issuer": external_url,
-                "credentials": metadata_credential_supported_ids,
+                "credential_configuration_ids": metadata_credential_supported_ids,
                 "grants": {"urn:ietf:params:oauth:grant-type:pre-authorized_code": {"pre-authorized_code": pre_auth_code, "user_pin_required": pin_required}},
     }*/
 
-    private String credential_issuer;
+    @JsonProperty("credential_issuer")
+    private String credentialIssuer;
+    @JsonProperty("credential_configuration_ids")
     private String credentials;
     private Map<String, Object> grants;
 }

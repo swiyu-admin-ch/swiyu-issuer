@@ -109,7 +109,7 @@ public class CredentialService {
         });
 
         CredentialOffer credentialOffer = CredentialOffer.builder()
-                .credential_issuer(config.getExternalUrl())
+                .credentialIssuer(config.getExternalUrl())
                 .credentials(credential.getMetadataCredentialSupportedId())
                 .grants(grants)
                 .build();
