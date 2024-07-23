@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -23,6 +24,6 @@ public class CredentialOffer {
     @JsonProperty("credential_issuer")
     private String credentialIssuer;
     @JsonProperty("credential_configuration_ids")
-    private String credentials;
+    private List<String> credentials;
     private Map<String, Object> grants;
 }
