@@ -15,7 +15,7 @@ spring:
           use_jdbc_metadata_defaults: false
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:db/migration/common
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     driver-class-name: org.postgresql.Driver

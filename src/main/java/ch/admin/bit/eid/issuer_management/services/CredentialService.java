@@ -109,7 +109,7 @@ public class CredentialService {
         });
 
         CredentialOffer credentialOffer = CredentialOffer.builder()
-                .credential_issuer(config.getExternalUrl())
+                .credentialIssuer(config.getExternalUrl())
                 .credentials(credential.getMetadataCredentialSupportedId())
                 .grants(grants)
                 .build();
@@ -123,8 +123,6 @@ public class CredentialService {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
-
-        // TODO check was macht "validated = vc.CredentialOfferParameters.model_validate(credential_offer)"
 
         return String.format("openid-credential-offer://?credential_offer=%s", credentialOfferString);
     }
