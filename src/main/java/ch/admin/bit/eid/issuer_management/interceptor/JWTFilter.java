@@ -14,6 +14,12 @@ import java.text.ParseException;
 @Component
 @Slf4j
 @AllArgsConstructor
+/**
+ * "Filter" which verifies and unpacks JWT Secured Request Bodies.
+ * The request is sent on with only the claims of the JWT in the request body.
+ * It is only activate if enable-jwt-authentication is set to true.
+ * GET Requests - which have no content - are excluded from this.
+ */
 public class JWTFilter implements Filter {
 
     private final ApplicationConfig config;

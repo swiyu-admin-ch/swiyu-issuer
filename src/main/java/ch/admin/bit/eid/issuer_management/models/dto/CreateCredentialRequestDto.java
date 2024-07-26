@@ -41,7 +41,7 @@ public class CreateCredentialRequestDto {
      **/
     @JsonFormat(pattern = ISO8601_FORMAT)
     @JsonProperty(value="credential_valid_until")
-    private Instant credential_valid_until;
+    private Instant credentialValidUntil;
 
     /**
      XMLSchema dateTimeStamp https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
@@ -49,6 +49,6 @@ public class CreateCredentialRequestDto {
      **/
     @JsonFormat(pattern = ISO8601_FORMAT)
     @JsonProperty(value="credential_valid_from")
-    private Instant credential_valid_from;
+    private Instant credentialValidFrom;
 
 }

@@ -27,6 +27,11 @@ import java.util.stream.Collectors;
 
 @Getter
 @Slf4j
+/**
+ * Wrapper for a request with a JWT encoded content.
+ * Reading from the wrapper only returns the claims of the JWT as the Request body.
+ * Create by using the static method <code>createAndValidate</code>
+ */
 public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
     private final SignedJWT jwt;
     private final String dataClaim;
@@ -45,6 +50,10 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
             SignedJWT jwt = wrappedRequest.getJwt();
             JWSHeader jwtHeader = jwt.getHeader();
             JWK matchingKey = allowedKeys.getKeyByKeyId(jwtHeader.getKeyID());
+            if (matchingKey == null) {
+                log.warn("No matching allowed key has been found for the received JWT");
+                throw new BadRequestException("Unknown Key has been used in signing the JWT");
+            }
             KeyType kty = matchingKey.getKeyType();
             if (!jwt.verify(buildVerifier(kty, matchingKey))){
                 log.warn("Request with invalid JWT encoding intercepted");

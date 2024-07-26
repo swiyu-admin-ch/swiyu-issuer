@@ -58,8 +58,8 @@ public class CredentialService {
                 // TODO check if needs to be set on start
                 .accessToken(UUID.randomUUID())
                 // TODO check if output is the same as py isoformat()
-                .credentialValidFrom(requestDto.getCredential_valid_from())
-                .credentialValidUntil(requestDto.getCredential_valid_until())
+                .credentialValidFrom(requestDto.getCredentialValidFrom())
+                .credentialValidUntil(requestDto.getCredentialValidUntil())
                 .build();
 
         return this.credentialOfferRepository.save(entity);
