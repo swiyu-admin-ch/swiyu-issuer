@@ -8,8 +8,8 @@ import ch.admin.bit.eid.issuer_management.models.entities.CredentialOfferEntity;
 import ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper;
 import ch.admin.bit.eid.issuer_management.services.CredentialService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -28,7 +28,7 @@ public class CredentialsController {
     @PostMapping("")
     @Operation(summary = "Creates a generic credential offer with the given content")
     public CredentialWithDeeplinkResponseDto createCredential(
-            @Validated @RequestBody CreateCredentialRequestDto requestDto) {
+            @Valid @RequestBody CreateCredentialRequestDto requestDto) {
         CredentialOfferEntity credential = this.credentialService.createCredential(requestDto);
 
         String offerLinkString = this.credentialService.getOfferDeeplinkFromCredential(credential);

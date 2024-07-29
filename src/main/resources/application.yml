@@ -34,3 +34,5 @@ springdoc:
 application:
   external-url: "${EXTERNAL_URL}"
   offer-validity: 2592000
+  enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
+  authentication-jwks: ${JWKS_ALLOWLIST}

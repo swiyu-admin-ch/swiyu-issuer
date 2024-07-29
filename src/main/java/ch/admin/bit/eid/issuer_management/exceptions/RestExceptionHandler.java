@@ -1,5 +1,6 @@
 package ch.admin.bit.eid.issuer_management.exceptions;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
@@ -8,11 +9,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.*;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
+@Slf4j
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -22,7 +23,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         final ApiError apiError = new ApiError(NOT_FOUND);
         apiError.setDetail(exception.getMessage());
 
-        // TODO add log
+        log.info("Resource not found", exception);
 
         return new ResponseEntity<>(apiError, apiError.getStatus());
     }
@@ -30,16 +31,26 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<Object> handleBadRequestException(final Exception exception, final WebRequest request) {
         final ApiError apiError = new ApiError(BAD_REQUEST);
-        // TODO add log
+        apiError.setDetail(exception.getMessage());
+        log.info("Bad Request intercepted", exception);
 
         return new ResponseEntity<>(apiError.getDetail(), apiError.getStatus());
     }
 
-    /*@ExceptionHandler
+    @ExceptionHandler(ConfigurationException.class)
+    public ResponseEntity<Object> handleConfigurationException(final Exception exception, final WebRequest request) {
+        final ApiError apiError = new ApiError(INTERNAL_SERVER_ERROR);
+        apiError.setDetail(exception.getMessage());
+        log.info("Configuration Exception intercepted", exception);
+
+        return new ResponseEntity<>(apiError.getDetail(), apiError.getStatus());
+    }
+
+    @ExceptionHandler
     public ResponseEntity<Object> handle(final Exception exception, final WebRequest request) {
         final ApiError apiError = new ApiError(INTERNAL_SERVER_ERROR);
-        // TODO add log
+        log.warn("General Exception handling", exception);
 
         return new ResponseEntity<>(apiError, apiError.getStatus());
-    }*/
+    }
 }

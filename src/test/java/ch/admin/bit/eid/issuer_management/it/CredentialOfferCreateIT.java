@@ -9,13 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
 @Nested
 @DisplayName("Create Offer")
-public class CredentialOfferCreateIt extends BaseIt {
+class CredentialOfferCreateIT extends BaseIt {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -65,11 +66,21 @@ public class CredentialOfferCreateIt extends BaseIt {
     @Test
     void testGetOfferData_thenSuccess() throws Exception {
 
-        String offer = "{\"test\"}";
+        String offerData = "{\"hello\":\"world\"}";
 
-        String jsonPayload = this.createOfferRequestJson(RandomStringUtils.random(10), offer);
+        String jsonPayload = """
+                        {
+                          "metadata_credential_supported_id": "test",
+                          "credential_subject_data": {
+                            "hello": "world"
+                          },
+                          "offer_validity_seconds": 36000
+                        }
+                        """;
 
-        MvcResult result = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
+        MvcResult result = mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -77,10 +88,7 @@ public class CredentialOfferCreateIt extends BaseIt {
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(offer));
+                .andExpect(content().string(offerData));
     }
 
-    private String createOfferRequestJson(String metadataCredentialSupportedId, String credentialSubjectData) {
-        return String.format("{\"metadata_credential_supported_id\": \"%s\", \"credential_subject_data\": %s}", metadataCredentialSupportedId, credentialSubjectData);
-    }
 }

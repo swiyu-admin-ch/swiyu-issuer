@@ -45,22 +45,22 @@ public class CredentialService {
     }
 
     public CredentialOfferEntity createCredential(CreateCredentialRequestDto requestDto) {
-        Instant expiration = Instant.now().plusSeconds(nonNull(requestDto.getOffer_validity_seconds())
-                ? requestDto.getOffer_validity_seconds()
+        Instant expiration = Instant.now().plusSeconds(nonNull(requestDto.getOfferValiditySeconds())
+                ? requestDto.getOfferValiditySeconds()
                 : config.getOfferValidity());
 
         // todo move to mapper
         CredentialOfferEntity entity = CredentialOfferEntity.builder()
                 .credentialStatus(CredentialStatusEnum.OFFERED)
-                .metadataCredentialSupportedId(requestDto.getMetadata_credential_supported_id())
-                .offerData(requestDto.getCredential_subject_data())
+                .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
+                .offerData(requestDto.getCredentialSubjectData())
                 .offerExpirationTimestamp(expiration.getEpochSecond())
                 .holderBindingNonce(UUID.randomUUID())
                 // TODO check if needs to be set on start
                 .accessToken(UUID.randomUUID())
                 // TODO check if output is the same as py isoformat()
-                .credentialValidFrom(requestDto.getCredential_valid_from())
-                .credentialValidUntil(requestDto.getCredential_valid_until())
+                .credentialValidFrom(requestDto.getCredentialValidFrom())
+                .credentialValidUntil(requestDto.getCredentialValidUntil())
                 .build();
 
         return this.credentialOfferRepository.save(entity);
