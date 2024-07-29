@@ -47,12 +47,12 @@ public class CredentialOfferEntity {
     private Instant credentialValidUntil;
 
     public static class CredentialOfferEntityBuilder {
-        public CredentialOfferEntityBuilder offerData(Object offerData){
+        public CredentialOfferEntityBuilder offerData(Object offerData) {
             Map<String, Object> metadata = new LinkedHashMap<>();
             if (offerData instanceof String) {
                 metadata.put("data", offerData);
                 metadata.put("data_integrity", "jwt");
-            }else if (offerData instanceof Map) {
+            } else if (offerData instanceof Map) {
                 metadata.put("data", new GsonBuilder().create().toJson(offerData));
             } else {
                 throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
