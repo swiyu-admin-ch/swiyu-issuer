@@ -20,7 +20,6 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -111,7 +110,7 @@ public class CredentialService {
 
         CredentialOffer credentialOffer = CredentialOffer.builder()
                 .credentialIssuer(config.getExternalUrl())
-                .credentials(List.of(credential.getMetadataCredentialSupportedId()))
+                .credentials(credential.getMetadataCredentialSupportedId())
                 .grants(grants)
                 .build();
 

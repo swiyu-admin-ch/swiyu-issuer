@@ -2,12 +2,13 @@ package ch.admin.bit.eid.issuer_management.models.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.Instant;
+import java.util.Date;
+import java.util.List;
 
 import static ch.admin.bit.eid.issuer_management.util.DateTimeUtils.ISO8601_FORMAT;
 
@@ -18,9 +19,9 @@ public class CreateCredentialRequestDto {
     /**
      ID as in credential metadata
      **/
-    @NotBlank(message = "'metadata_credential_supported_id' cannot be empty")
+    @NotEmpty(message = "'metadata_credential_supported_id' cannot be empty")
     @JsonProperty(value = "metadata_credential_supported_id")
-    private String metadataCredentialSupportedId;
+    private List<String> metadataCredentialSupportedId;
 
     /**
      Data to be used in VC
@@ -41,7 +42,7 @@ public class CreateCredentialRequestDto {
      **/
     @JsonFormat(pattern = ISO8601_FORMAT)
     @JsonProperty(value="credential_valid_until")
-    private Instant credentialValidUntil;
+    private Date credentialValidUntil;
 
     /**
      XMLSchema dateTimeStamp https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
@@ -49,6 +50,6 @@ public class CreateCredentialRequestDto {
      **/
     @JsonFormat(pattern = ISO8601_FORMAT)
     @JsonProperty(value="credential_valid_from")
-    private Instant credentialValidFrom;
+    private Date credentialValidFrom;
 
 }

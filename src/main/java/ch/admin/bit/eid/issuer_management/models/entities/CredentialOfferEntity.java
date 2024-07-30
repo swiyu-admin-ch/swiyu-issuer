@@ -12,9 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Data
@@ -31,7 +29,8 @@ public class CredentialOfferEntity {
     @Enumerated(EnumType.STRING)
     private CredentialStatusEnum credentialStatus;
 
-    private String metadataCredentialSupportedId;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<String> metadataCredentialSupportedId;
 
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> offerData;
@@ -42,9 +41,9 @@ public class CredentialOfferEntity {
 
     private UUID holderBindingNonce;
 
-    private Instant credentialValidFrom;
+    private Date credentialValidFrom;
 
-    private Instant credentialValidUntil;
+    private Date credentialValidUntil;
 
     public static class CredentialOfferEntityBuilder {
         public CredentialOfferEntityBuilder offerData(Object offerData) {
