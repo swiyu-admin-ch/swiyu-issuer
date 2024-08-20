@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
@@ -41,9 +41,9 @@ public class CredentialOfferEntity {
 
     private UUID holderBindingNonce;
 
-    private Date credentialValidFrom;
+    private LocalDateTime credentialValidFrom;
 
-    private Date credentialValidUntil;
+    private LocalDateTime credentialValidUntil;
 
     public static class CredentialOfferEntityBuilder {
         public CredentialOfferEntityBuilder offerData(Object offerData) {

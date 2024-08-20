@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static ch.admin.bit.eid.issuer_management.util.DateTimeUtils.ISO8601_FORMAT;
@@ -42,7 +42,7 @@ public class CreateCredentialRequestDto {
      **/
     @JsonFormat(pattern = ISO8601_FORMAT)
     @JsonProperty(value="credential_valid_until")
-    private Date credentialValidUntil;
+    private LocalDateTime credentialValidUntil;
 
     /**
      XMLSchema dateTimeStamp https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
@@ -50,6 +50,6 @@ public class CreateCredentialRequestDto {
      **/
     @JsonFormat(pattern = ISO8601_FORMAT)
     @JsonProperty(value="credential_valid_from")
-    private Date credentialValidFrom;
+    private LocalDateTime credentialValidFrom;
 
 }
