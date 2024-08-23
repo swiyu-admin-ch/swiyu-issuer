@@ -3,6 +3,7 @@ package ch.admin.bit.eid.issuer_management.controllers;
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
 import ch.admin.bit.eid.issuer_management.models.dto.CreateCredentialRequestDto;
 import ch.admin.bit.eid.issuer_management.models.dto.CredentialWithDeeplinkResponseDto;
+import ch.admin.bit.eid.issuer_management.models.dto.StatusResponseDto;
 import ch.admin.bit.eid.issuer_management.models.dto.UpdateStatusResponseDto;
 import ch.admin.bit.eid.issuer_management.models.entities.CredentialOfferEntity;
 import ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper;
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 import static ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper.credentialToCredentialResponseDto;
 import static ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper.credentialToUpdateStatusResponseDto;
+import static ch.admin.bit.eid.issuer_management.models.mappers.StatusResponseMapper.credentialToStatusResponseDto;
 
 // TODO add prefix
 @RestController
@@ -51,10 +53,10 @@ public class CredentialsController {
     }
 
     @GetMapping("/{credentialId}/status")
-    public String getCredentialStatus(@PathVariable UUID credentialId) {
+    public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
         CredentialOfferEntity credential = this.credentialService.getCredential(credentialId);
 
-        return credential.getCredentialStatus().getDisplayName();
+        return credentialToStatusResponseDto(credential);
     }
 
     @PatchMapping("/{credentialId}/status")

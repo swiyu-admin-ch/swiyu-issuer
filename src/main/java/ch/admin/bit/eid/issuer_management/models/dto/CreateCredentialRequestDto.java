@@ -51,5 +51,4 @@ public class CreateCredentialRequestDto {
     @JsonFormat(pattern = ISO8601_FORMAT)
     @JsonProperty(value="credential_valid_from")
     private LocalDateTime credentialValidFrom;
-
 }

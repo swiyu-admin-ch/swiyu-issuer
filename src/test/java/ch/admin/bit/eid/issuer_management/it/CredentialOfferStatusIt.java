@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("Offer status it")
-public class CredentialOfferStatusIt extends BaseIt  {
+class CredentialOfferStatusIt extends BaseIt  {
 
     @Autowired
     private CredentialOfferRepository repo;
