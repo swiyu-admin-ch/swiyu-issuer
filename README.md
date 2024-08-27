@@ -33,6 +33,9 @@ The Generic Issuer Agent Management is configured using environment variables.
 
 | Variable     | Description                                                                                     |
 |--------------|-------------------------------------------------------------------------------------------------|
+| POSTGRES_USER | Username to connect to the Issuer Agent Database shared with the issuer agent managment service |
+| POSTGRES_PASSWORD | Username to connect to the Issuer Agent Database |
+| POSTGRES_JDBC | JDBC Connection string to the shared DB |
 | EXTERNAL_URL | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet  |
 | ENABLE_JWT_AUTH | Enables the requirement of writing calls to the issuer management to be signed JWT |
 | JWKS_ALLOWLIST | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service | 
