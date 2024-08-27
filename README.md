@@ -1,5 +1,25 @@
 # Generic Issuer management service
+This software is a web server implementing the technical standards as specified in the [Swiss E-ID & Trust Infrastructure technical roadmap](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/tech-roadmap.md). Together with the other generic components provided, this software forms a collection of APIs allowing issuance and verification of verifiable credentials without the need of reimplementing the standards.
 
+The Generic Issuer Management Service is the interface to offer a credential. It should be only accessible from the issuers internal organization.
+
+As with all the generic issuance & verification services it is expected that every issuer and verifier hosts their own instance of the service.
+
+The issuer management service is linked to the issuer signer services through a database, allowing to scale the signer service independently from the management service.
+
+```mermaid
+flowchart TD
+  issint[\Issuer Business System\]
+  isam(Issuer Management Service)
+  isdb[(Postgres)]
+  isoi(Issuer Signer Service)
+  wallet[Wallet]
+  issint--->isam
+  isam--->isdb
+  isoi--->isdb
+  wallet--->isoi
+```
+# Development
 ## Setup
 
 - Start application IssuerManagementApplication with local profile
@@ -11,6 +31,11 @@
 ## Configuration
 The Generic Issuer Agent Management is configured using environment variables.
 
+| Variable     | Description                                                                                     |
+|--------------|-------------------------------------------------------------------------------------------------|
+| EXTERNAL_URL | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet  |
+| ENABLE_JWT_AUTH | Enables the requirement of writing calls to the issuer management to be signed JWT |
+| JWKS_ALLOWLIST | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service | 
 
 ### JWT Based Authentication
 If there is the need to further protect the API it is possible to enable the feature with a flag and
