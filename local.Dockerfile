@@ -1,4 +1,4 @@
-FROM openjdk:21-bookworm
+FROM eclipse-temurin:21
 
 RUN mkdir -p /app
 WORKDIR /app

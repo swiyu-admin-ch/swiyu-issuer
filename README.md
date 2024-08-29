@@ -52,3 +52,11 @@ If the JWT based authentication is activated it's expected to all in calls be wr
 The value of the data claim will contain the full json body of the normal request.  
 
 Note that this is only affects writing calls.
+
+## Contribution
+
+We appreciate feedback and contribution. More information can be found in the [CONTRIBUTING-File](/CONTRIBUTING.md).
+
+## License
+
+This project is licensed under the terms of the MIT license. See the [LICENSE](/LICENSE) file for details.
