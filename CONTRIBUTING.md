@@ -4,6 +4,4 @@ Contributions are welcome via GitHub Issues (pull requests and branches are disa
 
 Please feel free to fork, checkout and run the code yourself.
 
-As this project is a proof of concept and part of a bigger goal, please be aware that this is an example- and not a reference implementation.
-
 Thank you for your contribution
