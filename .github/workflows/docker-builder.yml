@@ -3,6 +3,7 @@ run-name: ${{ github.repository }} is building and publishing a docker image
 on:
     release: 
         types: [published]
+    workflow_dispatch:
 
 env:
     REGISTRY: ghcr.io
@@ -52,12 +53,3 @@ jobs:
                 tags: ${{ steps.meta.outputs.tags }}
                 labels: ${{ steps.meta.outputs.labels }}
                 file: local.Dockerfile
-            - name: Sign Docker Image digest
-              env:
-                    # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-                    TAGS: ${{ steps.meta.outputs.tags }}
-                    DIGEST: ${{ steps.push.outputs.digest }}
-              # This step uses the identity token to provision an ephemeral certificate
-              # to use with Private Images use --force for cosign
-              run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
-                
