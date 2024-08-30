@@ -1,7 +1,19 @@
-FROM docker.io/eclipse-temurin:21
+FROM bit-base-images-docker-hosted.nexus.bit.admin.ch/bit/eclipse-temurin:21
+USER 0
 
-RUN mkdir -p /app
+EXPOSE 8080
+
+COPY scripts/entrypoint.sh /app/
+
+ARG JAR_FILE=target/*.jar
+ADD ${JAR_FILE} /app/app.jar
+
+RUN set -uxe && \
+    chmod g=u /app/entrypoint.sh &&\
+    chmod +x /app/entrypoint.sh
+
 WORKDIR /app
-COPY ./target/*.jar /app/app.jar
 
-ENTRYPOINT ["java","-jar", "app.jar"]
+USER 1001
+
+ENTRYPOINT ["/app/entrypoint.sh","app.jar"]
