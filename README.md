@@ -61,3 +61,39 @@ We appreciate feedback and contribution. More information can be found in the [C
 ## License
 
 This project is licensed under the terms of the MIT license. See the [LICENSE](/LICENSE) file for details.
+
+## Data Structure
+```mermaid
+erDiagram
+CREDENTIAL_OFFER {
+  uuid id PK
+  text credential_status
+  text metadata_credential_supported_id 
+  jsonb offer_data
+  uuid holder_binding_nonce
+  uuid access_token
+  integer offer_expiration_timestamp
+  text credential_valid_from
+  text credential_valid_until
+}
+
+CREDENTIAL_OFFER_STATUS {
+  uuid credential_offer_id PK,FK
+  uuid status_id PK,FK
+  integer index
+}
+
+STATUS_LIST {
+  uuid id PK
+  text type
+  text purpose
+  text uri
+  text value
+  text length
+}
+
+CREDENTIAL_OFFER one to many CREDENTIAL_OFFER_STATUS : "has status"
+STATUS_LIST one to many CREDENTIAL_OFFER_STATUS : "is referenced in"
+```
+Note: Status List info comes from config and are populated to the DB the first time a Credential uses the status.
+ID of the credential offer is also the id used by the issuer adapter (the component communicating with the issuer agent management) to revoke the credential. It is returned when a new offer is created. It's recommended to save this id to revoke the credential later on.
