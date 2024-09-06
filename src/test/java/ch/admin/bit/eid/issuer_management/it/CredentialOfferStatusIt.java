@@ -1,8 +1,8 @@
 package ch.admin.bit.eid.issuer_management.it;
 
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
-import ch.admin.bit.eid.issuer_management.models.entities.CredentialOfferEntity;
-import ch.admin.bit.eid.issuer_management.repositories.CredentialOfferRepository;
+import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
+import ch.admin.bit.eid.issuer_management.domain.CredentialOfferRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.DisplayName;
@@ -96,8 +96,8 @@ class CredentialOfferStatusIt extends BaseIt  {
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
     }
 
-    private CredentialOfferEntity updateStatusForEntity(UUID id, CredentialStatusEnum status) {
-        CredentialOfferEntity credentialOffer = repo.findById(id).get();
+    private CredentialOffer updateStatusForEntity(UUID id, CredentialStatusEnum status) {
+        CredentialOffer credentialOffer = repo.findById(id).get();
         credentialOffer.setCredentialStatus(status);
 
         return repo.save(credentialOffer);

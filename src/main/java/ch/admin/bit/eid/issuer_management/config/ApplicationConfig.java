@@ -21,6 +21,9 @@ public class ApplicationConfig {
     @NotNull
     private Long offerValidity;
 
+    @NotNull
+    private String statusListUrl;
+
     /**
      * If set to true the service expects all
      * writing message bodies to be encoded as JWT

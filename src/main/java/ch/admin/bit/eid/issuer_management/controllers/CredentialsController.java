@@ -5,7 +5,7 @@ import ch.admin.bit.eid.issuer_management.models.dto.CreateCredentialRequestDto;
 import ch.admin.bit.eid.issuer_management.models.dto.CredentialWithDeeplinkResponseDto;
 import ch.admin.bit.eid.issuer_management.models.dto.StatusResponseDto;
 import ch.admin.bit.eid.issuer_management.models.dto.UpdateStatusResponseDto;
-import ch.admin.bit.eid.issuer_management.models.entities.CredentialOfferEntity;
+import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
 import ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper;
 import ch.admin.bit.eid.issuer_management.services.CredentialService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,7 +31,7 @@ public class CredentialsController {
     @Operation(summary = "Creates a generic credential offer with the given content")
     public CredentialWithDeeplinkResponseDto createCredential(
             @Valid @RequestBody CreateCredentialRequestDto requestDto) {
-        CredentialOfferEntity credential = this.credentialService.createCredential(requestDto);
+        CredentialOffer credential = this.credentialService.createCredential(requestDto);
 
         String offerLinkString = this.credentialService.getOfferDeeplinkFromCredential(credential);
 
@@ -47,14 +47,14 @@ public class CredentialsController {
     @GetMapping("/{credentialId}/offer_deeplink")
     @Operation(summary = "Gets the offer deeplink")
     public String getCredentialOfferDeeplink(@PathVariable UUID credentialId) {
-        CredentialOfferEntity credential = this.credentialService.getCredential(credentialId);
+        CredentialOffer credential = this.credentialService.getCredential(credentialId);
 
         return this.credentialService.getOfferDeeplinkFromCredential(credential);
     }
 
     @GetMapping("/{credentialId}/status")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
-        CredentialOfferEntity credential = this.credentialService.getCredential(credentialId);
+        CredentialOffer credential = this.credentialService.getCredential(credentialId);
 
         return credentialToStatusResponseDto(credential);
     }
@@ -63,7 +63,7 @@ public class CredentialsController {
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
                                                           @RequestParam("credentialStatus") CredentialStatusEnum credentialStatus) {
 
-        CredentialOfferEntity credential = this.credentialService.updateCredentialStatus(credentialId, credentialStatus);
+        CredentialOffer credential = this.credentialService.updateCredentialStatus(credentialId, credentialStatus);
 
         return credentialToUpdateStatusResponseDto(credential);
     }

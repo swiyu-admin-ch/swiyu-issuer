@@ -4,10 +4,9 @@ import ch.admin.bit.eid.issuer_management.config.ApplicationConfig;
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
 import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
 import ch.admin.bit.eid.issuer_management.exceptions.ResourceNotFoundException;
-import ch.admin.bit.eid.issuer_management.models.CredentialOffer;
 import ch.admin.bit.eid.issuer_management.models.dto.CreateCredentialRequestDto;
-import ch.admin.bit.eid.issuer_management.models.entities.CredentialOfferEntity;
-import ch.admin.bit.eid.issuer_management.repositories.CredentialOfferRepository;
+import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
+import ch.admin.bit.eid.issuer_management.domain.CredentialOfferRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,20 +35,20 @@ public class CredentialService {
 
     private final ObjectMapper objectMapper;
 
-    public CredentialOfferEntity getCredential(UUID credentialId) {
+    public CredentialOffer getCredential(UUID credentialId) {
 
         // Check if optional can be default
         return this.credentialOfferRepository.findById(credentialId)
                 .orElseThrow(() -> new ResourceNotFoundException(String.format("Credential %s not found", credentialId)));
     }
 
-    public CredentialOfferEntity createCredential(CreateCredentialRequestDto requestDto) {
+    public CredentialOffer createCredential(CreateCredentialRequestDto requestDto) {
         Instant expiration = Instant.now().plusSeconds(nonNull(requestDto.getOfferValiditySeconds())
                 ? requestDto.getOfferValiditySeconds()
                 : config.getOfferValidity());
 
         // todo move to mapper
-        CredentialOfferEntity entity = CredentialOfferEntity.builder()
+        CredentialOffer entity = CredentialOffer.builder()
                 .credentialStatus(CredentialStatusEnum.OFFERED)
                 .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
                 .offerData(requestDto.getCredentialSubjectData())
@@ -65,10 +64,10 @@ public class CredentialService {
         return this.credentialOfferRepository.save(entity);
     }
 
-    public CredentialOfferEntity updateCredentialStatus(@NotNull UUID credentialId,
-                                                        @NotNull CredentialStatusEnum newStatus) {
+    public CredentialOffer updateCredentialStatus(@NotNull UUID credentialId,
+                                                  @NotNull CredentialStatusEnum newStatus) {
 
-        CredentialOfferEntity credential = this.getCredential(credentialId);
+        CredentialOffer credential = this.getCredential(credentialId);
 
         // TODO rm status & credentialStatus
         boolean credentialStatus = Boolean.TRUE;
@@ -99,7 +98,7 @@ public class CredentialService {
         return this.credentialOfferRepository.save(credential);
     }
 
-    public String getOfferDeeplinkFromCredential(CredentialOfferEntity credential) {
+    public String getOfferDeeplinkFromCredential(CredentialOffer credential) {
 
         Map<String, Object> grants = new HashMap<>();
         grants.put("urn:ietf:params:oauth:grant-type:pre-authorized_code", new Object() {
@@ -108,7 +107,7 @@ public class CredentialService {
             final UUID preAuthorizedCode = credential.getId();
         });
 
-        CredentialOffer credentialOffer = CredentialOffer.builder()
+        ch.admin.bit.eid.issuer_management.models.CredentialOffer credentialOffer = ch.admin.bit.eid.issuer_management.models.CredentialOffer.builder()
                 .credentialIssuer(config.getExternalUrl())
                 .credentials(credential.getMetadataCredentialSupportedId())
                 .grants(grants)

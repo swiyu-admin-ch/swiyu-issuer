@@ -3,7 +3,7 @@ CREATE TABLE status_list (
     type text NOT NULL,
     purpose text,
     uri text NOT NULL,
-    value text NOT NULL,
+    status_zipped text NOT NULL,
     PRIMARY KEY (id)
 );
 

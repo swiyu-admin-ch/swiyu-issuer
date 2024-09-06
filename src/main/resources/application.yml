@@ -36,3 +36,4 @@ application:
   offer-validity: 2592000
   enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
   authentication-jwks: ${JWKS_ALLOWLIST}
+  status-list-url: ${STATUS_LIST_URL}

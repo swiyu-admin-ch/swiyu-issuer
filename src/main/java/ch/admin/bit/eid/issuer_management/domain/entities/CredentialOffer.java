@@ -1,4 +1,4 @@
-package ch.admin.bit.eid.issuer_management.models.entities;
+package ch.admin.bit.eid.issuer_management.domain.entities;
 
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
 import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
@@ -20,7 +20,7 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "credential_offer")
-public class CredentialOfferEntity {
+public class CredentialOffer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -45,8 +45,11 @@ public class CredentialOfferEntity {
 
     private LocalDateTime credentialValidUntil;
 
-    public static class CredentialOfferEntityBuilder {
-        public CredentialOfferEntityBuilder offerData(Object offerData) {
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "offer")
+    private List<CredentialOfferStatus> credentialOfferStatuses;
+
+    public static class CredentialOfferBuilder {
+        public CredentialOfferBuilder offerData(Object offerData) {
             Map<String, Object> metadata = new LinkedHashMap<>();
             if (offerData instanceof String) {
                 metadata.put("data", offerData);
