@@ -7,7 +7,8 @@ CREATE TABLE status_list
     status_zipped   text NOT NULL,
     last_used_index int  NOT NULL,
     max_length      int  NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    unique (uri)
 );
 
 CREATE TABLE credential_offer_status
