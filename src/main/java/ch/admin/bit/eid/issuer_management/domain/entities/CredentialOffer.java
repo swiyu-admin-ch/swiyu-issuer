@@ -3,16 +3,28 @@ package ch.admin.bit.eid.issuer_management.domain.entities;
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
 import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
 import com.google.gson.GsonBuilder;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -45,8 +57,10 @@ public class CredentialOffer {
 
     private LocalDateTime credentialValidUntil;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "offer")
-    private List<CredentialOfferStatus> credentialOfferStatuses;
+    @OneToMany(mappedBy = "offer")
+    @Cascade(org.hibernate.annotations.CascadeType.ALL)
+    private Set<CredentialOfferStatus> offerStatusSet;
+
 
     public static class CredentialOfferBuilder {
         public CredentialOfferBuilder offerData(Object offerData) {

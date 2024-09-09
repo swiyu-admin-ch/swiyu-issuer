@@ -19,10 +19,10 @@ public class ApplicationConfig {
     private String externalUrl;
 
     @NotNull
-    private Long offerValidity;
+    private String issuerId;
 
     @NotNull
-    private String statusListUrl;
+    private Long offerValidity;
 
     /**
      * If set to true the service expects all

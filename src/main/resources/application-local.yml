@@ -15,3 +15,6 @@ springdoc:
 application:
   external-url: "http://localhost:8080/"
   offer-validity: 2592000 # 60 * 60 * 24 * 30 => 30 days;
+controller:
+  # Use DEV Environment
+  uri: "https://status-data-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch"

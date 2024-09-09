@@ -32,8 +32,15 @@ springdoc:
   show-actuator: true
 
 application:
-  external-url: "${EXTERNAL_URL}"
+  # DID of the Issuer
+  issuer-id: ${ISSUER_ID}
+  # URL under which this service can be reached from the web
+  external-url: ${EXTERNAL_URL}
   offer-validity: 2592000
   enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
   authentication-jwks: ${JWKS_ALLOWLIST}
-  status-list-url: ${STATUS_LIST_URL}
+  status-list:
+    # URL where this service shall write status list updates to
+    controller-url: "${CONTROLLER_URL}"
+    # private key for singing status list VCs
+    private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY}}"

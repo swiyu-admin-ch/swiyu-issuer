@@ -1,32 +1,33 @@
 package ch.admin.bit.eid.issuer_management.domain.entities;
 
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @Table(name = "credential_offer_status")
+@Getter
+@Setter
 public class CredentialOfferStatus {
 
-    @Id
+    @EmbeddedId
+    private CredentialOfferStatusKey id;
+
     @ManyToOne
+    @MapsId("offerId")
     @JoinColumn(name = "credential_offer_id", referencedColumnName = "id")
     private CredentialOffer offer;
 
-    @Id
     @ManyToOne
+    @MapsId("statusListId")
     @JoinColumn(name = "status_list_id", referencedColumnName = "id")
-    private StatusListEntity statusList;
+    private StatusList statusList;
 
-    private int index;
+    private Integer index;
+
 }

@@ -5,7 +5,9 @@
 
 package ch.admin.bit.eid.issuer_management.models.statuslist;
 
+import ch.admin.bit.eid.issuer_management.exceptions.ConfigurationException;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -21,6 +23,7 @@ import java.util.zip.InflaterOutputStream;
  * See <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-status-list-02.html#name-status-list-token-in-jwt-fo">spec</a>
  * Status List published on registry
  */
+@Slf4j
 @Getter
 public class TokenStatusListToken {
 
@@ -73,8 +76,12 @@ public class TokenStatusListToken {
      *
      * @return a claim set containing
      */
-    public Map<String, Object> getStatusListClaims() throws IOException {
+    public Map<String, Object> getStatusListClaims() {
         return Map.of("bits", bits, "lst", encodeStatusList(statusList));
+    }
+
+    public String getStatusListData() {
+        return encodeStatusList(statusList);
     }
 
     /**
@@ -100,7 +107,7 @@ public class TokenStatusListToken {
      * Sets status bit to active
      *
      * @param idx    index of the status list entry
-     * @param status a status bit
+     * @param status a status bit, one of 1,2,4,8
      */
     public void setStatus(int idx, int status) {
         verifyStatusArgument(status);
@@ -113,7 +120,7 @@ public class TokenStatusListToken {
      * Sets status bit to inactive (0)
      *
      * @param idx    index of the status list entry
-     * @param status a status bit
+     * @param status a status bit, one of 1,2,4,8
      */
     public void unsetStatus(int idx, int status) {
         verifyStatusArgument(status);
@@ -159,16 +166,20 @@ public class TokenStatusListToken {
         statusList[idx * bits / 8] = statusValue;
     }
 
-    private static String encodeStatusList(byte[] statusList) throws IOException {
+    private static String encodeStatusList(byte[] statusList) {
         // zipping the data
-        var zlibOutput = new ByteArrayOutputStream();
-        var deflaterStream = new DeflaterOutputStream(zlibOutput, new Deflater(9));
-        deflaterStream.write(statusList);
-        deflaterStream.finish();
-        byte[] clippedZlibOutput = Arrays.copyOf(zlibOutput.toByteArray(), zlibOutput.size());
-        deflaterStream.close();
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(clippedZlibOutput);
-
+        try {
+            var zlibOutput = new ByteArrayOutputStream();
+            var deflaterStream = new DeflaterOutputStream(zlibOutput, new Deflater(9));
+            deflaterStream.write(statusList);
+            deflaterStream.finish();
+            byte[] clippedZlibOutput = Arrays.copyOf(zlibOutput.toByteArray(), zlibOutput.size());
+            deflaterStream.close();
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(clippedZlibOutput);
+        } catch (IOException e) {
+            log.error("Error occurred during zipping of Status List data", e);
+            throw new ConfigurationException("Status List data can not be zipped");
+        }
     }
 
     /**
@@ -176,10 +187,11 @@ public class TokenStatusListToken {
      * @return the bytes of the status list
      * @throws DataFormatException if the lst is not a zlib compressed status list
      */
-    private static byte[] decodeStatusList(String lst) throws DataFormatException, IOException {
+    private static byte[] decodeStatusList(String lst) throws IOException {
         // base64 decoding the data
         byte[] zippedData = Base64.getUrlDecoder().decode(lst);
-        
+
+
         var zlibOutput = new ByteArrayOutputStream();
         var inflaterStream = new InflaterOutputStream(zlibOutput);
         inflaterStream.write(zippedData);
@@ -187,6 +199,7 @@ public class TokenStatusListToken {
         byte[] clippedZlibOutput = Arrays.copyOf(zlibOutput.toByteArray(), zlibOutput.size());
         inflaterStream.close();
         return clippedZlibOutput;
+
     }
 
 }
