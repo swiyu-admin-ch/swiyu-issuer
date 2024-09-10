@@ -33,7 +33,7 @@ public class RestService {
                     .retrieve()
                     .toBodilessEntity();
         } catch (IllegalArgumentException e) {
-            log.warn(String.format("Extracting datastore entry from the status list uri %s using regex %s failed", uri, PATTERN));
+            log.warn(String.format("Extracting datastore entry from the status list uri %s using regex %s failed", uri, pattern));
             throw new BadRequestException(String.format("Status list URI %s can not be resolved", uri));
         } catch (RestClientException e) {
             log.error("Failed to update API endpoint", e);
