@@ -1,17 +1,23 @@
 package ch.admin.bit.eid.issuer_management.services;
 
 import ch.admin.bit.eid.issuer_management.config.ApplicationConfig;
+import ch.admin.bit.eid.issuer_management.domain.CredentialOfferRepository;
+import ch.admin.bit.eid.issuer_management.domain.CredentialOfferStatusRepository;
+import ch.admin.bit.eid.issuer_management.domain.StatusListRepository;
+import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
+import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOfferStatus;
+import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOfferStatusKey;
+import ch.admin.bit.eid.issuer_management.domain.entities.StatusList;
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
 import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
 import ch.admin.bit.eid.issuer_management.exceptions.ResourceNotFoundException;
 import ch.admin.bit.eid.issuer_management.models.dto.CreateCredentialRequestDto;
-import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
-import ch.admin.bit.eid.issuer_management.domain.CredentialOfferRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
@@ -19,21 +25,28 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.nonNull;
 
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class CredentialService {
 
     private final CredentialOfferRepository credentialOfferRepository;
+    private final CredentialOfferStatusRepository credentialOfferStatusRepository;
+    private final StatusListRepository statusListRepository;
 
     private final ApplicationConfig config;
 
     private final ObjectMapper objectMapper;
+
+    private final StatusListService statusListService;
 
     public CredentialOffer getCredential(UUID credentialId) {
 
@@ -47,54 +60,68 @@ public class CredentialService {
                 ? requestDto.getOfferValiditySeconds()
                 : config.getOfferValidity());
 
-        // todo move to mapper
+
+        List<StatusList> statusLists = statusListRepository.findByUriIn(requestDto.getStatusLists());
+        if (statusLists.size() != requestDto.getStatusLists().size()) {
+            throw new BadRequestException(String.format("Could not resolve all provided status lists, only found %s", statusLists.stream().map(StatusList::getUri).collect(Collectors.joining(", "))));
+        }
+
         CredentialOffer entity = CredentialOffer.builder()
                 .credentialStatus(CredentialStatusEnum.OFFERED)
                 .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
                 .offerData(requestDto.getCredentialSubjectData())
                 .offerExpirationTimestamp(expiration.getEpochSecond())
                 .holderBindingNonce(UUID.randomUUID())
-                // TODO check if needs to be set on start
                 .accessToken(UUID.randomUUID())
-                // TODO check if output is the same as py isoformat()
                 .credentialValidFrom(requestDto.getCredentialValidFrom())
                 .credentialValidUntil(requestDto.getCredentialValidUntil())
                 .build();
+        entity = this.credentialOfferRepository.save(entity);
 
-        return this.credentialOfferRepository.save(entity);
+        // Add Status List links
+        for (StatusList statusList : statusLists) {
+            CredentialOfferStatusKey offerStatusKey = CredentialOfferStatusKey.builder().offerId(entity.getId()).statusListId(statusList.getId()).build();
+            CredentialOfferStatus offerStatus = CredentialOfferStatus.builder().id(offerStatusKey).index(statusList.getLastUsedIndex()).offer(entity).statusList(statusList).build();
+            statusList.setLastUsedIndex(statusList.getLastUsedIndex() + 1);
+            credentialOfferStatusRepository.save(offerStatus);
+            statusListRepository.save(statusList);
+
+        }
+        return entity;
     }
 
     public CredentialOffer updateCredentialStatus(@NotNull UUID credentialId,
                                                   @NotNull CredentialStatusEnum newStatus) {
-
         CredentialOffer credential = this.getCredential(credentialId);
-
-        // TODO rm status & credentialStatus
-        boolean credentialStatus = Boolean.TRUE;
         CredentialStatusEnum currentStatus = credential.getCredentialStatus();
 
+        // No status change or was already revoked
         if (currentStatus == newStatus || currentStatus == CredentialStatusEnum.REVOKED) {
             throw new BadRequestException(String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
         }
 
-        if (currentStatus.isPostHolderInteraction() && newStatus != CredentialStatusEnum.REVOKED) {
-            if (currentStatus == CredentialStatusEnum.ISSUED) {
+        if (!currentStatus.isIssuedToHolder()) {
+            // Status before issuance is not reflected in the status list
+            if (newStatus == CredentialStatusEnum.REVOKED) {
+                credential.setOfferData(null);
+            } else if (newStatus == CredentialStatusEnum.OFFERED && currentStatus == CredentialStatusEnum.IN_PROGRESS) {
                 credential.setCredentialStatus(newStatus);
-            } else if (currentStatus.equals(newStatus)) {
-                // TODO check -> Why
-                // management.credential_status = db_credential.CredentialStatus.ISSUED.value;
+            } else {
+                throw new BadRequestException(String.format("Illegal state transition - Status cannot be updated from %s to %s", currentStatus, newStatus));
+            }
+        } else {
+            switch (newStatus) {
+                case REVOKED -> statusListService.revoke(credential.getOfferStatusSet());
+                case SUSPENDED -> statusListService.suspend(credential.getOfferStatusSet());
+                case ISSUED -> statusListService.unsuspend(credential.getOfferStatusSet());
+                default -> {
+                }
             }
 
-        } else if (currentStatus.isDuringHolderInteraction()) {
-            // TODO Check
-            credential.setCredentialStatus(CredentialStatusEnum.OFFERED);
-        } else if (newStatus == CredentialStatusEnum.REVOKED) {
-            credential.setCredentialStatus(newStatus);
-            credential.setOfferData(null);
-        } else {
-            throw new BadRequestException(String.format("Status cannot be updated from %s to %s", currentStatus, newStatus));
         }
 
+        log.info(String.format("Updating %s from %s to %s", credentialId, currentStatus, newStatus));
+        credential.setCredentialStatus(newStatus);
         return this.credentialOfferRepository.save(credential);
     }
 
@@ -124,5 +151,13 @@ public class CredentialService {
         }
 
         return String.format("openid-credential-offer://?credential_offer=%s", credentialOfferString);
+    }
+
+
+    private void setCredentialStatus(CredentialOffer offer, CredentialStatusEnum status) {
+        if (offer.getOfferStatusSet().isEmpty()) {
+            throw new BadRequestException(String.format("%s has no status list which could reflect the change to status %s", offer.getId(), status));
+        }
+
     }
 }

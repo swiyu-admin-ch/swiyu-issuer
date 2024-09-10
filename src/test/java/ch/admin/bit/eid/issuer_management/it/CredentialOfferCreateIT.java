@@ -31,14 +31,14 @@ class CredentialOfferCreateIT extends BaseIt {
 
 
         String now = new SimpleDateFormat(ISO8601_FORMAT).format(new Date());
-        String minPayloadWithValidUntil= String.format("{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}", "test", now);
+        String minPayloadWithValidUntil = String.format("{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}", "test", now);
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isOk());
     }
 
     @Test
     void testCreateOffer_thenValidationFailure() throws Exception {
-        String emptyMetadataId = String.format("{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {}}", "");
+        String emptyMetadataId = String.format("{\"metadata_credential_supported_id\": \"%s\", \"credential_subject_data\": {}}", "");
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(emptyMetadataId))
                 .andExpect(status().isBadRequest());
@@ -70,14 +70,14 @@ class CredentialOfferCreateIT extends BaseIt {
         String offerData = "{\"hello\":\"world\"}";
 
         String jsonPayload = """
-                        {
-                          "metadata_credential_supported_id": ["test"],
-                          "credential_subject_data": {
-                            "hello": "world"
-                          },
-                          "offer_validity_seconds": 36000
-                        }
-                        """;
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": {
+                    "hello": "world"
+                  },
+                  "offer_validity_seconds": 36000
+                }
+                """;
 
         MvcResult result = mvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)

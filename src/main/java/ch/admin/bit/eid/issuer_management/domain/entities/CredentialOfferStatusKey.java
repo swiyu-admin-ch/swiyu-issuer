@@ -7,13 +7,19 @@ package ch.admin.bit.eid.issuer_management.domain.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.UUID;
 
 @Embeddable
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CredentialOfferStatusKey implements Serializable {
     @Column(name = "credential_offer_id")
     private UUID offerId;

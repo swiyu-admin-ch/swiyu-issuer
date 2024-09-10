@@ -26,23 +26,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("testjwt")
 @AutoConfigureMockMvc
 class CredentialOfferCreateJWTIT {
+    protected static final String BASE_URL = "/credentials";
     @Autowired
     private MockMvc mvc;
-
-    protected static final String BASE_URL = "/credentials";
 
     @Test
     void createOfferWithJWT() throws Exception {
         String offerData = "{\"hello\":\"world\"}";
         String jsonPayload = """
-                        {
-                          "metadata_credential_supported_id": "test",
-                          "credential_subject_data": {
-                            "hello": "world"
-                          },
-                          "offer_validity_seconds": 36000
-                        }
-                        """;
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": {
+                    "hello": "world"
+                  },
+                  "offer_validity_seconds": 36000
+                }
+                """;
         testJWTCreateOffer(jsonPayload, offerData);
     }
 
@@ -51,7 +50,7 @@ class CredentialOfferCreateJWTIT {
         String offerData = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJoZWxsbyI6IndvcmxkIn0.eH9qoMvdv12LsZ3Og_K20no8uiBQFuJg6k6A7O8l06U";
         String jsonPayload = String.format("""
                 {
-                  "metadata_credential_supported_id": "test",
+                  "metadata_credential_supported_id": ["test"],
                   "credential_subject_data": %s,
                   "offer_validity_seconds": 36000
                 }

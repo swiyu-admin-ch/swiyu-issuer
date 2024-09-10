@@ -3,6 +3,7 @@ package ch.admin.bit.eid.issuer_management.services;
 import ch.admin.bit.eid.issuer_management.config.ApplicationConfig;
 import ch.admin.bit.eid.issuer_management.config.StatusListConfig;
 import ch.admin.bit.eid.issuer_management.domain.StatusListRepository;
+import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOfferStatus;
 import ch.admin.bit.eid.issuer_management.domain.entities.StatusList;
 import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
 import ch.admin.bit.eid.issuer_management.exceptions.ConfigurationException;
@@ -21,8 +22,11 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -37,11 +41,84 @@ public class StatusListService {
     public void createStatusList(StatusListCreateDto statusListCreateDto) {
         var statusListType = statusListCreateDto.getType();
         StatusList statusList = switch (statusListType) {
-            case ("TokenStatusList") -> initTokenStatusListToken(statusListCreateDto);
+            case TOKEN_STATUS_LIST -> initTokenStatusListToken(statusListCreateDto);
             default ->
-                    throw new NotImplementedError(String.format("Statulist Type %s is not available", statusListType));
+                    throw new NotImplementedError(String.format("Status List Type %s is not available", statusListType));
         };
         statusListRepository.save(statusList);
+    }
+
+    public boolean canRevoke(StatusList statusList) {
+        return switch (statusList.getType()) {
+            case TOKEN_STATUS_LIST -> (Integer) statusList.getConfig().get("bits") >= 1;
+        };
+    }
+
+    public boolean canSuspend(StatusList statusList) {
+        return switch (statusList.getType()) {
+            case TOKEN_STATUS_LIST -> (Integer) statusList.getConfig().get("bits") >= 2;
+        };
+    }
+
+    public void revoke(Set<CredentialOfferStatus> offerStatusSet) {
+        Set<CredentialOfferStatus> revokableStatusSet = offerStatusSet.stream().filter(credentialOfferStatus -> canRevoke(credentialOfferStatus.getStatusList())).collect(Collectors.toSet());
+        if (revokableStatusSet.isEmpty()) {
+            throw new BadRequestException("No Status List which supports revocation found");
+        }
+        for (CredentialOfferStatus offerStatus : revokableStatusSet) {
+            switch (offerStatus.getStatusList().getType()) {
+                case TOKEN_STATUS_LIST -> updateTokenStatusList(offerStatus, 1, true);
+            }
+        }
+    }
+
+    public void suspend(Set<CredentialOfferStatus> offerStatusSet) {
+        Set<CredentialOfferStatus> revokableStatusSet = offerStatusSet.stream().filter(credentialOfferStatus -> canSuspend(credentialOfferStatus.getStatusList())).collect(Collectors.toSet());
+        if (revokableStatusSet.isEmpty()) {
+            throw new BadRequestException("No Status List which supports suspension found");
+        }
+        for (CredentialOfferStatus offerStatus : revokableStatusSet) {
+            switch (offerStatus.getStatusList().getType()) {
+                case TOKEN_STATUS_LIST -> updateTokenStatusList(offerStatus, 2, true);
+            }
+        }
+    }
+
+    public void unsuspend(Set<CredentialOfferStatus> offerStatusSet) {
+        Set<CredentialOfferStatus> revokableStatusSet = offerStatusSet.stream().filter(credentialOfferStatus -> canSuspend(credentialOfferStatus.getStatusList())).collect(Collectors.toSet());
+        if (revokableStatusSet.isEmpty()) {
+            throw new BadRequestException("No Status List which supports suspension found");
+        }
+        for (CredentialOfferStatus offerStatus : revokableStatusSet) {
+            switch (offerStatus.getStatusList().getType()) {
+                case TOKEN_STATUS_LIST -> updateTokenStatusList(offerStatus, 2, false);
+            }
+        }
+    }
+
+    /**
+     * Updates the token status list by setting the given bit
+     *
+     * @param offerStatus
+     * @param statusBit   the statusBit to be set
+     * @param set         if the bit value should be set to 1
+     */
+    private void updateTokenStatusList(CredentialOfferStatus offerStatus, int statusBit, boolean set) {
+        StatusList statusList = offerStatus.getStatusList();
+        try {
+            TokenStatusListToken token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped());
+            if (set) {
+                token.setStatus(offerStatus.getIndex(), statusBit);
+            } else {
+                token.unsetStatus(offerStatus.getIndex(), statusBit);
+            }
+            statusList.setStatusZipped(token.getStatusListData());
+            updateRegistry(statusList, token);
+            statusListRepository.save(statusList);
+        } catch (IOException e) {
+            log.error(String.format("Failed to load status list %s", statusList.getId()), e);
+            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()));
+        }
     }
 
     private StatusList initTokenStatusListToken(StatusListCreateDto statusListCreateDto) {
@@ -52,7 +129,7 @@ public class StatusListService {
         TokenStatusListToken token = new TokenStatusListToken((Integer) config.get("bits"), statusListCreateDto.getMaxLength());
 
         // Build DB Entry
-        StatusList statusListEntity = StatusList.builder()
+        StatusList statusList = StatusList.builder()
                 .type(statusListCreateDto.getType())
                 .config(statusListCreateDto.getConfig())
                 .uri(statusListCreateDto.getUri())
@@ -61,8 +138,27 @@ public class StatusListService {
                 .maxLength(statusListCreateDto.getMaxLength())
                 .build();
 
+        updateRegistry(statusList, token);
+        statusListRepository.save(statusList);
+        return statusList;
+    }
+
+    private void updateRegistry(StatusList statusListEntity, TokenStatusListToken token) {
         // Build JWT
         ECKey signingKey = statusListConfig.getStatusListKey().toECKey();
+
+        SignedJWT statusListJWT = buildStatusListJWT(signingKey, statusListEntity, token);
+
+        try {
+            statusListJWT.sign(new ECDSASigner(signingKey));
+        } catch (JOSEException e) {
+            log.error("Failed to sign status list JWT with the provided key.", e);
+            throw new ConfigurationException("Failed to sign status list JWT with the provided key.");
+        }
+        restService.updateStatusList(statusListEntity.getUri(), statusListJWT.serialize());
+    }
+
+    private SignedJWT buildStatusListJWT(ECKey signingKey, StatusList statusListEntity, TokenStatusListToken token) {
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
                 .type(new JOSEObjectType("statuslist+jwt")).build();
@@ -72,16 +168,7 @@ public class StatusListService {
                 .issueTime(new Date())
                 .claim("status_list", token.getStatusListClaims())
                 .build();
-
         SignedJWT statusListJWT = new SignedJWT(header, claimSet);
-        try {
-            statusListJWT.sign(new ECDSASigner(signingKey));
-        } catch (JOSEException e) {
-            log.error("Failed to sign status list JWT with the provided key.", e);
-            throw new ConfigurationException("Failed to sign status list JWT with the provided key.");
-        }
-        restService.updateStatusList(statusListEntity.getUri(), statusListJWT.serialize());
-
-        return statusListEntity;
+        return statusListJWT;
     }
 }

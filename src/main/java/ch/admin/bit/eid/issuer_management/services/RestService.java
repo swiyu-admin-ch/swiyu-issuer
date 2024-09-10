@@ -39,7 +39,6 @@ public class RestService {
             log.error("Failed to update API endpoint", e);
             throw new ConfigurationException(String.format("Failed to update status list - does the status list %s exist?", datastoreEntryId));
         }
-
-
     }
+    
 }

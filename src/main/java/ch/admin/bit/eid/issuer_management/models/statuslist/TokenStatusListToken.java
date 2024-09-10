@@ -67,7 +67,7 @@ public class TokenStatusListToken {
         this.statusList = statusList;
     }
 
-    public static TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws DataFormatException, IOException {
+    public static TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws IOException {
         return new TokenStatusListToken(bits, decodeStatusList(lst));
     }
 
@@ -128,6 +128,14 @@ public class TokenStatusListToken {
         // Shift the bit to the correct position in the byte
         entryByte &= ~getBitPosition(idx, status);
         setStatusEntryByte(idx, entryByte);
+    }
+
+    public boolean canRevoke() {
+        return bits >= 1;
+    }
+
+    public boolean canSuspend() {
+        return bits >= 2;
     }
 
     /**

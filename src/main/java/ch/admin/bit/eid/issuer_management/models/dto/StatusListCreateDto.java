@@ -1,5 +1,6 @@
 package ch.admin.bit.eid.issuer_management.models.dto;
 
+import ch.admin.bit.eid.issuer_management.models.statuslist.StatusListType;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -16,8 +17,8 @@ public class StatusListCreateDto {
     /**
      * Type of the status list in camel case; eg TokenStatusList
      */
-    @NotEmpty
-    private String type;
+    @NotNull
+    private StatusListType type;
     /**
      * How many status entries can be part of the status list
      */

@@ -5,7 +5,10 @@
 
 package ch.admin.bit.eid.issuer_management.domain.entities;
 
+import ch.admin.bit.eid.issuer_management.models.statuslist.StatusListType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -35,7 +38,8 @@ public class StatusList {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private StatusListType type;
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> config;
     private String uri;

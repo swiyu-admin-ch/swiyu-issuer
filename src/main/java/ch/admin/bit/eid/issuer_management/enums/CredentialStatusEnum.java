@@ -19,7 +19,7 @@ public enum CredentialStatusEnum {
         return displayName;
     }
 
-    public boolean isPostHolderInteraction() {
+    public boolean isIssuedToHolder() {
         return this != OFFERED && this != IN_PROGRESS && this != CANCELLED;
     }
 

@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -57,7 +58,7 @@ public class CredentialOffer {
 
     private LocalDateTime credentialValidUntil;
 
-    @OneToMany(mappedBy = "offer")
+    @OneToMany(mappedBy = "offer", fetch = FetchType.EAGER)
     @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Set<CredentialOfferStatus> offerStatusSet;
 

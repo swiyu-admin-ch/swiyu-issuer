@@ -17,7 +17,6 @@ public class StatusListController {
 
     private final StatusListService service;
 
-
     @PostMapping("")
     @Operation(summary = "Create a new status list.")
     public void createStatusList(@Valid @RequestBody StatusListCreateDto statusListCreateDto) {
