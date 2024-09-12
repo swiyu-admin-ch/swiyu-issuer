@@ -1,6 +1,4 @@
 spring:
-  application:
-    name: issuer_management
   jpa:
     database: postgresql
     show-sql: false
@@ -44,3 +42,6 @@ application:
     controller-url: "${CONTROLLER_URL}"
     # private key for singing status list VCs
     private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY}}"
+logging:
+  level:
+    ch.admin.bit.eid.issuer_management.infrastructure.logging.RequestLoggingFilter: DEBUG
