@@ -1,6 +1,7 @@
 package ch.admin.bit.eid.issuer_management.it;
 
 import ch.admin.bit.eid.issuer_management.services.RestService;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -12,7 +13,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
+import static ch.admin.bit.eid.issuer_management.it.BaseIt.BASE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,5 +40,14 @@ class StatusListTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"uri\": \"https://status-data-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/api/v1/statuslist/874e5579-928e-42a4-8051-a3f9e9ead16f.jwt\",\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}")
         ).andExpect(status().isOk());
+    }
+
+    @Test
+    void createOfferWithoutStatusList_thenBadRequest() throws Exception {
+        String minPayloadWithEmptySubject = String.format("{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"https://status-data-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/api/v1/statuslist/874e5579-928e-42a4-8051-a3f9e9ead16f.jwt\"]}", RandomStringUtils.random(10));
+
+        MvcResult result = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
+                .andExpect(status().isBadRequest())
+                .andReturn();
     }
 }
