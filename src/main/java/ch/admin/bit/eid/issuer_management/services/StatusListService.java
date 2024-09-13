@@ -20,6 +20,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -45,7 +46,11 @@ public class StatusListService {
             default ->
                     throw new NotImplementedError(String.format("Status List Type %s is not available", statusListType));
         };
-        statusListRepository.save(statusList);
+        try {
+            statusListRepository.save(statusList);
+        } catch (DataIntegrityViolationException e) {
+            throw new BadRequestException(String.format("Status List %s already exists", statusList.getUri()));
+        }
     }
 
     public boolean canRevoke(StatusList statusList) {
@@ -139,7 +144,6 @@ public class StatusListService {
                 .build();
 
         updateRegistry(statusList, token);
-        statusListRepository.save(statusList);
         return statusList;
     }
 

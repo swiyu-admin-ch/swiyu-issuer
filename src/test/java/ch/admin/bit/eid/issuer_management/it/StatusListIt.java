@@ -40,6 +40,12 @@ class StatusListTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"uri\": \"https://status-data-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/api/v1/statuslist/874e5579-928e-42a4-8051-a3f9e9ead16f.jwt\",\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}")
         ).andExpect(status().isOk());
+
+        // Duplicate call does a bad request and not crash
+        mvc.perform(post("/status-list")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"uri\": \"https://status-data-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/api/v1/statuslist/874e5579-928e-42a4-8051-a3f9e9ead16f.jwt\",\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}")
+        ).andExpect(status().isBadRequest());
     }
 
     @Test
