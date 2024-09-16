@@ -9,6 +9,7 @@ import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
 import ch.admin.bit.eid.issuer_management.exceptions.ConfigurationException;
 import ch.admin.bit.eid.issuer_management.exceptions.NotImplementedError;
 import ch.admin.bit.eid.issuer_management.models.dto.StatusListCreateDto;
+import ch.admin.bit.eid.issuer_management.models.statuslist.TokenStatsListBit;
 import ch.admin.bit.eid.issuer_management.models.statuslist.TokenStatusListToken;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
@@ -55,13 +56,15 @@ public class StatusListService {
 
     public boolean canRevoke(StatusList statusList) {
         return switch (statusList.getType()) {
-            case TOKEN_STATUS_LIST -> (Integer) statusList.getConfig().get("bits") >= 1;
+            case TOKEN_STATUS_LIST ->
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getBitNumber();
         };
     }
 
     public boolean canSuspend(StatusList statusList) {
         return switch (statusList.getType()) {
-            case TOKEN_STATUS_LIST -> (Integer) statusList.getConfig().get("bits") >= 2;
+            case TOKEN_STATUS_LIST ->
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getBitNumber();
         };
     }
 
@@ -72,7 +75,8 @@ public class StatusListService {
         }
         for (CredentialOfferStatus offerStatus : revokableStatusSet) {
             switch (offerStatus.getStatusList().getType()) {
-                case TOKEN_STATUS_LIST -> updateTokenStatusList(offerStatus, 1, true);
+                case TOKEN_STATUS_LIST ->
+                        updateTokenStatusList(offerStatus, TokenStatsListBit.REVOKE.getBitNumber(), true);
             }
         }
     }
@@ -84,7 +88,8 @@ public class StatusListService {
         }
         for (CredentialOfferStatus offerStatus : revokableStatusSet) {
             switch (offerStatus.getStatusList().getType()) {
-                case TOKEN_STATUS_LIST -> updateTokenStatusList(offerStatus, 2, true);
+                case TOKEN_STATUS_LIST ->
+                        updateTokenStatusList(offerStatus, TokenStatsListBit.SUSPEND.getBitNumber(), true);
             }
         }
     }
@@ -96,7 +101,8 @@ public class StatusListService {
         }
         for (CredentialOfferStatus offerStatus : revokableStatusSet) {
             switch (offerStatus.getStatusList().getType()) {
-                case TOKEN_STATUS_LIST -> updateTokenStatusList(offerStatus, 2, false);
+                case TOKEN_STATUS_LIST ->
+                        updateTokenStatusList(offerStatus, TokenStatsListBit.SUSPEND.getBitNumber(), false);
             }
         }
     }

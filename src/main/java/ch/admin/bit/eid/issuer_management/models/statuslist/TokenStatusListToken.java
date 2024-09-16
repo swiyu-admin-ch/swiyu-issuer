@@ -28,10 +28,10 @@ import java.util.zip.InflaterOutputStream;
 public class TokenStatusListToken {
 
     /**
-     * zlib needs some maximum buffer size
-     * TODO: Make this configurable
+     * zlib needs some maximum buffer size.
+     * Randomly chosen 100 MB
      */
-    private static int RANDOM_BUFFER_SIZE = 100 * 1024 * 1024; // Randomly chosen 100 MB
+    private static int BUFFER_SIZE = 100 * 1024 * 1024;
     /**
      * Indicator how many consecutive bits of the token status list are contained within one status list entry.
      * Can be 1, 2, 4 or 8
@@ -131,11 +131,11 @@ public class TokenStatusListToken {
     }
 
     public boolean canRevoke() {
-        return bits >= 1;
+        return bits >= TokenStatsListBit.REVOKE.getBitNumber();
     }
 
     public boolean canSuspend() {
-        return bits >= 2;
+        return bits >= TokenStatsListBit.SUSPEND.getBitNumber();
     }
 
     /**
