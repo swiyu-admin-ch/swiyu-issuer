@@ -1,14 +1,18 @@
 package ch.admin.bit.eid.issuer_management.config;
 
+import ch.admin.bit.eid.issuer_management.exceptions.ConfigurationException;
 import com.nimbusds.jose.jwk.JWKSet;
+import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
 
 import java.text.ParseException;
 
+@Slf4j
 @Configuration
 @Validated
 @Data
@@ -40,7 +44,18 @@ public class ApplicationConfig {
      */
     private String authenticationJwks;
 
-    public JWKSet getAllowedKeySet() throws ParseException {
-        return JWKSet.parse(authenticationJwks);
+    private JWKSet allowedKeySet;
+
+    @PostConstruct
+    public void init() {
+        try {
+            if (enableJwtAuthentication) {
+                allowedKeySet = JWKSet.parse(authenticationJwks);
+            }
+        } catch (ParseException e) {
+            log.error("Provided Allow JWKSet can not be parsed! %s".formatted(authenticationJwks));
+            throw new ConfigurationException("Provided Allow JWKSet can not be parsed! %s".formatted(authenticationJwks));
+        }
     }
+
 }
