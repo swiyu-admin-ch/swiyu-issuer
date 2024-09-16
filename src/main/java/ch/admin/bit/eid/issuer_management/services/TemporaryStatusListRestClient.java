@@ -12,10 +12,13 @@ import org.springframework.web.client.RestClientException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Placeholder providing status list functionality until controller is done
+ */
 @Slf4j
 @Service
 @AllArgsConstructor
-public class RestService {
+public class TemporaryStatusListRestClient {
     public static final String CONTROLLER_URL_ADDITION = "/api/v1/statuslist/{datastoreEntryId}.jwt";
     private final RestClient restClient;
 
@@ -40,5 +43,5 @@ public class RestService {
             throw new ConfigurationException(String.format("Failed to update status list - does the status list %s exist?", datastoreEntryId));
         }
     }
-    
+
 }

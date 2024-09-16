@@ -1,6 +1,6 @@
 package ch.admin.bit.eid.issuer_management.it;
 
-import ch.admin.bit.eid.issuer_management.services.RestService;
+import ch.admin.bit.eid.issuer_management.services.TemporaryStatusListRestClient;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,11 +27,11 @@ class StatusListTests {
     private MockMvc mvc;
 
     @MockBean
-    private RestService restService;
+    private TemporaryStatusListRestClient temporaryStatusListRestClient;
 
     @BeforeEach
     void setupMock() {
-        Mockito.doNothing().when(restService).updateStatusList(ArgumentMatchers.isA(String.class), ArgumentMatchers.isA(String.class));
+        Mockito.doNothing().when(temporaryStatusListRestClient).updateStatusList(ArgumentMatchers.isA(String.class), ArgumentMatchers.isA(String.class));
     }
 
     @Test
