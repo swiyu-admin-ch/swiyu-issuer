@@ -1,6 +1,6 @@
 package ch.admin.bit.eid.issuer_management;
 
-import ch.admin.bit.eid.issuer_management.config.StatusListConfig;
+import ch.admin.bit.eid.issuer_management.config.StatusListProperties;
 import ch.admin.bit.eid.issuer_management.controllers.CredentialsController;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -42,7 +42,7 @@ public class IssuerManagementApplicationTests {
     @Autowired
     private CredentialsController credentialsController;
     @Autowired
-    private StatusListConfig statusListConfig;
+    private StatusListProperties statusListProperties;
 
     @Test
     void contextLoads() {
@@ -111,7 +111,7 @@ public class IssuerManagementApplicationTests {
 
     @Test
     void testLoadStatusListConfig() {
-        var signingKey = statusListConfig.getStatusListKey();
+        var signingKey = statusListProperties.getStatusListKey();
         assertTrue(signingKey.isPrivate(), "Signing Key should be recognized as private");
         assertEquals(KeyType.EC, signingKey.getKeyType());
     }

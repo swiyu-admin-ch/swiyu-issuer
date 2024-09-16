@@ -1,7 +1,7 @@
 package ch.admin.bit.eid.issuer_management.services;
 
-import ch.admin.bit.eid.issuer_management.config.ApplicationConfig;
-import ch.admin.bit.eid.issuer_management.config.StatusListConfig;
+import ch.admin.bit.eid.issuer_management.config.ApplicationProperties;
+import ch.admin.bit.eid.issuer_management.config.StatusListProperties;
 import ch.admin.bit.eid.issuer_management.domain.StatusListRepository;
 import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOfferStatus;
 import ch.admin.bit.eid.issuer_management.domain.entities.StatusList;
@@ -34,8 +34,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class StatusListService {
 
-    private final ApplicationConfig applicationConfig;
-    private final StatusListConfig statusListConfig;
+    private final ApplicationProperties applicationProperties;
+    private final StatusListProperties statusListProperties;
     private final RestService restService;
     private final StatusListRepository statusListRepository;
 
@@ -149,7 +149,7 @@ public class StatusListService {
 
     private void updateRegistry(StatusList statusListEntity, TokenStatusListToken token) {
         // Build JWT
-        ECKey signingKey = statusListConfig.getStatusListKey().toECKey();
+        ECKey signingKey = statusListProperties.getStatusListKey().toECKey();
 
         SignedJWT statusListJWT = buildStatusListJWT(signingKey, statusListEntity, token);
 
@@ -168,7 +168,7 @@ public class StatusListService {
                 .type(new JOSEObjectType("statuslist+jwt")).build();
         JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
                 .subject(statusListEntity.getUri())
-                .issuer(applicationConfig.getIssuerId())
+                .issuer(applicationProperties.getIssuerId())
                 .issueTime(new Date())
                 .claim("status_list", token.getStatusListClaims())
                 .build();

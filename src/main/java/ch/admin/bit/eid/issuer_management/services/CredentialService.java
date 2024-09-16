@@ -1,6 +1,6 @@
 package ch.admin.bit.eid.issuer_management.services;
 
-import ch.admin.bit.eid.issuer_management.config.ApplicationConfig;
+import ch.admin.bit.eid.issuer_management.config.ApplicationProperties;
 import ch.admin.bit.eid.issuer_management.domain.CredentialOfferRepository;
 import ch.admin.bit.eid.issuer_management.domain.CredentialOfferStatusRepository;
 import ch.admin.bit.eid.issuer_management.domain.StatusListRepository;
@@ -42,7 +42,7 @@ public class CredentialService {
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
     private final StatusListRepository statusListRepository;
 
-    private final ApplicationConfig config;
+    private final ApplicationProperties config;
 
     private final ObjectMapper objectMapper;
 

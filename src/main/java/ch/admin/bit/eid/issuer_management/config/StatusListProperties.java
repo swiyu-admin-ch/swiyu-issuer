@@ -17,7 +17,7 @@ import org.springframework.web.client.RestClient;
 @Validated
 @Data
 @ConfigurationProperties(prefix = "application.status-list")
-public class StatusListConfig {
+public class StatusListProperties {
     private String controllerUrl;
     private String privateKey;
     private JWK statusListKey;

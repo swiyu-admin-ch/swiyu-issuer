@@ -17,7 +17,7 @@ import java.text.ParseException;
 @Validated
 @Data
 @ConfigurationProperties(prefix = "application")
-public class ApplicationConfig {
+public class ApplicationProperties {
 
     @NotNull
     private String externalUrl;

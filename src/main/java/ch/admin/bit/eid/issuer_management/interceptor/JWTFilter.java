@@ -1,6 +1,6 @@
 package ch.admin.bit.eid.issuer_management.interceptor;
 
-import ch.admin.bit.eid.issuer_management.config.ApplicationConfig;
+import ch.admin.bit.eid.issuer_management.config.ApplicationProperties;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,7 +24,7 @@ import java.io.IOException;
 @AllArgsConstructor
 public class JWTFilter implements Filter {
 
-    private final ApplicationConfig config;
+    private final ApplicationProperties config;
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {

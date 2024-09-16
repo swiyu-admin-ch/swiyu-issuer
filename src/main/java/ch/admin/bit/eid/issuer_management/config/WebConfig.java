@@ -11,17 +11,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @Data
 public class WebConfig implements WebMvcConfigurer {
-    private final ApplicationConfig appConfig;
+    private final ApplicationProperties appConfig;
+
     @Override
     public void addFormatters(FormatterRegistry registry) {
         registry.addConverter(new StringToEnumConverter());
-    }
-
-    static class StringToEnumConverter implements Converter<String, CredentialStatusEnum> {
-        @Override
-        public CredentialStatusEnum convert(String source) {
-            return CredentialStatusEnum.valueOf(source.toUpperCase());
-        }
     }
 
     @Override
@@ -29,5 +23,12 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins("https://confluence.bit.admin.ch")
                 .allowedMethods("*");
+    }
+
+    static class StringToEnumConverter implements Converter<String, CredentialStatusEnum> {
+        @Override
+        public CredentialStatusEnum convert(String source) {
+            return CredentialStatusEnum.valueOf(source.toUpperCase());
+        }
     }
 }
