@@ -36,7 +36,7 @@ public class StatusListService {
 
     private final ApplicationProperties applicationProperties;
     private final StatusListProperties statusListProperties;
-    private final TemporaryStatusListRestClient temporaryStatusListRestClient;
+    private final TemporaryStatusListRestClientService temporaryStatusListRestClientService;
     private final StatusListRepository statusListRepository;
 
     public void createStatusList(StatusListCreateDto statusListCreateDto) {
@@ -159,7 +159,7 @@ public class StatusListService {
             log.error("Failed to sign status list JWT with the provided key.", e);
             throw new ConfigurationException("Failed to sign status list JWT with the provided key.");
         }
-        temporaryStatusListRestClient.updateStatusList(statusListEntity.getUri(), statusListJWT.serialize());
+        temporaryStatusListRestClientService.updateStatusList(statusListEntity.getUri(), statusListJWT.serialize());
     }
 
     private SignedJWT buildStatusListJWT(ECKey signingKey, StatusList statusListEntity, TokenStatusListToken token) {

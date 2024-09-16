@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 @AllArgsConstructor
-public class TemporaryStatusListRestClient {
+public class TemporaryStatusListRestClientService {
     public static final String CONTROLLER_URL_ADDITION = "/api/v1/statuslist/{datastoreEntryId}.jwt";
     private final RestClient restClient;
 

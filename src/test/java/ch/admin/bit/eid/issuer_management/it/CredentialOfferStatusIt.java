@@ -5,7 +5,7 @@ import ch.admin.bit.eid.issuer_management.domain.StatusListRepository;
 import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
 import ch.admin.bit.eid.issuer_management.models.statuslist.TokenStatusListToken;
-import ch.admin.bit.eid.issuer_management.services.TemporaryStatusListRestClient;
+import ch.admin.bit.eid.issuer_management.services.TemporaryStatusListRestClientService;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -37,14 +37,14 @@ class CredentialOfferStatusIt extends BaseIt {
     private StatusListRepository statusListRepository;
 
     @MockBean
-    private TemporaryStatusListRestClient temporaryStatusListRestClient;
+    private TemporaryStatusListRestClientService temporaryStatusListRestClientService;
 
     private UUID id;
 
     @BeforeEach
     void setupTest() throws Exception {
         // Mock removing access to registry
-        Mockito.doNothing().when(temporaryStatusListRestClient).updateStatusList(ArgumentMatchers.isA(String.class), ArgumentMatchers.isA(String.class));
+        Mockito.doNothing().when(temporaryStatusListRestClientService).updateStatusList(ArgumentMatchers.isA(String.class), ArgumentMatchers.isA(String.class));
         // Add status list
         mvc.perform(post("/status-list")
                 .contentType(MediaType.APPLICATION_JSON)
