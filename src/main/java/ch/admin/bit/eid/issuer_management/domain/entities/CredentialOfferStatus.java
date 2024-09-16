@@ -35,6 +35,10 @@ public class CredentialOfferStatus {
     @JoinColumn(name = "status_list_id", referencedColumnName = "id")
     private StatusList statusList;
 
+    /**
+     * The index the credential is assigned on the status list.
+     * The corresponding status has to be calculated depending on the type of status list using this index.
+     */
     private Integer index;
 
 }
