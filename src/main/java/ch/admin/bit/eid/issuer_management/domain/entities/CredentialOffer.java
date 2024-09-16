@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,6 +28,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Representation of a single offer and the vc which was created using that offer.
+ * This object serves as a link between the business issuer and the issued verifiable credential (vc).
+ */
 @Entity
 @Data
 @Builder
@@ -39,31 +44,71 @@ public class CredentialOffer {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /**
+     * internal Credential status, includes status before issuing the VC,
+     * which can not be covered by the status list
+     */
     @Enumerated(EnumType.STRING)
     private CredentialStatusEnum credentialStatus;
 
+    /**
+     * ID String referencing the entry in the issuer metadata of the signer
+     */
     @JdbcTypeCode(SqlTypes.JSON)
     private List<String> metadataCredentialSupportedId;
 
+    /**
+     * the Credential Subject Data. Has the shape for unprotected data
+     * <pre><code>
+     * {
+     *     "data": vc data json
+     * }
+     * </code></pre>
+     * <p>
+     * For data integrity protected data uses the shape
+     * <pre><code>
+     * {
+     *     "data": jwt encoded vc data string,
+     *     "data_integrity": "jwt"
+     * }
+     * </code></pre>
+     */
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> offerData;
 
+    /**
+     * Value used for the oid bearer token given to the holder
+     */
+    @NotNull
     private UUID accessToken;
 
+    /**
+     * Validity duration for the offer in seconds
+     */
     private long offerExpirationTimestamp;
 
+    /**
+     * Value used in the holder binding process to prevent replay attacks
+     */
     private UUID holderBindingNonce;
 
     private LocalDateTime credentialValidFrom;
 
     private LocalDateTime credentialValidUntil;
 
+    /**
+     * Link to what indexes on status lists are assigned to the vc
+     */
     @OneToMany(mappedBy = "offer", fetch = FetchType.EAGER)
     @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Set<CredentialOfferStatus> offerStatusSet;
 
 
     public static class CredentialOfferBuilder {
+        /**
+         * Wrapper to hide the additional wrapping of
+         * data: vc data json or using the jwt data integrity from the using application
+         */
         public CredentialOfferBuilder offerData(Object offerData) {
             Map<String, Object> metadata = new LinkedHashMap<>();
             if (offerData instanceof String) {
