@@ -52,7 +52,16 @@ The Generic Issuer Agent Management is configured using environment variables.
 | POSTGRES_JDBC | JDBC Connection string to the shared DB |
 | EXTERNAL_URL | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet  |
 | ENABLE_JWT_AUTH | Enables the requirement of writing calls to the issuer management to be signed JWT |
-| JWKS_ALLOWLIST | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service | 
+| JWKS_ALLOWLIST | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service |  
+| CONTROLLER_URL | URL of the registry controller used |
+| STATUS_LIST_KEY | Private Signing Key for the status list vc, the matching public key should be published on the base registry |
+
+### Kubernetes Vault Keys
+| Variable     | Description                                                                                     |
+|--------------|-------------------------------------------------------------------------------------------------|
+| secret.db.username | Username to connect to the Issuer Agent Database shared with the issuer agent managment service |
+| secret.db.password | Username to connect to the Issuer Agent Database |
+| secret.key.status-list.key | Private Signing Key for the status list vc, the matching public key should be published on the base registry |
 
 ## Data Structure
 
@@ -79,10 +88,11 @@ erDiagram
     STATUS_LIST {
         uuid id PK
         text type
-        text purpose
+        jsonb config
         text uri
-        text value
-        text length
+        text status_zipped
+        int last_used_index
+        int max_length
     }
 
     CREDENTIAL_OFFER one to many CREDENTIAL_OFFER_STATUS: "has status"
