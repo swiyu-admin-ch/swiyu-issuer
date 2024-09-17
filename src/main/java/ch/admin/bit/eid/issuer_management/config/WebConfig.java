@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @Data
 public class WebConfig implements WebMvcConfigurer {
-    private final ApplicationProperties appConfig;
+    private final ApplicationProperties applicationProperties;
 
     @Override
     public void addFormatters(FormatterRegistry registry) {
