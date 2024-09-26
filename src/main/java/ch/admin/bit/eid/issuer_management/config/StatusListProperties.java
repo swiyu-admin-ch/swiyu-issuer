@@ -19,6 +19,7 @@ public class StatusListProperties {
     private String controllerUrl;
     private String privateKey;
     private JWK statusListKey;
+    private String verificationMethod;
 
     @PostConstruct
     public void init() {

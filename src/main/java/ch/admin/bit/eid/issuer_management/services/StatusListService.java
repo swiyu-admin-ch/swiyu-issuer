@@ -157,7 +157,7 @@ public class StatusListService {
         // Build JWT
         ECKey signingKey = statusListProperties.getStatusListKey().toECKey();
 
-        SignedJWT statusListJWT = buildStatusListJWT(signingKey, statusListEntity, token);
+        SignedJWT statusListJWT = buildStatusListJWT(statusListEntity, token);
 
         try {
             statusListJWT.sign(new ECDSASigner(signingKey));
@@ -168,9 +168,9 @@ public class StatusListService {
         temporaryStatusListRestClientService.updateStatusList(statusListEntity.getUri(), statusListJWT.serialize());
     }
 
-    private SignedJWT buildStatusListJWT(ECKey signingKey, StatusList statusListEntity, TokenStatusListToken token) {
+    private SignedJWT buildStatusListJWT(StatusList statusListEntity, TokenStatusListToken token) {
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(signingKey.getKeyID())
+                .keyID(statusListProperties.getVerificationMethod())
                 .type(new JOSEObjectType("statuslist+jwt")).build();
         JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
                 .subject(statusListEntity.getUri())
@@ -178,7 +178,6 @@ public class StatusListService {
                 .issueTime(new Date())
                 .claim("status_list", token.getStatusListClaims())
                 .build();
-        SignedJWT statusListJWT = new SignedJWT(header, claimSet);
-        return statusListJWT;
+        return new SignedJWT(header, claimSet);
     }
 }

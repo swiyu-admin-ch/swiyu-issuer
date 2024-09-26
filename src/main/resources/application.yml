@@ -42,6 +42,8 @@ application:
     controller-url: "${CONTROLLER_URL}"
     # private key for singing status list VCs
     private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY}}"
+    # value to be added to the kid of the created status list; should be available in the published did document.
+    verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD}"
 logging:
   level:
     ch.admin.bit.eid.issuer_management.infrastructure.logging.RequestLoggingFilter: DEBUG
