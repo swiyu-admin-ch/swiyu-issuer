@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -41,17 +41,17 @@ public class CreateCredentialRequestDto {
      * XMLSchema dateTimeStamp https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
      * eg. 2010-01-01T19:23:24Z
      **/
-    @JsonFormat(pattern = ISO8601_FORMAT)
+    @JsonFormat(pattern = ISO8601_FORMAT, timezone = "UTC")
     @JsonProperty(value = "credential_valid_until")
-    private LocalDateTime credentialValidUntil;
+    private Instant credentialValidUntil;
 
     /**
      * XMLSchema dateTimeStamp https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
      * eg. 2010-01-01T19:23:24Z
      **/
-    @JsonFormat(pattern = ISO8601_FORMAT)
+    @JsonFormat(pattern = ISO8601_FORMAT, timezone = "UTC")
     @JsonProperty(value = "credential_valid_from")
-    private LocalDateTime credentialValidFrom;
+    private Instant credentialValidFrom;
 
     /**
      * URIs of the status lists to be used with the credential
