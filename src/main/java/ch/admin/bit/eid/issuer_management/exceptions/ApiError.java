@@ -16,14 +16,4 @@ public class ApiError {
         this.status = status;
         this.detail = status.getReasonPhrase();
     }
-
-    ApiError(HttpStatus status, Throwable exception) {
-        this.status = status;
-        this.detail = exception.getMessage();
-    }
-
-    ApiError(HttpStatus status, String message) {
-        this.status = status;
-        this.detail = message;
-    }
 }

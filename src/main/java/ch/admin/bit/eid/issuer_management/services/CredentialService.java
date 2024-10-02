@@ -20,7 +20,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.time.Instant;
@@ -114,8 +113,7 @@ public class CredentialService {
                 case REVOKED -> statusListService.revoke(credential.getOfferStatusSet());
                 case SUSPENDED -> statusListService.suspend(credential.getOfferStatusSet());
                 case ISSUED -> statusListService.unsuspend(credential.getOfferStatusSet());
-                default -> {
-                }
+                default -> throw new IllegalArgumentException("Unknown status");
             }
 
         }
@@ -143,10 +141,8 @@ public class CredentialService {
         String credentialOfferString = null;
 
         try {
-            credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOffer), Charset.defaultCharset().toString());
+            credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOffer), Charset.defaultCharset());
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
 
