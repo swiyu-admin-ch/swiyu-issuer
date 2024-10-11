@@ -32,12 +32,19 @@ class CredentialOfferCreateJWTIT {
 
     @Test
     void createOfferWithJWT() throws Exception {
-        String offerData = "{\"hello\":\"world\"}";
+        String offerData = """
+                {
+                    "lastName": "Example",
+                    "firstName": "Edward",
+                    "dateOfBirth": "1.1.1970"
+                  }""";
         String jsonPayload = """
                 {
                   "metadata_credential_supported_id": ["test"],
                   "credential_subject_data": {
-                    "hello": "world"
+                    "lastName": "Example",
+                    "firstName": "Edward",
+                    "dateOfBirth": "1.1.1970"
                   },
                   "offer_validity_seconds": 36000
                 }
@@ -75,6 +82,6 @@ class CredentialOfferCreateJWTIT {
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(offerData));
+                .andExpect(content().json(offerData));
     }
 }
