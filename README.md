@@ -128,6 +128,11 @@ The value of the data claim will contain the full json body of the normal reques
 
 Note that this is only affects writing calls.
 
+### Data Integrity Check
+To provide a data integrity check with the issuer it is possible to provide the credential subject data as JWT.
+
+See [CredentialOfferCreateJWTIT.java](src/test/java/ch/admin/bit/eid/issuer_management/it/CredentialOfferCreateJWTIT.java) for examples on how to use.
+
 ## Credential Status
 
 ```mermaid

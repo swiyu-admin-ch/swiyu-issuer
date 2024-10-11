@@ -30,31 +30,39 @@ class CredentialOfferCreateJWTIT {
     @Autowired
     private MockMvc mvc;
 
+    /**
+     * Create an offer with Issuer Agent Management configured to require the request
+     * being a JWT with the signature matching one of the entries in the whitelist of the config
+     */
     @Test
     void createOfferWithJWT() throws Exception {
+        // This offerData is the data we want to offer in the Verifiable Credential
         String offerData = """
                 {
                     "lastName": "Example",
                     "firstName": "Edward",
                     "dateOfBirth": "1.1.1970"
                   }""";
-        String jsonPayload = """
+        // We add the data to the other parts needed for offering a credential
+        String jsonPayload = String.format("""
                 {
                   "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": {
-                    "lastName": "Example",
-                    "firstName": "Edward",
-                    "dateOfBirth": "1.1.1970"
-                  },
+                  "credential_subject_data": %s,
                   "offer_validity_seconds": 36000
                 }
-                """;
+                """, offerData);
         testJWTCreateOffer(jsonPayload, offerData);
     }
 
+    /**
+     * Create an offer with Issuer Agent Management configured to require the request.
+     * Issuer Agent OID4VCI is also configured to require data integrity checking the signature with another whitelist configured there.
+     */
     @Test
     void createOfferWithJWTAndInnerJWT() throws Exception {
-        String offerData = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJoZWxsbyI6IndvcmxkIn0.eH9qoMvdv12LsZ3Og_K20no8uiBQFuJg6k6A7O8l06U";
+        // Offer data we want to use in the VC as JWT
+        String offerData = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsYXN0TmFtZSI6IkV4YW1wbGUiLCJmaXJzdE5hbWUiOiJFZHdhcmQiLCJkYXRlT2ZCaXJ0aCI6IjEuMS4xOTcwIn0.2VMjj1RpJ7jUjn1SJHDwwzqx3kygn88UxSsG5j1uXG8";
+        // Adding in the offer data is done in the same way as without data integrity
         String jsonPayload = String.format("""
                 {
                   "metadata_credential_supported_id": ["test"],
