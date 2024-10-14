@@ -60,6 +60,7 @@ public class CredentialsController {
     }
 
     @GetMapping("/{credentialId}/status")
+    @Operation(summary = "Gets the current status of an offer or the verifiable credential, if already issued.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
         CredentialOffer credential = this.credentialService.getCredential(credentialId);
 
@@ -67,6 +68,7 @@ public class CredentialsController {
     }
 
     @PatchMapping("/{credentialId}/status")
+    @Operation(summary = "Sets the status of an offer or the verifiable credential associated with the id.")
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
                                                           @RequestParam("credentialStatus") CredentialStatusEnum credentialStatus) {
 

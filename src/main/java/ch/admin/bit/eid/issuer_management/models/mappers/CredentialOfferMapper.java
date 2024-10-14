@@ -30,7 +30,7 @@ public class CredentialOfferMapper {
     public static UpdateStatusResponseDto credentialToUpdateStatusResponseDto(CredentialOffer credential) {
         return UpdateStatusResponseDto.builder()
                 .id(credential.getId())
-                .credentialStatus(credential.getCredentialStatus().getDisplayName())
+                .credentialStatus(credential.getCredentialStatus())
                 .build();
     }
 }
