@@ -1,6 +1,7 @@
 package ch.admin.bit.eid.issuer_management.it;
 
 import ch.admin.bit.eid.issuer_management.IssuerManagementApplicationTests;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -19,7 +20,6 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
@@ -51,7 +51,10 @@ class CredentialOfferCreateJWTIT {
                   "offer_validity_seconds": 36000
                 }
                 """, offerData);
-        testJWTCreateOffer(jsonPayload, offerData);
+        var resp = testJWTCreateOffer(jsonPayload);
+
+        ObjectMapper mapper = new ObjectMapper();
+        assert mapper.readTree(resp.getResponse().getContentAsString()).equals(mapper.readTree(offerData));
     }
 
     /**
@@ -66,14 +69,15 @@ class CredentialOfferCreateJWTIT {
         String jsonPayload = String.format("""
                 {
                   "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": %s,
+                  "credential_subject_data": "%s",
                   "offer_validity_seconds": 36000
                 }
                 """, offerData);
-        testJWTCreateOffer(jsonPayload, offerData);
+        var resp = testJWTCreateOffer(jsonPayload);
+        assert resp.getResponse().getContentAsString().equals(offerData);
     }
 
-    private void testJWTCreateOffer(String jsonPayload, String offerData) throws Exception {
+    private MvcResult testJWTCreateOffer(String jsonPayload) throws Exception {
         ECKey ecJWK = ECKey.parse(IssuerManagementApplicationTests.privateKey);
         JWTClaimsSet claims = new JWTClaimsSet.Builder().claim("data", jsonPayload).build();
 
@@ -88,8 +92,8 @@ class CredentialOfferCreateJWTIT {
 
         String id = JsonPath.read(result.getResponse().getContentAsString(), "$.management_id");
 
-        mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
+        return mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk())
-                .andExpect(content().json(offerData));
+                .andReturn();
     }
 }
