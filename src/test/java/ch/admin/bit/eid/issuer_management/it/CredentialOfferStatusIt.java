@@ -67,7 +67,7 @@ class CredentialOfferStatusIt extends BaseIt {
 
         mvc.perform(get(getUrl(id)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(expectedStatus.getDisplayName()));
+                .andExpect(jsonPath("$.status").value(expectedStatus.getDisplayName().toUpperCase()));
     }
 
     @Test

@@ -10,7 +10,7 @@ public class StatusResponseMapper {
     public static StatusResponseDto credentialToStatusResponseDto(CredentialOffer credentialOffer) {
 
         return StatusResponseDto.builder()
-                .status(credentialOffer.getCredentialStatus().getDisplayName())
+                .status(credentialOffer.getCredentialStatus())
                 .build();
     }
 }
