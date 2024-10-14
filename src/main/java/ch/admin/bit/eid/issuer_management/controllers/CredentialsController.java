@@ -28,9 +28,9 @@ public class CredentialsController {
     private final CredentialService credentialService;
 
     @PostMapping("")
-    @Operation(summary = "Creates a generic credential offer with the given content",
+    @Operation(summary = "Create a generic credential offer with the given content",
             description = """
-            Creates a new credential offer, which can the be collected by the holder.
+            Create a new credential offer, which can the be collected by the holder.
             The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
             The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
             Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
@@ -46,13 +46,13 @@ public class CredentialsController {
     }
 
     @GetMapping("/{credentialId}")
-    @Operation(summary = "Gets the offer data, if any is still cached")
+    @Operation(summary = "Get the offer data, if any is still cached")
     public Object getCredentialOffer(@PathVariable UUID credentialId) {
         return credentialToCredentialResponseDto(this.credentialService.getCredential(credentialId));
     }
 
     @GetMapping("/{credentialId}/offer_deeplink")
-    @Operation(summary = "Gets the offer deeplink")
+    @Operation(summary = "Get the offer deeplink")
     public String getCredentialOfferDeeplink(@PathVariable UUID credentialId) {
         CredentialOffer credential = this.credentialService.getCredential(credentialId);
 
@@ -60,7 +60,7 @@ public class CredentialsController {
     }
 
     @GetMapping("/{credentialId}/status")
-    @Operation(summary = "Gets the current status of an offer or the verifiable credential, if already issued.")
+    @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
         CredentialOffer credential = this.credentialService.getCredential(credentialId);
 
@@ -68,7 +68,7 @@ public class CredentialsController {
     }
 
     @PatchMapping("/{credentialId}/status")
-    @Operation(summary = "Sets the status of an offer or the verifiable credential associated with the id.")
+    @Operation(summary = "Set the status of an offer or the verifiable credential associated with the id.")
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
                                                           @RequestParam("credentialStatus") CredentialStatusEnum credentialStatus) {
 

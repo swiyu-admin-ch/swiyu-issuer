@@ -18,7 +18,7 @@ public class StatusListController {
     private final StatusListService service;
 
     @PostMapping("")
-    @Operation(summary = "Initialize a new status list.", description = "Initializes and links a status list slot to to this service. This process can be only done once per status list! Status List type, configuration or length can not be changed after initialization!")
+    @Operation(summary = "Initialize a new status list.", description = "Initialize and link a status list slot to to this service. This process can be only done once per status list! Status List type, configuration or length can not be changed after initialization!")
     public void createStatusList(@Valid @RequestBody StatusListCreateDto statusListCreateDto) {
         service.createStatusList(statusListCreateDto);
     }
