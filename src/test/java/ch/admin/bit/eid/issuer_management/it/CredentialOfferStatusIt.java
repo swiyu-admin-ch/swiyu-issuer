@@ -119,7 +119,7 @@ class CredentialOfferStatusIt extends BaseIt {
         CredentialStatusEnum newStatus = CredentialStatusEnum.ISSUED;
         mvc.perform(patch(getUpdateUrl(vcSuspendedId, newStatus)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(newStatus.getDisplayName()));
+                .andExpect(jsonPath("$.status").value(newStatus.getDisplayName().toUpperCase()));
         offer = repo.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusEnum.ISSUED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
@@ -141,7 +141,7 @@ class CredentialOfferStatusIt extends BaseIt {
 
         mvc.perform(patch(getUpdateUrl(vcId, newStatus)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(newStatus.getDisplayName()));
+                .andExpect(jsonPath("$.status").value(newStatus.getDisplayName().toUpperCase()));
         return vcId;
     }
 
@@ -167,7 +167,7 @@ class CredentialOfferStatusIt extends BaseIt {
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.status").value(newStatus.getDisplayName()));
+                .andExpect(jsonPath("$.status").value(newStatus.getDisplayName().toUpperCase()));
 
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))

@@ -21,7 +21,7 @@ import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,9 +92,9 @@ public class CredentialOffer {
      */
     private UUID holderBindingNonce;
 
-    private LocalDateTime credentialValidFrom;
+    private Instant credentialValidFrom;
 
-    private LocalDateTime credentialValidUntil;
+    private Instant credentialValidUntil;
 
     /**
      * Link to what indexes on status lists are assigned to the vc
