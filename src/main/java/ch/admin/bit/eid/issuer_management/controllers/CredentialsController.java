@@ -28,7 +28,14 @@ public class CredentialsController {
     private final CredentialService credentialService;
 
     @PostMapping("")
-    @Operation(summary = "Creates a generic credential offer with the given content")
+    @Operation(summary = "Creates a generic credential offer with the given content",
+            description = """
+            Creates a new credential offer, which can the be collected by the holder.
+            The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
+            The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
+            Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
+            """
+            )
     public CredentialWithDeeplinkResponseDto createCredential(
             @Valid @RequestBody CreateCredentialRequestDto requestDto) {
         CredentialOffer credential = this.credentialService.createCredential(requestDto);
