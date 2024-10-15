@@ -15,19 +15,13 @@ import lombok.Getter;
         EXPIRED - the lifetime of the VC expired (not used yet)
     """)
 public enum CredentialStatusEnum {
-    OFFERED("Offered"),
-    CANCELLED("Cancelled"),
-    IN_PROGRESS("Claiming in Progress"),
-    ISSUED("Issued"),
-    SUSPENDED("Suspended"),
-    REVOKED("Revoked"),
-    EXPIRED("Expired");
-
-    private final String displayName;
-
-    CredentialStatusEnum(String displayName) {
-        this.displayName = displayName;
-    }
+    OFFERED,
+    CANCELLED,
+    IN_PROGRESS,
+    ISSUED,
+    SUSPENDED,
+    REVOKED,
+    EXPIRED;
 
     public boolean isIssuedToHolder() {
         return this != OFFERED && this != IN_PROGRESS && this != CANCELLED;
