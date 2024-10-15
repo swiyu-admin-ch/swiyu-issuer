@@ -3,6 +3,7 @@ package ch.admin.bit.eid.issuer_management.controllers;
 import ch.admin.bit.eid.issuer_management.models.dto.StatusListCreateDto;
 import ch.admin.bit.eid.issuer_management.services.StatusListService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = "/status-list")
 @AllArgsConstructor
+@Tag(name = "Status List API")
 public class StatusListController {
 
     private final StatusListService service;

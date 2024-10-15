@@ -9,6 +9,7 @@ import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
 import ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper;
 import ch.admin.bit.eid.issuer_management.services.CredentialService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -19,10 +20,10 @@ import static ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferM
 import static ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper.credentialToUpdateStatusResponseDto;
 import static ch.admin.bit.eid.issuer_management.models.mappers.StatusResponseMapper.credentialToStatusResponseDto;
 
-// TODO add prefix
 @RestController
 @RequestMapping(value = "/credentials")
 @AllArgsConstructor
+@Tag(name = "Credential API")
 public class CredentialsController {
 
     private final CredentialService credentialService;
