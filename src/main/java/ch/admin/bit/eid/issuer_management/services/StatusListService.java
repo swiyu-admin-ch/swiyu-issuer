@@ -57,16 +57,17 @@ public class StatusListService {
     public boolean canRevoke(StatusList statusList) {
         return switch (statusList.getType()) {
             case TOKEN_STATUS_LIST ->
-                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getBitNumber();
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getValue();
         };
     }
 
     public boolean canSuspend(StatusList statusList) {
         return switch (statusList.getType()) {
             case TOKEN_STATUS_LIST ->
-                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getBitNumber();
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getValue();
         };
     }
+
 
     public void revoke(Set<CredentialOfferStatus> offerStatusSet) {
         Set<CredentialOfferStatus> revokableStatusSet = offerStatusSet.stream().filter(credentialOfferStatus -> canRevoke(credentialOfferStatus.getStatusList())).collect(Collectors.toSet());
@@ -76,33 +77,33 @@ public class StatusListService {
         for (CredentialOfferStatus offerStatus : revokableStatusSet) {
             switch (offerStatus.getStatusList().getType()) {
                 case TOKEN_STATUS_LIST ->
-                        updateTokenStatusList(offerStatus, TokenStatsListBit.REVOKE.getBitNumber(), true);
+                        updateTokenStatusList(offerStatus, TokenStatsListBit.REVOKE.getValue());
             }
         }
     }
 
     public void suspend(Set<CredentialOfferStatus> offerStatusSet) {
-        Set<CredentialOfferStatus> revokableStatusSet = offerStatusSet.stream().filter(credentialOfferStatus -> canSuspend(credentialOfferStatus.getStatusList())).collect(Collectors.toSet());
-        if (revokableStatusSet.isEmpty()) {
+        Set<CredentialOfferStatus> suspendableStatusSet = offerStatusSet.stream().filter(credentialOfferStatus -> canSuspend(credentialOfferStatus.getStatusList())).collect(Collectors.toSet());
+        if (suspendableStatusSet.isEmpty()) {
             throw new BadRequestException("No Status List which supports suspension found");
         }
-        for (CredentialOfferStatus offerStatus : revokableStatusSet) {
+        for (CredentialOfferStatus offerStatus : suspendableStatusSet) {
             switch (offerStatus.getStatusList().getType()) {
                 case TOKEN_STATUS_LIST ->
-                        updateTokenStatusList(offerStatus, TokenStatsListBit.SUSPEND.getBitNumber(), true);
+                        updateTokenStatusList(offerStatus, TokenStatsListBit.SUSPEND.getValue());
             }
         }
     }
 
-    public void unsuspend(Set<CredentialOfferStatus> offerStatusSet) {
-        Set<CredentialOfferStatus> revokableStatusSet = offerStatusSet.stream().filter(credentialOfferStatus -> canSuspend(credentialOfferStatus.getStatusList())).collect(Collectors.toSet());
-        if (revokableStatusSet.isEmpty()) {
+    public void revalidate(Set<CredentialOfferStatus> offerStatusSet) {
+        Set<CredentialOfferStatus> suspendableStatusSet = offerStatusSet.stream().filter(credentialOfferStatus -> canSuspend(credentialOfferStatus.getStatusList())).collect(Collectors.toSet());
+        if (suspendableStatusSet.isEmpty()) {
             throw new BadRequestException("No Status List which supports suspension found");
         }
-        for (CredentialOfferStatus offerStatus : revokableStatusSet) {
+        for (CredentialOfferStatus offerStatus : suspendableStatusSet) {
             switch (offerStatus.getStatusList().getType()) {
                 case TOKEN_STATUS_LIST ->
-                        updateTokenStatusList(offerStatus, TokenStatsListBit.SUSPEND.getBitNumber(), false);
+                        updateTokenStatusList(offerStatus, TokenStatsListBit.VALID.getValue());
             }
         }
     }
@@ -111,18 +112,13 @@ public class StatusListService {
      * Updates the token status list by setting the given bit
      *
      * @param offerStatus
-     * @param statusBit   the statusBit to be set
-     * @param set         if the bit value should be set to 1
+     * @param statusValue   the statusBit to be set
      */
-    private void updateTokenStatusList(CredentialOfferStatus offerStatus, int statusBit, boolean set) {
+    private void updateTokenStatusList(CredentialOfferStatus offerStatus, int statusValue) {
         StatusList statusList = offerStatus.getStatusList();
         try {
             TokenStatusListToken token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped());
-            if (set) {
-                token.setStatus(offerStatus.getIndex(), statusBit);
-            } else {
-                token.unsetStatus(offerStatus.getIndex(), statusBit);
-            }
+            token.setStatus(offerStatus.getIndex(), statusValue);
             statusList.setStatusZipped(token.getStatusListData());
             updateRegistry(statusList, token);
             statusListRepository.save(statusList);

@@ -112,7 +112,7 @@ public class CredentialService {
             switch (newStatus) {
                 case REVOKED -> statusListService.revoke(credential.getOfferStatusSet());
                 case SUSPENDED -> statusListService.suspend(credential.getOfferStatusSet());
-                case ISSUED -> statusListService.unsuspend(credential.getOfferStatusSet());
+                case ISSUED -> statusListService.revalidate(credential.getOfferStatusSet());
                 default -> throw new IllegalArgumentException("Unknown status");
             }
 

@@ -85,7 +85,12 @@ public class TokenStatusListToken {
     }
 
     /**
-     * Retrieves the status on the given index. Can contain multiple status being set. Eg 3 = revoked & suspended
+     * Retrieves the status on the given index.
+     * 0 = Valid
+     * 1 = Revoked
+     * 2 = Suspended
+     * 3 = ApplicationSpecificStatus#1
+     * ...
      *
      * @param idx index of the status list entry
      * @return the status bits as an integer
@@ -107,22 +112,23 @@ public class TokenStatusListToken {
      * Sets status bit to active
      *
      * @param idx    index of the status list entry
-     * @param status a status bit, one of 1,2,4,8
+     * @param status The new status to be set
      */
     public void setStatus(int idx, int status) {
         verifyStatusArgument(status);
+        unsetStatus(idx);
         byte entryByte = getStatusEntryByte(idx);
         entryByte |= getBitPosition(idx, status);
         setStatusEntryByte(idx, entryByte);
     }
 
     /**
-     * Sets status bit to inactive (0)
+     * Sets status to 0
      *
      * @param idx    index of the status list entry
-     * @param status a status bit, one of 1,2,4,8
      */
-    public void unsetStatus(int idx, int status) {
+    public void unsetStatus(int idx) {
+        int status = (1<<bits)-1;
         verifyStatusArgument(status);
         byte entryByte = getStatusEntryByte(idx);
         // Shift the bit to the correct position in the byte
@@ -131,11 +137,11 @@ public class TokenStatusListToken {
     }
 
     public boolean canRevoke() {
-        return bits >= TokenStatsListBit.REVOKE.getBitNumber();
+        return bits >= TokenStatsListBit.REVOKE.getValue();
     }
 
     public boolean canSuspend() {
-        return bits >= TokenStatsListBit.SUSPEND.getBitNumber();
+        return bits >= TokenStatsListBit.SUSPEND.getValue();
     }
 
     /**
@@ -152,11 +158,8 @@ public class TokenStatusListToken {
     }
 
     private void verifyStatusArgument(int status) {
-        if (bits < status) {
+        if (1<<bits <= status) {
             throw new IllegalArgumentException("Status can not exceed bits but was %d while expecting maximum of %d".formatted(status, bits));
-        }
-        if (status % 2 != 0 && status != 1) {
-            throw new IllegalArgumentException("Can only set one single status bit at a time");
         }
     }
 
