@@ -176,12 +176,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- CVE-Override CVE-2024-38816: remove once Spring boot releases a fixed version -->
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-webmvc</artifactId>
-                <version>6.1.13</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
