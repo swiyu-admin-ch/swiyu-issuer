@@ -54,13 +54,14 @@ On the base registry the public key is published. To generate the public key for
 The Generic Issuer Agent Management is configured using environment variables.
 
 | Variable                            | Description                                                                                                                                             |
-|-------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | POSTGRES_USER                       | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                         |
 | POSTGRES_PASSWORD                   | Username to connect to the Issuer Agent Database                                                                                                        |
 | POSTGRES_JDBC                       | JDBC Connection string to the shared DB                                                                                                                 |
 | EXTERNAL_URL                        | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet                                                          |
+| ISSUER_ID                           | DID of the Credential Issuer. This will be written to the credential and used during verification                                                       |
 | ENABLE_JWT_AUTH                     | Enables the requirement of writing calls to the issuer management to be signed JWT                                                                      |
-| JWKS_ALLOWLIST                      | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service                                                   |  
+| JWKS_ALLOWLIST                      | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service                                                   |
 | CONTROLLER_URL                      | URL of the registry controller used                                                                                                                     |
 | STATUS_LIST_KEY                     | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                            |
 | DID_STATUS_LIST_VERIFICATION_METHOD | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment |
@@ -68,7 +69,7 @@ The Generic Issuer Agent Management is configured using environment variables.
 ### Kubernetes Vault Keys
 
 | Variable                   | Description                                                                                                  |
-|----------------------------|--------------------------------------------------------------------------------------------------------------|
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | secret.db.username         | Username to connect to the Issuer Agent Database shared with the issuer agent managment service              |
 | secret.db.password         | Username to connect to the Issuer Agent Database                                                             |
 | secret.key.status-list.key | Private Signing Key for the status list vc, the matching public key should be published on the base registry |
