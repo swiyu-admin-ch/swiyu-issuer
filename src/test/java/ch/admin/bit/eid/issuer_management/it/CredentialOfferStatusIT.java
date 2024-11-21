@@ -9,9 +9,7 @@ import ch.admin.bit.eid.issuer_management.services.TemporaryStatusListRestClient
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -27,11 +25,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@DisplayName("Offer status it")
 class CredentialOfferStatusIt extends BaseIt {
 
     @Autowired
-    private CredentialOfferRepository repo;
+    private CredentialOfferRepository credentialOfferRepository;
 
     @Autowired
     private StatusListRepository statusListRepository;
@@ -43,6 +40,8 @@ class CredentialOfferStatusIt extends BaseIt {
 
     @BeforeEach
     void setupTest() throws Exception {
+        credentialOfferRepository.deleteAll();
+        statusListRepository.deleteAll();
         // Mock removing access to registry
         Mockito.doNothing().when(temporaryStatusListRestClientService).updateStatusList(ArgumentMatchers.isA(String.class), ArgumentMatchers.isA(String.class));
         // Add status list
@@ -52,12 +51,6 @@ class CredentialOfferStatusIt extends BaseIt {
         ).andExpect(status().isOk());
         // Add Test Offer
         id = this.createBasicOfferJsonAndGetUUID();
-    }
-
-    @AfterEach
-    void teardownTest() {
-        repo.deleteAll();
-        statusListRepository.deleteAll();
     }
 
     @Test
@@ -93,7 +86,7 @@ class CredentialOfferStatusIt extends BaseIt {
     void testUpdateOfferStatusWithRevokedWhenIssued_thenSuccess() throws Exception {
         UUID vcRevokedId = createIssueAndSetStateOfVc(CredentialStatusEnum.REVOKED);
 
-        var offer = repo.findById(vcRevokedId).get();
+        var offer = credentialOfferRepository.findById(vcRevokedId).get();
         assertEquals(CredentialStatusEnum.REVOKED, offer.getCredentialStatus());
         assertEquals(1, offer.getOfferStatusSet().size());
         var offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
@@ -105,7 +98,7 @@ class CredentialOfferStatusIt extends BaseIt {
         assertEquals(0, tokenStatusList.getStatus(1), "Should not be revoked");
 
         UUID vcSuspendedId = createIssueAndSetStateOfVc(CredentialStatusEnum.SUSPENDED);
-        offer = repo.findById(vcSuspendedId).get();
+        offer = credentialOfferRepository.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusEnum.SUSPENDED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
         assertEquals(1, offerStatus.getIndex(), "Should be the the second entry");
@@ -120,7 +113,7 @@ class CredentialOfferStatusIt extends BaseIt {
         mvc.perform(patch(getUpdateUrl(vcSuspendedId, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(newStatus.toString()));
-        offer = repo.findById(vcSuspendedId).get();
+        offer = credentialOfferRepository.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusEnum.ISSUED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
         statusList = offerStatus.getStatusList();
@@ -196,10 +189,10 @@ class CredentialOfferStatusIt extends BaseIt {
     }
 
     private CredentialOffer updateStatusForEntity(UUID id, CredentialStatusEnum status) {
-        CredentialOffer credentialOffer = repo.findById(id).get();
-        credentialOffer.setCredentialStatus(status);
+        CredentialOffer credentialOffer = credentialOfferRepository.findById(id).get();
+        credentialOffer.changeStatus(status);
 
-        return repo.save(credentialOffer);
+        return credentialOfferRepository.save(credentialOffer);
     }
 
     private static String getUrl(UUID id) {

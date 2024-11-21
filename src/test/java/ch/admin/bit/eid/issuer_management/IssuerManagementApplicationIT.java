@@ -2,11 +2,7 @@ package ch.admin.bit.eid.issuer_management;
 
 import ch.admin.bit.eid.issuer_management.config.StatusListProperties;
 import ch.admin.bit.eid.issuer_management.controllers.CredentialsController;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
@@ -28,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
-public class IssuerManagementApplicationTests {
+public class IssuerManagementApplicationIT {
 
     public static final String privateKey = """
                	{

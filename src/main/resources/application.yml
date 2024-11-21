@@ -46,4 +46,5 @@ application:
     verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD}"
 logging:
   level:
+    hibernate.engine.jdbc.spi.SqlExceptionHelper: FATAL # we want them only being logged when we don't catch them
     ch.admin.bit.eid.issuer_management.infrastructure.logging.RequestLoggingFilter: DEBUG

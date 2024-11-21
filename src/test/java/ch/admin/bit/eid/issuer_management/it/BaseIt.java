@@ -6,6 +6,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+// TODO EID-1736: remove inheritance complexity from tests:
+//  e.g. https://medium.com/@cezar.opri/we-should-avoid-using-inheritance-in-our-tests-7e900349b0b4
 @SpringBootTest()
 @ActiveProfiles("test")
 @AutoConfigureMockMvc

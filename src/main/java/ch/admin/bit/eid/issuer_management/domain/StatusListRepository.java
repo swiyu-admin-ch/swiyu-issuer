@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface StatusListRepository extends JpaRepository<StatusList, UUID> {
     List<StatusList> findByUriIn(List<String> uris);
+
+    boolean existsByUri(String uri);
 }

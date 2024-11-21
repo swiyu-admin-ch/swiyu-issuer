@@ -1,6 +1,6 @@
 package ch.admin.bit.eid.issuer_management.it;
 
-import ch.admin.bit.eid.issuer_management.IssuerManagementApplicationTests;
+import ch.admin.bit.eid.issuer_management.IssuerManagementApplicationIT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -78,7 +78,7 @@ class CredentialOfferCreateJWTIT {
     }
 
     private MvcResult testJWTCreateOffer(String jsonPayload) throws Exception {
-        ECKey ecJWK = ECKey.parse(IssuerManagementApplicationTests.privateKey);
+        ECKey ecJWK = ECKey.parse(IssuerManagementApplicationIT.privateKey);
         JWTClaimsSet claims = new JWTClaimsSet.Builder().claim("data", jsonPayload).build();
 
         SignedJWT jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("testkey").build(), claims);

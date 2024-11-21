@@ -17,40 +17,32 @@ import static org.springframework.http.HttpStatus.*;
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    protected ResponseEntity<Object> handleResourceNotFoundException(
+    protected ResponseEntity<ApiErrorDto> handleResourceNotFoundException(
             final ResourceNotFoundException exception, final WebRequest request
     ) {
-        final ApiError apiError = new ApiError(NOT_FOUND);
-        apiError.setDetail(exception.getMessage());
-
-        log.info("Resource not found", exception);
-
-        return new ResponseEntity<>(apiError, apiError.getStatus());
+        final ApiErrorDto apiError = new ApiErrorDto(NOT_FOUND, exception.getMessage());
+        log.debug("Resource not found", exception);
+        return new ResponseEntity<>(apiError, apiError.status());
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<Object> handleBadRequestException(final Exception exception, final WebRequest request) {
-        final ApiError apiError = new ApiError(BAD_REQUEST);
-        apiError.setDetail(exception.getMessage());
-        log.info("Bad Request intercepted", exception);
-
-        return new ResponseEntity<>(apiError.getDetail(), apiError.getStatus());
+    public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
+        final ApiErrorDto apiError = new ApiErrorDto(BAD_REQUEST, exception.getMessage());
+        log.debug("Bad Request intercepted", exception);
+        return new ResponseEntity<>(apiError, apiError.status());
     }
 
     @ExceptionHandler(ConfigurationException.class)
-    public ResponseEntity<Object> handleConfigurationException(final Exception exception, final WebRequest request) {
-        final ApiError apiError = new ApiError(INTERNAL_SERVER_ERROR);
-        apiError.setDetail(exception.getMessage());
-        log.info("Configuration Exception intercepted", exception);
-
-        return new ResponseEntity<>(apiError.getDetail(), apiError.getStatus());
+    public ResponseEntity<ApiErrorDto> handleConfigurationException(final Exception exception) {
+        final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, exception.getMessage());
+        log.debug("Configuration Exception intercepted", exception);
+        return new ResponseEntity<>(apiError, apiError.status());
     }
 
     @ExceptionHandler
-    public ResponseEntity<Object> handle(final Exception exception, final WebRequest request) {
-        final ApiError apiError = new ApiError(INTERNAL_SERVER_ERROR);
-        log.warn("General Exception handling", exception);
-
-        return new ResponseEntity<>(apiError, apiError.getStatus());
+    public ResponseEntity<ApiErrorDto> handle(final Exception exception, final WebRequest request) {
+        final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, null);
+        log.error("Unknown Exception occurred", exception);
+        return new ResponseEntity<>(apiError, apiError.status());
     }
 }

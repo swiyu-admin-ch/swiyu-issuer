@@ -13,10 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -33,7 +30,7 @@ import java.util.UUID;
  * This object serves as a link between the business issuer and the issued verifiable credential (vc).
  */
 @Entity
-@Data
+@Getter // do not apply generell setters on entities
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -103,24 +100,24 @@ public class CredentialOffer {
     @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Set<CredentialOfferStatus> offerStatusSet;
 
+    public void removeOfferData() {
+        this.offerData = null;
+    }
 
-    public static class CredentialOfferBuilder {
-        /**
-         * Wrapper to hide the additional wrapping of
-         * data: vc data json or using the jwt data integrity from the using application
-         */
-        public CredentialOfferBuilder offerData(Object offerData) {
-            Map<String, Object> metadata = new LinkedHashMap<>();
-            if (offerData instanceof String) {
-                metadata.put("data", offerData);
-                metadata.put("data_integrity", "jwt");
-            } else if (offerData instanceof Map) {
-                metadata.put("data", new GsonBuilder().create().toJson(offerData));
-            } else {
-                throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
-            }
-            this.offerData = metadata;
-            return this;
+    public void changeStatus(CredentialStatusEnum credentialStatus) {
+        this.credentialStatus = credentialStatus;
+    }
+
+    public static Map<String, Object> readOfferData(Object offerData) {
+        var metadata = new LinkedHashMap<String, Object>();
+        if (offerData instanceof String) {
+            metadata.put("data", offerData);
+            metadata.put("data_integrity", "jwt");
+        } else if (offerData instanceof Map) {
+            metadata.put("data", new GsonBuilder().create().toJson(offerData));
+        } else {
+            throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
         }
+        return metadata;
     }
 }

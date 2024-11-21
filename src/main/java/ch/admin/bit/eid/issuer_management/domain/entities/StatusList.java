@@ -19,7 +19,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -37,10 +36,9 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "status_list")
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter // do not apply generell setters on entities
 @Builder
 public class StatusList {
     @Id
@@ -68,6 +66,7 @@ public class StatusList {
     /**
      * indicator what index is to be next used for creation of a new VC.
      */
+    // TODO EID-1822 naming does not match the description, we actually store the nextFreeIndex
     @NotNull
     private Integer lastUsedIndex;
     /**
@@ -78,4 +77,13 @@ public class StatusList {
 
     @OneToMany(mappedBy = "statusList")
     private Set<CredentialOfferStatus> offerStatusSet;
+
+    public void setStatusZipped(String statusZipped) {
+        this.statusZipped = statusZipped;
+    }
+
+    public void incrementNextFreeIndex() {
+        // TODO EID-1822 lastUsedIndex should be renamed to nextFreeIndex
+        this.lastUsedIndex++;
+    }
 }
