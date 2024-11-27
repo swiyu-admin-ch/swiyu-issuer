@@ -21,4 +21,4 @@ application:
 
 logging:
   level:
-    hibernate.engine.jdbc.spi.SqlExceptionHelper: WARN
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: WARN
