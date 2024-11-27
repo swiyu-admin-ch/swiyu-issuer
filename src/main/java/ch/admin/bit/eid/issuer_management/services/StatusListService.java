@@ -100,7 +100,7 @@ public class StatusListService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<StatusList> findByUriIn(List<String> statusListUris) {
         return this.statusListRepository.findByUriIn(statusListUris);
     }
