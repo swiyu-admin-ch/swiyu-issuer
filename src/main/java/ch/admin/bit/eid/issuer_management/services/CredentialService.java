@@ -42,7 +42,7 @@ public class CredentialService {
     private final ObjectMapper objectMapper;
     private final StatusListService statusListService;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CredentialOffer getCredential(UUID credentialId) {
 
         // Check if optional can be default
@@ -127,7 +127,7 @@ public class CredentialService {
         return this.credentialOfferRepository.save(credential);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public String getOfferDeeplinkFromCredential(CredentialOffer credential) {
         var grants = new HashMap<String, Object>();
         grants.put("urn:ietf:params:oauth:grant-type:pre-authorized_code", new Object() {
