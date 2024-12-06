@@ -16,7 +16,6 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @ConfigurationProperties(prefix = "application.status-list")
 public class StatusListProperties {
-    private String controllerUrl;
     private String privateKey;
     private JWK statusListKey;
     private String verificationMethod;
@@ -30,6 +29,4 @@ public class StatusListProperties {
             throw new ConfigurationException("Status List Signing key can not be parsed");
         }
     }
-
-
 }

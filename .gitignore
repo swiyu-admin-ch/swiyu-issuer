@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+config/*
+!config/application-local-USERNAME.yml

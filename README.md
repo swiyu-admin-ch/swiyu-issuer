@@ -53,26 +53,36 @@ On the base registry the public key is published. To generate the public key for
 
 The Generic Issuer Agent Management is configured using environment variables.
 
-| Variable                            | Description                                                                                                                                             |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POSTGRES_USER                       | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                         |
-| POSTGRES_PASSWORD                   | Username to connect to the Issuer Agent Database                                                                                                        |
-| POSTGRES_JDBC                       | JDBC Connection string to the shared DB                                                                                                                 |
-| EXTERNAL_URL                        | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet                                                          |
-| ISSUER_ID                           | DID of the Credential Issuer. This will be written to the credential and used during verification                                                       |
-| ENABLE_JWT_AUTH                     | Enables the requirement of writing calls to the issuer management to be signed JWT                                                                      |
-| JWKS_ALLOWLIST                      | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service                                                   |
-| CONTROLLER_URL                      | URL of the registry controller used                                                                                                                     |
-| STATUS_LIST_KEY                     | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                            |
-| DID_STATUS_LIST_VERIFICATION_METHOD | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment |
+| Variable                                             | Description                                                                                                                                             |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POSTGRES_USER                                        | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                         |
+| POSTGRES_PASSWORD                                    | Username to connect to the Issuer Agent Database                                                                                                        |
+| POSTGRES_JDBC                                        | JDBC Connection string to the shared DB                                                                                                                 |
+| EXTERNAL_URL                                         | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet                                                          |
+| ISSUER_ID                                            | DID of the Credential Issuer. This will be written to the credential and used during verification                                                       |
+| ENABLE_JWT_AUTH                                      | Enables the requirement of writing calls to the issuer management to be signed JWT                                                                      |
+| JWKS_ALLOWLIST                                       | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service                                                   |
+| CONTROLLER_URL                                       | URL of the registry controller used                                                                                                                     |
+| STATUS_LIST_KEY                                      | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                            |
+| DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment |
+| SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                         |
+| SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                       |
+| SWIYU_STATUS_REGISTRY_TOKEN_URL                       | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                               |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self managment portal.                                     |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                  |
+| SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
+| SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal.   |
 
 ### Kubernetes Vault Keys
 
-| Variable                   | Description                                                                                                  |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| secret.db.username         | Username to connect to the Issuer Agent Database shared with the issuer agent managment service              |
-| secret.db.password         | Username to connect to the Issuer Agent Database                                                             |
-| secret.key.status-list.key | Private Signing Key for the status list vc, the matching public key should be published on the base registry |
+| Variable                                             | Description                                                                                                                                           |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| secret.db.username                                   | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                       |
+| secret.db.password                                   | Username to connect to the Issuer Agent Database                                                                                                      |
+| secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                          |
+| secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self managment portal.                                   |
+| secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                |
+| secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal. |
 
 ## Data Structure
 
@@ -156,6 +166,31 @@ stateDiagram-v2
     ISSUED --> REVOKED: revoke
     SUSPENDED --> REVOKED: revoke
 ```
+
+## SWIYU
+### Status registry
+To use the swiyu status registry to host your status lists you need a registration via ePortal to the swiyu ecosystem.
+To get the appropriate credentials please visit the swiyu portal application on ePortal.
+
+For access to the swiyu api you need a refresh token along with your other credentials, please see the `SWIYU_*` environment variables for further details.  
+
+The refresh token can only be used one time, but dont worry: the application does manage the refresh tokens itself.  
+But if your issuer agent management component does not run for over a week it might be possible that the refresh token saved in the database is no longer valid and cannot be used to start the api auth flow.  
+If this is the case you need to manually create a new refresh token in the api self service portal and bootstrap your issuer agent managment component with this token.  
+The application does log an appropriate error if it detects such an issue but will still start up.  
+Updates to the status registry will fail as long as the auth flow is not restarted with a valid bootstrap token.
+
+#### Setup a local environment
+1. Navigate to ePortal
+2. Search and select the application **swiyu pro beta**
+3. Create a new business partner (scroll to bottom of AGBs)
+4. Navigate again to ePortal
+5. Search and select the application **API Selfservice Portal**
+6. Select the API **swiyucorebusiness_status**
+7. Click the blue botton "Abonnieren Sie"
+8. Create a new application for this instance
+9. Use Customer Key & Secret to configure application-local.yml
+10. Onboard via API Gateway (TODO)
 
 ## Contribution
 

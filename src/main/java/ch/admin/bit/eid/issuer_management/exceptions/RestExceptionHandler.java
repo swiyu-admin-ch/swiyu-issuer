@@ -35,7 +35,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ConfigurationException.class)
     public ResponseEntity<ApiErrorDto> handleConfigurationException(final Exception exception) {
         final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, exception.getMessage());
-        log.debug("Configuration Exception intercepted", exception);
+        log.error("Configuration Exception intercepted", exception);
         return new ResponseEntity<>(apiError, apiError.status());
     }
 

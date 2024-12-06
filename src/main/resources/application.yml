@@ -25,6 +25,10 @@ spring:
       repositories:
         # Avoid hangs on startup, see https://github.com/spring-projects/spring-framework/issues/25111
         bootstrap_mode: default
+  task:
+    scheduling:
+      pool:
+        size: 2
 
 springdoc:
   show-actuator: true
@@ -38,13 +42,22 @@ application:
   enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
   authentication-jwks: ${JWKS_ALLOWLIST}
   status-list:
-    # URL where this service shall write status list updates to
-    controller-url: "${CONTROLLER_URL}"
     # private key for singing status list VCs
     private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY}}"
     # value to be added to the kid of the created status list; should be available in the published did document.
     verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD}"
 logging:
   level:
-    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: FATAL # suppress additional logging from hibernate, if uncatched it still will be logged as root cause.
     ch.admin.bit.eid.issuer_management.infrastructure.logging.RequestLoggingFilter: DEBUG
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: FATAL # suppress additional logging from hibernate, if uncatched it still will be logged as root cause.
+
+swiyu:
+  business-partner-id: ${SWIYU_PARTNER_ID:#{null}}
+  status-registry:
+    api-url: "${SWIYU_STATUS_REGISTRY_API_URL:https://status-reg-api.trust-infra.swiyu.admin.ch/}"
+    token-url: "${SWIYU_STATUS_REGISTRY_TOKEN_URL:https://keymanager-prd.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect/token}"
+    customer-key: ${secret.swiyu.status-registry.customer-key:${SWIYU_STATUS_REGISTRY_CUSTOMER_KEY:#{null}}}
+    customer-secret: ${secret.swiyu.status-registry.customer-secret:${SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET:#{null}}}
+    enable-refresh-token-flow: ${SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW:false}
+    bootstrap-refresh-token: ${secret.swiyu.status-registry.bootstrap-refresh-token:${SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN:#{null}}}
+    token-refresh-interval: "PT12H"

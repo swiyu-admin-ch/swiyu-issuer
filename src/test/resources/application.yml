@@ -1,0 +1,18 @@
+application:
+  issuer-id: "did:tdw:example"
+  external-url: "http://localhost:8080/test/"
+  offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
+  status-list:
+    private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
+    verification-method: "did:tdw:example#12345"
+
+swiyu:
+  status-registry:
+    api-url: "https://irrelevant.as.all.interaction.are.mocked"
+    token-url: "https://irrelevant.as.all.interaction.are.mocked"
+    bootstrap-refresh-token: "irrelevant as all interaction are mocked"
+    customer-key: "irrelevant as all interaction are mocked"
+    customer-secret: "irrelevant as all interaction are mocked"
+    enable-refresh-token-flow: false
+    token-refresh-interval: "PT5S"
+  business-partner-id: "00000000-0000-0000-0000-000000000000"

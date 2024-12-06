@@ -3,6 +3,7 @@ package ch.admin.bit.eid.issuer_management.services;
 import ch.admin.bit.eid.issuer_management.config.ApplicationProperties;
 import ch.admin.bit.eid.issuer_management.config.StatusListProperties;
 import ch.admin.bit.eid.issuer_management.domain.StatusListRepository;
+import ch.admin.bit.eid.issuer_management.domain.ecosystem.StatusRegistryClient;
 import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOfferStatus;
 import ch.admin.bit.eid.issuer_management.domain.entities.StatusList;
 import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
@@ -36,7 +37,7 @@ public class StatusListService {
 
     private final ApplicationProperties applicationProperties;
     private final StatusListProperties statusListProperties;
-    private final TemporaryStatusListRestClientService temporaryStatusListRestClientService;
+    private final StatusRegistryClient statusRegistryClient;
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
 
@@ -173,7 +174,7 @@ public class StatusListService {
             log.error("Failed to sign status list JWT with the provided key.", e);
             throw new ConfigurationException("Failed to sign status list JWT with the provided key.");
         }
-        temporaryStatusListRestClientService.updateStatusList(statusListEntity.getUri(), statusListJWT.serialize());
+        statusRegistryClient.updateStatusList(statusListEntity, statusListJWT.serialize());
     }
 
     private SignedJWT buildStatusListJWT(StatusList statusListEntity, TokenStatusListToken token) {
