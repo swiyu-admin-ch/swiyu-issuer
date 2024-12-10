@@ -3,27 +3,18 @@ package ch.admin.bit.eid.issuer_management.domain.entities;
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
 import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
 import com.google.gson.GsonBuilder;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Representation of a single offer and the vc which was created using that offer.
@@ -80,7 +71,7 @@ public class CredentialOffer {
     private UUID accessToken;
 
     /**
-     * Validity duration for the offer in seconds
+     * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
      */
     private long offerExpirationTimestamp;
 
@@ -100,14 +91,6 @@ public class CredentialOffer {
     @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Set<CredentialOfferStatus> offerStatusSet;
 
-    public void removeOfferData() {
-        this.offerData = null;
-    }
-
-    public void changeStatus(CredentialStatusEnum credentialStatus) {
-        this.credentialStatus = credentialStatus;
-    }
-
     public static Map<String, Object> readOfferData(Object offerData) {
         var metadata = new LinkedHashMap<String, Object>();
         if (offerData instanceof String) {
@@ -119,5 +102,13 @@ public class CredentialOffer {
             throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
         }
         return metadata;
+    }
+
+    public void removeOfferData() {
+        this.offerData = null;
+    }
+
+    public void changeStatus(CredentialStatusEnum credentialStatus) {
+        this.credentialStatus = credentialStatus;
     }
 }
