@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockAssert;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockingTaskExecutor;
+import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 @Service
 @EnableScheduling
+@EnableSchedulerLock(defaultLockAtMostFor = "10m")
 public class StatusRegistryTokenDomainService {
     private final SwiyuProperties swiyuProperties;
     private final TokenSetRepository tokenSetRepository;
@@ -38,6 +41,7 @@ public class StatusRegistryTokenDomainService {
      * Starts once after all other application startup is done.
      */
     @Scheduled(initialDelay = 0)
+    @SchedulerLock(name = "tokenRefresh")
     void bootstrapTokenSetRefresh() {
         lockingTaskExecutor.executeWithLock(
                 (Runnable) () -> {
@@ -59,6 +63,7 @@ public class StatusRegistryTokenDomainService {
             initialDelayString = "${swiyu.status-registry.token-refresh-interval}",
             fixedDelayString = "${swiyu.status-registry.token-refresh-interval}"
     )
+    @SchedulerLock(name = "tokenRefresh")
     void refreshTokenSets() {
         lockingTaskExecutor.executeWithLock(
                 (Runnable) () -> {
