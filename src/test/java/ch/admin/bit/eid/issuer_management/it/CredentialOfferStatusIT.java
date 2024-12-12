@@ -11,8 +11,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -37,6 +35,10 @@ class CredentialOfferStatusIt extends BaseIt {
     private StatusBusinessApiApi statusBusinessApi;
 
     private UUID id;
+
+    private static String getUrl(UUID id) {
+        return String.format("%s/%s/status", BASE_URL, id);
+    }
 
     @BeforeEach
     void setupTest() throws Exception {
@@ -151,7 +153,6 @@ class CredentialOfferStatusIt extends BaseIt {
                 .andExpect(status().isBadRequest());
     }
 
-
     @Test
     void testUpdateOfferStatusWithRevokedWhenOffered_thenSuccess() throws Exception {
         CredentialStatusEnum newStatus = CredentialStatusEnum.REVOKED;
@@ -192,9 +193,5 @@ class CredentialOfferStatusIt extends BaseIt {
         credentialOffer.changeStatus(status);
 
         return credentialOfferRepository.save(credentialOffer);
-    }
-
-    private static String getUrl(UUID id) {
-        return String.format("%s/%s/status", BASE_URL, id);
     }
 }

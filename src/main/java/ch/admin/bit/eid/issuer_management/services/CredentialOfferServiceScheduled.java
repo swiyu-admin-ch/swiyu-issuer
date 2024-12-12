@@ -2,7 +2,6 @@ package ch.admin.bit.eid.issuer_management.services;
 
 import ch.admin.bit.eid.issuer_management.domain.CredentialOfferRepository;
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
@@ -27,7 +26,7 @@ public class CredentialOfferServiceScheduled {
     @SchedulerLock(name = "expireOffers")
     @Transactional
     public void expireOffers() {
-        var expiredOffers = credentialOfferRepository.findByOfferExpirationTimestampLessThan(Instant.now().getEpochSecond());
+        var expiredOffers = credentialOfferRepository.findByCredentialStatusAndOfferExpirationTimestampLessThan(CredentialStatusEnum.OFFERED, Instant.now().getEpochSecond());
         expiredOffers.forEach(offer -> {
             offer.changeStatus(CredentialStatusEnum.EXPIRED);
             offer.removeOfferData();
