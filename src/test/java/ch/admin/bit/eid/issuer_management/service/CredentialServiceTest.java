@@ -25,7 +25,7 @@ public class CredentialServiceTest {
 
 
     @Test
-    void invalidateExpiredOffer() throws Exception {
+    void invalidateExpiredOffer() {
         var repoCount = credentialOfferRepository.count();
         Map<String, Object> offerData = Map.of("hello", "world");
         var expiredId = credentialOfferRepository.save(CredentialOffer.builder()
