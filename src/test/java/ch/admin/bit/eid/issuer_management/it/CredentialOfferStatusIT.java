@@ -8,24 +8,27 @@ import ch.admin.bit.eid.issuer_management.models.statuslist.TokenStatusListToken
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class CredentialOfferStatusIt extends BaseIt {
+class CredentialOfferStatusIT extends BaseIt {
 
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
@@ -37,6 +40,10 @@ class CredentialOfferStatusIt extends BaseIt {
     private StatusBusinessApiApi statusBusinessApi;
 
     private UUID id;
+
+    private static String getUrl(UUID id) {
+        return String.format("%s/%s/status", BASE_URL, id);
+    }
 
     @BeforeEach
     void setupTest() throws Exception {
@@ -151,7 +158,6 @@ class CredentialOfferStatusIt extends BaseIt {
                 .andExpect(status().isBadRequest());
     }
 
-
     @Test
     void testUpdateOfferStatusWithRevokedWhenOffered_thenSuccess() throws Exception {
         CredentialStatusEnum newStatus = CredentialStatusEnum.REVOKED;
@@ -194,7 +200,20 @@ class CredentialOfferStatusIt extends BaseIt {
         return credentialOfferRepository.save(credentialOffer);
     }
 
-    private static String getUrl(UUID id) {
-        return String.format("%s/%s/status", BASE_URL, id);
+
+    @Test
+    void testCreateOfferMultiThreaded_thenSuccess() throws Exception {
+        // create some offers in a multithreaded manner
+        var results = IntStream.range(0, 20).parallel().mapToObj(i -> {
+            try {
+                return createStatusListLinkedOfferAndGetUUID();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).toList();
+        // Get unique indexed on status list
+        var indexSet = credentialOfferRepository.findAllById(results).stream().map(offer -> offer.getOfferStatusSet().stream().findFirst().get().getIndex()).collect(Collectors.toSet());
+        Assertions.assertThat(indexSet).as("Should be the same size if no status was used multiple times").hasSameSizeAs(results);
+
     }
 }
