@@ -108,7 +108,7 @@ public class CredentialService {
             if (newStatus == CredentialStatusEnum.REVOKED) {
                 credential.removeOfferData();
             } else if (newStatus == CredentialStatusEnum.OFFERED && currentStatus == CredentialStatusEnum.IN_PROGRESS) {
-                // noting to be done here
+                credential.changeStatus(newStatus);
             } else {
                 throw new BadRequestException(String.format("Illegal state transition - Status cannot be updated from %s to %s", currentStatus, newStatus));
             }
