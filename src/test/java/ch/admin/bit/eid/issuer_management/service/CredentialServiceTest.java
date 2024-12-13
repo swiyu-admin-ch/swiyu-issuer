@@ -3,7 +3,7 @@ package ch.admin.bit.eid.issuer_management.service;
 import ch.admin.bit.eid.issuer_management.domain.CredentialOfferRepository;
 import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
-import ch.admin.bit.eid.issuer_management.services.CredentialOfferServiceScheduled;
+import ch.admin.bit.eid.issuer_management.services.CredentialService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -14,6 +14,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @SpringBootTest()
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
@@ -21,7 +23,7 @@ public class CredentialServiceTest {
     @Autowired
     CredentialOfferRepository credentialOfferRepository;
     @Autowired
-    CredentialOfferServiceScheduled credentialOfferServiceScheduled;
+    CredentialService credentialService;
 
 
     @Test
@@ -43,24 +45,40 @@ public class CredentialServiceTest {
                         .holderBindingNonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
+        var issuedId = credentialOfferRepository.save(
+                CredentialOffer.builder()
+                        .credentialStatus(CredentialStatusEnum.ISSUED)
+                        .offerExpirationTimestamp(Instant.now().getEpochSecond() - 1)
+                        .accessToken(UUID.randomUUID())
+                        .holderBindingNonce(UUID.randomUUID())
+                        // Note: Issued entries should have their data deleted by the VC signer component
+                        .build()).getId();
         credentialOfferRepository.flush();
-        assert credentialOfferRepository.count() == repoCount + 2;
+
         var expiredOffer = credentialOfferRepository.findById(expiredId);
         var validOffer = credentialOfferRepository.findById(validId);
-        assert expiredOffer.isPresent();
-        assert validOffer.isPresent();
-        assert expiredOffer.get().getOfferData() != null && expiredOffer.get().getOfferData().size() == 1;
-        assert validOffer.get().getOfferData() != null && validOffer.get().getOfferData().size() == 1;
-        assert expiredOffer.get().getCredentialStatus() == CredentialStatusEnum.OFFERED;
-        assert validOffer.get().getCredentialStatus() == CredentialStatusEnum.OFFERED;
-        credentialOfferServiceScheduled.expireOffers();
+        var issuedOffer = credentialOfferRepository.findById(issuedId);
+        assertThat(expiredOffer).isPresent();
+        assertThat(validOffer).isPresent();
+        assertThat(issuedOffer).isPresent();
+        assertThat(expiredOffer.get().getCredentialStatus()).isEqualTo(CredentialStatusEnum.OFFERED);
+        assertThat(validOffer.get().getCredentialStatus()).isEqualTo(CredentialStatusEnum.OFFERED);
+        assertThat(issuedOffer.get().getCredentialStatus()).isEqualTo(CredentialStatusEnum.ISSUED);
+        assertThat(expiredOffer.get().getOfferData()).isNotNull().isNotEmpty();
+        assertThat(validOffer.get().getOfferData()).isNotNull().isNotEmpty();
+        assertThat(issuedOffer.get().getOfferData()).isNull();
+        credentialService.expireOffers();
         expiredOffer = credentialOfferRepository.findById(expiredId);
         validOffer = credentialOfferRepository.findById(validId);
-        assert expiredOffer.isPresent();
-        assert validOffer.isPresent();
-        assert expiredOffer.get().getOfferData() == null;
-        assert validOffer.get().getOfferData() != null && validOffer.get().getOfferData().size() == 1;
-        assert expiredOffer.get().getCredentialStatus() == CredentialStatusEnum.EXPIRED;
-        assert validOffer.get().getCredentialStatus() == CredentialStatusEnum.OFFERED;
+        issuedOffer = credentialOfferRepository.findById(issuedId);
+        assertThat(expiredOffer).isPresent();
+        assertThat(validOffer).isPresent();
+        assertThat(issuedOffer).isPresent();
+        assertThat(expiredOffer.get().getCredentialStatus()).as("Expired offer should have a changed state").isEqualTo(CredentialStatusEnum.EXPIRED);
+        assertThat(validOffer.get().getCredentialStatus()).as("Valid Offer should not have been changed").isEqualTo(CredentialStatusEnum.OFFERED);
+        assertThat(issuedOffer.get().getCredentialStatus()).as("The state of issued VCs should not have been changed, despite the offer being expired").isEqualTo(CredentialStatusEnum.ISSUED);
+        assertThat(expiredOffer.get().getOfferData()).as("Data of expired offers should be deleted").isNull();
+        assertThat(validOffer.get().getOfferData()).as("Data of valid offers should have not been changed").isNotNull().isNotEmpty();
+        assertThat(issuedOffer.get().getOfferData()).isNull();
     }
 }
