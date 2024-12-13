@@ -27,7 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,6 +45,20 @@ public class StatusListService {
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
 
+    private static boolean canRevoke(StatusList statusList) {
+        return switch (statusList.getType()) {
+            case TOKEN_STATUS_LIST ->
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getValue();
+        };
+    }
+
+    private static boolean canSuspend(StatusList statusList) {
+        return switch (statusList.getType()) {
+            case TOKEN_STATUS_LIST ->
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getValue();
+        };
+    }
+
     public void createStatusList(StatusListCreateDto request) {
         try {
             // use explicit transaction, since we want to handle data integrety exceptions after commit
@@ -51,7 +69,7 @@ public class StatusListService {
                 };
                 statusListRepository.save(statusList);
             });
-        } catch(DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException e) {
             var msg = e.getMessage();
             if (msg.toLowerCase().contains("status_list_uri_key")) {
                 log.debug("Statuslist could not be initialized since already initialized", e);
@@ -154,7 +172,7 @@ public class StatusListService {
                 .config(statusListCreateDto.getConfig())
                 .uri(statusListCreateDto.getUri())
                 .statusZipped(token.getStatusListData())
-                .lastUsedIndex(0)
+                .nextFreeIndex(0)
                 .maxLength(statusListCreateDto.getMaxLength())
                 .build();
 
@@ -188,19 +206,5 @@ public class StatusListService {
                 .claim("status_list", token.getStatusListClaims())
                 .build();
         return new SignedJWT(header, claimSet);
-    }
-
-    private static boolean canRevoke(StatusList statusList) {
-        return switch (statusList.getType()) {
-            case TOKEN_STATUS_LIST ->
-                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getValue();
-        };
-    }
-
-    private static boolean canSuspend(StatusList statusList) {
-        return switch (statusList.getType()) {
-            case TOKEN_STATUS_LIST ->
-                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getValue();
-        };
     }
 }

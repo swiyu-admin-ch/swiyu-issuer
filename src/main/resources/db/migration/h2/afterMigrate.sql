@@ -27,3 +27,5 @@ CREATE TABLE credential_offer_status
     FOREIGN KEY (status_list_id) REFERENCES status_list (id),
     FOREIGN KEY (credential_offer_id) REFERENCES credential_offer (id)
 );
+alter table status_list alter column last_used_index rename to next_free_index;
+

@@ -19,7 +19,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -71,9 +70,8 @@ public class StatusList {
     /**
      * indicator what index is to be next used for creation of a new VC.
      */
-    // TODO EID-1822 naming does not match the description, we actually store the nextFreeIndex
     @NotNull
-    private Integer lastUsedIndex;
+    private Integer nextFreeIndex;
     /**
      * The maximum number of entries this status list is made for
      */
@@ -102,13 +100,12 @@ public class StatusList {
             throw new IllegalArgumentException("No UUID found in the provided URL.");
         }
     }
-    
+
     public void setStatusZipped(String statusZipped) {
         this.statusZipped = statusZipped;
     }
 
     public void incrementNextFreeIndex() {
-        // TODO EID-1822 lastUsedIndex should be renamed to nextFreeIndex
-        this.lastUsedIndex++;
+        this.nextFreeIndex++;
     }
 }
