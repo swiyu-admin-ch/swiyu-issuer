@@ -105,11 +105,11 @@ public class CredentialService {
 
         if (!currentStatus.isIssuedToHolder()) {
             // Status before issuance is not reflected in the status list
-            if (newStatus == CredentialStatusEnum.REVOKED) {
+            if (newStatus == CredentialStatusEnum.REVOKED || newStatus == CredentialStatusEnum.CANCELLED) {
                 credential.removeOfferData();
-            } else if (newStatus == CredentialStatusEnum.OFFERED && currentStatus == CredentialStatusEnum.IN_PROGRESS) {
-                credential.changeStatus(newStatus);
-            } else {
+                newStatus = CredentialStatusEnum.CANCELLED; // Use the correct status for status tracking
+            } else if (!(newStatus == CredentialStatusEnum.OFFERED && currentStatus == CredentialStatusEnum.IN_PROGRESS)) {
+                // Only allowed transition is to reset from IN_PROGRESS to OFFERED so the offer can be used again.
                 throw new BadRequestException(String.format("Illegal state transition - Status cannot be updated from %s to %s", currentStatus, newStatus));
             }
         } else {
