@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferEntity;
 import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListRepository;
@@ -161,7 +162,7 @@ class CredentialOfferStatusIT extends BaseIt {
 
     @Test
     void testUpdateOfferStatusWithRevokedWhenOffered_thenSuccess() throws Exception {
-        CredentialStatusEnum newStatus = CredentialStatusEnum.REVOKED;
+        CredentialStatusEnum newStatus = CredentialStatusEnum.CANCELLED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isOk())
