@@ -48,7 +48,7 @@ application:
     verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD}"
 logging:
   level:
-    ch.admin.bit.eid.issuer_management.infrastructure.logging.RequestLoggingFilter: DEBUG
+    ch.admin.bit.swiyu.issuer.management.infrastructure.logging.RequestLoggingFilter: DEBUG
     org.hibernate.engine.jdbc.spi.SqlExceptionHelper: FATAL # suppress additional logging from hibernate, if uncatched it still will be logged as root cause.
 
 swiyu:
