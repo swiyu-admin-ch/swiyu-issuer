@@ -8,7 +8,7 @@
         <version>3.3.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>ch.admin.bit.swiyu</groupId>
+    <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>issuer_management</artifactId>
     <version>0.0.2-SNAPSHOT</version>
     <name>issuer_management</name>
