@@ -1,6 +1,6 @@
 package ch.admin.bit.eid.issuer_management.config;
 
-import ch.admin.bit.eid.issuer_management.exceptions.ConfigurationException;
+import ch.admin.bit.eid.issuer_management.exception.ConfigurationException;
 import com.nimbusds.jose.jwk.JWKSet;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotNull;

@@ -1,4 +1,4 @@
-package ch.admin.bit.eid.issuer_management.services;
+package ch.admin.bit.eid.issuer_management.service;
 
 import ch.admin.bit.eid.issuer_management.config.ApplicationProperties;
 import ch.admin.bit.eid.issuer_management.config.StatusListProperties;
@@ -6,9 +6,9 @@ import ch.admin.bit.eid.issuer_management.domain.StatusListRepository;
 import ch.admin.bit.eid.issuer_management.domain.ecosystem.StatusRegistryClient;
 import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOfferStatus;
 import ch.admin.bit.eid.issuer_management.domain.entities.StatusList;
-import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
-import ch.admin.bit.eid.issuer_management.exceptions.ConfigurationException;
-import ch.admin.bit.eid.issuer_management.models.dto.StatusListCreateDto;
+import ch.admin.bit.eid.issuer_management.exception.BadRequestException;
+import ch.admin.bit.eid.issuer_management.exception.ConfigurationException;
+import ch.admin.bit.eid.issuer_management.api.dto.StatusListCreateDto;
 import ch.admin.bit.eid.issuer_management.models.statuslist.TokenStatsListBit;
 import ch.admin.bit.eid.issuer_management.models.statuslist.TokenStatusListToken;
 import com.nimbusds.jose.JOSEException;

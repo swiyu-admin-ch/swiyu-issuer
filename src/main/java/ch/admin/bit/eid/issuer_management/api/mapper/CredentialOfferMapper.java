@@ -1,7 +1,7 @@
-package ch.admin.bit.eid.issuer_management.models.mappers;
+package ch.admin.bit.eid.issuer_management.api.mapper;
 
-import ch.admin.bit.eid.issuer_management.models.dto.CredentialWithDeeplinkResponseDto;
-import ch.admin.bit.eid.issuer_management.models.dto.UpdateStatusResponseDto;
+import ch.admin.bit.eid.issuer_management.api.dto.CredentialWithDeeplinkResponseDto;
+import ch.admin.bit.eid.issuer_management.api.dto.UpdateStatusResponseDto;
 import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
 import lombok.experimental.UtilityClass;
 
@@ -14,8 +14,8 @@ public class CredentialOfferMapper {
                                                                                       String offerDeeplinkString) {
 
         return CredentialWithDeeplinkResponseDto.builder()
-                .management_id(credential.getId())
-                .offer_deeplink(offerDeeplinkString)
+                .managementId(credential.getId())
+                .offerDeeplink(offerDeeplinkString)
                 .build();
     }
 

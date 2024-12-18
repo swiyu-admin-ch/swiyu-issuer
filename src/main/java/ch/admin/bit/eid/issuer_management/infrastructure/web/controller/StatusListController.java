@@ -1,7 +1,7 @@
-package ch.admin.bit.eid.issuer_management.controllers;
+package ch.admin.bit.eid.issuer_management.infrastructure.web.controller;
 
-import ch.admin.bit.eid.issuer_management.models.dto.StatusListCreateDto;
-import ch.admin.bit.eid.issuer_management.services.StatusListService;
+import ch.admin.bit.eid.issuer_management.api.dto.StatusListCreateDto;
+import ch.admin.bit.eid.issuer_management.service.StatusListService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,7 +23,7 @@ public class StatusListController {
 
     @PostMapping("")
     @Operation(summary = "Initialize a new status list.", description = "Initialize and link a status list slot to to this service. This process can be only done once per status list! Status List type, configuration or length can not be changed after initialization!")
-    public void createStatusList(@Valid  @RequestBody StatusListCreateDto request) {
+    public void createStatusList(@Valid @RequestBody StatusListCreateDto request) {
         this.statusListService.createStatusList(request);
     }
 

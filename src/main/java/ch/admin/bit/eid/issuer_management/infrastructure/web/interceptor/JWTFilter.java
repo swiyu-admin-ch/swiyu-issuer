@@ -1,4 +1,4 @@
-package ch.admin.bit.eid.issuer_management.interceptor;
+package ch.admin.bit.eid.issuer_management.infrastructure.web.interceptor;
 
 import ch.admin.bit.eid.issuer_management.config.ApplicationProperties;
 import jakarta.servlet.Filter;

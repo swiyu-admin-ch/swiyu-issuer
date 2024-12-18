@@ -1,5 +1,7 @@
-package ch.admin.bit.eid.issuer_management.services;
+package ch.admin.bit.eid.issuer_management.service;
 
+import ch.admin.bit.eid.issuer_management.api.dto.CreateCredentialRequestDto;
+import ch.admin.bit.eid.issuer_management.api.dto.CredentialOfferDto;
 import ch.admin.bit.eid.issuer_management.config.ApplicationProperties;
 import ch.admin.bit.eid.issuer_management.domain.CredentialOfferRepository;
 import ch.admin.bit.eid.issuer_management.domain.CredentialOfferStatusRepository;
@@ -8,9 +10,8 @@ import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOfferStatus;
 import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOfferStatusKey;
 import ch.admin.bit.eid.issuer_management.domain.entities.StatusList;
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
-import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
-import ch.admin.bit.eid.issuer_management.exceptions.ResourceNotFoundException;
-import ch.admin.bit.eid.issuer_management.models.dto.CreateCredentialRequestDto;
+import ch.admin.bit.eid.issuer_management.exception.BadRequestException;
+import ch.admin.bit.eid.issuer_management.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -136,7 +137,7 @@ public class CredentialService {
             final UUID preAuthorizedCode = credential.getId();
         });
 
-        var credentialOffer = ch.admin.bit.eid.issuer_management.models.CredentialOffer.builder()
+        var credentialOffer = CredentialOfferDto.builder()
                 .credentialIssuer(config.getExternalUrl())
                 .credentials(credential.getMetadataCredentialSupportedId())
                 .grants(grants)

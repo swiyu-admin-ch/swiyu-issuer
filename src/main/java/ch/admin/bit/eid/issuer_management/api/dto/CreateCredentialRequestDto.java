@@ -1,4 +1,4 @@
-package ch.admin.bit.eid.issuer_management.models.dto;
+package ch.admin.bit.eid.issuer_management.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -17,6 +17,7 @@ import static ch.admin.bit.eid.issuer_management.util.DateTimeUtils.ISO8601_FORM
 
 @Data
 @Builder
+@Schema(name = "CreateCredentialRequest", description = "Initial credential creation request to start the offering process.")
 public class CreateCredentialRequestDto {
 
     /**
@@ -33,11 +34,11 @@ public class CreateCredentialRequestDto {
     @NotNull(message = "'credential_subject_data' must be set")
     @JsonProperty(value = "credential_subject_data")
     @Schema(description = """
-        The user data to be written in the verifiable credential. Can be a json object or a JWT.
-        credentialSubjectData": {"lastName": "Example","firstName": "Edward"}
-        When using data integrity JWT the value are as claims inside the JWT.
-        "credentialSubjectData": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsYXN0TmFtZSI6IkV4YW1wbGUiLCJmaXJzdE5hbWUiOiJFZHdhcmQiLCJkYXRlT2ZCaXJ0aCI6IjEuMS4xOTcwIn0.2VMjj1RpJ7jUjn1SJHDwwzqx3kygn88UxSsG5j1uXG8"
-    """, example = """
+                The user data to be written in the verifiable credential. Can be a json object or a JWT.
+                credentialSubjectData": {"lastName": "Example","firstName": "Edward"}
+                When using data integrity JWT the value are as claims inside the JWT.
+                "credentialSubjectData": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsYXN0TmFtZSI6IkV4YW1wbGUiLCJmaXJzdE5hbWUiOiJFZHdhcmQiLCJkYXRlT2ZCaXJ0aCI6IjEuMS4xOTcwIn0.2VMjj1RpJ7jUjn1SJHDwwzqx3kygn88UxSsG5j1uXG8"
+            """, example = """
             {
                 "lastName": "Example",
                 "firstName": "Edward"
@@ -74,9 +75,9 @@ public class CreateCredentialRequestDto {
      * URIs of the status lists to be used with the credential
      */
     @JsonProperty(value = "status_lists")
-    @ArraySchema( arraySchema =
-        @Schema(description = "List of URIs of the status lists to be used with the credential. Status Lists must be initialized. Can provide multiple status lists to have multiple status sources.",
-                example="[\"https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt\"]"))
+    @ArraySchema(arraySchema =
+    @Schema(description = "List of URIs of the status lists to be used with the credential. Status Lists must be initialized. Can provide multiple status lists to have multiple status sources.",
+            example = "[\"https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt\"]"))
     private List<String> statusLists;
 
     public List<String> getStatusLists() {

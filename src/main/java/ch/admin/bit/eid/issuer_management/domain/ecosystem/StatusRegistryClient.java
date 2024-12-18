@@ -2,9 +2,8 @@ package ch.admin.bit.eid.issuer_management.domain.ecosystem;
 
 import ch.admin.bit.eid.issuer_management.config.SwiyuProperties;
 import ch.admin.bit.eid.issuer_management.domain.entities.StatusList;
-import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
-import ch.admin.bit.eid.issuer_management.exceptions.ConfigurationException;
-import ch.admin.bit.eid.issuer_management.exceptions.ResourceNotFoundException;
+import ch.admin.bit.eid.issuer_management.exception.ConfigurationException;
+import ch.admin.bit.eid.issuer_management.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

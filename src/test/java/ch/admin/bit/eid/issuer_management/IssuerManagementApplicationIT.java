@@ -1,7 +1,7 @@
 package ch.admin.bit.eid.issuer_management;
 
 import ch.admin.bit.eid.issuer_management.config.StatusListProperties;
-import ch.admin.bit.eid.issuer_management.controllers.CredentialsController;
+import ch.admin.bit.eid.issuer_management.infrastructure.web.controller.CredentialsController;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.ECDSAVerifier;

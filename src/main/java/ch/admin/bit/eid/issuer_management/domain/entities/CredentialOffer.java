@@ -1,7 +1,7 @@
 package ch.admin.bit.eid.issuer_management.domain.entities;
 
 import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
-import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
+import ch.admin.bit.eid.issuer_management.exception.BadRequestException;
 import com.google.gson.GsonBuilder;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -100,14 +100,6 @@ public class CredentialOffer {
     @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Set<CredentialOfferStatus> offerStatusSet;
 
-    public void removeOfferData() {
-        this.offerData = null;
-    }
-
-    public void changeStatus(CredentialStatusEnum credentialStatus) {
-        this.credentialStatus = credentialStatus;
-    }
-
     public static Map<String, Object> readOfferData(Object offerData) {
         var metadata = new LinkedHashMap<String, Object>();
         if (offerData instanceof String) {
@@ -119,5 +111,13 @@ public class CredentialOffer {
             throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
         }
         return metadata;
+    }
+
+    public void removeOfferData() {
+        this.offerData = null;
+    }
+
+    public void changeStatus(CredentialStatusEnum credentialStatus) {
+        this.credentialStatus = credentialStatus;
     }
 }

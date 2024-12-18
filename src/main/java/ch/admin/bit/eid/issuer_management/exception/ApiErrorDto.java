@@ -1,4 +1,4 @@
-package ch.admin.bit.eid.issuer_management.exceptions;
+package ch.admin.bit.eid.issuer_management.exception;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;

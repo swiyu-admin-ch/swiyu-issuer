@@ -5,7 +5,7 @@
 
 package ch.admin.bit.eid.issuer_management.models.statuslist;
 
-import ch.admin.bit.eid.issuer_management.exceptions.ConfigurationException;
+import ch.admin.bit.eid.issuer_management.exception.ConfigurationException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,6 +71,42 @@ public class TokenStatusListToken {
         return new TokenStatusListToken(bits, decodeStatusList(lst));
     }
 
+    private static String encodeStatusList(byte[] statusList) {
+        // zipping the data
+        try {
+            var zlibOutput = new ByteArrayOutputStream();
+            var deflaterStream = new DeflaterOutputStream(zlibOutput, new Deflater(9));
+            deflaterStream.write(statusList);
+            deflaterStream.finish();
+            byte[] clippedZlibOutput = Arrays.copyOf(zlibOutput.toByteArray(), zlibOutput.size());
+            deflaterStream.close();
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(clippedZlibOutput);
+        } catch (IOException e) {
+            log.error("Error occurred during zipping of Status List data", e);
+            throw new ConfigurationException("Status List data can not be zipped");
+        }
+    }
+
+    /**
+     * @param lst
+     * @return the bytes of the status list
+     * @throws DataFormatException if the lst is not a zlib compressed status list
+     */
+    private static byte[] decodeStatusList(String lst) throws IOException {
+        // base64 decoding the data
+        byte[] zippedData = Base64.getUrlDecoder().decode(lst);
+
+
+        var zlibOutput = new ByteArrayOutputStream();
+        var inflaterStream = new InflaterOutputStream(zlibOutput);
+        inflaterStream.write(zippedData);
+        inflaterStream.finish();
+        byte[] clippedZlibOutput = Arrays.copyOf(zlibOutput.toByteArray(), zlibOutput.size());
+        inflaterStream.close();
+        return clippedZlibOutput;
+
+    }
+
     /**
      * Claims to be put in the status_list property
      *
@@ -125,10 +161,10 @@ public class TokenStatusListToken {
     /**
      * Sets status to 0
      *
-     * @param idx    index of the status list entry
+     * @param idx index of the status list entry
      */
     public void unsetStatus(int idx) {
-        int status = (1<<bits)-1;
+        int status = (1 << bits) - 1;
         verifyStatusArgument(status);
         byte entryByte = getStatusEntryByte(idx);
         // Shift the bit to the correct position in the byte
@@ -158,7 +194,7 @@ public class TokenStatusListToken {
     }
 
     private void verifyStatusArgument(int status) {
-        if (1<<bits <= status) {
+        if (1 << bits <= status) {
             throw new IllegalArgumentException("Status can not exceed bits but was %d while expecting maximum of %d".formatted(status, bits));
         }
     }
@@ -175,42 +211,6 @@ public class TokenStatusListToken {
      */
     private void setStatusEntryByte(int idx, byte statusValue) {
         statusList[idx * bits / 8] = statusValue;
-    }
-
-    private static String encodeStatusList(byte[] statusList) {
-        // zipping the data
-        try {
-            var zlibOutput = new ByteArrayOutputStream();
-            var deflaterStream = new DeflaterOutputStream(zlibOutput, new Deflater(9));
-            deflaterStream.write(statusList);
-            deflaterStream.finish();
-            byte[] clippedZlibOutput = Arrays.copyOf(zlibOutput.toByteArray(), zlibOutput.size());
-            deflaterStream.close();
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(clippedZlibOutput);
-        } catch (IOException e) {
-            log.error("Error occurred during zipping of Status List data", e);
-            throw new ConfigurationException("Status List data can not be zipped");
-        }
-    }
-
-    /**
-     * @param lst
-     * @return the bytes of the status list
-     * @throws DataFormatException if the lst is not a zlib compressed status list
-     */
-    private static byte[] decodeStatusList(String lst) throws IOException {
-        // base64 decoding the data
-        byte[] zippedData = Base64.getUrlDecoder().decode(lst);
-
-
-        var zlibOutput = new ByteArrayOutputStream();
-        var inflaterStream = new InflaterOutputStream(zlibOutput);
-        inflaterStream.write(zippedData);
-        inflaterStream.finish();
-        byte[] clippedZlibOutput = Arrays.copyOf(zlibOutput.toByteArray(), zlibOutput.size());
-        inflaterStream.close();
-        return clippedZlibOutput;
-
     }
 
 }

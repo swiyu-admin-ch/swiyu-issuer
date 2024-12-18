@@ -1,6 +1,6 @@
-package ch.admin.bit.eid.issuer_management.interceptor;
+package ch.admin.bit.eid.issuer_management.infrastructure.web.interceptor;
 
-import ch.admin.bit.eid.issuer_management.exceptions.BadRequestException;
+import ch.admin.bit.eid.issuer_management.exception.BadRequestException;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
@@ -36,6 +36,14 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
     private final SignedJWT jwt;
     private final String dataClaim;
 
+    public JWTResolveRequestWrapper(HttpServletRequest request) throws IOException, ParseException {
+        super(request);
+        String jwtString = request.getReader().lines().collect(Collectors.joining());
+        this.jwt = SignedJWT.parse(jwtString);
+        this.dataClaim = JsonParser.parseString(jwt.getJWTClaimsSet().getStringClaim("data")).toString();
+
+    }
+
     private static JWSVerifier buildVerifier(KeyType kty, JWK key) throws JOSEException {
         if (KeyType.EC.equals(kty)) {
             return new ECDSAVerifier(key.toECKey().toPublicJWK());
@@ -44,6 +52,7 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
         }
         throw new JOSEException("Unsupported Key Type %s".formatted(kty));
     }
+
     public static JWTResolveRequestWrapper createAndValidate(HttpServletRequest request, JWKSet allowedKeys) {
         try {
             JWTResolveRequestWrapper wrappedRequest = new JWTResolveRequestWrapper(request);
@@ -55,7 +64,7 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
                 throw new BadRequestException("Unknown Key has been used in signing the JWT");
             }
             KeyType kty = matchingKey.getKeyType();
-            if (!jwt.verify(buildVerifier(kty, matchingKey))){
+            if (!jwt.verify(buildVerifier(kty, matchingKey))) {
                 log.warn("Request with invalid JWT encoding intercepted");
                 throw new BadRequestException("Request JWT verification failed");
             }
@@ -64,14 +73,6 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
             log.info("Parsing communication JWT failed.", e);
             throw new BadRequestException("Request is not JWT encoded");
         }
-    }
-
-    public JWTResolveRequestWrapper(HttpServletRequest request) throws IOException, ParseException {
-        super(request);
-        String jwtString = request.getReader().lines().collect(Collectors.joining());
-        this.jwt = SignedJWT.parse(jwtString);
-        this.dataClaim = JsonParser.parseString(jwt.getJWTClaimsSet().getStringClaim("data")).toString();
-
     }
 
     @Override

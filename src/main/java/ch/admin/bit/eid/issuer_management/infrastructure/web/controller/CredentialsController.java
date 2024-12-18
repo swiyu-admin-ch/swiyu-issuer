@@ -1,24 +1,31 @@
-package ch.admin.bit.eid.issuer_management.controllers;
+package ch.admin.bit.eid.issuer_management.infrastructure.web.controller;
 
-import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
-import ch.admin.bit.eid.issuer_management.models.dto.CreateCredentialRequestDto;
-import ch.admin.bit.eid.issuer_management.models.dto.CredentialWithDeeplinkResponseDto;
-import ch.admin.bit.eid.issuer_management.models.dto.StatusResponseDto;
-import ch.admin.bit.eid.issuer_management.models.dto.UpdateStatusResponseDto;
+import ch.admin.bit.eid.issuer_management.api.dto.CreateCredentialRequestDto;
+import ch.admin.bit.eid.issuer_management.api.dto.CredentialWithDeeplinkResponseDto;
+import ch.admin.bit.eid.issuer_management.api.dto.StatusResponseDto;
+import ch.admin.bit.eid.issuer_management.api.dto.UpdateStatusResponseDto;
+import ch.admin.bit.eid.issuer_management.api.mapper.CredentialOfferMapper;
 import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
-import ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper;
-import ch.admin.bit.eid.issuer_management.services.CredentialService;
+import ch.admin.bit.eid.issuer_management.enums.CredentialStatusEnum;
+import ch.admin.bit.eid.issuer_management.service.CredentialService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-import static ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper.credentialToCredentialResponseDto;
-import static ch.admin.bit.eid.issuer_management.models.mappers.CredentialOfferMapper.credentialToUpdateStatusResponseDto;
-import static ch.admin.bit.eid.issuer_management.models.mappers.StatusResponseMapper.credentialToStatusResponseDto;
+import static ch.admin.bit.eid.issuer_management.api.mapper.CredentialOfferMapper.credentialToCredentialResponseDto;
+import static ch.admin.bit.eid.issuer_management.api.mapper.CredentialOfferMapper.credentialToUpdateStatusResponseDto;
+import static ch.admin.bit.eid.issuer_management.api.mapper.StatusResponseMapper.credentialToStatusResponseDto;
 
 @RestController
 @RequestMapping(value = "/credentials")
@@ -31,12 +38,12 @@ public class CredentialsController {
     @PostMapping("")
     @Operation(summary = "Create a generic credential offer with the given content",
             description = """
-            Create a new credential offer, which can the be collected by the holder.
-            The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
-            The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
-            Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
-            """
-            )
+                    Create a new credential offer, which can the be collected by the holder.
+                    The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
+                    The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
+                    Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
+                    """
+    )
     public CredentialWithDeeplinkResponseDto createCredential(
             @Valid @RequestBody CreateCredentialRequestDto requestDto) {
         CredentialOffer credential = this.credentialService.createCredential(requestDto);

@@ -1,4 +1,4 @@
-package ch.admin.bit.eid.issuer_management.exceptions;
+package ch.admin.bit.eid.issuer_management.exception;
 
 public class NotImplementedError extends RuntimeException {
 

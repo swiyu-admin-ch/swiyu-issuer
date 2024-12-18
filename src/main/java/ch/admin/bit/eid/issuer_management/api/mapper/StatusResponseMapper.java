@@ -1,6 +1,6 @@
-package ch.admin.bit.eid.issuer_management.models.mappers;
+package ch.admin.bit.eid.issuer_management.api.mapper;
 
-import ch.admin.bit.eid.issuer_management.models.dto.StatusResponseDto;
+import ch.admin.bit.eid.issuer_management.api.dto.StatusResponseDto;
 import ch.admin.bit.eid.issuer_management.domain.entities.CredentialOffer;
 import lombok.experimental.UtilityClass;
 
