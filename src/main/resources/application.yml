@@ -35,17 +35,18 @@ springdoc:
 
 application:
   # DID of the Issuer
-  issuer-id: ${ISSUER_ID}
+  issuer-id: ${ISSUER_ID:}
   # URL under which this service can be reached from the web
-  external-url: ${EXTERNAL_URL}
+  external-url: ${EXTERNAL_URL:}
   offer-validity: 2592000
   enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
-  authentication-jwks: ${JWKS_ALLOWLIST}
+  authentication-jwks: ${JWKS_ALLOWLIST:}
   status-list:
     # private key for singing status list VCs
-    private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY}}"
+    private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY:}}"
     # value to be added to the kid of the created status list; should be available in the published did document.
-    verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD}"
+    verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD:}"
+  offer-expiration-interval: "${CREDENTIAL_OFFER_EXPIRATION_INTERVAL:PT15M}"
 logging:
   level:
     ch.admin.bit.eid.issuer_management.infrastructure.logging.RequestLoggingFilter: DEBUG
