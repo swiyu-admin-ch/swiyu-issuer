@@ -29,17 +29,41 @@ flowchart TD
 
 # Getting Started
 
-1. If you start the application just with local profile like the script below, you need to set the credentials for the status-list api-gateway api.
+If you start the application with the local profile as described below, you need to set the credentials for the
+status-list api-gateway api in the `application-local.yml` file. The credentials can be obtained from the swiyu
+portal. The following properties need to be set:
 
-2. To start the application locally you can run:
+1. If you have a client key and secret you have to set the following properties in the `application-local.yml` file:
+
+```yaml
+  swiyu:
+    status-registry:
+    customer-key: "customer-key"
+    customer-secret: "customer-secret"
+```
+
+2. If you have a refresh token you have to set the following properties in the `application-local.yml`
+
+```yaml
+  swiyu:
+    status-registry:
+      api-url: "https://api-url"
+      enable-refresh-token-flow: true
+      bootstrap-refresh-token: "your refresh token"
+```
+
+> [!NOTE]  
+> The values can also be set as environment variables. For more information check
+> the [Configuration Environment Variables](#configuration-environment-variables) section.
+
+To start the application locally you can run:
 
 ```shell
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 Note: This spins up a local PostgreSQL database via docker. Once running, Openapi-Documentation can be
-accessed via
-http://localhost:8080/swagger-ui.html.
+accessed [here](http://localhost:8080/swagger-ui/index.html#/).
 
 # Development
 
@@ -47,10 +71,8 @@ http://localhost:8080/swagger-ui.html.
 
 - Start application IssuerManagementApplication with local profile
 
-  - Starts docker compose for database
-  - Runs Flyway migrations if needed
-
-- Api definitions can be found [here](http://localhost:8080/swagger-ui/index.html#/)
+    - Starts docker compose for database
+    - Runs Flyway migrations if needed
 
 ## Configuration
 
@@ -69,7 +91,7 @@ On the base registry the public key is published. To generate the public key for
 The Generic Issuer Agent Management is configured using environment variables.
 
 | Variable                                             | Description                                                                                                                                             |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
 | POSTGRES_USER                                        | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                         |
 | POSTGRES_PASSWORD                                    | Username to connect to the Issuer Agent Database                                                                                                        |
 | POSTGRES_JDBC                                        | JDBC Connection string to the shared DB                                                                                                                 |
@@ -91,7 +113,7 @@ The Generic Issuer Agent Management is configured using environment variables.
 ### Kubernetes Vault Keys
 
 | Variable                                             | Description                                                                                                                                           |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
 | secret.db.username                                   | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                       |
 | secret.db.password                                   | Username to connect to the Issuer Agent Database                                                                                                      |
 | secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                          |
