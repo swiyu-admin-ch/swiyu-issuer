@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockAssert;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockingTaskExecutor;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +26,6 @@ import java.time.Instant;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-@EnableScheduling
 public class StatusRegistryTokenDomainService {
     private final SwiyuProperties swiyuProperties;
     private final TokenSetRepository tokenSetRepository;

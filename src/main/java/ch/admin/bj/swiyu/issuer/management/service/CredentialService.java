@@ -19,6 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -158,5 +160,19 @@ public class CredentialService {
         }
 
         return String.format("openid-credential-offer://?credential_offer=%s", credentialOfferString);
+    }
+
+    /**
+     * Set the state of all expired credential offers to expired and delete the person data associated with it.
+     */
+    @Scheduled(initialDelay = 0, fixedDelayString = "${application.offer-expiration-interval}")
+    @SchedulerLock(name = "expireOffers")
+    @Transactional
+    public void expireOffers() {
+        var expiredOffers = credentialOfferRepository.findByCredentialStatusAndOfferExpirationTimestampLessThan(CredentialStatusEnum.OFFERED, Instant.now().getEpochSecond());
+        expiredOffers.forEach(offer -> {
+            offer.changeStatus(CredentialStatusEnum.EXPIRED);
+            offer.removeOfferData();
+        });
     }
 }

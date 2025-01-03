@@ -93,7 +93,7 @@ public class CredentialOfferEntity {
     private UUID accessToken;
 
     /**
-     * Validity duration for the offer in seconds
+     * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
      */
     private long offerExpirationTimestamp;
 

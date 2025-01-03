@@ -160,6 +160,7 @@ class CredentialOfferStatusIT extends BaseIt {
                 .andExpect(status().isBadRequest());
     }
 
+
     @Test
     void testUpdateOfferStatusWithRevokedWhenOffered_thenSuccess() throws Exception {
         CredentialStatusEnum newStatus = CredentialStatusEnum.CANCELLED;
@@ -167,7 +168,7 @@ class CredentialOfferStatusIT extends BaseIt {
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.status").value(newStatus.toString()));
+                .andExpect(jsonPath("$.status").value(CredentialStatusEnum.CANCELLED.toString()));
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk());

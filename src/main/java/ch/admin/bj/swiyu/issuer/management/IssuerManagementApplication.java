@@ -1,16 +1,20 @@
 package ch.admin.bj.swiyu.issuer.management;
 
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableConfigurationProperties
 @ConfigurationPropertiesScan
 @Slf4j
+@EnableScheduling
+@EnableSchedulerLock(defaultLockAtMostFor = "10m")
 public class IssuerManagementApplication {
 
     public static void main(String[] args) {
@@ -19,7 +23,7 @@ public class IssuerManagementApplication {
         String serverPort = env.getProperty("server.port");
         log.info(
                 """
-                                                
+
                         ----------------------------------------------------------------------------
                         \t'{}' is running!\s
                         \tProfile(s): \t\t\t\t{}
@@ -27,8 +31,7 @@ public class IssuerManagementApplication {
                         ----------------------------------------------------------------------------""",
                 appName,
                 env.getActiveProfiles(),
-                serverPort
-        );
+                serverPort);
     }
 
 }
