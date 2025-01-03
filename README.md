@@ -27,13 +27,28 @@ flowchart TD
     wallet ---> isoi
 ```
 
+# Getting Started
+
+1. If you start the application just with local profile like the script below, you need to set the credentials for the status-list api-gateway api.
+
+2. To start the application locally you can run:
+
+```shell
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+Note: This spins up a local PostgreSQL database via docker. Once running, Openapi-Documentation can be
+accessed via
+http://localhost:8080/swagger-ui.html.
+
 # Development
 
 ## Setup
 
 - Start application IssuerManagementApplication with local profile
-    - Starts docker compose for database
-    - Runs Flyway migrations if needed
+
+  - Starts docker compose for database
+  - Runs Flyway migrations if needed
 
 - Api definitions can be found [here](http://localhost:8080/swagger-ui/index.html#/)
 
@@ -67,7 +82,7 @@ The Generic Issuer Agent Management is configured using environment variables.
 | DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment |
 | SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                         |
 | SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                       |
-| SWIYU_STATUS_REGISTRY_TOKEN_URL                       | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                               |
+| SWIYU_STATUS_REGISTRY_TOKEN_URL                      | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                               |
 | SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self managment portal.                                     |
 | SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                  |
 | SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
@@ -140,9 +155,11 @@ The value of the data claim will contain the full json body of the normal reques
 Note that this is only affects writing calls.
 
 ### Data Integrity Check
+
 To provide a data integrity check with the issuer it is possible to provide the credential subject data as JWT.
 
-See [CredentialOfferCreateJWTIT.java](src/test/java/ch/admin/bit/eid/issuer_management/it/CredentialOfferCreateJWTIT.java) for examples on how to use.
+See [CredentialOfferCreateJWTIT.java](src/test/java/ch/admin/bit/eid/issuer_management/it/CredentialOfferCreateJWTIT.java)
+for examples on how to use.
 
 ## Credential Status
 
@@ -168,19 +185,25 @@ stateDiagram-v2
 ```
 
 ## SWIYU
+
 ### Status registry
+
 To use the swiyu status registry to host your status lists you need a registration via ePortal to the swiyu ecosystem.
 To get the appropriate credentials please visit the swiyu portal application on ePortal.
 
-For access to the swiyu api you need a refresh token along with your other credentials, please see the `SWIYU_*` environment variables for further details.  
+For access to the swiyu api you need a refresh token along with your other credentials, please see the `SWIYU_*`
+environment variables for further details.
 
 The refresh token can only be used one time, but dont worry: the application does manage the refresh tokens itself.  
-But if your issuer agent management component does not run for over a week it might be possible that the refresh token saved in the database is no longer valid and cannot be used to start the api auth flow.  
-If this is the case you need to manually create a new refresh token in the api self service portal and bootstrap your issuer agent managment component with this token.  
+But if your issuer agent management component does not run for over a week it might be possible that the refresh token
+saved in the database is no longer valid and cannot be used to start the api auth flow.  
+If this is the case you need to manually create a new refresh token in the api self service portal and bootstrap your
+issuer agent managment component with this token.  
 The application does log an appropriate error if it detects such an issue but will still start up.  
 Updates to the status registry will fail as long as the auth flow is not restarted with a valid bootstrap token.
 
 #### Setup a local environment
+
 1. Navigate to ePortal
 2. Search and select the application **swiyu pro beta**
 3. Create a new business partner (scroll to bottom of AGBs)
