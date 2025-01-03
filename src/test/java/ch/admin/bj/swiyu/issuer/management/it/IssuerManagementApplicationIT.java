@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management;
+package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.issuer.management.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialsController;
