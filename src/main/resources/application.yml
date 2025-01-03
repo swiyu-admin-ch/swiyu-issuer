@@ -30,6 +30,22 @@ spring:
       pool:
         size: 2
 
+management:
+  endpoint:
+    health:
+      enabled: true
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+
 springdoc:
   show-actuator: true
 
