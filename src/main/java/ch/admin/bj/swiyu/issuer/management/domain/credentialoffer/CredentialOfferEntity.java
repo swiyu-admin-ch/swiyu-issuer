@@ -1,9 +1,10 @@
-package ch.admin.bj.swiyu.issuer.management.domain.credential_offer;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer_status.CredentialOfferStatusEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusEntity;
 import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
 import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -36,7 +37,7 @@ import java.util.UUID;
  * verifiable credential (vc).
  */
 @Entity
-@Getter // do not apply generell setters on entities
+@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -62,7 +63,7 @@ public class CredentialOfferEntity {
 
     /**
      * the Credential Subject Data. Has the shape for unprotected data
-     * 
+     *
      * <pre>
      * <code>
      * {
@@ -72,7 +73,7 @@ public class CredentialOfferEntity {
      * </pre>
      * <p>
      * For data integrity protected data uses the shape
-     * 
+     *
      * <pre>
      * <code>
      * {
@@ -112,17 +113,41 @@ public class CredentialOfferEntity {
     @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Set<CredentialOfferStatusEntity> offerStatusSet;
 
+    /**
+     * Read the offer data depending on input type and add it to offer
+     *
+     * @param offerData can be string or map -> other will throw exception
+     * @return offerdata map
+     */
     public static Map<String, Object> readOfferData(Object offerData) {
-        var metadata = new LinkedHashMap<String, Object>();
         if (offerData instanceof String) {
-            metadata.put("data", offerData);
-            metadata.put("data_integrity", "jwt");
-        } else if (offerData instanceof Map) {
-            metadata.put("data", new GsonBuilder().create().toJson(offerData));
+            return readOfferDataString((String) offerData);
+        } else if (offerData instanceof Map<?, ?>) {
+            return readOfferDataMap((Map<?, ?>) offerData);
         } else {
             throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
         }
+    }
+
+    private static Map<String, Object> readOfferDataString(String offerData) {
+        var metadata = new LinkedHashMap<String, Object>();
+
+        metadata.put("data", offerData);
+        metadata.put("data_integrity", "jwt");
+
         return metadata;
+    }
+
+    private static Map<String, Object> readOfferDataMap(Map<?, ?> offerData) {
+        var metadata = new LinkedHashMap<String, Object>();
+
+        var mapper = new ObjectMapper();
+        try {
+            metadata.put("data", mapper.writeValueAsString(offerData));
+            return metadata;
+        } catch (JsonProcessingException e) {
+            throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
+        }
     }
 
     public void removeOfferData() {

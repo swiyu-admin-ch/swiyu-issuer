@@ -1,7 +1,11 @@
-package ch.admin.bj.swiyu.issuer.management.domain.ecosystem;
+package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.issuer.management.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenApi;
+import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenSetEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenSetRepository;
 import ch.admin.bj.swiyu.issuer.management.enums.EcosystemApiEnum;
+import ch.admin.bj.swiyu.issuer.management.exception.JsonException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockAssert;
@@ -63,7 +67,7 @@ public class StatusRegistryTokenDomainService {
                     try {
                         var dbData = tokenSetRepository.findById(thisApi);
                         if (dbData.isEmpty() || Instant.now().plusSeconds(1).isAfter(
-                                dbData.get().lastRefresh
+                                dbData.get().getLastRefresh()
                                         .plus(swiyuProperties.statusRegistry().tokenRefreshInterval()))) {
                             requestNewTokenSet();
                         } else {
@@ -88,7 +92,7 @@ public class StatusRegistryTokenDomainService {
     public String getAccessToken() {
         var dbData = tokenSetRepository.findById(thisApi)
                 .orElseThrow(() -> new IllegalArgumentException("TODO"));
-        return dbData.accessToken;
+        return dbData.getAccessToken();
     }
 
     /**
@@ -100,10 +104,10 @@ public class StatusRegistryTokenDomainService {
     public String forceRefreshAccessToken() {
         try {
             return lockingTaskExecutor.executeWithLock(
-                    () -> requestNewTokenSet().accessToken,
+                    () -> requestNewTokenSet().getAccessToken(),
                     statusRegistryTokenApiLockConfiguration).getResult();
         } catch (Throwable e) {
-            throw new RuntimeException(e);
+            throw new JsonException("forceRefreshAccessToken failed", e);
         }
     }
 
@@ -156,7 +160,7 @@ public class StatusRegistryTokenDomainService {
         } else {
             try {
                 // if initialized: try it with the token in the DB
-                tokenResponse = getTokenResponse(dbData.get().refreshToken);
+                tokenResponse = getTokenResponse(dbData.get().getRefreshToken());
                 log.debug("Refreshed token set based on refresh token in db.");
             } catch (Exception e) {
                 // if initialized, but it did not work with the DB token: try with the bootstrap

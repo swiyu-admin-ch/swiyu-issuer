@@ -5,7 +5,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.domain.status_list;
 
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer_status.CredentialOfferStatusEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;

@@ -1,8 +1,8 @@
-package ch.admin.bj.swiyu.issuer.management.config;
+package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
-import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.StatusRegistryTokenInterceptor;
+import ch.admin.bj.swiyu.issuer.management.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenApi;
 import ch.admin.bj.swiyu.issuer.management.enums.GlobalLocksEnum;
 import lombok.AllArgsConstructor;
@@ -46,7 +46,7 @@ public class StatusRegistryConfig {
 
     @Bean
     public ApiClient statusRegistryApiClient(RestClient.Builder builder,
-            StatusRegistryTokenInterceptor statusRegistryTokenInterceptor) {
+                                             StatusRegistryTokenInterceptor statusRegistryTokenInterceptor) {
         builder.requestInterceptor(statusRegistryTokenInterceptor);
         var client = new ApiClient(builder.build());
         client.setBasePath(swiyuProperties.statusRegistry().apiUrl().toExternalForm());

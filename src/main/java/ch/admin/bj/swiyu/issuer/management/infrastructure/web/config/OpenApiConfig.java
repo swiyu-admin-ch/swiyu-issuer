@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.config;
+package ch.admin.bj.swiyu.issuer.management.infrastructure.web.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;

@@ -1,16 +1,17 @@
 package ch.admin.bj.swiyu.issuer.management.service;
 
-import ch.admin.bj.swiyu.issuer.management.api.dto.CreateCredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.management.api.dto.CredentialOfferDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferEntity;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer_status.CredentialOfferStatusEntity;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer_status.CredentialOfferStatusKey;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer_status.CredentialOfferStatusRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusKey;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListEntity;
 import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
 import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.management.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.management.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,7 +29,7 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferEntity.readOfferData;
+import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity.readOfferData;
 import static java.util.Objects.nonNull;
 
 @Slf4j
@@ -96,7 +97,7 @@ public class CredentialService {
 
     @Transactional
     public CredentialOfferEntity updateCredentialStatus(@NotNull UUID credentialId,
-            @NotNull CredentialStatusEnum newStatus) {
+                                                        @NotNull CredentialStatusEnum newStatus) {
         CredentialOfferEntity credential = this.getCredential(credentialId);
         CredentialStatusEnum currentStatus = credential.getCredentialStatus();
 
@@ -153,7 +154,7 @@ public class CredentialService {
             credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOffer),
                     Charset.defaultCharset());
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new JsonException("Error processing credential offer for credential with id %s".formatted(credential.getId()), e);
         }
 
         return String.format("openid-credential-offer://?credential_offer=%s", credentialOfferString);

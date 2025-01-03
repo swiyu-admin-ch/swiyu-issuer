@@ -1,16 +1,18 @@
 package ch.admin.bj.swiyu.issuer.management.service;
 
-import ch.admin.bj.swiyu.issuer.management.api.dto.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.config.StatusListProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer_status.CredentialOfferStatusEntity;
-import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.StatusRegistryClient;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusEntity;
 import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListEntity;
 import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListType;
 import ch.admin.bj.swiyu.issuer.management.domain.status_list.TokenStatsListBit;
 import ch.admin.bj.swiyu.issuer.management.domain.status_list.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.management.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusRegistryClient;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -48,14 +50,14 @@ public class StatusListService {
     private static boolean canRevoke(StatusListEntity statusList) {
         return switch (statusList.getType()) {
             case TOKEN_STATUS_LIST ->
-                (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getValue();
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getValue();
         };
     }
 
     private static boolean canSuspend(StatusListEntity statusList) {
         return switch (statusList.getType()) {
             case TOKEN_STATUS_LIST ->
-                (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getValue();
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getValue();
         };
     }
 
@@ -179,7 +181,7 @@ public class StatusListService {
 
         // Build DB Entry
         StatusListEntity statusList = StatusListEntity.builder()
-                .type(statusListCreateDto.getType())
+                .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
                 .config(statusListCreateDto.getConfig())
                 .uri(statusListCreateDto.getUri())
                 .statusZipped(token.getStatusListData())
@@ -189,6 +191,14 @@ public class StatusListService {
 
         updateRegistry(statusList, token);
         return statusList;
+    }
+
+    private StatusListType getStatusListTypeFromDto(StatusListTypeDto statusListTypeDto) {
+        if (statusListTypeDto == null) {
+            return null;
+        }
+
+        return StatusListType.TOKEN_STATUS_LIST;
     }
 
     private void updateRegistry(StatusListEntity statusListEntity, TokenStatusListToken token) {

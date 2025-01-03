@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.domain.credential_offer_status;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

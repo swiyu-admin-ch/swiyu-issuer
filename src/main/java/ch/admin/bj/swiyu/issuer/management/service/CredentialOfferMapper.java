@@ -1,8 +1,8 @@
-package ch.admin.bj.swiyu.issuer.management.api.mapper;
+package ch.admin.bj.swiyu.issuer.management.service;
 
-import ch.admin.bj.swiyu.issuer.management.api.dto.CredentialWithDeeplinkResponseDto;
-import ch.admin.bj.swiyu.issuer.management.api.dto.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferEntity;
+import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
@@ -11,7 +11,7 @@ import java.util.Map;
 public class CredentialOfferMapper {
 
     public static CredentialWithDeeplinkResponseDto credentialToCredentialResponseDto(CredentialOfferEntity credential,
-            String offerDeeplinkString) {
+                                                                                      String offerDeeplinkString) {
 
         return CredentialWithDeeplinkResponseDto.builder()
                 .managementId(credential.getId())

@@ -1,7 +1,7 @@
-package ch.admin.bj.swiyu.issuer.management.api.mapper;
+package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
-import ch.admin.bj.swiyu.issuer.management.api.dto.StatusResponseDto;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferEntity;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.StatusResponseDto;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.domain.credential_offer_status;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

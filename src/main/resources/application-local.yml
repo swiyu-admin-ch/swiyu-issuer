@@ -24,11 +24,11 @@ swiyu:
     # internal api-keymanager token URL to not need the bootstrap-refresh-token
     token-url: "https://keymanager-npr-intra.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect/token"
     token-refresh-interval: "PT30S"
-  # The following 3 properties need to be generated via Api Self Service account per developer
+    # The following 3 properties need to be generated via Api Self Service account per developer
     # bootstrap-refresh-token: is not needed for BV internal deployments, if you need this you also need a different token-url
-    customer-key: ""
-    customer-secret: ""
-  business-partner-id: ""
+    customer-key: "customer-key"
+    customer-secret: "customer-secret"
+  business-partner-id: "0212063f-7bf6-4639-b4f2-4c482ee453cf"
 
 logging:
   level:

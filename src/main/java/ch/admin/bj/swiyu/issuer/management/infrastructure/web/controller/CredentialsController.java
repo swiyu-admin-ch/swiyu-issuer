@@ -1,12 +1,12 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.management.api.dto.CreateCredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.management.api.dto.CredentialWithDeeplinkResponseDto;
-import ch.admin.bj.swiyu.issuer.management.api.dto.StatusResponseDto;
-import ch.admin.bj.swiyu.issuer.management.api.dto.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.management.api.mapper.CredentialOfferMapper;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferEntity;
+import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.StatusResponseDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
 import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
+import ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,9 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.management.api.mapper.CredentialOfferMapper.credentialToCredentialResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.api.mapper.CredentialOfferMapper.credentialToUpdateStatusResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.api.mapper.StatusResponseMapper.credentialToStatusResponseDto;
+import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.credentialToCredentialResponseDto;
+import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.credentialToUpdateStatusResponseDto;
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.credentialToStatusResponseDto;
 
 @RestController
 @RequestMapping(value = "/credentials")
@@ -76,7 +76,7 @@ public class CredentialsController {
     @PatchMapping("/{credentialId}/status")
     @Operation(summary = "Set the status of an offer or the verifiable credential associated with the id.")
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
-            @RequestParam("credentialStatus") CredentialStatusEnum credentialStatus) {
+                                                          @RequestParam("credentialStatus") CredentialStatusEnum credentialStatus) {
 
         CredentialOfferEntity credential = this.credentialService.updateCredentialStatus(credentialId,
                 credentialStatus);

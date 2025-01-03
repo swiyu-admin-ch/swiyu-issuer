@@ -1,5 +1,6 @@
-package ch.admin.bj.swiyu.issuer.management.config;
+package ch.admin.bj.swiyu.issuer.management.infrastructure.web.config;
 
+import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
 import lombok.Data;
 import org.springframework.context.annotation.Configuration;

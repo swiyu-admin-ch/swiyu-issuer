@@ -1,6 +1,6 @@
-package ch.admin.bj.swiyu.issuer.management.domain.credential_offer_status;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus;
 
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
 import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListEntity;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;

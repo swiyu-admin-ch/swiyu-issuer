@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.domain.ecosystem;
+package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpRequest;

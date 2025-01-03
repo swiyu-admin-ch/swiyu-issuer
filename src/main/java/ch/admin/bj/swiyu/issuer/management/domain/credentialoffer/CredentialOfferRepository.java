@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.domain.credential_offer;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

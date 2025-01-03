@@ -1,8 +1,8 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferEntity;
-import ch.admin.bj.swiyu.issuer.management.domain.credential_offer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.management.domain.status_list.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;

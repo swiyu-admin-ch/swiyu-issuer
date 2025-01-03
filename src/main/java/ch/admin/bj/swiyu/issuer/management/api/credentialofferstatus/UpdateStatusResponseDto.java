@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.api.dto;
+package ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus;
 
 import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
 import com.fasterxml.jackson.annotation.JsonProperty;

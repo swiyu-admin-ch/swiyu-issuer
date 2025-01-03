@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.interceptor;
 
 import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.management.service.statusregistry.JWTResolveRequestWrapper;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

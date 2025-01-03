@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.api.dto;
+package ch.admin.bj.swiyu.issuer.management.api.credentialoffer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;

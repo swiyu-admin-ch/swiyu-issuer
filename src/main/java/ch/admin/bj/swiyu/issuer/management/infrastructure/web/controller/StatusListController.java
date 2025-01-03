@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.management.api.dto.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.service.StatusListService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

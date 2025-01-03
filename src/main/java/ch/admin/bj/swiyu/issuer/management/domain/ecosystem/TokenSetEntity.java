@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import lombok.Getter;
 
 import java.time.Instant;
 
@@ -14,7 +15,9 @@ import java.time.Instant;
  * <warning>No instance of this class should not be accessed outside the
  * TokenManager class.</warning>
  */
+
 @Entity
+@Getter
 public class TokenSetEntity {
     @Id
     @Enumerated(EnumType.STRING)

@@ -1,7 +1,8 @@
-package ch.admin.bj.swiyu.issuer.management.infrastructure.web.interceptor;
+package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
-import com.google.gson.JsonParser;
+import ch.admin.bj.swiyu.issuer.management.exception.NotImplementedError;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSVerifier;
@@ -39,10 +40,11 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
 
     public JWTResolveRequestWrapper(HttpServletRequest request) throws IOException, ParseException {
         super(request);
+        var mapper = new ObjectMapper();
         String jwtString = request.getReader().lines().collect(Collectors.joining());
         this.jwt = SignedJWT.parse(jwtString);
-        this.dataClaim = JsonParser.parseString(jwt.getJWTClaimsSet().getStringClaim("data")).toString();
-
+        // Todo check
+        this.dataClaim = mapper.readTree(jwt.getJWTClaimsSet().getStringClaim("data")).toString();
     }
 
     private static JWSVerifier buildVerifier(KeyType kty, JWK key) throws JOSEException {
@@ -92,7 +94,7 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
 
             @Override
             public void setReadListener(ReadListener readListener) {
-                throw new RuntimeException("Not implemented");
+                throw new NotImplementedError("setReadListener Not implemented");
             }
 
             @Override
