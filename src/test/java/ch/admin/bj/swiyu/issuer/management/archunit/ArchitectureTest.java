@@ -8,6 +8,7 @@ import com.tngtech.archunit.junit.ArchTests;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.library.Architectures;
 import com.tngtech.archunit.library.GeneralCodingRules;
+import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import jakarta.persistence.Entity;
 import lombok.AccessLevel;
@@ -163,12 +164,11 @@ public class ArchitectureTest {
                 .whereLayer(Layer.INFRASTRUCTURE.layerName)
                 .mayNotBeAccessedByAnyLayer();
 
-        // TODO : check why this?
-        /*@ArchTest
+        @ArchTest
         static final ArchRule no_cycles_between_slices = SlicesRuleDefinition.slices()
                 .matching("..management.(**)..")
                 .should()
-                .beFreeOfCycles();*/
+                .beFreeOfCycles();
 
         /**
          * ArchRules which support freezing. @see <a
@@ -182,8 +182,8 @@ public class ArchitectureTest {
                     architecture_is_respected
             );
 
-            /*@ArchTest
-            static final ArchRule freezing_no_cycles_between_slices = FreezingArchRule.freeze(no_cycles_between_slices);*/
+            @ArchTest
+            static final ArchRule freezing_no_cycles_between_slices = FreezingArchRule.freeze(no_cycles_between_slices);
         }
     }
 

@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusEntity;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
+import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,7 +41,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "credential_offer")
-public class CredentialOfferEntity {
+public class CredentialOffer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -53,7 +52,7 @@ public class CredentialOfferEntity {
      * which can not be covered by the status list
      */
     @Enumerated(EnumType.STRING)
-    private CredentialStatusEnum credentialStatus;
+    private CredentialStatusType credentialStatus;
 
     /**
      * ID String referencing the entry in the issuer metadata of the signer
@@ -111,7 +110,7 @@ public class CredentialOfferEntity {
      */
     @OneToMany(mappedBy = "offer", fetch = FetchType.EAGER)
     @Cascade(org.hibernate.annotations.CascadeType.ALL)
-    private Set<CredentialOfferStatusEntity> offerStatusSet;
+    private Set<CredentialOfferStatus> offerStatusSet;
 
     /**
      * Read the offer data depending on input type and add it to offer
@@ -154,7 +153,7 @@ public class CredentialOfferEntity {
         this.offerData = null;
     }
 
-    public void changeStatus(CredentialStatusEnum credentialStatus) {
+    public void changeStatus(CredentialStatusType credentialStatus) {
         this.credentialStatus = credentialStatus;
     }
 }

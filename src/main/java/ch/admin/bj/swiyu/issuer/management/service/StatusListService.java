@@ -4,12 +4,12 @@ import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.config.StatusListProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusEntity;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListEntity;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListType;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.TokenStatsListBit;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.TokenStatusListToken;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatus;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListType;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatsListBit;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.management.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusRegistryClient;
@@ -47,14 +47,14 @@ public class StatusListService {
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
 
-    private static boolean canRevoke(StatusListEntity statusList) {
+    private static boolean canRevoke(StatusList statusList) {
         return switch (statusList.getType()) {
             case TOKEN_STATUS_LIST ->
                     (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getValue();
         };
     }
 
-    private static boolean canSuspend(StatusListEntity statusList) {
+    private static boolean canSuspend(StatusList statusList) {
         return switch (statusList.getType()) {
             case TOKEN_STATUS_LIST ->
                     (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getValue();
@@ -85,14 +85,14 @@ public class StatusListService {
     }
 
     @Transactional
-    public void revoke(Set<CredentialOfferStatusEntity> offerStatusSet) {
-        Set<CredentialOfferStatusEntity> revokableStatusSet = offerStatusSet.stream()
+    public void revoke(Set<CredentialOfferStatus> offerStatusSet) {
+        Set<CredentialOfferStatus> revokableStatusSet = offerStatusSet.stream()
                 .filter(credentialOfferStatus -> canRevoke(credentialOfferStatus.getStatusList()))
                 .collect(Collectors.toSet());
         if (revokableStatusSet.isEmpty()) {
             throw new BadRequestException("No Status List which supports revocation found");
         }
-        for (CredentialOfferStatusEntity offerStatus : revokableStatusSet) {
+        for (CredentialOfferStatus offerStatus : revokableStatusSet) {
             switch (offerStatus.getStatusList().getType()) {
                 case TOKEN_STATUS_LIST -> updateTokenStatusList(offerStatus, TokenStatsListBit.REVOKE.getValue());
             }
@@ -100,14 +100,14 @@ public class StatusListService {
     }
 
     @Transactional
-    public void suspend(Set<CredentialOfferStatusEntity> offerStatusSet) {
-        Set<CredentialOfferStatusEntity> suspendableStatusSet = offerStatusSet.stream()
+    public void suspend(Set<CredentialOfferStatus> offerStatusSet) {
+        Set<CredentialOfferStatus> suspendableStatusSet = offerStatusSet.stream()
                 .filter(credentialOfferStatus -> canSuspend(credentialOfferStatus.getStatusList()))
                 .collect(Collectors.toSet());
         if (suspendableStatusSet.isEmpty()) {
             throw new BadRequestException("No Status List which supports suspension found");
         }
-        for (CredentialOfferStatusEntity offerStatus : suspendableStatusSet) {
+        for (CredentialOfferStatus offerStatus : suspendableStatusSet) {
             switch (offerStatus.getStatusList().getType()) {
                 case TOKEN_STATUS_LIST -> updateTokenStatusList(offerStatus, TokenStatsListBit.SUSPEND.getValue());
             }
@@ -115,14 +115,14 @@ public class StatusListService {
     }
 
     @Transactional
-    public void revalidate(Set<CredentialOfferStatusEntity> offerStatusSet) {
-        Set<CredentialOfferStatusEntity> suspendableStatusSet = offerStatusSet.stream()
+    public void revalidate(Set<CredentialOfferStatus> offerStatusSet) {
+        Set<CredentialOfferStatus> suspendableStatusSet = offerStatusSet.stream()
                 .filter(credentialOfferStatus -> canSuspend(credentialOfferStatus.getStatusList()))
                 .collect(Collectors.toSet());
         if (suspendableStatusSet.isEmpty()) {
             throw new BadRequestException("No Status List which supports suspension found");
         }
-        for (CredentialOfferStatusEntity offerStatus : suspendableStatusSet) {
+        for (CredentialOfferStatus offerStatus : suspendableStatusSet) {
             switch (offerStatus.getStatusList().getType()) {
                 case TOKEN_STATUS_LIST -> updateTokenStatusList(offerStatus, TokenStatsListBit.VALID.getValue());
             }
@@ -130,7 +130,7 @@ public class StatusListService {
     }
 
     @Transactional
-    public List<StatusListEntity> findByUriIn(List<String> statusListUris) {
+    public List<StatusList> findByUriIn(List<String> statusListUris) {
         return this.statusListRepository.findByUriIn(statusListUris);
     }
 
@@ -148,8 +148,8 @@ public class StatusListService {
      * @param offerStatus
      * @param statusValue the statusBit to be set
      */
-    private void updateTokenStatusList(CredentialOfferStatusEntity offerStatus, int statusValue) {
-        StatusListEntity statusList = offerStatus.getStatusList();
+    private void updateTokenStatusList(CredentialOfferStatus offerStatus, int statusValue) {
+        StatusList statusList = offerStatus.getStatusList();
         try {
             var token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                     statusList.getStatusZipped());
@@ -163,7 +163,7 @@ public class StatusListService {
         }
     }
 
-    private StatusListEntity initTokenStatusListToken(StatusListCreateDto statusListCreateDto) {
+    private StatusList initTokenStatusListToken(StatusListCreateDto statusListCreateDto) {
         Map<String, Object> config = statusListCreateDto.getConfig();
         if (config == null || config.get("bits") == null) {
             throw new BadRequestException("Must define 'bits' for TokenStatusList");
@@ -180,7 +180,7 @@ public class StatusListService {
                 statusListCreateDto.getMaxLength());
 
         // Build DB Entry
-        StatusListEntity statusList = StatusListEntity.builder()
+        StatusList statusList = StatusList.builder()
                 .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
                 .config(statusListCreateDto.getConfig())
                 .uri(statusListCreateDto.getUri())
@@ -201,7 +201,7 @@ public class StatusListService {
         return StatusListType.TOKEN_STATUS_LIST;
     }
 
-    private void updateRegistry(StatusListEntity statusListEntity, TokenStatusListToken token) {
+    private void updateRegistry(StatusList statusListEntity, TokenStatusListToken token) {
         // Build JWT
         ECKey signingKey = statusListProperties.getStatusListKey().toECKey();
 
@@ -216,7 +216,7 @@ public class StatusListService {
         statusRegistryClient.updateStatusList(statusListEntity, statusListJWT.serialize());
     }
 
-    private SignedJWT buildStatusListJWT(StatusListEntity statusListEntity, TokenStatusListToken token) {
+    private SignedJWT buildStatusListJWT(StatusList statusListEntity, TokenStatusListToken token) {
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(statusListProperties.getVerificationMethod())
                 .type(new JOSEObjectType("statuslist+jwt")).build();

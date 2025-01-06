@@ -1,11 +1,11 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.TokenStatusListToken;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
+import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -14,8 +14,12 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.UUID;
@@ -27,7 +31,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class CredentialOfferStatusIT extends BaseIt {
+@SpringBootTest()
+@ActiveProfiles("test")
+@AutoConfigureMockMvc
+class CredentialOfferStatusIT {
+
+    private static final String BASE_URL = "/credentials";
+
+    @Autowired
+    protected MockMvc mvc;
 
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
@@ -62,7 +74,7 @@ class CredentialOfferStatusIT extends BaseIt {
     @Test
     void testGetOfferStatus_thenSuccess() throws Exception {
 
-        CredentialStatusEnum expectedStatus = CredentialStatusEnum.OFFERED;
+        CredentialStatusType expectedStatus = CredentialStatusType.OFFERED;
 
         mvc.perform(get(getUrl(id)))
                 .andExpect(status().isOk())
@@ -72,7 +84,7 @@ class CredentialOfferStatusIT extends BaseIt {
     @Test
     void testUpdateOfferStatusWithOfferedWhenOffered_thenBadRequest() throws Exception {
 
-        CredentialStatusEnum newStatus = CredentialStatusEnum.OFFERED;
+        CredentialStatusType newStatus = CredentialStatusType.OFFERED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isBadRequest());
@@ -81,7 +93,7 @@ class CredentialOfferStatusIT extends BaseIt {
     @Test
     void testUpdateOfferStatusWithOfferedWhenOffered1_thenBadRequest() throws Exception {
 
-        CredentialStatusEnum newStatus = CredentialStatusEnum.ISSUED;
+        CredentialStatusType newStatus = CredentialStatusType.ISSUED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isBadRequest());
@@ -90,10 +102,10 @@ class CredentialOfferStatusIT extends BaseIt {
 
     @Test
     void testUpdateOfferStatusWithRevokedWhenIssued_thenSuccess() throws Exception {
-        UUID vcRevokedId = createIssueAndSetStateOfVc(CredentialStatusEnum.REVOKED);
+        UUID vcRevokedId = createIssueAndSetStateOfVc(CredentialStatusType.REVOKED);
 
         var offer = credentialOfferRepository.findById(vcRevokedId).get();
-        assertEquals(CredentialStatusEnum.REVOKED, offer.getCredentialStatus());
+        assertEquals(CredentialStatusType.REVOKED, offer.getCredentialStatus());
         assertEquals(1, offer.getOfferStatusSet().size());
         var offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
         assertEquals(0, offerStatus.getIndex(), "Should be the very first index");
@@ -104,9 +116,9 @@ class CredentialOfferStatusIT extends BaseIt {
         assertEquals(1, tokenStatusList.getStatus(0), "Should be revoked");
         assertEquals(0, tokenStatusList.getStatus(1), "Should not be revoked");
 
-        UUID vcSuspendedId = createIssueAndSetStateOfVc(CredentialStatusEnum.SUSPENDED);
+        UUID vcSuspendedId = createIssueAndSetStateOfVc(CredentialStatusType.SUSPENDED);
         offer = credentialOfferRepository.findById(vcSuspendedId).get();
-        assertEquals(CredentialStatusEnum.SUSPENDED, offer.getCredentialStatus());
+        assertEquals(CredentialStatusType.SUSPENDED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
         assertEquals(1, offerStatus.getIndex(), "Should be the the second entry");
         statusList = offerStatus.getStatusList();
@@ -117,12 +129,12 @@ class CredentialOfferStatusIT extends BaseIt {
         assertEquals(2, tokenStatusList.getStatus(1), "Should be suspended");
         assertEquals(0, tokenStatusList.getStatus(2), "Should not be revoked");
 
-        CredentialStatusEnum newStatus = CredentialStatusEnum.ISSUED;
+        CredentialStatusType newStatus = CredentialStatusType.ISSUED;
         mvc.perform(patch(getUpdateUrl(vcSuspendedId, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(newStatus.toString()));
         offer = credentialOfferRepository.findById(vcSuspendedId).get();
-        assertEquals(CredentialStatusEnum.ISSUED, offer.getCredentialStatus());
+        assertEquals(CredentialStatusType.ISSUED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
         statusList = offerStatus.getStatusList();
         tokenStatusList = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
@@ -136,10 +148,10 @@ class CredentialOfferStatusIT extends BaseIt {
      * revokes it
      */
     @NotNull
-    private UUID createIssueAndSetStateOfVc(CredentialStatusEnum newStatus) throws Exception {
+    private UUID createIssueAndSetStateOfVc(CredentialStatusType newStatus) throws Exception {
         UUID vcId = createStatusListLinkedOfferAndGetUUID();
 
-        this.updateStatusForEntity(vcId, CredentialStatusEnum.ISSUED);
+        this.updateStatusForEntity(vcId, CredentialStatusType.ISSUED);
 
         mvc.perform(patch(getUpdateUrl(vcId, newStatus)))
                 .andExpect(status().isOk())
@@ -152,9 +164,9 @@ class CredentialOfferStatusIT extends BaseIt {
      */
     @Test
     void testUpdateOfferStatusWithRevokedWhenIssuedWithoutStatusList_thenBadRequest() throws Exception {
-        CredentialStatusEnum newStatus = CredentialStatusEnum.REVOKED;
+        CredentialStatusType newStatus = CredentialStatusType.REVOKED;
 
-        this.updateStatusForEntity(id, CredentialStatusEnum.ISSUED);
+        this.updateStatusForEntity(id, CredentialStatusType.ISSUED);
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isBadRequest());
@@ -163,19 +175,19 @@ class CredentialOfferStatusIT extends BaseIt {
 
     @Test
     void testUpdateOfferStatusWithRevokedWhenOffered_thenSuccess() throws Exception {
-        CredentialStatusEnum newStatus = CredentialStatusEnum.CANCELLED;
+        CredentialStatusType newStatus = CredentialStatusType.CANCELLED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.status").value(CredentialStatusEnum.CANCELLED.toString()));
+                .andExpect(jsonPath("$.status").value(CredentialStatusType.CANCELLED.toString()));
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk());
 
     }
 
-    private String getUpdateUrl(UUID id, CredentialStatusEnum credentialStatus) {
+    private String getUpdateUrl(UUID id, CredentialStatusType credentialStatus) {
         return String.format("%s?credentialStatus=%s", getUrl(id), credentialStatus);
     }
 
@@ -207,8 +219,8 @@ class CredentialOfferStatusIT extends BaseIt {
         }
     }
 
-    private CredentialOfferEntity updateStatusForEntity(UUID id, CredentialStatusEnum status) {
-        CredentialOfferEntity credentialOffer = credentialOfferRepository.findById(id).get();
+    private CredentialOffer updateStatusForEntity(UUID id, CredentialStatusType status) {
+        CredentialOffer credentialOffer = credentialOfferRepository.findById(id).get();
         credentialOffer.changeStatus(status);
 
         return credentialOfferRepository.save(credentialOffer);

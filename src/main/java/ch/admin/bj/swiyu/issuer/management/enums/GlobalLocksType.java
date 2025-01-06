@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Getter
 @RequiredArgsConstructor
-public enum GlobalLocksEnum {
+public enum GlobalLocksType {
     STATUS_REGISTRY_TOKEN_MANAGER_TOKEN_REFRESH("STATUS_REGISTRY_TOKEN_MANAGER_TOKEN_REFRESH");
 
     private final String lockId;

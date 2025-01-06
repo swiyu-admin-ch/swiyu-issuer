@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.domain.status_list;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

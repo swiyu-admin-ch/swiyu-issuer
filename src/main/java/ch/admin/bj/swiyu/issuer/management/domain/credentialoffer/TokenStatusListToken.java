@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.domain.status_list;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
 import ch.admin.bj.swiyu.issuer.management.exception.ConfigurationException;
 import lombok.Getter;

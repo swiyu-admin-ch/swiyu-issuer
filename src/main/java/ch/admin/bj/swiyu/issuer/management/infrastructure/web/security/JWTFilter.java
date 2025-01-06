@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.infrastructure.web.interceptor;
+package ch.admin.bj.swiyu.issuer.management.infrastructure.web.security;
 
 import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.service.statusregistry.JWTResolveRequestWrapper;

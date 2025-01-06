@@ -1,7 +1,5 @@
-package ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListEntity;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,7 +25,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CredentialOfferStatusEntity {
+public class CredentialOfferStatus {
 
     @EmbeddedId
     private CredentialOfferStatusKey id;
@@ -35,12 +33,12 @@ public class CredentialOfferStatusEntity {
     @ManyToOne
     @MapsId("offerId")
     @JoinColumn(name = "credential_offer_id", referencedColumnName = "id")
-    private CredentialOfferEntity offer;
+    private CredentialOffer offer;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @MapsId("statusListId")
     @JoinColumn(name = "status_list_id", referencedColumnName = "id")
-    private StatusListEntity statusList;
+    private StatusList statusList;
 
     /**
      * The index the credential is assigned on the status list.

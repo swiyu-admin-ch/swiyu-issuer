@@ -5,7 +5,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.statuslist;
 
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.TokenStatusListToken;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

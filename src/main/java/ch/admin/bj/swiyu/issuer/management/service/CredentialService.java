@@ -3,13 +3,13 @@ package ch.admin.bj.swiyu.issuer.management.service;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusEntity;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusKey;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListEntity;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatus;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatusKey;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatusRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
+import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.management.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.management.exception.ResourceNotFoundException;
@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity.readOfferData;
+import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer.readOfferData;
 import static java.util.Objects.nonNull;
 
 @Slf4j
@@ -46,7 +46,7 @@ public class CredentialService {
     private final StatusListService statusListService;
 
     @Transactional
-    public CredentialOfferEntity getCredential(UUID credentialId) {
+    public CredentialOffer getCredential(UUID credentialId) {
 
         // Check if optional can be default
         return this.credentialOfferRepository.findById(credentialId)
@@ -55,7 +55,7 @@ public class CredentialService {
     }
 
     @Transactional
-    public CredentialOfferEntity createCredential(CreateCredentialRequestDto requestDto) {
+    public CredentialOffer createCredential(CreateCredentialRequestDto requestDto) {
         var expiration = Instant.now().plusSeconds(nonNull(requestDto.getOfferValiditySeconds())
                 ? requestDto.getOfferValiditySeconds()
                 : config.getOfferValidity());
@@ -64,11 +64,11 @@ public class CredentialService {
         var statusLists = statusListService.findByUriIn(statusListUris);
         if (statusLists.size() != requestDto.getStatusLists().size()) {
             throw new BadRequestException(String.format("Could not resolve all provided status lists, only found %s",
-                    statusLists.stream().map(StatusListEntity::getUri).collect(Collectors.joining(", "))));
+                    statusLists.stream().map(StatusList::getUri).collect(Collectors.joining(", "))));
         }
 
-        var entity = CredentialOfferEntity.builder()
-                .credentialStatus(CredentialStatusEnum.OFFERED)
+        var entity = CredentialOffer.builder()
+                .credentialStatus(CredentialStatusType.OFFERED)
                 .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
                 .offerData(readOfferData(requestDto.getCredentialSubjectData()))
                 .offerExpirationTimestamp(expiration.getEpochSecond())
@@ -80,12 +80,12 @@ public class CredentialService {
         entity = this.credentialOfferRepository.save(entity);
 
         // Add Status List links
-        for (StatusListEntity statusList : statusLists) {
+        for (StatusList statusList : statusLists) {
             var offerStatusKey = CredentialOfferStatusKey.builder()
                     .offerId(entity.getId())
                     .statusListId(statusList.getId())
                     .build();
-            var offerStatus = CredentialOfferStatusEntity.builder()
+            var offerStatus = CredentialOfferStatus.builder()
                     .id(offerStatusKey)
                     .index(statusList.getNextFreeIndex())
                     .offer(entity)
@@ -98,24 +98,24 @@ public class CredentialService {
     }
 
     @Transactional
-    public CredentialOfferEntity updateCredentialStatus(@NotNull UUID credentialId,
-                                                        @NotNull CredentialStatusEnum newStatus) {
-        CredentialOfferEntity credential = this.getCredential(credentialId);
-        CredentialStatusEnum currentStatus = credential.getCredentialStatus();
+    public CredentialOffer updateCredentialStatus(@NotNull UUID credentialId,
+                                                  @NotNull CredentialStatusType newStatus) {
+        CredentialOffer credential = this.getCredential(credentialId);
+        CredentialStatusType currentStatus = credential.getCredentialStatus();
 
         // No status change or was already revoked
-        if (currentStatus == newStatus || currentStatus == CredentialStatusEnum.REVOKED) {
+        if (currentStatus == newStatus || currentStatus == CredentialStatusType.REVOKED) {
             throw new BadRequestException(
                     String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
         }
 
         if (!currentStatus.isIssuedToHolder()) {
             // Status before issuance is not reflected in the status list
-            if (newStatus == CredentialStatusEnum.REVOKED || newStatus == CredentialStatusEnum.CANCELLED) {
+            if (newStatus == CredentialStatusType.REVOKED || newStatus == CredentialStatusType.CANCELLED) {
                 credential.removeOfferData();
-                newStatus = CredentialStatusEnum.CANCELLED; // Use the correct status for status tracking
-            } else if (!(newStatus == CredentialStatusEnum.OFFERED
-                    && currentStatus == CredentialStatusEnum.IN_PROGRESS)) {
+                newStatus = CredentialStatusType.CANCELLED; // Use the correct status for status tracking
+            } else if (!(newStatus == CredentialStatusType.OFFERED
+                    && currentStatus == CredentialStatusType.IN_PROGRESS)) {
                 // Only allowed transition is to reset from IN_PROGRESS to OFFERED so the offer
                 // can be used again.
                 throw new BadRequestException(String.format(
@@ -137,7 +137,7 @@ public class CredentialService {
     }
 
     @Transactional
-    public String getOfferDeeplinkFromCredential(CredentialOfferEntity credential) {
+    public String getOfferDeeplinkFromCredential(CredentialOffer credential) {
         var grants = new HashMap<String, Object>();
         grants.put("urn:ietf:params:oauth:grant-type:pre-authorized_code", new Object() {
             // TODO check what this value is and where it should be stored
@@ -169,9 +169,9 @@ public class CredentialService {
     @SchedulerLock(name = "expireOffers")
     @Transactional
     public void expireOffers() {
-        var expiredOffers = credentialOfferRepository.findByCredentialStatusAndOfferExpirationTimestampLessThan(CredentialStatusEnum.OFFERED, Instant.now().getEpochSecond());
+        var expiredOffers = credentialOfferRepository.findByCredentialStatusAndOfferExpirationTimestampLessThan(CredentialStatusType.OFFERED, Instant.now().getEpochSecond());
         expiredOffers.forEach(offer -> {
-            offer.changeStatus(CredentialStatusEnum.EXPIRED);
+            offer.changeStatus(CredentialStatusType.EXPIRED);
             offer.removeOfferData();
         });
     }

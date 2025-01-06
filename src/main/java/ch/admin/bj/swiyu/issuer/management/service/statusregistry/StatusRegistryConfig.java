@@ -4,7 +4,7 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.issuer.management.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenApi;
-import ch.admin.bj.swiyu.issuer.management.enums.GlobalLocksEnum;
+import ch.admin.bj.swiyu.issuer.management.enums.GlobalLocksType;
 import lombok.AllArgsConstructor;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -29,7 +29,7 @@ public class StatusRegistryConfig {
     public LockConfiguration statusRegistryTokenApiLockConfiguration() {
         return new LockConfiguration(
                 Instant.now(),
-                GlobalLocksEnum.STATUS_REGISTRY_TOKEN_MANAGER_TOKEN_REFRESH.getLockId(),
+                GlobalLocksType.STATUS_REGISTRY_TOKEN_MANAGER_TOKEN_REFRESH.getLockId(),
                 Duration.ofMinutes(10),
                 Duration.ofSeconds(1));
     }

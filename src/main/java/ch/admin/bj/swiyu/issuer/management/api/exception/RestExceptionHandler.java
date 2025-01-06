@@ -1,5 +1,8 @@
-package ch.admin.bj.swiyu.issuer.management.exception;
+package ch.admin.bj.swiyu.issuer.management.api.exception;
 
+import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.management.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.management.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;

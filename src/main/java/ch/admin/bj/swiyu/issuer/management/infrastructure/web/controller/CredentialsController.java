@@ -4,8 +4,8 @@ import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialR
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferEntity;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,9 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.credentialToCredentialResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.credentialToUpdateStatusResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.credentialToStatusResponseDto;
+import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toCredentialWithDeeplinkResponseDto;
+import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toUpdateStatusResponseDto;
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
 @RestController
 @RequestMapping(value = "/credentials")
@@ -44,23 +44,23 @@ public class CredentialsController {
             """)
     public CredentialWithDeeplinkResponseDto createCredential(
             @Valid @RequestBody CreateCredentialRequestDto requestDto) {
-        CredentialOfferEntity credential = this.credentialService.createCredential(requestDto);
+        CredentialOffer credential = this.credentialService.createCredential(requestDto);
 
         String offerLinkString = this.credentialService.getOfferDeeplinkFromCredential(credential);
 
-        return CredentialOfferMapper.credentialToCredentialResponseDto(credential, offerLinkString);
+        return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(credential, offerLinkString);
     }
 
     @GetMapping("/{credentialId}")
     @Operation(summary = "Get the offer data, if any is still cached")
     public Object getCredentialOffer(@PathVariable UUID credentialId) {
-        return credentialToCredentialResponseDto(this.credentialService.getCredential(credentialId));
+        return toCredentialWithDeeplinkResponseDto(this.credentialService.getCredential(credentialId));
     }
 
     @GetMapping("/{credentialId}/offer_deeplink")
     @Operation(summary = "Get the offer deeplink")
     public String getCredentialOfferDeeplink(@PathVariable UUID credentialId) {
-        CredentialOfferEntity credential = this.credentialService.getCredential(credentialId);
+        CredentialOffer credential = this.credentialService.getCredential(credentialId);
 
         return this.credentialService.getOfferDeeplinkFromCredential(credential);
     }
@@ -68,19 +68,19 @@ public class CredentialsController {
     @GetMapping("/{credentialId}/status")
     @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
-        CredentialOfferEntity credential = this.credentialService.getCredential(credentialId);
+        CredentialOffer credential = this.credentialService.getCredential(credentialId);
 
-        return credentialToStatusResponseDto(credential);
+        return toStatusResponseDto(credential);
     }
 
     @PatchMapping("/{credentialId}/status")
     @Operation(summary = "Set the status of an offer or the verifiable credential associated with the id.")
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
-                                                          @RequestParam("credentialStatus") CredentialStatusEnum credentialStatus) {
+                                                          @RequestParam("credentialStatus") CredentialStatusType credentialStatus) {
 
-        CredentialOfferEntity credential = this.credentialService.updateCredentialStatus(credentialId,
+        CredentialOffer credential = this.credentialService.updateCredentialStatus(credentialId,
                 credentialStatus);
 
-        return credentialToUpdateStatusResponseDto(credential);
+        return toUpdateStatusResponseDto(credential);
     }
 }

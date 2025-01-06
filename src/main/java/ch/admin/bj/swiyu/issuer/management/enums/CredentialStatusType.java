@@ -14,7 +14,7 @@ import lombok.Getter;
             REVOKED - the VC has been revoked. This state is final and can not be changed.
             EXPIRED - the lifetime of the VC expired (not used yet)
         """)
-public enum CredentialStatusEnum {
+public enum CredentialStatusType {
     OFFERED,
     CANCELLED,
     IN_PROGRESS,

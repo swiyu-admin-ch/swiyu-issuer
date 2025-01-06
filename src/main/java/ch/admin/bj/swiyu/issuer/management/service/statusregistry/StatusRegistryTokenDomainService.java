@@ -2,9 +2,9 @@ package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.issuer.management.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenApi;
-import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenSetEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenSet;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenSetRepository;
-import ch.admin.bj.swiyu.issuer.management.enums.EcosystemApiEnum;
+import ch.admin.bj.swiyu.issuer.management.enums.EcosystemApiType;
 import ch.admin.bj.swiyu.issuer.management.exception.JsonException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +34,7 @@ public class StatusRegistryTokenDomainService {
     private final LockConfiguration statusRegistryTokenApiLockConfiguration;
     private final TokenApi statusRegistryTokenApi;
 
-    private final EcosystemApiEnum thisApi = EcosystemApiEnum.STATUS_REGISTRY;
+    private final EcosystemApiType thisApi = EcosystemApiType.STATUS_REGISTRY;
 
     /**
      * Initial token set refresh flow.
@@ -144,7 +144,7 @@ public class StatusRegistryTokenDomainService {
      *
      * @return TokenSet the new, and therefore current, token set to use.
      */
-    private TokenSetEntity requestNewTokenSet() {
+    private TokenSet requestNewTokenSet() {
         // this method should only be called from locked context
         LockAssert.assertLocked();
 
@@ -170,7 +170,7 @@ public class StatusRegistryTokenDomainService {
             }
         }
         // save new token set data to db
-        TokenSetEntity saveTo = dbData.orElseGet(TokenSetEntity::new);
+        TokenSet saveTo = dbData.orElseGet(TokenSet::new);
         saveTo.apply(thisApi, tokenResponse);
         log.debug("Token set update successfully.");
         return tokenSetRepository.save(saveTo);

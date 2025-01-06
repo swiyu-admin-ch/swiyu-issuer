@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.config;
 
 import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusEnum;
+import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
 import lombok.Data;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -26,10 +26,10 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedMethods("*");
     }
 
-    static class StringToEnumConverter implements Converter<String, CredentialStatusEnum> {
+    static class StringToEnumConverter implements Converter<String, CredentialStatusType> {
         @Override
-        public CredentialStatusEnum convert(String source) {
-            return CredentialStatusEnum.valueOf(source.toUpperCase());
+        public CredentialStatusType convert(String source) {
+            return CredentialStatusType.valueOf(source.toUpperCase());
         }
     }
 }

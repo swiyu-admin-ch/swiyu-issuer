@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.domain.status_list;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import ch.admin.bj.swiyu.issuer.management.domain.credentialofferstatus.CredentialOfferStatusEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -48,7 +47,7 @@ import java.util.regex.Pattern;
 @AllArgsConstructor
 @Getter // do not apply generell setters on entities
 @Builder
-public class StatusListEntity {
+public class StatusList {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -83,7 +82,7 @@ public class StatusListEntity {
     private Integer maxLength;
 
     @OneToMany(mappedBy = "statusList")
-    private Set<CredentialOfferStatusEntity> offerStatusSet;
+    private Set<CredentialOfferStatus> offerStatusSet;
 
     public UUID getRegistryId() {
         /**

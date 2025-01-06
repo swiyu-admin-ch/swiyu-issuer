@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.issuer.management.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.status_list.StatusListEntity;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.management.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.management.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class StatusRegistryClient {
     private final SwiyuProperties swiyuProperties;
     private final StatusBusinessApiApi statusBusinessApi;
 
-    public void updateStatusList(StatusListEntity target, String statusListJWT) {
+    public void updateStatusList(StatusList target, String statusListJWT) {
 
         try {
             statusBusinessApi.updateStatusListEntry(

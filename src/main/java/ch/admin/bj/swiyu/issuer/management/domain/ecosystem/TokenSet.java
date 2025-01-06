@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.domain.ecosystem;
 
-import ch.admin.bj.swiyu.issuer.management.enums.EcosystemApiEnum;
+import ch.admin.bj.swiyu.issuer.management.enums.EcosystemApiType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -18,10 +18,10 @@ import java.time.Instant;
 
 @Entity
 @Getter
-public class TokenSetEntity {
+public class TokenSet {
     @Id
     @Enumerated(EnumType.STRING)
-    EcosystemApiEnum apiTarget;
+    EcosystemApiType apiTarget;
 
     @Column(nullable = true)
     String refreshToken;
@@ -32,7 +32,7 @@ public class TokenSetEntity {
     @Column(nullable = false)
     Instant lastRefresh;
 
-    public TokenSetEntity apply(EcosystemApiEnum apiTarget, TokenApi.TokenResponse tokenResponse) {
+    public TokenSet apply(EcosystemApiType apiTarget, TokenApi.TokenResponse tokenResponse) {
         this.apiTarget = apiTarget;
         this.refreshToken = tokenResponse.refresh_token();
         this.accessToken = tokenResponse.access_token();
