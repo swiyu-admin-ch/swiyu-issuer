@@ -29,11 +29,6 @@ import java.util.zip.InflaterOutputStream;
 public class TokenStatusListToken {
 
     /**
-     * zlib needs some maximum buffer size.
-     * Randomly chosen 100 MB
-     */
-    private static final int BUFFER_SIZE = 100 * 1024 * 1024;
-    /**
      * Indicator how many consecutive bits of the token status list are contained
      * within one status list entry.
      * Can be 1, 2, 4 or 8
