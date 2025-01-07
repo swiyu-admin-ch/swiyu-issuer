@@ -26,8 +26,8 @@ swiyu:
     token-refresh-interval: "PT30S"
     # The following 3 properties need to be generated via Api Self Service account per developer
     # bootstrap-refresh-token: is not needed for BV internal deployments, if you need this you also need a different token-url
-    customer-key: "customer-key"
-    customer-secret: "customer-secret"
+    customer-key: "7e95d032-8c5f-42b0-a485-6799cfcc3dee"
+    customer-secret: "2uJPrhTPgtjhroirqDBSsAlca0Y6smpV"
   business-partner-id: "0212063f-7bf6-4639-b4f2-4c482ee453cf"
 
 logging:

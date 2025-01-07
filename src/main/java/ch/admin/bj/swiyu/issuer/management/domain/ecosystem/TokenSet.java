@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Getter;
 
 import java.time.Instant;
@@ -18,6 +19,7 @@ import java.time.Instant;
 
 @Entity
 @Getter
+@Table(name = "token_set")
 public class TokenSet {
     @Id
     @Enumerated(EnumType.STRING)
