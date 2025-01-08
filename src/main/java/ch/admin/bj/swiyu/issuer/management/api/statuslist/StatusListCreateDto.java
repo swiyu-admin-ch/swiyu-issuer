@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.api.statuslist;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -10,14 +9,7 @@ import java.util.Map;
 @Data
 @Schema(name = "StatusListCreate")
 public class StatusListCreateDto {
-    /**
-     * URI where the status list is located
-     */
-    @NotEmpty
-    @Schema(description = """
-            Status list URI to initialize. This is the read URI as will be used by the holder to read the status list.
-            """, example = "https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt")
-    private String uri;
+
     /**
      * Type of the status list in camel case; eg TokenStatusList
      */

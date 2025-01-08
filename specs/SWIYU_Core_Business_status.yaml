@@ -1,19 +1,19 @@
 openapi: 3.0.1
 info:
-  title: SWIYU Core Business Service API
-  description: APIs for the SWIYU Core Business Service
+  title: SWIYU Service API
+  description: APIs for the SWIYU Services
   contact:
     name: EID - Team Tergum
-    url: https://confluence.bit.admin.ch/display/EIDTGM/E-ID+-+Team+Tergum+-+Startseite
-  version: 0.0.1
+    email: eid@bit.admin.ch
+  version: 0.0.1-SNAPSHOT
 externalDocs:
   url: https://confluence.bit.admin.ch/display/EIDTGM/E-ID+-+Team+Tergum+-+Startseite
 servers:
   - url: http://localhost:8200
     description: Generated server url
 security:
-  # manual change to disable unsupported openid flow (which we acually cannot use anyway)
-  - bearerAuth: []
+  - OIDC: [ ]
+    bearer-jwt: [ ]
 tags:
   - name: Status Business API
     description: Status Business API
@@ -57,19 +57,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiErrorDto"
+                $ref: "#/components/schemas/ApiError"
         "403":
           description: Forbidden
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiErrorDto"
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiErrorDto"
+                $ref: "#/components/schemas/ApiError"
         "500":
           description: Internal Server Error
         "200":
@@ -115,19 +115,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiErrorDto"
+                $ref: "#/components/schemas/ApiError"
         "403":
           description: Forbidden
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiErrorDto"
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiErrorDto"
+                $ref: "#/components/schemas/ApiError"
         "500":
           description: Internal Server Error
         "200":
@@ -156,19 +156,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiErrorDto"
+                $ref: "#/components/schemas/ApiError"
         "403":
           description: Forbidden
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiErrorDto"
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiErrorDto"
+                $ref: "#/components/schemas/ApiError"
         "500":
           description: Internal Server Error
         "200":
@@ -179,15 +179,11 @@ paths:
                 $ref: "#/components/schemas/StatusListEntryCreationDto"
 components:
   schemas:
-    ApiErrorDto:
+    ApiError:
       type: object
       properties:
-        code:
+        errorCode:
           type: string
-          enum:
-            - data_invalid
-            - resource_not_found
-            - resource_forbidden
         message:
           type: string
     StatusListEntryCreationDto:
@@ -196,19 +192,19 @@ components:
         id:
           type: string
           format: uuid
-          default: 18fa7c77-9dd1-4e20-a147-fb1bec146085
-        status_registry_url:
+          example: 18fa7c77-9dd1-4e20-a147-fb1bec146085
+        statusRegistryUrl:
           type: string
-          default: https://status-registry.admin.ch/api/v1/statuslist/18fa7c77-9dd1-4e20-a147-fb1bec146085.jwt
+          example: https://status-registry.admin.ch/api/v1/statuslist/18fa7c77-9dd1-4e20-a147-fb1bec146085.jwt
     PageStatusListEntryDto:
       type: object
       properties:
-        totalPages:
-          type: integer
-          format: int32
         totalElements:
           type: integer
           format: int64
+        totalPages:
+          type: integer
+          format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
         first:
@@ -226,9 +222,7 @@ components:
           type: integer
           format: int32
         sort:
-          type: array
-          items:
-            $ref: "#/components/schemas/SortObject"
+          $ref: "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
@@ -251,21 +245,15 @@ components:
           type: integer
           format: int64
         sort:
-          type: array
-          items:
-            $ref: "#/components/schemas/SortObject"
+          $ref: "#/components/schemas/SortObject"
     SortObject:
       type: object
       properties:
-        direction:
-          type: string
-        nullHandling:
-          type: string
-        ascending:
+        sorted:
           type: boolean
-        property:
-          type: string
-        ignoreCase:
+        unsorted:
+          type: boolean
+        empty:
           type: boolean
     StatusListEntryDto:
       type: object
@@ -273,22 +261,24 @@ components:
         id:
           type: string
           format: uuid
-          default: 18fa7c77-9dd1-4e20-a147-fb1bec146085
-        created_at:
+          example: 18fa7c77-9dd1-4e20-a147-fb1bec146085
+        createdAt:
           type: string
           format: date-time
-          default: 2024-10-29T09:35:16.809924Z
-        updated_at:
+          example: 2024-10-29T09:35:16.809924Z
+        updatedAt:
           type: string
           format: date-time
-          default: 2024-10-29T09:35:16.809924Z
+          example: 2024-10-29T09:35:16.809924Z
   securitySchemes:
+    bearer-jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: jwt
     prometheus:
       type: http
       scheme: basic
-    
-    # manual change to disable unsupported openid flow (which we acually cannot use anyway)
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT # optional, arbitrary value for documentation purposes
+    OIDC:
+      type: openIdConnect
+      description: OAuth2-Authentication
+      openIdConnectUrl: https://swiyu-oauth-mock-server-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/.well-known/openid-configuration

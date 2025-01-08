@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.management.exception.ConfigurationException;
@@ -19,6 +20,23 @@ public class StatusRegistryClient {
 
     private final SwiyuProperties swiyuProperties;
     private final StatusBusinessApiApi statusBusinessApi;
+
+    public StatusListEntryCreationDto createStatusList() {
+
+        var businessPartnerId = swiyuProperties.businessPartnerId();
+        try {
+            return statusBusinessApi.createStatusListEntry(businessPartnerId);
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new ResourceNotFoundException("Failed to create status list. Please check your Swiyu Status API access configuration.", e);
+            } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
+                throw new ResourceNotFoundException(String.format("Failed to create status list for business partner %s.", businessPartnerId), e);
+            }
+            throw new ConfigurationException(String.format("Failed to create status list. External system %s responded with: %s.", statusBusinessApi.getApiClient().getBasePath(), e.getStatusCode()), e);
+        } catch (Exception e) {
+            throw new ConfigurationException("Failed to create status list", e);
+        }
+    }
 
     public void updateStatusList(StatusList target, String statusListJWT) {
 

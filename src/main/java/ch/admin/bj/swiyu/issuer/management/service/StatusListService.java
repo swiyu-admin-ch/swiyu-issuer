@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.service;
 
+import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
@@ -66,7 +67,7 @@ public class StatusListService {
         try {
             // use explicit transaction, since we want to handle data integrety exceptions
             // after commit
-            transaction.executeWithoutResult((status) -> {
+            transaction.executeWithoutResult(status -> {
                 var statusListType = request.getType();
                 var statusList = switch (statusListType) {
                     case TOKEN_STATUS_LIST -> initTokenStatusListToken(request);
@@ -164,26 +165,24 @@ public class StatusListService {
     }
 
     private StatusList initTokenStatusListToken(StatusListCreateDto statusListCreateDto) {
+
         Map<String, Object> config = statusListCreateDto.getConfig();
         if (config == null || config.get("bits") == null) {
             throw new BadRequestException("Must define 'bits' for TokenStatusList");
         }
 
-        // check upfront if the status list already exists (yes we have unique
-        // constraint, but otherwise
-        // hibernate spams the log)
-        if (statusListRepository.existsByUri(statusListCreateDto.getUri())) {
-            throw new BadRequestException("Status List already exists with uri " + statusListCreateDto.getUri());
-        }
+        // creates new empty status list entry in the registry
+        var newStatusList = createEmptyRegistryEntry();
 
         TokenStatusListToken token = new TokenStatusListToken((Integer) config.get("bits"),
                 statusListCreateDto.getMaxLength());
 
         // Build DB Entry
         StatusList statusList = StatusList.builder()
+                .id(newStatusList.getId())
                 .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
                 .config(statusListCreateDto.getConfig())
-                .uri(statusListCreateDto.getUri())
+                .uri(newStatusList.getStatusRegistryUrl())
                 .statusZipped(token.getStatusListData())
                 .nextFreeIndex(0)
                 .maxLength(statusListCreateDto.getMaxLength())
@@ -199,6 +198,11 @@ public class StatusListService {
         }
 
         return StatusListType.TOKEN_STATUS_LIST;
+    }
+
+    private StatusListEntryCreationDto createEmptyRegistryEntry() {
+
+        return statusRegistryClient.createStatusList();
     }
 
     private void updateRegistry(StatusList statusListEntity, TokenStatusListToken token) {
