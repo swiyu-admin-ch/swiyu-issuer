@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -15,6 +14,4 @@ public interface StatusListRepository extends JpaRepository<StatusList, UUID> {
     List<StatusList> findByUriIn(List<String> uris);
 
     boolean existsByUri(String uri);
-
-    Optional<StatusList> findById(UUID id);
 }
