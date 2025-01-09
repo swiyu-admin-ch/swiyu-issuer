@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatsList
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.management.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.management.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusRegistryClient;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
@@ -63,16 +64,16 @@ public class StatusListService {
     }
 
     @Transactional
-    public void createStatusList(StatusListCreateDto request) {
+    public StatusList createStatusList(StatusListCreateDto request) {
         try {
             // use explicit transaction, since we want to handle data integrety exceptions
             // after commit
-            transaction.executeWithoutResult(status -> {
+            return transaction.execute(status -> {
                 var statusListType = request.getType();
                 var statusList = switch (statusListType) {
                     case TOKEN_STATUS_LIST -> initTokenStatusListToken(request);
                 };
-                statusListRepository.save(statusList);
+                return statusListRepository.save(statusList);
             });
         } catch (DataIntegrityViolationException e) {
             var msg = e.getMessage();
@@ -231,5 +232,10 @@ public class StatusListService {
                 .claim("status_list", token.getStatusListClaims())
                 .build();
         return new SignedJWT(header, claimSet);
+    }
+
+    public StatusList getStatusListInformation(UUID statusListId) {
+        return this.statusListRepository.findById(statusListId)
+                .orElseThrow(() -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
     }
 }
