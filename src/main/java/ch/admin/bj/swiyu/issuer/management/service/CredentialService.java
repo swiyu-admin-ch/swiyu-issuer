@@ -28,6 +28,7 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -169,7 +170,10 @@ public class CredentialService {
     @SchedulerLock(name = "expireOffers")
     @Transactional
     public void expireOffers() {
-        var expiredOffers = credentialOfferRepository.findByCredentialStatusAndOfferExpirationTimestampLessThan(CredentialStatusType.OFFERED, Instant.now().getEpochSecond());
+        var expireStates = List.of(CredentialStatusType.OFFERED, CredentialStatusType.IN_PROGRESS);
+        var expireTimeStamp = Instant.now().getEpochSecond();
+        log.info("Expiring {} offers", credentialOfferRepository.countByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp));
+        var expiredOffers = credentialOfferRepository.findByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp);
         expiredOffers.forEach(offer -> {
             offer.changeStatus(CredentialStatusType.EXPIRED);
             offer.removeOfferData();
