@@ -11,7 +11,8 @@ spring:
     enabled: true
     locations: classpath:db/migration/common,classpath:/db/migration/h2
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: validate
 
 application:
   issuer-id: "did:tdw:example"

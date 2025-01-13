@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest()
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
-public class CredentialServiceTest {
+public class CredentialServiceIT {
     @Autowired
     CredentialOfferRepository credentialOfferRepository;
     @Autowired
@@ -27,7 +27,6 @@ public class CredentialServiceTest {
 
     @Test
     void invalidateExpiredOffer() {
-        var repoCount = credentialOfferRepository.count();
         Map<String, Object> offerData = Map.of("hello", "world");
         var expiredId = credentialOfferRepository.save(CredentialOffer.builder()
                 .credentialStatus(CredentialStatusType.OFFERED)

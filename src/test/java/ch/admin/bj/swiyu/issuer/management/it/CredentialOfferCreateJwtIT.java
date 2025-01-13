@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest()
 @ActiveProfiles("testjwt")
 @AutoConfigureMockMvc
-class CredentialOfferCreateJWTIT {
+class CredentialOfferCreateJwtIT {
 
     private static final String BASE_URL = "/credentials";
 

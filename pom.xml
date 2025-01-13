@@ -11,8 +11,8 @@
     </parent>
 
     <groupId>ch.admin.bj.swiyu</groupId>
-    <artifactId>eid-issuer-management-service</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <artifactId>swiyu-issuer-management-service</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <description>Issuer management Service for public beta</description>
 
     <properties>

@@ -1,5 +1,3 @@
-ALTER TABLE credential_offer ALTER COLUMN offer_data text;
-
 DROP TABLE credential_offer_status;
 DROP TABLE status_list;
 CREATE TABLE status_list
@@ -20,12 +18,15 @@ CREATE TABLE status_list
 
 CREATE TABLE credential_offer_status
 (
-    credential_offer_id uuid     NOT NULL,
-    status_list_id      uuid     NOT NULL,
-    index               SMALLINT NOT NULL,
+    credential_offer_id uuid NOT NULL,
+    status_list_id      uuid NOT NULL,
+    index               int  NOT NULL,
     PRIMARY KEY (credential_offer_id, status_list_id),
     FOREIGN KEY (status_list_id) REFERENCES status_list (id),
     FOREIGN KEY (credential_offer_id) REFERENCES credential_offer (id)
 );
-alter table status_list alter column last_used_index rename to next_free_index;
+ALTER TABLE status_list ALTER COLUMN last_used_index rename to next_free_index;
+ALTER TABLE credential_offer ALTER COLUMN credential_valid_from timestamp;
+ALTER TABLE credential_offer ALTER COLUMN credential_valid_until timestamp;
+ALTER TABLE credential_offer ALTER COLUMN offer_expiration_timestamp TYPE bigint;
 
