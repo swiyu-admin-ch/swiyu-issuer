@@ -10,15 +10,14 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -47,7 +46,7 @@ class CredentialOfferStatusIT {
     @Autowired
     private StatusListRepository statusListRepository;
 
-    @MockBean
+    @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
 
     private UUID id;
@@ -147,7 +146,6 @@ class CredentialOfferStatusIT {
      * Creates an offer with a linked status list, set the state to issued and then
      * revokes it
      */
-    @NotNull
     private UUID createIssueAndSetStateOfVc(CredentialStatusType newStatus) throws Exception {
         UUID vcId = createStatusListLinkedOfferAndGetUUID();
 

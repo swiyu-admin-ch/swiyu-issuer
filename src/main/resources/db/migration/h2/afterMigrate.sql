@@ -25,7 +25,16 @@ CREATE TABLE credential_offer_status
     FOREIGN KEY (status_list_id) REFERENCES status_list (id),
     FOREIGN KEY (credential_offer_id) REFERENCES credential_offer (id)
 );
+
 ALTER TABLE status_list ALTER COLUMN last_used_index rename to next_free_index;
+
+-- V1_0_1 (without data migration)
+alter table credential_offer add column metadata_credential_supported_id_new jsonb;
+alter table credential_offer drop column metadata_credential_supported_id;
+alter table credential_offer rename column metadata_credential_supported_id_new TO metadata_credential_supported_id;
+alter table credential_offer alter column offer_data set data type jsonb;
+
+-- V1_0_6 (without data migration)
 ALTER TABLE credential_offer ALTER COLUMN credential_valid_from timestamp;
 ALTER TABLE credential_offer ALTER COLUMN credential_valid_until timestamp;
 ALTER TABLE credential_offer ALTER COLUMN offer_expiration_timestamp TYPE bigint;
