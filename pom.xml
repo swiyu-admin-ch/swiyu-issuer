@@ -12,7 +12,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-issuer-management-service</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
     <description>Issuer management Service for public beta</description>
 
     <properties>
@@ -259,6 +259,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- fix CVE-2023-3635, delete once fabric8 is updated -->
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>1.17.6</version>
+            </dependency>
+            <!-- end fix -->
         </dependencies>
     </dependencyManagement>
 </project>
