@@ -46,15 +46,33 @@ The latest images are available here:
 - [issuer-agent-oid4vci](https://github.com/admin-ch-ssi/mirror-issuer-agent-oid4vci/pkgs/container/mirror-issuer-agent-oid4vci)
 - [issuer-agent-management](https://github.com/admin-ch-ssi/mirror-issuer-agent-management/pkgs/container/mirror-issuer-agent-management)
 
-### 2. Initialize the status list
-Once the issuer-agent-management, issuer-agent-oid4vci and postgres instance are up and running you need to initialize the status
-list of your issuer so that you can issue credentials. The8 following request needs to be run on your issuer-agent-management instance.
+### 2. Create a verifiable credentials schema
+In order to support your use case you need to adapt the so-called issuer_metadata (see [sample.compose.yml](sample.compose.yml#L85)).
+Those metadata define the appearance of the credential in the wallet and what kind of credential formats are supported.
+For further information consult the [eidch-public-beta repo](https://github.com/e-id-admin/eidch-public-beta)
 
+
+### 3. Initialize the status list
+Once the issuer-agent-management, issuer-agent-oid4vci and postgres instance are up and running you need to initialize the status
+list of your issuer so that you can issue credentials.
+
+**Request to create an status list slot**  
+The url you'll receive in the response will be used in the next request as STATUS_JWT_URL
+```bash
+curl -X POST https://<SWIYU_STATUS_REGISTRY_API_URL>/api/v1/status/business-entities/<SWIYU_PARTNER_ID>/status-list-entries/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <SWIYU_STATUS_REGISTRY_ACCESS_TOKEN>" \
+  -d '{}'
+
+
+```
+
+The following request needs to be run on your issuer-agent-management instance.
 ```bash
 curl -X POST https://<EXTERNAL_URL of issuer-agent-management>/status-list \
 -H "Content-Type: application/json" \
 -d '{
-    "uri": "<You STATUS_REGISTRY_URL>",
+    "uri": "<STATUS_JWT_URL>",
     "type": "TOKEN_STATUS_LIST",
     "maxLength": 800000,
     "config": {
@@ -63,7 +81,7 @@ curl -X POST https://<EXTERNAL_URL of issuer-agent-management>/status-list \
   }'
 
 ```
-### 3. Issue credential
+### 4. Issue credential
 You're now ready to issue credentials by using the issuer-agent-management API which is accessible under
 https://<EXTERNAL_URL of issuer-agent-management>**/swagger-ui/index.html#/Credential%20API/createCredential**.
 
@@ -89,6 +107,8 @@ vaultsecrets:
 ### 2. Set the environment variables
 Due to the separation of the secret and non-secret variables the location is split. Make sure that you've set at least the following variables.
 Concerning the actual values take a look at the [sample.compose.yml](sample.compose.yml)
+ 
+> **After this** continue with [status list initialization](README.md#3.-Initialize-the-status-list)
 
 | Location                | issuer-agent-management                                                                                                                                                                                                                                                                                         | issuer-agent-oid4vci |
 |-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
