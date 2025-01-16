@@ -26,8 +26,89 @@ flowchart TD
     isoi ---> isdb
     wallet ---> isoi
 ```
+# Deployment
+> Please make sure that you did the following before starting the deployment:
+> - Generated the signing keys file with the didtoolbox.jar
+> - Generated a DID which is registered on the identifier registry
+> - Registered yourself on the swiyuprobeta portal
+> - Registered yourself on the api self service portal
 
-# Getting Started
+##  Third party usage
+ > Are you a third-party user? Then you're right here! Otherwhise go to [gov internal usage](#Gov-internal-usage)
+### 1. Set the environment variables
+A sample compose file for an entire setup of both components and a database can be found in [sample.compose.yml](sample.compose.yml) file.
+**Replace all placeholder <VARIABLE_NAME>**.
+
+Please be aware that both the issuer-agent-management and the issuer-agent-oid4vci need to be publicly accessible over an domain configured in `EXTERNAL_URL` so that 
+a wallet can communicate with them.
+
+The latest images are available here:
+- [issuer-agent-oid4vci](https://github.com/admin-ch-ssi/mirror-issuer-agent-oid4vci/pkgs/container/mirror-issuer-agent-oid4vci)
+- [issuer-agent-management](https://github.com/admin-ch-ssi/mirror-issuer-agent-management/pkgs/container/mirror-issuer-agent-management)
+
+### 2. Initialize the status list
+Once the issuer-agent-management, issuer-agent-oid4vci and postgres instance are up and running you need to initialize the status
+list of your issuer so that you can issue credentials. The8 following request needs to be run on your issuer-agent-management instance.
+
+```bash
+curl -X POST https://<EXTERNAL_URL of issuer-agent-management>/status-list \
+-H "Content-Type: application/json" \
+-d '{
+    "uri": "<You STATUS_REGISTRY_URL>",
+    "type": "TOKEN_STATUS_LIST",
+    "maxLength": 800000,
+    "config": {
+    "bits": 2
+    }
+  }'
+
+```
+### 3. Issue credential
+You're now ready to issue credentials by using the issuer-agent-management API which is accessible under
+https://<EXTERNAL_URL of issuer-agent-management>**/swagger-ui/index.html#/Credential%20API/createCredential**.
+
+## Gov internal usage
+### 1. Setup up infrastructure
+When deployed in an RHOS setup the issuer-management / issuer-agent setup need the following setup
+#### Database
+Single postgresql databse service needs to be available. Make sure that the following bindings exist between your database and the application namespace:
+- database -> issuer-agent-management: Full
+- database -> issuer-agent-oid4vci: Read-Write
+#### MAV
+The MAV needs to be bound to the application namespace. Make sure the secrets are located in the path **default/application_secrets**
+and you configured the vault so that it uses the application_secrets as properties
+```yaml
+vaultsecrets:
+  vaultserver: https://mav.bit.admin.ch
+  serviceaccount: default
+  cluster: p-szb-ros-shrd-npr-01
+  path: default
+  properties:
+    - application_secrets
+``` 
+### 2. Set the environment variables
+Due to the separation of the secret and non-secret variables the location is split. Make sure that you've set at least the following variables.
+Concerning the actual values take a look at the [sample.compose.yml](sample.compose.yml)
+
+| Location                | issuer-agent-management                                                                                                                                                                                                                                                                                         | issuer-agent-oid4vci |
+|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
+| GitOps                  | ISSUER_ID<br/>SWIYU_PARTNER_ID<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_KEY<br/>EXTERNAL_URL<br/>OFFER_VALIDITY_SECONDS<br/>LOGGING_LEVEL_CH_ADMIN_BIT_EID<br/>SPRING_APPLICATION_NAME<br/>SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW<br/>SWIYU_STATUS_REGISTRY_TOKEN_URL<br/>SWIYU_STATUS_REGISTRY_API_URL | EXTERNAL_URL<br/>ISSUER_ID<br/>DID_SDJWT_VERIFICATION_METHOD<br/>OPENID_CONFIG_FILE<br/>METADATA_CONFIG_FILE<br/>TOKEN_TTL                     |
+| ManagedApplicationVault | STATUS_LIST_KEY<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET<br/>SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN                                                                                                                                                                                                              |  SDJWT_KEY                    |
+
+
+# Development
+
+> Please be aware that this section **focus on the development of the issuer management service**. For the deployment of the
+> component please consult [deployment section](#Deployment).
+
+## Setup
+
+- Start application IssuerManagementApplication with local profile
+
+    - Starts docker compose for database
+    - Runs Flyway migrations if needed
+
+## Configuration
 
 If you start the application with the local profile as described below, you need to set the credentials for the
 status-list api-gateway api in the `application-local.yml` file. The credentials can be obtained from the swiyu
@@ -64,17 +145,6 @@ mvn spring-boot:run -Dspring-boot.run.profiles=local
 
 Note: This spins up a local PostgreSQL database via docker. Once running, Openapi-Documentation can be
 accessed [here](http://localhost:8080/swagger-ui/index.html#/).
-
-# Development
-
-## Setup
-
-- Start application IssuerManagementApplication with local profile
-
-    - Starts docker compose for database
-    - Runs Flyway migrations if needed
-
-## Configuration
 
 ### Generate Keys
 
