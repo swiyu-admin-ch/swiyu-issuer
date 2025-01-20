@@ -31,7 +31,6 @@ public class OpenApiConfig {
         return GroupedOpenApi.builder()
                 .group("API")
                 .pathsToMatch("/**")
-                .packagesToScan("ch.admin.bj.swiyu.issuer.management")
                 .build();
     }
 }
