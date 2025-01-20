@@ -8,9 +8,9 @@ spring:
       ddl-auto: none
     properties:
       hibernate:
-        temp:
+        boot:
           # https://stackoverflow.com/questions/10075081/hibernate-slow-to-acquire-postgres-connection
-          use_jdbc_metadata_defaults: false
+          allow_jdbc_metadata_access: false
   flyway:
     enabled: true
     locations: classpath:db/migration/common,classpath:db/migration/postgres
@@ -33,9 +33,9 @@ spring:
 management:
   endpoint:
     health:
-      enabled: true
       probes:
         enabled: true
+      access: read_only
   health:
     livenessState:
       enabled: true

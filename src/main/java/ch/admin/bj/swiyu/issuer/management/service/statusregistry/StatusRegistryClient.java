@@ -1,10 +1,10 @@
 package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
-import ch.admin.bj.swiyu.issuer.management.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
-import ch.admin.bj.swiyu.issuer.management.exception.ConfigurationException;
-import ch.admin.bj.swiyu.issuer.management.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

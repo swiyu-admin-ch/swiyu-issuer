@@ -1,11 +1,8 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -73,7 +70,7 @@ class CredentialOfferStatusIT {
     @Test
     void testGetOfferStatus_thenSuccess() throws Exception {
 
-        CredentialStatusType expectedStatus = CredentialStatusType.OFFERED;
+        CredentialStatusTypeDto expectedStatus = CredentialStatusTypeDto.OFFERED;
 
         mvc.perform(get(getUrl(id)))
                 .andExpect(status().isOk())
@@ -83,7 +80,7 @@ class CredentialOfferStatusIT {
     @Test
     void testUpdateOfferStatusWithOfferedWhenOffered_thenBadRequest() throws Exception {
 
-        CredentialStatusType newStatus = CredentialStatusType.OFFERED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.OFFERED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isBadRequest());
@@ -92,7 +89,7 @@ class CredentialOfferStatusIT {
     @Test
     void testUpdateOfferStatusWithOfferedWhenOffered1_thenBadRequest() throws Exception {
 
-        CredentialStatusType newStatus = CredentialStatusType.ISSUED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.ISSUED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isBadRequest());
@@ -101,7 +98,7 @@ class CredentialOfferStatusIT {
 
     @Test
     void testUpdateOfferStatusWithRevokedWhenIssued_thenSuccess() throws Exception {
-        UUID vcRevokedId = createIssueAndSetStateOfVc(CredentialStatusType.REVOKED);
+        UUID vcRevokedId = createIssueAndSetStateOfVc(CredentialStatusTypeDto.REVOKED);
 
         var offer = credentialOfferRepository.findById(vcRevokedId).get();
         assertEquals(CredentialStatusType.REVOKED, offer.getCredentialStatus());
@@ -115,7 +112,7 @@ class CredentialOfferStatusIT {
         assertEquals(1, tokenStatusList.getStatus(0), "Should be revoked");
         assertEquals(0, tokenStatusList.getStatus(1), "Should not be revoked");
 
-        UUID vcSuspendedId = createIssueAndSetStateOfVc(CredentialStatusType.SUSPENDED);
+        UUID vcSuspendedId = createIssueAndSetStateOfVc(CredentialStatusTypeDto.SUSPENDED);
         offer = credentialOfferRepository.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusType.SUSPENDED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
@@ -128,7 +125,7 @@ class CredentialOfferStatusIT {
         assertEquals(2, tokenStatusList.getStatus(1), "Should be suspended");
         assertEquals(0, tokenStatusList.getStatus(2), "Should not be revoked");
 
-        CredentialStatusType newStatus = CredentialStatusType.ISSUED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.ISSUED;
         mvc.perform(patch(getUpdateUrl(vcSuspendedId, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(newStatus.toString()));
@@ -146,7 +143,7 @@ class CredentialOfferStatusIT {
      * Creates an offer with a linked status list, set the state to issued and then
      * revokes it
      */
-    private UUID createIssueAndSetStateOfVc(CredentialStatusType newStatus) throws Exception {
+    private UUID createIssueAndSetStateOfVc(CredentialStatusTypeDto newStatus) throws Exception {
         UUID vcId = createStatusListLinkedOfferAndGetUUID();
 
         this.updateStatusForEntity(vcId, CredentialStatusType.ISSUED);
@@ -162,7 +159,7 @@ class CredentialOfferStatusIT {
      */
     @Test
     void testUpdateOfferStatusWithRevokedWhenIssuedWithoutStatusList_thenBadRequest() throws Exception {
-        CredentialStatusType newStatus = CredentialStatusType.REVOKED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.REVOKED;
 
         this.updateStatusForEntity(id, CredentialStatusType.ISSUED);
 
@@ -173,19 +170,19 @@ class CredentialOfferStatusIT {
 
     @Test
     void testUpdateOfferStatusWithRevokedWhenOffered_thenSuccess() throws Exception {
-        CredentialStatusType newStatus = CredentialStatusType.CANCELLED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.CANCELLED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.status").value(CredentialStatusType.CANCELLED.toString()));
+                .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.CANCELLED.toString()));
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk());
 
     }
 
-    private String getUpdateUrl(UUID id, CredentialStatusType credentialStatus) {
+    private String getUpdateUrl(UUID id, CredentialStatusTypeDto credentialStatus) {
         return String.format("%s?credentialStatus=%s", getUrl(id), credentialStatus);
     }
 
@@ -220,7 +217,6 @@ class CredentialOfferStatusIT {
     private CredentialOffer updateStatusForEntity(UUID id, CredentialStatusType status) {
         CredentialOffer credentialOffer = credentialOfferRepository.findById(id).get();
         credentialOffer.changeStatus(status);
-
         return credentialOfferRepository.save(credentialOffer);
     }
 

@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.enums;
+package ch.admin.bj.swiyu.issuer.management.common.lock;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

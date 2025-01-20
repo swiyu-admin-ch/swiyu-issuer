@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.management.domain.ecosystem;
 
-import ch.admin.bj.swiyu.issuer.management.enums.EcosystemApiType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

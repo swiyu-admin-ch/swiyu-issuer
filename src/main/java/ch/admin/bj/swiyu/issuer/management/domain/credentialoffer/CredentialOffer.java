@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
-import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;

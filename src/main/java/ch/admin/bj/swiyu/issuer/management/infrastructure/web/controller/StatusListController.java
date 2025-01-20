@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = "/status-list")
 @AllArgsConstructor
-@Tag(name = "Status List API")
+@Tag(name = "Status List", description = "Status List Management API")
 public class StatusListController {
 
     private final StatusListService statusListService;

@@ -2,17 +2,12 @@ package ch.admin.bj.swiyu.issuer.management.service;
 
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialOfferDto;
-import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatus;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatusKey;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatusRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
-import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.management.exception.JsonException;
-import ch.admin.bj.swiyu.issuer.management.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.JsonException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +28,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer.readOfferData;
+import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toCredentialStatusType;
 import static java.util.Objects.nonNull;
 
 @Slf4j
@@ -100,9 +96,11 @@ public class CredentialService {
 
     @Transactional
     public CredentialOffer updateCredentialStatus(@NotNull UUID credentialId,
-                                                  @NotNull CredentialStatusType newStatus) {
+                                                  @NotNull CredentialStatusTypeDto requestedNewStatus) {
         CredentialOffer credential = this.getCredential(credentialId);
-        CredentialStatusType currentStatus = credential.getCredentialStatus();
+        var currentStatus = credential.getCredentialStatus();
+        var newStatus = toCredentialStatusType(requestedNewStatus);
+
 
         // No status change or was already revoked
         if (currentStatus == newStatus || currentStatus == CredentialStatusType.REVOKED) {

@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.security;
 
-import ch.admin.bj.swiyu.issuer.management.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.service.statusregistry.JWTResolveRequestWrapper;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;

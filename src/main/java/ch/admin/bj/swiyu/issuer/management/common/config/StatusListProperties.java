@@ -1,6 +1,6 @@
-package ch.admin.bj.swiyu.issuer.management.config;
+package ch.admin.bj.swiyu.issuer.management.common.config;
 
-import ch.admin.bj.swiyu.issuer.management.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import jakarta.annotation.PostConstruct;

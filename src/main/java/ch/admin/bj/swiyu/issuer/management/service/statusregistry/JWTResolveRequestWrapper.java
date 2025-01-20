@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
-import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.management.exception.NotImplementedError;
+import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.NotImplementedError;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
@@ -26,14 +26,15 @@ import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.stream.Collectors;
 
-@Getter
-@Slf4j
+
 /**
  * Wrapper for a request with a JWT encoded content.
  * Reading from the wrapper only returns the claims of the JWT as the Request
  * body.
  * Create by using the static method <code>createAndValidate</code>
  */
+@Getter
+@Slf4j
 public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
     private final SignedJWT jwt;
     private final String dataClaim;

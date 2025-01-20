@@ -5,11 +5,12 @@ import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDee
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
-import ch.admin.bj.swiyu.issuer.management.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -35,8 +36,8 @@ import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusR
 @RestController
 @RequestMapping(value = "/credentials")
 @AllArgsConstructor
-@Tag(name = "Credential API")
-public class CredentialsController {
+@Tag(name = "Credential", description = "Credential Management API")
+public class CredentialController {
 
     private final CredentialService credentialService;
 
@@ -141,7 +142,8 @@ public class CredentialsController {
     @PatchMapping("/{credentialId}/status")
     @Operation(summary = "Set the status of an offer or the verifiable credential associated with the id.")
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
-                                                          @RequestParam("credentialStatus") CredentialStatusType credentialStatus) {
+                                                          @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = CredentialStatusTypeDto.class))
+                                                          @RequestParam("credentialStatus") CredentialStatusTypeDto credentialStatus) {
 
         CredentialOffer credential = this.credentialService.updateCredentialStatus(credentialId,
                 credentialStatus);

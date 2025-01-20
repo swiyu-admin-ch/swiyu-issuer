@@ -2,9 +2,9 @@ package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
-import ch.admin.bj.swiyu.issuer.management.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenApi;
-import ch.admin.bj.swiyu.issuer.management.enums.GlobalLocksType;
+import ch.admin.bj.swiyu.issuer.management.common.lock.GlobalLocksType;
 import lombok.AllArgsConstructor;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import org.springframework.context.annotation.Bean;

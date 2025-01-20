@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.common;
+package ch.admin.bj.swiyu.issuer.management.common.date;
 
 import lombok.experimental.UtilityClass;
 

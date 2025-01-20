@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus;
 
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,5 +13,5 @@ import lombok.NoArgsConstructor;
 @Schema(name = "StatusResponse")
 public class StatusResponseDto {
 
-    private CredentialStatusType status;
+    private CredentialStatusTypeDto status;
 }

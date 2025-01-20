@@ -1,10 +1,10 @@
-package ch.admin.bj.swiyu.issuer.management.enums;
+package ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 @Getter
-@Schema(example = "SUSPENDED", description = """
+@Schema(name = "CredentialStatusType", enumAsRef = true, example = "SUSPENDED", description = """
             Status for the full lifecycle of a verifiable credential.
             OFFERED - an offer link has been created, and not yet redeemed by a holder.
             CANCELLED - the VC was revoked before being claimed.
@@ -14,7 +14,7 @@ import lombok.Getter;
             REVOKED - the VC has been revoked. This state is final and can not be changed.
             EXPIRED - the lifetime of the VC expired (not used yet)
         """)
-public enum CredentialStatusType {
+public enum CredentialStatusTypeDto {
     OFFERED,
     CANCELLED,
     IN_PROGRESS,
