@@ -6,13 +6,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.7</version>
+        <version>3.4.1</version>
         <relativePath/>
     </parent>
 
     <groupId>ch.admin.bj.swiyu</groupId>
-    <artifactId>eid-issuer-management-service</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <artifactId>swiyu-issuer-management-service</artifactId>
+    <version>0.1.2-SNAPSHOT</version>
     <description>Issuer management Service for public beta</description>
 
     <properties>
@@ -25,9 +25,9 @@
         <nimbus-jose-jwt.version>9.40</nimbus-jose-jwt.version>
         <bouncycastle.version>1.78.1</bouncycastle.version>
         <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
-        <springdoc-openapi-starter-webmvc-ui.version>2.6.0</springdoc-openapi-starter-webmvc-ui.version>
+        <springdoc-openapi-starter-webmvc-ui.version>2.7.0</springdoc-openapi-starter-webmvc-ui.version>
         <openapi-generator-maven-plugin.version>7.7.0</openapi-generator-maven-plugin.version>
-        <spring-cloud-dependencies.version>2023.0.3</spring-cloud-dependencies.version>
+        <spring-cloud-dependencies.version>2024.0.0</spring-cloud-dependencies.version>
     </properties>
 
     <dependencies>
@@ -181,10 +181,6 @@
                         </exclude>
                     </excludes>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
                 <executions>
                     <execution>
                         <goals>
@@ -263,6 +259,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- fix CVE-2023-3635, delete once fabric8 is updated -->
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>1.17.6</version>
+            </dependency>
+            <!-- end fix -->
         </dependencies>
     </dependencyManagement>
 </project>

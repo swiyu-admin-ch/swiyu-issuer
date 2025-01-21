@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.enums;
+package ch.admin.bj.swiyu.issuer.management.domain.ecosystem;
 
 /**
  * A list of APIs provided by the swiyu ecosystem.

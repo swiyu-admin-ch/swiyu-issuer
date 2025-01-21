@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 
-import static ch.admin.bj.swiyu.issuer.management.common.DateTimeUtils.ISO8601_FORMAT;
+import static ch.admin.bj.swiyu.issuer.management.common.date.DateTimeUtils.ISO8601_FORMAT;
 
 @Data
 @Builder

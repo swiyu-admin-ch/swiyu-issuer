@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.config;
+package ch.admin.bj.swiyu.issuer.management.common.lock;
 
 import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor;
 import net.javacrumbs.shedlock.core.LockProvider;

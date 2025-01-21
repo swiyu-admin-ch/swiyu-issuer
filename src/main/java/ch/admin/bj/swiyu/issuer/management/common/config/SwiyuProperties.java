@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.config;
+package ch.admin.bj.swiyu.issuer.management.common.config;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;

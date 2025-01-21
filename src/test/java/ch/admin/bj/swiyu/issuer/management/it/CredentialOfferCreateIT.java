@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static ch.admin.bj.swiyu.issuer.management.common.DateTimeUtils.ISO8601_FORMAT;
+import static ch.admin.bj.swiyu.issuer.management.common.date.DateTimeUtils.ISO8601_FORMAT;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;

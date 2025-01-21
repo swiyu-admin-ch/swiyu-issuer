@@ -1,11 +1,15 @@
 package ch.admin.bj.swiyu.issuer.management.service;
 
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
+
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toCredentialStatusTypeDto;
 
 @UtilityClass
 public class CredentialOfferMapper {
@@ -30,7 +34,22 @@ public class CredentialOfferMapper {
     public static UpdateStatusResponseDto toUpdateStatusResponseDto(CredentialOffer credential) {
         return UpdateStatusResponseDto.builder()
                 .id(credential.getId())
-                .credentialStatus(credential.getCredentialStatus())
+                .credentialStatus(toCredentialStatusTypeDto(credential.getCredentialStatus()))
                 .build();
+    }
+
+    public static CredentialStatusType toCredentialStatusType(CredentialStatusTypeDto source) {
+        if (source == null) {
+            return null;
+        }
+        return switch (source) {
+            case OFFERED -> CredentialStatusType.OFFERED;
+            case CANCELLED -> CredentialStatusType.CANCELLED;
+            case IN_PROGRESS -> CredentialStatusType.IN_PROGRESS;
+            case ISSUED -> CredentialStatusType.ISSUED;
+            case SUSPENDED -> CredentialStatusType.SUSPENDED;
+            case REVOKED -> CredentialStatusType.REVOKED;
+            case EXPIRED -> CredentialStatusType.EXPIRED;
+        };
     }
 }

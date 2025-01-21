@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus;
 
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -20,5 +19,5 @@ public class UpdateStatusResponseDto {
     private UUID id;
 
     @JsonProperty("status")
-    private CredentialStatusType credentialStatus;
+    private CredentialStatusTypeDto credentialStatus;
 }

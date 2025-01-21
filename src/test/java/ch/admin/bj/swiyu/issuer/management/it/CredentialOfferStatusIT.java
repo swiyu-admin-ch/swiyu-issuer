@@ -1,26 +1,20 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
-import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.management.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -41,7 +35,8 @@ class CredentialOfferStatusIT {
 
     private static final String BASE_URL = "/credentials";
     private final UUID statusListUUID = UUID.randomUUID();
-    private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt".formatted(statusListUUID);
+    private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
+            .formatted(statusListUUID);
 
     @Autowired
     protected SwiyuProperties swiyuProperties;
@@ -55,7 +50,7 @@ class CredentialOfferStatusIT {
     @Autowired
     private StatusListRepository statusListRepository;
 
-    @MockBean
+    @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
 
     private UUID id;
@@ -73,14 +68,15 @@ class CredentialOfferStatusIT {
         statusListEntryCreationDto.setId(statusListUUID);
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
 
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(statusListEntryCreationDto);
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
+                .thenReturn(statusListEntryCreationDto);
 
         // Mock removing access to registry
         // Add status list
         mvc.perform(post("/status-list")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                        "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
                 .andExpect(status().isOk());
         // Add Test Offer
         id = this.createBasicOfferJsonAndGetUUID();
@@ -89,7 +85,7 @@ class CredentialOfferStatusIT {
     @Test
     void testGetOfferStatus_thenSuccess() throws Exception {
 
-        CredentialStatusType expectedStatus = CredentialStatusType.OFFERED;
+        CredentialStatusTypeDto expectedStatus = CredentialStatusTypeDto.OFFERED;
 
         mvc.perform(get(getUrl(id)))
                 .andExpect(status().isOk())
@@ -99,7 +95,7 @@ class CredentialOfferStatusIT {
     @Test
     void testUpdateOfferStatusWithOfferedWhenOffered_thenBadRequest() throws Exception {
 
-        CredentialStatusType newStatus = CredentialStatusType.OFFERED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.OFFERED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isBadRequest());
@@ -108,7 +104,7 @@ class CredentialOfferStatusIT {
     @Test
     void testUpdateOfferStatusWithOfferedWhenOffered1_thenBadRequest() throws Exception {
 
-        CredentialStatusType newStatus = CredentialStatusType.ISSUED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.ISSUED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isBadRequest());
@@ -117,7 +113,7 @@ class CredentialOfferStatusIT {
 
     @Test
     void testUpdateOfferStatusWithRevokedWhenIssued_thenSuccess() throws Exception {
-        UUID vcRevokedId = createIssueAndSetStateOfVc(CredentialStatusType.REVOKED);
+        UUID vcRevokedId = createIssueAndSetStateOfVc(CredentialStatusTypeDto.REVOKED);
 
         var offer = credentialOfferRepository.findById(vcRevokedId).get();
         assertEquals(CredentialStatusType.REVOKED, offer.getCredentialStatus());
@@ -131,7 +127,7 @@ class CredentialOfferStatusIT {
         assertEquals(1, tokenStatusList.getStatus(0), "Should be revoked");
         assertEquals(0, tokenStatusList.getStatus(1), "Should not be revoked");
 
-        UUID vcSuspendedId = createIssueAndSetStateOfVc(CredentialStatusType.SUSPENDED);
+        UUID vcSuspendedId = createIssueAndSetStateOfVc(CredentialStatusTypeDto.SUSPENDED);
         offer = credentialOfferRepository.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusType.SUSPENDED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
@@ -144,7 +140,7 @@ class CredentialOfferStatusIT {
         assertEquals(2, tokenStatusList.getStatus(1), "Should be suspended");
         assertEquals(0, tokenStatusList.getStatus(2), "Should not be revoked");
 
-        CredentialStatusType newStatus = CredentialStatusType.ISSUED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.ISSUED;
         mvc.perform(patch(getUpdateUrl(vcSuspendedId, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(newStatus.toString()));
@@ -162,8 +158,7 @@ class CredentialOfferStatusIT {
      * Creates an offer with a linked status list, set the state to issued and then
      * revokes it
      */
-    @NotNull
-    private UUID createIssueAndSetStateOfVc(CredentialStatusType newStatus) throws Exception {
+    private UUID createIssueAndSetStateOfVc(CredentialStatusTypeDto newStatus) throws Exception {
         UUID vcId = createStatusListLinkedOfferAndGetUUID();
 
         this.updateStatusForEntity(vcId, CredentialStatusType.ISSUED);
@@ -180,7 +175,7 @@ class CredentialOfferStatusIT {
      */
     @Test
     void testUpdateOfferStatusWithRevokedWhenIssuedWithoutStatusList_thenBadRequest() throws Exception {
-        CredentialStatusType newStatus = CredentialStatusType.REVOKED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.REVOKED;
 
         this.updateStatusForEntity(id, CredentialStatusType.ISSUED);
 
@@ -188,22 +183,21 @@ class CredentialOfferStatusIT {
                 .andExpect(status().isBadRequest());
     }
 
-
     @Test
     void testUpdateOfferStatusWithRevokedWhenOffered_thenSuccess() throws Exception {
-        CredentialStatusType newStatus = CredentialStatusType.CANCELLED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.CANCELLED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.status").value(CredentialStatusType.CANCELLED.toString()));
+                .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.CANCELLED.toString()));
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk());
 
     }
 
-    private String getUpdateUrl(UUID id, CredentialStatusType credentialStatus) {
+    private String getUpdateUrl(UUID id, CredentialStatusTypeDto credentialStatus) {
         return String.format("%s?credentialStatus=%s", getUrl(id), credentialStatus);
     }
 
@@ -220,7 +214,8 @@ class CredentialOfferStatusIT {
     }
 
     private UUID createStatusListLinkedOfferAndGetUUID() throws Exception {
-        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}".formatted(RandomStringUtils.random(10), statusRegistryUrl);
+        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+                .formatted(RandomStringUtils.random(10), statusRegistryUrl);
 
         MvcResult result = mvc
                 .perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
@@ -236,7 +231,6 @@ class CredentialOfferStatusIT {
     private CredentialOffer updateStatusForEntity(UUID id, CredentialStatusType status) {
         CredentialOffer credentialOffer = credentialOfferRepository.findById(id).get();
         credentialOffer.changeStatus(status);
-
         return credentialOfferRepository.save(credentialOffer);
     }
 

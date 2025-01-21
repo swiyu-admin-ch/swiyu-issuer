@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -38,33 +38,21 @@ class StatusListIT {
     private String statusListUrl;
     @Autowired
     private MockMvc mvc;
-    @MockBean
-    private StatusBusinessApiApi statusBusinessApi;
 
-    @Autowired
-    private StatusListRepository statusListRepository;
-
-    @BeforeEach
-    void setUp() {
-        this.statusListUUID = UUID.randomUUID();
-        this.statusListUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt".formatted(statusListUUID);
-        var statusListEntryCreationDto = new StatusListEntryCreationDto();
-        statusListEntryCreationDto.setId(statusListUUID);
-        statusListEntryCreationDto.setStatusRegistryUrl(statusListUrl);
-
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(statusListEntryCreationDto);
-    }
+    @MockitoBean
+    private StatusRegistryClient statusRegistryClient;
 
     @Test
     void createNewStatusList_thenSuccess() throws Exception {
         var type = "TOKEN_STATUS_LIST";
         var maxLength = 255;
         var bits = 2;
-        var payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength, bits);
+        var payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength,
+                bits);
 
         var result = mvc.perform(post("/status-list")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
@@ -87,7 +75,8 @@ class StatusListIT {
 
     @Test
     void createOfferWithoutStatusList_thenBadRequest() throws Exception {
-        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}".formatted(RandomStringUtils.random(10), statusListUrl);
+        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+                .formatted(RandomStringUtils.random(10), statusListUrl);
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
                 .andExpect(status().isBadRequest())
@@ -98,7 +87,8 @@ class StatusListIT {
     void getNotExistingStatusList_thenSuccess() throws Exception {
         var notExistingstatusListUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
         var requestUrl = String.format("%s/%s", STATUS_LIST_BASE_URL, notExistingstatusListUUID);
-        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}".formatted(RandomStringUtils.random(10), statusListUrl);
+        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+                .formatted(RandomStringUtils.random(10), statusListUrl);
 
         mvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
                 .andExpect(status().isNotFound())
@@ -111,15 +101,17 @@ class StatusListIT {
         var type = "TOKEN_STATUS_LIST";
         var maxLength = 255;
         var bits = 2;
-        var payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength, bits);
+        var payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength,
+                bits);
 
         var result = mvc.perform(post("/status-list")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        String offerCred = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}".formatted(RandomStringUtils.random(10), statusListUrl);
+        String offerCred = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+                .formatted(RandomStringUtils.random(10), statusListUrl);
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(offerCred))
                 .andExpect(status().isOk())

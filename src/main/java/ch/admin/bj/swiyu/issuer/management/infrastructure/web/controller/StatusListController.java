@@ -23,7 +23,7 @@ import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusL
 @RestController
 @RequestMapping(value = "/status-list")
 @AllArgsConstructor
-@Tag(name = "Status List API")
+@Tag(name = "Status List", description = "Status List Management API")
 public class StatusListController {
 
     private final StatusListService statusListService;

@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.exception;
+package ch.admin.bj.swiyu.issuer.management.common.exception;
 
 public class ResourceNotFoundException extends RuntimeException {
 

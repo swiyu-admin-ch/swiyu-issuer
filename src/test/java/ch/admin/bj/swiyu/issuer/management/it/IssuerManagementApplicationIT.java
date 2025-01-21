@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
-import ch.admin.bj.swiyu.issuer.management.config.StatusListProperties;
-import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialsController;
+import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
+import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialController;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -40,13 +40,13 @@ public class IssuerManagementApplicationIT {
             "y":"71y_zEPAglUXBghaBxypTAzlNx57KNY9lv8LTbPkmZA"
             }""";
     @Autowired
-    private CredentialsController credentialsController;
+    private CredentialController credentialController;
     @Autowired
     private StatusListProperties statusListProperties;
 
     @Test
     void contextLoads() {
-        assertThat(credentialsController).isNotNull();
+        assertThat(credentialController).isNotNull();
     }
 
     @Test

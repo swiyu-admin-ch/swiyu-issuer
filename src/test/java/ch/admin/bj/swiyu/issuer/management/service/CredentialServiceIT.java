@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.issuer.management.service;
 
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.management.enums.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest()
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
-public class CredentialServiceTest {
+public class CredentialServiceIT {
     @Autowired
     CredentialOfferRepository credentialOfferRepository;
     @Autowired
@@ -27,7 +27,6 @@ public class CredentialServiceTest {
 
     @Test
     void invalidateExpiredOffer() {
-        var repoCount = credentialOfferRepository.count();
         Map<String, Object> offerData = Map.of("hello", "world");
         var expiredId = credentialOfferRepository.save(CredentialOffer.builder()
                 .credentialStatus(CredentialStatusType.OFFERED)
