@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.management.service;
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
@@ -38,6 +39,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusListMapper.toStatusListDto;
+
 @Slf4j
 @AllArgsConstructor
 @Service
@@ -63,18 +66,29 @@ public class StatusListService {
         };
     }
 
+    @Transactional(readOnly = true)
+    public StatusListDto getStatusListInformation(UUID statusListId) {
+        var statusList = this.statusListRepository.findById(statusListId)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
+
+        return toStatusListDto(statusList);
+    }
+
     @Transactional
-    public StatusList createStatusList(StatusListCreateDto request) {
+    public StatusListDto createStatusList(StatusListCreateDto request) {
         try {
             // use explicit transaction, since we want to handle data integrety exceptions
             // after commit
-            return transaction.execute(status -> {
+            var newStatusList = transaction.execute(status -> {
                 var statusListType = request.getType();
                 var statusList = switch (statusListType) {
                     case TOKEN_STATUS_LIST -> initTokenStatusListToken(request);
                 };
                 return statusListRepository.save(statusList);
             });
+
+            return toStatusListDto(newStatusList);
         } catch (DataIntegrityViolationException e) {
             var msg = e.getMessage();
             if (msg.toLowerCase().contains("status_list_uri_key")) {
@@ -231,11 +245,5 @@ public class StatusListService {
                 .claim("status_list", token.getStatusListClaims())
                 .build();
         return new SignedJWT(header, claimSet);
-    }
-
-    public StatusList getStatusListInformation(UUID statusListId) {
-        return this.statusListRepository.findById(statusListId)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
     }
 }

@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusListMapper.toStatusListDto;
-
 @Slf4j
 @RestController
 @RequestMapping(value = "/status-list")
@@ -34,12 +32,12 @@ public class StatusListController {
             "This process can be only done once per status list! Status List type, " +
             "configuration or length can not be changed after initialization!")
     public StatusListDto createStatusList(@Valid @RequestBody StatusListCreateDto request) {
-        return toStatusListDto(this.statusListService.createStatusList(request));
+        return this.statusListService.createStatusList(request);
     }
 
     @GetMapping("/{statusListId}")
     @Operation(summary = "Get the status information of a status list.")
     public StatusListDto getStatusListInformation(@PathVariable UUID statusListId) {
-        return toStatusListDto(this.statusListService.getStatusListInformation(statusListId));
+        return this.statusListService.getStatusListInformation(statusListId);
     }
 }
