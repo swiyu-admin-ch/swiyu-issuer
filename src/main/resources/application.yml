@@ -62,6 +62,26 @@ application:
     private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY:}}"
     # value to be added to the kid of the created status list; should be available in the published did document.
     verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD:}"
+
+    key-management-method: "${SDJWT_SIGNING_KEY_MANAGEMENT_METHOD:key}"
+
+    hsm:
+      user-pin: "${secret.key.sdjwt.hsm.pin.user:${SDJWT_HSM_USER_PIN:}}"
+      # Key identifier or alias, or label when using pkcs11-tool
+      key-id: "${secret.key.sdjwt.hsm.id:${SDJWT_HSM_KEYID:}}"
+      # Optional pin to unlock the key
+      key-pin: "${secret.key.sdjwt.hsm.pin.key:${SDJWT_HSM_KEY_PIN}}"
+      # File Path to the HSM config file. For settings see https://docs.oracle.com/en/java/javase/21/security/pkcs11-reference-guide1.html
+      pkcs11-config: "${SDJWT_HSM_CONFIG_PATH:}"
+
+      # For Cloud HSM like eg. securosys
+      user: "${SDJWT_HSM_USER:}"
+      host: "${SDJWT_HSM_HOST:}"
+      password: "${SDJWT_HSM_PASSWORD:}"
+      port: "${SDJWT_HSM_PORT:}"
+      proxy-user: "${SDJWT_HSM_PROXY_USER:}"
+      proxy-password: "${SDJWT_HSM_PROXY_PASSWORD:}"
+
   offer-expiration-interval: "${CREDENTIAL_OFFER_EXPIRATION_INTERVAL:PT15M}"
 logging:
   level:
