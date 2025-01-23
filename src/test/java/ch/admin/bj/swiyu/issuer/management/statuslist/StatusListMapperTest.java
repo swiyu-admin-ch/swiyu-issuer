@@ -13,13 +13,14 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class StatusListMapperTest {
+class StatusListMapperTest {
 
     @Test
-    public void testToStatusListDto() {
+    void testToStatusListDto() {
         var statusListType = StatusListType.TOKEN_STATUS_LIST;
         var maxLength = new Random().nextInt();
         var nextFreeIndex = new Random().nextInt();
+        var remainingEntries = maxLength - nextFreeIndex;
         var configMap = new HashMap<String, Object>();
         var id = UUID.randomUUID();
         var statusRegistryUrl = "uri";
@@ -39,13 +40,14 @@ public class StatusListMapperTest {
         assertEquals(id, statusListDto.getId());
         assertEquals(statusRegistryUrl, statusListDto.getStatusRegistryUrl());
         assertEquals(StatusListTypeDto.TOKEN_STATUS_LIST, statusListDto.getType());
-        assertEquals(maxLength, statusListDto.getMaxLength());
+        assertEquals(maxLength, statusListDto.getMaxListEntries());
+        assertEquals(remainingEntries, statusListDto.getRemainingListEntries());
         assertEquals(nextFreeIndex, statusListDto.getNextFreeIndex());
         assertEquals(configMap, statusListDto.getConfig());
     }
 
     @Test
-    public void testToStatusListTypeDto() {
+    void testToStatusListTypeDto() {
         StatusListType statusListType = StatusListType.TOKEN_STATUS_LIST;
 
         StatusListTypeDto statusListTypeDto = StatusListMapper.toStatusListTypeDto(statusListType);

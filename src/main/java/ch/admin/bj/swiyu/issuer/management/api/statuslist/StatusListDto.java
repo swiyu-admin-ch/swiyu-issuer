@@ -22,7 +22,10 @@ public class StatusListDto {
     private StatusListTypeDto type;
 
     @Schema(description = "How many status entries can be part of the status list. The memory size of the status list is depending on the type and the config of the status list.", example = "800000")
-    private Integer maxLength;
+    private Integer maxListEntries;
+
+    @Schema(description = "How many status entries are not used in the  status list.", example = "12")
+    private Integer remainingListEntries;
 
     @Schema(description = "Technical type of the status list to be used. This influences the options available in config.")
     private Integer nextFreeIndex;

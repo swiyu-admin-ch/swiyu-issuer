@@ -14,7 +14,8 @@ public class StatusListMapper {
                 .id(statusList.getId())
                 .statusRegistryUrl(statusList.getUri())
                 .type(toStatusListTypeDto(statusList.getType()))
-                .maxLength(statusList.getMaxLength())
+                .maxListEntries(statusList.getMaxLength())
+                .remainingListEntries(statusList.getMaxLength() - statusList.getNextFreeIndex())
                 .nextFreeIndex(statusList.getNextFreeIndex())
                 .config(statusList.getConfig())
                 .build();

@@ -5,14 +5,15 @@ import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
+import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatus;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListType;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatsListBit;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
-import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusRegistryClient;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
@@ -51,14 +52,14 @@ public class StatusListService {
     private static boolean canRevoke(StatusList statusList) {
         return switch (statusList.getType()) {
             case TOKEN_STATUS_LIST ->
-                (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getValue();
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.REVOKE.getValue();
         };
     }
 
     private static boolean canSuspend(StatusList statusList) {
         return switch (statusList.getType()) {
             case TOKEN_STATUS_LIST ->
-                (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getValue();
+                    (Integer) statusList.getConfig().get("bits") >= TokenStatsListBit.SUSPEND.getValue();
         };
     }
 
@@ -179,7 +180,6 @@ public class StatusListService {
 
         // Build DB Entry
         StatusList statusList = StatusList.builder()
-                .id(newStatusList.getId())
                 .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
                 .config(statusListCreateDto.getConfig())
                 .uri(newStatusList.getStatusRegistryUrl())

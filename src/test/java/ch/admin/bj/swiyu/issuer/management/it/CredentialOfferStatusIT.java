@@ -1,8 +1,14 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -74,9 +80,9 @@ class CredentialOfferStatusIT {
         // Mock removing access to registry
         // Add status list
         mvc.perform(post("/status-list")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                        "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
                 .andExpect(status().isOk());
         // Add Test Offer
         id = this.createBasicOfferJsonAndGetUUID();
