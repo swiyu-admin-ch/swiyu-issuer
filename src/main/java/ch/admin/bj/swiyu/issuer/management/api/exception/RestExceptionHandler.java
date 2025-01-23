@@ -2,7 +2,9 @@ package ch.admin.bj.swiyu.issuer.management.api.exception;
 
 import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.CreateStatusListException;
 import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.UpdateStatusListException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -31,6 +33,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
         final ApiErrorDto apiError = new ApiErrorDto(BAD_REQUEST, exception.getMessage());
         log.debug("Bad Request intercepted", exception);
+        return new ResponseEntity<>(apiError, apiError.status());
+    }
+
+    @ExceptionHandler({CreateStatusListException.class, UpdateStatusListException.class})
+    public ResponseEntity<ApiErrorDto> handleCreateStatusListException(final Exception exception) {
+        final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, exception.getMessage());
+        log.error("Status List Exception intercepted", exception);
         return new ResponseEntity<>(apiError, apiError.status());
     }
 
