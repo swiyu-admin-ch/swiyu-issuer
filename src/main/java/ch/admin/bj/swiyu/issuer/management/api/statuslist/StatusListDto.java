@@ -1,32 +1,35 @@
 package ch.admin.bj.swiyu.issuer.management.api.statuslist;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Data
-@Schema(name = "StatusListCreate")
-public class StatusListCreateDto {
+@Builder
+@Schema(name = "StatusList")
+public class StatusListDto {
 
-    /**
-     * Type of the status list in camel case; eg TokenStatusList
-     */
-    @NotNull
+    @Schema(description = "Id of the status list used by the business issuer.")
+    private UUID id;
+
+    @Schema(description = "URI of the status list used by registry.")
+    private String statusRegistryUrl;
+
     @Schema(description = "Technical type of the status list to be used. This influences the options available in config.")
     private StatusListTypeDto type;
-    /**
-     * How many status entries can be part of the status list
-     */
-    @NotNull
+
     @Schema(description = "How many status entries can be part of the status list. The memory size of the status list is depending on the type and the config of the status list.", example = "800000")
-    private Integer maxLength;
-    /**
-     * Additional config parameters, depending on the status list type
-     * eg {"bits": 2} for token status list with revocation & suspension
-     * or {"purpose": "suspension"} for a bit string status list for suspension
-     */
+    private Integer maxListEntries;
+
+    @Schema(description = "How many status entries are not used in the  status list.", example = "12")
+    private Integer remainingListEntries;
+
+    @Schema(description = "Shows which is the next free status entry that can be used")
+    private Integer nextFreeIndex;
+
     @Schema(description = """
                  Additional config parameters, depending on the status list type. For Example
                  {"bits": 2}
@@ -37,5 +40,4 @@ public class StatusListCreateDto {
             {"bits": 2}
             """)
     private Map<String, Object> config;
-
 }

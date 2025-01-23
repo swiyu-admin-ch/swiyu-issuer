@@ -13,7 +13,7 @@ servers:
     description: Generated server url
 security:
   # manual change to disable unsupported openid flow (which we acually cannot use anyway)
-  - bearerAuth: []
+  - bearerAuth: [ ]
 tags:
   - name: Status Business API
     description: Status Business API
@@ -286,7 +286,7 @@ components:
     prometheus:
       type: http
       scheme: basic
-    
+
     # manual change to disable unsupported openid flow (which we acually cannot use anyway)
     bearerAuth:
       type: http

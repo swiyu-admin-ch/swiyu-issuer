@@ -1,17 +1,20 @@
 package ch.admin.bj.swiyu.issuer.management.service;
 
+import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
+import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatus;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListType;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatsListBit;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
-import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusRegistryClient;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
@@ -35,6 +38,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusListMapper.toStatusListDto;
 
 @Slf4j
 @AllArgsConstructor
@@ -61,18 +66,29 @@ public class StatusListService {
         };
     }
 
+    @Transactional(readOnly = true)
+    public StatusListDto getStatusListInformation(UUID statusListId) {
+        var statusList = this.statusListRepository.findById(statusListId)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
+
+        return toStatusListDto(statusList);
+    }
+
     @Transactional
-    public void createStatusList(StatusListCreateDto request) {
+    public StatusListDto createStatusList(StatusListCreateDto request) {
         try {
             // use explicit transaction, since we want to handle data integrety exceptions
             // after commit
-            transaction.executeWithoutResult((status) -> {
+            var newStatusList = transaction.execute(status -> {
                 var statusListType = request.getType();
                 var statusList = switch (statusListType) {
                     case TOKEN_STATUS_LIST -> initTokenStatusListToken(request);
                 };
-                statusListRepository.save(statusList);
+                return statusListRepository.save(statusList);
             });
+
+            return toStatusListDto(newStatusList);
         } catch (DataIntegrityViolationException e) {
             var msg = e.getMessage();
             if (msg.toLowerCase().contains("status_list_uri_key")) {
@@ -164,17 +180,14 @@ public class StatusListService {
     }
 
     private StatusList initTokenStatusListToken(StatusListCreateDto statusListCreateDto) {
+
         Map<String, Object> config = statusListCreateDto.getConfig();
         if (config == null || config.get("bits") == null) {
             throw new BadRequestException("Must define 'bits' for TokenStatusList");
         }
 
-        // check upfront if the status list already exists (yes we have unique
-        // constraint, but otherwise
-        // hibernate spams the log)
-        if (statusListRepository.existsByUri(statusListCreateDto.getUri())) {
-            throw new BadRequestException("Status List already exists with uri " + statusListCreateDto.getUri());
-        }
+        // creates new empty status list entry in the registry
+        var newStatusList = createEmptyRegistryEntry();
 
         TokenStatusListToken token = new TokenStatusListToken((Integer) config.get("bits"),
                 statusListCreateDto.getMaxLength());
@@ -183,7 +196,7 @@ public class StatusListService {
         StatusList statusList = StatusList.builder()
                 .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
                 .config(statusListCreateDto.getConfig())
-                .uri(statusListCreateDto.getUri())
+                .uri(newStatusList.getStatusRegistryUrl())
                 .statusZipped(token.getStatusListData())
                 .nextFreeIndex(0)
                 .maxLength(statusListCreateDto.getMaxLength())
@@ -199,6 +212,11 @@ public class StatusListService {
         }
 
         return StatusListType.TOKEN_STATUS_LIST;
+    }
+
+    private StatusListEntryCreationDto createEmptyRegistryEntry() {
+
+        return statusRegistryClient.createStatusList();
     }
 
     private void updateRegistry(StatusList statusListEntity, TokenStatusListToken token) {
