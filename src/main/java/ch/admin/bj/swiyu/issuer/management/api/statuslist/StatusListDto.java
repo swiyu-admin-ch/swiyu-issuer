@@ -27,7 +27,7 @@ public class StatusListDto {
     @Schema(description = "How many status entries are not used in the  status list.", example = "12")
     private Integer remainingListEntries;
 
-    @Schema(description = "Technical type of the status list to be used. This influences the options available in config.")
+    @Schema(description = "Shows which is the next free status entry that can be used")
     private Integer nextFreeIndex;
 
     @Schema(description = """
