@@ -1,8 +1,14 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -23,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -33,6 +40,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CredentialOfferStatusIT {
 
     private static final String BASE_URL = "/credentials";
+    private final UUID statusListUUID = UUID.randomUUID();
+    private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
+            .formatted(statusListUUID);
+
+    @Autowired
+    protected SwiyuProperties swiyuProperties;
 
     @Autowired
     protected MockMvc mvc;
@@ -56,12 +69,20 @@ class CredentialOfferStatusIT {
     void setupTest() throws Exception {
         credentialOfferRepository.deleteAll();
         statusListRepository.deleteAll();
+
+        var statusListEntryCreationDto = new StatusListEntryCreationDto();
+        statusListEntryCreationDto.setId(statusListUUID);
+        statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
+
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
+                .thenReturn(statusListEntryCreationDto);
+
         // Mock removing access to registry
         // Add status list
         mvc.perform(post("/status-list")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                "{\"uri\": \"https://status-data-service-d.bit.admin.ch/api/v1/statuslist/44bca201-f8b4-469d-8157-4ee48879b23e.jwt\",\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
+                                "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
                 .andExpect(status().isOk());
         // Add Test Offer
         id = this.createBasicOfferJsonAndGetUUID();
@@ -151,6 +172,7 @@ class CredentialOfferStatusIT {
         mvc.perform(patch(getUpdateUrl(vcId, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(newStatus.toString()));
+
         return vcId;
     }
 
@@ -166,7 +188,6 @@ class CredentialOfferStatusIT {
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isBadRequest());
     }
-
 
     @Test
     void testUpdateOfferStatusWithRevokedWhenOffered_thenSuccess() throws Exception {
@@ -199,9 +220,8 @@ class CredentialOfferStatusIT {
     }
 
     private UUID createStatusListLinkedOfferAndGetUUID() throws Exception {
-        String minPayloadWithEmptySubject = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"https://status-data-service-d.bit.admin.ch/api/v1/statuslist/44bca201-f8b4-469d-8157-4ee48879b23e.jwt\"]}",
-                RandomStringUtils.random(10));
+        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+                .formatted(RandomStringUtils.random(10), statusRegistryUrl);
 
         MvcResult result = mvc
                 .perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))

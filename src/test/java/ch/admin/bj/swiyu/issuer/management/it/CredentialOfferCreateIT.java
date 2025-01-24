@@ -68,7 +68,7 @@ class CredentialOfferCreateIT {
 
         String invalidValidUntilPattern = String.format(
                 "{\"metadata_credential_supported_id\": \"%s\", \"credential_subject_data\": {}, \"credential_valid_until\" : \"2010-01-01T19:23:24.111\"}",
-                RandomStringUtils.random(10));
+                RandomStringUtils.insecure().next(10));
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(invalidValidUntilPattern))
                 .andExpect(status().isBadRequest());
@@ -76,14 +76,14 @@ class CredentialOfferCreateIT {
         // Check Invalid JSON payloads in credential_subject_data
         String invalidValidFromPattern = String.format(
                 "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {}, \"credential_valid_from\" : \"2010-01-01T19:23:24.111\"}",
-                RandomStringUtils.random(10));
+                RandomStringUtils.insecure().next(10));
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(invalidValidFromPattern))
                 .andExpect(status().isBadRequest());
 
         String invalidJson = String.format(
                 "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"test\"}}",
-                RandomStringUtils.random(10));
+                RandomStringUtils.insecure().next(10));
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(invalidJson))
                 .andExpect(status().isBadRequest());
     }
