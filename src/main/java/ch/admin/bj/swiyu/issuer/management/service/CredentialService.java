@@ -2,12 +2,18 @@ package ch.admin.bj.swiyu.issuer.management.service;
 
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialOfferDto;
-import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.management.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatus;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatusKey;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatusRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -101,11 +107,15 @@ public class CredentialService {
         var currentStatus = credential.getCredentialStatus();
         var newStatus = toCredentialStatusType(requestedNewStatus);
 
-
-        // No status change or was already revoked
-        if (currentStatus == newStatus || currentStatus == CredentialStatusType.REVOKED) {
+        // should not be able to change status to other than revoked if it is already revoked
+        if (newStatus != CredentialStatusType.REVOKED && currentStatus == CredentialStatusType.REVOKED) {
             throw new BadRequestException(
                     String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
+        }
+
+        // Ignore no status changes and return
+        if (currentStatus == newStatus) {
+            return credential;
         }
 
         if (!currentStatus.isIssuedToHolder()) {

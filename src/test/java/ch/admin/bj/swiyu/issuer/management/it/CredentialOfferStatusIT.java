@@ -99,12 +99,33 @@ class CredentialOfferStatusIT {
     }
 
     @Test
-    void testUpdateOfferStatusWithOfferedWhenOffered_thenBadRequest() throws Exception {
+    void testUpdateOfferStatusWithOfferedWhenOffered_thenOk() throws Exception {
+
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.OFFERED;
+
+        mvc.perform(patch(getUpdateUrl(id, CredentialStatusTypeDto.REVOKED)))
+                .andExpect(status().isOk());
+
+        mvc.perform(patch(getUpdateUrl(id, newStatus)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateOfferStatusWithRevokedWhenRevoked_thenOk() throws Exception {
 
         CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.OFFERED;
 
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testUpdateOfferStatusWithOfferedWhenRevoked_thenBadRequest() throws Exception {
+
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.OFFERED;
+
+        mvc.perform(patch(getUpdateUrl(id, newStatus)))
+                .andExpect(status().isOk());
     }
 
     @Test
