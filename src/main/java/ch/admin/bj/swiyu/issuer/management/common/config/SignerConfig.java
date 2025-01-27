@@ -17,6 +17,9 @@ import java.security.Provider;
 import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 
+/**
+ * Configures a JWS Singer. Used in Issuer management, OID4VCI and Verifier OID4VP
+ */
 @Configuration
 @RequiredArgsConstructor
 public class SignerConfig {
@@ -49,7 +52,7 @@ public class SignerConfig {
                 final var baos = new ByteArrayOutputStream();
                 // Create ad-hoc configuration
                 (new PrintStream(baos)).println(
-                        statusListProperties.getHsm().securosysStringConfig()
+                        statusListProperties.getHsm().getSecurosysStringConfig()
                 );
                 final var bais = new ByteArrayInputStream(baos.toByteArray());
                 final var provider = (Provider) Class.forName("com.securosys.primus.jce.PrimusProvider").getDeclaredConstructor().newInstance();
