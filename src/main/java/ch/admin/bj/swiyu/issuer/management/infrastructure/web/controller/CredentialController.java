@@ -34,7 +34,7 @@ import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.
 import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
 @RestController
-@RequestMapping(value = "/credentials")
+@RequestMapping(value = {"/credentials","/api/v1/credentials"})
 @AllArgsConstructor
 @Tag(name = "Credential", description = "Credential Management API")
 public class CredentialController {
