@@ -26,38 +26,50 @@ flowchart TD
     isoi ---> isdb
     wallet ---> isoi
 ```
+
 # Deployment
+
 > Please make sure that you did the following before starting the deployment:
 > - Generated the signing keys file with the didtoolbox.jar
 > - Generated a DID which is registered on the identifier registry
 > - Registered yourself on the swiyuprobeta portal
 > - Registered yourself on the api self service portal
 
-##  Third party usage
- > Are you a third-party user? Then you're right here! Otherwhise go to [gov internal usage](#Gov-internal-usage)
+## Third party usage
+
+> Are you a third-party user? Then you're right here! Otherwhise go to [gov internal usage](#Gov-internal-usage)
+
 ### 1. Set the environment variables
-A sample compose file for an entire setup of both components and a database can be found in [sample.compose.yml](sample.compose.yml) file.
+
+A sample compose file for an entire setup of both components and a database can be found
+in [sample.compose.yml](sample.compose.yml) file.
 **Replace all placeholder <VARIABLE_NAME>**.
 
-Please be aware that both the issuer-agent-management and the issuer-agent-oid4vci need to be publicly accessible over an domain configured in `EXTERNAL_URL` so that 
+Please be aware that both the issuer-agent-management and the issuer-agent-oid4vci need to be publicly accessible over
+an domain configured in `EXTERNAL_URL` so that
 a wallet can communicate with them.
 
 The latest images are available here:
+
 - [issuer-agent-oid4vci](https://github.com/admin-ch-ssi/mirror-issuer-agent-oid4vci/pkgs/container/mirror-issuer-agent-oid4vci)
 - [issuer-agent-management](https://github.com/admin-ch-ssi/mirror-issuer-agent-management/pkgs/container/mirror-issuer-agent-management)
 
 ### 2. Create a verifiable credentials schema
-In order to support your use case you need to adapt the so-called issuer_metadata (see [sample.compose.yml](sample.compose.yml#L85)).
+
+In order to support your use case you need to adapt the so-called issuer_metadata (
+see [sample.compose.yml](sample.compose.yml#L85)).
 Those metadata define the appearance of the credential in the wallet and what kind of credential formats are supported.
 For further information consult the [eidch-public-beta repo](https://github.com/e-id-admin/eidch-public-beta)
 
-
 ### 3. Initialize the status list
-Once the issuer-agent-management, issuer-agent-oid4vci and postgres instance are up and running you need to initialize the status
+
+Once the issuer-agent-management, issuer-agent-oid4vci and postgres instance are up and running you need to initialize
+the status
 list of your issuer so that you can issue credentials.
 
 **Request to create an status list slot**  
 The url you'll receive in the response will be used in the next request as STATUS_JWT_URL
+
 ```bash
 curl -X POST https://<SWIYU_STATUS_REGISTRY_API_URL>/api/v1/status/business-entities/<SWIYU_PARTNER_ID>/status-list-entries/ \
   -H "Content-Type: application/json" \
@@ -68,6 +80,7 @@ curl -X POST https://<SWIYU_STATUS_REGISTRY_API_URL>/api/v1/status/business-enti
 ```
 
 The following request needs to be run on your issuer-agent-management instance.
+
 ```bash
 curl -X POST https://<EXTERNAL_URL of issuer-agent-management>/status-list \
 -H "Content-Type: application/json" \
@@ -81,20 +94,32 @@ curl -X POST https://<EXTERNAL_URL of issuer-agent-management>/status-list \
   }'
 
 ```
+
 ### 4. Issue credential
+
 You're now ready to issue credentials by using the issuer-agent-management API which is accessible under
 https://<EXTERNAL_URL of issuer-agent-management>**/swagger-ui/index.html#/Credential%20API/createCredential**.
 
 ## Gov internal usage
+
 ### 1. Setup up infrastructure
+
 When deployed in an RHOS setup the issuer-management / issuer-agent setup need the following setup
+
 #### Database
-Single postgresql databse service needs to be available. Make sure that the following bindings exist between your database and the application namespace:
+
+Single postgresql databse service needs to be available. Make sure that the following bindings exist between your
+database and the application namespace:
+
 - database -> issuer-agent-management: Full
 - database -> issuer-agent-oid4vci: Read-Write
+
 #### MAV
-The MAV needs to be bound to the application namespace. Make sure the secrets are located in the path **default/application_secrets**
+
+The MAV needs to be bound to the application namespace. Make sure the secrets are located in the path *
+*default/application_secrets**
 and you configured the vault so that it uses the application_secrets as properties
+
 ```yaml
 vaultsecrets:
   vaultserver: https://mav.bit.admin.ch
@@ -104,21 +129,24 @@ vaultsecrets:
   properties:
     - application_secrets
 ``` 
+
 ### 2. Set the environment variables
-Due to the separation of the secret and non-secret variables the location is split. Make sure that you've set at least the following variables.
+
+Due to the separation of the secret and non-secret variables the location is split. Make sure that you've set at least
+the following variables.
 Concerning the actual values take a look at the [sample.compose.yml](sample.compose.yml)
- 
+
 > **After this** continue with [status list initialization](README.md#3.-Initialize-the-status-list)
 
-| Location                | issuer-agent-management                                                                                                                                                                                                                                                                                         | issuer-agent-oid4vci |
-|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
-| GitOps                  | ISSUER_ID<br/>SWIYU_PARTNER_ID<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_KEY<br/>EXTERNAL_URL<br/>OFFER_VALIDITY_SECONDS<br/>LOGGING_LEVEL_CH_ADMIN_BIT_EID<br/>SPRING_APPLICATION_NAME<br/>SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW<br/>SWIYU_STATUS_REGISTRY_TOKEN_URL<br/>SWIYU_STATUS_REGISTRY_API_URL | EXTERNAL_URL<br/>ISSUER_ID<br/>DID_SDJWT_VERIFICATION_METHOD<br/>OPENID_CONFIG_FILE<br/>METADATA_CONFIG_FILE<br/>TOKEN_TTL                     |
-| ManagedApplicationVault | STATUS_LIST_KEY<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET<br/>SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN                                                                                                                                                                                                              |  SDJWT_KEY                    |
-
+| Location                | issuer-agent-management                                                                                                                                                                                                                                                                                         | issuer-agent-oid4vci                                                                                                       |
+|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| GitOps                  | ISSUER_ID<br/>SWIYU_PARTNER_ID<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_KEY<br/>EXTERNAL_URL<br/>OFFER_VALIDITY_SECONDS<br/>LOGGING_LEVEL_CH_ADMIN_BIT_EID<br/>SPRING_APPLICATION_NAME<br/>SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW<br/>SWIYU_STATUS_REGISTRY_TOKEN_URL<br/>SWIYU_STATUS_REGISTRY_API_URL | EXTERNAL_URL<br/>ISSUER_ID<br/>DID_SDJWT_VERIFICATION_METHOD<br/>OPENID_CONFIG_FILE<br/>METADATA_CONFIG_FILE<br/>TOKEN_TTL |
+| ManagedApplicationVault | STATUS_LIST_KEY<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET<br/>SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN                                                                                                                                                                                                     | SDJWT_KEY                                                                                                                  |
 
 # Development
 
-> Please be aware that this section **focus on the development of the issuer management service**. For the deployment of the
+> Please be aware that this section **focus on the development of the issuer management service**. For the deployment of
+> the
 > component please consult [deployment section](#Deployment).
 
 ## Setup
@@ -210,6 +238,29 @@ The Generic Issuer Agent Management is configured using environment variables.
 | secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self managment portal.                                   |
 | secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                |
 | secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal. |
+
+### HSM - Hardware Security Module
+
+For operations with an HSM, the keys need not be mounted directly into the environment running this application.
+Instead, a connection is created to the HSM via JCA. This can be with
+the [Sun PKCS11 provider](https://docs.oracle.com/en/java/javase/22/security/pkcs11-reference-guide1.html) or a vendor
+specific option.
+Note that for creating the keys it is expected that the public key is provided as self-signed certificated.
+
+| Variable                      | Description                                                                                                                                                                                |
+|-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| SIGNING_KEY_MANAGEMENT_METHOD | This variable serves as selector. `key` is used for a mounted key. `pkcs11` for the sun pkcs11 selector. For vendor specific libraries the project must be compiled with these configured. |
+| HSM_HOST                      | URI of the HSM Host or Proxy to be connected to                                                                                                                                            |
+| HSM_PORT                      |                                                                                                                                                                                            |
+| HSM_USER                      | User for logging in on the host                                                                                                                                                            |
+| HSM_PASSWORD                  | Password for logging in to the HSM                                                                                                                                                         |
+| HSM_PROXY_USER                |                                                                                                                                                                                            |
+| HSM_PROXY_PASSWORD            |                                                                                                                                                                                            |
+| HSM_USER_PIN                  | For some proprietary providers required pin                                                                                                                                                |
+| HSM_KEY_ID                    | Key identifier or alias, or label when using pkcs11-tool                                                                                                                                   |
+| HSM_KEY_PIN                   | Optional pin to unlock the key                                                                                                                                                             |
+| HSM_CONFIG_PATH               | File Path to the HSM config file when using [Sun PKCS11 provider](https://docs.oracle.com/en/java/javase/22/security/pkcs11-reference-guide1.html)                                         |
+| HSM_USER_PIN                  | PIN for getting keys from the HSM                                                                                                                                                          |
 
 ## Data Structure
 

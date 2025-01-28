@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
-import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialController;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -12,7 +11,6 @@ import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Test;
@@ -23,7 +21,6 @@ import org.springframework.test.context.ActiveProfiles;
 import java.text.ParseException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -41,8 +38,6 @@ public class IssuerManagementApplicationIT {
             }""";
     @Autowired
     private CredentialController credentialController;
-    @Autowired
-    private StatusListProperties statusListProperties;
 
     @Test
     void contextLoads() {
@@ -108,10 +103,4 @@ public class IssuerManagementApplicationIT {
         }
     }
 
-    @Test
-    void testLoadStatusListConfig() {
-        var signingKey = statusListProperties.getStatusListKey();
-        assertTrue(signingKey.isPrivate(), "Signing Key should be recognized as private");
-        assertEquals(KeyType.EC, signingKey.getKeyType());
-    }
 }

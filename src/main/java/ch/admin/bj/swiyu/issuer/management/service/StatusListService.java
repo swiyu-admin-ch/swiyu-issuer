@@ -20,8 +20,7 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.AllArgsConstructor;
@@ -51,6 +50,7 @@ public class StatusListService {
     private final StatusRegistryClient statusRegistryClient;
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
+    private final JWSSigner signer;
 
     private static boolean canRevoke(StatusList statusList) {
         return switch (statusList.getType()) {
@@ -221,12 +221,10 @@ public class StatusListService {
 
     private void updateRegistry(StatusList statusListEntity, TokenStatusListToken token) {
         // Build JWT
-        ECKey signingKey = statusListProperties.getStatusListKey().toECKey();
-
         SignedJWT statusListJWT = buildStatusListJWT(statusListEntity, token);
 
         try {
-            statusListJWT.sign(new ECDSASigner(signingKey));
+            statusListJWT.sign(signer);
         } catch (JOSEException e) {
             log.error("Failed to sign status list JWT with the provided key.", e);
             throw new ConfigurationException("Failed to sign status list JWT with the provided key.");
