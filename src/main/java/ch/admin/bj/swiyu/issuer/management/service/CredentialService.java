@@ -148,6 +148,7 @@ public class CredentialService {
                 .credentialIssuer(config.getExternalUrl())
                 .credentials(credential.getMetadataCredentialSupportedId())
                 .grants(grants)
+                .version(config.getRequestOfferVersion())
                 .build();
 
         String credentialOfferString = null;

@@ -25,6 +25,29 @@ public class CredentialServiceIT {
     CredentialService credentialService;
 
     @Test
+    void offerDeeplinkTest() {
+        Map<String, Object> offerData = Map.of("hello", "world");
+
+        var validId = credentialOfferRepository.save(
+                CredentialOffer.builder()
+                        .credentialStatus(CredentialStatusType.OFFERED)
+                        .offerExpirationTimestamp(now().plusSeconds(1000).getEpochSecond())
+                        .accessToken(UUID.randomUUID())
+                        .holderBindingNonce(UUID.randomUUID())
+                        .offerData(offerData)
+                        .build()).getId();
+        credentialOfferRepository.flush();
+
+        var validOffer = credentialOfferRepository.findById(validId);
+        assert(validOffer.isPresent());
+        var validDeeplink = credentialService.getOfferDeeplinkFromCredential(validOffer.get());
+        assertThat(validDeeplink).isNotNull();
+        System.out.println(validDeeplink);
+        assertThat(validDeeplink.contains("version")).isTrue();
+
+    }
+
+    @Test
     void invalidateExpiredOffer() {
         Map<String, Object> offerData = Map.of("hello", "world");
         var expiredOfferdId = credentialOfferRepository.save(

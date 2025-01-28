@@ -28,6 +28,9 @@ public class ApplicationProperties {
     @NotNull
     private Long offerValidity;
 
+    @NotNull
+    private String requestOfferVersion;
+
     /**
      * If set to true the service expects all
      * writing message bodies to be encoded as JWT
