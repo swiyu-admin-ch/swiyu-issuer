@@ -107,15 +107,15 @@ public class CredentialService {
         var currentStatus = credential.getCredentialStatus();
         var newStatus = toCredentialStatusType(requestedNewStatus);
 
-        // should not be able to change status to other than revoked if it is already revoked
-        if (newStatus != CredentialStatusType.REVOKED && currentStatus == CredentialStatusType.REVOKED) {
-            throw new BadRequestException(
-                    String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
-        }
-
         // Ignore no status changes and return
         if (currentStatus == newStatus) {
             return credential;
+        }
+
+        // should not be able to change status to other than revoked if it is already revoked
+        if (currentStatus == CredentialStatusType.REVOKED) {
+            throw new BadRequestException(
+                    String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
         }
 
         if (!currentStatus.isIssuedToHolder()) {
