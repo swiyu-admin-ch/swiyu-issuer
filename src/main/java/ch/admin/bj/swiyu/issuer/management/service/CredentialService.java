@@ -59,7 +59,7 @@ public class CredentialService {
 
     @Transactional
     public CredentialOffer createCredential(CreateCredentialRequestDto requestDto) {
-        var expiration = Instant.now().plusSeconds(nonNull(requestDto.getOfferValiditySeconds())
+        var expiration = Instant.now().plusSeconds(requestDto.getOfferValiditySeconds() > 0
                 ? requestDto.getOfferValiditySeconds()
                 : config.getOfferValidity());
 
