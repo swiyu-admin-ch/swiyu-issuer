@@ -35,7 +35,6 @@ services:
       SWIYU_STATUS_REGISTRY_API_URL: "<SWIYU_STATUS_REGISTRY_API_URL>" #e.g. https://status-reg-api-r.trust-infra.swiyu.admin.ch
 
       # Default settings for the application. Only change these if you know what you are doing
-      OFFER_VALIDITY_SECONDS: 20
       LOGGING_LEVEL_CH_ADMIN_BIT_EID: DEBUG
       SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW: true
 

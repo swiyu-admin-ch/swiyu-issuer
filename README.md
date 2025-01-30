@@ -140,7 +140,7 @@ Concerning the actual values take a look at the [sample.compose.yml](sample.comp
 
 | Location                | issuer-agent-management                                                                                                                                                                                                                                                                                         | issuer-agent-oid4vci                                                                                                       |
 |-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| GitOps                  | ISSUER_ID<br/>SWIYU_PARTNER_ID<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_KEY<br/>EXTERNAL_URL<br/>OFFER_VALIDITY_SECONDS<br/>LOGGING_LEVEL_CH_ADMIN_BIT_EID<br/>SPRING_APPLICATION_NAME<br/>SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW<br/>SWIYU_STATUS_REGISTRY_TOKEN_URL<br/>SWIYU_STATUS_REGISTRY_API_URL | EXTERNAL_URL<br/>ISSUER_ID<br/>DID_SDJWT_VERIFICATION_METHOD<br/>OPENID_CONFIG_FILE<br/>METADATA_CONFIG_FILE<br/>TOKEN_TTL |
+| GitOps                  | ISSUER_ID<br/>SWIYU_PARTNER_ID<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_KEY<br/>EXTERNAL_URL<br/><br/>LOGGING_LEVEL_CH_ADMIN_BIT_EID<br/>SPRING_APPLICATION_NAME<br/>SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW<br/>SWIYU_STATUS_REGISTRY_TOKEN_URL<br/>SWIYU_STATUS_REGISTRY_API_URL | EXTERNAL_URL<br/>ISSUER_ID<br/>DID_SDJWT_VERIFICATION_METHOD<br/>OPENID_CONFIG_FILE<br/>METADATA_CONFIG_FILE<br/>TOKEN_TTL |
 | ManagedApplicationVault | STATUS_LIST_KEY<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET<br/>SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN                                                                                                                                                                                                     | SDJWT_KEY                                                                                                                  |
 
 # Development
@@ -217,7 +217,6 @@ The Generic Issuer Agent Management is configured using environment variables.
 | ISSUER_ID                                            | DID of the Credential Issuer. This will be written to the credential and used during verification                                                       |
 | ENABLE_JWT_AUTH                                      | Enables the requirement of writing calls to the issuer management to be signed JWT                                                                      |
 | JWKS_ALLOWLIST                                       | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service                                                   |
-| CONTROLLER_URL                                       | URL of the registry controller used                                                                                                                     |
 | STATUS_LIST_KEY                                      | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                            |
 | DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment |
 | SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                         |
@@ -227,6 +226,7 @@ The Generic Issuer Agent Management is configured using environment variables.
 | SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                  |
 | SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
 | SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal.   |
+| CREDENTIAL_OFFER_EXPIRATION_INTERVAL        | The interval in which expired offers are cleared from the storage. The default value is 15min                                                           |
 
 ### Kubernetes Vault Keys
 
