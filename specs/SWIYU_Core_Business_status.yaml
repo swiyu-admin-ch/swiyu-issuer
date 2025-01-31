@@ -12,7 +12,8 @@ servers:
   - url: https://swiyu-core-business-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch
     description: Generated server url
 security:
-  - bearer-jwt: []
+  # manual change to disable unsupported openid flow (which we acually cannot use anyway)
+  - bearer-jwt: [ ]
 tags:
   - name: Status Business API
     description: Status Business API
