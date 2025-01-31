@@ -54,7 +54,7 @@ public class CredentialService {
         return this.credentialOfferRepository.findById(credentialId)
                 .map(offer -> {
                     // Make sure only offer is returned if it is not expired
-                    if(offer.hasExpirationTimeStampPassed()) {
+                    if(offer.getCredentialStatus() != CredentialStatusType.EXPIRED && offer.hasExpirationTimeStampPassed()) {
                         return updateCredentialStatus(offer, CredentialStatusType.EXPIRED);
                     }
                     return offer;
