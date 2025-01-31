@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toCredentialStatusType;
-import static java.util.Objects.nonNull;
 
 @Slf4j
 @Service
@@ -53,6 +52,12 @@ public class CredentialService {
 
         // Check if optional can be default
         return this.credentialOfferRepository.findById(credentialId)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(String.format("Credential %s not found", credentialId)));
+    }
+
+    public CredentialOffer getCredentialForUpdate(UUID credentialId) {
+        return this.credentialOfferRepository.findByIdForUpdate(credentialId)
                 .orElseThrow(
                         () -> new ResourceNotFoundException(String.format("Credential %s not found", credentialId)));
     }
@@ -103,7 +108,7 @@ public class CredentialService {
     @Transactional
     public CredentialOffer updateCredentialStatus(@NotNull UUID credentialId,
                                                   @NotNull CredentialStatusTypeDto requestedNewStatus) {
-        CredentialOffer credential = this.getCredential(credentialId);
+        CredentialOffer credential = this.getCredentialForUpdate(credentialId);
         var currentStatus = credential.getCredentialStatus();
         var newStatus = toCredentialStatusType(requestedNewStatus);
 
