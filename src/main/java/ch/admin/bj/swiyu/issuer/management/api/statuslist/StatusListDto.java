@@ -30,6 +30,9 @@ public class StatusListDto {
     @Schema(description = "Shows which is the next free status entry that can be used")
     private Integer nextFreeIndex;
 
+    @Schema(description = "Version of the status list schema")
+    private String version;
+
     @Schema(description = """
                  Additional config parameters, depending on the status list type. For Example
                  {"bits": 2}

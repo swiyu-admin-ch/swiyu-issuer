@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import static java.time.Instant.now;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest()
 @ActiveProfiles("test")
@@ -23,6 +24,83 @@ public class CredentialServiceIT {
     CredentialOfferRepository credentialOfferRepository;
     @Autowired
     CredentialService credentialService;
+
+    @Test
+    void offerDeeplinkTest() {
+        Map<String, Object> offerData = Map.of("hello", "world");
+
+        var validId = credentialOfferRepository.save(
+                CredentialOffer.builder()
+                        .credentialStatus(CredentialStatusType.OFFERED)
+                        .offerExpirationTimestamp(now().plusSeconds(1000).getEpochSecond())
+                        .accessToken(UUID.randomUUID())
+                        .holderBindingNonce(UUID.randomUUID())
+                        .offerData(offerData)
+                        .build()).getId();
+        credentialOfferRepository.flush();
+
+        var validOffer = credentialOfferRepository.findById(validId);
+        assert(validOffer.isPresent());
+        var validDeeplink = credentialService.getOfferDeeplinkFromCredential(validOffer.get());
+        assertThat(validDeeplink).isNotNull();
+        System.out.println(validDeeplink);
+        assertThat(validDeeplink.contains("version")).isTrue();
+
+    }
+
+    @Test
+    void getCredentialInvalidateOfferWhenExpired() {
+        Map<String, Object> offerData = Map.of("hello", "world");
+        var expiredOfferdId = credentialOfferRepository.save(
+                CredentialOffer.builder()
+                        .credentialStatus(CredentialStatusType.OFFERED)
+                        .offerExpirationTimestamp(now().minusSeconds(1).getEpochSecond())
+                        .accessToken(UUID.randomUUID())
+                        .holderBindingNonce(UUID.randomUUID())
+                        .offerData(offerData)
+                        .build()).getId();
+
+        var response = credentialService.getCredential(expiredOfferdId);
+        assertEquals(CredentialStatusType.EXPIRED, response.getCredentialStatus());
+        assertNull(response.getOfferData());
+    }
+
+    @Test
+    void getDeeplinkInvalidateOfferWhenExpired() {
+        Map<String, Object> offerData = Map.of("hello", "world");
+        var expiredOfferdId = credentialOfferRepository.save(
+                CredentialOffer.builder()
+                        .credentialStatus(CredentialStatusType.OFFERED)
+                        .offerExpirationTimestamp(now().minusSeconds(1).getEpochSecond())
+                        .accessToken(UUID.randomUUID())
+                        .holderBindingNonce(UUID.randomUUID())
+                        .offerData(offerData)
+                        .build()).getId();
+
+        var credential = credentialService.getCredential(expiredOfferdId);
+        assertEquals(CredentialStatusType.EXPIRED, credential.getCredentialStatus());
+        assertNull(credential.getOfferData());
+        var deepLink = credentialService.getOfferDeeplinkFromCredential(credential);
+        assertNotNull(deepLink);
+        assertTrue(deepLink.startsWith("openid-credential-offer://"));
+    }
+
+    @Test
+    void getCredentialOfferWhenNotExpired() {
+        Map<String, Object> offerData = Map.of("hello", "world");
+        var expiredOfferdId = credentialOfferRepository.save(
+                CredentialOffer.builder()
+                        .credentialStatus(CredentialStatusType.OFFERED)
+                        .offerExpirationTimestamp(now().plusSeconds(20).getEpochSecond())
+                        .accessToken(UUID.randomUUID())
+                        .holderBindingNonce(UUID.randomUUID())
+                        .offerData(offerData)
+                        .build()).getId();
+
+        var response = credentialService.getCredential(expiredOfferdId);
+        assertEquals(CredentialStatusType.OFFERED, response.getCredentialStatus());
+        assertNotNull(response.getOfferData());
+    }
 
     @Test
     void invalidateExpiredOffer() {

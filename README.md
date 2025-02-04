@@ -35,11 +35,9 @@ flowchart TD
 > - Registered yourself on the swiyuprobeta portal
 > - Registered yourself on the api self service portal
 
-## Third party usage
-
 > Are you a third-party user? Then you're right here! Otherwhise go to [gov internal usage](#Gov-internal-usage)
 
-### 1. Set the environment variables
+## 1. Set the environment variables
 
 A sample compose file for an entire setup of both components and a database can be found
 in [sample.compose.yml](sample.compose.yml) file.
@@ -54,14 +52,14 @@ The latest images are available here:
 - [issuer-agent-oid4vci](https://github.com/admin-ch-ssi/mirror-issuer-agent-oid4vci/pkgs/container/mirror-issuer-agent-oid4vci)
 - [issuer-agent-management](https://github.com/admin-ch-ssi/mirror-issuer-agent-management/pkgs/container/mirror-issuer-agent-management)
 
-### 2. Create a verifiable credentials schema
+## 2. Create a verifiable credentials schema
 
 In order to support your use case you need to adapt the so-called issuer_metadata (
 see [sample.compose.yml](sample.compose.yml#L85)).
 Those metadata define the appearance of the credential in the wallet and what kind of credential formats are supported.
 For further information consult the [eidch-public-beta repo](https://github.com/e-id-admin/eidch-public-beta)
 
-### 3. Initialize the status list
+## 3. Initialize the status list
 
 Once the issuer-agent-management, issuer-agent-oid4vci and postgres instance are up and running you need to initialize
 the status
@@ -95,53 +93,32 @@ curl -X POST https://<EXTERNAL_URL of issuer-agent-management>/status-list \
 
 ```
 
-### 4. Issue credential
+## 4. Issue credential
 
 You're now ready to issue credentials by using the issuer-agent-management API which is accessible under
-https://<EXTERNAL_URL of issuer-agent-management>**/swagger-ui/index.html#/Credential%20API/createCredential**.
+https://<EXTERNAL_URL of issuer-agent-management>**/swagger-ui/index.html#/Credential%20API/createCredential** to create
+a credential offer for a holder. Here is an example of a request body for the offer creation
 
-## Gov internal usage
-
-### 1. Setup up infrastructure
-
-When deployed in an RHOS setup the issuer-management / issuer-agent setup need the following setup
-
-#### Database
-
-Single postgresql databse service needs to be available. Make sure that the following bindings exist between your
-database and the application namespace:
-
-- database -> issuer-agent-management: Full
-- database -> issuer-agent-oid4vci: Read-Write
-
-#### MAV
-
-The MAV needs to be bound to the application namespace. Make sure the secrets are located in the path *
-*default/application_secrets**
-and you configured the vault so that it uses the application_secrets as properties
-
-```yaml
-vaultsecrets:
-  vaultserver: https://mav.bit.admin.ch
-  serviceaccount: default
-  cluster: p-szb-ros-shrd-npr-01
-  path: default
-  properties:
-    - application_secrets
-``` 
-
-### 2. Set the environment variables
-
-Due to the separation of the secret and non-secret variables the location is split. Make sure that you've set at least
-the following variables.
-Concerning the actual values take a look at the [sample.compose.yml](sample.compose.yml)
-
-> **After this** continue with [status list initialization](README.md#3.-Initialize-the-status-list)
-
-| Location                | issuer-agent-management                                                                                                                                                                                                                                                                                         | issuer-agent-oid4vci                                                                                                       |
-|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| GitOps                  | ISSUER_ID<br/>SWIYU_PARTNER_ID<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_KEY<br/>EXTERNAL_URL<br/><br/>LOGGING_LEVEL_CH_ADMIN_BIT_EID<br/>SPRING_APPLICATION_NAME<br/>SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW<br/>SWIYU_STATUS_REGISTRY_TOKEN_URL<br/>SWIYU_STATUS_REGISTRY_API_URL | EXTERNAL_URL<br/>ISSUER_ID<br/>DID_SDJWT_VERIFICATION_METHOD<br/>OPENID_CONFIG_FILE<br/>METADATA_CONFIG_FILE<br/>TOKEN_TTL |
-| ManagedApplicationVault | STATUS_LIST_KEY<br/>SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET<br/>SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN                                                                                                                                                                                                     | SDJWT_KEY                                                                                                                  |
+```json
+{
+  "metadata_credential_supported_id": [
+    #Identifier as configured in the credential_configurations_supported section of the issuer_metadata
+    "myIssuerMetadataCredentialSupportedId"
+  ],
+  "credential_subject_data": {
+    # Actual content of the credential aka offer data
+    "lastName": "Example",
+    "firstName": "Edward"
+  },
+  "offer_validity_seconds": 86400,
+  "credential_valid_until": "2010-01-01T19:23:24Z",
+  "credential_valid_from": "2010-01-01T18:23:24Z",
+  "status_lists": [
+    # Url of the status list created in previous step
+    "https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt"
+  ]
+}
+```
 
 # Development
 
@@ -208,25 +185,25 @@ On the base registry the public key is published. To generate the public key for
 
 The Generic Issuer Agent Management is configured using environment variables.
 
-| Variable                                             | Description                                                                                                                                             |
-|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| POSTGRES_USER                                        | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                         |
-| POSTGRES_PASSWORD                                    | Username to connect to the Issuer Agent Database                                                                                                        |
-| POSTGRES_JDBC                                        | JDBC Connection string to the shared DB                                                                                                                 |
-| EXTERNAL_URL                                         | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet                                                          |
-| ISSUER_ID                                            | DID of the Credential Issuer. This will be written to the credential and used during verification                                                       |
-| ENABLE_JWT_AUTH                                      | Enables the requirement of writing calls to the issuer management to be signed JWT                                                                      |
-| JWKS_ALLOWLIST                                       | A Json Web Key set of the public keys authorized to do writing calls to the issuer management service                                                   |
-| STATUS_LIST_KEY                                      | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                            |
-| DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment |
-| SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                         |
-| SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                       |
-| SWIYU_STATUS_REGISTRY_TOKEN_URL                      | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                               |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self managment portal.                                     |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                  |
-| SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
-| SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal.   |
-| CREDENTIAL_OFFER_EXPIRATION_INTERVAL        | The interval in which expired offers are cleared from the storage. The default value is 15min                                                           |
+| Variable                                             | Description                                                                                                                                                                                                                                                                              |
+|:-----------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| POSTGRES_USER                                        | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                                                                                                                                                          |
+| POSTGRES_PASSWORD                                    | Username to connect to the Issuer Agent Database                                                                                                                                                                                                                                         |
+| POSTGRES_JDBC                                        | JDBC Connection string to the shared DB                                                                                                                                                                                                                                                  |
+| EXTERNAL_URL                                         | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet                                                                                                                                                                                           |
+| ISSUER_ID                                            | DID of the Credential Issuer. This will be written to the credential and used during verification                                                                                                                                                                                        |
+| ENABLE_JWT_AUTH                                      | Enables the requirement of writing calls to the issuer management to be signed JWT                                                                                                                                                                                                       |
+| JWKS_ALLOWLIST                                       | When ENABLE_JWT_AUTH is set to true with this property the public keys authorized to perform a writing call can be set as a Json Web Key set according to [RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#appendix-A.1)                                                          |
+| STATUS_LIST_KEY                                      | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                                                                                                                                                             |
+| DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment                                                                                                                                  |
+| SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                                                                                                                                                          |
+| SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                                                                                                                                                        |
+| SWIYU_STATUS_REGISTRY_TOKEN_URL                      | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                                                                                                                                                                |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self managment portal.                                                                                                                                                                      |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                                                                                                                                                   |
+| SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                                                                                                                                                  |
+| SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal.                                                                                                                                    |
+| CREDENTIAL_OFFER_EXPIRATION_INTERVAL                 | The interval in which expired offers are cleared from the storage in the [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). The default value is 15min. This should not be confused with the time an offer is actually valid, which is controlled per request |
 
 ### Kubernetes Vault Keys
 

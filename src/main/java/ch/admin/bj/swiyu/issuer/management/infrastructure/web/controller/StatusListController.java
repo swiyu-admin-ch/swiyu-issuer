@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/status-list")
+@RequestMapping(value = {"/status-list","/api/v1/status-list"})
 @AllArgsConstructor
 @Tag(name = "Status List", description = "Status List Management API")
 public class StatusListController {

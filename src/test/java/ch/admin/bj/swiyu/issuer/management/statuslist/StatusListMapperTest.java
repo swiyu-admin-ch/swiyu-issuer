@@ -24,6 +24,7 @@ class StatusListMapperTest {
         var configMap = new HashMap<String, Object>();
         var id = UUID.randomUUID();
         var statusRegistryUrl = "uri";
+        var version = "1.0";
         configMap.put("key", "value");
 
         StatusList statusList = StatusList.builder()
@@ -35,7 +36,7 @@ class StatusListMapperTest {
                 .config(configMap)
                 .build();
 
-        StatusListDto statusListDto = StatusListMapper.toStatusListDto(statusList);
+        StatusListDto statusListDto = StatusListMapper.toStatusListDto(statusList, version);
 
         assertEquals(id, statusListDto.getId());
         assertEquals(statusRegistryUrl, statusListDto.getStatusRegistryUrl());
@@ -44,6 +45,7 @@ class StatusListMapperTest {
         assertEquals(remainingEntries, statusListDto.getRemainingListEntries());
         assertEquals(nextFreeIndex, statusListDto.getNextFreeIndex());
         assertEquals(configMap, statusListDto.getConfig());
+        assertEquals(version, statusListDto.getVersion());
     }
 
     @Test

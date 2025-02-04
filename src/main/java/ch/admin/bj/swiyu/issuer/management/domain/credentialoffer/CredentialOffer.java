@@ -147,4 +147,8 @@ public class CredentialOffer {
     public void changeStatus(CredentialStatusType credentialStatus) {
         this.credentialStatus = credentialStatus;
     }
+
+    public boolean hasExpirationTimeStampPassed() {
+        return Instant.now().isAfter(Instant.ofEpochSecond(this.offerExpirationTimestamp));
+    }
 }
