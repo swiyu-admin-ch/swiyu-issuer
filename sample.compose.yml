@@ -15,7 +15,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
   issuer-agent-management:
-    image: bit-eid-docker-hosted.nexus.bit.admin.ch/eid/issuer-agent-management:0.1.2-20250115125926-1866787
+    image: bit-eid-docker-hosted.nexus.bit.admin.ch/eid/issuer-agent-management:0.1.3-20250203071644-458f935
     environment:
       EXTERNAL_URL: "https:<url of your own issuer-agent-oid4vci service>"
       SPRING_APPLICATION_NAME: "<custom name of the application>"
@@ -31,11 +31,10 @@ services:
       SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN: "<Your SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN>"
 
       # Environment specific values. Please consult the main manual
-      SWIYU_STATUS_REGISTRY_TOKEN_URL: "https://<KEY_MANAGER for the env>/keycloak/realms/APIGW/protocol/openid-connect/token #e.g. https://keymanager-npr-intra.api.admin.ch"
+      SWIYU_STATUS_REGISTRY_TOKEN_URL: "https://<KEY_MANAGER for the env>/keycloak/realms/APIGW/protocol/openid-connect/token" #e.g. https://keymanager-npr-intra.api.admin.ch
       SWIYU_STATUS_REGISTRY_API_URL: "<SWIYU_STATUS_REGISTRY_API_URL>" #e.g. https://status-reg-api-r.trust-infra.swiyu.admin.ch
 
       # Default settings for the application. Only change these if you know what you are doing
-      OFFER_VALIDITY_SECONDS: 20
       LOGGING_LEVEL_CH_ADMIN_BIT_EID: DEBUG
       SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW: true
 
@@ -50,7 +49,7 @@ services:
         - postgres
 
   issuer-agent-oid4vci:
-    image: bit-eid-docker-hosted.nexus.bit.admin.ch/eid/issuer-agent-oid4vci:0.0.2-20241122082342-ed89147
+    image: bit-eid-docker-hosted.nexus.bit.admin.ch/eid/issuer-agent-oid4vci:0.1.3-20250203125452-986cb03
     environment:
       EXTERNAL_URL: "https://<external url of this service>"
       ISSUER_ID: "<Your ISSUER_ID>" #e.g did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:identifier-reg-r.trust-infra.swiyu.admin.ch:api:v1:did:ff8eb859-6996-4e51-a976-be1ca584c124
@@ -99,14 +98,14 @@ configs:
             },
             "display": [
               {
-                "name": "Strassenverkehrsamt Appenzell Ausserrhoden",
+                "name": "Mein Test VC",
                 "locale": "de-CH",
                 "logo": {
                   "uri": "data:image/png;base64,here-baseimagestring"
                 }
               },
               {
-                "name": "Road traffic office Appenzell Ausserrhoden",
+                "name": "My test vc",
                 "locale": "en-US",
                 "logo": {
                   "uri": "data:image/png;base64,here-baseimagestring"
@@ -114,7 +113,7 @@ configs:
               }
             ],
             "credential_configurations_supported": {
-              "elfa-sdjwt": {
+              "my-test-vc": {
                 "format": "vc+sd-jwt",
                 "cryptographic_binding_methods_supported": [
                   "did:tdw"
@@ -132,25 +131,25 @@ configs:
                 },
                 "display": [
                   {
-                    "name": "REF: Demo-Lernfahrausweis",
+                    "name": "Demo-VC",
                     "locale": "de-CH",
                     "logo": {
                       "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACPSURBVHgB7ZbbCYAwDEVvxEHcREdzlI7gCHUDN9AtfEJM0S9BUWwrSA5cWujHgdA2oWFcWhAyxKGjYVpYNpaZawSEiHJZCjhhP84lAuMczpUgMir8Tii32PBGiRdoSVWoQhX+UJjiOfnJf9pIV68QQFjsOWIkXoVGYi/OO9zgtlDKZeEBfRbeiT4IU+xRfwVePD+H6WV/zQAAAABJRU5ErkJggg=="
                     },
-                    "description": "Kategorie B",
+                    "description": "Das ist ein Test-VC",
                     "background_color": "#ff69b4"
                   },
                   {
-                    "name": "REF: Demo digital learner's permit",
+                    "name": "Demo-VC",
                     "locale": "en-US",
                     "logo": {
                       "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAACaSURBVEhLYxgFo2DQA0YoTRB89v0sfp/7PsMr7lcMLnNdXgGF/kNkSANMUBov+M/wn/Hfv38vmBmZX/xl/vtiVf0qVqgUyYAoC6kJRi2kOhi1kOpg1EKqA7pbSFThDSpLP3l/+veE7wnDE14gxkG/534vxmDH8BqqDSsYxEH6n+EpkARjoI9R8X8IzfCT4R9Y7SgYBUMYMDAAAMQ3Q6IEloWyAAAAAElFTkSuQmCC"
                     },
-                    "description": "Category B",
+                    "description": "This is an test vc",
                     "background_color": "#4A412A"
                   }
                 ],
-                  "vct": "elfa-sdjwt",
+                  "vct": "my-test-vc",
                 "claims": {
                   "id": {
                     "mandatory": true,
@@ -217,358 +216,13 @@ configs:
                         "name": "First name"
                       }
                     ]
-                  },
-                  "dateOfBirth": {
-                    "mandatory": false,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Geburtsdatum"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Date de naissance"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Data di nascita"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Date of birth"
-                      }
-                    ]
-                  },
-                  "hometown": {
-                    "mandatory": true,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Heimatort"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Ville natale"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Città natale"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Home town"
-                      }
-                    ]
-                  },
-                  "registrationNumber": {
-                    "mandatory": true,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "RegNr"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Numéro d'enregistrement"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Numero di registrazione"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "RegNb"
-                      }
-                    ]
-                  },
-                  "dateOfExpiration": {
-                    "mandatory": false,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Gültigkeit"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Date d'expiration"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Data di scadenza"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Validity"
-                      }
-                    ]
-                  },
-                  "issuerEntity": {
-                    "mandatory": true,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Ausstellbehörde"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Entité émettrice"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Ente emittente"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Issuing authority"
-                      }
-                    ]
-                  },
-                  "issuerEntityDate": {
-                    "mandatory": true,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Ausstellbehörde (Datum)"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Date de l'entité émettrice"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Data ente emittente"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Issuing authority (date)"
-                      }
-                    ]
-                  },
-                  "signatureImage": {
-                    "mandatory": false,
-                    "value_type": "image/png",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Unterschrift"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Image de la signature"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Immagine della firma"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Signature"
-                      }
-                    ]
-                  },
-                  "photoImage": {
-                    "mandatory": true,
-                    "value_type": "image/png",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Foto"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Photo"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Foto"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Photo"
-                      }
-                    ]
-                  },
-                  "categoryCode": {
-                    "mandatory": true,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Kategorie"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Code de catégorie"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Codice categoria"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Category"
-                      }
-                    ]
-                  },
-                  "categoryRestrictions": {
-                    "mandatory": false,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Auflagen/Verfügungen/Beschränkung auf der Kat"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Restrictions de catégorie"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Restrizioni di categoria"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Category Restrictions"
-                      }
-                    ]
-                  },
-                  "restrictionsA": {
-                    "mandatory": false,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Auflagen/Verfügungen/Beschränkung A"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Restrictions A"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Restrizioni A"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Restrictions A"
-                      }
-                    ]
-                  },
-                  "restrictionsB": {
-                    "mandatory": false,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Auflagen/Verfügungen/Beschränkung B"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Restrictions B"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Restrizioni B"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Restrictions B"
-                      }
-                    ]
-                  },
-                  "faberPin": {
-                    "mandatory": false,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Faber Pin"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Pin Faber"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Pin Faber"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Faber Pin"
-                      }
-                    ]
-                  },
-                  "policeQRImage": {
-                    "mandatory": false,
-                    "value_type": "image/png",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Police QR Code"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Code QR de la police"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Codice QR della polizia"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Police QR Code"
-                      }
-                    ]
-                  },
-                  "credentialNumber": {
-                    "mandatory": true,
-                    "value_type": "string",
-                    "display": [
-                      {
-                        "locale": "de-CH",
-                        "name": "Credentialnummer"
-                      },
-                      {
-                        "locale": "fr-CH",
-                        "name": "Numéro de justificatif"
-                      },
-                      {
-                        "locale": "it-CH",
-                        "name": "Numero del credenziale"
-                      },
-                      {
-                        "locale": "en-US",
-                        "name": "Credential Number"
-                      }
-                    ]
                   }
                 },
                 "order": [
-                  "photoImage",
                   "id",
                   "lastName",
-                  "firstName",
-                  "dateOfBirth",
-                  "hometown",
-                  "issuerEntity",
-                  "issuerEntityDate",
-                  "dateOfExpiration",
-                  "categoryCode",
-                  "categoryRestrictions",
-                  "restrictionsA",
-                  "restrictionsB",
-                  "registrationNumber",
-                  "faberPin",
-                  "credentialNumber",
-                  "policeQRImage",
-                  "signatureImage"
+                  "firstName"
                 ]
-              },
+              }
             }
           }

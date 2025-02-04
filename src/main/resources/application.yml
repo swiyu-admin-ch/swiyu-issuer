@@ -62,6 +62,31 @@ application:
     private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY:}}"
     # value to be added to the kid of the created status list; should be available in the published did document.
     verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD:}"
+
+    key-management-method: "${SIGNING_KEY_MANAGEMENT_METHOD:key}"
+    # Pin to unlock the hsm
+    hsm:
+      user-pin: "${secret.key.hsm.pin.user:${HSM_USER_PIN:}}"
+      # Key identifier or alias, or label when using pkcs11-tool
+      key-id: "${secret.key.hsm.id:${HSM_KEY_ID:}}"
+      # Optional pin to unlock the key
+      key-pin: "${secret.key.hsm.pin.key:${HSM_KEY_PIN:}}"
+      # File Path to the HSM config file. For settings see https://docs.oracle.com/en/java/javase/21/security/pkcs11-reference-guide1.html
+      pkcs11-config: "${HSM_CONFIG_PATH:}"
+
+      # For Cloud HSM like eg. securosys
+      # User for logging in on the host
+      user: "${HSM_USER:}"
+      # URI of the HSM Host or Proxy to be connected to
+      host: "${HSM_HOST:}"
+      # Password for the Host
+      password: "${HSM_PASSWORD:}"
+      # Port for either the proxy or host
+      port: "${HSM_PORT:}"
+      # When using a proxy with username / password authentication
+      proxy-user: "${HSM_PROXY_USER:}"
+      proxy-password: "${HSM_PROXY_PASSWORD:}"
+
   offer-expiration-interval: "${CREDENTIAL_OFFER_EXPIRATION_INTERVAL:PT15M}"
 logging:
   level:

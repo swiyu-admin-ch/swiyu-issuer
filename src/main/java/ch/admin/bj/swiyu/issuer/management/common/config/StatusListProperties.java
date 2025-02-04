@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationExcepti
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -19,6 +20,9 @@ public class StatusListProperties {
     private String privateKey;
     private JWK statusListKey;
     private String verificationMethod;
+    @NotNull
+    private String keyManagementMethod;
+    private HSMProperties hsm;
 
     private String version = "1.0";
 

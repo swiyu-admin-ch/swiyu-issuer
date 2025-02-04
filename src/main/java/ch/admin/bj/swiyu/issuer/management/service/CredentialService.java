@@ -2,12 +2,18 @@ package ch.admin.bj.swiyu.issuer.management.service;
 
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialOfferDto;
-import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.management.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatus;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatusKey;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferStatusRepository;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +35,6 @@ import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toCredentialStatusType;
-import static java.util.Objects.nonNull;
 
 @Slf4j
 @Service
@@ -47,13 +52,20 @@ public class CredentialService {
 
         // Check if optional can be default
         return this.credentialOfferRepository.findById(credentialId)
+                .map(offer -> {
+                    // Make sure only offer is returned if it is not expired
+                    if(offer.getCredentialStatus() != CredentialStatusType.EXPIRED && offer.hasExpirationTimeStampPassed()) {
+                        return updateCredentialStatus(offer, CredentialStatusType.EXPIRED);
+                    }
+                    return offer;
+                })
                 .orElseThrow(
                         () -> new ResourceNotFoundException(String.format("Credential %s not found", credentialId)));
     }
 
     @Transactional
     public CredentialOffer createCredential(CreateCredentialRequestDto requestDto) {
-        var expiration = Instant.now().plusSeconds(nonNull(requestDto.getOfferValiditySeconds())
+        var expiration = Instant.now().plusSeconds(requestDto.getOfferValiditySeconds() > 0
                 ? requestDto.getOfferValiditySeconds()
                 : config.getOfferValidity());
 
@@ -95,20 +107,37 @@ public class CredentialService {
     }
 
     @Transactional
+    public CredentialOffer updateCredentialStatus(@NotNull CredentialOffer credential,
+                                                  @NotNull CredentialStatusTypeDto requestedNewStatus) {
+        return updateCredentialStatus(credential, toCredentialStatusType(requestedNewStatus));
+    }
+
+    @Transactional
     public CredentialOffer updateCredentialStatus(@NotNull UUID credentialId,
                                                   @NotNull CredentialStatusTypeDto requestedNewStatus) {
-        CredentialOffer credential = this.getCredential(credentialId);
+        return updateCredentialStatus(getCredential(credentialId), requestedNewStatus);
+    }
+
+    @Transactional
+    public CredentialOffer updateCredentialStatus(@NotNull CredentialOffer credential,
+                                                  @NotNull CredentialStatusType newStatus) {
         var currentStatus = credential.getCredentialStatus();
-        var newStatus = toCredentialStatusType(requestedNewStatus);
 
+        // Ignore no status changes and return
+        if (currentStatus == newStatus) {
+            return credential;
+        }
 
-        // No status change or was already revoked
-        if (currentStatus == newStatus || currentStatus == CredentialStatusType.REVOKED) {
+        // should not be able to change status to other than revoked if it is already revoked
+        if (currentStatus == CredentialStatusType.REVOKED) {
             throw new BadRequestException(
                     String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
         }
 
-        if (!currentStatus.isIssuedToHolder()) {
+        if(newStatus == CredentialStatusType.EXPIRED) {
+            credential.changeStatus(CredentialStatusType.EXPIRED);
+            credential.removeOfferData();
+        } else if (!currentStatus.isIssuedToHolder()) {
             // Status before issuance is not reflected in the status list
             if (newStatus == CredentialStatusType.REVOKED || newStatus == CredentialStatusType.CANCELLED) {
                 credential.removeOfferData();
@@ -130,7 +159,7 @@ public class CredentialService {
 
         }
 
-        log.info(String.format("Updating %s from %s to %s", credentialId, currentStatus, newStatus));
+        log.info(String.format("Updating %s from %s to %s", credential.getId(), currentStatus, newStatus));
         credential.changeStatus(newStatus);
         return this.credentialOfferRepository.save(credential);
     }
@@ -173,9 +202,6 @@ public class CredentialService {
         var expireTimeStamp = Instant.now().getEpochSecond();
         log.info("Expiring {} offers", credentialOfferRepository.countByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp));
         var expiredOffers = credentialOfferRepository.findByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp);
-        expiredOffers.forEach(offer -> {
-            offer.changeStatus(CredentialStatusType.EXPIRED);
-            offer.removeOfferData();
-        });
+        expiredOffers.forEach(offer -> updateCredentialStatus(offer, CredentialStatusType.EXPIRED));
     }
 }
