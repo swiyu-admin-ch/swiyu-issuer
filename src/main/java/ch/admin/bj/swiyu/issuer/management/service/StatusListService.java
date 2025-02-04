@@ -72,7 +72,7 @@ public class StatusListService {
                 .orElseThrow(
                         () -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
 
-        return toStatusListDto(statusList);
+        return toStatusListDto(statusList, statusListProperties.getVersion());
     }
 
     @Transactional
@@ -88,7 +88,7 @@ public class StatusListService {
                 return statusListRepository.save(statusList);
             });
 
-            return toStatusListDto(newStatusList);
+            return toStatusListDto(newStatusList, statusListProperties.getVersion());
         } catch (DataIntegrityViolationException e) {
             var msg = e.getMessage();
             if (msg.toLowerCase().contains("status_list_uri_key")) {

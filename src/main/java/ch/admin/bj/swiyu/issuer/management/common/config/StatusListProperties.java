@@ -20,6 +20,8 @@ public class StatusListProperties {
     private JWK statusListKey;
     private String verificationMethod;
 
+    private String version = "1.0";
+
     @PostConstruct
     public void init() {
         try {

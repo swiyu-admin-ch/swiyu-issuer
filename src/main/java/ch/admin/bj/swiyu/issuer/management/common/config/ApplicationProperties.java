@@ -29,7 +29,7 @@ public class ApplicationProperties {
     private Long offerValidity;
 
     @NotNull
-    private String requestOfferVersion;
+    private String requestOfferVersion = "1.0";
 
     /**
      * If set to true the service expects all
