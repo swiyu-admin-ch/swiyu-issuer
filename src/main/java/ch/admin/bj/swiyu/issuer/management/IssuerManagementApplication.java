@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 package ch.admin.bj.swiyu.issuer.management;
 
 import lombok.extern.slf4j.Slf4j;

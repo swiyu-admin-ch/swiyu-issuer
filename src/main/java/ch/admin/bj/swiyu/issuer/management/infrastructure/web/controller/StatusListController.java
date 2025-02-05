@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
@@ -19,7 +25,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping(value = {"/status-list","/api/v1/status-list"})
+@RequestMapping(value = {"/status-list", "/api/v1/status-list"})
 @AllArgsConstructor
 @Tag(name = "Status List", description = "Status List Management API")
 public class StatusListController {

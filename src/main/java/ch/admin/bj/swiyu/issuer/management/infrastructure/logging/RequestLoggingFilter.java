@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 package ch.admin.bj.swiyu.issuer.management.infrastructure.logging;
 
 import jakarta.servlet.FilterChain;
@@ -42,7 +48,7 @@ class RequestLoggingFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain) throws ServletException, IOException {
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         boolean shouldSkipTracing = isAsyncDispatch(request);
         if (shouldSkipTracing) {
             filterChain.doFilter(request, response);

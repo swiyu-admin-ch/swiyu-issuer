@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Swiss Confederation
+
+SPDX-License-Identifier: MIT
+-->
+
 # Generic issuer management service
 
 This software is a web server implementing the technical standards as specified in

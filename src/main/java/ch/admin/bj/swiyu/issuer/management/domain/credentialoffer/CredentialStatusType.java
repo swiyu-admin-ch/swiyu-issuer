@@ -1,6 +1,10 @@
-package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
-import lombok.Getter;
+package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
 public enum CredentialStatusType {
     OFFERED,

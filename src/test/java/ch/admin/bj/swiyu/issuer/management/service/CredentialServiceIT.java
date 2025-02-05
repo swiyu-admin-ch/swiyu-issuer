@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 package ch.admin.bj.swiyu.issuer.management.service;
 
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
@@ -40,7 +46,7 @@ public class CredentialServiceIT {
         credentialOfferRepository.flush();
 
         var validOffer = credentialOfferRepository.findById(validId);
-        assert(validOffer.isPresent());
+        assert (validOffer.isPresent());
         var validDeeplink = credentialService.getOfferDeeplinkFromCredential(validOffer.get());
         assertThat(validDeeplink).isNotNull();
         System.out.println(validDeeplink);

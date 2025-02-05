@@ -1,7 +1,13 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.config;
 
-import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
 import lombok.Data;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;

@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 package ch.admin.bj.swiyu.issuer.management.domain.ecosystem;
 
 import org.springframework.web.bind.annotation.RequestParam;
@@ -9,23 +15,23 @@ import org.springframework.web.service.annotation.PostExchange;
  */
 public interface TokenApi {
 
-        @PostExchange(contentType = "application/x-www-form-urlencoded")
-        TokenResponse getNewToken(
+    @PostExchange(contentType = "application/x-www-form-urlencoded")
+    TokenResponse getNewToken(
 
-                        @RequestParam String client_id,
-                        @RequestParam String client_secret,
-                        @RequestParam String grant_type);
+            @RequestParam String client_id,
+            @RequestParam String client_secret,
+            @RequestParam String grant_type);
 
-        @PostExchange(contentType = "application/x-www-form-urlencoded")
-        TokenResponse getNewToken(
-                        @RequestParam String client_id,
-                        @RequestParam String client_secret,
-                        @RequestParam(required = false) String refresh_token,
-                        @RequestParam String grant_type);
+    @PostExchange(contentType = "application/x-www-form-urlencoded")
+    TokenResponse getNewToken(
+            @RequestParam String client_id,
+            @RequestParam String client_secret,
+            @RequestParam(required = false) String refresh_token,
+            @RequestParam String grant_type);
 
-        record TokenResponse(
-                        String access_token,
-                        String refresh_token) {
-        }
+    record TokenResponse(
+            String access_token,
+            String refresh_token) {
+    }
 
 }

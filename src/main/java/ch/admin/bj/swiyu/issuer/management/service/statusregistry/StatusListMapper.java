@@ -1,12 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListTypeDto;
-import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListType;
 import lombok.experimental.UtilityClass;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @UtilityClass
 public class StatusListMapper {

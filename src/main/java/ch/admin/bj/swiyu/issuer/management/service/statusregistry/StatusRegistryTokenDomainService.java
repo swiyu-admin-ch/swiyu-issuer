@@ -1,11 +1,17 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
 import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.management.common.exception.JsonException;
+import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.EcosystemApiType;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenApi;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenSet;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenSetRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.EcosystemApiType;
-import ch.admin.bj.swiyu.issuer.management.common.exception.JsonException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockAssert;

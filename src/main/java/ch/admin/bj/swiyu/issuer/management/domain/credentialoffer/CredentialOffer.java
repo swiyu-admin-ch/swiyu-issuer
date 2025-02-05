@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
 import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
