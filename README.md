@@ -4,6 +4,8 @@ SPDX-FileCopyrightText: 2025 Swiss Confederation
 SPDX-License-Identifier: MIT
 -->
 
+![Public Beta banner](https://github.com/e-id-admin/eidch-public-beta/blob/main/assets/github-banner-publicbeta.jpg)
+
 # Generic issuer management service
 
 This software is a web server implementing the technical standards as specified in
@@ -19,6 +21,17 @@ instance of the service.
 
 The issuer management service is linked to the issuer signer services through a database, allowing to scale the signer
 service independently from the management service.
+
+## Table of Contents
+
+- [Overview](#Overview)
+- [Deployment](#deployment)
+- [Development](#development)
+- [SWIYU](#swiyu)
+- [Contributions and feedback](#contributions-and-feedback)
+- [License](#license)
+
+## Overview
 
 ```mermaid
 flowchart TD
@@ -36,6 +49,7 @@ flowchart TD
 # Deployment
 
 > Please make sure that you did the following before starting the deployment:
+>
 > - Generated the signing keys file with the didtoolbox.jar
 > - Generated a DID which is registered on the identifier registry
 > - Registered yourself on the swiyuprobeta portal
@@ -148,20 +162,20 @@ portal. The following properties need to be set:
 1. If you have a client key and secret you have to set the following properties in the `application-local.yml` file:
 
 ```yaml
-  swiyu:
-    status-registry:
-    customer-key: "customer-key"
-    customer-secret: "customer-secret"
+swiyu:
+  status-registry:
+  customer-key: "customer-key"
+  customer-secret: "customer-secret"
 ```
 
 2. If you have a refresh token you have to set the following properties in the `application-local.yml`
 
 ```yaml
-  swiyu:
-    status-registry:
-      api-url: "https://api-url"
-      enable-refresh-token-flow: true
-      bootstrap-refresh-token: "your refresh token"
+swiyu:
+  status-registry:
+    api-url: "https://api-url"
+    enable-refresh-token-flow: true
+    bootstrap-refresh-token: "your refresh token"
 ```
 
 > [!NOTE]  
@@ -361,9 +375,12 @@ Updates to the status registry will fail as long as the auth flow is not restart
 9. Use Customer Key & Secret to configure application-local.yml
 10. Onboard via API Gateway (TODO)
 
-## Contribution
+## Contributions and feedback
 
-We appreciate feedback and contribution. More information can be found in the [CONTRIBUTING-File](/CONTRIBUTING.md).
+The code for this repository is developed privately and will be released after each sprint. The published code can
+therefore only be a snapshot of the current development and not a thoroughly tested version. However, we welcome any
+feedback on the code regarding both the implementation and security aspects. Please follow the guidelines for
+contributing found in [CONTRIBUTING.md](/CONTRIBUTING.md).
 
 ## License
 
