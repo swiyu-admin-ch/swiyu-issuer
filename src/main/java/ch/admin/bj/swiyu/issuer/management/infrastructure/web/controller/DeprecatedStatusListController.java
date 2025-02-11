@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@Deprecated
+@Deprecated(since = "0.1.3-SNAPSHOT", forRemoval = true)
 @Slf4j
 @RestController
 @RequestMapping(value = {"/status-list"})

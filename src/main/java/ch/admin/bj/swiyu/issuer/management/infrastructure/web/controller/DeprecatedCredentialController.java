@@ -26,7 +26,7 @@ import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.
 import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toUpdateStatusResponseDto;
 import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
-@Deprecated
+@Deprecated(since = "0.1.3-SNAPSHOT", forRemoval = true)
 @RestController
 @RequestMapping(value = {"/credentials"})
 @AllArgsConstructor
