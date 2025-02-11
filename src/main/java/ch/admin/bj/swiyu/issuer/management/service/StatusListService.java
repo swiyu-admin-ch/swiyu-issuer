@@ -152,7 +152,7 @@ public class StatusListService {
 
     @Transactional
     public void incrementNextFreeIndex(UUID statusListId) {
-        var statusList = statusListRepository.findById(statusListId)
+        var statusList = statusListRepository.findByIdForUpdate(statusListId)
                 .orElseThrow(() -> new BadRequestException(String.format("Status List %s not found", statusListId)));
         statusList.incrementNextFreeIndex();
         statusListRepository.save(statusList);
@@ -165,7 +165,7 @@ public class StatusListService {
      * @param statusValue the statusBit to be set
      */
     private void updateTokenStatusList(CredentialOfferStatus offerStatus, int statusValue) {
-        StatusList statusList = offerStatus.getStatusList();
+        StatusList statusList = statusListRepository.findByIdForUpdate(offerStatus.getStatusList().getId()).orElseThrow();
         try {
             var token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                     statusList.getStatusZipped());

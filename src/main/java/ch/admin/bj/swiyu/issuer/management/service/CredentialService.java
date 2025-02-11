@@ -54,11 +54,17 @@ public class CredentialService {
         return this.credentialOfferRepository.findById(credentialId)
                 .map(offer -> {
                     // Make sure only offer is returned if it is not expired
-                    if(offer.getCredentialStatus() != CredentialStatusType.EXPIRED && offer.hasExpirationTimeStampPassed()) {
-                        return updateCredentialStatus(offer, CredentialStatusType.EXPIRED);
+                    if (offer.getCredentialStatus() != CredentialStatusType.EXPIRED && offer.hasExpirationTimeStampPassed()) {
+                        return updateCredentialStatus(getCredentialForUpdate(offer.getId()), CredentialStatusType.EXPIRED);
                     }
                     return offer;
                 })
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(String.format("Credential %s not found", credentialId)));
+    }
+
+    public CredentialOffer getCredentialForUpdate(UUID credentialId) {
+        return this.credentialOfferRepository.findByIdForUpdate(credentialId)
                 .orElseThrow(
                         () -> new ResourceNotFoundException(String.format("Credential %s not found", credentialId)));
     }
@@ -106,21 +112,21 @@ public class CredentialService {
         return entity;
     }
 
-    @Transactional
-    public CredentialOffer updateCredentialStatus(@NotNull CredentialOffer credential,
-                                                  @NotNull CredentialStatusTypeDto requestedNewStatus) {
-        return updateCredentialStatus(credential, toCredentialStatusType(requestedNewStatus));
-    }
 
     @Transactional
     public CredentialOffer updateCredentialStatus(@NotNull UUID credentialId,
                                                   @NotNull CredentialStatusTypeDto requestedNewStatus) {
-        return updateCredentialStatus(getCredential(credentialId), requestedNewStatus);
+        return updateCredentialStatus(getCredentialForUpdate(credentialId), toCredentialStatusType(requestedNewStatus));
     }
 
+    /**
+     * @param credential the pessimistic write locked credential offer
+     * @param newStatus  the new status assigned
+     * @return the updated CredentialOffer
+     */
     @Transactional
-    public CredentialOffer updateCredentialStatus(@NotNull CredentialOffer credential,
-                                                  @NotNull CredentialStatusType newStatus) {
+    protected CredentialOffer updateCredentialStatus(@NotNull CredentialOffer credential,
+                                                     @NotNull CredentialStatusType newStatus) {
         var currentStatus = credential.getCredentialStatus();
 
         // Ignore no status changes and return
@@ -134,7 +140,7 @@ public class CredentialService {
                     String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
         }
 
-        if(newStatus == CredentialStatusType.EXPIRED) {
+        if (newStatus == CredentialStatusType.EXPIRED) {
             credential.changeStatus(CredentialStatusType.EXPIRED);
             credential.removeOfferData();
         } else if (!currentStatus.isIssuedToHolder()) {
