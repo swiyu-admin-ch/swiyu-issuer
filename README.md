@@ -67,11 +67,6 @@ Please be aware that both the issuer-agent-management and the issuer-agent-oid4v
 an domain configured in `EXTERNAL_URL` so that
 a wallet can communicate with them.
 
-The latest images are available here:
-
-- [issuer-agent-oid4vci](https://github.com/admin-ch-ssi/mirror-issuer-agent-oid4vci/pkgs/container/mirror-issuer-agent-oid4vci)
-- [issuer-agent-management](https://github.com/admin-ch-ssi/mirror-issuer-agent-management/pkgs/container/mirror-issuer-agent-management)
-
 ## 2. Create a verifiable credentials schema
 
 In order to support your use case you need to adapt the so-called issuer_metadata (
@@ -122,21 +117,39 @@ a credential offer for a holder. Here is an example of a request body for the of
 ```json
 {
   "metadata_credential_supported_id": [
-    #Identifier as configured in the credential_configurations_supported section of the issuer_metadata
-    "myIssuerMetadataCredentialSupportedId"
-  ],
+    #
+  Identifier
+  as
+  configured
+  in
+  the
+  credential_configurations_supported
+  section
+  of
+  the
+  issuer_metadata
+  "myIssuerMetadataCredentialSupportedId"
+],
   "credential_subject_data": {
-    # Actual content of the credential aka offer data
-    "lastName": "Example",
-    "firstName": "Edward"
-  },
-  "offer_validity_seconds": 86400,
-  "credential_valid_until": "2010-01-01T19:23:24Z",
-  "credential_valid_from": "2010-01-01T18:23:24Z",
-  "status_lists": [
-    # Url of the status list created in previous step
-    "https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt"
-  ]
+    #
+  Actual
+  content
+  of
+  the
+  credential
+  aka
+  offer
+  data
+  "lastName": "Example",
+  "firstName": "Edward"
+},
+"offer_validity_seconds": 86400,
+"credential_valid_until": "2010-01-01T19:23:24Z",
+"credential_valid_from": "2010-01-01T18:23:24Z",
+"status_lists": [
+# Url of the status list created in previous step
+"https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt"
+]
 }
 ```
 
@@ -318,7 +331,7 @@ Note that this is only affects writing calls.
 
 To provide a data integrity check with the issuer it is possible to provide the credential subject data as JWT.
 
-See [CredentialOfferCreateJWTIT.java](src/test/java/ch/admin/bit/eid/issuer_management/it/CredentialOfferCreateJWTIT.java)
+See [CredentialOfferCreateJWTIT.java](src/test/java/ch/admin/bj/swiyu/issuer/management/it/CredentialOfferCreateJwtIT.java)
 for examples on how to use.
 
 ## Credential Status
