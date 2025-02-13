@@ -9,7 +9,15 @@ package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -96,7 +104,9 @@ public class CredentialOffer {
     /**
      * Value used in the holder binding process to prevent replay attacks
      */
-    private UUID holderBindingNonce;
+    private UUID nonce;
+
+    private Long tokenExpirationTimestamp;
 
     private Instant credentialValidFrom;
 

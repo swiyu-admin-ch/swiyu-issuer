@@ -40,7 +40,7 @@ public class CredentialServiceIT {
                         .credentialStatus(CredentialStatusType.OFFERED)
                         .offerExpirationTimestamp(now().plusSeconds(1000).getEpochSecond())
                         .accessToken(UUID.randomUUID())
-                        .holderBindingNonce(UUID.randomUUID())
+                        .nonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
         credentialOfferRepository.flush();
@@ -62,7 +62,7 @@ public class CredentialServiceIT {
                         .credentialStatus(CredentialStatusType.OFFERED)
                         .offerExpirationTimestamp(now().minusSeconds(1).getEpochSecond())
                         .accessToken(UUID.randomUUID())
-                        .holderBindingNonce(UUID.randomUUID())
+                        .nonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
 
@@ -79,7 +79,7 @@ public class CredentialServiceIT {
                         .credentialStatus(CredentialStatusType.OFFERED)
                         .offerExpirationTimestamp(now().minusSeconds(1).getEpochSecond())
                         .accessToken(UUID.randomUUID())
-                        .holderBindingNonce(UUID.randomUUID())
+                        .nonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
 
@@ -99,7 +99,7 @@ public class CredentialServiceIT {
                         .credentialStatus(CredentialStatusType.OFFERED)
                         .offerExpirationTimestamp(now().plusSeconds(20).getEpochSecond())
                         .accessToken(UUID.randomUUID())
-                        .holderBindingNonce(UUID.randomUUID())
+                        .nonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
 
@@ -116,7 +116,7 @@ public class CredentialServiceIT {
                         .credentialStatus(CredentialStatusType.OFFERED)
                         .offerExpirationTimestamp(now().minusSeconds(1).getEpochSecond())
                         .accessToken(UUID.randomUUID())
-                        .holderBindingNonce(UUID.randomUUID())
+                        .nonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
 
@@ -125,7 +125,7 @@ public class CredentialServiceIT {
                         .credentialStatus(CredentialStatusType.IN_PROGRESS)
                         .offerExpirationTimestamp(now().minusSeconds(1).getEpochSecond())
                         .accessToken(UUID.randomUUID())
-                        .holderBindingNonce(UUID.randomUUID())
+                        .nonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
 
@@ -134,7 +134,7 @@ public class CredentialServiceIT {
                         .credentialStatus(CredentialStatusType.OFFERED)
                         .offerExpirationTimestamp(now().plusSeconds(1000).getEpochSecond())
                         .accessToken(UUID.randomUUID())
-                        .holderBindingNonce(UUID.randomUUID())
+                        .nonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
 
@@ -143,7 +143,7 @@ public class CredentialServiceIT {
                         .credentialStatus(CredentialStatusType.ISSUED)
                         .offerExpirationTimestamp(now().minusSeconds(1).getEpochSecond())
                         .accessToken(UUID.randomUUID())
-                        .holderBindingNonce(UUID.randomUUID())
+                        .nonce(UUID.randomUUID())
                         // Note: Issued entries should have their data deleted by the VC signer component
                         .build()).getId();
         credentialOfferRepository.flush();

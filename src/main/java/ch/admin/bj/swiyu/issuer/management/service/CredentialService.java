@@ -93,7 +93,7 @@ public class CredentialService {
                 .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
                 .offerData(readOfferData(requestDto.getCredentialSubjectData()))
                 .offerExpirationTimestamp(expiration.getEpochSecond())
-                .holderBindingNonce(UUID.randomUUID())
+                .nonce(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
                 .credentialValidFrom(requestDto.getCredentialValidFrom())
                 .credentialValidUntil(requestDto.getCredentialValidUntil())

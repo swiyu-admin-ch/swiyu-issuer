@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2025 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
-
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
@@ -14,21 +8,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Deprecated(since = "0.1.3-SNAPSHOT", forRemoval = true)
 @Slf4j
 @RestController
-@RequestMapping(value = {"/api/v1/status-list"})
+@RequestMapping(value = {"/status-list"})
 @AllArgsConstructor
 @Tag(name = "Status List", description = "Status List Management API")
-public class StatusListController {
+public class DeprecatedStatusListController {
 
     private final StatusListService statusListService;
 

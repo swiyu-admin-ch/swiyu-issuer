@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2025 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
-
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
@@ -24,14 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -39,11 +26,12 @@ import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.
 import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toUpdateStatusResponseDto;
 import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
+@Deprecated(since = "0.1.3-SNAPSHOT", forRemoval = true)
 @RestController
-@RequestMapping(value = {"/api/v1/credentials"})
+@RequestMapping(value = {"/credentials"})
 @AllArgsConstructor
 @Tag(name = "Credential", description = "Credential Management API")
-public class CredentialController {
+public class DeprecatedCredentialController {
 
     private final CredentialService credentialService;
 
@@ -51,11 +39,11 @@ public class CredentialController {
     @Operation(
             summary = "Create a generic credential offer with the given content",
             description = """
-                    Create a new credential offer, which can the be collected by the holder.
-                    The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
-                    The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
-                    Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
-                    """,
+            Create a new credential offer, which can the be collected by the holder.
+            The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
+            The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
+            Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
+            """,
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -65,8 +53,8 @@ public class CredentialController {
                     @ApiResponse(
                             responseCode = "400",
                             description = """
-                                    Bad request due to user content or internal call to external service like statuslist
-                                    """,
+                            Bad request due to user content or internal call to external service like statuslist
+                            """,
                             content = @Content(schema = @Schema(implementation = Object.class))
                     )
             }
