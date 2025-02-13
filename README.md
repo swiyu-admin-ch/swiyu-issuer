@@ -117,29 +117,10 @@ a credential offer for a holder. Here is an example of a request body for the of
 ```json
 {
   "metadata_credential_supported_id": [
-    #
-  Identifier
-  as
-  configured
-  in
-  the
-  credential_configurations_supported
-  section
-  of
-  the
-  issuer_metadata
-  "myIssuerMetadataCredentialSupportedId"
+    # Identifier as configured in the credential_configurations_supported section of the issuer_metadata "myIssuerMetadataCredentialSupportedId"
 ],
   "credential_subject_data": {
-    #
-  Actual
-  content
-  of
-  the
-  credential
-  aka
-  offer
-  data
+    # Actual content of the credential aka offer data
   "lastName": "Example",
   "firstName": "Edward"
 },
