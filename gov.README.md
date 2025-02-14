@@ -20,8 +20,8 @@ database and the application namespace:
 
 #### MAV
 
-The MAV needs to be bound to the application namespace. Make sure the secrets are located in the path \*
-\*default/application_secrets\*\*
+The MAV needs to be bound to the application namespace. Make sure the secrets are located in the path *
+*default/application_secrets**
 and you configured the vault so that it uses the application_secrets as properties
 
 ```yaml
