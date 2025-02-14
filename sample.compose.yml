@@ -19,7 +19,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
   issuer-agent-management:
-    image: ghcr.io/e-id-admin/eidch-issuer-agent-management:latest
+    image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-management:latest
     environment:
       EXTERNAL_URL: "https:<url of your own issuer-agent-oid4vci service>"
       SPRING_APPLICATION_NAME: "<custom name of the application>"
@@ -53,7 +53,7 @@ services:
       - postgres
 
   issuer-agent-oid4vci:
-    image: ghcr.io/e-id-admin/eidch-issuer-agent-oid4vci:latest
+    image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-oid4vci:latest
     environment:
       EXTERNAL_URL: "https://<external url of this service>"
       ISSUER_ID: "<Your ISSUER_ID>" #e.g did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:identifier-reg-r.trust-infra.swiyu.admin.ch:api:v1:did:ff8eb859-6996-4e51-a976-be1ca584c124

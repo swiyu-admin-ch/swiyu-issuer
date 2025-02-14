@@ -4,12 +4,12 @@ SPDX-FileCopyrightText: 2025 Swiss Confederation
 SPDX-License-Identifier: MIT
 -->
 
-![Public Beta banner](https://github.com/e-id-admin/eidch-public-beta/blob/main/assets/github-banner-publicbeta.jpg)
+![github-banner](https://github.com/swiyu-admin-ch/swiyu-admin-ch.github.io/blob/main/assets/images/github-banner.jpg)
 
 # Generic issuer management service
 
 This software is a web server implementing the technical standards as specified in
-the [Swiss E-ID & Trust Infrastructure technical roadmap](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/tech-roadmap.md).
+the [Swiss e-ID and trust infrastructure: Initial implementation](https://swiyu-admin-ch.github.io/initial-technology/).
 Together with the other generic components provided, this software forms a collection of APIs allowing issuance and
 verification of verifiable credentials without the need of reimplementing the standards.
 
@@ -72,7 +72,7 @@ a wallet can communicate with them.
 In order to support your use case you need to adapt the so-called issuer_metadata (
 see [sample.compose.yml](sample.compose.yml#L85)).
 Those metadata define the appearance of the credential in the wallet and what kind of credential formats are supported.
-For further information consult the [eidch-public-beta repo](https://github.com/e-id-admin/eidch-public-beta)
+For further information consult the [Cookbooks](https://swiyu-admin-ch.github.io/cookbooks/)
 
 ## 3. Initialize the status list
 
