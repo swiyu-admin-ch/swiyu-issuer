@@ -10,14 +10,9 @@ info:
     name: EID - Team Tergum
     email: eid@bit.admin.ch
   version: 0.0.2-20250130130815-9f87328
-externalDocs:
-  url: https://confluence.bit.admin.ch/display/EIDTGM/E-ID+-+Team+Tergum+-+Startseite
-servers:
-  - url: https://swiyu-core-business-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch
-    description: Generated server url
 security:
   # manual change to disable unsupported openid flow (which we acually cannot use anyway)
-  - bearer-jwt: [ ]
+  - bearer-jwt: []
 tags:
   - name: Status Business API
     description: Status Business API

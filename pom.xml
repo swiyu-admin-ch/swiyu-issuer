@@ -271,7 +271,7 @@
             <dependencies>
                 <!-- Securosys HSM -->
                 <dependency>
-                    <!-- https://nexus.bit.admin.ch/#browse/browse:bit-pki-raw-hosted:securosys%2Fjce-provider -->
+                    <!-- work in progress -->
                     <!-- mvn install:install-file -Dfile=lib/primusX-java11.jar -DgroupId=com.securosys.primus -DartifactId=jce -Dversion=2.4.3 -Dpackaging=jar -DlocalRepositoryPath=local -->
                     <groupId>com.securosys.primus</groupId>
                     <artifactId>jce</artifactId>
