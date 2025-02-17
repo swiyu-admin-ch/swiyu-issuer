@@ -9,6 +9,7 @@ package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.service.StatusListService;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,6 +33,7 @@ public class StatusListController {
 
     private final StatusListService statusListService;
 
+    @Timed
     @PostMapping("")
     @Operation(summary = "Create and initialize a new status list.", description = "Initialize and link a status list slot to to this service. "
             +
@@ -41,6 +43,7 @@ public class StatusListController {
         return this.statusListService.createStatusList(request);
     }
 
+    @Timed
     @GetMapping("/{statusListId}")
     @Operation(summary = "Get the status information of a status list.")
     public StatusListDto getStatusListInformation(@PathVariable UUID statusListId) {

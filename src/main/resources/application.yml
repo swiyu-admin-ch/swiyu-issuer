@@ -48,7 +48,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info
+        include: health, info, prometheus
 
 springdoc:
   show-actuator: true
@@ -107,3 +107,9 @@ swiyu:
     enable-refresh-token-flow: ${SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW:false}
     bootstrap-refresh-token: ${secret.swiyu.status-registry.bootstrap-refresh-token:${SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN:#{null}}}
     token-refresh-interval: "PT12H"
+
+monitoring:
+  basic-auth:
+    enabled: ${MONITORING_BASIC_AUTH_ENABLED:false}
+    username: "${MONITORING_BASIC_AUTH_USERNAME:}"
+    password: "${MONITORING_BASIC_AUTH_PASSWORD:}"

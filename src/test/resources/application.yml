@@ -22,3 +22,7 @@ swiyu:
     enable-refresh-token-flow: false
     token-refresh-interval: "PT5S"
   business-partner-id: "00000000-0000-0000-0000-000000000000"
+
+monitoring:
+  basic-auth:
+    enabled: false

@@ -14,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatu
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialService;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -47,6 +48,7 @@ public class CredentialController {
 
     private final CredentialService credentialService;
 
+    @Timed
     @PostMapping("")
     @Operation(
             summary = "Create a generic credential offer with the given content",
@@ -80,6 +82,7 @@ public class CredentialController {
         return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(credential, offerLinkString);
     }
 
+    @Timed
     @GetMapping("/{credentialId}")
     @Operation(
             summary = "Get the offer data, if any is still cached",
@@ -106,6 +109,7 @@ public class CredentialController {
         return toCredentialWithDeeplinkResponseDto(this.credentialService.getCredential(credentialId));
     }
 
+    @Timed
     @GetMapping("/{credentialId}/offer_deeplink")
     @Operation(
             summary = "Get the offer deeplink",
@@ -137,6 +141,7 @@ public class CredentialController {
         return this.credentialService.getOfferDeeplinkFromCredential(credential);
     }
 
+    @Timed
     @GetMapping("/{credentialId}/status")
     @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
@@ -145,6 +150,7 @@ public class CredentialController {
         return toStatusResponseDto(credential);
     }
 
+    @Timed
     @PatchMapping("/{credentialId}/status")
     @Operation(summary = "Set the status of an offer or the verifiable credential associated with the id.")
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
