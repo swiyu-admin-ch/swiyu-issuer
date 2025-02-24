@@ -18,6 +18,7 @@ import lombok.Data;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static ch.admin.bj.swiyu.issuer.management.common.date.DateTimeUtils.ISO8601_FORMAT;
 
@@ -51,6 +52,17 @@ public class CreateCredentialRequestDto {
             }
             """)
     private Object credentialSubjectData;
+
+    @JsonProperty(value = "credential_metadata")
+    @Schema(description = """
+            Various metadata to be used for credential creation.
+            """,
+            example = """
+                    {
+                        "vct#integrity": "sha256-0000000000000000000000000000000000000000000="
+                    }
+                    """)
+    private Map<String, Object> credentialMetadata;
 
     /**
      * Validitiy how long the offer should be usable.
