@@ -6,8 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.management.api.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.management.common.date.CustomInstantDeserializer;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
@@ -62,9 +64,9 @@ public class CreateCredentialRequestDto {
     /**
      * <a href="https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp">XMLSchema
      * dateTimeStamp</a>
-     * eg. 2010-01-01T19:23:24Z
+     * eg. 2010-01-01T19:23:24.132Z
      **/
-    @JsonFormat(pattern = ISO8601_FORMAT, timezone = "UTC")
+    @JsonDeserialize(using = CustomInstantDeserializer.class)
     @JsonProperty(value = "credential_valid_until")
     @Schema(description = "Setting for until when the VC shall be valid. XMLSchema dateTimeStamp https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp", example = "2010-01-01T19:23:24Z")
     private Instant credentialValidUntil;
@@ -72,9 +74,9 @@ public class CreateCredentialRequestDto {
     /**
      * <a href="https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp">XMLSchema
      * dateTimeStamp</a>
-     * eg. 2010-01-01T19:23:24Z
+     * eg. 2010-01-01T19:23:24.123Z
      **/
-    @JsonFormat(pattern = ISO8601_FORMAT, timezone = "UTC")
+    @JsonDeserialize(using = CustomInstantDeserializer.class)
     @JsonProperty(value = "credential_valid_from")
     @Schema(description = "Setting for from when the VC shall be valid. XMLSchema dateTimeStamp https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp", example = "2010-01-01T18:23:24Z")
     private Instant credentialValidFrom;
