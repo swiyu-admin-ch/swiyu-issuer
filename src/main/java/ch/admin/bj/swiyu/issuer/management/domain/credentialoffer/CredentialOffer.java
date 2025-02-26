@@ -106,6 +106,8 @@ public class CredentialOffer {
      */
     private UUID nonce;
 
+    private UUID preAuthorizedCode;
+
     private Long tokenExpirationTimestamp;
 
     private Instant credentialValidFrom;

@@ -95,6 +95,7 @@ public class CredentialService {
                 .offerExpirationTimestamp(expiration.getEpochSecond())
                 .nonce(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
+                .preAuthorizedCode(UUID.randomUUID())
                 .credentialValidFrom(requestDto.getCredentialValidFrom())
                 .credentialValidUntil(requestDto.getCredentialValidUntil())
                 .build();
@@ -180,9 +181,8 @@ public class CredentialService {
     public String getOfferDeeplinkFromCredential(CredentialOffer credential) {
         var grants = new HashMap<String, Object>();
         grants.put("urn:ietf:params:oauth:grant-type:pre-authorized_code", new Object() {
-            // TODO check what this value is and where it should be stored
             @JsonProperty("pre-authorized_code")
-            final UUID preAuthorizedCode = credential.getId();
+            final UUID preAuthorizedCode = credential.getPreAuthorizedCode();
         });
 
         var credentialOffer = CredentialOfferDto.builder()
