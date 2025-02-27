@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.1.0
 
+### Added
+
 - New optional credential_metadata field for providing metadata for vc creation, for example integrity hashes when adding { "vct#integrity": "<subresource integrity hash>" }
 
 ## 1.0.0
