@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - v1.1 ISO8601 compatibility for CredentialRequest
 
+### Fixed
+- Status Lists are now sized correctly for the number of entries during creation, instead of reserving one full byte. This only affects status list creation. Existing status lists still work (though being larger than intended). 
+- Fix a bug where the lock was not propagated correctly to the status list.
+
 ## 1.0.0
 
 - Initial Release

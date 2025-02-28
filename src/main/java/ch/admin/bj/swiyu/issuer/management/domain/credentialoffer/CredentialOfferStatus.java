@@ -19,6 +19,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Cascade;
 
 /**
  * Linking an Index on a Status List to a Verifiable Credential.
@@ -43,6 +44,7 @@ public class CredentialOfferStatus {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @MapsId("statusListId")
+    @Cascade(org.hibernate.annotations.CascadeType.ALL)
     @JoinColumn(name = "status_list_id", referencedColumnName = "id")
     private StatusList statusList;
 
