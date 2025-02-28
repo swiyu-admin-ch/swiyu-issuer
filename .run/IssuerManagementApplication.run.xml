@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-     <configuration default="false" name="IssuerManagementApplication" type="SpringBootApplicationConfigurationType"
+    <configuration default="false" name="IssuerManagementApplication" type="SpringBootApplicationConfigurationType"
                    factoryName="Spring Boot" nameIsGenerated="true">
         <option name="ACTIVE_PROFILES" value="local,local-${USER}"/>
         <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources"/>
