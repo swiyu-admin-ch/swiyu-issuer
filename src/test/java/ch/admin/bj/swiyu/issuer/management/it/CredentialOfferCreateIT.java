@@ -65,6 +65,24 @@ class CredentialOfferCreateIT {
     }
 
     @Test
+    void testCreateOffer_noMilliseconds_thenSuccess() throws Exception {
+        String minPayloadWithEmptySubject = String.format(
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}}",
+                "test");
+        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.management_id").isNotEmpty())
+                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty());
+
+        String now = "2025-02-25T15:55:11Z";
+        String minPayloadWithValidUntil = String.format(
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}",
+                "test", now);
+        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void testCreateOffer_thenValidationFailure() throws Exception {
         String emptyMetadataId = String.format(
                 "{\"metadata_credential_supported_id\": \"%s\", \"credential_subject_data\": {}}", "");

@@ -12,7 +12,7 @@ When deployed in an RHOS setup the issuer-management / issuer-agent setup need t
 
 #### Database
 
-Single postgresql databse service needs to be available. Make sure that the following bindings exist between your
+Single postgresql database service needs to be available. Make sure that the following bindings exist between your
 database and the application namespace:
 
 - database -> issuer-agent-management: Full
