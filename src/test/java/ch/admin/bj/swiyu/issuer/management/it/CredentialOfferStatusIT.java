@@ -10,11 +10,7 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -58,9 +54,10 @@ class CredentialOfferStatusIT {
 
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
-
     @Autowired
     private StatusListRepository statusListRepository;
+    @Autowired
+    private CredentialOfferStatusRepository credentialOfferStatusRepository;
 
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
@@ -73,6 +70,7 @@ class CredentialOfferStatusIT {
 
     @BeforeEach
     void setupTest() throws Exception {
+        credentialOfferStatusRepository.deleteAll();
         credentialOfferRepository.deleteAll();
         statusListRepository.deleteAll();
 
