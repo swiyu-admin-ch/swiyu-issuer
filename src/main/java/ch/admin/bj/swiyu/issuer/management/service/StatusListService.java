@@ -177,8 +177,8 @@ public class StatusListService {
                     statusList.getStatusZipped());
             token.setStatus(offerStatus.getIndex(), statusValue);
             statusList.setStatusZipped(token.getStatusListData());
-            statusListRepository.save(statusList);
             updateRegistry(statusList, token);
+            statusListRepository.save(statusList);
         } catch (IOException e) {
             log.error(String.format("Failed to load status list %s", statusList.getId()), e);
             throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()));

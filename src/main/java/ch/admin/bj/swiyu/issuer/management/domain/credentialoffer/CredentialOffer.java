@@ -23,7 +23,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -116,7 +115,6 @@ public class CredentialOffer {
      * Link to what indexes on status lists are assigned to the vc
      */
     @OneToMany(mappedBy = "offer", fetch = FetchType.EAGER)
-    @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Set<CredentialOfferStatus> offerStatusSet;
 
     /**
