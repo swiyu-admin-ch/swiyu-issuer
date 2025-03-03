@@ -90,6 +90,13 @@ public class CredentialOffer {
     private Map<String, Object> offerData;
 
     /**
+     * VC Type specific metadata which is dynamically provisioned.
+     * For example vct#integrity for SD-JWT VC.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, Object> credentialMetadata;
+
+    /**
      * Value used for the oid bearer token given to the holder
      */
     @NotNull

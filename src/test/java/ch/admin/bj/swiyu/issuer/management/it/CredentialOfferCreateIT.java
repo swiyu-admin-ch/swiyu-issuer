@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.DisplayName;
@@ -21,11 +22,15 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.management.common.date.DateTimeUtils.ISO8601_FORMAT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
 @ActiveProfiles("test")
@@ -36,6 +41,8 @@ class CredentialOfferCreateIT {
 
     private static final String BASE_URL = "/credentials";
 
+    @Autowired
+    private CredentialOfferRepository credentialOfferRepository;
     @Autowired
     private MockMvc mvc;
 
@@ -138,6 +145,31 @@ class CredentialOfferCreateIT {
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(offerData));
+    }
+
+    @Test
+    void testCreateOfferVcMetadata_thenSuccess() throws Exception {
+        String testIntegrity = "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=";
+        String jsonPayload = String.format("""
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": {
+                    "hello": "world"
+                  },
+                  "offer_validity_seconds": 36000,
+                  "credential_metadata": {
+                    "vct#integrity": "%s"
+                  }
+                }
+                """, testIntegrity);
+
+        MvcResult result = mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andReturn();
+        String id = JsonPath.read(result.getResponse().getContentAsString(), "$.management_id");
+        assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().get("vct#integrity"));
     }
 
 }
