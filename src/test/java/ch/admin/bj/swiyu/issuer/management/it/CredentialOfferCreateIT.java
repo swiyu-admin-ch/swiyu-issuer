@@ -41,7 +41,8 @@ class CredentialOfferCreateIT {
 
     private static final String BASE_URL = "/credentials";
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private MockMvc mvc;

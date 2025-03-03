@@ -106,6 +106,9 @@ public class CredentialOffer {
      */
     private UUID nonce;
 
+    /**
+     * Value used to get the token for grant-type:pre-authorized_code
+     */
     private UUID preAuthorizedCode;
 
     private Long tokenExpirationTimestamp;
