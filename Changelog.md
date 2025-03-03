@@ -5,9 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.2.1
+### Fixed
 
-- v1.1 ISO8601 compatibility for CredentialRequest
+- Updated Spring Boot Parent, fixing CVE-2024-50379
+
+## 1.2.0
+### Added
+- Extending prometheus export with metrics for build `runtime
+
+## 1.1.0
+### Changed
+- ISO8601 compatibility for CredentialRequest
 
 ### Fixed
 - Status Lists are now sized correctly for the number of entries during creation, instead of reserving one full byte. This only affects status list creation. Existing status lists still work (though being larger than intended). 
