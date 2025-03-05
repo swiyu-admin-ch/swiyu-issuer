@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - improved error message on missing auth token for accessing status registry
+- updated issuer_metadata in sample.compose.yml to be valid
 
 ## 1.2.5
 

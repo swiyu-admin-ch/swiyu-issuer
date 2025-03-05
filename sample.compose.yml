@@ -16,8 +16,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    volumes:
-      - db_data:/var/lib/postgresql/data
   issuer-agent-management:
     image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-management:latest
     environment:
@@ -81,9 +79,6 @@ services:
     depends_on:
       - postgres
 
-volumes:
-  db_data:
-
 configs:
   issuer_metadata:
     content: |
@@ -100,6 +95,7 @@ configs:
             "A128CBC-HS256"
           ]
         },
+        "version": "1.0",
         "display": [
           {
             "name": "Mein Test VC",
@@ -120,10 +116,10 @@ configs:
           "my-test-vc": {
             "format": "vc+sd-jwt",
             "cryptographic_binding_methods_supported": [
-              "did:tdw"
+              "did:jwk"
             ],
             "credential_signing_alg_values_supported": [
-              "Ed25519VerificationKey2020"
+              "ES256"
             ],
             "proof_types_supported": {
               "jwt": {
