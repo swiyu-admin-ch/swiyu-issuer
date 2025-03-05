@@ -6,15 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.management.domain.ecosystem;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.Getter;
-
 import java.time.Instant;
+
+import jakarta.persistence.*;
+import lombok.Getter;
 
 /**
  * Entity to manage the swiyu provider provided tokens.
@@ -39,11 +34,10 @@ public class TokenSet {
     @Column(nullable = false)
     Instant lastRefresh;
 
-    public TokenSet apply(EcosystemApiType apiTarget, TokenApi.TokenResponse tokenResponse) {
+    public void apply(EcosystemApiType apiTarget, TokenApi.TokenResponse tokenResponse) {
         this.apiTarget = apiTarget;
         this.refreshToken = tokenResponse.refresh_token();
         this.accessToken = tokenResponse.access_token();
         this.lastRefresh = Instant.now();
-        return this;
     }
 }
