@@ -6,6 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.management.service;
 
+import java.util.Map;
+
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toCredentialStatusTypeDto;
+
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
@@ -13,16 +17,11 @@ import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffe
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
 import lombok.experimental.UtilityClass;
 
-import java.util.Map;
-
-import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toCredentialStatusTypeDto;
-
 @UtilityClass
 public class CredentialOfferMapper {
 
     public static CredentialWithDeeplinkResponseDto toCredentialWithDeeplinkResponseDto(CredentialOffer credential,
                                                                                         String offerDeeplinkString) {
-
         return CredentialWithDeeplinkResponseDto.builder()
                 .managementId(credential.getId())
                 .offerDeeplink(offerDeeplinkString)

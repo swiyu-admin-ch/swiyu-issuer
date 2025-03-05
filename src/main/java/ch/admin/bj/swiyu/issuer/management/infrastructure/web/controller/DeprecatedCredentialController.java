@@ -5,8 +5,6 @@ import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDee
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,10 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toCredentialWithDeeplinkResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toUpdateStatusResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
-
 @Deprecated(since = "0.1.3-SNAPSHOT", forRemoval = true)
 @RestController
 @RequestMapping(value = {"/credentials"})
@@ -39,11 +33,11 @@ public class DeprecatedCredentialController {
     @Operation(
             summary = "Create a generic credential offer with the given content",
             description = """
-            Create a new credential offer, which can the be collected by the holder.
-            The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
-            The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
-            Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
-            """,
+                    Create a new credential offer, which can the be collected by the holder.
+                    The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
+                    The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
+                    Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
+                    """,
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -53,19 +47,15 @@ public class DeprecatedCredentialController {
                     @ApiResponse(
                             responseCode = "400",
                             description = """
-                            Bad request due to user content or internal call to external service like statuslist
-                            """,
+                                    Bad request due to user content or internal call to external service like statuslist
+                                    """,
                             content = @Content(schema = @Schema(implementation = Object.class))
                     )
             }
     )
     public CredentialWithDeeplinkResponseDto createCredential(
             @Valid @RequestBody CreateCredentialRequestDto requestDto) {
-        CredentialOffer credential = this.credentialService.createCredential(requestDto);
-
-        String offerLinkString = this.credentialService.getOfferDeeplinkFromCredential(credential);
-
-        return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(credential, offerLinkString);
+        return this.credentialService.createCredential(requestDto);
     }
 
     @GetMapping("/{credentialId}")
@@ -91,7 +81,7 @@ public class DeprecatedCredentialController {
             }
     )
     public Object getCredentialOffer(@PathVariable UUID credentialId) {
-        return toCredentialWithDeeplinkResponseDto(this.credentialService.getCredential(credentialId));
+        return this.credentialService.getCredentialOffer(credentialId);
     }
 
     @GetMapping("/{credentialId}/offer_deeplink")
@@ -120,17 +110,13 @@ public class DeprecatedCredentialController {
             }
     )
     public String getCredentialOfferDeeplink(@PathVariable UUID credentialId) {
-        CredentialOffer credential = this.credentialService.getCredential(credentialId);
-
-        return this.credentialService.getOfferDeeplinkFromCredential(credential);
+        return this.credentialService.getCredentialOfferDeeplink(credentialId);
     }
 
     @GetMapping("/{credentialId}/status")
     @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
-        CredentialOffer credential = this.credentialService.getCredential(credentialId);
-
-        return toStatusResponseDto(credential);
+        return this.credentialService.getCredentialStatus(credentialId);
     }
 
     @PatchMapping("/{credentialId}/status")
@@ -138,10 +124,6 @@ public class DeprecatedCredentialController {
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
                                                           @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = CredentialStatusTypeDto.class))
                                                           @RequestParam("credentialStatus") CredentialStatusTypeDto credentialStatus) {
-
-        CredentialOffer credential = this.credentialService.updateCredentialStatus(credentialId,
-                credentialStatus);
-
-        return toUpdateStatusResponseDto(credential);
+        return this.credentialService.updateCredentialStatus(credentialId, credentialStatus);
     }
 }
