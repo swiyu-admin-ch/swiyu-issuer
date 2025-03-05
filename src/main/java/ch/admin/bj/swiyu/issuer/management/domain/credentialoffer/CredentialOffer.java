@@ -23,7 +23,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -91,6 +90,13 @@ public class CredentialOffer {
     private Map<String, Object> offerData;
 
     /**
+     * VC Type specific metadata which is dynamically provisioned.
+     * For example vct#integrity for SD-JWT VC.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, Object> credentialMetadata;
+
+    /**
      * Value used for the oid bearer token given to the holder
      */
     @NotNull
@@ -121,7 +127,6 @@ public class CredentialOffer {
      * Link to what indexes on status lists are assigned to the vc
      */
     @OneToMany(mappedBy = "offer", fetch = FetchType.EAGER)
-    @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Set<CredentialOfferStatus> offerStatusSet;
 
     /**

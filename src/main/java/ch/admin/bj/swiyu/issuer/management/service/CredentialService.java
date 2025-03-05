@@ -36,6 +36,7 @@ import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -98,6 +99,7 @@ public class CredentialService {
                 .preAuthorizedCode(UUID.randomUUID())
                 .credentialValidFrom(requestDto.getCredentialValidFrom())
                 .credentialValidUntil(requestDto.getCredentialValidUntil())
+                .credentialMetadata(Optional.ofNullable(requestDto.getCredentialMetadata()).orElse(new HashMap<>()))
                 .build();
         entity = this.credentialOfferRepository.save(entity);
 

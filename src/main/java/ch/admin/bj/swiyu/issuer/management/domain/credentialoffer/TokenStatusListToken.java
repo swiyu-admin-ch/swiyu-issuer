@@ -50,7 +50,7 @@ public class TokenStatusListToken {
      */
     public TokenStatusListToken(int bits, int statusListLength) {
         this.bits = bits;
-        statusList = new byte[statusListLength];
+        statusList = new byte[(int) Math.ceil(statusListLength * bits / 8.0)];
     }
 
     /**
@@ -197,8 +197,12 @@ public class TokenStatusListToken {
         }
     }
 
-    private byte getStatusEntryByte(int idx) {
-        return statusList[idx * bits / 8];
+    private byte getStatusEntryByte(int idx) throws IndexOutOfBoundsException {
+        try {
+            return statusList[idx * bits / 8];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new IndexOutOfBoundsException("Status List Index %d out of bounds (Max size %d)".formatted(idx, statusList.length * bits));
+        }
     }
 
     /**

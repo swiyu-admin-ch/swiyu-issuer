@@ -15,6 +15,8 @@ import java.util.Random;
 import java.util.zip.DataFormatException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestTokenStatusListToken {
@@ -99,5 +101,41 @@ public class TestTokenStatusListToken {
         var size_bytes = ((String) claims.get("lst")).length();
         assertTrue(size_bytes < Math.pow(2, 20) * 5);// Smaller than 5MBi to download
 
+    }
+
+    @Test
+    void testStatusListStructure() throws IOException {
+        var statusList = new TokenStatusListToken(2, 4);
+        for (byte statusByte : statusList.getStatusList()) {
+            assertEquals(0, statusByte);
+        }
+        var initialStatusList = statusList.getStatusListData();
+        var loadedStatusList = TokenStatusListToken.loadTokenStatusListToken(2, initialStatusList);
+        // Should be still the same zipped string after loading
+        assertEquals(initialStatusList, loadedStatusList.getStatusListData());
+        // Should be still all 0s
+        for (byte statusByte : statusList.getStatusList()) {
+            assertEquals(0, statusByte);
+        }
+        statusList.setStatus(0, 3);
+        statusList.setStatus(1, 1);
+        statusList.setStatus(2, 1);
+        statusList.setStatus(3, 2);
+        for (byte statusByte : statusList.getStatusList()) {
+            assertNotEquals(0, statusByte);
+        }
+        loadedStatusList = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusListData());
+        assertNotEquals(initialStatusList, loadedStatusList.getStatusListData());
+        loadedStatusList.setStatus(0, 0);
+        loadedStatusList.setStatus(1, 0);
+        loadedStatusList.setStatus(2, 0);
+        loadedStatusList.setStatus(3, 0);
+        assertEquals(initialStatusList, loadedStatusList.getStatusListData());
+        for (byte statusByte : loadedStatusList.getStatusList()) {
+            assertEquals(0, statusByte);
+        }
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            statusList.setStatus(4, 1);
+        });
     }
 }
