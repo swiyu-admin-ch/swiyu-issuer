@@ -27,6 +27,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.text.ParseException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -107,6 +108,12 @@ public class IssuerManagementApplicationIT {
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void testHttpMaxRedirectsSystemPropertyIsSet() {
+        var maxRedirects = System.getProperty("http.maxRedirects");
+        assertEquals("5", maxRedirects);
     }
 
 }
