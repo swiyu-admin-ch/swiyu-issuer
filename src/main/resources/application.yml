@@ -54,6 +54,12 @@ springdoc:
   show-actuator: true
 
 application:
+  # Schema of the generated deeplink. Keep in mind that the wallet must support this.
+  # iOS is not capable of letting the user choose between the apps being opened by the schema.
+  # the standard is openid-credential-offer
+  # default for swiss ecosystem is swiyu://
+  # It is not recommended to change this value unless you want to use this issuer in a different ecosystem.
+  deeplink-schema: ${DEEPLINK_SCHEMA:swiyu}
   # DID of the Issuer
   issuer-id: ${ISSUER_ID:}
   # URL under which this service can be reached from the web

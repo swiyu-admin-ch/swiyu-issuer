@@ -202,7 +202,7 @@ public class CredentialService {
             throw new JsonException("Error processing credential offer for credential with id %s".formatted(credential.getId()), e);
         }
 
-        return String.format("openid-credential-offer://?credential_offer=%s", credentialOfferString);
+        return String.format("%s://?credential_offer=%s", config.getDeeplinkSchema(), credentialOfferString);
     }
 
     /**

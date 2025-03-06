@@ -11,6 +11,7 @@ application:
     verification-method: "did:tdw:example#12345"
     key-management-method: "key"
   offer-expiration-interval: "PT15M"
+  deeplink-schema: swiyu
 
 swiyu:
   status-registry:

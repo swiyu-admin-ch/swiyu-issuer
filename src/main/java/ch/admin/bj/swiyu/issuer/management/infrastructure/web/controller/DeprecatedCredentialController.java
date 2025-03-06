@@ -1,5 +1,11 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
+import java.util.UUID;
+
+import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toCredentialWithDeeplinkResponseDto;
+import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toUpdateStatusResponseDto;
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
+
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
@@ -20,12 +26,6 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toCredentialWithDeeplinkResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toUpdateStatusResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
-
 @Deprecated(since = "0.1.3-SNAPSHOT", forRemoval = true)
 @RestController
 @RequestMapping(value = {"/credentials"})
@@ -39,11 +39,11 @@ public class DeprecatedCredentialController {
     @Operation(
             summary = "Create a generic credential offer with the given content",
             description = """
-            Create a new credential offer, which can the be collected by the holder.
-            The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
-            The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
-            Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
-            """,
+                    Create a new credential offer, which can the be collected by the holder.
+                    The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
+                    The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
+                    Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
+                    """,
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -53,8 +53,8 @@ public class DeprecatedCredentialController {
                     @ApiResponse(
                             responseCode = "400",
                             description = """
-                            Bad request due to user content or internal call to external service like statuslist
-                            """,
+                                    Bad request due to user content or internal call to external service like statuslist
+                                    """,
                             content = @Content(schema = @Schema(implementation = Object.class))
                     )
             }
@@ -107,7 +107,7 @@ public class DeprecatedCredentialController {
                                             @ExampleObject(
                                                     name = "Offer deeplink",
                                                     summary = "Example of a deeplink",
-                                                    value = "openid-credential-offer://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22b614c966-0c1d-4636-9aec-e2496d242d25%22%7D%7D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fissuer-agent-oid4vci-d.bit.admin.ch%22%2C%22credential_configuration_ids%22%3A%5B%22myIssuerMetadataCredentialSupportedId%22%5D%7D"
+                                                    value = "swiyu://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22b614c966-0c1d-4636-9aec-e2496d242d25%22%7D%7D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fissuer-agent-oid4vci-d.bit.admin.ch%22%2C%22credential_configuration_ids%22%3A%5B%22myIssuerMetadataCredentialSupportedId%22%5D%7D"
                                             )
                                     }
                             )
