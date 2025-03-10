@@ -6,6 +6,16 @@
 
 package ch.admin.bj.swiyu.issuer.management.service;
 
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer.readOfferData;
+import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.*;
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
+
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
@@ -28,19 +38,6 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer.readOfferData;
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.*;
-import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
 @Slf4j
 @Service
@@ -154,10 +151,15 @@ public class CredentialService {
                         "Illegal state transition - Status cannot be updated from %s to %s", currentStatus, newStatus));
             }
         } else {
+
+            final Set<CredentialOfferStatus> offerStatusSet = credential.getOfferStatusSet();
+            if (offerStatusSet.isEmpty()) {
+                throw new BadRequestException("No associated status lists found. Can not set a status to an already issued credential");
+            }
             switch (newStatus) {
-                case REVOKED -> statusListService.revoke(credential.getOfferStatusSet());
-                case SUSPENDED -> statusListService.suspend(credential.getOfferStatusSet());
-                case ISSUED -> statusListService.revalidate(credential.getOfferStatusSet());
+                case REVOKED -> statusListService.revoke(offerStatusSet);
+                case SUSPENDED -> statusListService.suspend(offerStatusSet);
+                case ISSUED -> statusListService.revalidate(offerStatusSet);
                 default -> throw new IllegalArgumentException("Unknown status");
             }
 
@@ -210,7 +212,6 @@ public class CredentialService {
                     .id(offerStatusKey)
                     .index(statusList.getNextFreeIndex())
                     .offer(entity)
-                    .statusList(statusList)
                     .build();
             credentialOfferStatusRepository.save(offerStatus);
             statusListService.incrementNextFreeIndex(statusList.getId());

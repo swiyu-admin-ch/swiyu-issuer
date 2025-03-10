@@ -6,10 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -19,6 +15,10 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterOutputStream;
+
+import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * See <a href=
@@ -170,11 +170,11 @@ public class TokenStatusListToken {
     }
 
     public boolean canRevoke() {
-        return bits >= TokenStatsListBit.REVOKE.getValue();
+        return bits >= TokenStatusListBit.REVOKE.getValue();
     }
 
     public boolean canSuspend() {
-        return bits >= TokenStatsListBit.SUSPEND.getValue();
+        return bits >= TokenStatusListBit.SUSPEND.getValue();
     }
 
     /**
