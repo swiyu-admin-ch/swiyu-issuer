@@ -33,9 +33,9 @@ public class CredentialServiceIT {
 
     @Test
     void offerDeeplinkTest() {
+        // GIVEN
         Map<String, Object> offerData = Map.of("hello", "world");
-
-        var validId = credentialOfferRepository.save(
+        var validId = credentialOfferRepository.saveAndFlush(
                 CredentialOffer.builder()
                         .credentialStatus(CredentialStatusType.OFFERED)
                         .offerExpirationTimestamp(now().plusSeconds(1000).getEpochSecond())
@@ -43,11 +43,12 @@ public class CredentialServiceIT {
                         .nonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
-        credentialOfferRepository.flush();
 
         var validOffer = credentialOfferRepository.findById(validId);
-        assert (validOffer.isPresent());
-        var validDeeplink = credentialService.getOfferDeeplinkFromCredential(validOffer.get());
+        assertThat(validOffer.isPresent()).isTrue();
+        // WHEN
+        var validDeeplink = credentialService.getCredentialOfferDeeplink(validOffer.get().getId());
+        // THEN
         assertThat(validDeeplink).isNotNull();
         System.out.println(validDeeplink);
         assertThat(validDeeplink.contains("version")).isTrue();
@@ -56,6 +57,7 @@ public class CredentialServiceIT {
 
     @Test
     void getCredentialInvalidateOfferWhenExpired() {
+        // GIVEN
         Map<String, Object> offerData = Map.of("hello", "world");
         var expiredOfferdId = credentialOfferRepository.save(
                 CredentialOffer.builder()
@@ -65,14 +67,18 @@ public class CredentialServiceIT {
                         .nonce(UUID.randomUUID())
                         .offerData(offerData)
                         .build()).getId();
-
-        var response = credentialService.getCredential(expiredOfferdId);
+        // WHEN
+        // note: getting an expired offer will imeediately update it to expired
+        credentialService.getCredentialOffer(expiredOfferdId);
+        // THEN
+        var response = credentialOfferRepository.findById(expiredOfferdId).orElseThrow();
         assertEquals(CredentialStatusType.EXPIRED, response.getCredentialStatus());
         assertNull(response.getOfferData());
     }
 
     @Test
     void getDeeplinkInvalidateOfferWhenExpired() {
+        // GIVEN
         Map<String, Object> offerData = Map.of("hello", "world");
         var expiredOfferdId = credentialOfferRepository.save(
                 CredentialOffer.builder()
@@ -83,10 +89,14 @@ public class CredentialServiceIT {
                         .offerData(offerData)
                         .build()).getId();
 
-        var credential = credentialService.getCredential(expiredOfferdId);
+        // WHEN
+        // note: getting an expired offer will immediately update it to expired
+        credentialService.getCredentialOffer(expiredOfferdId);
+        // THEN
+        var credential = credentialOfferRepository.findById(expiredOfferdId).orElseThrow();
         assertEquals(CredentialStatusType.EXPIRED, credential.getCredentialStatus());
         assertNull(credential.getOfferData());
-        var deepLink = credentialService.getOfferDeeplinkFromCredential(credential);
+        var deepLink = credentialService.getCredentialOfferDeeplink(credential.getId());
         assertNotNull(deepLink);
         assertTrue(deepLink.startsWith("swiyu://"));
     }
@@ -103,7 +113,7 @@ public class CredentialServiceIT {
                         .offerData(offerData)
                         .build()).getId();
 
-        var response = credentialService.getCredential(expiredOfferdId);
+        var response = credentialOfferRepository.findById(expiredOfferdId).orElseThrow();
         assertEquals(CredentialStatusType.OFFERED, response.getCredentialStatus());
         assertNotNull(response.getOfferData());
     }

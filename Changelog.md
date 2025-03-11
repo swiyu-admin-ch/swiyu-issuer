@@ -10,6 +10,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change deeplink schema to swiyu. It can be changed with an environment variable if need be, but no action on issuer side should be necessary. A new wallet version is needed
 
+## 1.2.7
+
+### Fixed
+
+- Fixed potential decompression bomb security issue
+
+## 1.2.6
+
+### Fixed
+
+- improved error message on missing auth token for accessing status registry
+- updated issuer_metadata in sample.compose.yml to be valid
+
+## 1.2.5
+
+### Changed
+
+- internal technical cleanups
+
+## Removed
+
+- Deprecated Endpoints without version number are removed
+
+## 1.2.4
+
+### Changed
+
+- Provide securosys HSM Primus jce provider
+
+## 1.2.3
+
+### Fixed
+
+- Set connection timeout, read timeout and max redirects for rest client.
+
+## 1.2.2
+
+### Fixed
+
+- Use separate pre-auth code instead of management id to get token
+
 ## 1.2.1
 ### Fixed
 

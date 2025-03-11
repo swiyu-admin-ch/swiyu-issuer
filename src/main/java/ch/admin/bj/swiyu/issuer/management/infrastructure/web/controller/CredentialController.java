@@ -17,8 +17,6 @@ import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDee
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,6 +30,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping(value = {"/api/v1/credentials"})
@@ -66,13 +66,8 @@ public class CredentialController {
                     )
             }
     )
-    public CredentialWithDeeplinkResponseDto createCredential(
-            @Valid @RequestBody CreateCredentialRequestDto requestDto) {
-        CredentialOffer credential = this.credentialService.createCredential(requestDto);
-
-        String offerLinkString = this.credentialService.getOfferDeeplinkFromCredential(credential);
-
-        return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(credential, offerLinkString);
+    public CredentialWithDeeplinkResponseDto createCredential(@Valid @RequestBody CreateCredentialRequestDto request) {
+        return this.credentialService.createCredential(request);
     }
 
     @Timed
@@ -99,7 +94,7 @@ public class CredentialController {
             }
     )
     public Object getCredentialOffer(@PathVariable UUID credentialId) {
-        return toCredentialWithDeeplinkResponseDto(this.credentialService.getCredential(credentialId));
+        return this.credentialService.getCredentialOffer(credentialId);
     }
 
     @Timed
@@ -129,18 +124,14 @@ public class CredentialController {
             }
     )
     public String getCredentialOfferDeeplink(@PathVariable UUID credentialId) {
-        CredentialOffer credential = this.credentialService.getCredential(credentialId);
-
-        return this.credentialService.getOfferDeeplinkFromCredential(credential);
+        return this.credentialService.getCredentialOfferDeeplink(credentialId);
     }
 
     @Timed
     @GetMapping("/{credentialId}/status")
     @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
-        CredentialOffer credential = this.credentialService.getCredential(credentialId);
-
-        return toStatusResponseDto(credential);
+        return this.credentialService.getCredentialStatus(credentialId);
     }
 
     @Timed
@@ -150,9 +141,6 @@ public class CredentialController {
                                                           @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = CredentialStatusTypeDto.class))
                                                           @RequestParam("credentialStatus") CredentialStatusTypeDto credentialStatus) {
 
-        CredentialOffer credential = this.credentialService.updateCredentialStatus(credentialId,
-                credentialStatus);
-
-        return toUpdateStatusResponseDto(credential);
+        return this.credentialService.updateCredentialStatus(credentialId, credentialStatus);
     }
 }

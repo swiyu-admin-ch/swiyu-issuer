@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: MIT
 
 spring:
+  http:
+    client:
+      connect-timeout: 10000 # 10 seconds
+      read-timeout: 30000 # 30 seconds
   jpa:
     database: postgresql
     show-sql: false
@@ -119,3 +123,6 @@ monitoring:
     enabled: ${MONITORING_BASIC_AUTH_ENABLED:false}
     username: "${MONITORING_BASIC_AUTH_USERNAME:}"
     password: "${MONITORING_BASIC_AUTH_PASSWORD:}"
+
+http:
+  max-redirects: 5

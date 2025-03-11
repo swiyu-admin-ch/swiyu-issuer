@@ -10,18 +10,22 @@ import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusLis
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Executable;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Random;
 import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.boot.actuate.autoconfigure.cloudfoundry.SecurityResponse.success;
 
 public class TestTokenStatusListToken {
     @Test
-    void testCreateNewStatusList_thenSuccess() throws DataFormatException, IOException {
+    void testCreateNewStatusList_thenSuccess() throws IOException {
         /*
          * byte_array = [0xc9, 0x44, 0xf9]
          * encoded:
@@ -137,5 +141,50 @@ public class TestTokenStatusListToken {
         assertThrows(IndexOutOfBoundsException.class, () -> {
             statusList.setStatus(4, 1);
         });
+    }
+
+    @Test
+    void testDecodeStatusList_CompressionBomb_IOExceptionExpected() {
+        // Generate a compression bomb
+        byte[] compressionBomb = createCompressionBomb(5 * 1024 * 1024); // 5MB
+        // Encode in Base64
+        var base64CompressionBomb = Base64.getUrlEncoder().withoutPadding().encodeToString(compressionBomb);
+        // Expect an IOException while decompressing
+        var exception = assertThrows(IOException.class, () -> {
+            TokenStatusListToken.decodeStatusList(base64CompressionBomb, 4 * 1024 * 1024); // 4MB
+        });
+        assertEquals("Decompressed data exceeds safe limit! Possible compression bomb attack.", exception.getMessage());
+    }
+
+    @Test
+    void testDecodeStatusList_CompressionBomb_NoExceptionExpected() {
+        // Generate a compression bomb
+        byte[] compressionBomb = createCompressionBomb(5 * 1024 * 1024); // 4MB
+        // Encode in Base64
+        var base64CompressionBomb = Base64.getUrlEncoder().withoutPadding().encodeToString(compressionBomb);
+        // Expect no IOException while decompressing, because the safe limit is bigger than the compressed data
+        assertDoesNotThrow(() -> {
+            TokenStatusListToken.decodeStatusList(base64CompressionBomb, 5 * 1024 * 1024); // 5MB
+        });
+    }
+
+    /**
+     * Creates a highly compressed payload (Compression Bomb) that will exceed the safe limit when decompressed.
+     */
+    private byte[] createCompressionBomb(int sizeInBytes) {
+        try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+             // Use deflater with max compression level (9)
+             DeflaterOutputStream deflaterStream = new DeflaterOutputStream(byteStream, new Deflater(9))) {
+
+            byte[] largeData = new byte[sizeInBytes];
+            Arrays.fill(largeData, (byte) 'A');
+
+            deflaterStream.write(largeData);
+            deflaterStream.finish();
+
+            return byteStream.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create compression bomb", e);
+        }
     }
 }
