@@ -6,9 +6,12 @@
 
 package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
+import java.time.Instant;
+
+import static ch.admin.bj.swiyu.issuer.management.domain.ecosystem.EcosystemApiType.STATUS_REGISTRY;
+
 import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.management.common.exception.JsonException;
-import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.EcosystemApiType;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenApi;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenSet;
 import ch.admin.bj.swiyu.issuer.management.domain.ecosystem.TokenSetRepository;
@@ -20,8 +23,6 @@ import net.javacrumbs.shedlock.core.LockingTaskExecutor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
 
 /**
  * A service to interact with the status registry token provider from the swiyu
@@ -39,8 +40,6 @@ public class StatusRegistryTokenDomainService {
 
     private final LockConfiguration statusRegistryTokenApiLockConfiguration;
     private final TokenApi statusRegistryTokenApi;
-
-    private final EcosystemApiType thisApi = EcosystemApiType.STATUS_REGISTRY;
 
     /**
      * Initial token set refresh flow.
@@ -69,7 +68,7 @@ public class StatusRegistryTokenDomainService {
                 (Runnable) () -> {
                     log.info("Refresh token set with this instance.");
                     try {
-                        var dbData = tokenSetRepository.findById(thisApi);
+                        var dbData = tokenSetRepository.findById(STATUS_REGISTRY);
                         if (dbData.isEmpty() || Instant.now().plusSeconds(1).isAfter(
                                 dbData.get().getLastRefresh()
                                         .plus(swiyuProperties.statusRegistry().tokenRefreshInterval()))) {
@@ -94,8 +93,9 @@ public class StatusRegistryTokenDomainService {
      */
     @Transactional(readOnly = true)
     public String getAccessToken() {
-        var dbData = tokenSetRepository.findById(thisApi)
-                .orElseThrow(() -> new IllegalArgumentException("TODO"));
+        var dbData = tokenSetRepository.findById(STATUS_REGISTRY)
+                .orElseThrow(() -> new IllegalStateException("Failed to lookup authorization token for accessing the " +
+                        "status registry. There was no token provided under the key 'STATUS_REGISTRY'."));
         return dbData.getAccessToken();
     }
 
@@ -155,7 +155,7 @@ public class StatusRegistryTokenDomainService {
         LockAssert.assertLocked();
 
         // check old config
-        var dbData = tokenSetRepository.findById(thisApi);
+        var dbData = tokenSetRepository.findById(STATUS_REGISTRY);
         TokenApi.TokenResponse tokenResponse;
         if (dbData.isEmpty()) {
             // if not initialized: try it with the bootstrap token
@@ -177,7 +177,7 @@ public class StatusRegistryTokenDomainService {
         }
         // save new token set data to db
         TokenSet saveTo = dbData.orElseGet(TokenSet::new);
-        saveTo.apply(thisApi, tokenResponse);
+        saveTo.apply(STATUS_REGISTRY, tokenResponse);
         log.debug("Token set update successfully.");
         return tokenSetRepository.save(saveTo);
     }

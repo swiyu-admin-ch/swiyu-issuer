@@ -5,7 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.7
+
+### Fixed
+
+- Fixed potential decompression bomb security issue
+
+## 1.2.6
+
+### Fixed
+
+- improved error message on missing auth token for accessing status registry
+- updated issuer_metadata in sample.compose.yml to be valid
+
 ## 1.2.5
+
+### Changed
+
+- internal technical cleanups
 
 ## Removed
 
@@ -40,10 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Extending prometheus export with metrics for build `runtime
-- New optional credential_metadata field for providing metadata for vc creation, for example integrity hashes when adding { "vct#integrity": "<subresource integrity hash>" }
+- New optional credential_metadata field for providing metadata for vc creation, for example integrity hashes when
+  adding { "vct#integrity": "<subresource integrity hash>" }
 
 ### Changed
+
 - v1.1 ISO8601 compatibility for CredentialRequest
+
 ## 1.1.0
 
 ### Changed
@@ -51,7 +71,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ISO8601 compatibility for CredentialRequest
 
 ### Fixed
-- Status Lists are now sized correctly for the number of entries during creation, instead of reserving one full byte. This only affects status list creation. Existing status lists still work (though being larger than intended). 
+
+- Status Lists are now sized correctly for the number of entries during creation, instead of reserving one full byte.
+  This only affects status list creation. Existing status lists still work (though being larger than intended).
 - Fix a bug where the lock was not propagated correctly to the status list.
 
 ## 1.0.0
