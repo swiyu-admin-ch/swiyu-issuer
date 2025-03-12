@@ -11,6 +11,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -23,6 +24,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static net.logstash.logback.argument.StructuredArguments.keyValue;
@@ -42,9 +44,11 @@ class RequestLoggingFilter extends OncePerRequestFilter {
 
     public static final String UNKNOWN_METHOD = "UNKNOWN";
 
-    private static String method(ServletServerHttpRequest request) {
-        return request.getMethod() == null ? UNKNOWN_METHOD : request.getMethod().toString();
-    }
+    /**
+     * By default we don't want all the /actuator access being logged since it pollutes the logs.
+     */
+    @Value("${request.logging.uri-filter-pattern:.*/actuator/.*}")
+    private Pattern uriFilterPattern;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
@@ -67,9 +71,11 @@ class RequestLoggingFilter extends OncePerRequestFilter {
         var servletRequest = request instanceof ServletServerHttpRequest ? (ServletServerHttpRequest) request
                 : new ServletServerHttpRequest(request);
         var method = method(servletRequest);
-        log.debug("Incoming {} Request to {}",
-                value("method", method),
-                value("uri", servletRequest.getURI().toASCIIString()));
+        if (shouldTraceUri(request.getRequestURI())) {
+            log.debug("Incoming {} Request to {}",
+                    value("method", method),
+                    value("uri", servletRequest.getURI().toASCIIString()));
+        }
 
     }
 
@@ -82,13 +88,26 @@ class RequestLoggingFilter extends OncePerRequestFilter {
         var durationTime = ChronoUnit.MILLIS.between(incomingTime, ZonedDateTime.now());
         var remoteAddress = servletServerHttpRequest.getRemoteAddress();
         String format = "Response: {} {} {} {} {} {} {}";
-        log.debug(format,
-                value("method", method),
-                value("uri", servletServerHttpRequest.getURI().toASCIIString()),
-                keyValue("result", response.getStatus()),
-                keyValue("dt", durationTime),
-                keyValue("remoteAddr", remoteAddress == null ? null : remoteAddress.toString()),
-                keyValue("requestHeaders", servletServerHttpRequest.getHeaders()),
-                keyValue("responseHeaders", responseHeaders));
+        if (shouldTraceUri(request.getRequestURI())) {
+            log.debug(format,
+                    value("method", method),
+                    value("uri", servletServerHttpRequest.getURI().toASCIIString()),
+                    keyValue("result", response.getStatus()),
+                    keyValue("dt", durationTime),
+                    keyValue("remoteAddr", remoteAddress == null ? null : remoteAddress.toString()),
+                    keyValue("requestHeaders", servletServerHttpRequest.getHeaders()),
+                    keyValue("responseHeaders", responseHeaders));
+        }
+    }
+
+    private boolean shouldTraceUri(String uri) {
+        if (uriFilterPattern == null) {
+            return true;
+        }
+        return !uriFilterPattern.matcher(uri).matches();
+    }
+
+    private static String method(ServletServerHttpRequest request) {
+        return request.getMethod() == null ? UNKNOWN_METHOD : request.getMethod().toString();
     }
 }
