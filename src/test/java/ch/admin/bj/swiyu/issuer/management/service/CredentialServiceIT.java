@@ -6,6 +6,13 @@
 
 package ch.admin.bj.swiyu.issuer.management.service;
 
+import java.util.Map;
+import java.util.UUID;
+
+import static java.time.Instant.now;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
@@ -14,13 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-
-import java.util.Map;
-import java.util.UUID;
-
-import static java.time.Instant.now;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest()
 @ActiveProfiles("test")
@@ -98,7 +98,7 @@ public class CredentialServiceIT {
         assertNull(credential.getOfferData());
         var deepLink = credentialService.getCredentialOfferDeeplink(credential.getId());
         assertNotNull(deepLink);
-        assertTrue(deepLink.startsWith("openid-credential-offer://"));
+        assertTrue(deepLink.startsWith("swiyu://"));
     }
 
     @Test

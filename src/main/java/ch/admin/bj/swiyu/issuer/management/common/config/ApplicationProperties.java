@@ -6,17 +6,18 @@
 
 package ch.admin.bj.swiyu.issuer.management.common.config;
 
+import java.text.ParseException;
+
 import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
 import com.nimbusds.jose.jwk.JWKSet;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
-
-import java.text.ParseException;
 
 @Slf4j
 @Configuration
@@ -27,6 +28,9 @@ public class ApplicationProperties {
 
     @NotNull
     private String externalUrl;
+
+    @NotEmpty
+    private String deeplinkSchema;
 
     @NotNull
     private String issuerId;

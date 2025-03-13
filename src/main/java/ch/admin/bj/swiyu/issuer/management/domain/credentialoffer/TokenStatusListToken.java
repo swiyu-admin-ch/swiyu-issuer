@@ -27,7 +27,7 @@ import java.util.zip.*;
 @Getter
 public class TokenStatusListToken {
 
-    private static final int MAX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024; // 100MB
+    private static final int MAX_UNCOMPRESSED_SIZE_IN_BYTES = 10485760; // 10MB
 
     /**
      * Indicator how many consecutive bits of the token status list are contained
@@ -99,25 +99,6 @@ public class TokenStatusListToken {
      * @throws IOException If an error occurs during decoding, decompression, or if the decompressed data exceeds the allowed limit.
      */
     public static byte[] decodeStatusList(String lst) throws IOException {
-        return decodeStatusList(lst, MAX_UNCOMPRESSED_SIZE);
-    }
-
-    /**
-     * Decodes and decompresses a Base64-encoded and compressed status list.
-     *
-     * <p>This method performs the following steps:
-     * <ul>
-     *     <li>Decodes the input string using Base64 decoding.</li>
-     *     <li>Decompresses the deflated data using a {@link InflaterInputStream}.</li>
-     *     <li>Ensures that the decompressed data does not exceed a predefined safe limit to prevent potential compression bomb attacks.</li>
-     * </ul>
-     *
-     * @param lst The Base64-encoded and deflate-compressed input string.
-     * @param maxUncompressedSizeInBytes The maximum allowed size of the decompressed data in bytes.
-     * @return A byte array containing the decompressed data.
-     * @throws IOException If an error occurs during decoding, decompression, or if the decompressed data exceeds the allowed limit.
-     */
-    public static byte[] decodeStatusList(String lst, int maxUncompressedSizeInBytes) throws IOException {
         byte[] zippedData = Base64.getUrlDecoder().decode(lst);
 
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(zippedData);
@@ -131,7 +112,7 @@ public class TokenStatusListToken {
             // Check if the decompressed data size exceeds the allowed limit
             while ((bytesRead = inflaterStream.read(buffer)) != -1) {
                 totalSize += bytesRead;
-                if (totalSize > maxUncompressedSizeInBytes) {
+                if (totalSize > MAX_UNCOMPRESSED_SIZE_IN_BYTES) {
                     throw new IOException("Decompressed data exceeds safe limit! Possible compression bomb attack.");
                 }
                 output.write(buffer, 0, bytesRead);

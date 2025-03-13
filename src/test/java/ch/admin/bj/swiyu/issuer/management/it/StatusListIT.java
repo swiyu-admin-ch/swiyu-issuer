@@ -6,6 +6,14 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
+import java.util.UUID;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
@@ -21,21 +29,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.UUID;
-
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest()
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 class StatusListIT {
 
-    private static final String BASE_URL = "/credentials";
-    private static final String STATUS_LIST_BASE_URL = "/status-list";
+    public static final String STATUS_LIST_BASE_URL = "/api/v1/status-list";
+    private static final String BASE_URL = "/api/v1/credentials";
     private final UUID statusListUUID = UUID.randomUUID();
     private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
             .formatted(statusListUUID);
@@ -65,7 +65,7 @@ class StatusListIT {
         var payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength,
                 bits);
 
-        var result = mvc.perform(post("/status-list")
+        var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -79,7 +79,7 @@ class StatusListIT {
                 .andReturn();
 
         // check if get info endpoint return the same values
-        mvc.perform(get("/status-list/" + JsonPath.read(result.getResponse().getContentAsString(), "$.id")))
+        mvc.perform(get(STATUS_LIST_BASE_URL + "/" + JsonPath.read(result.getResponse().getContentAsString(), "$.id")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
@@ -123,7 +123,7 @@ class StatusListIT {
         var freeIndex = 0;
         var remainigEntries = maxLength - freeIndex;
 
-        var result = mvc.perform(post("/status-list")
+        var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -140,7 +140,7 @@ class StatusListIT {
         var statusListId = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
         var expectedNextFreeIndex = 1;
 
-        mvc.perform(get("/status-list/" + statusListId))
+        mvc.perform(get(STATUS_LIST_BASE_URL + "/" + statusListId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())

@@ -6,6 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -23,16 +27,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest()
 @ActiveProfiles("testjwt")
 @AutoConfigureMockMvc
 class CredentialOfferCreateJwtIT {
 
-    private static final String BASE_URL = "/credentials";
+    private static final String BASE_URL = "/api/v1/credentials";
 
     @Autowired
     private MockMvc mvc;

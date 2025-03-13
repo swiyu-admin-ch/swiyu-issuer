@@ -52,8 +52,10 @@ public class StatusRegistryConfig {
 
     @Bean
     public ApiClient statusRegistryApiClient(RestClient.Builder builder,
-                                             StatusRegistryTokenInterceptor statusRegistryTokenInterceptor) {
+                                             StatusRegistryTokenInterceptor statusRegistryTokenInterceptor,
+                                             StatusRegistryContentLengthInterceptor statusRegistryContentLengthInterceptor) {
         builder.requestInterceptor(statusRegistryTokenInterceptor);
+        builder.requestInterceptor(statusRegistryContentLengthInterceptor);
         var client = new ApiClient(builder.build());
         client.setBasePath(swiyuProperties.statusRegistry().apiUrl().toExternalForm());
         return client;

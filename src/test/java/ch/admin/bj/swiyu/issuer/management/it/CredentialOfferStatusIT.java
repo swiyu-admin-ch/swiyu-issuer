@@ -45,7 +45,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @AutoConfigureMockMvc
 class CredentialOfferStatusIT {
 
-    private static final String BASE_URL = "/credentials";
+    private static final String BASE_URL = "/api/v1/credentials";
     private final UUID statusListUUID = UUID.randomUUID();
     private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
             .formatted(statusListUUID);
@@ -87,7 +87,7 @@ class CredentialOfferStatusIT {
 
         // Mock removing access to registry
         // Add status list
-        mvc.perform(post("/status-list")
+        mvc.perform(post("/api/v1/status-list")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
                                 "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))

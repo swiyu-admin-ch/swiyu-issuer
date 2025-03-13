@@ -6,8 +6,22 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
+import java.util.UUID;
+
+import static ch.admin.bj.swiyu.issuer.management.common.date.DateTimeUtils.ISO8601_FORMAT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.DisplayName;
@@ -21,22 +35,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Map;
-import java.util.UUID;
-
-import static ch.admin.bj.swiyu.issuer.management.common.date.DateTimeUtils.ISO8601_FORMAT;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest()
 @ActiveProfiles("test")
 @Nested
@@ -44,14 +42,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class CredentialOfferCreateIT {
 
-    private static final String BASE_URL = "/credentials";
+    private static final String BASE_URL = "/api/v1/credentials";
 
     @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
-    
+
     @Autowired
     private MockMvc mvc;
 
@@ -73,7 +71,7 @@ class CredentialOfferCreateIT {
 
         // decode deeplink should not throw an exception
         var deeplink = URLDecoder.decode(urlEncodedDeeplink, StandardCharsets.UTF_8);
-        var credentialOfferString = deeplink.replace("openid-credential-offer://?credential_offer=", "");
+        var credentialOfferString = deeplink.replace("swiyu://?credential_offer=", "");
 
         var credentialOffer = objectMapper.readValue(credentialOfferString, Map.class);
         Map<?, ?> grants = (Map<?, ?>) credentialOffer.get("grants");
