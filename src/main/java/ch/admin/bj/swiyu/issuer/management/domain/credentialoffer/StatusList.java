@@ -6,14 +6,12 @@
 
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import java.util.Map;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,12 +20,6 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * A representation of any form of status list which can be represented as
@@ -81,9 +73,7 @@ public class StatusList {
      */
     @NotNull
     private Integer maxLength;
-
-    @OneToMany(mappedBy = "statusList")
-    private Set<CredentialOfferStatus> offerStatusSet;
+    
 
     public UUID getRegistryId() {
         /**

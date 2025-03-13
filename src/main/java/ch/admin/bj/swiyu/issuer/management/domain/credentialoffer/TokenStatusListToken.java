@@ -189,11 +189,11 @@ public class TokenStatusListToken {
     }
 
     public boolean canRevoke() {
-        return bits >= TokenStatsListBit.REVOKE.getValue();
+        return bits >= TokenStatusListBit.REVOKE.getValue();
     }
 
     public boolean canSuspend() {
-        return bits >= TokenStatsListBit.SUSPEND.getValue();
+        return bits >= TokenStatusListBit.SUSPEND.getValue();
     }
 
     /**

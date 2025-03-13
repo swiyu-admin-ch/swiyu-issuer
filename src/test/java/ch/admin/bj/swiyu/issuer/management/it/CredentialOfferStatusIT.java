@@ -6,11 +6,15 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
+import java.io.IOException;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -151,7 +155,7 @@ class CredentialOfferStatusIT {
         assertEquals(1, offer.getOfferStatusSet().size());
         var offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
         assertEquals(0, offerStatus.getIndex(), "Should be the very first index");
-        var statusList = offerStatus.getStatusList();
+        var statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
         assertEquals(1, statusList.getNextFreeIndex(), "Should have advanced the counter");
         var tokenStatusList = TokenStatusListToken
                 .loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped());
@@ -163,7 +167,7 @@ class CredentialOfferStatusIT {
         assertEquals(CredentialStatusType.SUSPENDED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
         assertEquals(1, offerStatus.getIndex(), "Should be the the second entry");
-        statusList = offerStatus.getStatusList();
+        statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
         assertEquals(2, statusList.getNextFreeIndex(), "Should have advanced the counter");
         tokenStatusList = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                 statusList.getStatusZipped());
@@ -178,7 +182,7 @@ class CredentialOfferStatusIT {
         offer = credentialOfferRepository.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusType.ISSUED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
-        statusList = offerStatus.getStatusList();
+        statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
         tokenStatusList = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                 statusList.getStatusZipped());
         assertEquals(1, tokenStatusList.getStatus(0), "Should be still revoked");
@@ -270,7 +274,7 @@ class CredentialOfferStatusIT {
         // create some offers in a multithreaded manner
         // When increasing this too much spring boot will throw 'Failed to read request'
         // in a non-deterministic way...
-        var results = IntStream.range(0, 5).parallel().mapToObj(i -> {
+        var results = IntStream.range(0, 20).parallel().mapToObj(i -> {
             try {
                 return createStatusListLinkedOfferAndGetUUID();
             } catch (Exception e) {
@@ -283,6 +287,86 @@ class CredentialOfferStatusIT {
                 .collect(Collectors.toSet());
         Assertions.assertThat(indexSet).as("Should be the same size if no status was used multiple times")
                 .hasSameSizeAs(results);
+    }
 
+    @Test
+    void testUpdateOfferStatusMultiThreaded_thenSuccess() throws Exception {
+        // create some offers in a multithreaded manner
+        // When increasing this too much spring boot will throw 'Failed to read request'
+        // in a non-deterministic way...
+        var offerIds = IntStream.range(0, 20).parallel().mapToObj(i -> {
+            try {
+                return createStatusListLinkedOfferAndGetUUID();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).toList();
+        // Set offers to issued
+        offerIds.forEach(offerId -> {
+            updateStatusForEntity(offerId, CredentialStatusType.ISSUED);
+        });
+        // Get all offers and the status list we are using
+        var offers = offerIds.stream().map(credentialOfferRepository::findById).map(Optional::get).toList();
+        var statusListId = offers.getFirst().getOfferStatusSet().stream().findFirst().get().getId().getStatusListId();
+        var statusListIndexes = offers.stream().map(CredentialOffer::getOfferStatusSet).flatMap(Set::stream).map(CredentialOfferStatus::getIndex).collect(Collectors.toSet());
+        // Check initialization
+        assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.ISSUED));
+        var initialStatusListToken = TokenStatusListToken.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
+        assertTrue(statusListIndexes.stream().allMatch(idx -> initialStatusListToken.getStatus(idx) == TokenStatusListBit.VALID.getValue()));
+        // Update Status to Suspended
+        offerIds.stream().parallel().forEach(offerId -> {
+            try {
+                mvc.perform(patch(getUpdateUrl(offerId, CredentialStatusTypeDto.SUSPENDED)))
+                        .andExpect(status().is(200));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.SUSPENDED));
+        offerIds.forEach(this::assertOfferStateConsistent);
+        // Reset Status
+        offerIds.stream().parallel().forEach(offerId -> {
+            try {
+                mvc.perform(patch(getUpdateUrl(offerId, CredentialStatusTypeDto.ISSUED)))
+                        .andExpect(status().is(200));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.ISSUED));
+        offerIds.forEach(this::assertOfferStateConsistent);
+        var restoredStatusListToken = TokenStatusListToken.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
+        assertEquals(initialStatusListToken.getStatusListData(), restoredStatusListToken.getStatusListData(), "Bitstring should be same again");
+    }
+
+    /**
+     * Helper function that checks if the status of an offer is the same as shown in the bitstring of the status list
+     *
+     * @param offerId UUID of the CredentialOffer to be checked
+     */
+    private void assertOfferStateConsistent(UUID offerId) {
+        var offer = credentialOfferRepository.findById(offerId).get();
+        var state = offer.getCredentialStatus();
+        var statusList = statusListRepository.findById(offer.getOfferStatusSet().stream().findFirst().get().getId().getStatusListId()).get();
+        offer.getOfferStatusSet().forEach(status -> {
+            try {
+                var tokenState = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusZipped()).getStatus(status.getIndex());
+                var expectedState = switch (state) {
+                    case OFFERED:
+                    case CANCELLED:
+                    case IN_PROGRESS:
+                    case EXPIRED:
+                    case ISSUED:
+                        yield TokenStatusListBit.VALID.getValue();
+                    case SUSPENDED:
+                        yield TokenStatusListBit.SUSPEND.getValue();
+                    case REVOKED:
+                        yield TokenStatusListBit.REVOKE.getValue();
+                };
+                assertEquals(expectedState, tokenState, String.format("offer %s , idx %d", offerId, tokenState));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 }
