@@ -9,7 +9,10 @@ package ch.admin.bj.swiyu.issuer.management.service;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer.readOfferData;
@@ -88,7 +91,7 @@ public class CredentialService {
     @SchedulerLock(name = "expireOffers")
     @Transactional
     public void expireOffers() {
-        var expireStates = List.of(CredentialStatusType.OFFERED, CredentialStatusType.IN_PROGRESS);
+        var expireStates = CredentialStatusType.getExpirableStates();
         var expireTimeStamp = Instant.now().getEpochSecond();
         log.info("Expiring {} offers", credentialOfferRepository.countByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp));
         var expiredOffers = credentialOfferRepository.findByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp);
@@ -106,7 +109,7 @@ public class CredentialService {
         return this.credentialOfferRepository.findById(credentialId)
                 .map(offer -> {
                     // Make sure only offer is returned if it is not expired
-                    if (offer.getCredentialStatus() != CredentialStatusType.EXPIRED && offer.hasExpirationTimeStampPassed()) {
+                    if (CredentialStatusType.getExpirableStates().contains(offer.getCredentialStatus()) && offer.hasExpirationTimeStampPassed()) {
                         return updateCredentialStatus(getCredentialForUpdate(offer.getId()), CredentialStatusType.EXPIRED);
                     }
                     return offer;

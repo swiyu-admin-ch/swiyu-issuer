@@ -119,6 +119,23 @@ public class CredentialServiceIT {
     }
 
     @Test
+    void getCredentialOfferWhenExpiredAndRevoked() {
+        Map<String, Object> offerData = Map.of("hello", "world");
+        var expiredOfferdId = credentialOfferRepository.save(
+                CredentialOffer.builder()
+                        .credentialStatus(CredentialStatusType.REVOKED)
+                        .offerExpirationTimestamp(now().minusSeconds(3600).getEpochSecond())
+                        .accessToken(UUID.randomUUID())
+                        .nonce(UUID.randomUUID())
+                        .offerData(offerData)
+                        .build()).getId();
+
+        var response = credentialOfferRepository.findById(expiredOfferdId).orElseThrow();
+        assertEquals(CredentialStatusType.REVOKED, response.getCredentialStatus());
+        assertNotNull(response.getOfferData());
+    }
+
+    @Test
     void invalidateExpiredOffer() {
         Map<String, Object> offerData = Map.of("hello", "world");
         var expiredOfferdId = credentialOfferRepository.save(
