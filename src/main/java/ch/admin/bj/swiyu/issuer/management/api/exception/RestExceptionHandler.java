@@ -6,11 +6,11 @@
 
 package ch.admin.bj.swiyu.issuer.management.api.exception;
 
-import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
-import ch.admin.bj.swiyu.issuer.management.common.exception.CreateStatusListException;
-import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
-import ch.admin.bj.swiyu.issuer.management.common.exception.UpdateStatusListException;
+import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.*;
+
+import ch.admin.bj.swiyu.issuer.management.common.exception.*;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
@@ -23,12 +23,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-
-import java.util.stream.Collectors;
-
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
@@ -52,7 +46,11 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({CreateStatusListException.class, UpdateStatusListException.class})
     public ResponseEntity<ApiErrorDto> handleCreateStatusListException(final Exception exception) {
-        final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, exception.getMessage());
+        var exceptionMessage = exception.getMessage();
+        if (exception.getCause() != null) {
+            exceptionMessage += " - caused by - " + exception.getCause().getMessage();
+        }
+        final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, exceptionMessage);
         log.error("Status List Exception intercepted", exception);
         return new ResponseEntity<>(apiError, apiError.status());
     }
