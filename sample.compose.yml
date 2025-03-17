@@ -85,16 +85,6 @@ configs:
       {
         "credential_issuer": "${external-url}",
         "credential_endpoint": "${external-url}/credential",
-        "credential_response_encryption": {
-          "encryption_required": false,
-          "alg_values_supported": [
-            "RSA-OAEP-256",
-            "ECDH-ES+A128KW"
-          ],
-          "enc_values_supported": [
-            "A128CBC-HS256"
-          ]
-        },
         "version": "1.0",
         "display": [
           {
