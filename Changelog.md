@@ -5,13 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.6
 
-## 1.3.4
-
-### Added 
+### Added
 
 - Reduced default size for status lists and did documents with a way to change it, if it is really necessary (not
   recommended)
+
+## 1.3.5
+
+### Changed
+
+- Update specs for core status api to latest version
+
+## 1.3.4
+
+### Changed
+
+- Update sample.compose file to remove incorrect credential_response_encryption
 
 ## 1.3.3
 
