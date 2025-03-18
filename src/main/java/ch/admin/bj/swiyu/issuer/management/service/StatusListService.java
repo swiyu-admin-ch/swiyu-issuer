@@ -120,7 +120,7 @@ public class StatusListService {
         }
         try {
             var token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
-                    statusList.getStatusZipped());
+                    statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
             token.setStatus(offerStatus.getIndex(), bit.getValue());
             statusList.setStatusZipped(token.getStatusListData());
             updateRegistry(statusList, token);

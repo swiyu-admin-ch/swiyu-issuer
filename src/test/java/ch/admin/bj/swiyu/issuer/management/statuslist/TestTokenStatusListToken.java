@@ -6,22 +6,19 @@
 
 package ch.admin.bj.swiyu.issuer.management.statuslist;
 
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Executable;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Random;
-import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.boot.actuate.autoconfigure.cloudfoundry.SecurityResponse.success;
+
+import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class TestTokenStatusListToken {
     @Test
@@ -80,12 +77,12 @@ public class TestTokenStatusListToken {
         assertEquals(2, claims.get("bits"));
         // Try loading the one we created
         var statusListLoaded = TokenStatusListToken.loadTokenStatusListToken((int) claims.get("bits"),
-                (String) claims.get("lst"));
+                (String) claims.get("lst"), 5);
         for (int i = 0; i < 12; i++) {
             assertEquals(statusList.getStatus(i), statusListLoaded.getStatus(i));
         }
         // Compare to spec lst example
-        statusListLoaded = TokenStatusListToken.loadTokenStatusListToken(2, "eNo76fITAAPfAgc");
+        statusListLoaded = TokenStatusListToken.loadTokenStatusListToken(2, "eNo76fITAAPfAgc", 5);
         for (int i = 0; i < 12; i++) {
             assertEquals(statusList.getStatus(i), statusListLoaded.getStatus(i));
         }
@@ -114,7 +111,7 @@ public class TestTokenStatusListToken {
             assertEquals(0, statusByte);
         }
         var initialStatusList = statusList.getStatusListData();
-        var loadedStatusList = TokenStatusListToken.loadTokenStatusListToken(2, initialStatusList);
+        var loadedStatusList = TokenStatusListToken.loadTokenStatusListToken(2, initialStatusList, 5);
         // Should be still the same zipped string after loading
         assertEquals(initialStatusList, loadedStatusList.getStatusListData());
         // Should be still all 0s
@@ -128,7 +125,7 @@ public class TestTokenStatusListToken {
         for (byte statusByte : statusList.getStatusList()) {
             assertNotEquals(0, statusByte);
         }
-        loadedStatusList = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusListData());
+        loadedStatusList = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusListData(), 5);
         assertNotEquals(initialStatusList, loadedStatusList.getStatusListData());
         loadedStatusList.setStatus(0, 0);
         loadedStatusList.setStatus(1, 0);
@@ -151,20 +148,20 @@ public class TestTokenStatusListToken {
         var base64CompressionBomb = Base64.getUrlEncoder().withoutPadding().encodeToString(compressionBomb);
         // Expect an IOException while decompressing
         var exception = assertThrows(IOException.class, () -> {
-            TokenStatusListToken.decodeStatusList(base64CompressionBomb);
+            TokenStatusListToken.decodeStatusList(base64CompressionBomb, 204800);
         });
-        assertEquals("Decompressed data exceeds safe limit! Possible compression bomb attack.", exception.getMessage());
+        assertEquals("Decompressed data exceeds safe limit! Possible compression bomb attack. Aborted at 205824 bytes", exception.getMessage());
     }
 
     @Test
     void testDecodeStatusList_CompressionBomb_NoExceptionExpected() {
         // Generate a compression bomb
-        byte[] compressionBomb = createCompressionBomb(9437184); // 9MB
+        byte[] compressionBomb = createCompressionBomb(102400); // 100KiB
         // Encode in Base64
         var base64CompressionBomb = Base64.getUrlEncoder().withoutPadding().encodeToString(compressionBomb);
         // Expect no IOException while decompressing, because the safe limit is bigger than the compressed data
         assertDoesNotThrow(() -> {
-            TokenStatusListToken.decodeStatusList(base64CompressionBomb);
+            TokenStatusListToken.decodeStatusList(base64CompressionBomb, 204800);
         });
     }
 

@@ -29,6 +29,7 @@ public class StatusListProperties {
     @NotNull
     private String keyManagementMethod;
     private HSMProperties hsm;
+    private int statusListSizeLimit;
 
     private String version = "1.0";
 

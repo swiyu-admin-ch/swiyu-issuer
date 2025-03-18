@@ -146,6 +146,10 @@ class CredentialOfferStatusIT {
         // todo check!! message
     }
 
+    private TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws IOException {
+        return TokenStatusListToken.loadTokenStatusListToken(bits, lst, 204800);
+    }
+
     @Test
     void testUpdateOfferStatusWithRevokedWhenIssued_thenSuccess() throws Exception {
         UUID vcRevokedId = createIssueAndSetStateOfVc(CredentialStatusTypeDto.REVOKED);
@@ -157,8 +161,7 @@ class CredentialOfferStatusIT {
         assertEquals(0, offerStatus.getIndex(), "Should be the very first index");
         var statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
         assertEquals(1, statusList.getNextFreeIndex(), "Should have advanced the counter");
-        var tokenStatusList = TokenStatusListToken
-                .loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped());
+        var tokenStatusList = loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped());
         assertEquals(1, tokenStatusList.getStatus(0), "Should be revoked");
         assertEquals(0, tokenStatusList.getStatus(1), "Should not be revoked");
 
@@ -169,7 +172,7 @@ class CredentialOfferStatusIT {
         assertEquals(1, offerStatus.getIndex(), "Should be the the second entry");
         statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
         assertEquals(2, statusList.getNextFreeIndex(), "Should have advanced the counter");
-        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
+        tokenStatusList = loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                 statusList.getStatusZipped());
         assertEquals(1, tokenStatusList.getStatus(0), "Should be still revoked");
         assertEquals(2, tokenStatusList.getStatus(1), "Should be suspended");
@@ -183,7 +186,7 @@ class CredentialOfferStatusIT {
         assertEquals(CredentialStatusType.ISSUED, offer.getCredentialStatus());
         offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
         statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
-        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
+        tokenStatusList = loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                 statusList.getStatusZipped());
         assertEquals(1, tokenStatusList.getStatus(0), "Should be still revoked");
         assertEquals(0, tokenStatusList.getStatus(1), "Should not be suspended any more");
@@ -311,7 +314,7 @@ class CredentialOfferStatusIT {
         var statusListIndexes = offers.stream().map(CredentialOffer::getOfferStatusSet).flatMap(Set::stream).map(CredentialOfferStatus::getIndex).collect(Collectors.toSet());
         // Check initialization
         assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.ISSUED));
-        var initialStatusListToken = TokenStatusListToken.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
+        var initialStatusListToken = loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
         assertTrue(statusListIndexes.stream().allMatch(idx -> initialStatusListToken.getStatus(idx) == TokenStatusListBit.VALID.getValue()));
         // Update Status to Suspended
         offerIds.stream().parallel().forEach(offerId -> {
@@ -335,7 +338,7 @@ class CredentialOfferStatusIT {
         });
         assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.ISSUED));
         offerIds.forEach(this::assertOfferStateConsistent);
-        var restoredStatusListToken = TokenStatusListToken.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
+        var restoredStatusListToken = loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
         assertEquals(initialStatusListToken.getStatusListData(), restoredStatusListToken.getStatusListData(), "Bitstring should be same again");
     }
 
@@ -350,7 +353,7 @@ class CredentialOfferStatusIT {
         var statusList = statusListRepository.findById(offer.getOfferStatusSet().stream().findFirst().get().getId().getStatusListId()).get();
         offer.getOfferStatusSet().forEach(status -> {
             try {
-                var tokenState = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusZipped()).getStatus(status.getIndex());
+                var tokenState = loadTokenStatusListToken(2, statusList.getStatusZipped()).getStatus(status.getIndex());
                 var expectedState = switch (state) {
                     case OFFERED:
                     case CANCELLED:

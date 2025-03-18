@@ -10,6 +10,7 @@ application:
     private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
     verification-method: "did:tdw:example#12345"
     key-management-method: "key"
+    status-list-size-limit: 204800 # 200KiB
   offer-expiration-interval: "PT15M"
   deeplink-schema: swiyu
 

@@ -6,17 +6,19 @@
 
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
-import java.util.zip.*;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
+
+import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationException;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * See <a href=
@@ -26,8 +28,6 @@ import java.util.zip.*;
 @Slf4j
 @Getter
 public class TokenStatusListToken {
-
-    private static final int MAX_UNCOMPRESSED_SIZE_IN_BYTES = 10485760; // 10MB
 
     /**
      * Indicator how many consecutive bits of the token status list are contained
@@ -64,8 +64,8 @@ public class TokenStatusListToken {
         this.statusList = statusList;
     }
 
-    public static TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws IOException {
-        return new TokenStatusListToken(bits, decodeStatusList(lst));
+    public static TokenStatusListToken loadTokenStatusListToken(int bits, String lst, int maxBufferSize) throws IOException {
+        return new TokenStatusListToken(bits, decodeStatusList(lst, maxBufferSize));
     }
 
     private static String encodeStatusList(byte[] statusList) {
@@ -98,7 +98,7 @@ public class TokenStatusListToken {
      * @return A byte array containing the decompressed data.
      * @throws IOException If an error occurs during decoding, decompression, or if the decompressed data exceeds the allowed limit.
      */
-    public static byte[] decodeStatusList(String lst) throws IOException {
+    public static byte[] decodeStatusList(String lst, int maxBufferSize) throws IOException {
         byte[] zippedData = Base64.getUrlDecoder().decode(lst);
 
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(zippedData);
@@ -112,8 +112,8 @@ public class TokenStatusListToken {
             // Check if the decompressed data size exceeds the allowed limit
             while ((bytesRead = inflaterStream.read(buffer)) != -1) {
                 totalSize += bytesRead;
-                if (totalSize > MAX_UNCOMPRESSED_SIZE_IN_BYTES) {
-                    throw new IOException("Decompressed data exceeds safe limit! Possible compression bomb attack.");
+                if (totalSize > maxBufferSize) {
+                    throw new IOException(String.format("Decompressed data exceeds safe limit! Possible compression bomb attack. Aborted at %d bytes", totalSize));
                 }
                 output.write(buffer, 0, bytesRead);
             }

@@ -78,6 +78,8 @@ application:
     verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD:}"
 
     key-management-method: "${SIGNING_KEY_MANAGEMENT_METHOD:key}"
+
+    status-list-size-limit: 204800 # 200KiB
     # Pin to unlock the hsm
     hsm:
       user-pin: "${secret.key.hsm.pin.user:${HSM_USER_PIN:}}"
@@ -102,6 +104,7 @@ application:
       proxy-password: "${HSM_PROXY_PASSWORD:}"
 
   offer-expiration-interval: "${CREDENTIAL_OFFER_EXPIRATION_INTERVAL:PT15M}"
+
 logging:
   level:
     ch.admin.bj.swiyu.issuer.management.infrastructure.logging.RequestLoggingFilter: DEBUG

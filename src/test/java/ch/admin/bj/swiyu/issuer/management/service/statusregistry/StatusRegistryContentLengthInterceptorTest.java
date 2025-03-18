@@ -1,5 +1,13 @@
 package ch.admin.bj.swiyu.issuer.management.service.statusregistry;
 
+import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -7,13 +15,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpResponse;
-
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class StatusRegistryContentLengthInterceptorTest {
 
@@ -24,7 +25,9 @@ class StatusRegistryContentLengthInterceptorTest {
 
     @BeforeEach
     void setUp() {
-        statusRegistryContentLengthInterceptor = new StatusRegistryContentLengthInterceptor();
+        var testStatusListProperties = new StatusListProperties();
+        testStatusListProperties.setStatusListSizeLimit(204800);
+        statusRegistryContentLengthInterceptor = new StatusRegistryContentLengthInterceptor(testStatusListProperties);
         request = mock(HttpRequest.class);
         execution = mock(ClientHttpRequestExecution.class);
         response = mock(ClientHttpResponse.class);
