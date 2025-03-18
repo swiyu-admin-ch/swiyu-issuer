@@ -6,10 +6,7 @@ openapi: 3.0.1
 info:
   title: SWIYU Service API
   description: APIs for the SWIYU Services
-  contact:
-    name: EID - Team Tergum
-    email: eid@bit.admin.ch
-  version: 0.0.2-20250130130815-9f87328
+  version:  1.2.4-20250317145139-7c755a9
 security:
   # manual change to disable unsupported openid flow (which we acually cannot use anyway)
   - bearer-jwt: []
@@ -102,9 +99,8 @@ paths:
             default: 20
         - name: sort
           in: query
-          description:
-            "Sorting criteria in the format: property,(asc|desc). Default\
-            \ sort order is ascending. Multiple sort criteria are supported."
+          description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
           schema:
             type: array
             items:
@@ -184,6 +180,18 @@ components:
       properties:
         errorCode:
           type: string
+          description: |
+            | Value              | Description                                                                           |
+            | ------------------ | ------------------------------------------------------------------------------------- |
+            | data_invalid       | Indicates that the given data was invalid in syntax of semantic.                      |
+            | resource_not_found | Indicates that the requested data was not found in the given context.                 |
+            | resource_forbidden | Indicates that the requested data in not available with the permissions used.         |
+            | action_forbidden   | Indicates that the requested action could not be processed with the permissions used. |
+          enum:
+            - data_invalid
+            - resource_not_found
+            - resource_forbidden
+            - action_forbidden
         message:
           type: string
         additionalDetails:
@@ -209,6 +217,12 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -221,25 +235,14 @@ components:
           format: int32
         sort:
           $ref: "#/components/schemas/SortObject"
-        first:
-          type: boolean
-        last:
-          type: boolean
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
       type: object
       properties:
-        offset:
-          type: integer
-          format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
         paged:
           type: boolean
         pageNumber:
@@ -250,14 +253,19 @@ components:
           format: int32
         unpaged:
           type: boolean
+        offset:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
     SortObject:
       type: object
       properties:
-        empty:
-          type: boolean
         sorted:
           type: boolean
         unsorted:
+          type: boolean
+        empty:
           type: boolean
     StatusListEntryDto:
       type: object
