@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: "secret"
       POSTGRES_DB: "issuer_db"
     ports:
-      - '5434:5432'
+      - "5434:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U issuer_mgmt_user -d issuer_db" ]
       interval: 5s
@@ -46,7 +46,7 @@ services:
       POSTGRES_DB: "issuer_db"
       POSTGRES_JDBC: "jdbc:postgresql://postgres:5432/issuer_db"
     ports:
-      - '8080:8080'
+      - "8080:8080"
     depends_on:
       - postgres
 
@@ -72,7 +72,7 @@ services:
       POSTGRES_DB: "issuer_db"
       POSTGRES_JDBC: "jdbc:postgresql://postgres:5432/issuer_db"
     ports:
-      - '8081:8080'
+      - "8081:8080"
     configs:
       - source: issuer_metadata
         target: /cfg-files/issuer_metadata.json
@@ -84,7 +84,7 @@ configs:
     content: |
       {
         "credential_issuer": "${external-url}",
-        "credential_endpoint": "${external-url}/credential",
+        "credential_endpoint": "${external-url}/api/v1/credential",
         "version": "1.0",
         "display": [
           {
@@ -124,7 +124,7 @@ configs:
                 "name": "Demo-VC",
                 "locale": "de-CH",
                 "logo": {
-                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACPSURBVHgB7ZbbCYAwDEVvxEHcREdzlI7gCHUDN9AtfEJM0S9BUWwrSA5cWujHgdA2oWFcWhAyxKGjYVpYNpaZawSEiHJZCjhhP84lAuMczpUgMir8Tii32PBGiRdoSVWoQhX+UJjiOfnJf9pIV68QQFjsOWIkXoVGYi/OO9zgtlDKZeEBfRbeiT4IU+xRfwVePD+H6WV/zQAAAABJRU5ErkJggg=="
+                  "uri": "uri": "data:image/png;base64,here-baseimagestring"
                 },
                 "description": "Das ist ein Test-VC",
                 "background_color": "#ff69b4"
@@ -133,7 +133,7 @@ configs:
                 "name": "Demo-VC",
                 "locale": "en-US",
                 "logo": {
-                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAACaSURBVEhLYxgFo2DQA0YoTRB89v0sfp/7PsMr7lcMLnNdXgGF/kNkSANMUBov+M/wn/Hfv38vmBmZX/xl/vtiVf0qVqgUyYAoC6kJRi2kOhi1kOpg1EKqA7pbSFThDSpLP3l/+veE7wnDE14gxkG/534vxmDH8BqqDSsYxEH6n+EpkARjoI9R8X8IzfCT4R9Y7SgYBUMYMDAAAMQ3Q6IEloWyAAAAAElFTkSuQmCC"
+                  "uri": "uri": "data:image/png;base64,here-baseimagestring"
                 },
                 "description": "This is an test vc",
                 "background_color": "#4A412A"
@@ -141,28 +141,6 @@ configs:
             ],
               "vct": "my-test-vc",
             "claims": {
-              "id": {
-                "mandatory": true,
-                "value_type": "string",
-                "display": [
-                  {
-                    "locale": "de-CH",
-                    "name": "Holder binding key"
-                  },
-                  {
-                    "locale": "fr-CH",
-                    "name": "Holder binding key"
-                  },
-                  {
-                    "locale": "it-CH",
-                    "name": "Holder binding key"
-                  },
-                  {
-                    "locale": "en-US",
-                    "name": "Holder binding key"
-                  }
-                ]
-              },
               "lastName": {
                 "mandatory": false,
                 "value_type": "string",
@@ -208,10 +186,37 @@ configs:
                 ]
               }
             },
+            "birthDate": {
+                "mandatory": true,
+                "value_type": "string",
+                "display": [
+                  {
+                    "locale": "de-CH",
+                    "name": "Geburtsdatum"
+                  },
+                  {
+                    "locale": "fr-CH",
+                    "name": "Date de naissance"
+                  },
+                  {
+                    "locale": "it-CH",
+                    "name": "Data di nascita"
+                  },
+                  {
+                    "locale": "rm-CH",
+                    "name": "Data di naschientscha"
+                  },
+                  {
+                    "locale": "en-GB",
+                    "name": "Date of birth"
+                  }
+                ]
+              }
+            },
             "order": [
-              "id",
+              "firstName",
               "lastName",
-              "firstName"
+              "birthDate"
             ]
           }
         }
