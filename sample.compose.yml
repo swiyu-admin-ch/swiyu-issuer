@@ -4,7 +4,7 @@
 
 services:
   postgres:
-    image: postgres:15.8-alpine
+    image: postgres:15.8
     environment:
       POSTGRES_USER: "issuer_mgmt_user"
       POSTGRES_PASSWORD: "secret"
@@ -12,7 +12,7 @@ services:
     ports:
       - "5434:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U issuer_mgmt_user -d issuer_db" ]
+      test: ["CMD-SHELL", "pg_isready -U issuer_mgmt_user -d issuer_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -30,6 +30,7 @@ services:
       SWIYU_PARTNER_ID: "<Your SWIYU_PARTNER_ID>"
       SWIYU_STATUS_REGISTRY_CUSTOMER_KEY: "<Your SWIYU_STATUS_REGISTRY_CUSTOMER_KEY>"
       SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET: "<Your SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET>"
+      SWIYU_STATUS_REGISTRY_ACCESS_TOKEN: "<Your SWIYU_STATUS_REGISTRY_ACCESS_TOKEN>"
       SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN: "<Your SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN>"
 
       # Environment specific values. Please consult the main manual
@@ -38,7 +39,7 @@ services:
 
       # Default settings for the application. Only change these if you know what you are doing
       LOGGING_LEVEL_CH_ADMIN_BIT_EID: DEBUG
-      SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW: true
+      SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW: "true"
 
       # Persistence
       POSTGRES_USER: "issuer_mgmt_user"
@@ -124,7 +125,7 @@ configs:
                 "name": "Demo-VC",
                 "locale": "de-CH",
                 "logo": {
-                  "uri": "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
                 },
                 "description": "Das ist ein Test-VC",
                 "background_color": "#ff69b4"
@@ -133,7 +134,7 @@ configs:
                 "name": "Demo-VC",
                 "locale": "en-US",
                 "logo": {
-                  "uri": "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
                 },
                 "description": "This is an test vc",
                 "background_color": "#4A412A"
@@ -184,9 +185,8 @@ configs:
                     "name": "First name"
                   }
                 ]
-              }
-            },
-            "birthDate": {
+              },
+              "birthDate": {
                 "mandatory": true,
                 "value_type": "string",
                 "display": [
