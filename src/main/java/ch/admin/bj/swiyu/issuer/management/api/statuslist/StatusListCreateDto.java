@@ -26,7 +26,7 @@ public class StatusListCreateDto {
      * How many status entries can be part of the status list
      */
     @NotNull
-    @Schema(description = "How many status entries can be part of the status list. The memory size of the status list is depending on the type and the config of the status list.", example = "800000")
+    @Schema(description = "How many status entries can be part of the status list. The memory size of the status list is depending on the type and the config of the status list.", example = "100000")
     private Integer maxLength;
     /**
      * Additional config parameters, depending on the status list type

@@ -27,7 +27,7 @@ public class StatusListDto {
     @Schema(description = "Technical type of the status list to be used. This influences the options available in config.")
     private StatusListTypeDto type;
 
-    @Schema(description = "How many status entries can be part of the status list. The memory size of the status list is depending on the type and the config of the status list.", example = "800000")
+    @Schema(description = "How many status entries can be part of the status list. The memory size of the status list is depending on the type and the config of the status list.", example = "100000")
     private Integer maxListEntries;
 
     @Schema(description = "How many status entries are not used in the  status list.", example = "12")

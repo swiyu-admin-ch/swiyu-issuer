@@ -100,7 +100,7 @@ curl -X POST https://<EXTERNAL_URL of issuer-agent-management>/status-list \
 -d '{
     "uri": "<STATUS_JWT_URL>",
     "type": "TOKEN_STATUS_LIST",
-    "maxLength": 800000,
+    "maxLength": 100000,
     "config": {
     "bits": 2
     }
