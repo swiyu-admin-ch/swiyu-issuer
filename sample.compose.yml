@@ -12,30 +12,30 @@ services:
     ports:
       - "5434:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U issuer_mgmt_user -d issuer_db"]
+      test: [ "CMD-SHELL", "pg_isready -U issuer_mgmt_user -d issuer_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
   issuer-agent-management:
     image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-management:latest
     environment:
-      EXTERNAL_URL: "https:<url of your own issuer-agent-oid4vci service>"
-      SPRING_APPLICATION_NAME: "<custom name of the application>"
-      ISSUER_ID: "<Your ISSUER_ID>" #e.g did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:identifier-reg-r.trust-infra.swiyu.admin.ch:api:v1:did:ff8eb859-6996-4e51-a976-be1ca584c124
-      DID_STATUS_LIST_VERIFICATION_METHOD: "<Your ISSUER_DID>#assert-key-01"
-      STATUS_LIST_KEY: |
-        -----BEGIN EC PRIVATE KEY-----
-        <private key of the file "assert-key-01">
-        -----END EC PRIVATE KEY-----
-      SWIYU_PARTNER_ID: "<Your SWIYU_PARTNER_ID>"
-      SWIYU_STATUS_REGISTRY_CUSTOMER_KEY: "<Your SWIYU_STATUS_REGISTRY_CUSTOMER_KEY>"
-      SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET: "<Your SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET>"
-      SWIYU_STATUS_REGISTRY_ACCESS_TOKEN: "<Your SWIYU_STATUS_REGISTRY_ACCESS_TOKEN>"
-      SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN: "<Your SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN>"
+      EXTERNAL_URL: ${EXTERNAL_URL}
+      SPRING_APPLICATION_NAME: ${SPRING_APPLICATION_NAME}
+      ISSUER_ID: ${ISSUER_ID}
+      DID_STATUS_LIST_VERIFICATION_METHOD: ${DID_STATUS_LIST_VERIFICATION_METHOD}
+      STATUS_LIST_KEY: ${STATUS_LIST_KEY}
+      SWIYU_PARTNER_ID: ${SWIYU_PARTNER_ID}
+      SWIYU_STATUS_REGISTRY_CUSTOMER_KEY: ${SWIYU_STATUS_REGISTRY_CUSTOMER_KEY}
+      SWIYU_STATUS_REGISTRY_ACCESS_TOKEN: ${SWIYU_STATUS_REGISTRY_ACCESS_TOKEN}
+      SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET: ${SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET}
+      SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN: ${SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN}
 
       # Environment specific values. Please consult the main manual
-      SWIYU_STATUS_REGISTRY_TOKEN_URL: "https://<KEY_MANAGER for the env>/keycloak/realms/APIGW/protocol/openid-connect/token" #e.g. https://keymanager-prd.api.admin.ch/keycloak/realms/APIGW
-      SWIYU_STATUS_REGISTRY_API_URL: "<SWIYU_STATUS_REGISTRY_API_URL>" #e.g. https://status-reg-api.trust-infra.swiyu-int.admin.ch
+      SWIYU_STATUS_REGISTRY_TOKEN_URL: ${SWIYU_STATUS_REGISTRY_TOKEN_URL}
+      SWIYU_STATUS_REGISTRY_API_URL: ${SWIYU_STATUS_REGISTRY_TOKEN_URL}
 
       # Default settings for the application. Only change these if you know what you are doing
       LOGGING_LEVEL_CH_ADMIN_BIT_EID: DEBUG
@@ -52,18 +52,15 @@ services:
       - postgres
 
   issuer-agent-oid4vci:
-    image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-oid4vci:latest
+    image: "ghcr.io/swiyu-admin-ch/eidch-issuer-agent-oid4vci:latest"
     environment:
-      EXTERNAL_URL: "https://<external url of this service>"
-      ISSUER_ID: "<Your ISSUER_ID>" #e.g did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:identifier-reg-r.trust-infra.swiyu.admin.ch:api:v1:did:ff8eb859-6996-4e51-a976-be1ca584c124
-      DID_SDJWT_VERIFICATION_METHOD: "<Your ISSUER_ID>#assert-key-01"
-      SDJWT_KEY: |
-        -----BEGIN EC PRIVATE KEY-----
-        <private key of the file "assert-key-01">
-        -----END EC PRIVATE KEY-----
+      EXTERNAL_URL: ${EXTERNAL_URL}
+      ISSUER_ID: ${OID4VCI_ISSUER_ID}
+      DID_SDJWT_VERIFICATION_METHOD: ${DID_SDJWT_VERIFICATION_METHOD}
+      SDJWT_KEY: ${SDJWT_KEY}
 
       # Default settings for the application. Only change these if you know what you are doing
-      OPENID_CONFIG_FILE: "classpath:openid.json"
+      OPENID_CONFIG_FILE: "file:/cfg-files/openid_metadata.json"
       METADATA_CONFIG_FILE: "file:/cfg-files/issuer_metadata.json"
       TOKEN_TTL: 600
 
@@ -77,15 +74,26 @@ services:
     configs:
       - source: issuer_metadata
         target: /cfg-files/issuer_metadata.json
+      - source: openid_metadata
+        target: /cfg-files/openid_metadata.json
     depends_on:
       - postgres
 
+volumes:
+  db_data:
+
 configs:
+  openid_metadata:
+    content: |
+      {
+        "issuer": "${EXTERNAL_URL}",
+        "token_endpoint": "${EXTERNAL_URL}/api/v1/token"
+      }
   issuer_metadata:
     content: |
       {
-        "credential_issuer": "${external-url}",
-        "credential_endpoint": "${external-url}/api/v1/credential",
+        "credential_issuer": "${EXTERNAL_URL}",
+        "credential_endpoint": "${EXTERNAL_URL}/api/v1/credential",
         "version": "1.0",
         "display": [
           {
