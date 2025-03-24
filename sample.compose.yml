@@ -52,7 +52,7 @@ services:
       - postgres
 
   issuer-agent-oid4vci:
-    image: "ghcr.io/swiyu-admin-ch/eidch-issuer-agent-oid4vci:latest"
+    image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-oid4vci:latest
     environment:
       EXTERNAL_URL: ${EXTERNAL_URL}
       ISSUER_ID: ${OID4VCI_ISSUER_ID}
