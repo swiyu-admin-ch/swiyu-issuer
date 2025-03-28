@@ -6,11 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.management.service;
 
-import java.io.IOException;
-import java.util.*;
-
-import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusListMapper.toStatusListDto;
-
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListDto;
@@ -22,6 +17,8 @@ import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationExcepti
 import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusRegistryClient;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.*;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -32,6 +29,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import java.io.IOException;
+import java.util.*;
+
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusListMapper.toStatusListDto;
 
 @Slf4j
 @AllArgsConstructor
@@ -44,6 +46,7 @@ public class StatusListService {
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
     private final JWSSigner signer;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public StatusListDto getStatusListInformation(UUID statusListId) {
@@ -133,21 +136,22 @@ public class StatusListService {
 
     private StatusList initTokenStatusListToken(StatusListCreateDto statusListCreateDto) {
 
-        Map<String, Object> config = statusListCreateDto.getConfig();
-        if (config == null || config.get("bits") == null) {
-            throw new BadRequestException("Must define 'bits' for TokenStatusList");
-        }
+        var config = statusListCreateDto.getConfig();
 
         // creates new empty status list entry in the registry
         var newStatusList = createEmptyRegistryEntry();
 
-        TokenStatusListToken token = new TokenStatusListToken((Integer) config.get("bits"),
+        TokenStatusListToken token = new TokenStatusListToken(config.getBits(),
                 statusListCreateDto.getMaxLength());
+
+        // TODO check if shouldn't be changed with a migration..
+        var configMap = objectMapper.convertValue(statusListCreateDto.getConfig(), new TypeReference<Map<String, Object>>() {
+        });
 
         // Build DB Entry
         StatusList statusList = StatusList.builder()
                 .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
-                .config(statusListCreateDto.getConfig())
+                .config(configMap)
                 .uri(newStatusList.getStatusRegistryUrl())
                 .statusZipped(token.getStatusListData())
                 .nextFreeIndex(0)

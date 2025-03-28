@@ -6,16 +6,13 @@
 
 package ch.admin.bj.swiyu.issuer.management.api.exception;
 
-import java.util.stream.Collectors;
-
-import static org.springframework.http.HttpStatus.*;
-
 import ch.admin.bj.swiyu.issuer.management.common.exception.*;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -23,6 +20,13 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static org.springframework.http.HttpStatus.*;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
@@ -74,11 +78,18 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                                                                   @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status,
                                                                   @NonNull WebRequest request) {
-        var errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage()))
-                .sorted()
-                .collect(Collectors.joining(", "));
-        log.debug("Received bad request. Details: {}", errors);
-        return new ResponseEntity<>(errors, BAD_REQUEST);
+        List<String> errors = Stream.concat(
+                ex.getBindingResult().getFieldErrors()
+                        .stream().map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage())),
+                ex.getBindingResult().getGlobalErrors().stream().map(error -> String.format("%s: %s", error.getObjectName(), error.getDefaultMessage()))
+        ).toList();
+
+        return new ResponseEntity<>(getErrorsMap(errors), new HttpHeaders(), HttpStatus.BAD_REQUEST);
+    }
+
+    private Map<String, List<String>> getErrorsMap(List<String> errors) {
+        Map<String, List<String>> errorResponse = new HashMap<>();
+        errorResponse.put("errors", errors);
+        return errorResponse;
     }
 }

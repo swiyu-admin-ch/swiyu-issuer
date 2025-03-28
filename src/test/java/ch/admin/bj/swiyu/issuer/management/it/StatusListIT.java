@@ -6,16 +6,9 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
-import java.util.UUID;
-
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
+import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -28,6 +21,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.UUID;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
 @ActiveProfiles("test")
@@ -43,6 +44,8 @@ class StatusListIT {
     private SwiyuProperties swiyuProperties;
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private StatusListProperties statusListProperties;
 
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
@@ -150,5 +153,81 @@ class StatusListIT {
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
                 .andExpect(jsonPath("$.nextFreeIndex").value(expectedNextFreeIndex))
                 .andExpect(jsonPath("$.config.bits").value(bits));
+    }
+
+    @Test
+    void createStatusList_invalidStatusListType_thenBadRequest() throws Exception {
+        var type = "NOT_TOKEN_STATUS_LIST";
+        var bits = 1;
+        var payload = getCreateStatusListPayload(type, statusListProperties.getStatusListSizeLimit(), bits);
+
+        mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createStatusList_maxLengthExceeded_thenSuccess() throws Exception {
+        var bits = 1;
+        var payload = getCreateTokenStatusListPayload(statusListProperties.getStatusListSizeLimit() + 1, bits);
+        var invalidTotalSize = (statusListProperties.getStatusListSizeLimit() + 1) * bits;
+
+        mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0]").value("statusListCreateDto: Status list has invalid size %s cannot exceed the maximum size limit of %s"
+                        .formatted(invalidTotalSize, statusListProperties.getStatusListSizeLimit())));
+    }
+
+    @Test
+    void createStatusList_maxLengthExceededWithBits_thenSuccess() throws Exception {
+        var bits = 2;
+        var invalidMaxLength = (statusListProperties.getStatusListSizeLimit() / bits) + 1;
+        var payload = getCreateTokenStatusListPayload(invalidMaxLength, bits);
+        var invalidTotalSize = invalidMaxLength * bits;
+
+        mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0]").value("statusListCreateDto: Status list has invalid size %s cannot exceed the maximum size limit of %s"
+                        .formatted(invalidTotalSize, statusListProperties.getStatusListSizeLimit())));
+    }
+
+    @Test
+    void createStatusList_invalidConfig_thenSuccess() throws Exception {
+        var bits = 3;
+        var validMaxLength = 100;
+        var payload = getCreateTokenStatusListPayload(validMaxLength, bits);
+
+        mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0]").value("config.bits: Bits can only contain 1, 2, 4 or 8"));
+    }
+
+    @Test
+    void createStatusList_invalidBitsAmount_thenBadRequest() throws Exception {
+        var type = "TOKEN_STATUS_LIST";
+        var invalidMaxLength = statusListProperties.getStatusListSizeLimit();
+        var payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": null}", type, invalidMaxLength);
+
+        mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0]").value("config: must not be null"))
+                .andExpect(jsonPath("$.errors[1]").value("statusListCreateDto: Status list size cannot be evaluated due to missing infos in config"));
+    }
+
+    private String getCreateTokenStatusListPayload(int maxLength, int bits) {
+        return String.format("{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", maxLength, bits);
+    }
+
+    private String getCreateStatusListPayload(String type, int maxLength, int bits) {
+        return String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength, bits);
     }
 }

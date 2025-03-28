@@ -6,20 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
-import java.io.IOException;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
@@ -39,6 +25,20 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import java.io.IOException;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
 @ActiveProfiles("test")
@@ -355,11 +355,7 @@ class CredentialOfferStatusIT {
             try {
                 var tokenState = loadTokenStatusListToken(2, statusList.getStatusZipped()).getStatus(status.getIndex());
                 var expectedState = switch (state) {
-                    case OFFERED:
-                    case CANCELLED:
-                    case IN_PROGRESS:
-                    case EXPIRED:
-                    case ISSUED:
+                    case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, ISSUED:
                         yield TokenStatusListBit.VALID.getValue();
                     case SUSPENDED:
                         yield TokenStatusListBit.SUSPEND.getValue();
