@@ -9,7 +9,7 @@ package ch.admin.bj.swiyu.issuer.management.statuslist;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListTypeDto;
-import ch.admin.bj.swiyu.issuer.management.api.validators.StatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.management.api.validators.ValidStatusListMaxLengthValidator;
 import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
 import jakarta.validation.ConstraintValidatorContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 class StatusListMaxLengthValidatorTest {
 
     private final StatusListCreateDto dto = new StatusListCreateDto();
-    private StatusListMaxLengthValidator validator;
+    private ValidStatusListMaxLengthValidator validator;
 
     @MockitoBean
     private ConstraintValidatorContext context;
@@ -34,7 +34,7 @@ class StatusListMaxLengthValidatorTest {
     void setUp() {
         StatusListProperties statusListProperties = new StatusListProperties();
         statusListProperties.setStatusListSizeLimit(1000);
-        validator = new StatusListMaxLengthValidator(statusListProperties);
+        validator = new ValidStatusListMaxLengthValidator(statusListProperties);
         context = mock(ConstraintValidatorContext.class);
         when(context.buildConstraintViolationWithTemplate(any())).thenReturn(mock(ConstraintValidatorContext.ConstraintViolationBuilder.class));
         dto.setType(StatusListTypeDto.TOKEN_STATUS_LIST);

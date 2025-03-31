@@ -9,7 +9,7 @@ package ch.admin.bj.swiyu.issuer.management.archunit;
 import ch.admin.bj.swiyu.issuer.management.IssuerManagementApplication;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.management.api.validators.StatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.management.api.validators.ValidStatusListMaxLengthValidator;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -178,8 +178,8 @@ public class ArchitectureTest {
                 .matching("..management.(**)..")
                 .should()
                 .beFreeOfCycles()
-                .ignoreDependency(StatusListMaxLengthValidator.class, StatusListCreateDto.class)
-                .ignoreDependency(StatusListMaxLengthValidator.class, StatusListConfigDto.class);
+                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
+                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class);
 
         /**
          * ArchRules which support freezing. @see <a

@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import static java.util.Objects.isNull;
 
 @RequiredArgsConstructor
-public class StatusListMaxLengthValidator implements ConstraintValidator<ValidStatusListMaxLength, Object> {
+public class ValidStatusListMaxLengthValidator implements ConstraintValidator<ValidStatusListMaxLength, Object> {
 
     private final StatusListProperties statusListProperties;
 

@@ -9,10 +9,14 @@ package ch.admin.bj.swiyu.issuer.management.api.validators;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 @Documented
-@Constraint(validatedBy = StatusListMaxLengthValidator.class)
+@Constraint(validatedBy = ValidStatusListMaxLengthValidator.class)
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidStatusListMaxLength {
