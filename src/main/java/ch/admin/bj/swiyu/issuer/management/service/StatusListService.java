@@ -17,7 +17,6 @@ import ch.admin.bj.swiyu.issuer.management.common.exception.ConfigurationExcepti
 import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusRegistryClient;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.*;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -144,14 +143,13 @@ public class StatusListService {
         TokenStatusListToken token = new TokenStatusListToken(config.getBits(),
                 statusListCreateDto.getMaxLength());
 
-        // TODO check if shouldn't be changed with a migration..
-        var configMap = objectMapper.convertValue(statusListCreateDto.getConfig(), new TypeReference<Map<String, Object>>() {
-        });
-
         // Build DB Entry
         StatusList statusList = StatusList.builder()
                 .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
-                .config(configMap)
+                .config(Map.of(
+                        "bits", config.getBits(),
+                        "purpose", config.getPurpose() != null ? config.getPurpose() : ""
+                ))
                 .uri(newStatusList.getStatusRegistryUrl())
                 .statusZipped(token.getStatusListData())
                 .nextFreeIndex(0)

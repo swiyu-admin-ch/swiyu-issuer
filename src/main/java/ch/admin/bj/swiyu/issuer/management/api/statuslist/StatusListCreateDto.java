@@ -6,7 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.management.api.statuslist;
 
-import ch.admin.bj.swiyu.issuer.management.api.validators.ValidStatusListMaxLength;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;

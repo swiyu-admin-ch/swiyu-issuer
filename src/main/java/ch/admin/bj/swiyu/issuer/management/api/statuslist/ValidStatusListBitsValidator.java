@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.api.validators;
+package ch.admin.bj.swiyu.issuer.management.api.statuslist;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-public class ValidBitsValidator implements ConstraintValidator<ValidBits, Integer> {
+public class ValidStatusListBitsValidator implements ConstraintValidator<ValidStatusListBits, Integer> {
 
     @Override
     public boolean isValid(Integer value, ConstraintValidatorContext context) {

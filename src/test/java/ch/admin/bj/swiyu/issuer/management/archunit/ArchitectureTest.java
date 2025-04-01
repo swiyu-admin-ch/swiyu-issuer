@@ -9,7 +9,7 @@ package ch.admin.bj.swiyu.issuer.management.archunit;
 import ch.admin.bj.swiyu.issuer.management.IssuerManagementApplication;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.management.api.validators.ValidStatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.ValidStatusListMaxLengthValidator;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;

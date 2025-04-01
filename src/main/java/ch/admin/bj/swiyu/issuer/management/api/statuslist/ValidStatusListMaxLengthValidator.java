@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.api.validators;
+package ch.admin.bj.swiyu.issuer.management.api.statuslist;
 
-import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;

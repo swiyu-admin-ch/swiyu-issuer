@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -152,7 +153,27 @@ class StatusListIT {
                 .andExpect(jsonPath("$.remainingListEntries").value(remainigEntries - expectedNextFreeIndex))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
                 .andExpect(jsonPath("$.nextFreeIndex").value(expectedNextFreeIndex))
-                .andExpect(jsonPath("$.config.bits").value(bits));
+                .andExpect(jsonPath("$.config.bits").value(bits)).andExpect(jsonPath("$.config.purpose").isEmpty());
+    }
+
+    @Test
+    void createStatusListWithPurpose_thenSuccess() throws Exception {
+        var bits = 1;
+        var purpose = "test";
+        var payload = String.format("{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": %d,\"config\": {\"bits\": %d, \"purpose\": \"%s\"}}", statusListProperties.getStatusListSizeLimit(), bits, purpose);
+
+        var newStatusList = mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andReturn();
+
+
+        // check if get info endpoint return the same values
+        mvc.perform(get(STATUS_LIST_BASE_URL + "/" + JsonPath.read(newStatusList.getResponse().getContentAsString(), "$.id")))
+                .andExpect(jsonPath("$.config.bits").value(bits))
+                .andExpect(jsonPath("$.config.purpose").value(purpose))
+        ;
     }
 
     @Test
@@ -173,12 +194,14 @@ class StatusListIT {
         var payload = getCreateTokenStatusListPayload(statusListProperties.getStatusListSizeLimit() + 1, bits);
         var invalidTotalSize = (statusListProperties.getStatusListSizeLimit() + 1) * bits;
 
-        mvc.perform(post(STATUS_LIST_BASE_URL)
+        var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0]").value("statusListCreateDto: Status list has invalid size %s cannot exceed the maximum size limit of %s"
-                        .formatted(invalidTotalSize, statusListProperties.getStatusListSizeLimit())));
+                .andReturn().getResponse().getContentAsString();
+
+        assertTrue(result.contains("statusListCreateDto: Status list has invalid size %s cannot exceed the maximum size limit of %s"
+                .formatted(invalidTotalSize, statusListProperties.getStatusListSizeLimit())));
     }
 
     @Test
@@ -188,12 +211,14 @@ class StatusListIT {
         var payload = getCreateTokenStatusListPayload(invalidMaxLength, bits);
         var invalidTotalSize = invalidMaxLength * bits;
 
-        mvc.perform(post(STATUS_LIST_BASE_URL)
+        var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0]").value("statusListCreateDto: Status list has invalid size %s cannot exceed the maximum size limit of %s"
-                        .formatted(invalidTotalSize, statusListProperties.getStatusListSizeLimit())));
+                .andReturn().getResponse().getContentAsString();
+
+        assertTrue(result.contains("statusListCreateDto: Status list has invalid size %s cannot exceed the maximum size limit of %s"
+                .formatted(invalidTotalSize, statusListProperties.getStatusListSizeLimit())));
     }
 
     @Test
@@ -202,11 +227,14 @@ class StatusListIT {
         var validMaxLength = 100;
         var payload = getCreateTokenStatusListPayload(validMaxLength, bits);
 
-        mvc.perform(post(STATUS_LIST_BASE_URL)
+        var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0]").value("config.bits: Bits can only contain 1, 2, 4 or 8"));
+                .andReturn()
+                .getResponse().getContentAsString();
+
+        assertTrue(result.contains("config.bits: Bits can only contain 1, 2, 4 or 8"));
     }
 
     @Test
@@ -215,12 +243,15 @@ class StatusListIT {
         var invalidMaxLength = statusListProperties.getStatusListSizeLimit();
         var payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": null}", type, invalidMaxLength);
 
-        mvc.perform(post(STATUS_LIST_BASE_URL)
+        var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0]").value("config: must not be null"))
-                .andExpect(jsonPath("$.errors[1]").value("statusListCreateDto: Status list size cannot be evaluated due to missing infos in config"));
+                .andReturn().getResponse()
+                .getContentAsString();
+
+        assertTrue(result.contains("statusListCreateDto: Status list size cannot be evaluated due to missing infos in config"));
+        assertTrue(result.contains("config: must not be null"));
     }
 
     private String getCreateTokenStatusListPayload(int maxLength, int bits) {

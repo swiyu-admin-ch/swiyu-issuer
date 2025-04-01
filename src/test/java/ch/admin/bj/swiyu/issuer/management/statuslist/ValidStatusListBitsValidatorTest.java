@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.statuslist;
 
-import ch.admin.bj.swiyu.issuer.management.api.validators.ValidBitsValidator;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.ValidStatusListBitsValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,14 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-class ValidBitsValidatorTest {
+class ValidStatusListBitsValidatorTest {
 
-    private ValidBitsValidator bitsValidator;
+    private ValidStatusListBitsValidator bitsValidator;
     private ConstraintValidatorContext context;
 
     @BeforeEach
     void setUp() {
-        bitsValidator = new ValidBitsValidator();
+        bitsValidator = new ValidStatusListBitsValidator();
         context = mock(ConstraintValidatorContext.class);
     }
 

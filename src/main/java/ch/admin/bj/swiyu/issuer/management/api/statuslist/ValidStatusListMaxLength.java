@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.api.validators;
+package ch.admin.bj.swiyu.issuer.management.api.statuslist;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
@@ -12,12 +12,12 @@ import jakarta.validation.Payload;
 import java.lang.annotation.*;
 
 @Documented
-@Constraint(validatedBy = ValidBitsValidator.class)
-@Target({ElementType.METHOD, ElementType.FIELD})
+@Constraint(validatedBy = ValidStatusListMaxLengthValidator.class)
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ValidBits {
+public @interface ValidStatusListMaxLength {
 
-    String message() default "Bits can only contain 1, 2, 4 or 8";
+    String message() default "Invalid maxLength for status list";
 
     Class<?>[] groups() default {};
 
