@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update and improved the error feedback in the status list create dto. The error messages are now more detailed and
   provide more information about the error.
+- The status list validations are no longer returned in a comma separated string, but in a list of strings
 
 ## 1.3.6
 
