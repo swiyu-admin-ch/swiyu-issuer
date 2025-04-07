@@ -6,18 +6,20 @@
 
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 import java.util.Map;
 
-@Getter
-@AllArgsConstructor
-public class CredentialRequest {
-
-    private String format;
-
-    private Map<String, Object> proof;
-
-    private CredentialResponseEncryption credentialResponseEncryption;
+public record CredentialRequest(
+        /**
+         * Format of the requested credential. Only vc+sd-jwt format is supported
+         */
+        String format,
+        /**
+         * Proof for holder binding
+         */
+        Map<String, Object> proof,
+        /**
+         * If this request element is not present, the corresponding credential response returned is not encrypted
+         */
+        CredentialResponseEncryption credentialResponseEncryption
+) {
 }

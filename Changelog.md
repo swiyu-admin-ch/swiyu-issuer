@@ -5,13 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.3.7
+## 1.5.0
 
 ### Added
 
 - Added new status "DEFERRED" and "READY" for the deferred flow (READY can be set via the patch status endpoint).
-- Updated documentation for credential and deferred flow and statu
-- Updated Spring parent to 3.4.4
+- Updated documentation for credential and deferred flow and status
+
+## 1.4.0
+
+### Changed
+
+- Update and improved the error feedback in the status list create dto. The error messages are now more detailed and
+  provide more information about the error.
+- The status list validations are no longer returned in a comma separated string, but in a list of strings
 
 ## 1.3.6
 

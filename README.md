@@ -357,11 +357,6 @@ sequenceDiagram
                 MGMT-->>-BUSINESS : 
             end
         end
-        
-        BUSINESS->>BUSINESS : Some additional process if STATUS = Deferred
-        BUSINESS->>+MGMT : Set status READY
-        MGMT->>DB : Store offer
-        MGMT-->>-BUSINESS : 
 
         loop Get deferred credential
             alt STATUS is not READY
@@ -415,7 +410,6 @@ for examples on how to use.
 
 ```mermaid
 stateDiagram-v2
-    stateDiagram-v2
     OFFERED
     IN_PROGRESS
     state fork_state <<fork>>

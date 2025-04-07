@@ -381,7 +381,6 @@ class CredentialOfferStatusIT {
             try {
                 var tokenState = loadTokenStatusListToken(2, statusList.getStatusZipped()).getStatus(status.getIndex());
                 var expectedState = switch (state) {
-                    // TODO chcek
                     case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED:
                         yield TokenStatusListBit.VALID.getValue();
                     case SUSPENDED:

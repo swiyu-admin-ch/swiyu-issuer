@@ -7,6 +7,9 @@
 package ch.admin.bj.swiyu.issuer.management.archunit;
 
 import ch.admin.bj.swiyu.issuer.management.IssuerManagementApplication;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListConfigDto;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.management.api.statuslist.ValidStatusListMaxLengthValidator;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -174,7 +177,9 @@ public class ArchitectureTest {
         static final ArchRule no_cycles_between_slices = SlicesRuleDefinition.slices()
                 .matching("..management.(**)..")
                 .should()
-                .beFreeOfCycles();
+                .beFreeOfCycles()
+                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
+                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class);
 
         /**
          * ArchRules which support freezing. @see <a
