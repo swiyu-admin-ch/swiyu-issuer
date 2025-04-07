@@ -12,6 +12,8 @@ public enum CredentialStatusType {
     OFFERED,
     CANCELLED,
     IN_PROGRESS,
+    DEFERRED,
+    READY,
     ISSUED,
     SUSPENDED,
     REVOKED,

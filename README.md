@@ -157,19 +157,19 @@ portal. The following properties need to be set:
 
 ```yaml
 swiyu:
-  status-registry:
-  customer-key: "customer-key"
-  customer-secret: "customer-secret"
+    status-registry:
+    customer-key: "customer-key"
+    customer-secret: "customer-secret"
 ```
 
 2. If you have a refresh token you have to set the following properties in the `application-local.yml`
 
 ```yaml
 swiyu:
-  status-registry:
-    api-url: "https://api-url"
-    enable-refresh-token-flow: true
-    bootstrap-refresh-token: "your refresh token"
+    status-registry:
+        api-url: "https://api-url"
+        enable-refresh-token-flow: true
+        bootstrap-refresh-token: "your refresh token"
 ```
 
 > [!NOTE]  
@@ -200,7 +200,7 @@ On the base registry the public key is published. To generate the public key for
 The Generic Issuer Agent Management is configured using environment variables.
 
 | Variable                                             | Description                                                                                                                                                                                                                                                                              |
-| :--------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|:-----------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | POSTGRES_USER                                        | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                                                                                                                                                          |
 | POSTGRES_PASSWORD                                    | Username to connect to the Issuer Agent Database                                                                                                                                                                                                                                         |
 | POSTGRES_JDBC                                        | JDBC Connection string to the shared DB                                                                                                                                                                                                                                                  |
@@ -221,10 +221,11 @@ The Generic Issuer Agent Management is configured using environment variables.
 | MONITORING_BASIC_AUTH_ENABLED                        | Enables basic auth protection of the /actuator/prometheus endpoint. (Default: false)                                                                                                                                                                                                     |
 | MONITORING_BASIC_AUTH_USERNAME                       | Sets the username for the basic auth protection of the /actuator/prometheus endpoint.                                                                                                                                                                                                    |
 | MONITORING_BASIC_AUTH_PASSWORD                       | Sets the password for the basic auth protection of the /actuator/prometheus endpoint.                                                                                                                                                                                                    |
+
 ### Kubernetes Vault Keys
 
 | Variable                                             | Description                                                                                                                                           |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
 | secret.db.username                                   | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                       |
 | secret.db.password                                   | Username to connect to the Issuer Agent Database                                                                                                      |
 | secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                          |
@@ -241,7 +242,7 @@ specific option.
 Note that for creating the keys it is expected that the public key is provided as self-signed certificated.
 
 | Variable                      | Description                                                                                                                                                                                |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | SIGNING_KEY_MANAGEMENT_METHOD | This variable serves as selector. `key` is used for a mounted key. `pkcs11` for the sun pkcs11 selector. For vendor specific libraries the project must be compiled with these configured. |
 | HSM_HOST                      | URI of the HSM Host or Proxy to be connected to                                                                                                                                            |
 | HSM_PORT                      |                                                                                                                                                                                            |
@@ -297,6 +298,98 @@ ID of the credential offer is also the id used by the issuer adapter (the compon
 management) to revoke the credential. It is returned when a new offer is created. It's recommended to save this id to
 revoke the credential later on.
 
+## Credential flows
+
+```mermaid
+sequenceDiagram
+    actor BUSINESS as Business Issuer 
+
+    participant MGMT as Issues Agent Management
+    participant DB as Issuer db
+    participant STATUS as Status Registry
+    participant SIGNER as Issues Agent OID4VCI
+
+    actor WALLET as Holder
+
+    # Create offer
+    BUSINESS->>+MGMT: Create offer
+    MGMT->>+STATUS: Create status list entry
+    STATUS->>-MGMT: 
+    MGMT->>+DB : Store offer
+    DB-->>-MGMT : 
+    MGMT-->>-BUSINESS : Return offer details (incl. deeplink)
+
+    # Pass deeplink to WALLET
+    BUSINESS-->>+WALLET : Pass deeplink to wallet
+    Note over BUSINESS,WALLET: INFO: This is not part of this service and must be handled by the Business Issuer
+
+    loop Status check
+        BUSINESS->>+MGMT: Get status
+        MGMT-->>-BUSINESS : 
+    end
+
+    # Get credential
+    WALLET->>+SIGNER : Get openid metadata
+    SIGNER-->>-WALLET : 
+
+    WALLET->>+SIGNER : Get issuer metadata
+    SIGNER-->>-WALLET : 
+
+    WALLET->>+SIGNER : Get oauth token
+    SIGNER-->>-WALLET : Oauth token
+
+    alt Deferred = true
+        WALLET->>+SIGNER : Redeem offer
+        SIGNER->>+DB : Get offer data and status list INFO
+        DB-->-SIGNER : 
+        SIGNER->>+DB : Set STATUS = Deferred
+        DB-->-SIGNER : 
+        SIGNER-->>-WALLET : Transaction id
+
+        loop get status
+            BUSINESS->>+MGMT: Get status
+            MGMT-->>-BUSINESS : Status
+
+            alt STATUS is Deferred
+                BUSINESS->>BUSINESS : Some additional process
+                BUSINESS->>+MGMT : Set status READY
+                MGMT->>DB : Store offer
+                MGMT-->>-BUSINESS : 
+            end
+        end
+        
+        BUSINESS->>BUSINESS : Some additional process if STATUS = Deferred
+        BUSINESS->>+MGMT : Set status READY
+        MGMT->>DB : Store offer
+        MGMT-->>-BUSINESS : 
+
+        loop Get deferred credential
+            alt STATUS is not READY
+                WALLET->>+SIGNER: Get credential from deferred_credential
+                SIGNER->>+DB : Get offer data and status list INF
+                DB-->-SIGNER : 
+                SIGNER-->>-WALLET : issuance_pending
+            else
+                WALLET->>+SIGNER: Get credential from deferred_credential
+                SIGNER->>+DB : Get offer data and status list INFO
+                DB-->-SIGNER : 
+                SIGNER-->>-WALLET : VC
+            end
+        end
+    else 
+        WALLET->>+SIGNER: Get credential
+        SIGNER->>+DB : Get offer data and status list INFO
+        SIGNER-->>-WALLET : VC
+    end
+
+    loop STATUS is ISSUED
+        BUSINESS->>+MGMT: Get status
+        MGMT->>+DB : Remove offer data
+        MGMT-->>-BUSINESS : Status
+    end
+
+```
+
 ### JWT Based Authentication
 
 If there is the need to further protect the API it is possible to enable the feature with a flag and
@@ -322,23 +415,34 @@ for examples on how to use.
 
 ```mermaid
 stateDiagram-v2
+    stateDiagram-v2
     OFFERED
     IN_PROGRESS
+    state fork_state <<fork>>
+    DEFERRED
+    READY
+    state join_state <<join>>
     EXPIRED
     ISSUED
     SUSPENDED
     REVOKED
     [*] --> OFFERED
-    IN_PROGRESS --> OFFERED: reset
-    IN_PROGRESS --> ISSUED: issue credential (delete vc data)
-    IN_PROGRESS --> EXPIRED: validity posix timestamp exceeded
-    OFFERED --> REVOKED: revoke offer
-    OFFERED --> IN_PROGRESS: Redeem token
-    OFFERED --> EXPIRED: validity posix timestamp exceeded
-    ISSUED --> SUSPENDED: suspend
-    SUSPENDED --> ISSUED: unsuspend
-    ISSUED --> REVOKED: revoke
-    SUSPENDED --> REVOKED: revoke
+    OFFERED --> CANCELLED : Process can be "cancelled as long as the vc is not ISSUED"
+    CANCELLED --> [*]
+    IN_PROGRESS --> OFFERED
+    OFFERED --> IN_PROGRESS
+    IN_PROGRESS --> fork_state
+    fork_state --> DEFERRED : Credential endpoint called by Holder and (deferred = true)
+    fork_state --> join_state : Non-deferred flow
+    IN_PROGRESS --> EXPIRED : Can expire on status (OFFERED, IN_PROGRESS, DEFERRED, READY)
+    EXPIRED --> [*]
+    DEFERRED --> READY : Status READY must be set by issuer-agent-management
+    READY --> join_state
+    join_state --> ISSUED
+    ISSUED --> SUSPENDED
+    SUSPENDED --> ISSUED
+    ISSUED --> REVOKED
+    REVOKED --> [*]
 ```
 
 ## SWIYU

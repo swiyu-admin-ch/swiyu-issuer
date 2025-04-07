@@ -6,19 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.management.service;
 
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer.readOfferData;
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.*;
-import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
-
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
@@ -41,6 +28,19 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer.readOfferData;
+import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.*;
+import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
 @Slf4j
 @Service
@@ -136,6 +136,18 @@ public class CredentialService {
         if (currentStatus == CredentialStatusType.REVOKED) {
             throw new BadRequestException(
                     String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
+        }
+
+        // if the new status is READY, then we can only set it if the old status was deferred
+        if (newStatus == CredentialStatusType.READY) {
+
+            if (currentStatus == CredentialStatusType.DEFERRED) {
+                credential.changeStatus(CredentialStatusType.READY);
+                return credential;
+            } else {
+                throw new BadRequestException(
+                        String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
+            }
         }
 
         if (newStatus == CredentialStatusType.EXPIRED) {

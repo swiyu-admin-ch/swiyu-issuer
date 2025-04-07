@@ -15,6 +15,8 @@ import lombok.Getter;
             OFFERED - an offer link has been created, and not yet redeemed by a holder.
             CANCELLED - the VC was revoked before being claimed.
             IN_PROGRESS - very short lived state, if the Holder has redeemed the one-time-code, but not yet gotten their credential. To allow a holder to retry fetching the vc set the state to offered.
+            DEFERRED - the token has been retrieved  but the credential is not yet issued, as the credential metadata deferred is set to true.
+            READY - Status set by the business issuer to continue the issuance of the credential for the deferred flow.
             ISSUED - the VC has been collected by the holder and is valid.
             SUSPENDED - the VC has been temporarily suspended. To unsuspend change state to issued.
             REVOKED - the VC has been revoked. This state is final and can not be changed.
@@ -24,6 +26,8 @@ public enum CredentialStatusTypeDto {
     OFFERED,
     CANCELLED,
     IN_PROGRESS,
+    DEFERRED,
+    READY,
     ISSUED,
     SUSPENDED,
     REVOKED,

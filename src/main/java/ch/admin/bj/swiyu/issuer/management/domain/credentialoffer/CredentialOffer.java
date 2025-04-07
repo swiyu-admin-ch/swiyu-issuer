@@ -9,15 +9,7 @@ package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,11 +19,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Representation of a single offer and the vc which was created using that
@@ -102,6 +90,8 @@ public class CredentialOffer {
     @NotNull
     private UUID accessToken;
 
+    private UUID transactionId;
+
     /**
      * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
      */
@@ -122,6 +112,13 @@ public class CredentialOffer {
     private Instant credentialValidFrom;
 
     private Instant credentialValidUntil;
+
+    /**
+     * This claim is contained in the response if the Credential Issuer was unable to immediately issue the Credential.
+     * Is removed after the Credential has been obtained by the Wallet
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    private CredentialRequest credentialRequest;
 
     /**
      * Link to what indexes on status lists are assigned to the vc

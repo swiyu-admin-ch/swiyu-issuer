@@ -6,24 +6,11 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
-import java.io.IOException;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -39,6 +26,20 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import java.io.IOException;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
 @ActiveProfiles("test")
@@ -130,8 +131,33 @@ class CredentialOfferStatusIT {
     @Test
     void testUpdateOfferStatusWithRevokedWhenRevoked_thenOk() throws Exception {
 
-        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.OFFERED;
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.REVOKED;
 
+        mvc.perform(patch(getUpdateUrl(id, newStatus)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testUpdateOfferStatusWithDeferred_thenBadRequest() throws Exception {
+
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.READY;
+
+        mvc.perform(patch(getUpdateUrl(id, newStatus)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateOfferStatusWithReadyWhenDeferred_thenOk() throws Exception {
+
+        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.READY;
+
+        // Set the status to DEFERRED as this is done by the oid4vci
+        var offer = credentialOfferRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(String.format("Credential %s not found", id)));
+
+        offer.changeStatus(CredentialStatusType.DEFERRED);
+
+        credentialOfferRepository.save(offer);
+        
         mvc.perform(patch(getUpdateUrl(id, newStatus)))
                 .andExpect(status().isOk());
     }
@@ -355,11 +381,8 @@ class CredentialOfferStatusIT {
             try {
                 var tokenState = loadTokenStatusListToken(2, statusList.getStatusZipped()).getStatus(status.getIndex());
                 var expectedState = switch (state) {
-                    case OFFERED:
-                    case CANCELLED:
-                    case IN_PROGRESS:
-                    case EXPIRED:
-                    case ISSUED:
+                    // TODO chcek
+                    case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED:
                         yield TokenStatusListBit.VALID.getValue();
                     case SUSPENDED:
                         yield TokenStatusListBit.SUSPEND.getValue();

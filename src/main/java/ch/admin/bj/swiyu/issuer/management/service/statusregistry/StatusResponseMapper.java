@@ -31,6 +31,8 @@ public class StatusResponseMapper {
             case OFFERED -> CredentialStatusTypeDto.OFFERED;
             case CANCELLED -> CredentialStatusTypeDto.CANCELLED;
             case IN_PROGRESS -> CredentialStatusTypeDto.IN_PROGRESS;
+            case DEFERRED -> CredentialStatusTypeDto.DEFERRED;
+            case READY -> CredentialStatusTypeDto.READY;
             case ISSUED -> CredentialStatusTypeDto.ISSUED;
             case SUSPENDED -> CredentialStatusTypeDto.SUSPENDED;
             case REVOKED -> CredentialStatusTypeDto.REVOKED;

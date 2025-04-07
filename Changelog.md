@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.7
+
+### Added
+
+- Added new status "DEFERRED" and "READY" for the deferred flow (READY can be set via the patch status endpoint).
+- Updated documentation for credential and deferred flow and statu
+- Updated Spring parent to 3.4.4
+
 ## 1.3.6
 
 ### Added
