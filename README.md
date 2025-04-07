@@ -321,7 +321,7 @@ sequenceDiagram
 
     # Pass deeplink to WALLET
     BUSINESS-->>+WALLET : Pass deeplink to wallet
-    Note over BUSINESS,WALLET: INFO: This is not part of this service and must be handled by the Business Issuer
+    Note over BUSINESS,WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
 
     loop Status check
         BUSINESS->>+MGMT: Get status
