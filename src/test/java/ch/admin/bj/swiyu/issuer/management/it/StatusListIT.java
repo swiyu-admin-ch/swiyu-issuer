@@ -234,7 +234,7 @@ class StatusListIT {
                 .andReturn()
                 .getResponse().getContentAsString();
 
-        assertTrue(result.contains("config.bits: Bits can only contain 1, 2, 4 or 8"));
+        assertTrue(result.contains("config.bits: Bits can only be 1, 2, 4 or 8"));
     }
 
     @Test
