@@ -17,7 +17,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidStatusListBits {
 
-    String message() default "Bits can only contain 1, 2, 4 or 8";
+    String message() default "Bits can only be 1, 2, 4 or 8";
 
     Class<?>[] groups() default {};
 
