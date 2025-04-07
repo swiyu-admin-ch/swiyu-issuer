@@ -124,7 +124,7 @@ a credential offer for a holder. Here is an example of a request body for the of
         "firstName": "Edward"
     },
     "offer_validity_seconds": 86400,
-    "credential_valid_until": "2010-01-01T19:23:24Z",
+    "credential_valid_until": "2030-01-01T19:23:24Z",
     "credential_valid_from": "2010-01-01T18:23:24Z",
     "status_lists": [
         "https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt"
