@@ -18,6 +18,6 @@ public class StatusListConfigDto {
 
     @NotNull
     @ValidStatusListBits
-    @Schema(description = "The number of bits used per Referenced Token. Possible values are 1, 2, 4, 8.", example = "2")
+    @Schema(description = "The number of bits used per Referenced Token. More bits allow additional states. 1 bit is only revocation, 2 bits is revocation and suspension of a credential. Possible values are 1, 2, 4, 8.", example = "2")
     private Integer bits;
 }
