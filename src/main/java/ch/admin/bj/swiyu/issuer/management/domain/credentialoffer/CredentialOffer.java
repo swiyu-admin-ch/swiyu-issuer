@@ -90,7 +90,16 @@ public class CredentialOffer {
     @NotNull
     private UUID accessToken;
 
+    /**
+     * Value used for the deferred flow to get the credential
+     */
     private UUID transactionId;
+
+    /**
+     * Value used for the store the public key from the holder received in the deferred flow
+     */
+    @Column(name = "holder_jwk")
+    private String holderJWK;
 
     /**
      * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
