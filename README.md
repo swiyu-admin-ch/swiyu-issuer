@@ -264,6 +264,9 @@ erDiagram
         text metadata_credential_supported_id
         jsonb offer_data
         jsonb credential_metadata
+        jsonb credential_request;
+        uuid transaction_id;
+        text holder_jwk;
         uuid holder_binding_nonce
         uuid access_token
         integer offer_expiration_timestamp
