@@ -183,4 +183,14 @@ public class CredentialOffer {
     public boolean hasExpirationTimeStampPassed() {
         return Instant.now().isAfter(Instant.ofEpochSecond(this.offerExpirationTimestamp));
     }
+
+    public void expire() {
+        this.changeStatus(CredentialStatusType.EXPIRED);
+        this.removeOfferData();
+    }
+
+    public void cancel() {
+        this.changeStatus(CredentialStatusType.CANCELLED);
+        this.removeOfferData();
+    }
 }

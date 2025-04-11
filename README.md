@@ -424,7 +424,6 @@ stateDiagram-v2
     [*] --> OFFERED
     OFFERED --> CANCELLED : Process can be "cancelled as long as the vc is not ISSUED"
     CANCELLED --> [*]
-    IN_PROGRESS --> OFFERED
     OFFERED --> IN_PROGRESS
     IN_PROGRESS --> fork_state
     fork_state --> DEFERRED : Credential endpoint called by Holder and (deferred = true)

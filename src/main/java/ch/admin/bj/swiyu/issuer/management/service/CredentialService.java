@@ -125,64 +125,73 @@ public class CredentialService {
      */
     private CredentialOffer updateCredentialStatus(@NotNull CredentialOffer credential,
                                                    @NotNull CredentialStatusType newStatus) {
+
         var currentStatus = credential.getCredentialStatus();
 
-        // Ignore no status changes and return
+        // Ignore no status changes and return. This needs to be checked first to prevent unnecessary errors
         if (currentStatus == newStatus) {
             return credential;
         }
 
-        // should not be able to change status to other than revoked if it is already revoked
-        if (currentStatus == CredentialStatusType.REVOKED) {
-            throw new BadRequestException(
-                    String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
+        // status is already in a terminal state and cannot be changed
+        if (currentStatus.isTerminalState()) {
+            throw new BadRequestException(String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
         }
 
-        // if the new status is READY, then we can only set it if the old status was deferred
-        if (newStatus == CredentialStatusType.READY) {
-
-            if (currentStatus == CredentialStatusType.DEFERRED) {
-                credential.changeStatus(CredentialStatusType.READY);
-                return credential;
-            } else {
-                throw new BadRequestException(
-                        String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
-            }
-        }
-
-        if (newStatus == CredentialStatusType.EXPIRED) {
-            credential.changeStatus(CredentialStatusType.EXPIRED);
-            credential.removeOfferData();
-        } else if (!currentStatus.isIssuedToHolder()) {
-            // Status before issuance is not reflected in the status list
-            if (newStatus == CredentialStatusType.REVOKED || newStatus == CredentialStatusType.CANCELLED) {
-                credential.removeOfferData();
-                newStatus = CredentialStatusType.CANCELLED; // Use the correct status for status tracking
-            } else if (!(newStatus == CredentialStatusType.OFFERED
-                    && currentStatus == CredentialStatusType.IN_PROGRESS)) {
-                // Only allowed transition is to reset from IN_PROGRESS to OFFERED so the offer
-                // can be used again.
-                throw new BadRequestException(String.format(
-                        "Illegal state transition - Status cannot be updated from %s to %s", currentStatus, newStatus));
-            }
+        if (!currentStatus.isIssuedToHolder()) {
+            credential = handlePreIssuanceStatusChange(credential, currentStatus, newStatus);
         } else {
-
-            final Set<CredentialOfferStatus> offerStatusSet = credential.getOfferStatusSet();
-            if (offerStatusSet.isEmpty()) {
-                throw new BadRequestException("No associated status lists found. Can not set a status to an already issued credential");
-            }
-            switch (newStatus) {
-                case REVOKED -> statusListService.revoke(offerStatusSet);
-                case SUSPENDED -> statusListService.suspend(offerStatusSet);
-                case ISSUED -> statusListService.revalidate(offerStatusSet);
-                default -> throw new IllegalArgumentException("Unknown status");
-            }
-
+            credential = handlePostIssuanceStatusChange(credential, newStatus);
         }
 
         log.info(String.format("Updating %s from %s to %s", credential.getId(), currentStatus, newStatus));
-        credential.changeStatus(newStatus);
         return this.credentialOfferRepository.save(credential);
+    }
+
+    // handles cancelled, ready and
+    private CredentialOffer handlePreIssuanceStatusChange(CredentialOffer credential,
+                                                          CredentialStatusType currentStatus,
+                                                          CredentialStatusType newStatus) {
+
+        // if the new status is READY, then we can only set it if the old status was deferred
+        if (currentStatus == CredentialStatusType.DEFERRED && newStatus == CredentialStatusType.READY) {
+            credential.changeStatus(CredentialStatusType.READY);
+            return credential;
+        }
+
+        if (newStatus == CredentialStatusType.CANCELLED || newStatus == CredentialStatusType.REVOKED) {
+            credential.cancel();
+            return credential;
+        }
+
+        throw new BadRequestException(String.format(
+                "Illegal state transition - Status cannot be updated from %s to %s", currentStatus, newStatus));
+    }
+
+    /**
+     * Handle status changes after issuance (status suspended, revoked and issued)
+     *
+     * @param credential
+     * @param newStatus
+     */
+    private CredentialOffer handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
+
+        final Set<CredentialOfferStatus> offerStatusSet = credential.getOfferStatusSet();
+
+        if (offerStatusSet.isEmpty()) {
+            throw new BadRequestException("No associated status lists found. Can not set a status to an already issued credential");
+        }
+
+        switch (newStatus) {
+            case REVOKED -> statusListService.revoke(offerStatusSet);
+            case SUSPENDED -> statusListService.suspend(offerStatusSet);
+            case ISSUED -> statusListService.revalidate(offerStatusSet);
+            default -> throw new BadRequestException(String.format(
+                    "Illegal state transition - Status cannot be updated from %s to %s", credential.getCredentialStatus(), newStatus));
+        }
+
+        credential.changeStatus(newStatus);
+        return credential;
     }
 
     private CredentialOffer getCredentialForUpdate(UUID credentialId) {
