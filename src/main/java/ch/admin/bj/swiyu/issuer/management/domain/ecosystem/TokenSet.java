@@ -6,10 +6,13 @@
 
 package ch.admin.bj.swiyu.issuer.management.domain.ecosystem;
 
-import java.time.Instant;
-
+import ch.admin.bj.swiyu.issuer.management.domain.AuditMetadata;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.Getter;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.Instant;
 
 /**
  * Entity to manage the swiyu provider provided tokens.
@@ -20,7 +23,13 @@ import lombok.Getter;
 @Entity
 @Getter
 @Table(name = "token_set")
+@EntityListeners(AuditingEntityListener.class)
 public class TokenSet {
+
+    @Embedded
+    @Valid
+    private final AuditMetadata auditMetadata = new AuditMetadata();
+
     @Id
     @Enumerated(EnumType.STRING)
     EcosystemApiType apiTarget;

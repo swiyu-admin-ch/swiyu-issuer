@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.archunit;
 
-import ch.admin.bj.swiyu.issuer.management.IssuerManagementApplication;
+import ch.admin.bj.swiyu.issuer.management.Application;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.ValidStatusListMaxLengthValidator;
@@ -34,7 +34,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.*;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
 @AnalyzeClasses(
-        packagesOf = {IssuerManagementApplication.class},
+        packagesOf = {Application.class},
         importOptions = {ImportOption.DoNotIncludeTests.class, ImportOption.DoNotIncludeJars.class}
 )
 public class ArchitectureTest {

@@ -6,9 +6,12 @@
 
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.management.domain.AuditMetadata;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * Linking an Index on a Status List to a Verifiable Credential.
@@ -21,7 +24,12 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class CredentialOfferStatus {
+
+    @Embedded
+    @Valid
+    private final AuditMetadata auditMetadata = new AuditMetadata();
 
     @EmbeddedId
     private CredentialOfferStatusKey id;

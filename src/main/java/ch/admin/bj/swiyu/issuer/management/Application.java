@@ -21,10 +21,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Slf4j
 @EnableScheduling
 @EnableSchedulerLock(defaultLockAtMostFor = "10m")
-public class IssuerManagementApplication {
+public class Application {
 
     public static void main(String[] args) {
-        Environment env = SpringApplication.run(IssuerManagementApplication.class, args).getEnvironment();
+        Environment env = SpringApplication.run(Application.class, args).getEnvironment();
         String appName = env.getProperty("spring.application.name");
         String serverPort = env.getProperty("server.port");
         log.info(

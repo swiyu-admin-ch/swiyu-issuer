@@ -6,12 +6,9 @@
 
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import ch.admin.bj.swiyu.issuer.management.domain.AuditMetadata;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,6 +17,12 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A representation of any form of status list which can be represented as
@@ -40,7 +43,12 @@ import org.hibernate.type.SqlTypes;
 @AllArgsConstructor
 @Getter // do not apply generell setters on entities
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class StatusList {
+    @Embedded
+    @Valid
+    private final AuditMetadata auditMetadata = new AuditMetadata();
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -73,7 +81,6 @@ public class StatusList {
      */
     @NotNull
     private Integer maxLength;
-    
 
     public UUID getRegistryId() {
         /**

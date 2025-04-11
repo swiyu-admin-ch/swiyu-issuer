@@ -7,9 +7,11 @@
 package ch.admin.bj.swiyu.issuer.management.domain.credentialoffer;
 
 import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.management.domain.AuditMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,10 +19,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.util.*;
-
 /**
  * Representation of a single offer and the vc which was created using that
  * offer.
@@ -32,8 +34,13 @@ import java.util.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "credential_offer")
 public class CredentialOffer {
+
+    @Embedded
+    @Valid
+    private final AuditMetadata auditMetadata = new AuditMetadata();
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

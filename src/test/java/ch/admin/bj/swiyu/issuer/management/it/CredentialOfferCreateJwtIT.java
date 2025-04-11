@@ -6,10 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -26,6 +22,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
 @ActiveProfiles("testjwt")
@@ -89,7 +89,7 @@ class CredentialOfferCreateJwtIT {
     }
 
     private MvcResult testJWTCreateOffer(String jsonPayload) throws Exception {
-        ECKey ecJWK = ECKey.parse(IssuerManagementApplicationIT.privateKey);
+        ECKey ecJWK = ECKey.parse(ApplicationIT.privateKey);
         JWTClaimsSet claims = new JWTClaimsSet.Builder().claim("data", jsonPayload).build();
 
         SignedJWT jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("testkey").build(), claims);
