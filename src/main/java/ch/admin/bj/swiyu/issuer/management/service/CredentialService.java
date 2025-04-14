@@ -149,7 +149,9 @@ public class CredentialService {
         return this.credentialOfferRepository.save(credential);
     }
 
-    // handles cancelled, ready and
+    /**
+     * Handles status changes before issuance (status cancelled, ready and expired)
+     */
     private CredentialOffer handlePreIssuanceStatusChange(CredentialOffer credential,
                                                           CredentialStatusType currentStatus,
                                                           CredentialStatusType newStatus) {
@@ -175,10 +177,7 @@ public class CredentialService {
     }
 
     /**
-     * Handle status changes after issuance (status suspended, revoked and issued)
-     *
-     * @param credential
-     * @param newStatus
+     * Handles status changes after issuance (status suspended, revoked and issued)
      */
     private CredentialOffer handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
 
@@ -249,7 +248,6 @@ public class CredentialService {
         return entity;
     }
 
-    // protected because it is used for testing
     private String getOfferDeeplinkFromCredential(CredentialOffer credential) {
         var grants = new HashMap<String, Object>();
         grants.put("urn:ietf:params:oauth:grant-type:pre-authorized_code", new Object() {
