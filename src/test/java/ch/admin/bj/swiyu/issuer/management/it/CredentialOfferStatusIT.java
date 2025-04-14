@@ -383,7 +383,7 @@ class CredentialOfferStatusIT {
     class InvalidStatusInputs {
 
         @ParameterizedTest
-        @ValueSource(strings = {"IN_PROGRESS", "DEFERRED"})
+        @ValueSource(strings = {"IN_PROGRESS", "DEFERRED", "ISSUED"})
         void testUpdateOfferStatusWhenPreIssuedWhitSuspended_thenBadRequest(String value) throws Exception {
             var originalState = CredentialStatusTypeDto.OFFERED.toString();
             var newValue = CredentialStatusTypeDto.valueOf(value);
@@ -398,7 +398,7 @@ class CredentialOfferStatusIT {
         }
 
         @Test
-        void testUpdateOfferStatusWithCancelledWhenExpired_thenBadRequest() throws Exception {
+        void testUpdateOfferStatusWithOfferedWhenInProgress_thenBadRequest() throws Exception {
             var originalState = CredentialStatusTypeDto.IN_PROGRESS.toString();
             var vcId = createBasicOfferJsonAndGetUUID();
             changeOfferStatus(vcId, CredentialStatusType.valueOf(originalState));
@@ -412,7 +412,7 @@ class CredentialOfferStatusIT {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"OFFERED", "CANCELLED", "IN_PROGRESS", "DEFERRED", "READY", "EXPIRED", "CANCELLED"})
+        @ValueSource(strings = {"OFFERED", "CANCELLED", "IN_PROGRESS", "DEFERRED", "READY", "EXPIRED"})
         void testUpdateOfferWithIssuedWhenPreIssued_thenBadRequest(String originalState) throws Exception {
 
             var newValue = CredentialStatusTypeDto.ISSUED;
@@ -479,7 +479,7 @@ class CredentialOfferStatusIT {
 
         @ParameterizedTest
         @ValueSource(strings = {"OFFERED", "IN_PROGRESS", "DEFERRED", "READY"})
-        void testUpdateOfferStatusWhenPreIssuedWithRevoked_thenBadRequest(String value) throws Exception {
+        void testUpdateOfferStatusWhenPreIssuedWithRevoked_thenIsOk(String value) throws Exception {
             var vcId = createStatusListLinkedOfferAndGetUUID();
             changeOfferStatus(CredentialStatusType.valueOf(value));
 
@@ -561,7 +561,7 @@ class CredentialOfferStatusIT {
 
         @ParameterizedTest
         @ValueSource(strings = {"REVOKED", "SUSPENDED", "ISSUED"})
-        void testCancelWhenIssued_thenBadRequest(String value) throws Exception {
+        void testCancelWhenPostIssued_thenBadRequest(String value) throws Exception {
             var originalState = CredentialStatusTypeDto.valueOf(value);
             var vcId = createIssueAndSetStateOfVc(originalState);
             updateStatusForEntity(vcId, CredentialStatusType.valueOf(value));
