@@ -10,9 +10,7 @@ CREATE TABLE status_list
     last_used_index     int             NOT NULL,
     max_length          int             NOT NULL,
     created_at          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-    created_by          VARCHAR(255)    DEFAULT 'system',
     last_modified_at    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-    last_modified_by    VARCHAR(255)    DEFAULT 'system',
     PRIMARY KEY (id),
     --
     -- We want the same constraint name as in postgres!
@@ -26,9 +24,7 @@ CREATE TABLE credential_offer_status
     status_list_id      uuid            NOT NULL,
     index               int             NOT NULL,
     created_at          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-    created_by          VARCHAR(255)    DEFAULT 'system',
     last_modified_at    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-    last_modified_by    VARCHAR(255)    DEFAULT 'system',
     PRIMARY KEY (credential_offer_id, status_list_id),
     FOREIGN KEY (status_list_id) REFERENCES status_list (id),
     FOREIGN KEY (credential_offer_id) REFERENCES credential_offer (id)
