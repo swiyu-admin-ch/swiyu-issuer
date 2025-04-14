@@ -31,13 +31,5 @@ public enum CredentialStatusTypeDto {
     ISSUED,
     SUSPENDED,
     REVOKED,
-    EXPIRED;
-
-    public boolean isIssuedToHolder() {
-        return this != OFFERED && this != IN_PROGRESS && this != CANCELLED;
-    }
-
-    public boolean isDuringHolderInteraction() {
-        return this == IN_PROGRESS;
-    }
+    EXPIRED
 }

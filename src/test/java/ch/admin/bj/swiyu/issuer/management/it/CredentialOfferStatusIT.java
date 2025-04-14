@@ -112,7 +112,7 @@ class CredentialOfferStatusIT {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"OFFERED", "IN_PROGRESS", "DEFERRED", "READY", "CANCELLED", "ISSUED", "SUSPENDED", "REVOKED"})
+    @ValueSource(strings = {"READY", "CANCELLED", "SUSPENDED", "REVOKED"})
     void testUpdateWithSameStatus_thenOk(String value) throws Exception {
         var vcId = createStatusListLinkedOfferAndGetUUID();
         changeOfferStatus(vcId, CredentialStatusType.valueOf(value));
@@ -564,6 +564,7 @@ class CredentialOfferStatusIT {
         void testCancelWhenIssued_thenBadRequest(String value) throws Exception {
             var originalState = CredentialStatusTypeDto.valueOf(value);
             var vcId = createIssueAndSetStateOfVc(originalState);
+            updateStatusForEntity(vcId, CredentialStatusType.valueOf(value));
 
             mvc.perform(patch(getUpdateUrl(vcId, newStatus)))
                     .andExpect(status().isBadRequest());

@@ -9,8 +9,8 @@ package ch.admin.bj.swiyu.issuer.management.service;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
-import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.StatusResponseDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.management.common.exception.BadRequestException;
@@ -62,11 +62,12 @@ public class CredentialService {
     public String getCredentialOfferDeeplink(UUID credentialId) {
         var credential = this.getCredential(credentialId);
         return this.getOfferDeeplinkFromCredential(credential);
+
     }
 
     @Transactional
     public UpdateStatusResponseDto updateCredentialStatus(@NotNull UUID credentialId,
-                                                          @NotNull CredentialStatusTypeDto requestedNewStatus) {
+                                                          @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
         var credential = updateCredentialStatus(getCredentialForUpdate(credentialId), toCredentialStatusType(requestedNewStatus));
         return toUpdateStatusResponseDto(credential);
     }
@@ -152,6 +153,11 @@ public class CredentialService {
     private CredentialOffer handlePreIssuanceStatusChange(CredentialOffer credential,
                                                           CredentialStatusType currentStatus,
                                                           CredentialStatusType newStatus) {
+
+        if (newStatus == CredentialStatusType.EXPIRED) {
+            credential.expire();
+            return credential;
+        }
 
         // if the new status is READY, then we can only set it if the old status was deferred
         if (currentStatus == CredentialStatusType.DEFERRED && newStatus == CredentialStatusType.READY) {

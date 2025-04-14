@@ -6,16 +6,11 @@
 
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
-import java.util.UUID;
-
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toCredentialWithDeeplinkResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.service.CredentialOfferMapper.toUpdateStatusResponseDto;
-import static ch.admin.bj.swiyu.issuer.management.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
-
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.StatusResponseDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.service.CredentialService;
 import io.micrometer.core.annotation.Timed;
@@ -139,7 +134,7 @@ public class CredentialController {
     @Operation(summary = "Set the status of an offer or the verifiable credential associated with the id.")
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
                                                           @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = CredentialStatusTypeDto.class))
-                                                          @RequestParam("credentialStatus") CredentialStatusTypeDto credentialStatus) {
+                                                          @RequestParam("credentialStatus") UpdateCredentialStatusRequestTypeDto credentialStatus) {
 
         return this.credentialService.updateCredentialStatus(credentialId, credentialStatus);
     }

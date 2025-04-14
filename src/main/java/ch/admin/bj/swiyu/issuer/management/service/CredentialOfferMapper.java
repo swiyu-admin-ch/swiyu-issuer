@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.management.service;
 
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
@@ -57,6 +58,19 @@ public class CredentialOfferMapper {
             case SUSPENDED -> CredentialStatusType.SUSPENDED;
             case REVOKED -> CredentialStatusType.REVOKED;
             case EXPIRED -> CredentialStatusType.EXPIRED;
+        };
+    }
+
+    public static CredentialStatusType toCredentialStatusType(UpdateCredentialStatusRequestTypeDto source) {
+        if (source == null) {
+            return null;
+        }
+        return switch (source) {
+            case CANCELLED -> CredentialStatusType.CANCELLED;
+            case READY -> CredentialStatusType.READY;
+            case ISSUED -> CredentialStatusType.ISSUED;
+            case SUSPENDED -> CredentialStatusType.SUSPENDED;
+            case REVOKED -> CredentialStatusType.REVOKED;
         };
     }
 }
