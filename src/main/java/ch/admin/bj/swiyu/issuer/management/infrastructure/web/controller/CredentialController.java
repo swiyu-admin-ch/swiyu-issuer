@@ -8,7 +8,6 @@ package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialoffer.CredentialWithDeeplinkResponseDto;
-import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.UpdateStatusResponseDto;
@@ -133,7 +132,7 @@ public class CredentialController {
     @PatchMapping("/{credentialId}/status")
     @Operation(summary = "Set the status of an offer or the verifiable credential associated with the id.")
     public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
-                                                          @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = CredentialStatusTypeDto.class))
+                                                          @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = UpdateCredentialStatusRequestTypeDto.class))
                                                           @RequestParam("credentialStatus") UpdateCredentialStatusRequestTypeDto credentialStatus) {
 
         return this.credentialService.updateCredentialStatus(credentialId, credentialStatus);

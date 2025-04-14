@@ -12,12 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Status EXPIRED cannot be set via API anymore
 - Refactored offer status logic
 
-## 1.5.0
+## 1.6.0
 
 ### Added
 
 - Added new status "DEFERRED" and "READY" for the deferred flow (READY can be set via the patch status endpoint).
 - Updated documentation for credential and deferred flow and status
+- Removed impossible status input in swagger and validation
 
 ## 1.4.0
 
