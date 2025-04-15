@@ -139,10 +139,12 @@ public class CredentialService {
             throw new BadRequestException(String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
         }
 
-        if (!currentStatus.isIssuedToHolder()) {
-            credential = handlePreIssuanceStatusChange(credential, currentStatus, newStatus);
+        if (newStatus == CredentialStatusType.EXPIRED) {
+            credential.expire();
+        } else if (!currentStatus.isIssuedToHolder()) {
+            handlePreIssuanceStatusChange(credential, currentStatus, newStatus);
         } else {
-            credential = handlePostIssuanceStatusChange(credential, newStatus);
+            handlePostIssuanceStatusChange(credential, newStatus);
         }
 
         log.info(String.format("Updating %s from %s to %s", credential.getId(), currentStatus, newStatus));
@@ -152,24 +154,19 @@ public class CredentialService {
     /**
      * Handles status changes before issuance (status cancelled, ready and expired)
      */
-    private CredentialOffer handlePreIssuanceStatusChange(CredentialOffer credential,
-                                                          CredentialStatusType currentStatus,
-                                                          CredentialStatusType newStatus) {
-
-        if (newStatus == CredentialStatusType.EXPIRED) {
-            credential.expire();
-            return credential;
-        }
+    private void handlePreIssuanceStatusChange(CredentialOffer credential,
+                                               CredentialStatusType currentStatus,
+                                               CredentialStatusType newStatus) {
 
         // if the new status is READY, then we can only set it if the old status was deferred
         if (currentStatus == CredentialStatusType.DEFERRED && newStatus == CredentialStatusType.READY) {
             credential.changeStatus(CredentialStatusType.READY);
-            return credential;
+            return;
         }
 
         if (newStatus == CredentialStatusType.CANCELLED || newStatus == CredentialStatusType.REVOKED) {
             credential.cancel();
-            return credential;
+            return;
         }
 
         throw new BadRequestException(String.format(
@@ -179,7 +176,7 @@ public class CredentialService {
     /**
      * Handles status changes after issuance (status suspended, revoked and issued)
      */
-    private CredentialOffer handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
+    private void handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
 
         final Set<CredentialOfferStatus> offerStatusSet = credential.getOfferStatusSet();
 
@@ -196,7 +193,6 @@ public class CredentialService {
         }
 
         credential.changeStatus(newStatus);
-        return credential;
     }
 
     private CredentialOffer getCredentialForUpdate(UUID credentialId) {
