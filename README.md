@@ -305,10 +305,10 @@ revoke the credential later on.
 sequenceDiagram
     actor BUSINESS as Business Issuer 
 
-    participant MGMT as Issues Agent Management
+    participant MGMT as Issuer Agent Management
     participant DB as Issuer db
     participant STATUS as Status Registry
-    participant SIGNER as Issues Agent OID4VCI
+    participant SIGNER as Issuer Agent OID4VCI
 
     actor WALLET as Holder
 
