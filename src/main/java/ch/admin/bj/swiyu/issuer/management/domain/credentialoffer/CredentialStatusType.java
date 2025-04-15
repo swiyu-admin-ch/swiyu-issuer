@@ -27,7 +27,11 @@ public enum CredentialStatusType {
     }
 
     public boolean isIssuedToHolder() {
-        return this != OFFERED && this != IN_PROGRESS && this != CANCELLED;
+        return this != OFFERED && this != IN_PROGRESS && this != CANCELLED && this != DEFERRED && this != READY;
+    }
+
+    public boolean isTerminalState() {
+        return this == REVOKED || this == EXPIRED || this == CANCELLED;
     }
 
     public boolean isDuringHolderInteraction() {

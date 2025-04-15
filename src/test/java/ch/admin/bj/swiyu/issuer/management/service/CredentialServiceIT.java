@@ -6,13 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.management.service;
 
-import java.util.Map;
-import java.util.UUID;
-
-import static java.time.Instant.now;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialStatusType;
@@ -21,6 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
+import java.util.Map;
+import java.util.UUID;
+
+import static java.time.Instant.now;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest()
 @ActiveProfiles("test")
@@ -80,7 +80,7 @@ public class CredentialServiceIT {
     void getDeeplinkInvalidateOfferWhenExpired() {
         // GIVEN
         Map<String, Object> offerData = Map.of("hello", "world");
-        var expiredOfferdId = credentialOfferRepository.save(
+        var expiredOfferId = credentialOfferRepository.save(
                 CredentialOffer.builder()
                         .credentialStatus(CredentialStatusType.OFFERED)
                         .offerExpirationTimestamp(now().minusSeconds(1).getEpochSecond())
@@ -91,9 +91,9 @@ public class CredentialServiceIT {
 
         // WHEN
         // note: getting an expired offer will immediately update it to expired
-        credentialService.getCredentialOffer(expiredOfferdId);
+        credentialService.getCredentialOffer(expiredOfferId);
         // THEN
-        var credential = credentialOfferRepository.findById(expiredOfferdId).orElseThrow();
+        var credential = credentialOfferRepository.findById(expiredOfferId).orElseThrow();
         assertEquals(CredentialStatusType.EXPIRED, credential.getCredentialStatus());
         assertNull(credential.getOfferData());
         var deepLink = credentialService.getCredentialOfferDeeplink(credential.getId());
