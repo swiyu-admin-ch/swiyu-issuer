@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 @Getter
-@Schema(name = "CredentialStatusType", enumAsRef = true, example = "SUSPENDED", description = """
+@Schema(name = "UpdateCredentialStatusRequestType", enumAsRef = true, example = "SUSPENDED", description = """
             Status for the full lifecycle of a verifiable credential.
             CANCELLED - the VC was revoked before being claimed.
             READY - Status set by the business issuer to continue the issuance of the credential for the deferred flow
