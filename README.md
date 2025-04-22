@@ -145,6 +145,14 @@ a credential offer for a holder. Here is an example of a request body for the of
     - Starts docker compose for database
     - Runs Flyway migrations if needed
 
+### Updating Openapi Spec
+
+The `openapi.yaml` can be updated by using the generate-doc profile.
+
+```
+mvn verify -P generate-doc
+```
+
 ## Configuration
 
 If you start the application with the local profile as described below, you need to set the credentials for the
