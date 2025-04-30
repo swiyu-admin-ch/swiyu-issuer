@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2025 Swiss Confederation
+#
+# SPDX-License-Identifier: MIT
+
+spring:
+  docker:
+    compose:
+      enabled: false
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;
+    username: sa
+    password: sa
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/common,classpath:/db/migration/h2
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+application:
+  external-url: "http://localhost:8080/test/"
+  offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
+  enable-jwt-authentication: true
+  authentication-jwks: |
+    {
+    "keys":[
+      {
+        "kty":"EC",
+        "crv":"P-256",
+        "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+        "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
+        "use":"enc",
+        "kid":"1"
+      },
+      {
+        "kty":"RSA",
+        "n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx
+        4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMs
+        tn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2
+        QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbI
+        SD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqb
+        w0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",
+        "e":"AQAB",
+        "alg":"RS256",
+        "kid":"2011-04-29"
+      },
+      {
+        "kty":"EC",
+        "crv":"P-256",
+        "kid":"testkey",
+        "x":"_gHQsZT-CB_KvIfpvJsDxVSXkuwRJsuof-oMihcupQU",
+        "y":"71y_zEPAglUXBghaBxypTAzlNx57KNY9lv8LTbPkmZA"
+      }
+    ]
+    }

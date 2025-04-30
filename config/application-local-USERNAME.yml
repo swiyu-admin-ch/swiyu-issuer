@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2025 Swiss Confederation
+#
+# SPDX-License-Identifier: MIT
+
+# 1. please copy and re-name this file so that USERNAME is your linux username
+# 2. Create a business partner to your account on ePortal REF (via portal: https://eportal-r.admin.ch/start?search=swiyu)
+# 3. Gather customer key and secret from the API self-service portal (https://eportal-r.admin.ch/start?search=selfservice)
+# 4. Fill data below with said data (business partner id is the one in the API self-service portal on the upper right)
+swiyu:
+  status-registry:
+    api-url: "https://status-reg-api-r.trust-infra.swiyu.admin.ch"
+    # internal api-keymanager token URL to not need the bootstrap-refresh-token
+    token-url: "https://keymanager-npr-intra.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect/token"
+    customer-key: ""
+    customer-secret: ""
+  business-partner-id: ""

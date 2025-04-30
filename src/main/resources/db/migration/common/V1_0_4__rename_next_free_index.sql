@@ -1,0 +1,1 @@
+alter table status_list rename column last_used_index to next_free_index;

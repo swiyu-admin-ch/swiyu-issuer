@@ -1,0 +1,131 @@
+# SPDX-FileCopyrightText: 2025 Swiss Confederation
+#
+# SPDX-License-Identifier: MIT
+
+spring:
+  http:
+    client:
+      connect-timeout: 10000 # 10 seconds
+      read-timeout: 30000 # 30 seconds
+  jpa:
+    database: postgresql
+    show-sql: false
+    generate-ddl: false
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        boot:
+          # https://stackoverflow.com/questions/10075081/hibernate-slow-to-acquire-postgres-connection
+          allow_jdbc_metadata_access: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/common,classpath:db/migration/postgres
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: org.postgresql.Driver
+    url: "${POSTGRES_JDBC}"
+    username: "${secret.db.username:${POSTGRES_USER}}"
+    password: "${secret.db.password:${POSTGRES_PASSWORD}}"
+  data:
+    jpa:
+      repositories:
+        # Avoid hangs on startup, see https://github.com/spring-projects/spring-framework/issues/25111
+        bootstrap_mode: default
+  task:
+    scheduling:
+      pool:
+        size: 2
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      access: read_only
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+
+springdoc:
+  show-actuator: true
+
+application:
+  # Schema of the generated deeplink. Keep in mind that the wallet must support this.
+  # iOS is not capable of letting the user choose between the apps being opened by the schema.
+  # the standard is openid-credential-offer
+  # default for swiss ecosystem is swiyu://
+  # It is not recommended to change this value unless you want to use this issuer in a different ecosystem.
+  deeplink-schema: ${DEEPLINK_SCHEMA:swiyu}
+  # DID of the Issuer
+  issuer-id: ${ISSUER_ID:}
+  # URL under which this service can be reached from the web
+  external-url: ${EXTERNAL_URL:}
+  offer-validity: 2592000
+  enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
+  authentication-jwks: ${JWKS_ALLOWLIST:}
+  status-list:
+    # private key for singing status list VCs
+    private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY:}}"
+    # value to be added to the kid of the created status list; should be available in the published did document.
+    verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD:}"
+
+    key-management-method: "${SIGNING_KEY_MANAGEMENT_METHOD:key}"
+
+    status-list-size-limit: 204800 # 200KiB
+    # Pin to unlock the hsm
+    hsm:
+      user-pin: "${secret.key.hsm.pin.user:${HSM_USER_PIN:}}"
+      # Key identifier or alias, or label when using pkcs11-tool
+      key-id: "${secret.key.hsm.id:${HSM_KEY_ID:}}"
+      # Optional pin to unlock the key
+      key-pin: "${secret.key.hsm.pin.key:${HSM_KEY_PIN:}}"
+      # File Path to the HSM config file. For settings see https://docs.oracle.com/en/java/javase/21/security/pkcs11-reference-guide1.html
+      pkcs11-config: "${HSM_CONFIG_PATH:}"
+
+      # For Cloud HSM like eg. securosys
+      # User for logging in on the host
+      user: "${HSM_USER:}"
+      # URI of the HSM Host or Proxy to be connected to
+      host: "${HSM_HOST:}"
+      # Password for the Host
+      password: "${HSM_PASSWORD:}"
+      # Port for either the proxy or host
+      port: "${HSM_PORT:}"
+      # When using a proxy with username / password authentication
+      proxy-user: "${HSM_PROXY_USER:}"
+      proxy-password: "${HSM_PROXY_PASSWORD:}"
+
+  offer-expiration-interval: "${CREDENTIAL_OFFER_EXPIRATION_INTERVAL:PT15M}"
+
+logging:
+  level:
+    ch.admin.bj.swiyu.issuer.management.infrastructure.logging.RequestLoggingFilter: DEBUG
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: FATAL # suppress additional logging from hibernate, if uncatched it still will be logged as root cause.
+
+swiyu:
+  business-partner-id: ${SWIYU_PARTNER_ID:#{null}}
+  status-registry:
+    api-url: "${SWIYU_STATUS_REGISTRY_API_URL:https://status-reg-api.trust-infra.swiyu.admin.ch/}"
+    token-url: "${SWIYU_STATUS_REGISTRY_TOKEN_URL:https://keymanager-prd.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect/token}"
+    customer-key: ${secret.swiyu.status-registry.customer-key:${SWIYU_STATUS_REGISTRY_CUSTOMER_KEY:#{null}}}
+    customer-secret: ${secret.swiyu.status-registry.customer-secret:${SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET:#{null}}}
+    enable-refresh-token-flow: ${SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW:false}
+    bootstrap-refresh-token: ${secret.swiyu.status-registry.bootstrap-refresh-token:${SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN:#{null}}}
+    token-refresh-interval: "PT12H"
+
+monitoring:
+  basic-auth:
+    enabled: ${MONITORING_BASIC_AUTH_ENABLED:false}
+    username: "${MONITORING_BASIC_AUTH_USERNAME:}"
+    password: "${MONITORING_BASIC_AUTH_PASSWORD:}"
+
+http:
+  max-redirects: 5

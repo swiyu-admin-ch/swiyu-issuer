@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2025 Swiss Confederation
+#
+# SPDX-License-Identifier: MIT
+
+server:
+  port: 8080
+spring:
+  application:
+    # note: since we use spring boot cloud and docker compose support, the application name
+    # is configured here. This way the application name is available in early log outputs on
+    # startup.
+    name: issuer-agent-management
+  cloud:
+    kubernetes:
+      config:
+        enabled: false
+      secrets:
+        enabled: true
+        paths: /data/secrets

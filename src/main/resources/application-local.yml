@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2025 Swiss Confederation
+#
+# SPDX-License-Identifier: MIT
+
+spring:
+  docker:
+    compose:
+      enabled: true
+      file: compose.yaml
+  datasource:
+    url: "jdbc:postgresql://localhost:5434/issuer_db"
+    username: "issuer_mgmt_user"
+    password: "secret"
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+springdoc:
+  show-actuator: true
+
+application:
+  external-url: "http://localhost:8080/"
+  offer-validity: 2592000 # 60 * 60 * 24 * 30 => 30 days;
+  status-list:
+    private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
+
+swiyu:
+  status-registry:
+    api-url: "https://status-reg-api-r.trust-infra.swiyu.admin.ch"
+    # internal api-keymanager token URL to not need the bootstrap-refresh-token
+    token-url: "https://keymanager-npr-intra.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect/token"
+    token-refresh-interval: "PT30S"
+    # The following 3 properties need to be generated via Api Self Service account per developer
+    # bootstrap-refresh-token: is not needed for BV internal deployments, if you need this you also need a different token-url
+    customer-key: "customer-key"
+    customer-secret: "customer-secret"
+  business-partner-id: "0212063f-7bf6-4639-b4f2-4c482ee453cf"
+
+logging:
+  level:
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: WARN

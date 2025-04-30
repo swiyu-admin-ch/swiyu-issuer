@@ -1,0 +1,230 @@
+# SPDX-FileCopyrightText: 2025 Swiss Confederation
+#
+# SPDX-License-Identifier: MIT
+
+services:
+  postgres:
+    image: postgres:15.8
+    environment:
+      POSTGRES_USER: "issuer_mgmt_user"
+      POSTGRES_PASSWORD: "secret"
+      POSTGRES_DB: "issuer_db"
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U issuer_mgmt_user -d issuer_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  issuer-agent-management:
+    image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-management:latest
+    environment:
+      EXTERNAL_URL: ${EXTERNAL_URL}
+      SPRING_APPLICATION_NAME: ${SPRING_APPLICATION_NAME}
+      ISSUER_ID: ${ISSUER_ID}
+      DID_STATUS_LIST_VERIFICATION_METHOD: ${DID_STATUS_LIST_VERIFICATION_METHOD}
+      STATUS_LIST_KEY: ${STATUS_LIST_KEY}
+      SWIYU_PARTNER_ID: ${SWIYU_PARTNER_ID}
+      SWIYU_STATUS_REGISTRY_CUSTOMER_KEY: ${SWIYU_STATUS_REGISTRY_CUSTOMER_KEY}
+      SWIYU_STATUS_REGISTRY_ACCESS_TOKEN: ${SWIYU_STATUS_REGISTRY_ACCESS_TOKEN}
+      SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET: ${SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET}
+      SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN: ${SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN}
+
+      # Environment specific values. Please consult the main manual
+      SWIYU_STATUS_REGISTRY_TOKEN_URL: ${SWIYU_STATUS_REGISTRY_TOKEN_URL}
+      SWIYU_STATUS_REGISTRY_API_URL: ${SWIYU_STATUS_REGISTRY_TOKEN_URL}
+
+      # Default settings for the application. Only change these if you know what you are doing
+      LOGGING_LEVEL_CH_ADMIN_BIT_EID: DEBUG
+      SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW: "true"
+
+      # Persistence
+      POSTGRES_USER: "issuer_mgmt_user"
+      POSTGRES_PASSWORD: "secret"
+      POSTGRES_DB: "issuer_db"
+      POSTGRES_JDBC: "jdbc:postgresql://postgres:5432/issuer_db"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  issuer-agent-oid4vci:
+    image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-oid4vci:latest
+    environment:
+      EXTERNAL_URL: ${EXTERNAL_URL}
+      ISSUER_ID: ${OID4VCI_ISSUER_ID}
+      DID_SDJWT_VERIFICATION_METHOD: ${DID_SDJWT_VERIFICATION_METHOD}
+      SDJWT_KEY: ${SDJWT_KEY}
+
+      # Default settings for the application. Only change these if you know what you are doing
+      OPENID_CONFIG_FILE: "file:/cfg-files/openid_metadata.json"
+      METADATA_CONFIG_FILE: "file:/cfg-files/issuer_metadata.json"
+      TOKEN_TTL: 600
+
+      # Persistence
+      POSTGRES_USER: "issuer_mgmt_user"
+      POSTGRES_PASSWORD: "secret"
+      POSTGRES_DB: "issuer_db"
+      POSTGRES_JDBC: "jdbc:postgresql://postgres:5432/issuer_db"
+    ports:
+      - "8081:8080"
+    configs:
+      - source: issuer_metadata
+        target: /cfg-files/issuer_metadata.json
+      - source: openid_metadata
+        target: /cfg-files/openid_metadata.json
+    depends_on:
+      - postgres
+
+volumes:
+  db_data:
+
+configs:
+  openid_metadata:
+    content: |
+      {
+        "issuer": "${EXTERNAL_URL}",
+        "token_endpoint": "${EXTERNAL_URL}/api/v1/token"
+      }
+  issuer_metadata:
+    content: |
+      {
+        "credential_issuer": "${EXTERNAL_URL}",
+        "credential_endpoint": "${EXTERNAL_URL}/api/v1/credential",
+        "version": "1.0",
+        "display": [
+          {
+            "name": "Mein Test VC",
+            "locale": "de-CH",
+            "logo": {
+              "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+            }
+          },
+          {
+            "name": "My test vc",
+            "locale": "en-US",
+            "logo": {
+              "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+            }
+          }
+        ],
+        "credential_configurations_supported": {
+          "my-test-vc": {
+            "format": "vc+sd-jwt",
+            "cryptographic_binding_methods_supported": [
+              "did:jwk"
+            ],
+            "credential_signing_alg_values_supported": [
+              "ES256"
+            ],
+            "proof_types_supported": {
+              "jwt": {
+                "proof_signing_alg_values_supported": [
+                  "ES256"
+                ]
+              }
+            },
+            "display": [
+              {
+                "name": "Demo-VC",
+                "locale": "de-CH",
+                "logo": {
+                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+                },
+                "description": "Das ist ein Test-VC",
+                "background_color": "#ff69b4"
+              },
+              {
+                "name": "Demo-VC",
+                "locale": "en-US",
+                "logo": {
+                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+                },
+                "description": "This is an test vc",
+                "background_color": "#4A412A"
+              }
+            ],
+              "vct": "my-test-vc",
+            "claims": {
+              "lastName": {
+                "mandatory": false,
+                "value_type": "string",
+                "display": [
+                  {
+                    "locale": "de-CH",
+                    "name": "Name"
+                  },
+                  {
+                    "locale": "fr-CH",
+                    "name": "Nom de famille"
+                  },
+                  {
+                    "locale": "it-CH",
+                    "name": "Cognome"
+                  },
+                  {
+                    "locale": "en-US",
+                    "name": "Last name"
+                  }
+                ]
+              },
+              "firstName": {
+                "mandatory": false,
+                "value_type": "string",
+                "display": [
+                  {
+                    "locale": "de-CH",
+                    "name": "Vorname"
+                  },
+                  {
+                    "locale": "fr-CH",
+                    "name": "Prénom"
+                  },
+                  {
+                    "locale": "it-CH",
+                    "name": "Nome"
+                  },
+                  {
+                    "locale": "en-US",
+                    "name": "First name"
+                  }
+                ]
+              },
+              "birthDate": {
+                "mandatory": true,
+                "value_type": "string",
+                "display": [
+                  {
+                    "locale": "de-CH",
+                    "name": "Geburtsdatum"
+                  },
+                  {
+                    "locale": "fr-CH",
+                    "name": "Date de naissance"
+                  },
+                  {
+                    "locale": "it-CH",
+                    "name": "Data di nascita"
+                  },
+                  {
+                    "locale": "rm-CH",
+                    "name": "Data di naschientscha"
+                  },
+                  {
+                    "locale": "en-GB",
+                    "name": "Date of birth"
+                  }
+                ]
+              }
+            },
+            "order": [
+              "firstName",
+              "lastName",
+              "birthDate"
+            ]
+          }
+        }
+      }

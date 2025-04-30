@@ -1,0 +1,529 @@
+openapi: 3.0.1
+info:
+  title: Issuer management API
+  description: Generic Issuer management service
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: Credential
+  description: Credential Management API
+- name: Status List
+  description: Status List Management API
+- name: Actuator
+  description: Monitor and interact
+  externalDocs:
+    description: Spring Boot Actuator Web API Documentation
+    url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
+paths:
+  /api/v1/status-list:
+    post:
+      tags:
+      - Status List
+      summary: Create and initialize a new status list.
+      description: "Initialize and link a status list slot to to this service. This\
+        \ process can be only done once per status list! Status List type, configuration\
+        \ or length can not be changed after initialization!"
+      operationId: createStatusList
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusListCreate"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StatusList"
+  /api/v1/credentials:
+    post:
+      tags:
+      - Credential
+      summary: Create a generic credential offer with the given content
+      description: |
+        Create a new credential offer, which can the be collected by the holder.
+        The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
+        The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
+        Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
+      operationId: createCredential
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCredentialRequest"
+        required: true
+      responses:
+        "200":
+          description: Credential offer created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CredentialWithDeeplinkResponse"
+        "400":
+          description: |
+            Bad request due to user content or internal call to external service like statuslist
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/v1/credentials/{credentialId}/status:
+    get:
+      tags:
+      - Credential
+      summary: "Get the current status of an offer or the verifiable credential, if\
+        \ already issued."
+      operationId: getCredentialStatus
+      parameters:
+      - name: credentialId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+    patch:
+      tags:
+      - Credential
+      summary: Set the status of an offer or the verifiable credential associated
+        with the id.
+      operationId: updateCredentialStatus
+      parameters:
+      - name: credentialId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: credentialStatus
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/UpdateCredentialStatusRequestType"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UpdateStatusResponse"
+  /api/v1/status-list/{statusListId}:
+    get:
+      tags:
+      - Status List
+      summary: Get the status information of a status list.
+      operationId: getStatusListInformation
+      parameters:
+      - name: statusListId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StatusList"
+  /api/v1/credentials/{credentialId}:
+    get:
+      tags:
+      - Credential
+      summary: "Get the offer data, if any is still cached"
+      operationId: getCredentialOffer
+      parameters:
+      - name: credentialId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Credential offer found
+          content:
+            '*/*':
+              schema:
+                type: object
+              examples:
+                Offer data:
+                  summary: Example of vc content/ offer data for vc with first/lastname
+                    as credentialSubjectData
+                  description: Offer data
+                  value:
+                    lastName: Example
+                    firstName: Edward
+  /api/v1/credentials/{credentialId}/offer_deeplink:
+    get:
+      tags:
+      - Credential
+      summary: Get the offer deeplink
+      operationId: getCredentialOfferDeeplink
+      parameters:
+      - name: credentialId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Offer deeplink found
+          content:
+            '*/*':
+              schema:
+                type: string
+              examples:
+                Offer deeplink:
+                  summary: Example of a deeplink
+                  description: Offer deeplink
+                  value: swiyu://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22b614c966-0c1d-4636-9aec-e2496d242d25%22%7D%7D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fissuer-agent-oid4vci-d.bit.admin.ch%22%2C%22credential_configuration_ids%22%3A%5B%22myIssuerMetadataCredentialSupportedId%22%5D%7D
+        "404":
+          description: Offer not found or already expired
+          content:
+            '*/*':
+              schema:
+                type: object
+  /actuator:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator root web endpoint
+      operationId: links
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: "#/components/schemas/Link"
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: "#/components/schemas/Link"
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: "#/components/schemas/Link"
+  /actuator/prometheus:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'prometheus'
+      operationId: scrape
+      parameters:
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - CONTENT_TYPE_004
+          - CONTENT_TYPE_OPENMETRICS_100
+          - CONTENT_TYPE_PROTOBUF
+      - name: includedNames
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain;version=0.0.4;charset=utf-8:
+              schema:
+                type: object
+            application/openmetrics-text;version=1.0.0;charset=utf-8:
+              schema:
+                type: object
+            application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited:
+              schema:
+                type: object
+  /actuator/info:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'info'
+      operationId: info
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
+  /actuator/health:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'health'
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
+components:
+  schemas:
+    StatusListCreate:
+      required:
+      - config
+      - maxLength
+      - type
+      type: object
+      properties:
+        type:
+          type: string
+          description: Technical type of the status list to be used. This influences
+            the options available in config.
+          enum:
+          - TOKEN_STATUS_LIST
+        maxLength:
+          minimum: 1
+          type: integer
+          description: How many status entries can be part of the status list. The
+            memory size of the status list is depending on the type and the config
+            of the status list.
+          format: int32
+          example: 100000
+        config:
+          $ref: "#/components/schemas/StatusListCreateConfig"
+    StatusListCreateConfig:
+      required:
+      - bits
+      type: object
+      properties:
+        purpose:
+          type: string
+        bits:
+          type: integer
+          description: "The number of bits used per Referenced Token. More bits allow\
+            \ additional states. 1 bit is only revocation, 2 bits is revocation and\
+            \ suspension of a credential. Possible values are 1, 2, 4, 8."
+          format: int32
+          example: 2
+      description: |2
+             Additional config parameters, depending on the status list type. For Example
+             {"bits": 2}
+             for token status list with revocation & suspension
+             {"purpose": "suspension"}
+             for a bit string status list for suspension
+      example:
+        bits: 2
+    StatusList:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Id of the status list used by the business issuer.
+          format: uuid
+        statusRegistryUrl:
+          type: string
+          description: URI of the status list used by registry.
+        type:
+          type: string
+          description: Technical type of the status list to be used. This influences
+            the options available in config.
+          enum:
+          - TOKEN_STATUS_LIST
+        maxListEntries:
+          type: integer
+          description: How many status entries can be part of the status list. The
+            memory size of the status list is depending on the type and the config
+            of the status list.
+          format: int32
+          example: 100000
+        remainingListEntries:
+          type: integer
+          description: How many status entries are not used in the  status list.
+          format: int32
+          example: 12
+        nextFreeIndex:
+          type: integer
+          description: Shows which is the next free status entry that can be used
+          format: int32
+        version:
+          type: string
+          description: Version of the status list schema
+        config:
+          type: object
+          additionalProperties:
+            type: object
+            description: |2
+                   Additional config parameters, depending on the status list type. For Example
+                   {"bits": 2}
+                   for token status list with revocation & suspension
+                   {"purpose": "suspension"}
+                   for a bit string status list for suspension
+            example:
+              bits: 2
+          description: |2
+                 Additional config parameters, depending on the status list type. For Example
+                 {"bits": 2}
+                 for token status list with revocation & suspension
+                 {"purpose": "suspension"}
+                 for a bit string status list for suspension
+          example:
+            bits: 2
+    CredentialWithDeeplinkResponse:
+      type: object
+      properties:
+        management_id:
+          type: string
+          format: uuid
+        offer_deeplink:
+          type: string
+    CreateCredentialRequest:
+      required:
+      - credential_subject_data
+      - metadata_credential_supported_id
+      type: object
+      properties:
+        metadata_credential_supported_id:
+          type: array
+          description: ID linking the offer to the issuer metadata.
+          example:
+          - myIssuerMetadataCredentialSupportedId
+          items:
+            type: string
+        credential_subject_data:
+          type: object
+          description: |2
+                The user data to be written in the verifiable credential. Can be a json object or a JWT.
+                credentialSubjectData": {"lastName": "Example","firstName": "Edward"}
+                When using data integrity JWT the value are as claims inside the JWT.
+                "credentialSubjectData": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsYXN0TmFtZSI6IkV4YW1wbGUiLCJmaXJzdE5hbWUiOiJFZHdhcmQiLCJkYXRlT2ZCaXJ0aCI6IjEuMS4xOTcwIn0.2VMjj1RpJ7jUjn1SJHDwwzqx3kygn88UxSsG5j1uXG8"
+          example:
+            lastName: Example
+            firstName: Edward
+        credential_metadata:
+          type: object
+          additionalProperties:
+            type: object
+            description: |
+              Various metadata to be used for credential creation.
+            example:
+              vct#integrity: sha256-0000000000000000000000000000000000000000000=
+          description: |
+            Various metadata to be used for credential creation.
+          example:
+            vct#integrity: sha256-0000000000000000000000000000000000000000000=
+        offer_validity_seconds:
+          type: integer
+          description: how long the offer should be usable in seconds. Example is
+            1 Day.
+          format: int32
+          example: 86400
+        credential_valid_until:
+          type: string
+          description: Setting for until when the VC shall be valid. XMLSchema dateTimeStamp
+            https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
+          format: date-time
+          example: 2010-01-01T19:23:24Z
+        credential_valid_from:
+          type: string
+          description: Setting for from when the VC shall be valid. XMLSchema dateTimeStamp
+            https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
+          format: date-time
+          example: 2010-01-01T18:23:24Z
+        status_lists:
+          type: array
+          description: List of URIs of the status lists to be used with the credential.
+            Status Lists must be initialized. Can provide multiple status lists to
+            have multiple status sources.
+          example:
+          - https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt
+          items:
+            type: string
+      description: Initial credential creation request to start the offering process.
+    UpdateCredentialStatusRequestType:
+      type: string
+      description: |2
+            Status for the full lifecycle of a verifiable credential.
+            CANCELLED - the VC was revoked before being claimed.
+            READY - Status set by the business issuer to continue the issuance of the credential for the deferred flow
+            SUSPENDED - the VC has been temporarily suspended. To unsuspend change state to issued.
+            REVOKED - the VC has been revoked. This state is final and can not be changed.
+      example: SUSPENDED
+      enum:
+      - CANCELLED
+      - READY
+      - ISSUED
+      - SUSPENDED
+      - REVOKED
+    CredentialStatusType:
+      type: string
+      description: |2
+            Status for the full lifecycle of a verifiable credential.
+            OFFERED - an offer link has been created, and not yet redeemed by a holder.
+            CANCELLED - the VC was revoked before being claimed.
+            IN_PROGRESS - very short lived state, if the Holder has redeemed the one-time-code, but not yet gotten their credential. To allow a holder to retry fetching the vc set the state to offered.
+            DEFERRED - the offer has been used and all necessary data from the wallet has been received but the credential is not yet issued. To use this state the credential metadata entry has to have deferred set to true.
+            READY - Status set by the business issuer to continue the issuance of the credential for the deferred flow.
+            ISSUED - the VC has been collected by the holder and is valid.
+            SUSPENDED - the VC has been temporarily suspended. To unsuspend change state to issued.
+            REVOKED - the VC has been revoked. This state is final and can not be changed.
+            EXPIRED - the lifetime of the VC expired (not used yet)
+      example: SUSPENDED
+      enum:
+      - OFFERED
+      - CANCELLED
+      - IN_PROGRESS
+      - DEFERRED
+      - READY
+      - ISSUED
+      - SUSPENDED
+      - REVOKED
+      - EXPIRED
+    UpdateStatusResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+        templated:
+          type: boolean
