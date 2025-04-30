@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.archunit;
 
-import ch.admin.bj.swiyu.issuer.management.Application;
+import ch.admin.bj.swiyu.issuer.Application;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.management.api.statuslist.ValidStatusListMaxLengthValidator;
@@ -23,6 +23,7 @@ import jakarta.persistence.Entity;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;

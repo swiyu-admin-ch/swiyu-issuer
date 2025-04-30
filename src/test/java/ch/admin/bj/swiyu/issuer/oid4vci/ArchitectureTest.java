@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci;
 
+import ch.admin.bj.swiyu.issuer.Application;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
