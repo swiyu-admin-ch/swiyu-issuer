@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="Oid4vciApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+        <option name="ACTIVE_PROFILES" value="local" />
+        <envs>
+            <env name="APPLICATION_VCTMETADATAFILES_TESTV1" value="classpath:vct_metadata.json" />
+        </envs>
+        <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+        <module name="swiyu-issuer-oid4vci-service"/>
+        <option name="SPRING_BOOT_MAIN_CLASS" value="ch.admin.bj.swiyu.issuer.oid4vci.Application" />
+        <method v="2">
+            <option name="Make" enabled="true" />
+        </method>
+    </configuration>
+</component>

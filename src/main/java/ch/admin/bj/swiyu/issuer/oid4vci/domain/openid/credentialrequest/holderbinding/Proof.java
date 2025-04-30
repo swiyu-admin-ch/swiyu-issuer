@@ -1,0 +1,23 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+package ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.holderbinding;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+import java.util.List;
+import java.util.UUID;
+
+@AllArgsConstructor
+@Getter
+public abstract class Proof {
+    public final ProofType proofType;
+
+    public abstract boolean isValidHolderBinding(String issuerId, List<String> supportedSigningAlgorithms, UUID nonce, Long tokenExpirationTimestamp);
+
+    public abstract String getBinding();
+}

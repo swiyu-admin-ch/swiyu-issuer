@@ -1,0 +1,4 @@
+{
+  "issuer": "${external-url}",
+  "token_endpoint": "${external-url}/api/v1/token"
+}

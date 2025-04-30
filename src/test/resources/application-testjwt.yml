@@ -23,6 +23,16 @@ application:
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
   enable-jwt-authentication: true
   authentication-jwks: |
+#  external-url: "http://localhost:8080"
+  #  openid_file: "file:///data/example_openid.json"
+  issuer-id: "did:example:localhost%3A8080:abcabc"
+  openid-file: "classpath:example_openid.json"
+  metadata-file: "classpath:example_issuer_metadata.json"
+  key:
+    sdjwt:
+      private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
+      verification-method: "did:example:localhost%3A8080:abcabc#sdjwt"
+  data-integrity-jwks: |
     {
     "keys":[
       {

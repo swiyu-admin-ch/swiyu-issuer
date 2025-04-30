@@ -6,14 +6,14 @@ SPDX-License-Identifier: MIT
 
 ![github-banner](https://github.com/swiyu-admin-ch/swiyu-admin-ch.github.io/blob/main/assets/images/github-banner.jpg)
 
-# Generic issuer management service
+# Generic issuer service
 
 This software is a web server implementing the technical standards as specified in
 the [Swiss e-ID and trust infrastructure: Initial implementation](https://swiyu-admin-ch.github.io/initial-technology/).
 Together with the other generic components provided, this software forms a collection of APIs allowing issuance and
 verification of verifiable credentials without the need of reimplementing the standards.
 
-The Generic Issuer Management Service is the interface to offer a credential. It should be only accessible from the
+The Generic Issuer Service is the interface to offer a credential. It should be only accessible from the
 issuers internal organization.
 
 As with all the generic issuance & verification services it is expected that every issuer and verifier hosts their own
@@ -142,8 +142,8 @@ a credential offer for a holder. Here is an example of a request body for the of
 
 - Start application IssuerManagementApplication with local profile
 
-    - Starts docker compose for database
-    - Runs Flyway migrations if needed
+  - Starts docker compose for database
+  - Runs Flyway migrations if needed
 
 ### Updating Openapi Spec
 

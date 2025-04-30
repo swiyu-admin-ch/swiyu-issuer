@@ -1,0 +1,171 @@
+{
+  "credential_issuer": "${external-url}",
+  "credential_endpoint": "${external-url}/api/v1/credential",
+  "credential_response_encryption": {
+    "encryption_required": false,
+    "alg_values_supported": [
+      "RSA-OAEP-256",
+      "ECDH-ES+A128KW"
+    ],
+    "enc_values_supported": [
+      "A128CBC-HS256"
+    ]
+  },
+  "version": "1.0",
+  "display": [
+    {
+      "name": "Strassenverkehrsamt Appenzell Ausserrhoden",
+      "locale": "de-CH",
+      "logo": {
+        "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAANiSURBVHhe7d2/itxVAIbhE2FZkICJja5FQJGAWAo2/r0BC0NAiWBh5UVYBCxSBYQUGhACqWxSCRZaBCVWFiJiKyEKSmQRNYI7u8kY4VzAss384vs8xQzf6V/mTHWO/fDsqfWAqIfmNyQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDRPJB3B8ZdeHY++9c5cm/fn55+NPz69Ntb7+/OEwxLAEZw8e27snL8w1+btXrk8bl+6ONarvXnCYbkCkSYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgLRFPZT93wvsW489MddyPfzc8+OR116fa/PufP3V+Ov6F2McHMyTZbpz4/rY//WXuZZhUQGc+ujqOP7iK3Pxf3Pr3bfvR/DlXMvgCkSaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEhb1BNJJ868ObaffGqu5do+/cw4/sLLc23eP99/N/7+9psx7t6dJ8v0+7VPxurmj3Mtw6ICOLa1df9j+T9KJ868MXbee3+uzdu9+vH47cMPxnpvNU+WaX2wP8a9e3Mtw6ICeFCcPHtu7Jy/MNfm7V65PG5fujjWq715wmH5D0CaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQ5p3gI9h6fGdsP316rs1b/fzTWN26ubhHqB8EAiDNFYg0AZAmANIEQJoASBMAaQIgTQCkCYA0AZAmANIEQJoASBMAaQIgTQCkCYA0AZAmANIEQJoASBMAaQIgTQCkCYA0AZAmANIEQJoASBMAaQIgTQCkCYA0AZAmAMLG+BeKW2mZvu1dyAAAAABJRU5ErkJggg=="
+      }
+    },
+    {
+      "name": "Road traffic office Appenzell Ausserrhoden",
+      "locale": "en-US",
+      "logo": {
+        "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAANiSURBVHhe7d2/itxVAIbhE2FZkICJja5FQJGAWAo2/r0BC0NAiWBh5UVYBCxSBYQUGhACqWxSCRZaBCVWFiJiKyEKSmQRNYI7u8kY4VzAss384vs8xQzf6V/mTHWO/fDsqfWAqIfmNyQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDRPJB3B8ZdeHY++9c5cm/fn55+NPz69Ntb7+/OEwxLAEZw8e27snL8w1+btXrk8bl+6ONarvXnCYbkCkSYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgDQBkCYA0gRAmgBIEwBpAiBNAKQJgLRFPZT93wvsW489MddyPfzc8+OR116fa/PufP3V+Ov6F2McHMyTZbpz4/rY//WXuZZhUQGc+ujqOP7iK3Pxf3Pr3bfvR/DlXMvgCkSaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEhb1BNJJ868ObaffGqu5do+/cw4/sLLc23eP99/N/7+9psx7t6dJ8v0+7VPxurmj3Mtw6ICOLa1df9j+T9KJ868MXbee3+uzdu9+vH47cMPxnpvNU+WaX2wP8a9e3Mtw6ICeFCcPHtu7Jy/MNfm7V65PG5fujjWq715wmH5D0CaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQJgDSBECaAEgTAGkCIE0ApAmANAGQ5p3gI9h6fGdsP316rs1b/fzTWN26ubhHqB8EAiDNFYg0AZAmANIEQJoASBMAaQIgTQCkCYA0AZAmANIEQJoASBMAaQIgTQCkCYA0AZAmANIEQJoASBMAaQIgTQCkCYA0AZAmANIEQJoASBMAaQIgTQCkCYA0AZAmAMLG+BeKW2mZvu1dyAAAAABJRU5ErkJggg=="
+      }
+    }
+  ],
+  "credential_configurations_supported": {
+    "${stage}university_example_sd_jwt": {
+      "format": "vc+sd-jwt",
+      "credential_signing_alg_values_supported": [
+        "ES256"
+      ],
+      "proof_types_supported": {
+        "jwt": {
+          "proof_signing_alg_values_supported": [
+            "ES256"
+          ]
+        }
+      },
+      "display": [
+        {
+          "name": "${stage}Beispiel Credential",
+          "locale": "de-CH",
+          "logo": {
+            "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABMUlEQVR4nO2VTU4CQRCFv9c9ToIXYccRhMR4Ar2DbrmI8SB6Ak0UjsCOi2iE6So3I0kPg7R/CQve8qVev+p+NTVwxB6opGgwnFwqVGO8aVUVbs3sbfnysE9bFXUhvyDGa6wlQkS+roG/MQCtsASWcq4Aoczg5zgQA6cp4nqQTdFgOL5SqCaYeXaW/EwKI7ylJdxtIdc8bze00zW7/6SykCWdE6sblDKd3NgcDuCOFEaEMMoNIvLmBOg3AL1vT8sOuIP31eXT9e8hd27gNSFuV3WfCEACdfoLEWxd7zRw9KTUJMwyXX/IvpClPGR33JllffRfLMfpcHJLrKabbEKElO5el8/TfdqyDNS7UorWzIF8yb9A4TbtTFeIYFbvrv+mgbseldJq88NxcGf+teqIQnwAtnl4Gff2T2YAAAAASUVORK5CYII="
+          },
+          "description": "Beispiel Credential",
+          "background_color": "#007AFF"
+        },
+        {
+          "name": "${stage}Example Credential",
+          "locale": "en-US",
+          "logo": {
+            "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABMUlEQVR4nO2VTU4CQRCFv9c9ToIXYccRhMR4Ar2DbrmI8SB6Ak0UjsCOi2iE6So3I0kPg7R/CQve8qVev+p+NTVwxB6opGgwnFwqVGO8aVUVbs3sbfnysE9bFXUhvyDGa6wlQkS+roG/MQCtsASWcq4Aoczg5zgQA6cp4nqQTdFgOL5SqCaYeXaW/EwKI7ylJdxtIdc8bze00zW7/6SykCWdE6sblDKd3NgcDuCOFEaEMMoNIvLmBOg3AL1vT8sOuIP31eXT9e8hd27gNSFuV3WfCEACdfoLEWxd7zRw9KTUJMwyXX/IvpClPGR33JllffRfLMfpcHJLrKabbEKElO5el8/TfdqyDNS7UorWzIF8yb9A4TbtTFeIYFbvrv+mgbseldJq88NxcGf+teqIQnwAtnl4Gff2T2YAAAAASUVORK5CYII="
+          },
+          "description": "Test Credential",
+          "background_color": "#007AFF"
+        }
+      ],
+      "vct": "${stage}_university_example_sd_jwt",
+      "claims": {
+        "degree": {
+          "type": {
+            "mandatory": true,
+            "value_type": "string",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typ"
+              }
+            ]
+          },
+          "name": {
+            "mandatory": true,
+            "value_type": "string",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Diplomtitle"
+              }
+            ]
+          },
+          "average_grade": {
+            "mandatory": false,
+            "value_type": "number",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Notendurchschnitt"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "university_example_sd_jwt": {
+      "format": "vc+sd-jwt",
+      "credential_signing_alg_values_supported": [
+        "ES256"
+      ],
+      "cryptographic_binding_methods_supported": [
+        "did:jwk"
+      ],
+      "proof_types_supported": {
+        "jwt": {
+          "proof_signing_alg_values_supported": [
+            "ES256"
+          ]
+        }
+      },
+      "vct": "university_example_sd_jwt",
+      "claims": {
+        "degree": {
+          "type": {
+            "mandatory": true,
+            "value_type": "string",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typ"
+              }
+            ]
+          },
+          "name": {
+            "mandatory": true,
+            "value_type": "string",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Diplomtitle"
+              }
+            ]
+          },
+          "average_grade": {
+            "mandatory": false,
+            "value_type": "number",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Notendurchschnitt"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "unbound_example_sd_jwt": {
+      "format": "vc+sd-jwt",
+      "credential_signing_alg_values_supported": [
+        "ES256"
+      ],
+      "vct": "unbound_example_sd_jwt",
+      "claims": {
+        "animal": {
+          "mandatory": true,
+          "value_type": "string",
+          "display": [
+            {
+              "locale": "de-CH",
+              "name": "Tier"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
