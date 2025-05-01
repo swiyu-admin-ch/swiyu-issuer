@@ -42,8 +42,6 @@
         <sonar.issue.ignore.multicriteria.e1.ruleKey>xml:S3422</sonar.issue.ignore.multicriteria.e1.ruleKey>
         <sonar.issue.ignore.multicriteria.e1.resourceKey>**/pom.xml</sonar.issue.ignore.multicriteria.e1.resourceKey>
         <spring-doc.version>2.7.0</spring-doc.version>
-        <nimbus.version>9.40</nimbus.version>
-        <logstash.logback.version>7.4</logstash.logback.version>
         <authlete.version>1.4</authlete.version>
         <springframework.cloud.version>2024.0.0</springframework.cloud.version>
     </properties>
@@ -192,14 +190,14 @@
             <version>${javacrumbs.shedlock.version}</version>
         </dependency>
         <!-- Tracing -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-tracing</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-tracing-bridge-brave</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.micrometer</groupId>-->
+<!--            <artifactId>micrometer-tracing</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.micrometer</groupId>-->
+<!--            <artifactId>micrometer-tracing-bridge-brave</artifactId>-->
+<!--        </dependency>-->
 
         <!-- test dependencies -->
         <dependency>
@@ -222,38 +220,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-json</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.nimbusds</groupId>
-            <artifactId>nimbus-jose-jwt</artifactId>
-            <version>${nimbus.version}</version>
-        </dependency>
         <!-- To load pem files with nimbus -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>${bouncycastle.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.securosys.primus</groupId>
-            <artifactId>jce</artifactId>
-            <version>${primus-jce.version}</version>
-        </dependency>
 
         <!-- Logging -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.logstash.logback</groupId>
-            <artifactId>logstash-logback-encoder</artifactId>
-            <version>${logstash.logback.version}</version>
-        </dependency>
+
         <!-- End Logging -->
 
         <!-- SD-JWT -->
@@ -307,37 +277,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <!-- See https://www.baeldung.com/checkstyle-java for more info -->
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>${maven-checkstyle-plugin.version}</version>
-                <configuration>
-                    <!-- See https://checkstyle.sourceforge.io/config.html -->
-                    <configLocation>google_checks.xml</configLocation>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.ec4j.maven</groupId>
-                <artifactId>editorconfig-maven-plugin</artifactId>
-                <version>${editorconfig-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>check</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <!-- See https://www.baeldung.com/checkstyle-java for more info -->
                 <groupId>org.apache.maven.plugins</groupId>
