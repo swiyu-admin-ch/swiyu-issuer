@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.common;
 
-import ch.admin.bj.swiyu.issuer.management.common.date.CustomInstantDeserializer;
+import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import org.junit.jupiter.api.BeforeEach;

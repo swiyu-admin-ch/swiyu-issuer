@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
-import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialController;
+import ch.admin.bj.swiyu.issuer.infrastructure.web.management.CredentialController;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.ECDSAVerifier;

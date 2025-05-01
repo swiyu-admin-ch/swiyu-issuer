@@ -6,10 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.oid4vci.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.oid4vci.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestUtils;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
@@ -74,8 +74,8 @@ class DeferredFlowIT {
         var statusList = createStatusList();
         statusListRepository.saveAndFlush(statusList);
 
-        saveStatusListLinkedOffer(createTestOffer(deferredOfferId, deferredPreAuthCode, CredentialStatus.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true)), statusList);
-        saveStatusListLinkedOffer(createTestOffer(notDeferredOfferId, notDeferredOfferId, CredentialStatus.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false)), statusList);
+        saveStatusListLinkedOffer(createTestOffer(deferredOfferId, deferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true)), statusList);
+        saveStatusListLinkedOffer(createTestOffer(notDeferredOfferId, notDeferredOfferId, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false)), statusList);
 
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
@@ -267,7 +267,7 @@ class DeferredFlowIT {
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
         credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
-        statusList.incrementIndex();
+        statusList.incrementNextFreeIndex();
         statusListRepository.saveAndFlush(statusList);
     }
 
@@ -287,7 +287,7 @@ class DeferredFlowIT {
             @Override
             protected void doInTransactionWithoutResult(TransactionStatus status) {
                 var credentialOffer = credentialOfferRepository.findByAccessToken(UUID.fromString(token)).get();
-                credentialOffer.setCredentialStatus(CredentialStatus.READY);
+                credentialOffer.setCredentialStatus(CredentialStatusType.READY);
                 credentialOfferRepository.save(credentialOffer);
             }
         });

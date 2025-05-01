@@ -6,15 +6,15 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
-import ch.admin.bj.swiyu.issuer.oid4vci.api.CredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.CredentialRequest;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.CredentialResponseEncryption;
-import ch.admin.bj.swiyu.issuer.oid4vci.service.mapper.CredentialRequestMapper;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
+import ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.service.mapper.CredentialRequestMapper.toCredentialResponseEncryption;
+import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialResponseEncryption;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,8 +30,8 @@ class CredentialRequestMapperTest {
         when(dto.credentialResponseEncryption()).thenReturn(null);
 
         // Act
-        CredentialRequest credentialRequest = CredentialRequestMapper.toCredentialRequest(dto);
-        CredentialResponseEncryption credentialResponseEncryption = toCredentialResponseEncryption(dto.credentialResponseEncryption());
+        CredentialRequestClass credentialRequest = CredentialRequestMapper.toCredentialRequest(dto);
+        CredentialResponseEncryptionClass credentialResponseEncryption = toCredentialResponseEncryption(dto.credentialResponseEncryption());
 
         // Assert
         assertEquals(dto.proof(), credentialRequest.getProof());

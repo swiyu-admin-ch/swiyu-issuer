@@ -13,14 +13,14 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.management.common.date.DateTimeUtils.ISO8601_FORMAT;
+import static ch.admin.bj.swiyu.issuer.common.date.DateTimeUtils.ISO8601_FORMAT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;

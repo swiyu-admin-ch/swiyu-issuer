@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.oid4vci.domain.credentialoffer.*;
 import com.google.gson.GsonBuilder;
 import lombok.experimental.UtilityClass;
@@ -18,19 +19,19 @@ import static java.util.Objects.nonNull;
 @UtilityClass
 public class CredentialOfferTestData {
 
-    public static CredentialOffer createTestOffer(UUID offerID, UUID preAuthCode, CredentialStatus status, String metadataId) {
+    public static CredentialOffer createTestOffer(UUID offerID, UUID preAuthCode, CredentialStatusType status, String metadataId) {
         return createTestOffer(offerID, preAuthCode, status, metadataId, Instant.now(), Instant.now().plusSeconds(120), null);
     }
 
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatus status, String metadataId) {
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId) {
         return createTestOffer(UUID.randomUUID(), preAuthCode, status, metadataId, Instant.now(), Instant.now().plusSeconds(120), null);
     }
 
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatus status, String metadataId, Instant validFrom, Instant validUntil) {
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Instant validFrom, Instant validUntil) {
         return createTestOffer(UUID.randomUUID(), preAuthCode, status, metadataId, validFrom, validUntil, null);
     }
 
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatus status, String metadataId, Instant validFrom, Instant validUntil, Map<String, Object> credentialMetadata) {
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Instant validFrom, Instant validUntil, Map<String, Object> credentialMetadata) {
         return createTestOffer(UUID.randomUUID(), preAuthCode, status, metadataId, validFrom, validUntil, credentialMetadata);
     }
 
@@ -51,7 +52,7 @@ public class CredentialOfferTestData {
 
     public static CredentialOffer createTestOffer(UUID offerID,
                                                   UUID preAuthCode,
-                                                  CredentialStatus status,
+                                                  CredentialStatusType status,
                                                   String metadataId,
                                                   Instant validFrom,
                                                   Instant validUntil,
@@ -71,7 +72,7 @@ public class CredentialOfferTestData {
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 UUID.randomUUID(),
                 preAuthCode,
-                (int) Instant.now().plusSeconds(120).getEpochSecond(),
+                Instant.now().plusSeconds(120).getEpochSecond(),
                 validFrom,
                 validUntil,
                 null,

@@ -8,10 +8,10 @@ package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.management.api.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.management.common.exception.ResourceNotFoundException;
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.apache.commons.lang3.RandomStringUtils;

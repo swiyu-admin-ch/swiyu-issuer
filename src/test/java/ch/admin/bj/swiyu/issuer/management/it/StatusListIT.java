@@ -8,8 +8,8 @@ package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
-import ch.admin.bj.swiyu.issuer.management.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;

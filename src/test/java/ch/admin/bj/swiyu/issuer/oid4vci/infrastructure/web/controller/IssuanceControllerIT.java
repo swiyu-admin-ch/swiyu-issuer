@@ -6,10 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.oid4vci.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.oid4vci.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestUtils;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -75,9 +75,9 @@ class IssuanceControllerIT {
     void setUp() throws JOSEException {
         var statusList = createStatusList();
         statusListRepository.saveAndFlush(statusList);
-        saveStatusListLinkedOffer(createTestOffer(offerId, validPreAuthCode, CredentialStatus.OFFERED, "university_example_sd_jwt"), statusList);
-        saveStatusListLinkedOffer(createTestOffer(allValuesOfferId, allValuesPreAuthCode, CredentialStatus.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null), statusList);
-        saveStatusListLinkedOffer(createUnboundCredentialOffer(unboundOfferId, unboundPreAuthCode, CredentialStatus.OFFERED), statusList);
+        saveStatusListLinkedOffer(createTestOffer(offerId, validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt"), statusList);
+        saveStatusListLinkedOffer(createTestOffer(allValuesOfferId, allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null), statusList);
+        saveStatusListLinkedOffer(createUnboundCredentialOffer(unboundOfferId, unboundPreAuthCode, CredentialStatusType.OFFERED), statusList);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
@@ -343,7 +343,7 @@ class IssuanceControllerIT {
         return credentialSubjectData;
     }
 
-    private static CredentialOffer createUnboundCredentialOffer(UUID offerID, UUID preAuthCode, CredentialStatus status) {
+    private static CredentialOffer createUnboundCredentialOffer(UUID offerID, UUID preAuthCode, CredentialStatusType status) {
         var offerData = new HashMap<String, Object>();
         offerData.put("data", new GsonBuilder().create().toJson(getUnboundCredentialSubjectData()));
         return new CredentialOffer(
@@ -358,7 +358,7 @@ class IssuanceControllerIT {
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 UUID.randomUUID(),
                 preAuthCode,
-                (int) Instant.now().plusSeconds(120).getEpochSecond(),
+                Instant.now().plusSeconds(120).getEpochSecond(),
                 null,
                 null,
                 null,
@@ -407,7 +407,7 @@ class IssuanceControllerIT {
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
         credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
-        statusList.incrementIndex();
+        statusList.incrementNextFreeIndex();
         statusListRepository.saveAndFlush(statusList);
     }
 }

@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.common.utils;
 
+import ch.admin.bj.swiyu.issuer.common.date.TimeUtils;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

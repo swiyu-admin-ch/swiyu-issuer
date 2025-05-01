@@ -16,7 +16,7 @@ import java.util.zip.DeflaterOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ch.admin.bj.swiyu.issuer.management.domain.credentialoffer.TokenStatusListToken;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

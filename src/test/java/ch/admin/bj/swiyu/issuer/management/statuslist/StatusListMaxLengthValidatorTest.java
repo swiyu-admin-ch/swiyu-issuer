@@ -6,11 +6,11 @@
 
 package ch.admin.bj.swiyu.issuer.management.statuslist;
 
-import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListConfigDto;
-import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.management.api.statuslist.StatusListTypeDto;
-import ch.admin.bj.swiyu.issuer.management.api.statuslist.ValidStatusListMaxLengthValidator;
-import ch.admin.bj.swiyu.issuer.management.common.config.StatusListProperties;
+import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
+import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
+import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import jakarta.validation.ConstraintValidatorContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

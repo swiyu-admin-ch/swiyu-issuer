@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.statuslist;
 
-import ch.admin.bj.swiyu.issuer.management.api.statuslist.ValidStatusListBitsValidator;
+import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListBitsValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

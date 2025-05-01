@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

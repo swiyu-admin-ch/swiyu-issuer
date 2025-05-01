@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.oid4vci.api.type_metadata.TypeMetadataDto;
+import ch.admin.bj.swiyu.issuer.api.type_metadata.TypeMetadataDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

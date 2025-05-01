@@ -6,11 +6,12 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
-import ch.admin.bj.swiyu.issuer.oid4vci.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.credentialoffer.CredentialStatus;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.CredentialRequest;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -46,9 +47,9 @@ class SdJwtCredentialIT {
     @Test
     void getMinimalSdJwtCredentialTestClaims_thenSuccess() {
 
-        CredentialOffer credentialOffer = createTestOffer(preAuthCode, CredentialStatus.OFFERED, "university_example_sd_jwt");
+        CredentialOffer credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
 
-        CredentialRequest credentialRequest = CredentialRequest.builder().build();
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
 
         var vc = vcFormatFactory
@@ -84,9 +85,9 @@ class SdJwtCredentialIT {
         Instant now = Instant.now();
         Instant expiration = now.plus(30, ChronoUnit.DAYS);
 
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatus.OFFERED, "university_example_sd_jwt", now, expiration);
+        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", now, expiration);
 
-        CredentialRequest credentialRequest = CredentialRequest.builder().build();
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
 
         var vc = vcFormatFactory
@@ -117,9 +118,9 @@ class SdJwtCredentialIT {
     @Test
     void getSdJwtCredentialTestSD_thenSuccess() {
 
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatus.OFFERED, "university_example_sd_jwt");
+        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
 
-        CredentialRequest credentialRequest = CredentialRequest.builder().build();
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
 
         var vc = vcFormatFactory

@@ -1,8 +1,10 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.holderbinding;
 
-import ch.admin.bj.swiyu.issuer.oid4vci.common.exception.Oid4vcException;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.credentialoffer.CredentialStatus;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestUtils;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -131,7 +133,7 @@ public class ProofJwtTest {
     private CredentialOffer createTestOffer(UUID nonce) {
         return new CredentialOffer(
                 UUID.randomUUID(),
-                CredentialStatus.OFFERED,
+                CredentialStatusType.OFFERED,
                 Collections.emptyList(),
                 new HashMap<String, Object>() {{
                     put("data", "data");
@@ -144,7 +146,7 @@ public class ProofJwtTest {
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 nonce,
                 UUID.randomUUID(),
-                120,
+                120L,
                 Instant.now(),
                 Instant.now(),
                 null,
