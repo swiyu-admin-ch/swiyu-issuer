@@ -30,7 +30,7 @@ import java.security.interfaces.ECPrivateKey;
 @RequiredArgsConstructor
 public class SignerConfig {
 
-    // TODO: StatusListProperties is the same as sdjwtProperties, should be merged!
+    // TODO gapa: StatusListProperties is the same as sdjwtProperties, should be merged!
     private final StatusListProperties statusListProperties;
 
     /**

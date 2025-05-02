@@ -62,7 +62,6 @@ public class CredentialService {
 
     private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
-    private final ApplicationProperties config;
     private final ObjectMapper objectMapper;
     private final StatusListService statusListService;
     private final IssuerMetadataTechnical issuerMetadata;
@@ -222,7 +221,7 @@ public class CredentialService {
     private CredentialOffer createCredentialOffer(CreateCredentialRequestDto requestDto) {
         var expiration = Instant.now().plusSeconds(requestDto.getOfferValiditySeconds() > 0
                 ? requestDto.getOfferValiditySeconds()
-                : config.getOfferValidity());
+                : applicationProperties.getOfferValidity());
 
         var statusListUris = requestDto.getStatusLists();
         var statusLists = statusListService.findByUriIn(statusListUris);
@@ -270,10 +269,10 @@ public class CredentialService {
         });
 
         var credentialOffer = CredentialOfferDto.builder()
-                .credentialIssuer(config.getExternalUrl())
+                .credentialIssuer(applicationProperties.getExternalUrl())
                 .credentials(credential.getMetadataCredentialSupportedId())
                 .grants(grants)
-                .version(config.getRequestOfferVersion())
+                .version(applicationProperties.getRequestOfferVersion())
                 .build();
 
         String credentialOfferString = null;
@@ -284,7 +283,7 @@ public class CredentialService {
             throw new JsonException("Error processing credential offer for credential with id %s".formatted(credential.getId()), e);
         }
 
-        return String.format("%s://?credential_offer=%s", config.getDeeplinkSchema(), credentialOfferString);
+        return String.format("%s://?credential_offer=%s", applicationProperties.getDeeplinkSchema(), credentialOfferString);
     }
 
     @Transactional

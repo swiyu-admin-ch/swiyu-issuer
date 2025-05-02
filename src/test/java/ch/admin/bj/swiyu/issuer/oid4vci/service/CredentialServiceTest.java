@@ -41,8 +41,7 @@ class CredentialServiceTest {
     private CredentialOfferRepository credentialOfferRepository;
     @Mock
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
-    @Mock
-    private ApplicationProperties config;
+
     @Mock
     private ObjectMapper objectMapper;
     @Mock
@@ -61,7 +60,7 @@ class CredentialServiceTest {
     @Test
     void givenExpiredToken_whenGetCredential_thenThrowOAuthException() throws OAuthException {
         // Given
-        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, config, objectMapper, statusListService, issuerMetadata,vcFormatFactory, applicationProperties, signer, openIDConfiguration);
+        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, issuerMetadata,vcFormatFactory, applicationProperties, signer, openIDConfiguration);
         var uuid = UUID.randomUUID();
         var offerData = new HashMap<String, Object>() {{
             put("data", "data");
@@ -89,7 +88,7 @@ class CredentialServiceTest {
     @Test
     void givenExpiredOffer_whenCredentialIsCreated_throws() {
         // GIVEN
-        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, config, objectMapper, statusListService, issuerMetadata,vcFormatFactory, applicationProperties, signer, openIDConfiguration);
+        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, issuerMetadata,vcFormatFactory, applicationProperties, signer, openIDConfiguration);
         var uuid = UUID.randomUUID();
         var preAuthorizedCode = UUID.randomUUID();
         var offerData = new HashMap<String, Object>() {{
@@ -120,7 +119,7 @@ class CredentialServiceTest {
     @Test
     void givenExpiredOffer_whenTokenIsCreated_throws() {
         // GIVEN
-        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, config, objectMapper, statusListService, issuerMetadata,vcFormatFactory, applicationProperties, signer, openIDConfiguration);
+        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, issuerMetadata,vcFormatFactory, applicationProperties, signer, openIDConfiguration);
         var uuid = UUID.randomUUID();
         var offerData = new HashMap<String, Object>() {{
             put("data", "data");

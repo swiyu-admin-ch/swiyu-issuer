@@ -10,8 +10,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType.TOKEN_STATUS_LIST;
-
 public class VerifiableCredentialStatusFactory {
     public VerifiableCredentialStatusReference createStatusListReference(CredentialOfferStatus offerStatus) {
         var statusListType = offerStatus.getStatusList().getType();

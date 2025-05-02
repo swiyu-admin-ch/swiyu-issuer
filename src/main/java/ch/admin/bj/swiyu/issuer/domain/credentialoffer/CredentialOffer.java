@@ -115,7 +115,7 @@ public class CredentialOffer {
     /**
      * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
      */
-    private long offerExpirationTimestamp;
+    private long tokenExpirationTimestamp;
 
     /**
      * Value used in the holder binding process to prevent replay attacks
@@ -127,7 +127,7 @@ public class CredentialOffer {
      */
     private UUID preAuthorizedCode;
 
-    private Long tokenExpirationTimestamp;
+    private long offerExpirationTimestamp;
 
     private Instant credentialValidFrom;
 
@@ -241,7 +241,7 @@ public class CredentialOffer {
     }
 
     public boolean hasTokenExpirationPassed() {
-        return this.tokenExpirationTimestamp != null && Instant.now().isAfter(Instant.ofEpochSecond(this.tokenExpirationTimestamp));
+        return Instant.now().isAfter(Instant.ofEpochSecond(this.tokenExpirationTimestamp));
     }
 
     public boolean isDeferred() {

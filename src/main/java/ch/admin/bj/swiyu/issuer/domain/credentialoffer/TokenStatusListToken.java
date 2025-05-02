@@ -54,7 +54,7 @@ public class TokenStatusListToken {
      */
     public TokenStatusListToken(int bits, int statusListLength) {
         this.bits = bits;
-        //TODO gapa: statusList = new byte[statusListLength];
+        //TODO gapa: statusList = new byte[statusListLength]; is there a reason why this was ficed in one project but not in the other?
         statusList = new byte[(int) Math.ceil(statusListLength * bits / 8.0)];
     }
 

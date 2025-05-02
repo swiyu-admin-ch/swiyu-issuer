@@ -21,7 +21,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(name = "credential_offer_status")
 @Getter
-@Setter // TODO: do not apply setters on entities
+@Setter // TODO gapa: do not apply setters on entities
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA
 @AllArgsConstructor // test data
 @EntityListeners(AuditingEntityListener.class)

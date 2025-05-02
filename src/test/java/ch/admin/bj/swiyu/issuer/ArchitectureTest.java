@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.archunit;
+package ch.admin.bj.swiyu.issuer;
 
-import ch.admin.bj.swiyu.issuer.Application;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
@@ -170,13 +169,17 @@ public class ArchitectureTest {
                 .whereLayer(Layer.API.layerName)
                 .mayOnlyBeAccessedByLayers(Layer.SERVICE.layerName, Layer.INFRASTRUCTURE.layerName)
                 .whereLayer(Layer.DOMAIN.layerName)
-                .mayOnlyBeAccessedByLayers(Layer.SERVICE.layerName)
+                .mayOnlyBeAccessedByLayers(
+                        Layer.SERVICE.layerName,
+                        // INFRASTRUCTURE: due to simplicity we allow infrastructure in general, but only for
+                        // exceptions. see rule infrastructure_may_access_only_exceptions_from_domain
+                        Layer.INFRASTRUCTURE.layerName)
                 .whereLayer(Layer.INFRASTRUCTURE.layerName)
                 .mayNotBeAccessedByAnyLayer();
 
         @ArchTest
         static final ArchRule no_cycles_between_slices = SlicesRuleDefinition.slices()
-                .matching("..management.(**)..")
+                .matching("..issuer.(**)..")
                 .should()
                 .beFreeOfCycles()
                 .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
