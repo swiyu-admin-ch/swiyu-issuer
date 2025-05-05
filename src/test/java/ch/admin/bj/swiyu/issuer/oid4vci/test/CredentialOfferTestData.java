@@ -44,9 +44,7 @@ public class CredentialOfferTestData {
                 "https://localhost:8080/status",
                 statusListToken.getStatusListClaims().get("lst").toString(),
                 0,
-                10000,
-                Collections.emptySet()
-
+                10000
         );
     }
 
@@ -75,7 +73,6 @@ public class CredentialOfferTestData {
                 Instant.now().plusSeconds(120).getEpochSecond(),
                 validFrom,
                 validUntil,
-                null,
                 null
         );
     }

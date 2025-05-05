@@ -74,7 +74,6 @@ class IssuanceControllerIT {
     @BeforeEach
     void setUp() throws JOSEException {
         var statusList = createStatusList();
-        statusListRepository.saveAndFlush(statusList);
         saveStatusListLinkedOffer(createTestOffer(offerId, validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt"), statusList);
         saveStatusListLinkedOffer(createTestOffer(allValuesOfferId, allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null), statusList);
         saveStatusListLinkedOffer(createUnboundCredentialOffer(unboundOfferId, unboundPreAuthCode, CredentialStatusType.OFFERED), statusList);
@@ -361,7 +360,6 @@ class IssuanceControllerIT {
                 Instant.now().plusSeconds(120).getEpochSecond(),
                 null,
                 null,
-                null,
                 null
         );
     }
@@ -405,9 +403,11 @@ class IssuanceControllerIT {
     }
 
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
-        credentialOfferRepository.save(offer);
+       credentialOfferRepository.save(offer);
+        statusListRepository.save(statusList);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
         statusList.incrementNextFreeIndex();
-        statusListRepository.saveAndFlush(statusList);
+
     }
+
 }

@@ -8,6 +8,8 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import com.nimbusds.jose.JWSSigner;
 import lombok.AllArgsConstructor;
@@ -22,6 +24,8 @@ public class CredentialFormatFactory {
     private final DataIntegrityService dataIntegrityService;
     private final SdjwtProperties sdjwtProperties;
     private final JWSSigner signer;
+    private final StatusListRepository statusListRepository;
+    private final CredentialOfferStatusRepository credentialOfferStatusRepository;
 
     /**
      * Get the credential format builder for the given configuration identifier.
@@ -37,7 +41,7 @@ public class CredentialFormatFactory {
 
         return switch (configuration.getFormat()) {
             case "vc+sd-jwt" ->
-                    new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, signer);
+                    new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, signer, statusListRepository, credentialOfferStatusRepository);
             default -> throw new IllegalArgumentException("Unknown format: " + configuration.getFormat());
         };
     }

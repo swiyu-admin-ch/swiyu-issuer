@@ -144,9 +144,10 @@ class CredentialOfferStatusIT {
         UUID vcRevokedId = createIssueAndSetStateOfVc(CredentialStatusTypeDto.REVOKED);
 
         var offer = credentialOfferRepository.findById(vcRevokedId).get();
+        Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
         assertEquals(CredentialStatusType.REVOKED, offer.getCredentialStatus());
-        assertEquals(1, offer.getOfferStatusSet().size());
-        var offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
+        assertEquals(1, byOfferStatusId.size());
+        var offerStatus = byOfferStatusId.stream().findFirst().get();
         assertEquals(0, offerStatus.getIndex(), "Should be the very first index");
         var statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
         assertEquals(1, statusList.getNextFreeIndex(), "Should have advanced the counter");
@@ -157,7 +158,7 @@ class CredentialOfferStatusIT {
         UUID vcSuspendedId = createIssueAndSetStateOfVc(CredentialStatusTypeDto.SUSPENDED);
         offer = credentialOfferRepository.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusType.SUSPENDED, offer.getCredentialStatus());
-        offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
+        offerStatus = byOfferStatusId.stream().findFirst().get();
         assertEquals(1, offerStatus.getIndex(), "Should be the the second entry");
         statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
         assertEquals(2, statusList.getNextFreeIndex(), "Should have advanced the counter");
@@ -173,7 +174,7 @@ class CredentialOfferStatusIT {
                 .andExpect(jsonPath("$.status").value(newStatus.toString()));
         offer = credentialOfferRepository.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusType.ISSUED, offer.getCredentialStatus());
-        offerStatus = offer.getOfferStatusSet().stream().findFirst().get();
+        offerStatus = byOfferStatusId.stream().findFirst().get();
         statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
         tokenStatusList = loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                 statusList.getStatusZipped());
@@ -248,7 +249,11 @@ class CredentialOfferStatusIT {
         }).toList();
         // Get unique indexed on status list
         var indexSet = credentialOfferRepository.findAllById(results).stream()
-                .map(offer -> offer.getOfferStatusSet().stream().findFirst().get().getIndex())
+                .map(offer -> {
+                            Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
+                            return byOfferStatusId.stream().findFirst().get().getIndex();
+                        }
+                )
                 .collect(Collectors.toSet());
         Assertions.assertThat(indexSet).as("Should be the same size if no status was used multiple times")
                 .hasSameSizeAs(results);
@@ -272,8 +277,12 @@ class CredentialOfferStatusIT {
         });
         // Get all offers and the status list we are using
         var offers = offerIds.stream().map(credentialOfferRepository::findById).map(Optional::get).toList();
-        var statusListId = offers.getFirst().getOfferStatusSet().stream().findFirst().get().getId().getStatusListId();
-        var statusListIndexes = offers.stream().map(CredentialOffer::getOfferStatusSet).flatMap(Set::stream).map(CredentialOfferStatus::getIndex).collect(Collectors.toSet());
+        CredentialOffer offer = offers.getFirst();
+        Set<CredentialOfferStatus> credentialOfferStatuses = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
+        var statusListId = credentialOfferStatuses.stream().findFirst().get().getId().getStatusListId();
+        var statusListIndexes = offers.stream()
+                .map(credentialOffer -> credentialOfferStatusRepository.findByOfferStatusId(credentialOffer.getId()))
+                .flatMap(Set::stream).map(CredentialOfferStatus::getIndex).collect(Collectors.toSet());
         // Check initialization
         assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.ISSUED));
         var initialStatusListToken = loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
@@ -311,9 +320,10 @@ class CredentialOfferStatusIT {
      */
     private void assertOfferStateConsistent(UUID offerId) {
         var offer = credentialOfferRepository.findById(offerId).get();
+        Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
         var state = offer.getCredentialStatus();
-        var statusList = statusListRepository.findById(offer.getOfferStatusSet().stream().findFirst().get().getId().getStatusListId()).get();
-        offer.getOfferStatusSet().forEach(status -> {
+        var statusList = statusListRepository.findById(byOfferStatusId.stream().findFirst().get().getId().getStatusListId()).get();
+        byOfferStatusId.forEach(status -> {
             try {
                 var tokenState = loadTokenStatusListToken(2, statusList.getStatusZipped()).getStatus(status.getIndex());
                 var expectedState = switch (state) {

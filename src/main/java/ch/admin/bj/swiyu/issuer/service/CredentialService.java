@@ -195,7 +195,8 @@ public class CredentialService {
      */
     private void handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
 
-        final Set<CredentialOfferStatus> offerStatusSet = credential.getOfferStatusSet();
+
+        final Set<CredentialOfferStatus> offerStatusSet = credentialOfferStatusRepository.findByOfferStatusId(credential.getId());
 
         if (offerStatusSet.isEmpty()) {
             throw new BadRequestException("No associated status lists found. Can not set a status to an already issued credential");

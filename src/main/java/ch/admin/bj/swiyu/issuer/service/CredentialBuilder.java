@@ -10,9 +10,7 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatusFactory;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatusReference;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.encryption.CredentialResponseEncryptor;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
@@ -34,18 +32,24 @@ public abstract class CredentialBuilder {
     private final IssuerMetadataTechnical issuerMetadata;
     private final DataIntegrityService dataIntegrityService;
     private final JWSSigner signer;
+    private final StatusListRepository statusListRepository;
+    private final CredentialOfferStatusRepository credentialOfferStatusRepository;
     private CredentialResponseEncryptor credentialResponseEncryptor;
     private CredentialOffer credentialOffer;
     private CredentialConfiguration credentialConfiguration;
     private Optional<DidJwk> holderBinding;
     private List<String> metadataCredentialsSupportedIds;
 
-    CredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata, DataIntegrityService dataIntegrityService, JWSSigner signer) {
+    CredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata,
+                      DataIntegrityService dataIntegrityService, JWSSigner signer,
+                      StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
         this.applicationProperties = applicationProperties;
         this.issuerMetadata = issuerMetadata;
         this.dataIntegrityService = dataIntegrityService;
         this.holderBinding = Optional.empty();
         this.signer = signer;
+        this.statusListRepository = statusListRepository;
+        this.credentialOfferStatusRepository = credentialOfferStatusRepository;
     }
 
     public CredentialBuilder credentialOffer(CredentialOffer credentialOffer) {
@@ -134,11 +138,17 @@ public abstract class CredentialBuilder {
     protected Map<String, Object> getStatusReferences() {
         VerifiableCredentialStatusFactory statusFactory = new VerifiableCredentialStatusFactory();
         HashMap<String, Object> statuses = new HashMap<>();
-        return Optional.ofNullable(this.credentialOffer.getOfferStatusSet()).orElse(new HashSet<>()).stream()
-                .map(statusFactory::createStatusListReference)
+        Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(this.credentialOffer.getId());
+
+        return byOfferStatusId.stream()
+                .map((CredentialOfferStatus credentialOfferStatus) -> statusFactory.createStatusListReference(credentialOfferStatus.getIndex(), getStatusList(credentialOfferStatus)))
                 .map(VerifiableCredentialStatusReference::createVCRepresentation)
                 .reduce(statuses, statusFactory::mergeStatus);
+    }
 
+    private StatusList getStatusList(CredentialOfferStatus credentialOfferStatus) {
+        return statusListRepository.findById(credentialOfferStatus.getId().getStatusListId())
+                .orElseThrow(() -> new CredentialException("StatusList not found for ID: " + credentialOfferStatus.getId().getStatusListId()));
     }
 
     abstract String getCredential();

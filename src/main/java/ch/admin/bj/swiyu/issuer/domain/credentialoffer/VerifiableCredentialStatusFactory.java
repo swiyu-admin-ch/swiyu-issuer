@@ -11,11 +11,11 @@ import java.util.Map;
 import java.util.Set;
 
 public class VerifiableCredentialStatusFactory {
-    public VerifiableCredentialStatusReference createStatusListReference(CredentialOfferStatus offerStatus) {
-        var statusListType = offerStatus.getStatusList().getType();
+    public VerifiableCredentialStatusReference createStatusListReference(Integer index, StatusList statusList) {
+        var statusListType = statusList.getType();
         return switch (statusListType) {
             case TOKEN_STATUS_LIST ->
-                    new TokenStatusListReference(offerStatus.getIndex(), offerStatus.getStatusList().getUri(), offerStatus.getStatusList().getType().displayName);
+                    new TokenStatusListReference(index, statusList.getUri(), statusList.getType().displayName);
         };
     }
 

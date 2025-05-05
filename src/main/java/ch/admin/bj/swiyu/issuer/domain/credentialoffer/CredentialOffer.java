@@ -143,8 +143,8 @@ public class CredentialOffer {
     /**
      * Link to what indexes on status lists are assigned to the vc
      */
-    @OneToMany(mappedBy = "offer", fetch = FetchType.EAGER)
-    private Set<CredentialOfferStatus> offerStatusSet;
+//    @OneToMany(mappedBy = "offer")
+//    private Set<CredentialOfferStatus> offerStatusSet;
 
     /**
      * Read the offer data depending on input type and add it to offer

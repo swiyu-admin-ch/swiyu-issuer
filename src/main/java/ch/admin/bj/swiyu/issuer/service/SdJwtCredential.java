@@ -21,6 +21,8 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
@@ -36,8 +38,8 @@ public class SdJwtCredential extends CredentialBuilder {
     private final SdjwtProperties sdjwtProperties;
 
 
-    public SdJwtCredential(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata, DataIntegrityService dataIntegrityService, SdjwtProperties sdjwtProperties, JWSSigner signer) {
-        super(applicationProperties, issuerMetadata, dataIntegrityService, signer);
+    public SdJwtCredential(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata, DataIntegrityService dataIntegrityService, SdjwtProperties sdjwtProperties, JWSSigner signer, StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
+        super(applicationProperties, issuerMetadata, dataIntegrityService, signer, statusListRepository, credentialOfferStatusRepository);
         this.sdjwtProperties = sdjwtProperties;
     }
 

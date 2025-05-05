@@ -11,10 +11,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatus;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -44,12 +41,13 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter // do not apply generell setters on entities
+@Setter
 @Builder
-@EntityListeners(AuditingEntityListener.class)
+//@EntityListeners(AuditingEntityListener.class)
 public class StatusList {
-    @Embedded
-    @Valid
-    private final AuditMetadata auditMetadata = new AuditMetadata();
+//    @Embedded
+//    @Valid
+//    private final AuditMetadata auditMetadata = new AuditMetadata();
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -84,8 +82,8 @@ public class StatusList {
     @NotNull
     private Integer maxLength;
 
-    @OneToMany(mappedBy = "statusList")
-    private Set<CredentialOfferStatus> offerStatusSet;
+//    @OneToMany(mappedBy = "statusList")
+//    private Set<CredentialOfferStatus> offerStatusSet;
 
     public UUID getRegistryId() {
         /**

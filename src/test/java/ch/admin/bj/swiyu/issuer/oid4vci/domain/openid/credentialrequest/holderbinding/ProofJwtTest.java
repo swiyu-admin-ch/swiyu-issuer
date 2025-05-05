@@ -149,7 +149,6 @@ public class ProofJwtTest {
                 120L,
                 Instant.now(),
                 Instant.now(),
-                null,
                 null
         );
     }
