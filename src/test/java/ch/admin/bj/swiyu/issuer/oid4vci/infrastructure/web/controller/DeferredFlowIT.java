@@ -71,8 +71,6 @@ class DeferredFlowIT {
     @BeforeEach
     void setUp() throws JOSEException {
         var statusList = createStatusList();
-        statusListRepository.save(statusList);
-
         var deferredOffer = createTestOffer(deferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
         saveStatusListLinkedOffer(deferredOffer, statusList);
         var notDeferredOffer = createTestOffer(notDeferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false));
@@ -266,6 +264,7 @@ class DeferredFlowIT {
     }
 
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
+        statusListRepository.save(statusList);
         credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
         statusList.incrementNextFreeIndex();
