@@ -48,10 +48,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class DeferredFlowIT {
 
-    private static final UUID deferredOfferId = UUID.randomUUID();
-    private static final UUID notDeferredOfferId = UUID.randomUUID();
     private static ECKey jwk;
     private final UUID deferredPreAuthCode = UUID.randomUUID();
+    private final UUID notDeferredPreAuthCode = UUID.randomUUID();
     private final Instant validFrom = Instant.now();
     private final Instant validUntil = Instant.now().plus(30, ChronoUnit.DAYS);
     @Autowired
@@ -72,10 +71,12 @@ class DeferredFlowIT {
     @BeforeEach
     void setUp() throws JOSEException {
         var statusList = createStatusList();
-        statusListRepository.saveAndFlush(statusList);
+        statusListRepository.save(statusList);
 
-        saveStatusListLinkedOffer(createTestOffer(deferredOfferId, deferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true)), statusList);
-        saveStatusListLinkedOffer(createTestOffer(notDeferredOfferId, notDeferredOfferId, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false)), statusList);
+        var deferredOffer = createTestOffer(deferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
+        saveStatusListLinkedOffer(deferredOffer, statusList);
+        var notDeferredOffer = createTestOffer(notDeferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false));
+        saveStatusListLinkedOffer(notDeferredOffer, statusList);
 
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
@@ -203,7 +204,7 @@ class DeferredFlowIT {
         String credentialRequestString = getCredentialRequestString(proof);
 
         // wrong token
-        var otherTokenResponse = TestUtils.fetchOAuthToken(mock, notDeferredOfferId.toString());
+        var otherTokenResponse = TestUtils.fetchOAuthToken(mock, notDeferredPreAuthCode.toString());
         var otherToken = otherTokenResponse.get("access_token");
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -268,7 +269,6 @@ class DeferredFlowIT {
         credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
         statusList.incrementNextFreeIndex();
-        statusListRepository.saveAndFlush(statusList);
     }
 
     private static String getDeferredCredentialRequestString(String transactionId) {

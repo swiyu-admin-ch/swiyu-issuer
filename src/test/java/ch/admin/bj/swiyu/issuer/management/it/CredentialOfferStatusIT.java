@@ -150,7 +150,7 @@ class CredentialOfferStatusIT {
         var offerStatus = byOfferStatusId.stream().findFirst().get();
         assertEquals(0, offerStatus.getIndex(), "Should be the very first index");
         var statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
-        assertEquals(1, statusList.getNextFreeIndex(), "Should have advanced the counter");
+        assertEquals(1, statusList.getNextFreeIndex(), "Should NOT have advanced the counter");
         var tokenStatusList = loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped());
         assertEquals(1, tokenStatusList.getStatus(0), "Should be revoked");
         assertEquals(0, tokenStatusList.getStatus(1), "Should not be revoked");
@@ -158,6 +158,7 @@ class CredentialOfferStatusIT {
         UUID vcSuspendedId = createIssueAndSetStateOfVc(CredentialStatusTypeDto.SUSPENDED);
         offer = credentialOfferRepository.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusType.SUSPENDED, offer.getCredentialStatus());
+        byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
         offerStatus = byOfferStatusId.stream().findFirst().get();
         assertEquals(1, offerStatus.getIndex(), "Should be the the second entry");
         statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
@@ -174,6 +175,7 @@ class CredentialOfferStatusIT {
                 .andExpect(jsonPath("$.status").value(newStatus.toString()));
         offer = credentialOfferRepository.findById(vcSuspendedId).get();
         assertEquals(CredentialStatusType.ISSUED, offer.getCredentialStatus());
+        byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
         offerStatus = byOfferStatusId.stream().findFirst().get();
         statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
         tokenStatusList = loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),

@@ -7,49 +7,40 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.oid4vci.domain.credentialoffer.*;
 import com.google.gson.GsonBuilder;
 import lombok.experimental.UtilityClass;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static java.util.Objects.nonNull;
 
 @UtilityClass
 public class CredentialOfferTestData {
 
-    public static CredentialOffer createTestOffer(UUID offerID, UUID preAuthCode, CredentialStatusType status, String metadataId) {
-        return createTestOffer(offerID, preAuthCode, status, metadataId, Instant.now(), Instant.now().plusSeconds(120), null);
-    }
-
     public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId) {
-        return createTestOffer(UUID.randomUUID(), preAuthCode, status, metadataId, Instant.now(), Instant.now().plusSeconds(120), null);
+        return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), null);
     }
 
     public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Instant validFrom, Instant validUntil) {
-        return createTestOffer(UUID.randomUUID(), preAuthCode, status, metadataId, validFrom, validUntil, null);
-    }
-
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Instant validFrom, Instant validUntil, Map<String, Object> credentialMetadata) {
-        return createTestOffer(UUID.randomUUID(), preAuthCode, status, metadataId, validFrom, validUntil, credentialMetadata);
+        return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, null);
     }
 
     public static StatusList createStatusList() {
         var statusListToken = new TokenStatusListToken(2, 10000);
-        return new StatusList(
-                UUID.randomUUID(),
-                StatusListType.TOKEN_STATUS_LIST,
-                Map.of("bits", 2),
-                "https://localhost:8080/status",
-                statusListToken.getStatusListClaims().get("lst").toString(),
-                0,
-                10000
-        );
+        return StatusList.builder().type(StatusListType.TOKEN_STATUS_LIST)
+                .config(Map.of("bits", 2))
+                .uri("https://localhost:8080/status")
+                .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
+                .nextFreeIndex(0)
+                .maxLength(10000)
+                .build();
     }
 
-    public static CredentialOffer createTestOffer(UUID offerID,
-                                                  UUID preAuthCode,
+    public static CredentialOffer createTestOffer(UUID preAuthCode,
                                                   CredentialStatusType status,
                                                   String metadataId,
                                                   Instant validFrom,
@@ -58,23 +49,19 @@ public class CredentialOfferTestData {
         Map<String, Object> defaultCredentialMetadata = Map.of("vct#integrity", "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=");
         HashMap<String, Object> offerData = new HashMap<>();
         offerData.put("data", new GsonBuilder().create().toJson(addIllegalClaims(getUniversityCredentialSubjectData())));
-        return new CredentialOffer(
-                offerID,
-                status,
-                List.of(metadataId),
-                offerData,
-                nonNull(credentialMetadata) ? credentialMetadata : defaultCredentialMetadata,
-                UUID.randomUUID(),
-                null,
-                null,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                UUID.randomUUID(),
-                preAuthCode,
-                Instant.now().plusSeconds(120).getEpochSecond(),
-                validFrom,
-                validUntil,
-                null
-        );
+        return CredentialOffer.builder()
+                .credentialStatus(status)
+                .metadataCredentialSupportedId(List.of(metadataId))
+                .offerData(offerData)
+                .credentialMetadata(nonNull(credentialMetadata) ? credentialMetadata : defaultCredentialMetadata)
+                .accessToken(UUID.randomUUID())
+                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .nonce(UUID.randomUUID())
+                .preAuthorizedCode(preAuthCode)
+                .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .credentialValidFrom(validFrom)
+                .credentialValidUntil(validUntil)
+                .build();
     }
 
     /**

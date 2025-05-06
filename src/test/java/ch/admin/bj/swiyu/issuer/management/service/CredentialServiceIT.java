@@ -36,7 +36,7 @@ public class CredentialServiceIT {
     void offerDeeplinkTest() {
         // GIVEN
         Map<String, Object> offerData = Map.of("hello", "world");
-        var validId = credentialOfferRepository.saveAndFlush(
+        var validId = credentialOfferRepository.save(
                 CredentialOffer.builder()
                         .credentialStatus(CredentialStatusType.OFFERED)
                         .offerExpirationTimestamp(now().plusSeconds(1000).getEpochSecond())
@@ -174,7 +174,6 @@ public class CredentialServiceIT {
                         .nonce(UUID.randomUUID())
                         // Note: Issued entries should have their data deleted by the VC signer component
                         .build()).getId();
-        credentialOfferRepository.flush();
 
         var expiredOffered = credentialOfferRepository.findById(expiredOfferdId);
         var expiredInProgress = credentialOfferRepository.findById(expiredInProgressId);

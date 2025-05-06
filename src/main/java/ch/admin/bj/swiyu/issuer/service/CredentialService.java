@@ -399,7 +399,7 @@ public class CredentialService {
         offer.markAsInProgress();
         offer.setTokenIssuanceTimestamp(applicationProperties.getTokenTTL());
 
-        credentialOfferRepository.saveAndFlush(offer);
+        credentialOfferRepository.save(offer);
 
         return OAuthTokenDto.builder()
                 .accessToken(offer.getAccessToken().toString())

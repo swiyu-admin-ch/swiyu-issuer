@@ -49,9 +49,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class IssuanceControllerIT {
 
-    private static final UUID offerId = UUID.fromString("deadbeef-dead-dead-dead-deaddeafbeef");
-    private static final UUID unboundOfferId = UUID.fromString("00000000-0000-0000-0000-000000000000");
-    private static final UUID allValuesOfferId = UUID.randomUUID();
+    private static UUID offerId;
+    private static UUID unboundOfferId;
+    private static UUID allValuesOfferId;
     private static ECKey jwk;
     private final UUID validPreAuthCode = UUID.randomUUID();
     private final UUID allValuesPreAuthCode = UUID.randomUUID();
@@ -74,9 +74,16 @@ class IssuanceControllerIT {
     @BeforeEach
     void setUp() throws JOSEException {
         var statusList = createStatusList();
-        saveStatusListLinkedOffer(createTestOffer(offerId, validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt"), statusList);
-        saveStatusListLinkedOffer(createTestOffer(allValuesOfferId, allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null), statusList);
-        saveStatusListLinkedOffer(createUnboundCredentialOffer(unboundOfferId, unboundPreAuthCode, CredentialStatusType.OFFERED), statusList);
+        statusListRepository.save(statusList);
+        var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        saveStatusListLinkedOffer(offer, statusList);
+        offerId = offer.getId();
+        var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
+        saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, statusList);
+        allValuesOfferId = allValuesPreAuthCodeOffer.getId();
+        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialStatusType.OFFERED);
+        saveStatusListLinkedOffer(unboundOffer, statusList);
+        unboundOfferId = unboundOffer.getId();
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
@@ -342,26 +349,19 @@ class IssuanceControllerIT {
         return credentialSubjectData;
     }
 
-    private static CredentialOffer createUnboundCredentialOffer(UUID offerID, UUID preAuthCode, CredentialStatusType status) {
+    private static CredentialOffer createUnboundCredentialOffer( UUID preAuthCode, CredentialStatusType status) {
         var offerData = new HashMap<String, Object>();
         offerData.put("data", new GsonBuilder().create().toJson(getUnboundCredentialSubjectData()));
-        return new CredentialOffer(
-                offerID,
-                status,
-                List.of("unbound_example_sd_jwt"),
-                offerData,
-                new HashMap<>(),
-                UUID.randomUUID(),
-                null,
-                null,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                UUID.randomUUID(),
-                preAuthCode,
-                Instant.now().plusSeconds(120).getEpochSecond(),
-                null,
-                null,
-                null
-        );
+        return CredentialOffer.builder().credentialStatus(status)
+                .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
+                .offerData(offerData)
+                .credentialMetadata(new HashMap<>())
+                .accessToken(UUID.randomUUID())
+                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .nonce(UUID.randomUUID())
+                .preAuthorizedCode(preAuthCode)
+                .build();
     }
 
     private String getBoundVc() throws Exception {
@@ -403,7 +403,7 @@ class IssuanceControllerIT {
     }
 
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
-       credentialOfferRepository.save(offer);
+        credentialOfferRepository.save(offer);
         statusListRepository.save(statusList);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
         statusList.incrementNextFreeIndex();
