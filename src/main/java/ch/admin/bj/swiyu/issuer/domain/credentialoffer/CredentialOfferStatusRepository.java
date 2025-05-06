@@ -21,6 +21,5 @@ public interface CredentialOfferStatusRepository
         extends JpaRepository<CredentialOfferStatus, CredentialOfferStatusKey> {
 
     @Query("SELECT c FROM CredentialOfferStatus c WHERE :offerStatusId = c.id.offerId")
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Set<CredentialOfferStatus> findByOfferStatusId(UUID offerStatusId);
 }

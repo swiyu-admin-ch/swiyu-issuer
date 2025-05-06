@@ -23,28 +23,28 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Setter // TODO gapa: do not apply setters on entities
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA
 @AllArgsConstructor // test data
-//@EntityListeners(AuditingEntityListener.class)
+@EntityListeners(AuditingEntityListener.class)
 @Builder
 public class CredentialOfferStatus {
 
-//    @Embedded
-//    @Valid
-//    private final AuditMetadata auditMetadata = new AuditMetadata();
+    @Embedded
+    @Valid
+    private final AuditMetadata auditMetadata = new AuditMetadata();
 
     @EmbeddedId
     private CredentialOfferStatusKey id;
 
-    @ManyToOne
-    @MapsId("offerId")
-    @JoinColumn(name = "credential_offer_id", referencedColumnName = "id", updatable = false)
-    // We have no reason to propagate the update, as there *should* be no use case for this
-    private CredentialOffer offer;
-
-    @ManyToOne
-    @MapsId("statusListId")
-    @JoinColumn(name = "status_list_id", referencedColumnName = "id", updatable = false)
-    // We have no reason to propagate the update, as there *should* be no use case for this
-    private StatusList statusList;
+//    @ManyToOne
+//    @MapsId("offerId")
+//    @JoinColumn(name = "credential_offer_id", referencedColumnName = "id", updatable = false)
+//    // We have no reason to propagate the update, as there *should* be no use case for this
+//    private CredentialOffer offer;
+//
+//    @ManyToOne
+//    @MapsId("statusListId")
+//    @JoinColumn(name = "status_list_id", referencedColumnName = "id", updatable = false)
+//    // We have no reason to propagate the update, as there *should* be no use case for this
+//    private StatusList statusList;
 
     /**
      * The index the credential is assigned on the status list.

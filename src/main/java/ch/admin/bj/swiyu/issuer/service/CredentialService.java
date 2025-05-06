@@ -254,7 +254,6 @@ public class CredentialService {
             var offerStatus = CredentialOfferStatus.builder()
                     .id(offerStatusKey)
                     .index(statusList.getNextFreeIndex())
-                    .offer(entity)
                     .build();
             credentialOfferStatusRepository.save(offerStatus);
             statusListService.incrementNextFreeIndex(statusList.getId());

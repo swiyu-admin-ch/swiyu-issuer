@@ -102,8 +102,6 @@ public class CredentialOfferTestData {
     public static CredentialOfferStatus linkStatusList(CredentialOffer offer, StatusList statusList) {
         return new CredentialOfferStatus(
                 new CredentialOfferStatusKey(offer.getId(), statusList.getId()),
-                offer,
-                statusList,
                 statusList.getNextFreeIndex()
         );
     }

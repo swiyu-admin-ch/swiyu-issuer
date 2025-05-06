@@ -22,17 +22,49 @@ application:
   external-url: "http://localhost:8080/test/"
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
   enable-jwt-authentication: true
-  authentication-jwks: |
-#  external-url: "http://localhost:8080"
-  #  openid_file: "file:///data/example_openid.json"
   issuer-id: "did:example:localhost%3A8080:abcabc"
   openid-file: "classpath:example_openid.json"
   metadata-file: "classpath:example_issuer_metadata.json"
+  template-replacement:
+    external-url: "http://localhost:8080"
+    stage: "local-"
   key:
     sdjwt:
       private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
       verification-method: "did:example:localhost%3A8080:abcabc#sdjwt"
   data-integrity-jwks: |
+    {
+    "keys":[
+      {
+        "kty":"EC",
+        "crv":"P-256",
+        "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+        "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
+        "use":"enc",
+        "kid":"1"
+      },
+      {
+        "kty":"RSA",
+        "n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx
+        4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMs
+        tn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2
+        QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbI
+        SD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqb
+        w0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",
+        "e":"AQAB",
+        "alg":"RS256",
+        "kid":"2011-04-29"
+      },
+      {
+        "kty":"EC",
+        "crv":"P-256",
+        "kid":"testkey",
+        "x":"_gHQsZT-CB_KvIfpvJsDxVSXkuwRJsuof-oMihcupQU",
+        "y":"71y_zEPAglUXBghaBxypTAzlNx57KNY9lv8LTbPkmZA"
+      }
+    ]
+    }
+  authentication-jwks: |
     {
     "keys":[
       {
