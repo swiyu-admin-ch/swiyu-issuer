@@ -15,6 +15,15 @@ application:
   deeplink-schema: swiyu
   token-ttl: 600
   acceptable-proof-time-window-seconds: 120
+  openid-file: "classpath:example_openid.json"
+  metadata-file: "classpath:example_issuer_metadata.json"
+  # vct metadata files. They key will become part of the url
+  vct-metadata-files:
+    my-vct-v01: "classpath:example_vct_metadata.json"
+  overlays-capture-architecture-metadata-files:
+    my-oca-v01: "classpath:example_oca.json"
+  json-schema-metadata-files:
+    my-schema-v01: "classpath:example_json_schema.json"
 swiyu:
   status-registry:
     api-url: "https://irrelevant.as.all.interaction.are.mocked"

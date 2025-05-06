@@ -97,9 +97,12 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
                                                                   @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status,
                                                                   @NonNull WebRequest request) {
-        var errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage()))
-                .sorted()
+
+        String errors = Stream.concat(
+                        ex.getBindingResult().getFieldErrors()
+                                .stream().map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage())),
+                        ex.getBindingResult().getGlobalErrors().stream().map(error -> String.format("%s: %s", error.getObjectName(), error.getDefaultMessage()))
+                ).sorted()
                 .collect(Collectors.joining(", "));
 
         log.info("Received bad request. Details: {}", errors);
