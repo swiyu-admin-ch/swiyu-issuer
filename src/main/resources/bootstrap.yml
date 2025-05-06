@@ -9,8 +9,7 @@ spring:
     # note: since we use spring boot cloud and docker compose support, the application name
     # is configured here. This way the application name is available in early log outputs on
     # startup.
-    name: issuer-agent-management
-#    name: issuer-oid4vci
+    name: issuer-agent
   docker:
     compose:
       enabled: false

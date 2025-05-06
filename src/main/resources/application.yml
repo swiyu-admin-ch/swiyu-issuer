@@ -13,7 +13,7 @@ spring:
     generate-ddl: false
     open-in-view: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     properties:
       hibernate:
         boot:
@@ -37,6 +37,8 @@ spring:
     scheduling:
       pool:
         size: 2
+http:
+  max-redirects: 5
 
 management:
   endpoint:
@@ -183,15 +185,3 @@ monitoring:
     enabled: ${MONITORING_BASIC_AUTH_ENABLED:false}
     username: "${MONITORING_BASIC_AUTH_USERNAME:}"
     password: "${MONITORING_BASIC_AUTH_PASSWORD:}"
-
-http:
-  max-redirects: 5
-  datasource:
-    url: "${POSTGRES_JDBC}"
-    username: "${secret.db.username:${POSTGRES_USER:}}"
-    password: "${secret.db.password:${POSTGRES_PASSWORD:}}"
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    open-in-view: false
-    hibernate:
-      ddl-auto: validate # issuer-agent-management is owner of the schema, so we just validate if it matches
