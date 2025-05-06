@@ -20,7 +20,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(name = "credential_offer_status")
 @Getter
-@Setter // TODO gapa: do not apply setters on entities
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA
 @AllArgsConstructor // test data
 @EntityListeners(AuditingEntityListener.class)
@@ -33,18 +33,6 @@ public class CredentialOfferStatus {
 
     @EmbeddedId
     private CredentialOfferStatusKey id;
-
-//    @ManyToOne
-//    @MapsId("offerId")
-//    @JoinColumn(name = "credential_offer_id", referencedColumnName = "id", updatable = false)
-//    // We have no reason to propagate the update, as there *should* be no use case for this
-//    private CredentialOffer offer;
-//
-//    @ManyToOne
-//    @MapsId("statusListId")
-//    @JoinColumn(name = "status_list_id", referencedColumnName = "id", updatable = false)
-//    // We have no reason to propagate the update, as there *should* be no use case for this
-//    private StatusList statusList;
 
     /**
      * The index the credential is assigned on the status list.

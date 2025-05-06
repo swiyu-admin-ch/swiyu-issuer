@@ -47,8 +47,8 @@ public class CredentialOffer {
     private final AuditMetadata auditMetadata = new AuditMetadata();
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID(); // Generate the ID manually
 
     /**
      * internal Credential status, includes status before issuing the VC,
@@ -139,12 +139,6 @@ public class CredentialOffer {
      */
     @JdbcTypeCode(SqlTypes.JSON)
     private CredentialRequestClass credentialRequest;
-
-    /**
-     * Link to what indexes on status lists are assigned to the vc
-     */
-//    @OneToMany(mappedBy = "offer")
-//    private Set<CredentialOfferStatus> offerStatusSet;
 
     /**
      * Read the offer data depending on input type and add it to offer

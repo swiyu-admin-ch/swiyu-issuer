@@ -66,7 +66,7 @@ public class CredentialService {
     private final StatusListService statusListService;
     private final IssuerMetadataTechnical issuerMetadata;
     private final CredentialFormatFactory vcFormatFactory;
-    private final ApplicationProperties applicationProperties; // TODO gapa: remove this and use config
+    private final ApplicationProperties applicationProperties;
     private final JWSSigner signer;
     private final OpenIdIssuerConfiguration openIDConfiguration;
 

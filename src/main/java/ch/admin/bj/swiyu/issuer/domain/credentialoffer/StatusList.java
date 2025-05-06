@@ -43,15 +43,15 @@ import java.util.regex.Pattern;
 @Getter // do not apply generell setters on entities
 @Setter
 @Builder
-//@EntityListeners(AuditingEntityListener.class)
+@EntityListeners(AuditingEntityListener.class)
 public class StatusList {
-//    @Embedded
-//    @Valid
-//    private final AuditMetadata auditMetadata = new AuditMetadata();
+    @Embedded
+    @Valid
+    private final AuditMetadata auditMetadata = new AuditMetadata();
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID(); // Generate the ID manually
 
     @Enumerated(EnumType.STRING)
     @NotNull
@@ -81,9 +81,6 @@ public class StatusList {
      */
     @NotNull
     private Integer maxLength;
-
-//    @OneToMany(mappedBy = "statusList")
-//    private Set<CredentialOfferStatus> offerStatusSet;
 
     public UUID getRegistryId() {
         /**

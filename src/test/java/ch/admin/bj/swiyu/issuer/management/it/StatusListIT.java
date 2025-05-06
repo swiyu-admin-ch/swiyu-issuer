@@ -116,7 +116,6 @@ class StatusListIT {
                 .andReturn();
     }
 
-    // TODO gapa: Fix this test
     @Test
     void createOfferThenGetStatusList_thenSuccess() throws Exception {
 
