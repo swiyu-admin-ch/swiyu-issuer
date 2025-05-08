@@ -86,9 +86,9 @@ application:
     hsm:
       user-pin: "${secret.key.hsm.pin.user:${HSM_USER_PIN:}}"
       # Key identifier or alias, or label when using pkcs11-tool
-      key-id: "${secret.key.hsm.id:${HSM_KEY_ID:}}"
+      key-id: "${secret.key.hsm.id:${HSM_STATUS_KEY_ID:${HSM_KEY_ID:}}}"
       # Optional pin to unlock the key
-      key-pin: "${secret.key.hsm.pin.key:${HSM_KEY_PIN:}}"
+      key-pin: "${secret.key.hsm.pin.key:${HSM_STATUS_KEY_PIN:${HSM_KEY_PIN:}}}"
       # File Path to the HSM config file. For settings see https://docs.oracle.com/en/java/javase/21/security/pkcs11-reference-guide1.html
       pkcs11-config: "${HSM_CONFIG_PATH:}"
 
