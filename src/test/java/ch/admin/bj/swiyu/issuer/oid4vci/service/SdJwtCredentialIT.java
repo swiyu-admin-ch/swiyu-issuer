@@ -14,7 +14,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -41,7 +40,7 @@ class SdJwtCredentialIT {
     @Autowired
     private ApplicationProperties applicationProperties;
 
-    @Mock
+    @Autowired
     private IssuerMetadataTechnical issuerMetadataTechnical;
 
     @Test
@@ -73,7 +72,8 @@ class SdJwtCredentialIT {
 
         // jwt payload - required fields iss-vct-iat
         assertEquals(applicationProperties.getIssuerId(), JsonPath.read(payload, "$.iss"));
-        assertEquals(credentialOffer.getMetadataCredentialSupportedId().getFirst(), JsonPath.read(payload, "$.vct"));
+        var offerMetadataCredentialSupportId = credentialOffer.getMetadataCredentialSupportedId().getFirst();
+        assertEquals(issuerMetadataTechnical.getCredentialConfigurationById(offerMetadataCredentialSupportId).getVct(), JsonPath.read(payload, "$.vct"));
         assertTrue(nonNull(JsonPath.read(payload, "$.iat")));
 
         assertFalse(vc.getContentType().isBlank());

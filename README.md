@@ -19,9 +19,6 @@ issuers internal organization.
 As with all the generic issuance & verification services it is expected that every issuer and verifier hosts their own
 instance of the service.
 
-The issuer management service is linked to the issuer signer services through a database, allowing to scale the signer
-service independently from the management service.
-
 ## Table of Contents
 
 - [Overview](#Overview)
@@ -34,16 +31,14 @@ service independently from the management service.
 ## Overview
 
 ```mermaid
-flowchart TD
+flowchart LR
     issint[\Issuer Business System\]
-    isam(Issuer Management Service)
+    iss(Issuer Agent)
     isdb[(Postgres)]
-    isoi(Issuer Signer Service)
     wallet[Wallet]
-    issint ---> isam
-    isam ---> isdb
-    isoi ---> isdb
-    wallet ---> isoi
+    issint --Internal Network--> iss
+    iss ---> isdb
+    wallet --Web Access--> iss
 ```
 
 # Deployment
@@ -63,9 +58,8 @@ A sample compose file for an entire setup of both components and a database can 
 in [sample.compose.yml](sample.compose.yml) file.
 **Replace all placeholder <VARIABLE_NAME>**.
 
-Please be aware that both the issuer-agent-management and the issuer-agent-oid4vci need to be publicly accessible over
-an domain configured in `EXTERNAL_URL` so that
-a wallet can communicate with them.
+Please be aware that both the issuer-agent needs to be publicly accessible over  a domain configured in `EXTERNAL_URL` 
+so that a wallet can communicate with them.
 
 ## 2. Create a verifiable credentials schema
 
@@ -76,9 +70,10 @@ For further information consult the [Cookbooks](https://swiyu-admin-ch.github.io
 
 ## 3. Initialize the status list
 
-Once the issuer-agent-management, issuer-agent-oid4vci and postgres instance are up and running you need to initialize
-the status
-list of your issuer so that you can issue credentials.
+Once the issuer-agent and postgres instance are up and running you need to initialize the status
+list of your issuer so that you can issue credentials with a status. 
+
+It is possible to issue credentials without status. Be wary though, as these credentials can not be revoked anymore!
 
 **Request to create an status list slot**  
 The url you'll receive in the response will be used in the next request as STATUS_JWT_URL
@@ -92,10 +87,10 @@ curl -X POST https://<SWIYU_STATUS_REGISTRY_API_URL>/api/v1/status/business-enti
 
 ```
 
-The following request needs to be run on your issuer-agent-management instance.
+The following request needs to be run on your issuer-agent instance.
 
 ```bash
-curl -X POST https://<EXTERNAL_URL of issuer-agent-management>/status-list \
+curl -X POST https://<EXTERNAL_URL of issuer-agent>/status-list \
 -H "Content-Type: application/json" \
 -d '{
     "uri": "<STATUS_JWT_URL>",
@@ -110,8 +105,8 @@ curl -X POST https://<EXTERNAL_URL of issuer-agent-management>/status-list \
 
 ## 4. Issue credential
 
-You're now ready to issue credentials by using the issuer-agent-management API which is accessible under
-https://<EXTERNAL_URL of issuer-agent-management>**/swagger-ui/index.html#/Credential%20API/createCredential** to create
+You're now ready to issue credentials by using the issuer-agent API which is accessible under
+https://<EXTERNAL_URL of issuer-agent>**/swagger-ui/index.html#/Credential%20API/createCredential** to create
 a credential offer for a holder. Here is an example of a request body for the offer creation
 
 ```json
@@ -132,15 +127,46 @@ a credential offer for a holder. Here is an example of a request body for the of
 }
 ```
 
+### VCT - verifiable credential type
+A verifiable credential in the sd-jwt vc format has a vct claim. The content of this is set through the issuer metadata for each credential configuration supported entry. The vct can be a string or URL. If it is a URL it should be resolveable to SD-JWT VC Type Metadata.
+When providing a URL, it is recommended to use a subresource integrity [sri](https://developer.mozilla.org/de/docs/Web/Security/Subresource_Integrity) hash.
+The integrity hash is provided with each created credential offer in the offer metadata while issuing the credential.
+The integrity can be calculated using shell commands.
+
+`echo "sha256-$(wget -O- http://localhost:8080/vct/my-vct-v01 | openssl dgst -binary -sha256 | openssl base64 -A)"`
+
+```json
+{
+    "metadata_credential_supported_id": [
+        "myIssuerMetadataCredentialSupportedId"
+    ],
+    "credential_subject_data": {
+        "lastName": "Example",
+        "firstName": "Edward"
+    },
+    "offer_validity_seconds": 86400,
+    "credential_valid_until": "2030-01-01T19:23:24Z",
+    "credential_valid_from": "2010-01-01T18:23:24Z",
+    "status_lists": [
+        "https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt"
+    ],
+    "credential_metadata": {
+        "vct#integrity": "sha256-JXU3403niPeAUi8FN0IX6wfXafrgusykHC1LpKMOO94="
+    }
+}
+```
+
+More details on the vct claim can be found in the [swiss profile](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#sd-jwt-vc) and the latest version of [SD-JWT-based Verifiable Credentials](https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/). For compatibility with other ecosystem participants, please use the adoptions as shown in the swiss profile.
+
 # Development
 
-> Please be aware that this section **focus on the development of the issuer management service**. For the deployment of
+> Please be aware that this section **focus on the development of the issuer agent service**. For the deployment of
 > the
 > component please consult [deployment section](#Deployment).
 
 ## Setup
 
-- Start application IssuerManagementApplication with local profile
+- Start application IssuerApplication with local profile
 
   - Starts docker compose for database
   - Runs Flyway migrations if needed
@@ -203,17 +229,32 @@ On the base registry the public key is published. To generate the public key for
 
 ### Configuration Environment Variables
 
-The Generic Issuer Agent Management is configured using environment variables.
+The Generic Issuer Agent is configured using environment variables.
 
+#### DB Connection
 | Variable                                             | Description                                                                                                                                                                                                                                                                              |
 |:-----------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | POSTGRES_USER                                        | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                                                                                                                                                          |
 | POSTGRES_PASSWORD                                    | Username to connect to the Issuer Agent Database                                                                                                                                                                                                                                         |
 | POSTGRES_JDBC                                        | JDBC Connection string to the shared DB                                                                                                                                                                                                                                                  |
-| EXTERNAL_URL                                         | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet                                                                                                                                                                                           |
-| ISSUER_ID                                            | DID of the Credential Issuer. This will be written to the credential and used during verification                                                                                                                                                                                        |
-| ENABLE_JWT_AUTH                                      | Enables the requirement of writing calls to the issuer management to be signed JWT                                                                                                                                                                                                       |
-| JWKS_ALLOWLIST                                       | When ENABLE_JWT_AUTH is set to true with this property the public keys authorized to perform a writing call can be set as a Json Web Key set according to [RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#appendix-A.1)                                                          |
+
+
+#### Verifiable Credential Issuing
+| Variable                             | Description                                                                                                                                                                                                                                                                              |
+|:-------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| EXTERNAL_URL                         | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet                                                                                                                                                                                           |
+| ISSUER_ID                            | DID of the Credential Issuer. This will be written to the credential and used during verification                                                                                                                                                                                        |
+| CREDENTIAL_OFFER_EXPIRATION_INTERVAL | The interval in which expired offers are cleared from the storage in the [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). The default value is 15min. This should not be confused with the time an offer is actually valid, which is controlled per request |
+| OPENID_CONFIG_FILE                   | JSON file containing the OpenID Connect Configuration of the Issuer. Placeholder replacement is done as described in Config File Placeholders                                    |
+| METADATA_CONFIG_FILE                 | The OID4VCI Metadata as a json. Placeholder replacement is done as described in Config File Placeholders. For details on the OID4VCI Metadata consult the OID4VCI Specification. |
+| SDJWT_KEY (Optional - See HSM)       | The private key used to sign SD-JWT Credentials. The matching public key must be published on the base registry for verification. - Not recommended.                             |
+| DID_SDJWT_VERIFICATION_METHOD        | The full DID with fragment as used to find the public key for sd-jwt VCs in the DID Document. eg: `did:tdw:<base-registry-url>:<issuer_uuid>#<sd-jwt-public-key-fragment>`       |
+
+
+
+#### Status List
+| Variable                                             | Description                                                                                                                                                                                                                                                                              |
+|:-----------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | STATUS_LIST_KEY                                      | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                                                                                                                                                             |
 | DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment                                                                                                                                  |
 | SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                                                                                                                                                          |
@@ -223,23 +264,57 @@ The Generic Issuer Agent Management is configured using environment variables.
 | SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                                                                                                                                                   |
 | SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                                                                                                                                                  |
 | SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal.                                                                                                                                    |
-| CREDENTIAL_OFFER_EXPIRATION_INTERVAL                 | The interval in which expired offers are cleared from the storage in the [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). The default value is 15min. This should not be confused with the time an offer is actually valid, which is controlled per request |
-| MONITORING_BASIC_AUTH_ENABLED                        | Enables basic auth protection of the /actuator/prometheus endpoint. (Default: false)                                                                                                                                                                                                     |
-| MONITORING_BASIC_AUTH_USERNAME                       | Sets the username for the basic auth protection of the /actuator/prometheus endpoint.                                                                                                                                                                                                    |
-| MONITORING_BASIC_AUTH_PASSWORD                       | Sets the password for the basic auth protection of the /actuator/prometheus endpoint.                                                                                                                                                                                                    |
 
-### Kubernetes Vault Keys
+
+#### Monitoring
+| Variable                       | Description                                                                                                                                                                                                                                                                              |
+|:-------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| MONITORING_BASIC_AUTH_ENABLED  | Enables basic auth protection of the /actuator/prometheus endpoint. (Default: false)                                                                                                                                                                                                     |
+| MONITORING_BASIC_AUTH_USERNAME | Sets the username for the basic auth protection of the /actuator/prometheus endpoint.                                                                                                                                                                                                    |
+| MONITORING_BASIC_AUTH_PASSWORD | Sets the password for the basic auth protection of the /actuator/prometheus endpoint.                                                                                                                                                                                                    |
+
+
+#### JWT Based Data Integrity
+If there is the need to further protect the API / Data Integrity it is possible to enable the feature with a flag and
+set the environment variables with the allowed public key as a JSON Web Key Set
+
+| Variable                  | Description                                                                                                                                                                                                                     |
+|:--------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ENABLE_JWT_AUTH           | Enables the requirement of writing calls to the issuer agent to be signed JWT                                                                                                                                                       |
+| JWKS_ALLOWLIST (Optional) | When ENABLE_JWT_AUTH is set to true with this property the public keys authorized to perform a writing call can be set as a Json Web Key set according to [RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#appendix-A.1) |
+
+
+```
+    ENABLE_JWT_AUTH=true
+    JWKS_ALLOWLIST={"keys":[{"kty":"EC","crv":"P-256","kid":"testkey","x":"_gHQsZT-CB_KvIfpvJsDxVSXkuwRJsuof-oMihcupQU","y":"71y_zEPAglUXBghaBxypTAzlNx57KNY9lv8LTbPkmZA"}]}
+```
+
+If the JWT based authentication is activated it's expected to all in calls be wrapped in a signed JWT with the claim "
+data".
+The value of the data claim will contain the full json body of the normal request.
+
+Note that this is only affects writing calls.
+
+#### Data Integrity Check
+
+To provide a data integrity check with the issuer it is possible to provide the credential subject data as JWT.
+
+See [CredentialOfferCreateJWTIT.java](src/test/java/ch/admin/bj/swiyu/issuer/management/it/CredentialOfferCreateJwtIT.java)
+for examples on how to use.
+
+#### Kubernetes Vault Keys
 
 | Variable                                             | Description                                                                                                                                           |
 |------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
 | secret.db.username                                   | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                       |
 | secret.db.password                                   | Username to connect to the Issuer Agent Database                                                                                                      |
+| secret.key.sdjwt.key                                 | Private Key used to sign jwt_vc / SD-JWT Verifiable Credentials                                                                                       |
 | secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                          |
 | secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self managment portal.                                   |
 | secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                |
 | secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal. |
 
-### HSM - Hardware Security Module
+#### HSM - Hardware Security Module
 
 For operations with an HSM, the keys need not be mounted directly into the environment running this application.
 Instead, a connection is created to the HSM via JCA. This can be with
@@ -259,8 +334,80 @@ Note that for creating the keys it is expected that the public key is provided a
 | HSM_USER_PIN                  | For some proprietary providers required pin                                                                                                                                                |
 | HSM_KEY_ID                    | Key identifier or alias, or label when using pkcs11-tool                                                                                                                                   |
 | HSM_KEY_PIN                   | Optional pin to unlock the key                                                                                                                                                             |
+| HSM_STATUS_KEY_ID             | Key identifier or alias, or label when using pkcs11-tool for status list key. If not set will use HSM_KEY_ID                                                                               |
+| HSM_STATUS_KEY_PIN            | Optional pin to unlock the status list key. If not set will use HSM_KEY_PIN                                                                                                                |
 | HSM_CONFIG_PATH               | File Path to the HSM config file when using [Sun PKCS11 provider](https://docs.oracle.com/en/java/javase/22/security/pkcs11-reference-guide1.html)                                         |
 | HSM_USER_PIN                  | PIN for getting keys from the HSM                                                                                                                                                          |
+
+#### Config File Templating
+
+The content of the metadata json files, among these METADATA_CONFIG_FILE and OPENID_CONFIG_FILE can be annotated with
+template values.
+By default, the external-url can be always used.
+
+```
+{
+  "issuer": "${external-url}",
+  "token_endpoint": "${external-url}/token"
+}
+```
+
+Using Spring environment variables arbitrary environment variables can be used for the templating.
+
+Let's say we want to add a prefix to the display name for your VC depending on the environment your issuer runs on.
+This can be achieved by adding in a template value, which is in essence an arbitrary string decorated by ${}.
+In this case we choose "stage". The environment variables are all in caps.
+See
+the [official Spring documentation](https://docs.spring.io/spring-boot/docs/2.6.1/reference/html/features.html#features.external-config.typesafe-configuration-properties.relaxed-binding.environment-variables)
+for further information.
+
+```
+...
+      "display": [
+        {
+          "name": "${stage}MyCredential",
+...
+```
+
+In our deployment we can set the value by adding in the environment variable
+`APPLICATION_TEMPLATEREPLACEMENT_STAGE=dev-`
+
+
+#### Allowed Issuer Metadata config values
+
+> The paths specified below are referring to the json structure of the credential issuer metadata as specified in
+> the [OpenID4VCI sepcificiation](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#section-11.2.3)
+
+| Config path                                                                   | Allowed values                                                   | Required | Comment                                                   |
+|-------------------------------------------------------------------------------|------------------------------------------------------------------|----------|-----------------------------------------------------------|
+| credential_response_encryption.alg_values_supported                           | ["RSA-OAEP-256","ECDH-ES+A128KW"]                                | Yes      |                                                           |
+| credential_response_encryption.enc_values_supported                           | ["A128CBC-HS256"]                                                | Yes      |                                                           |
+| version                                                                       | "1.0"                                                            | Yes      |                                                           |
+| credential_configurations_supported.*.format                                  | "vc+sd-jwt"                                                      | Yes      |                                                           |
+| credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256"]                                                        | Yes      |                                                           |
+| credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256"]} ``` | No       | When set only the exact object shown as sample is allowed |
+| credential_configurations_supported.*.cryptographic_binding_methods_supported | ["did:jwk"]                                                      | No       |                                                           |
+
+#### VC Metadata provisioning
+
+In some simpler deployments no content delivery network is available to provide credential metadata for things like
+vct (verifiable credential type), json schemas or overlays capture architecture. In this case the desired files can be
+mounted in similar fashion to the issuer metadata.
+A significant difference is though that the file locations are specified ad-hoc with spring environment variables as
+documented in [Config File Templating](#config-file-templating)
+
+Placeholders in these files will be replaced as well.
+
+| Variable Map                                          | Destination                |
+|-------------------------------------------------------|----------------------------|
+| APPLICATION_VCTMETADATAFILES_                         | $EXTERNAL_URL/vct/         |
+| APPLICATION_JSONSCHEMAMETADATAFILES_                  | $EXTERNAL_URL/json-schema/ |
+| APPLICATION_OVERLAYSCAPTUREARCHITECTUREMETADATAFILES_ | $EXTERNAL_URL/oca/         |
+
+For example we could use the file `/cfg-files/vct-test.json` by setting
+`APPLICATION_VCTMETADATAFILES_TESTV1=file:/cfg-files/vct-test.json`.
+The content of vct-test.json will then be available at `$EXTERNAL_URL/vct/testv1`
+
 
 ## Data Structure
 
@@ -303,8 +450,8 @@ erDiagram
 ```
 
 Note: Status List info comes from config and are populated to the DB the first time a Credential uses the status.
-ID of the credential offer is also the id used by the issuer adapter (the component communicating with the issuer agent
-management) to revoke the credential. It is returned when a new offer is created. It's recommended to save this id to
+ID of the credential offer is also the id used by the issuer adapter (the component communicating with the issuer agent)
+to revoke the credential. It is returned when a new offer is created. It's recommended to save this id to
 revoke the credential later on.
 
 ## Credential flows
@@ -313,107 +460,85 @@ revoke the credential later on.
 sequenceDiagram
     actor BUSINESS as Business Issuer 
 
-    participant MGMT as Issuer Agent Management
-    participant DB as Issuer db
+    participant ISS as Issuer Agent
+    participant DB as Issuer DB
     participant STATUS as Status Registry
-    participant SIGNER as Issuer Agent OID4VCI
 
     actor WALLET as Holder
 
     # Create offer
-    BUSINESS->>+MGMT: Create offer
-    MGMT->>+STATUS: Create status list entry
-    STATUS->>-MGMT: 
-    MGMT->>+DB : Store offer
-    DB-->>-MGMT : 
-    MGMT-->>-BUSINESS : Return offer details (incl. deeplink)
+    BUSINESS->>+ISS: Create offer
+    ISS->>+STATUS: Create status list entry
+    STATUS->>-ISS: 
+    ISS->>+DB : Store offer
+    DB-->>-ISS : 
+    ISS-->>-BUSINESS : Return offer details (incl. deeplink)
 
     # Pass deeplink to WALLET
     BUSINESS-->>+WALLET : Pass deeplink to wallet
     Note over BUSINESS,WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
 
     loop Status check
-        BUSINESS->>+MGMT: Get status
-        MGMT-->>-BUSINESS : 
+        BUSINESS->>+ISS: Get status
+        ISS-->>-BUSINESS : 
     end
 
     # Get credential
-    WALLET->>+SIGNER : Get openid metadata
-    SIGNER-->>-WALLET : 
+    WALLET->>+ISS : Get openid metadata
+    ISS-->>-WALLET : 
 
-    WALLET->>+SIGNER : Get issuer metadata
-    SIGNER-->>-WALLET : 
+    WALLET->>+ISS : Get issuer metadata
+    ISS-->>-WALLET : 
 
-    WALLET->>+SIGNER : Get oauth token
-    SIGNER-->>-WALLET : Oauth token
+    WALLET->>+ISS : Get oauth token
+    ISS-->>-WALLET : Oauth token
 
     alt Deferred = true
-        WALLET->>+SIGNER : Redeem offer
-        SIGNER->>+DB : Get offer data and status list INFO
-        DB-->-SIGNER : 
-        SIGNER->>+DB : Set STATUS = Deferred
-        DB-->-SIGNER : 
-        SIGNER-->>-WALLET : Transaction id
+        WALLET->>+ISS : Redeem offer
+        ISS->>+DB : Get offer data and status list INFO
+        DB-->-ISS : 
+        ISS->>+DB : Set STATUS = Deferred
+        DB-->-ISS : 
+        ISS-->>-WALLET : Transaction id
 
         loop get status
-            BUSINESS->>+MGMT: Get status
-            MGMT-->>-BUSINESS : Status
+            BUSINESS->>+ISS: Get status
+            ISS-->>-BUSINESS : Status
 
             alt STATUS is Deferred
                 BUSINESS->>BUSINESS : Some additional process
-                BUSINESS->>+MGMT : Set status READY
-                MGMT->>DB : Store offer
-                MGMT-->>-BUSINESS : 
+                BUSINESS->>+ISS : Set status READY
+                ISS->>DB : Store offer
+                ISS-->>-BUSINESS : 
             end
         end
 
         loop Get deferred credential
             alt STATUS is not READY
-                WALLET->>+SIGNER: Get credential from deferred_credential
-                SIGNER->>+DB : Get offer data and status list INF
-                DB-->-SIGNER : 
-                SIGNER-->>-WALLET : issuance_pending
+                WALLET->>+ISS: Get credential from deferred_credential
+                ISS->>+DB : Get offer data and status list INF
+                DB-->-ISS : 
+                ISS-->>-WALLET : issuance_pending
             else
-                WALLET->>+SIGNER: Get credential from deferred_credential
-                SIGNER->>+DB : Get offer data and status list INFO
-                DB-->-SIGNER : 
-                SIGNER-->>-WALLET : VC
+                WALLET->>+ISS: Get credential from deferred_credential
+                ISS->>+DB : Get offer data and status list INFO
+                DB-->-ISS : 
+                ISS-->>-WALLET : VC
             end
         end
     else 
-        WALLET->>+SIGNER: Get credential
-        SIGNER->>+DB : Get offer data and status list INFO
-        SIGNER-->>-WALLET : VC
+        WALLET->>+ISS: Get credential
+        ISS->>+DB : Get offer data and status list INFO
+        ISS-->>-WALLET : VC
     end
 
     loop STATUS is ISSUED
-        BUSINESS->>+MGMT: Get status
-        MGMT->>+DB : Remove offer data
-        MGMT-->>-BUSINESS : Status
+        BUSINESS->>+ISS: Get status
+        ISS->>+DB : Remove offer data
+        ISS-->>-BUSINESS : Status
     end
 
 ```
-
-### JWT Based Authentication
-
-If there is the need to further protect the API it is possible to enable the feature with a flag and
-set the environment variables with the allowed public key as a JSON Web Key Set
-
-    ENABLE_JWT_AUTH=true
-    JWKS_ALLOWLIST={"keys":[{"kty":"EC","crv":"P-256","kid":"testkey","x":"_gHQsZT-CB_KvIfpvJsDxVSXkuwRJsuof-oMihcupQU","y":"71y_zEPAglUXBghaBxypTAzlNx57KNY9lv8LTbPkmZA"}]}
-
-If the JWT based authentication is activated it's expected to all in calls be wrapped in a signed JWT with the claim "
-data".
-The value of the data claim will contain the full json body of the normal request.
-
-Note that this is only affects writing calls.
-
-### Data Integrity Check
-
-To provide a data integrity check with the issuer it is possible to provide the credential subject data as JWT.
-
-See [CredentialOfferCreateJWTIT.java](src/test/java/ch/admin/bj/swiyu/issuer/management/it/CredentialOfferCreateJwtIT.java)
-for examples on how to use.
 
 ## Credential Status
 
@@ -438,7 +563,7 @@ stateDiagram-v2
     fork_state --> join_state : Non-deferred flow
     IN_PROGRESS --> EXPIRED : Can expire on status (OFFERED, IN_PROGRESS, DEFERRED, READY)
     EXPIRED --> [*]
-    DEFERRED --> READY : Status READY must be set by issuer-agent-management
+    DEFERRED --> READY : Status READY must be set by the business issuer
     READY --> join_state
     join_state --> ISSUED
     ISSUED --> SUSPENDED
@@ -458,7 +583,7 @@ For access to the swiyu api you need a refresh token along with your other crede
 environment variables for further details.
 
 The refresh token can only be used one time, but dont worry: the application does manage the refresh tokens itself.  
-But if your issuer agent management component does not run for over a week it might be possible that the refresh token
+But if your issuer agent component does not run for over a week it might be possible that the refresh token
 saved in the database is no longer valid and cannot be used to start the api auth flow.  
 If this is the case you need to manually create a new refresh token in the api self service portal and bootstrap your
 issuer agent managment component with this token.  
