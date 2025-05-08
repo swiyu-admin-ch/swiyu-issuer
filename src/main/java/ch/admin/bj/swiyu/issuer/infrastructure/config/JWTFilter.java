@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.infrastructure.security;
+package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.JWTResolveRequestWrapper;
@@ -16,7 +16,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -26,7 +25,6 @@ import java.io.IOException;
  * It is only activate if enable-jwt-authentication is set to true.
  * GET Requests - which have no content - are excluded from this.
  */
-@Component
 @Slf4j
 @AllArgsConstructor
 public class JWTFilter implements Filter {
