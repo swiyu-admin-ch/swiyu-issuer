@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
@@ -23,7 +24,7 @@ public class CredentialFormatFactory {
     private final IssuerMetadataTechnical issuerMetadata;
     private final DataIntegrityService dataIntegrityService;
     private final SdjwtProperties sdjwtProperties;
-    private final JWSSigner signer;
+    private final SignatureService signatureService;
     private final StatusListRepository statusListRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
 
@@ -40,8 +41,13 @@ public class CredentialFormatFactory {
         }
 
         return switch (configuration.getFormat()) {
-            case "vc+sd-jwt" ->
-                    new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, signer, statusListRepository, credentialOfferStatusRepository);
+            case "vc+sd-jwt" -> {
+                try {
+                    yield new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, signatureService.defaultSigner(sdjwtProperties), statusListRepository, credentialOfferStatusRepository);
+                } catch (Exception e) {
+                    throw new ConfigurationException("Signing Key Configuration could not be used for signature",e);
+                }
+            }
             default -> throw new IllegalArgumentException("Unknown format: " + configuration.getFormat());
         };
     }

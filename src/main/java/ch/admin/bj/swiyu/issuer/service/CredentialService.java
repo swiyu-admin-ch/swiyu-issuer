@@ -67,7 +67,6 @@ public class CredentialService {
     private final IssuerMetadataTechnical issuerMetadata;
     private final CredentialFormatFactory vcFormatFactory;
     private final ApplicationProperties applicationProperties;
-    private final JWSSigner signer;
     private final OpenIdIssuerConfiguration openIDConfiguration;
 
     @Transactional // not readonly since expired credentails gets updated here automatically

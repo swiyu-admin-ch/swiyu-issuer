@@ -30,7 +30,6 @@ import static java.util.Objects.nonNull;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@ActiveProfiles("test")
 class SdJwtCredentialIT {
 
     private final UUID preAuthCode = UUID.randomUUID();

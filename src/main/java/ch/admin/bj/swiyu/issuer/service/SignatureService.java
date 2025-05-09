@@ -1,19 +1,13 @@
-/*
- * SPDX-FileCopyrightText: 2025 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
+package ch.admin.bj.swiyu.issuer.service;
 
-package ch.admin.bj.swiyu.issuer.common.config;
-
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.bc.BouncyCastleProviderSingleton;
 import com.nimbusds.jose.jwk.ECKey;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,33 +17,21 @@ import java.security.Provider;
 import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 
-/**
- * Configures a JWS Singer. Used in Issuer management, OID4VCI and Verifier OID4VP
- */
-@Configuration
-@RequiredArgsConstructor
-public class SignerConfig {
-
-    // TODO gapa: StatusListProperties is the same as sdjwtProperties, should be merged!
-    private final StatusListProperties statusListProperties;
-
-    /**
-     * @return A Signing Provider used to sign JWTs.
-     * @throws Exception if the SigningProvider can not be created.
-     */
-    @Bean
-    public JWSSigner defaultSigner() throws Exception {
-        return switch (statusListProperties.getKeyManagementMethod()) {
+@Service
+public class SignatureService {
+    @Cacheable("jwsSigner")
+    public JWSSigner defaultSigner(SignatureConfiguration signatureConfiguration) throws Exception {
+        return switch (signatureConfiguration.getKeyManagementMethod()) {
             case "key" ->
                 // We are currently only supporting EC Keys
-                    fromEC(ECKey.parseFromPEMEncodedObjects(statusListProperties.getPrivateKey()).toECKey());
+                    fromEC(ECKey.parseFromPEMEncodedObjects(signatureConfiguration.getPrivateKey()).toECKey());
 
             case "pkcs11" -> {
-                Provider provider = Security.getProvider("SunPKCS11").configure(statusListProperties.getHsm().getPkcs11Config());
+                Provider provider = Security.getProvider("SunPKCS11").configure(signatureConfiguration.getHsm().getPkcs11Config());
                 Security.addProvider(provider);
                 var hsmKeyStore = KeyStore.getInstance("PKCS11", provider);
-                hsmKeyStore.load(null, statusListProperties.getHsm().getUserPin().toCharArray());
-                var privateKey = ECKey.load(hsmKeyStore, statusListProperties.getHsm().getKeyId(), statusListProperties.getHsm().getUserPin().toCharArray());
+                hsmKeyStore.load(null, signatureConfiguration.getHsm().getUserPin().toCharArray());
+                var privateKey = ECKey.load(hsmKeyStore, signatureConfiguration.getHsm().getKeyId(), signatureConfiguration.getHsm().getUserPin().toCharArray());
 
                 yield fromEC(privateKey, provider);
             }
@@ -60,7 +42,7 @@ public class SignerConfig {
                 final var baos = new ByteArrayOutputStream();
                 // Create ad-hoc configuration
                 (new PrintStream(baos)).println(
-                        statusListProperties.getHsm().getSecurosysStringConfig()
+                        signatureConfiguration.getHsm().getSecurosysStringConfig()
                 );
                 final var bais = new ByteArrayInputStream(baos.toByteArray());
                 final var provider = (Provider) Class.forName("com.securosys.primus.jce.PrimusProvider").getDeclaredConstructor().newInstance();
@@ -70,11 +52,11 @@ public class SignerConfig {
                 hsmKeyStore.load(bais, null);
 
                 // Loading the ECKey does not work for securosys provider, it does things different than expected by nimbus
-                var privateKey = (ECPrivateKey) hsmKeyStore.getKey(statusListProperties.getHsm().getKeyId(), statusListProperties.getHsm().getUserPin().toCharArray());
+                var privateKey = (ECPrivateKey) hsmKeyStore.getKey(signatureConfiguration.getHsm().getKeyId(), signatureConfiguration.getHsm().getUserPin().toCharArray());
                 yield fromEC(privateKey, provider);
             }
             default ->
-                    throw new IllegalArgumentException(String.format("Key management method \"%s\" not supported", statusListProperties.getKeyManagementMethod()));
+                    throw new IllegalArgumentException(String.format("Key management method \"%s\" not supported", signatureConfiguration.getKeyManagementMethod()));
 
         };
     }

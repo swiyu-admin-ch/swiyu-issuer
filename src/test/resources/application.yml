@@ -21,8 +21,16 @@ application:
   issuer-id: "did:tdw:example"
   external-url: "http://localhost:8080/test/"
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
+  template-replacement:
+    external-url: "http://localhost:8080"
+    stage: "local-"
   status-list:
-    private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
+    private-key: |
+      -----BEGIN EC PRIVATE KEY-----
+      MHcCAQEEIMUIbiziNKtPQFlCeZUgcvM22GPN9rqlsT1mluTDRI0aoAoGCCqGSM49
+      AwEHoUQDQgAEm38isThXK8WxACgw4ycYrwY2OLWvOYWm96utBFwhBhnXOpdFb4e8
+      +QzpPS7/vMQCX/EZvgDbEXrv/fC5W8M9YQ==
+      -----END EC PRIVATE KEY-----
     verification-method: "did:tdw:example#12345"
     key-management-method: "key"
     status-list-size-limit: 204800 # 200KiB
@@ -39,6 +47,11 @@ application:
     my-oca-v01: "classpath:example_oca.json"
   json-schema-metadata-files:
     my-schema-v01: "classpath:example_json_schema.json"
+  key:
+    sdjwt:
+      key-management-method: "key"
+      private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
+      verification-method: "did:example:localhost%3A8080:abcabc#sdjwt"
 swiyu:
   status-registry:
     api-url: "https://irrelevant.as.all.interaction.are.mocked"
@@ -53,3 +66,5 @@ swiyu:
 monitoring:
   basic-auth:
     enabled: false
+http:
+  max-redirects: 5

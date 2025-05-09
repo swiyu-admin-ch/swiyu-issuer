@@ -44,7 +44,7 @@ public class StatusListService {
     private final StatusRegistryClient statusRegistryClient;
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
-    private final JWSSigner signer;
+    private final SignatureService signatureService;
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
@@ -178,8 +178,8 @@ public class StatusListService {
         SignedJWT statusListJWT = buildStatusListJWT(statusListEntity, token);
 
         try {
-            statusListJWT.sign(signer);
-        } catch (JOSEException e) {
+            statusListJWT.sign(signatureService.defaultSigner(statusListProperties));
+        } catch (Exception e) {
             log.error("Failed to sign status list JWT with the provided key.", e);
             throw new ConfigurationException("Failed to sign status list JWT with the provided key.");
         }
