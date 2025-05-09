@@ -74,7 +74,6 @@ class IssuanceControllerIT {
     @BeforeEach
     void setUp() throws JOSEException {
         var statusList = createStatusList();
-//        statusListRepository.save(statusList);
         var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
         saveStatusListLinkedOffer(offer, statusList);
         offerId = offer.getId();
