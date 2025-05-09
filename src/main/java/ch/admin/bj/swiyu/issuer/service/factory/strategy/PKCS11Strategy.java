@@ -10,8 +10,10 @@ import java.security.Provider;
 import java.security.Security;
 
 /**
- * This strategy is used for the PKCS11 HSM. It requires the key to be created together with a self-signed certificate.
- * The key must be imported into the HSM using the PKCS11 standart.
+ * This strategy is used for a PKCS #11 (Cryptoki) connection to an HSM.
+ * A pkcs11 module (implementation for how the hardware is to be used) and configuration
+ * (settings of this implementation) must be provided va pkcs11Config. These two things are vendor specific.
+ * It requires the key to be available together with a self-signed certificate on the HSM.
  */
 @Component("pkcs11")
 public class PKCS11Strategy implements IKeyManagementStrategy {

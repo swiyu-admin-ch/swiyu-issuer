@@ -14,7 +14,8 @@ import java.security.interfaces.ECPrivateKey;
 
 /**
  * This strategy is used for the Securosys HSM. It requires the key to be created together with a self-signed certificate.
- * The key must be imported into the HSM using the Primus tools.
+ * The connection to the HSM is made through Primus JCA/JCE.
+ * The key must be created in or imported into the HSM using the Primus tools.
  * <p>
  * See https://docs.securosys.com/primus-tools/Use-Cases/certificate-sign-request
  */
