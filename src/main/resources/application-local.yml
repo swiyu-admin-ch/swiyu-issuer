@@ -27,8 +27,6 @@ springdoc:
 application:
   external-url: "http://localhost:8080/"
   offer-validity: 2592000 # 60 * 60 * 24 * 30 => 30 days;
-  status-list:
-    private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
   issuer-id: "did:example:123456789"
   token-ttl: 600
   #  openid-file: "file:///data/example_openid.json"
@@ -44,6 +42,17 @@ application:
   json-schema-metadata-files:
     my-schema-v01: "classpath:example_json_schema.json"
 
+  status-list:
+    private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
+    verification-method: "did:example:123456789#example-method"
+  key:
+    sdjwt:
+      private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIAs0WyAxFdOvqYML8t2Zy0otWO93eXnR5X1fa09hI6mDoAoGCCqGSM49\nAwEHoUQDQgAEJCe2BrwmpvMHw/J+hx6dGKCtRtv+X5fk8NNCXSSHr9owdxOyIaz9\nplC4UblhP2d7rIi52L4LKqEhp6cliJ5xuw==\n-----END EC PRIVATE KEY-----\n"
+      verification-method: "did:example:123456789#example-method"
+  template-replacement:
+    external-url: "http://localhost:8080"
+
+
 swiyu:
   status-registry:
     api-url: "https://status-reg-api-r.trust-infra.swiyu.admin.ch"
@@ -55,9 +64,3 @@ swiyu:
     customer-key: "customer-key"
     customer-secret: "customer-secret"
   business-partner-id: "0212063f-7bf6-4639-b4f2-4c482ee453cf"
-
-  key:
-    sdjwt:
-      private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIAs0WyAxFdOvqYML8t2Zy0otWO93eXnR5X1fa09hI6mDoAoGCCqGSM49\nAwEHoUQDQgAEJCe2BrwmpvMHw/J+hx6dGKCtRtv+X5fk8NNCXSSHr9owdxOyIaz9\nplC4UblhP2d7rIi52L4LKqEhp6cliJ5xuw==\n-----END EC PRIVATE KEY-----\n"
-  template-replacement:
-    external-url: "http://localhost:8080"

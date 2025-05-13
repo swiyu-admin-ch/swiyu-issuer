@@ -6,6 +6,9 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
+- name: Well-known endpoints
+  description: OpenID .well-known endpoints for issuer configuration and credentials
+    API
 - name: Credential
   description: Credential Management API
 - name: Status List
@@ -15,7 +18,38 @@ tags:
   externalDocs:
     description: Spring Boot Actuator Web API Documentation
     url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
+- name: Issuer OID4VCI
+  description: OpenID for Verifiable Credential Issuance API
+- name: Credential Metadata
+  description: Metadata for Verifiable Credentials
 paths:
+  /api/v1/token:
+    post:
+      tags:
+      - Issuer OID4VCI
+      summary: Collect Bearer token with pre-authorized code
+      operationId: oauthAccessToken
+      parameters:
+      - name: grant_type
+        in: query
+        required: false
+        schema:
+          type: string
+          default: urn:ietf:params:oauth:grant-type:pre-authorized_code
+      - name: pre-authorized_code
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthToken"
   /api/v1/status-list:
     post:
       tags:
@@ -32,12 +66,45 @@ paths:
               $ref: "#/components/schemas/StatusListCreate"
         required: true
       responses:
+        "404":
+          description: Not Found
         "200":
           description: OK
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/StatusList"
+  /api/v1/deferred_credential:
+    post:
+      tags:
+      - Issuer OID4VCI
+      summary: Collect credential associated with the bearer token and the transaction
+        id. This endpoint is used for deferred issuance.
+      operationId: createDeferredCredential
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeferredCredentialRequest"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+            application/jwt:
+              schema:
+                type: string
   /api/v1/credentials:
     post:
       tags:
@@ -56,6 +123,8 @@ paths:
               $ref: "#/components/schemas/CreateCredentialRequest"
         required: true
       responses:
+        "404":
+          description: Not Found
         "200":
           description: Credential offer created
           content:
@@ -69,6 +138,37 @@ paths:
             '*/*':
               schema:
                 type: object
+  /api/v1/credential:
+    post:
+      tags:
+      - Issuer OID4VCI
+      summary: Collect credential associated with the bearer token with the requested
+        credential properties.
+      operationId: createCredential_1
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialRequest"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+            application/jwt:
+              schema:
+                type: string
   /api/v1/credentials/{credentialId}/status:
     get:
       tags:
@@ -84,6 +184,8 @@ paths:
           type: string
           format: uuid
       responses:
+        "404":
+          description: Not Found
         "200":
           description: OK
           content:
@@ -109,12 +211,74 @@ paths:
         schema:
           $ref: "#/components/schemas/UpdateCredentialStatusRequestType"
       responses:
+        "404":
+          description: Not Found
         "200":
           description: OK
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UpdateStatusResponse"
+  /vct/{metadataKey}:
+    get:
+      tags:
+      - Credential Metadata
+      operationId: getCredentialTypeMetadata
+      parameters:
+      - name: metadataKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /oca/{ocaKey}:
+    get:
+      tags:
+      - Credential Metadata
+      operationId: getOverlaysCaptureArchitecture
+      parameters:
+      - name: ocaKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+  /json-schema/{schemaKey}:
+    get:
+      tags:
+      - Credential Metadata
+      operationId: getJsonSchema
+      parameters:
+      - name: schemaKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/schema+json:
+              schema:
+                type: string
   /api/v1/status-list/{statusListId}:
     get:
       tags:
@@ -129,6 +293,8 @@ paths:
           type: string
           format: uuid
       responses:
+        "404":
+          description: Not Found
         "200":
           description: OK
           content:
@@ -149,6 +315,8 @@ paths:
           type: string
           format: uuid
       responses:
+        "404":
+          description: Not Found
         "200":
           description: Credential offer found
           content:
@@ -177,6 +345,12 @@ paths:
           type: string
           format: uuid
       responses:
+        "404":
+          description: Offer not found or already expired
+          content:
+            '*/*':
+              schema:
+                type: object
         "200":
           description: Offer deeplink found
           content:
@@ -188,12 +362,6 @@ paths:
                   summary: Example of a deeplink
                   description: Offer deeplink
                   value: swiyu://?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22b614c966-0c1d-4636-9aec-e2496d242d25%22%7D%7D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fissuer-agent-oid4vci-d.bit.admin.ch%22%2C%22credential_configuration_ids%22%3A%5B%22myIssuerMetadataCredentialSupportedId%22%5D%7D
-        "404":
-          description: Offer not found or already expired
-          content:
-            '*/*':
-              schema:
-                type: object
   /actuator:
     get:
       tags:
@@ -201,6 +369,8 @@ paths:
       summary: Actuator root web endpoint
       operationId: links
       responses:
+        "404":
+          description: Not Found
         "200":
           description: OK
           content:
@@ -245,6 +415,8 @@ paths:
         schema:
           type: string
       responses:
+        "404":
+          description: Not Found
         "200":
           description: OK
           content:
@@ -264,6 +436,8 @@ paths:
       summary: Actuator web endpoint 'info'
       operationId: info
       responses:
+        "404":
+          description: Not Found
         "200":
           description: OK
           content:
@@ -283,6 +457,8 @@ paths:
       summary: Actuator web endpoint 'health'
       operationId: health
       responses:
+        "404":
+          description: Not Found
         "200":
           description: OK
           content:
@@ -295,8 +471,58 @@ paths:
             application/json:
               schema:
                 type: object
+  /.well-known/openid-credential-issuer:
+    get:
+      tags:
+      - Well-known endpoints
+      summary: Information about credentials which can be issued.
+      operationId: getIssuerMetadata
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+  /.well-known/openid-configuration:
+    get:
+      tags:
+      - Well-known endpoints
+      summary: OpenID Connect information required for issuing VCs
+      operationId: getOpenIDConfiguration
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OpenIdConfiguration"
 components:
   schemas:
+    OAuthToken:
+      required:
+      - access_token
+      type: object
+      properties:
+        token_type:
+          type: string
+        refresh_token:
+          type: string
+        scope:
+          type: string
+        access_token:
+          type: string
+        expires_in:
+          type: integer
+          format: int64
+        c_nonce:
+          type: string
     StatusListCreate:
       required:
       - config
@@ -397,6 +623,22 @@ components:
                  for a bit string status list for suspension
           example:
             bits: 2
+    DeferredCredentialRequest:
+      required:
+      - transaction_id
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          description: Id received from the create credential request for the deferred
+            flow.
+          format: uuid
+        proof:
+          type: object
+          additionalProperties:
+            type: object
+            description: Proof for holder binding. Can be in key:did or cnf format.
+          description: Proof for holder binding. Can be in key:did or cnf format.
     CredentialWithDeeplinkResponse:
       type: object
       properties:
@@ -468,6 +710,37 @@ components:
           items:
             type: string
       description: Initial credential creation request to start the offering process.
+    CredentialRequest:
+      required:
+      - format
+      type: object
+      properties:
+        format:
+          pattern: ^vc\+sd-jwt$
+          type: string
+        proof:
+          type: object
+          additionalProperties:
+            type: object
+            description: Proof for holder binding. Can be in key:did or cnf format.
+          description: Proof for holder binding. Can be in key:did or cnf format.
+        credential_response_encryption:
+          $ref: "#/components/schemas/CredentialResponseEncryption"
+    CredentialResponseEncryption:
+      required:
+      - alg
+      - enc
+      - jwk
+      type: object
+      properties:
+        jwk:
+          type: object
+          additionalProperties:
+            type: object
+        alg:
+          type: string
+        enc:
+          type: string
     UpdateCredentialStatusRequestType:
       type: string
       description: |2
@@ -527,3 +800,10 @@ components:
           type: string
         templated:
           type: boolean
+    OpenIdConfiguration:
+      type: object
+      properties:
+        issuer:
+          type: string
+        token_endpoint:
+          type: string
