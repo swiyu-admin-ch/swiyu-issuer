@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.0.1
 
-### Changed
+### Fixed
 
 - Fix status code when jwt filter criteria are not met from a 500 to 401.
 
