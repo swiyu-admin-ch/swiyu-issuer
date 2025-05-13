@@ -88,6 +88,30 @@ class CredentialOfferCreateJwtIT {
         assert resp.getResponse().getContentAsString().equals(offerData);
     }
 
+    @Test
+    void createOfferWithoutJwt() throws Exception {
+        // This offerData is the data we want to offer in the Verifiable Credential
+        String offerData = """
+                {
+                    "lastName": "Example",
+                    "firstName": "Edward",
+                    "dateOfBirth": "1.1.1970"
+                  }""";
+        // We add the data to the other parts needed for offering a credential
+        String jsonPayload = String.format("""
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": %s,
+                  "offer_validity_seconds": 36000
+                }
+                """, offerData);
+
+        mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isUnauthorized());
+    }
+
     private MvcResult testJWTCreateOffer(String jsonPayload) throws Exception {
         ECKey ecJWK = ECKey.parse(ApplicationIT.privateKey);
         JWTClaimsSet claims = new JWTClaimsSet.Builder().claim("data", jsonPayload).build();
