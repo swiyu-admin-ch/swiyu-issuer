@@ -35,6 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SdJwtCredential extends CredentialBuilder {
 
+    public static final List<String> SDJWT_PROTECTED_CLAIMS = List.of("iss", "nbf", "exp", "iat", "cnf", "vct", "status", "_sd", "_sd_alg", "sd_hash", "...");
+
     private final SdjwtProperties sdjwtProperties;
 
 
@@ -83,17 +85,17 @@ public class SdJwtCredential extends CredentialBuilder {
         for (Map.Entry<String, Object> statusEntry : getStatusReferences().entrySet()) {
             builder.putClaim(statusEntry.getKey(), statusEntry.getValue());
         }
-        // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
-        // Registered JWT claims MUST be included not as always disclosed
-        // sub & iat may explicitly be selectively disclosed
-        var protectedClaims = List.of("iss", "nbf", "exp", "iat", "cnf", "vct", "status");
 
 
         // Optional claims as disclosures
         // Code below follows example from https://github.com/authlete/sd-jwt?tab=readme-ov-file#credential-jwt
         List<Disclosure> disclosures = new ArrayList<>();
         for (var entry : getOfferData().entrySet()) {
-            if (protectedClaims.contains(entry.getKey())) {
+
+            // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
+            // Registered JWT claims MUST be included not as always disclosed
+            // sub & iat may explicitly be selectively disclosed
+            if (SDJWT_PROTECTED_CLAIMS.contains(entry.getKey())) {
                 // We only log the issue and do not add the claim.
                 log.warn("Upstream application tried to override protected claim {} in credential offer {}. Original value has been retained",
                         entry.getKey(), getCredentialOffer().getId());

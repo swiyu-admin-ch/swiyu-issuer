@@ -111,7 +111,7 @@ public abstract class CredentialBuilder {
      * @return the data as to be used in credentialSubject
      */
     protected Map<String, Object> getOfferData() {
-        return this.dataIntegrityService.getVerifiedOfferData(this.credentialOffer);
+        return this.dataIntegrityService.getVerifiedOfferData(this.credentialOffer.getOfferData(), this.credentialOffer.getId());
     }
 
     /**
