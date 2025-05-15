@@ -18,7 +18,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-issuer-service</artifactId>
-    <version>1.6.1-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <description>Issuer Service for public beta</description>
 
     <properties>
