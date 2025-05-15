@@ -339,6 +339,10 @@ Note that for creating the keys it is expected that the public key is provided a
 | HSM_STATUS_KEY_PIN            | Optional pin to unlock the status list key. If not set will use HSM_KEY_PIN                                                                                                                |
 | HSM_CONFIG_PATH               | File Path to the HSM config file when using [Sun PKCS11 provider](https://docs.oracle.com/en/java/javase/22/security/pkcs11-reference-guide1.html)                                         |
 
+
+### Config Files
+Config Files can be mounted in the container. For further details on please refer to the cookbooks.
+
 #### Config File Templating
 
 The content of the metadata json files, among these METADATA_CONFIG_FILE and OPENID_CONFIG_FILE can be annotated with
@@ -387,6 +391,34 @@ In our deployment we can set the value by adding in the environment variable
 | credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256"]                                                        | Yes      |                                                           |
 | credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256"]} ``` | No       | When set only the exact object shown as sample is allowed |
 | credential_configurations_supported.*.cryptographic_binding_methods_supported | ["did:jwk"]                                                      | No       |                                                           |
+
+The configuration `proof_types_supported` allows specifying the required security specification the wallet should store 
+key material in for the credential. This value is provided alongside `proof_signing_alg_values_supported`.
+Use of `key_attestation_required` is optional. 
+
+Example value 
+```
+"proof_types_supported": {
+        "jwt": {
+          "proof_signing_alg_values_supported": [
+            "ES256"
+          ],
+          "key_attestations_required": {
+            "key_storage": ["iso_18045_high"]
+          }
+        }
+      }
+```
+
+The value of `key_attestation_required` can be an empty json object `{}`. This requests a key attestation to provided,
+but leaves the choice of security level up to the wallet. 
+
+| Supported key_storage Value | Description                                                                                                                                                           |
+|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| iso_18045_enhanced-basic	   | Key storage is resistant to attack with attack potential "Enhanced-Basic", equivalent to VAN.3 according to ISO 18045. This is the case if TEE is used                |
+| iso_18045_high                            | Key storage is is resistant to attack with attack potential "High", equivalent to VAN.5 according to ISO 18045. This is the case if Strongbox/Secure enclave is used  |
+
+
 
 #### VC Metadata provisioning
 
