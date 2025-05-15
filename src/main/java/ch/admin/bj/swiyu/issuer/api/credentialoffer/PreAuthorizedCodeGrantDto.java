@@ -9,7 +9,6 @@ import java.util.UUID;
  *
  * @param preAuthCode The pre-authorized code as a UUID.
  */
-public record PreAuthorizedCodeDto(
-        @JsonProperty("pre-authorized_code") UUID preAuthCode
-) {
+public record PreAuthorizedCodeGrantDto(
+        @JsonProperty("pre-authorized_code") UUID preAuthCode) {
 }

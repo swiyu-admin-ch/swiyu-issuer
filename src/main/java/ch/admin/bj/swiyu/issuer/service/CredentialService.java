@@ -268,7 +268,7 @@ public class CredentialService {
 
     private String getOfferDeeplinkFromCredential(CredentialOffer credential) {
 
-        var grants = new GrantsDto(new PreAuthorizedCodeDto(credential.getPreAuthorizedCode()));
+        var grants = new GrantsDto(new PreAuthorizedCodeGrantDto(credential.getPreAuthorizedCode()));
 
         var credentialOffer = CredentialOfferDto.builder()
                 .credentialIssuer(applicationProperties.getExternalUrl())
@@ -277,7 +277,7 @@ public class CredentialService {
                 .version(applicationProperties.getRequestOfferVersion())
                 .build();
 
-        String credentialOfferString = null;
+        String credentialOfferString;
         try {
             credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOffer),
                     Charset.defaultCharset());

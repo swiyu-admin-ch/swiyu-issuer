@@ -7,5 +7,5 @@ import io.swagger.v3.oas.annotations.media.Schema;
         Grants to be used in the credential offer. Currently only pre-authorized code is supported.
         """)
 public record GrantsDto(
-        @JsonProperty("urn:ietf:params:oauth:grant-type:pre-authorized_code") PreAuthorizedCodeDto preAuthorizedCode) {
+        @JsonProperty("urn:ietf:params:oauth:grant-type:pre-authorized_code") PreAuthorizedCodeGrantDto preAuthorizedCode) {
 }
