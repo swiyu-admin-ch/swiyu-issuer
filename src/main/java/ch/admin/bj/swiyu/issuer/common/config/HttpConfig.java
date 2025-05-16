@@ -11,11 +11,11 @@ import org.springframework.context.annotation.Configuration;
  * Configures the maximum number of HTTP redirects by setting the `http.maxRedirects` system property.
  * This configuration is necessary because Spring Boot, by default, uses `HttpURLConnection` as the underlying
  * HTTP client for requests and `HttpURLConnection` respects the `http.maxRedirects` system property to manage redirects.
- *
+ * <br>
  * Unlike properties such as `readTimeout` and `connectionTimeout`, which can be configured directly through
  * Spring's `application.yml`, the `http.maxRedirects` property must be set as a system property at the JVM level.
  * This is because `HttpURLConnection` does not expose a direct configuration property for controlling redirects.
- *
+ * <br>
  * If the property is not set, the default behavior of `HttpURLConnection` will allow up to 20 redirects.
  */
 @Getter
@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Configuration;
 public class HttpConfig {
 
     private Integer maxRedirects;
+    private Integer objectSizeLimit;
 
     @PostConstruct
     public void init() {

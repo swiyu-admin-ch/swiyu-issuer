@@ -13,21 +13,16 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
-import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
-import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
-import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.common.exception.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestableProof;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JWSSigner;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -47,9 +42,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.*;
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
+import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.service.CredentialOfferMapper.*;
 import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
@@ -64,10 +58,12 @@ public class CredentialService {
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
     private final ObjectMapper objectMapper;
     private final StatusListService statusListService;
+    private final KeyAttestationService keyAttestationService;
     private final IssuerMetadataTechnical issuerMetadata;
     private final CredentialFormatFactory vcFormatFactory;
     private final ApplicationProperties applicationProperties;
     private final OpenIdIssuerConfiguration openIDConfiguration;
+
 
     @Transactional // not readonly since expired credentails gets updated here automatically
     public Object getCredentialOffer(UUID credentialId) {
@@ -274,7 +270,7 @@ public class CredentialService {
                 .version(applicationProperties.getRequestOfferVersion())
                 .build();
 
-        String credentialOfferString = null;
+        String credentialOfferString;
         try {
             credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOffer),
                     Charset.defaultCharset());
@@ -466,13 +462,13 @@ public class CredentialService {
                 credentialOffer.getMetadataCredentialSupportedId().getFirst());
 
         // Process Holder Binding if a Proof Type is required
-        var proofTypes = credentialConfiguration.getProofTypesSupported();
-        if (proofTypes != null && !proofTypes.isEmpty()) {
+        var supportedProofTypes = credentialConfiguration.getProofTypesSupported();
+        if (supportedProofTypes != null && !supportedProofTypes.isEmpty()) {
             var requestProof = credentialRequest.getProof(applicationProperties.getAcceptableProofTimeWindowSeconds())
                     .orElseThrow(
                             () -> new Oid4vcException(INVALID_PROOF,
                                     "Proof must be provided for the requested credential"));
-            var bindingProofType = Optional.of(proofTypes.get(requestProof.proofType.toString()))
+            var bindingProofType = Optional.of(supportedProofTypes.get(requestProof.proofType.toString()))
                     .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
                             "Provided proof is not supported for the credential requested."));
             try {
@@ -486,6 +482,21 @@ public class CredentialService {
             } catch (IOException e) {
                 throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
             }
+            var attestationRequirement = bindingProofType.getKeyAttestationRequirement();
+            if (attestationRequirement != null) {
+                if (!(requestProof instanceof AttestableProof)) {
+                    throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
+                }
+                var attestation = ((AttestableProof) requestProof).getAttestationJwt();
+                if (attestation == null) {
+                    throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
+                }
+                if (!keyAttestationService.isValidKeyAttestation(attestationRequirement, attestation)) {
+                    throw new Oid4vcException(INVALID_PROOF, "Attestation was invalid!");
+                }
+            }
+
+
             return Optional.of(requestProof.getBinding());
         }
         return Optional.empty();

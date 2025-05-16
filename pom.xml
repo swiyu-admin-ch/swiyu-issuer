@@ -18,7 +18,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-issuer-service</artifactId>
-    <version>1.6.1-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <description>Issuer Service for public beta</description>
 
     <properties>
@@ -130,10 +130,23 @@
             <version>${bouncycastle.version}</version>
         </dependency>
 
+        <!-- HSM -->
         <dependency>
             <groupId>com.securosys.primus</groupId>
             <artifactId>jce</artifactId>
             <version>${primus-jce.version}</version>
+        </dependency>
+
+        <!-- Resolve DID -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.16.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.swiyu-admin-ch</groupId>
+            <artifactId>didresolver</artifactId>
+            <version>2.0.1</version>
         </dependency>
 
         <!-- Logging -->
@@ -307,7 +320,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <!-- TODO EID-1771 remove once we have included system scoped jars properly -->
+                    <!-- Required for HSM Library (primusX) -->
                     <includeSystemScope>true</includeSystemScope>
                     <excludes>
                         <exclude>

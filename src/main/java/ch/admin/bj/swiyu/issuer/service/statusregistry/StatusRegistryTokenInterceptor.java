@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -26,8 +27,9 @@ import java.io.IOException;
 public class StatusRegistryTokenInterceptor implements ClientHttpRequestInterceptor {
     private final StatusRegistryTokenDomainService statusRegistryTokenDomainService;
 
+    @NonNull
     @Override
-    public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
+    public ClientHttpResponse intercept(@NonNull HttpRequest request, @NonNull byte[] body, ClientHttpRequestExecution execution)
             throws IOException {
         request.getHeaders().add("Authorization", "Bearer " + statusRegistryTokenDomainService.getAccessToken());
         ClientHttpResponse response;
