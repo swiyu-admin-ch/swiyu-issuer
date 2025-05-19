@@ -14,7 +14,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 @Builder
@@ -34,7 +33,7 @@ public class CredentialOfferDto {
     @JsonProperty("credential_configuration_ids")
     private List<String> credentials;
 
-    private Map<String, Object> grants;
+    private GrantsDto grants;
 
     private String version;
 }

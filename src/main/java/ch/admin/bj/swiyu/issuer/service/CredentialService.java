@@ -6,9 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
@@ -20,7 +18,6 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestableProof;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -36,15 +33,13 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.*;
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.service.CredentialOfferMapper.*;
+import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SDJWT_PROTECTED_CLAIMS;
 import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 import static java.util.Objects.isNull;
@@ -63,6 +58,7 @@ public class CredentialService {
     private final CredentialFormatFactory vcFormatFactory;
     private final ApplicationProperties applicationProperties;
     private final OpenIdIssuerConfiguration openIDConfiguration;
+    private final DataIntegrityService dataIntegrityService;
 
 
     @Transactional // not readonly since expired credentails gets updated here automatically
@@ -219,6 +215,10 @@ public class CredentialService {
                 ? requestDto.getOfferValiditySeconds()
                 : applicationProperties.getOfferValidity());
 
+        // Check if credentialSubjectData contains protected claims
+        var offerData = readOfferData(requestDto.getCredentialSubjectData());
+        validateOfferData(offerData);
+
         var statusListUris = requestDto.getStatusLists();
         var statusLists = statusListService.findByUriIn(statusListUris);
         if (statusLists.size() != requestDto.getStatusLists().size()) {
@@ -229,7 +229,7 @@ public class CredentialService {
         var entity = CredentialOffer.builder()
                 .credentialStatus(CredentialStatusType.OFFERED)
                 .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
-                .offerData(readOfferData(requestDto.getCredentialSubjectData()))
+                .offerData(offerData)
                 .offerExpirationTimestamp(expiration.getEpochSecond())
                 .nonce(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
@@ -256,12 +256,22 @@ public class CredentialService {
         return entity;
     }
 
+    private void validateOfferData(Map<String, Object> offerData) {
+        var validatedOfferData = dataIntegrityService.getVerifiedOfferData(offerData, null);
+
+        // check if credentialSubjectData contains protected claims
+        List<String> duplicates = new ArrayList<>(validatedOfferData.keySet().stream()
+                .filter(SDJWT_PROTECTED_CLAIMS::contains)
+                .toList());
+
+        if (!duplicates.isEmpty()) {
+            throw new BadRequestException("The following claims are not allowed in the credentialSubjectData: " + duplicates);
+        }
+    }
+
     private String getOfferDeeplinkFromCredential(CredentialOffer credential) {
-        var grants = new HashMap<String, Object>();
-        grants.put("urn:ietf:params:oauth:grant-type:pre-authorized_code", new Object() {
-            @JsonProperty("pre-authorized_code")
-            final UUID preAuthorizedCode = credential.getPreAuthorizedCode();
-        });
+
+        var grants = new GrantsDto(new PreAuthorizedCodeGrantDto(credential.getPreAuthorizedCode()));
 
         var credentialOffer = CredentialOfferDto.builder()
                 .credentialIssuer(applicationProperties.getExternalUrl())

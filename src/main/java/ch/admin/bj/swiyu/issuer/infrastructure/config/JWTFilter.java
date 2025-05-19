@@ -8,12 +8,9 @@ package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.JWTResolveRequestWrapper;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,12 +31,21 @@ public class JWTFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
             throws IOException, ServletException {
+
+        HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
+
         if (!config.isEnableJwtAuthentication() || "GET".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, servletResponse);
             return;
         }
-        filterChain.doFilter(JWTResolveRequestWrapper.createAndValidate(request, config.getAllowedKeySet()),
-                servletResponse);
+
+        try {
+            filterChain.doFilter(JWTResolveRequestWrapper.createAndValidate(request, config.getAllowedKeySet()),
+                    servletResponse);
+        } catch (Exception e) {
+            // as filters cannot be handled by the default exception handler, we need to set the error code and message manually
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
+        }
     }
 }

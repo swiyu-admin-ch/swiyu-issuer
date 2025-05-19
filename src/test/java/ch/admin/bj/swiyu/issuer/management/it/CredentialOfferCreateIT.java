@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.it;
 
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
@@ -13,6 +14,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,7 +27,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Map;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.common.date.DateTimeUtils.ISO8601_FORMAT;
@@ -71,9 +73,8 @@ class CredentialOfferCreateIT {
         var deeplink = URLDecoder.decode(urlEncodedDeeplink, StandardCharsets.UTF_8);
         var credentialOfferString = deeplink.replace("swiyu://?credential_offer=", "");
 
-        var credentialOffer = objectMapper.readValue(credentialOfferString, Map.class);
-        Map<?, ?> grants = (Map<?, ?>) credentialOffer.get("grants");
-        String preAuthorizedCode = ((Map<String, String>) grants.get("urn:ietf:params:oauth:grant-type:pre-authorized_code")).get("pre-authorized_code");
+        var credentialOffer = objectMapper.readValue(credentialOfferString, CredentialOfferDto.class);
+        String preAuthorizedCode = credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString();
         assertNotSame(preAuthorizedCode, managementId);
 
         String now = new SimpleDateFormat(ISO8601_FORMAT).format(new Date());
@@ -190,6 +191,28 @@ class CredentialOfferCreateIT {
                 .andReturn();
         String id = JsonPath.read(result.getResponse().getContentAsString(), "$.management_id");
         assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().get("vct#integrity"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"iss", "nbf", "exp", "iat", "cnf", "vct", "status", "_sd", "_sd_alg", "sd_hash", "..."})
+    void testProtectedClaimsInOfferData_thenBadRequest(String claim) throws Exception {
+
+        String jsonPayload = """
+                {
+                  "metadata_credential_supported_id": ["university_example_sd_jwt"],
+                  "credential_subject_data": {
+                    "%s": "protected claim"
+                  },
+                  "offer_validity_seconds": 36000
+                }
+                """.formatted(claim);
+
+        mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("The following claims are not allowed in the credentialSubjectData: [%s]".formatted(claim)))
+                .andReturn();
     }
 
 }
