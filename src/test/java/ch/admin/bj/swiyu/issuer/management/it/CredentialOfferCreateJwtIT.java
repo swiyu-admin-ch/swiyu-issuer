@@ -109,7 +109,7 @@ class CredentialOfferCreateJwtIT {
     }
 
     @Test
-    void createOfferWithoutJwtWhenRequired_thenBadRequest() throws Exception {
+    void createOfferMissingJwt_thenBadRequest() throws Exception {
         // This offerData is the data we want to offer in the Verifiable Credential
         String offerData = """
                 {
