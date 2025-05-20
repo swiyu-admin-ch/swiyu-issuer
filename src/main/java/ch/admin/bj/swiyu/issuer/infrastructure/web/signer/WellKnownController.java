@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -30,6 +31,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Slf4j
 @Tag(name = "Well-known endpoints", description = "OpenID .well-known endpoints for issuer configuration and credentials API")
+@RequestMapping(".well-known")
 public class WellKnownController {
 
     private final OpenIdIssuerApiConfiguration openIDConfigurationDto;
@@ -40,7 +42,7 @@ public class WellKnownController {
      *
      * @return OpenIdConfigurationDto as defined by OIDConnect and extended by OID4VCI
      */
-    @GetMapping(value = {"/.well-known/openid-configuration"})
+    @GetMapping(value = {"/openid-configuration", "/oauth-authorization-server"})
     @Operation(summary = "OpenID Connect information required for issuing VCs")
     public OpenIdConfigurationDto getOpenIDConfiguration() throws IOException {
         return openIDConfigurationDto.getOpenIdConfiguration();
@@ -51,7 +53,7 @@ public class WellKnownController {
      *
      * @return Issuer Metadata as defined by OID4VCI
      */
-    @GetMapping(value = {"/.well-known/openid-credential-issuer"})
+    @GetMapping(value = {"/openid-credential-issuer"})
     @Operation(summary = "Information about credentials which can be issued.")
     public Map<String, Object> getIssuerMetadata() throws IOException {
         return openIDConfiguration.getIssuerMetadata();

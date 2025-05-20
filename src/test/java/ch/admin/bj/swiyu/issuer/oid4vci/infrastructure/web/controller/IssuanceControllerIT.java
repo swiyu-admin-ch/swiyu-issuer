@@ -69,6 +69,27 @@ class IssuanceControllerIT {
     @Autowired
     private ApplicationProperties applicationProperties;
 
+    private static Map<String, String> getUnboundCredentialSubjectData() {
+        Map<String, String> credentialSubjectData = new HashMap<>();
+        credentialSubjectData.put("animal", "Tux");
+        return credentialSubjectData;
+    }
+
+    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode, CredentialStatusType status) {
+        var offerData = new HashMap<String, Object>();
+        offerData.put("data", new GsonBuilder().create().toJson(getUnboundCredentialSubjectData()));
+        return CredentialOffer.builder().credentialStatus(status)
+                .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
+                .offerData(offerData)
+                .credentialMetadata(new HashMap<>())
+                .accessToken(UUID.randomUUID())
+                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .nonce(UUID.randomUUID())
+                .preAuthorizedCode(preAuthCode)
+                .build();
+    }
+
     @BeforeEach
     void setUp() throws JOSEException {
         var statusList = createStatusList();
@@ -96,8 +117,16 @@ class IssuanceControllerIT {
     }
 
     @Test
-    void testGetOpenIdConfiguraion_thenSuccess() throws Exception {
+    void testGetOpenIdConfiguration_thenSuccess() throws Exception {
         mock.perform(get("/.well-known/openid-configuration"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("token_endpoint")))
+                .andExpect(content().string(not(containsString("${external-url}"))));
+    }
+
+    @Test
+    void testGetOauthAuthorizationServer_thenSuccess() throws Exception {
+        mock.perform(get("/.well-known/oauth-authorization-server"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("token_endpoint")))
                 .andExpect(content().string(not(containsString("${external-url}"))));
@@ -338,27 +367,6 @@ class IssuanceControllerIT {
         var unboundVc = SignedJWT.parse(getUnboundVc());
         assertNull(unboundVc.getJWTClaimsSet().getClaims().get("vc#integrity"));
 
-    }
-
-    private static Map<String, String> getUnboundCredentialSubjectData() {
-        Map<String, String> credentialSubjectData = new HashMap<>();
-        credentialSubjectData.put("animal", "Tux");
-        return credentialSubjectData;
-    }
-
-    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode, CredentialStatusType status) {
-        var offerData = new HashMap<String, Object>();
-        offerData.put("data", new GsonBuilder().create().toJson(getUnboundCredentialSubjectData()));
-        return CredentialOffer.builder().credentialStatus(status)
-                .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
-                .offerData(offerData)
-                .credentialMetadata(new HashMap<>())
-                .accessToken(UUID.randomUUID())
-                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
-                .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
-                .nonce(UUID.randomUUID())
-                .preAuthorizedCode(preAuthCode)
-                .build();
     }
 
     private String getBoundVc() throws Exception {
