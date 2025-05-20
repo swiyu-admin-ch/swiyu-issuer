@@ -8,6 +8,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import org.springframework.util.StringUtils;
 
 import java.text.ParseException;
 import java.util.Date;
@@ -49,7 +50,7 @@ public class AttestationJwt {
      * @throws IllegalArgumentException if one of the checks fails
      */
     private static void validateBody(JWTClaimsSet jwtClaimsSet) throws IllegalArgumentException {
-        if (jwtClaimsSet.getIssuer() == null) {
+        if (!StringUtils.hasLength(jwtClaimsSet.getIssuer())) {
             throw new IllegalArgumentException("Issuer is required");
         }
         if (jwtClaimsSet.getIssueTime() == null) {
@@ -104,8 +105,8 @@ public class AttestationJwt {
             throw new IllegalArgumentException("Algorithm must be one of "
                     + ALLOWED_ALGORITHMS.stream().map(JWSAlgorithm::getName).collect(Collectors.joining(", ")));
         }
-        if (header.getKeyID() == null) {
-            throw new IllegalArgumentException("KeyID MUST NOT be null");
+        if (!StringUtils.hasLength(header.getKeyID())) {
+            throw new IllegalArgumentException("KeyID MUST NOT be set");
         }
     }
 

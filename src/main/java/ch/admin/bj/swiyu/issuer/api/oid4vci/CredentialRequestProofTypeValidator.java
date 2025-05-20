@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.api.oid4vci;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -27,7 +28,7 @@ public class CredentialRequestProofTypeValidator implements ConstraintValidator<
      */
     @Override
     public boolean isValid(Map<String, Object> proof, ConstraintValidatorContext context) {
-        if (proof == null || proof.isEmpty()) {
+        if (CollectionUtils.isEmpty(proof)) {
             // proof entry itself is optional
             return true;
         }
@@ -40,10 +41,8 @@ public class CredentialRequestProofTypeValidator implements ConstraintValidator<
         // When proof_type is cwt, a proof object MUST include a cwt claim containing a CWT defined in Section 7.2.1.3.
         // When proof_type is set to ldp_vp, the proof object MUST include a ldp_vp claim containing a W3C Verifiable Presentation defined in Section 7.2.1.2.
         // proof_type display name is equal to the claim
-        if (Arrays.stream(ProofTypeDto.values()).anyMatch(p -> p.getDisplayName().equals(proofType)) && proof.containsKey(proofType)) {
-            return true;
-        }
         // Not recognized proof type or missing claim
-        return false;
+        return Arrays.stream(ProofTypeDto.values()).anyMatch(p -> p.getDisplayName().equals(proofType)) && proof.containsKey(proofType);
+
     }
 }

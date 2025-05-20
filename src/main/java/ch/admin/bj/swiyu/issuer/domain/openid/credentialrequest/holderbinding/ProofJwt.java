@@ -14,6 +14,7 @@ import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.SignedJWT;
+import org.springframework.util.StringUtils;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -118,7 +119,7 @@ public class ProofJwt extends Proof implements AttestableProof {
 
     @Override
     public String getBinding() {
-        if (this.holderKeyJson == null) {
+        if (!StringUtils.hasLength(this.holderKeyJson)) {
             throw new IllegalStateException("Must first call isValidHolderBinding");
         }
         return this.holderKeyJson;
