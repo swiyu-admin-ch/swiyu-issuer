@@ -20,7 +20,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestTokenStatusListToken {
+public class TokenStatusListTokenTest {
     @Test
     void testCreateNewStatusList_thenSuccess() throws IOException {
         /*
