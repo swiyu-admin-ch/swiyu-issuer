@@ -25,7 +25,7 @@ public class AttestationJwt {
 
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
     // OID4VCI 0.15 specifies keyattestion+jwt, in IANA they registered key-attestation+jwt
-    private static final Set<String> ALLOWED_TYPES = Set.of("keyattestion+jwt", "key-attestation+jwt");
+    private static final Set<String> ALLOWED_TYPES = Set.of("keyattestation+jwt", "key-attestation+jwt");
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
 
