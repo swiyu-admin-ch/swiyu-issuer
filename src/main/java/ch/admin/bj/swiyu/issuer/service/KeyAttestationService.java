@@ -23,7 +23,7 @@ public class KeyAttestationService {
             return AttestationJwt.parseJwt(attestationJwt).isValidAttestation(keyResolver, attestationRequirement.getKeyStorage());
         } catch (ParseException e ) {
             throw new Oid4vcException(e, INVALID_PROOF, "Attestation is malformed!");
-        } catch (IllegalArgumentException e ) {
+        } catch (IllegalArgumentException e) {
             throw new Oid4vcException(e, INVALID_PROOF, String.format("Attestation is malformed! %s", e.getMessage()));
         } catch (JOSEException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Attestation key is not supported or not matching the signature!");
