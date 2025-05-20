@@ -21,7 +21,7 @@ public class KeyAttestationService {
     public boolean isValidKeyAttestation(@NotNull KeyAttestationRequirement attestationRequirement, @NotNull String attestationJwt) {
         try {
             return AttestationJwt.parseJwt(attestationJwt).isValidAttestation(keyResolver, attestationRequirement.getKeyStorage());
-        } catch (ParseException e ) {
+        } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Attestation is malformed!");
         } catch (IllegalArgumentException e) {
             throw new Oid4vcException(e, INVALID_PROOF, String.format("Attestation is malformed! %s", e.getMessage()));
