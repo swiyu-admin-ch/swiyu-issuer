@@ -341,7 +341,7 @@ Note that for creating the keys it is expected that the public key is provided a
 
 
 ### Config Files
-Config Files can be mounted in the container. For further details on please refer to the cookbooks.
+Config Files can be mounted in the container. For further details please refer to the cookbooks.
 
 #### Config File Templating
 
