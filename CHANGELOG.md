@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/.well-known/openid-configuration` endpoint but in a OAuth2-centric way.
 - The `/.well-known/openid-configuration` still exists and is not deprecated.
 
+## 1.1.1
+
+### Fixed
+
+- rename issuer-agent to swiyu-issuer-service in documentation and configuration
+
 ## 1.1.0
 
 ### Fixed

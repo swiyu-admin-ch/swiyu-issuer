@@ -59,7 +59,7 @@ A sample compose file for an entire setup of both components and a database can 
 in [sample.compose.yml](sample.compose.yml) file.
 **Replace all placeholder <VARIABLE_NAME>**.
 
-Please be aware that both the issuer-agent needs to be publicly accessible over  a domain configured in `EXTERNAL_URL` 
+Please be aware that both the swiyu-issuer-service needs to be publicly accessible over  a domain configured in `EXTERNAL_URL` 
 so that a wallet can communicate with them.
 
 ## 2. Create a verifiable credentials schema
@@ -71,7 +71,7 @@ For further information consult the [Cookbooks](https://swiyu-admin-ch.github.io
 
 ## 3. Initialize the status list
 
-Once the issuer-agent and postgres instance are up and running you need to initialize the status
+Once the swiyu-issuer-service and postgres instance are up and running you need to initialize the status
 list of your issuer so that you can issue credentials with a status. 
 
 It is possible to issue credentials without status. Be wary though, as these credentials can not be revoked anymore!
@@ -88,10 +88,10 @@ curl -X POST https://<SWIYU_STATUS_REGISTRY_API_URL>/api/v1/status/business-enti
 
 ```
 
-The following request needs to be run on your issuer-agent instance.
+The following request needs to be run on your swiyu-issuer-service instance.
 
 ```bash
-curl -X POST https://<EXTERNAL_URL of issuer-agent>/status-list \
+curl -X POST https://<EXTERNAL_URL of swiyu-issuer-service>/status-list \
 -H "Content-Type: application/json" \
 -d '{
     "uri": "<STATUS_JWT_URL>",
@@ -106,8 +106,8 @@ curl -X POST https://<EXTERNAL_URL of issuer-agent>/status-list \
 
 ## 4. Issue credential
 
-You're now ready to issue credentials by using the issuer-agent API which is accessible under
-https://<EXTERNAL_URL of issuer-agent>**/swagger-ui/index.html#/Credential%20API/createCredential** to create
+You're now ready to issue credentials by using the swiyu-issuer-service API which is accessible under
+https://<EXTERNAL_URL of swiyu-issuer-service>**/swagger-ui/index.html#/Credential%20API/createCredential** to create
 a credential offer for a holder. Here is an example of a request body for the offer creation
 
 ```json

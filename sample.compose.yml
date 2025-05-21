@@ -19,8 +19,8 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
-  issuer-agent-management:
-    image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-management:latest
+  swiyu-issuer-service:
+    image: ghcr.io/swiyu-admin-ch/eidch-swiyu-issuer-service:latest
     environment:
       EXTERNAL_URL: ${EXTERNAL_URL}
       SPRING_APPLICATION_NAME: ${SPRING_APPLICATION_NAME}
@@ -32,6 +32,8 @@ services:
       SWIYU_STATUS_REGISTRY_ACCESS_TOKEN: ${SWIYU_STATUS_REGISTRY_ACCESS_TOKEN}
       SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET: ${SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET}
       SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN: ${SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN}
+      DID_SDJWT_VERIFICATION_METHOD: ${DID_SDJWT_VERIFICATION_METHOD}
+      SDJWT_KEY: ${SDJWT_KEY}
 
       # Environment specific values. Please consult the main manual
       SWIYU_STATUS_REGISTRY_TOKEN_URL: ${SWIYU_STATUS_REGISTRY_TOKEN_URL}
@@ -40,24 +42,6 @@ services:
       # Default settings for the application. Only change these if you know what you are doing
       LOGGING_LEVEL_CH_ADMIN_BIT_EID: DEBUG
       SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW: "true"
-
-      # Persistence
-      POSTGRES_USER: "issuer_mgmt_user"
-      POSTGRES_PASSWORD: "secret"
-      POSTGRES_DB: "issuer_db"
-      POSTGRES_JDBC: "jdbc:postgresql://postgres:5432/issuer_db"
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
-
-  issuer-agent-oid4vci:
-    image: ghcr.io/swiyu-admin-ch/eidch-issuer-agent-oid4vci:latest
-    environment:
-      EXTERNAL_URL: ${EXTERNAL_URL}
-      ISSUER_ID: ${OID4VCI_ISSUER_ID}
-      DID_SDJWT_VERIFICATION_METHOD: ${DID_SDJWT_VERIFICATION_METHOD}
-      SDJWT_KEY: ${SDJWT_KEY}
 
       # Default settings for the application. Only change these if you know what you are doing
       OPENID_CONFIG_FILE: "file:/cfg-files/openid_metadata.json"
@@ -69,13 +53,13 @@ services:
       POSTGRES_PASSWORD: "secret"
       POSTGRES_DB: "issuer_db"
       POSTGRES_JDBC: "jdbc:postgresql://postgres:5432/issuer_db"
-    ports:
-      - "8081:8080"
     configs:
       - source: issuer_metadata
         target: /cfg-files/issuer_metadata.json
       - source: openid_metadata
         target: /cfg-files/openid_metadata.json
+    ports:
+      - "8080:8080"
     depends_on:
       - postgres
 
