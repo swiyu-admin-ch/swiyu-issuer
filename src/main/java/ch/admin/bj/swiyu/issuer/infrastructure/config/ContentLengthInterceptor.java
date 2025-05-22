@@ -4,24 +4,23 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.service.statusregistry;
+package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
-import java.io.IOException;
 
-import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 @RequiredArgsConstructor
-@Component
-public class StatusRegistryContentLengthInterceptor implements ClientHttpRequestInterceptor {
+public class ContentLengthInterceptor implements ClientHttpRequestInterceptor {
 
-    private final StatusListProperties statusListProperties;
+
+    private final int maxSize;
 
     @NonNull
     @Override
@@ -29,8 +28,8 @@ public class StatusRegistryContentLengthInterceptor implements ClientHttpRequest
         ClientHttpResponse response = execution.execute(request, body);
         long contentLength = response.getHeaders().getContentLength();
 
-        if (contentLength > statusListProperties.getStatusListSizeLimit()) {
-            throw new IllegalArgumentException("Status list size from %s exceeds maximum allowed size".formatted(request.getURI()));
+        if (contentLength > this.maxSize) {
+            throw new IllegalStateException("Requested Object size from %s exceeds maximum allowed size".formatted(request.getURI()));
         }
 
         return response;

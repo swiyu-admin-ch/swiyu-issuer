@@ -14,6 +14,7 @@ import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.SignedJWT;
+import org.springframework.util.StringUtils;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -21,11 +22,18 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-public class ProofJwt extends Proof {
+public class ProofJwt extends Proof implements AttestableProof {
 
+    /**
+     * Holder Binding Proof as JWT to be verified
+     */
     private final String jwt;
+    /**
+     * Time window (now +/-) in which the proof jwt must have been issued at
+     */
     private final int acceptableProofTimeWindowSeconds;
     private String holderKeyJson;
+    private SignedJWT signedJWT;
 
     public ProofJwt(ProofType proofType, String jwt) {
         this(proofType, jwt, 10);
@@ -47,7 +55,7 @@ public class ProofJwt extends Proof {
                                         Long tokenExpirationTimestamp) {
 
         try {
-            SignedJWT signedJWT = SignedJWT.parse(this.jwt);
+            signedJWT = SignedJWT.parse(this.jwt);
 
             // check JOSE headers
             JWSHeader header = signedJWT.getHeader();
@@ -111,8 +119,28 @@ public class ProofJwt extends Proof {
 
     @Override
     public String getBinding() {
+        if (!StringUtils.hasLength(this.holderKeyJson)) {
+            throw new IllegalStateException("Must first call isValidHolderBinding");
+        }
         return this.holderKeyJson;
     }
+
+    /**
+     *
+     * @return the Attestation JWT if present. If not present returns null
+     */
+    @Override
+    public String getAttestationJwt() {
+        if (this.signedJWT == null) {
+            throw new IllegalStateException("Must first call isValidHolderBinding");
+        }
+        var attestation = signedJWT.getHeader().getCustomParam("key_attestation");
+        if (attestation == null) {
+            return null;
+        }
+        return attestation.toString();
+    }
+
 
     private static Oid4vcException proofException(String errorDescription) {
         return new Oid4vcException(CredentialRequestError.INVALID_PROOF, errorDescription);

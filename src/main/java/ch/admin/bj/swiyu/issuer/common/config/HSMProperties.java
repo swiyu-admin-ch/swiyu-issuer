@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
 @Configuration
 @Valid
@@ -42,9 +43,9 @@ public class HSMProperties {
     }
 
     private String getSecurosysConfigIfExists(String propertyName, String value) {
-        if (value == null || value.isBlank()) {
+        if (!StringUtils.hasLength(value)) {
             return "";
         }
-        return String.format("com.securosys.primus.jce.%s=%s\n", propertyName, value);
+        return String.format("com.securosys.primus.jce.%s=%s%n", propertyName, value);
     }
 }
