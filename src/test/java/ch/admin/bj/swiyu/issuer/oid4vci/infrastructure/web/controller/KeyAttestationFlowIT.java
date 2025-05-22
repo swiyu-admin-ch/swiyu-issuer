@@ -15,7 +15,6 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -36,6 +36,7 @@ import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.crea
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 class KeyAttestationFlowIT {
     private static ECKey jwk;
     private final UUID testOfferNoAttestationId = UUID.randomUUID();
@@ -61,11 +62,6 @@ class KeyAttestationFlowIT {
         credentialOfferRepository.save(createTestOffer(testOfferAnyAttestationId, CredentialStatusType.OFFERED, "university_example_any_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
         credentialOfferRepository.save(createTestOffer(testOfferHighAttestationId, CredentialStatusType.OFFERED, "university_example_high_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
         jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate();
-    }
-
-    @AfterEach
-    void tearDown() {
-        credentialOfferRepository.deleteAll();
     }
 
 
@@ -106,6 +102,7 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Attestation");
     }
+
     @Test
     void testMissingAttestation_thenFail() throws Exception {
         var tokenResponse = TestUtils.fetchOAuthToken(mock, testOfferAnyAttestationId.toString());
