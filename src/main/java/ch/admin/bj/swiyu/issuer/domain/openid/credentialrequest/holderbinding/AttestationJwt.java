@@ -28,6 +28,7 @@ public class AttestationJwt {
     private static final Set<String> ALLOWED_TYPES = Set.of("keyattestation+jwt", "key-attestation+jwt");
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
+    private final JWTClaimsSet claims;
 
     /**
      * Creates an Attestation JWT from a base64 encoded JWT, performing basic validation.
@@ -42,6 +43,19 @@ public class AttestationJwt {
         validateHeader(parsedJwt.getHeader());
         validateBody(claims);
         return new AttestationJwt(parsedJwt, extractSupportedAttackPotentialResistance(claims));
+    }
+
+    /**
+     *
+     * @param trustedAttestationProviders list of trusted issuers
+     * @return true if the jwt issuer is part of the provided issuers
+     * @throws IllegalArgumentException if the issuer of the jwt is not matching the list of trusted attestation providers
+     */
+    public boolean issuedByAny(@NotNull List<String> trustedAttestationProviders) throws IllegalArgumentException {
+        if (!trustedAttestationProviders.contains(claims.getIssuer())) {
+            throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted issuers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
+        }
+        return true;
     }
 
     /**
@@ -110,9 +124,10 @@ public class AttestationJwt {
         }
     }
 
-    private AttestationJwt(SignedJWT signedJWT, List<AttackPotentialResistance> attestedAttackPotentialResistance) {
+    private AttestationJwt(SignedJWT signedJWT, List<AttackPotentialResistance> attestedAttackPotentialResistance) throws ParseException {
         this.signedJWT = signedJWT;
         this.attestedAttackPotentialResistance = attestedAttackPotentialResistance;
+        this.claims = signedJWT.getJWTClaimsSet();
     }
 
     /**

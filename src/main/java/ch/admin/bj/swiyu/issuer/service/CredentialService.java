@@ -17,7 +17,9 @@ import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestableProof;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Proof;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -493,23 +495,27 @@ public class CredentialService {
                 throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
             }
             var attestationRequirement = bindingProofType.getKeyAttestationRequirement();
-            if (attestationRequirement != null) {
-                if (!(requestProof instanceof AttestableProof)) {
-                    throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
-                }
-                var attestation = ((AttestableProof) requestProof).getAttestationJwt();
-                if (attestation == null) {
-                    throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
-                }
-                if (!keyAttestationService.isValidKeyAttestation(attestationRequirement, attestation)) {
-                    throw new Oid4vcException(INVALID_PROOF, "Attestation was invalid!");
-                }
-            }
+            checkHolderKeyAttestation(attestationRequirement, requestProof);
 
 
             return Optional.of(requestProof.getBinding());
         }
         return Optional.empty();
+    }
+
+    private void checkHolderKeyAttestation(KeyAttestationRequirement attestationRequirement, Proof requestProof) {
+        if (attestationRequirement != null) {
+            if (!(requestProof instanceof AttestableProof)) {
+                throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
+            }
+            var attestation = ((AttestableProof) requestProof).getAttestationJwt();
+            if (attestation == null) {
+                throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
+            }
+            if (!keyAttestationService.isValidKeyAttestation(attestationRequirement, attestation)) {
+                throw new Oid4vcException(INVALID_PROOF, "Attestation was invalid or from an untrusted source!");
+            }
+        }
     }
 
 }

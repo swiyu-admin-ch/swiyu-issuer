@@ -419,6 +419,14 @@ but leaves the choice of security level up to the wallet.
 | iso_18045_high                            | Key storage is is resistant to attack with attack potential "High", equivalent to VAN.5 according to ISO 18045. This is the case if Strongbox/Secure enclave is used  |
 
 
+It is possible to limit key attestation providers by their DID. This can be configured with providing a list of trusted attestation issuers. 
+If an empty array is provided (default) the key attestation is trusted from any issuer.
+The attestations integrity and signature are checked in every case.
+
+| Variable                      | Description                                                                                                                                                                   | Default |
+|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| TRUSTED_ATTESTATION_PROVIDERS | This array of strings contains dids (used in JWT "iss" claim) to be trusted for the key attestation. Is only used if key attestations are demanded for the credential issued. | []      |
+
 
 #### VC Metadata provisioning
 

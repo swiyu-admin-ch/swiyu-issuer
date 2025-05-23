@@ -104,6 +104,18 @@ class KeyAttestationFlowIT {
     }
 
     @Test
+    void testUntrustedAttestationIssuer() throws Exception {
+        var untrustedIssuer = "did:example:untrusted";
+        var fetchData = prepareAttestedVC(testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH, untrustedIssuer);
+        mockDidResolve(jwk.toPublicJWK());
+        var response = TestUtils.requestFailingCredential(mock, fetchData.token, fetchData.credentialRequestString);
+        // Proof should be invalid when untrusted
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
+        // We want the error description to be helpful telling about the current issuer and the expected issuers.
+        Assertions.assertThat(response.get("error_description").getAsString()).contains(untrustedIssuer).contains(applicationProperties.getTrustedAttestationProviders().getFirst());
+    }
+
+    @Test
     void testMissingAttestation_thenFail() throws Exception {
         var tokenResponse = TestUtils.fetchOAuthToken(mock, testOfferAnyAttestationId.toString());
         var token = tokenResponse.get("access_token");
@@ -123,12 +135,23 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Attestation");
     }
 
+
     private CredentialFetchData prepareAttestedVC(UUID offerId, AttackPotentialResistance resistance) throws Exception {
+        return prepareAttestedVC(offerId, resistance, null);
+    }
+    private CredentialFetchData prepareAttestedVC(UUID offerId, AttackPotentialResistance resistance, String attestationIssuerDid) throws Exception {
         var tokenResponse = TestUtils.fetchOAuthToken(mock, offerId.toString());
         var token = tokenResponse.get("access_token");
         Assertions.assertThat(token).isNotNull();
         Assertions.assertThat(tokenResponse).containsKey("c_nonce");
-        String proof = TestUtils.createAttestedHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true, resistance);
+        String proof = TestUtils.createAttestedHolderProof(
+                jwk,
+                applicationProperties.getTemplateReplacement().get("external-url"),
+                tokenResponse.get("c_nonce").toString(),
+                ProofType.JWT.getClaimTyp(),
+                false,
+                resistance,
+                attestationIssuerDid);
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
 
         return new CredentialFetchData(token, credentialRequestString);

@@ -63,15 +63,15 @@ public class TestUtils {
     public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk) throws JOSEException {
         return createHolderProof(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, new Date());
     }
-    public static String createAttestedHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, AttackPotentialResistance attestationLevel) throws JOSEException {
-        return createHolderproofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, new Date(), attestationLevel);
+    public static String createAttestedHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, AttackPotentialResistance attestationLevel, String attestationIssuerDid) throws JOSEException {
+        return createHolderproofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, new Date(), attestationLevel, attestationIssuerDid);
     }
     public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, Date issueTime) throws JOSEException {
-        return createHolderproofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, issueTime, null);
+        return createHolderproofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, issueTime, null, null);
     }
 
     @NotNull
-    private static String createHolderproofJWT(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, Date issueTime, @Nullable AttackPotentialResistance attestationLevel) throws JOSEException {
+    private static String createHolderproofJWT(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, Date issueTime, @Nullable AttackPotentialResistance attestationLevel, @Nullable String attestationIssuerDid) throws JOSEException {
         JWSSigner signer = new ECDSASigner(holderPrivateKey);
 
         var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
@@ -83,7 +83,7 @@ public class TestUtils {
         }
         // Add attestation if required
         if (attestationLevel != null) {
-            var attestation = createKeyAttestation(attestationLevel, holderPrivateKey.toPublicJWK());
+            var attestation = createKeyAttestation(attestationLevel, holderPrivateKey.toPublicJWK(), attestationIssuerDid == null ? "did:test:test-attestation-builder": attestationIssuerDid);
             attestation.sign(signer);
             headerBuilder.customParam("key_attestation", attestation.serialize());
         }
@@ -100,14 +100,13 @@ public class TestUtils {
         return jwt.serialize();
     }
 
-    private static SignedJWT createKeyAttestation(AttackPotentialResistance attestationLevel, ECKey publicJWK) {
-        final var TEST_DID = "did:test:test-attestation-builder";
+    private static SignedJWT createKeyAttestation(AttackPotentialResistance attestationLevel, ECKey publicJWK, String attestationIssuerDid) {
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType("key-attestation+jwt"))
-                .keyID(TEST_DID+"#key-1")
+                .keyID(attestationIssuerDid+"#key-1")
                 .build();
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .issuer(TEST_DID)
+                .issuer(attestationIssuerDid)
                 .issueTime(Date.from(Instant.now()))
                 .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
                 .claim("key_storage", List.of(attestationLevel.getValue()))

@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.common.config;
 
 import java.text.ParseException;
+import java.util.List;
 import java.util.Map;
 
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
@@ -39,6 +40,12 @@ public class ApplicationProperties {
 
     @NotNull
     private Long offerValidity;
+
+    /**
+     * List of DIDs of Attestation Providers deemed trustworthy for verifying the Key Attestation.
+     */
+    @NotNull
+    private List<String> trustedAttestationProviders;
 
     @NotNull
     private String requestOfferVersion = "1.0";

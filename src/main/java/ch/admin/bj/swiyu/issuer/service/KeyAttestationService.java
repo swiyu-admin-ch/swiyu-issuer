@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestationJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
@@ -17,14 +18,19 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @AllArgsConstructor
 public class KeyAttestationService {
     private final KeyResolver keyResolver;
+    private final ApplicationProperties applicationProperties;
 
     public boolean isValidKeyAttestation(@NotNull KeyAttestationRequirement attestationRequirement, @NotNull String attestationJwt) {
         try {
-            return AttestationJwt.parseJwt(attestationJwt).isValidAttestation(keyResolver, attestationRequirement.getKeyStorage());
+            var attestation = AttestationJwt.parseJwt(attestationJwt);
+            var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
+            // If trusted Attestation Services is empty, all attestation services are trusted for ease of trying out things.
+            var trustedAttestation = trustedAttestationServices.isEmpty() || attestation.issuedByAny(trustedAttestationServices);
+            return trustedAttestation && attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage());
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Attestation is malformed!");
         } catch (IllegalArgumentException e) {
-            throw new Oid4vcException(e, INVALID_PROOF, String.format("Attestation is malformed! %s", e.getMessage()));
+            throw new Oid4vcException(e, INVALID_PROOF, String.format("Attestation has been rejected! %s", e.getMessage()));
         } catch (JOSEException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Attestation key is not supported or not matching the signature!");
         }
