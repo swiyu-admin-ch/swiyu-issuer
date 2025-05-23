@@ -390,7 +390,7 @@ In our deployment we can set the value by adding in the environment variable
 | credential_configurations_supported.*.format                                  | "vc+sd-jwt"                                                      | Yes      |                                                           |
 | credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256"]                                                        | Yes      |                                                           |
 | credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256"]} ``` | No       | When set only the exact object shown as sample is allowed |
-| credential_configurations_supported.*.cryptographic_binding_methods_supported | ["did:jwk"]                                                      | No       |                                                           |
+| credential_configurations_supported.*.cryptographic_binding_methods_supported | ["jwk"]                                                          | No       |                                                           |
 
 The configuration `proof_types_supported` allows specifying the required security specification the wallet should store 
 key material in for the credential. This value is provided alongside `proof_signing_alg_values_supported`.

@@ -34,6 +34,9 @@
       "credential_signing_alg_values_supported": [
         "ES256"
       ],
+      "cryptographic_binding_methods_supported": [
+        "jwk"
+      ],
       "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
@@ -173,7 +176,7 @@
         "ES256"
       ],
       "cryptographic_binding_methods_supported": [
-        "did:jwk"
+        "jwk"
       ],
       "proof_types_supported": {
         "jwt": {
@@ -227,7 +230,7 @@
         "ES256"
       ],
       "cryptographic_binding_methods_supported": [
-        "did:jwk"
+        "jwk"
       ],
       "proof_types_supported": {
         "jwt": {

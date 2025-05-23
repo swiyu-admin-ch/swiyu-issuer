@@ -99,7 +99,7 @@ configs:
           "my-test-vc": {
             "format": "vc+sd-jwt",
             "cryptographic_binding_methods_supported": [
-              "did:jwk"
+              "jwk"
             ],
             "credential_signing_alg_values_supported": [
               "ES256"

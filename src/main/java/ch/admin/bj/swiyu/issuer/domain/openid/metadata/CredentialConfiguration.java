@@ -60,7 +60,7 @@ public class CredentialConfiguration {
      */
     @JsonProperty("cryptographic_binding_methods_supported")
     @Valid
-    private List<@Pattern(regexp = "^did:jwk$", message = "Only jwk as did:jwk is supported")String> cryptographicBindingMethodsSupported;
+    private List<@Pattern(regexp = "^(did:)?jwk$", message = "Only jwk and did:jwk are supported")String> cryptographicBindingMethodsSupported;
 
     /**
      * Case-sensitive strings that identify the algorithms that the Issuer uses to sign the issued Credential

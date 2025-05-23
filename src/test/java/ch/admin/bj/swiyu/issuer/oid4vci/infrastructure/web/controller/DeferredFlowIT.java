@@ -95,7 +95,7 @@ class DeferredFlowIT {
         var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
 
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true);
+        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -128,7 +128,7 @@ class DeferredFlowIT {
         var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
 
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true);
+        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, (String) token, credentialRequestString)
@@ -168,7 +168,7 @@ class DeferredFlowIT {
     void testWrongBearer_thenInvalidCredentialRequestException() throws Exception {
         var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true);
+        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -197,7 +197,7 @@ class DeferredFlowIT {
 
         var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true);
+        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         // wrong token
@@ -231,7 +231,7 @@ class DeferredFlowIT {
         var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
 
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true);
+        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, (String) token, credentialRequestString)

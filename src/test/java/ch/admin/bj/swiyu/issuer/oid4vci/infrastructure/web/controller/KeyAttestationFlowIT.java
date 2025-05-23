@@ -128,7 +128,7 @@ class KeyAttestationFlowIT {
         var token = tokenResponse.get("access_token");
         Assertions.assertThat(token).isNotNull();
         Assertions.assertThat(tokenResponse).containsKey("c_nonce");
-        String proof = TestUtils.createAttestedHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true, resistance);
+        String proof = TestUtils.createAttestedHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false, resistance);
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
 
         return new CredentialFetchData(token, credentialRequestString);
