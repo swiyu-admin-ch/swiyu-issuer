@@ -194,7 +194,7 @@ class CredentialOfferCreateIT {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"iss", "nbf", "exp", "iat", "cnf", "vct", "status", "_sd", "_sd_alg", "sd_hash", "..."})
+    @ValueSource(strings = {"sub", "iss", "nbf", "exp", "iat", "cnf", "vct", "status", "_sd", "_sd_alg", "sd_hash", "..."})
     void testProtectedClaimsInOfferData_thenBadRequest(String claim) throws Exception {
 
         String jsonPayload = """
