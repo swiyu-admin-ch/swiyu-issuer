@@ -380,7 +380,7 @@ In our deployment we can set the value by adding in the environment variable
 #### Allowed Issuer Metadata config values
 
 > The paths specified below are referring to the json structure of the credential issuer metadata as specified in
-> the [OpenID4VCI sepcificiation](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#section-11.2.3)
+> the [OpenID4VCI specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#section-11.2.3)
 
 | Config path                                                                   | Allowed values                                                   | Required | Comment                                                   |
 |-------------------------------------------------------------------------------|------------------------------------------------------------------|----------|-----------------------------------------------------------|
@@ -412,11 +412,14 @@ Example value
 
 The value of `key_attestation_required` can be an empty json object `{}`. This requests a key attestation to provided,
 but leaves the choice of security level up to the wallet. 
+A key attestation is proof created by a service (henceforth called attestation service) attesting the wallets key has been created according to a given security standard. 
+We as issuer have to trust this attestation service. For more details about key attestations refer to the OID4VCI specification
+or other online resources like for example the [android documentation](https://developer.android.com/privacy-and-security/security-key-attestation).
 
-| Supported key_storage Value | Description                                                                                                                                                           |
-|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| iso_18045_enhanced-basic	   | Key storage is resistant to attack with attack potential "Enhanced-Basic", equivalent to VAN.3 according to ISO 18045. This is the case if TEE is used                |
-| iso_18045_high                            | Key storage is is resistant to attack with attack potential "High", equivalent to VAN.5 according to ISO 18045. This is the case if Strongbox/Secure enclave is used  |
+| Supported key_storage Value | Description                                                                                                                                                                                                                                            |
+|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| iso_18045_enhanced-basic	   | Key storage is resistant to attack with attack potential "Enhanced-Basic", equivalent to VAN.3 according to ISO 18045. This is the case if TEE is used.                                                                                                |
+| iso_18045_high              | Key storage is is resistant to attack with attack potential "High", equivalent to VAN.5 according to ISO 18045. This is the case if Strongbox/Secure enclave is used. Please note that no backup of credentials issued with this security can be made. |
 
 
 It is possible to limit key attestation providers by their DID. This can be configured with providing a list of trusted attestation issuers. 
