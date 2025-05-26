@@ -494,6 +494,7 @@ public class CredentialService {
             } catch (IOException e) {
                 throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
             }
+
             var attestationRequirement = bindingProofType.getKeyAttestationRequirement();
             checkHolderKeyAttestation(attestationRequirement, requestProof);
 
@@ -503,17 +504,24 @@ public class CredentialService {
         return Optional.empty();
     }
 
-    private void checkHolderKeyAttestation(KeyAttestationRequirement attestationRequirement, Proof requestProof) {
-        if (attestationRequirement != null) {
-            if (!(requestProof instanceof AttestableProof)) {
-                throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
-            }
-            var attestation = ((AttestableProof) requestProof).getAttestationJwt();
-            if (attestation == null) {
-                throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
-            }
-            keyAttestationService.throwIfInvalidAttestation(attestationRequirement, attestation);
+    private void checkHolderKeyAttestation(KeyAttestationRequirement attestationRequirement, Proof requestProof) throws Oid4vcException {
+        // No Attestation required, no further checks needed
+        if (attestationRequirement == null) {
+            return;
         }
+
+        // Proof type cannot hold an attestation
+        if (!(requestProof instanceof AttestableProof)) {
+            throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
+        }
+
+
+        var attestation = ((AttestableProof) requestProof).getAttestationJwt();
+        if (attestation == null) {
+            throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
+        }
+
+        keyAttestationService.throwIfInvalidAttestation(attestationRequirement, attestation);
     }
 
 }
