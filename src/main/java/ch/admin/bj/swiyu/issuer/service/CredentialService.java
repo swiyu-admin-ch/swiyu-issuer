@@ -512,9 +512,7 @@ public class CredentialService {
             if (attestation == null) {
                 throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
             }
-            if (!keyAttestationService.isValidKeyAttestation(attestationRequirement, attestation)) {
-                throw new Oid4vcException(INVALID_PROOF, "Attestation was invalid or from an untrusted source!");
-            }
+            keyAttestationService.throwIfInvalidAttestation(attestationRequirement, attestation);
         }
     }
 

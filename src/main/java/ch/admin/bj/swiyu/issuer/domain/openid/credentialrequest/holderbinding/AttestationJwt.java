@@ -48,14 +48,12 @@ public class AttestationJwt {
     /**
      *
      * @param trustedAttestationProviders list of trusted issuers
-     * @return true if the jwt issuer is part of the provided issuers
      * @throws IllegalArgumentException if the issuer of the jwt is not matching the list of trusted attestation providers
      */
-    public boolean issuedByAny(@NotNull List<String> trustedAttestationProviders) throws IllegalArgumentException {
+    public void throwIfNotTrustedAttestationProvider(@NotNull List<String> trustedAttestationProviders) throws IllegalArgumentException {
         if (!trustedAttestationProviders.contains(claims.getIssuer())) {
             throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted issuers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
         }
-        return true;
     }
 
     /**

@@ -20,13 +20,20 @@ public class KeyAttestationService {
     private final KeyResolver keyResolver;
     private final ApplicationProperties applicationProperties;
 
-    public boolean isValidKeyAttestation(@NotNull KeyAttestationRequirement attestationRequirement, @NotNull String attestationJwt) {
+
+    public void throwIfInvalidAttestation(@NotNull KeyAttestationRequirement attestationRequirement, @NotNull String attestationJwt) throws Oid4vcException {
         try {
             var attestation = AttestationJwt.parseJwt(attestationJwt);
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
+
             // If trusted Attestation Services is empty, all attestation services are trusted for ease of trying out things.
-            var trustedAttestation = trustedAttestationServices.isEmpty() || attestation.issuedByAny(trustedAttestationServices);
-            return trustedAttestation && attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage());
+            if(!trustedAttestationServices.isEmpty()) {
+                attestation.throwIfNotTrustedAttestationProvider(trustedAttestationServices);
+            }
+
+            if (!attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage())) {
+                throw new Oid4vcException(INVALID_PROOF, "Attestation was invalid or not matching the attack resistance for the credential!");
+            }
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Attestation is malformed!");
         } catch (IllegalArgumentException e) {
