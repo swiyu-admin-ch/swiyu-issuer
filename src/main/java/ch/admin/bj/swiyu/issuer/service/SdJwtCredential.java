@@ -6,17 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.getUnixTimeStamp;
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToUnixTimestamp;
-import static java.util.Objects.nonNull;
-
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
@@ -32,10 +21,21 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.extern.slf4j.Slf4j;
 
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.getUnixTimeStamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
+import static java.util.Objects.nonNull;
+
 @Slf4j
 public class SdJwtCredential extends CredentialBuilder {
 
-    public static final List<String> SDJWT_PROTECTED_CLAIMS = List.of("iss", "nbf", "exp", "iat", "cnf", "vct", "status", "_sd", "_sd_alg", "sd_hash", "...");
+    public static final List<String> SDJWT_PROTECTED_CLAIMS = List.of("sub", "iss", "nbf", "exp", "iat", "cnf", "vct", "status", "_sd", "_sd_alg", "sd_hash", "...");
 
     private final SdjwtProperties sdjwtProperties;
 
