@@ -44,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-
 class DeferredFlowIT {
 
     private static ECKey jwk;
@@ -66,6 +65,18 @@ class DeferredFlowIT {
     private ApplicationProperties applicationProperties;
     @Autowired
     private TransactionTemplate transactionTemplate;
+
+    private static String getCredentialRequestString(String proof) {
+        return String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
+    }
+
+    private static String getDeferredCredentialRequestString(String transactionId) {
+        return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
+    }
+
+    private static Map<String, Object> getCredentialMetadata(Boolean deferred) {
+        return Map.of("vct#integrity", "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", "deferred", deferred);
+    }
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -131,7 +142,7 @@ class DeferredFlowIT {
         String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
-        var response = requestCredential(mock, (String) token, credentialRequestString)
+        var response = requestCredential(mock, token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -160,7 +171,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_CREDENTIAL_REQUEST"))
+                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
                 .andReturn();
     }
 
@@ -220,7 +231,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_CREDENTIAL_REQUEST"))
+                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
                 .andExpect(jsonPath("$.error_description").value("Invalid transactional id"))
                 .andReturn();
     }
@@ -234,7 +245,7 @@ class DeferredFlowIT {
         String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
-        var response = requestCredential(mock, (String) token, credentialRequestString)
+        var response = requestCredential(mock, token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -254,12 +265,8 @@ class DeferredFlowIT {
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_CREDENTIAL_REQUEST"))
+                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
                 .andReturn();
-    }
-
-    private static String getCredentialRequestString(String proof) {
-        return String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
     }
 
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
@@ -267,10 +274,6 @@ class DeferredFlowIT {
         credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
         statusList.incrementNextFreeIndex();
-    }
-
-    private static String getDeferredCredentialRequestString(String transactionId) {
-        return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
     }
 
     private ResultActions getDeferredCallResultActions(Object token, String deferredCredentialRequestString) throws Exception {
@@ -289,10 +292,6 @@ class DeferredFlowIT {
                 credentialOfferRepository.save(credentialOffer);
             }
         });
-    }
-
-    private static Map<String, Object> getCredentialMetadata(Boolean deferred) {
-        return Map.of("vct#integrity", "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", "deferred", deferred);
     }
 
 }
