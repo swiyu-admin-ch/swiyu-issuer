@@ -42,9 +42,21 @@ public class WellKnownController {
      *
      * @return OpenIdConfigurationDto as defined by OIDConnect and extended by OID4VCI
      */
-    @GetMapping(value = {"/openid-configuration", "/oauth-authorization-server"})
+    @GetMapping("/openid-configuration")
     @Operation(summary = "OpenID Connect information required for issuing VCs")
     public OpenIdConfigurationDto getOpenIDConfiguration() throws IOException {
+        return openIDConfigurationDto.getOpenIdConfiguration();
+    }
+
+    /**
+     * OpenID Connect information for the OAuth Authorization Server
+     * This endpoint is a duplicate of the getOpenIDConfiguration endpoint in order to generate a clean openapi doc
+     *
+     * @return OpenIdConfigurationDto as defined by OIDConnect and extended by OID4VCI
+     */
+    @GetMapping("/oauth-authorization-server")
+    @Operation(summary = "OpenID Connect information required for issuing VCs")
+    public OpenIdConfigurationDto getOpenIDConfigurationForOauthAuthServer() throws IOException {
         return openIDConfigurationDto.getOpenIdConfiguration();
     }
 
