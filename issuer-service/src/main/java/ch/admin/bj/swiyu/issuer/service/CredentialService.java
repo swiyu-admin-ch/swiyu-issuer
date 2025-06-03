@@ -438,7 +438,7 @@ public class CredentialService {
         var storedTransactionId = credentialOffer.getTransactionId();
 
         if (isNull(storedTransactionId) || !storedTransactionId.equals(transactionId)) {
-            throw new Oid4vcException(INVALID_CREDENTIAL_REQUEST, "Invalid transactional id");
+            throw new Oid4vcException(INVALID_TRANSACTION_ID, "Invalid transactional id");
         }
 
         return credentialOffer;

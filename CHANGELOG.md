@@ -47,18 +47,24 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
 }
 ```
 
-- Enable requesting Key Attestation via Issuer Metadata. This can be used with key_attestation_required. See readme for more details.
-- Enable receiving and verification of Key Attestations in Credential Request Proofs. Verifying the integrity of the attestation and checking if it was issued by one of the issuers trusted in TRUSTED_ATTESTATION_PROVIDERS.
+- Enable requesting Key Attestation via Issuer Metadata. This can be used with key_attestation_required. See readme for
+  more details.
+- Enable receiving and verification of Key Attestations in Credential Request Proofs. Verifying the integrity of the
+  attestation and checking if it was issued by one of the issuers trusted in TRUSTED_ATTESTATION_PROVIDERS.
 
 ### Fixed
 
 - Checks for protected claims are now done in the create-offer-flow (1 step) instead of the issuance flow.
 - Business Issuer is directly informed when the payload cannot be processed later.
 - Fix status code when jwt filter criteria are not met from a 500 to 401.
+- Fixed error code when deferred endpoint is called with invalid transaction id to INVALID_TRANSACTION_ID instead of
+  INVALID_CREDENTIAL_REQUEST.
 
 ## 1.0.0
+
 Merge of issuer-agent-management 1.6.1 and issuer-agent-oid4vci into one service.
 
-For migration merge environment variables. Please ensure that management endpoints are not accessible from public using a WAF or Reverse-Proxy limiting the reachable endpoints.
+For migration merge environment variables. Please ensure that management endpoints are not accessible from public using
+a WAF or Reverse-Proxy limiting the reachable endpoints.
 
 Note: If using HSM for signing, both status list and credentials must be signed with HSM.
