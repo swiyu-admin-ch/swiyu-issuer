@@ -236,6 +236,14 @@
             <version>${revision}</version> <!-- Use the same version as the parent pom -->
         </dependency>
 
+        <dependency>
+            <groupId>ch.admin.bj.swiyu</groupId>
+            <artifactId>swiyu-issuer-service</artifactId>
+            <version>${revision}</version> <!-- Use the same version as the parent pom -->
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+
         <!-- this is a test dependency, it is used to test the verifier service with the mocks defined in verifer-service-->
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>

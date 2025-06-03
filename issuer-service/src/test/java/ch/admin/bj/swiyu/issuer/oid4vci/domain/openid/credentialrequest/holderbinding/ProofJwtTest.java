@@ -5,7 +5,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestUtils;
+import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.Curve;
@@ -114,7 +114,7 @@ public class ProofJwtTest {
     void givenValidKidAttributeRepresentation_whenHolderBindingValidate_thenValid_() throws JOSEException {
         // Check holder proof with didJwk
         var nonce = UUID.randomUUID();
-        String proof = TestUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), true);
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), true);
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
         var offer = createTestOffer(nonce);
         assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
@@ -124,7 +124,7 @@ public class ProofJwtTest {
     void givenValidJwkAttributeRepresentation_whenHolderBindingValidate_thenValid_() throws JOSEException {
         // Check holder proof with didJwk
         var nonce = UUID.randomUUID();
-        String proof = TestUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), false);
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
         var offer = createTestOffer(nonce);
         assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));

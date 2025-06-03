@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.metadata;
+package ch.admin.bj.swiyu.issuer.oid4vci;
 
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests with the example_issuer_metadata.json and testing the example configs.
  */
 @SpringBootTest
-class IssuerMetadataTechnicalTest {
+class IssuerMetadataTechnicalIT {
 
     @Autowired
     IssuerMetadataTechnical issuerMetadataTechnical;

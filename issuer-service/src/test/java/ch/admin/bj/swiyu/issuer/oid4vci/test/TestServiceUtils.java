@@ -6,40 +6,23 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
-import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
-import com.authlete.sd.Disclosure;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 
-public class TestUtils {
+public class TestServiceUtils {
 //    public static Map<String, Object> fetchOAuthToken(MockMvc mock, String preAuthCode) throws Exception {
 //        var response = mock.perform(post("/api/v1/token")
 //                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
@@ -52,13 +35,13 @@ public class TestUtils {
 //        return new ObjectMapper().readValue(response.getResponse().getContentAsString(), HashMap.class);
 //    }
 
-    public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
-        return mock.perform(post("/api/v1/credential")
-                .header("Authorization", String.format("BEARER %s", token))
-                .contentType("application/json")
-                .content(credentialRequestString)
-        );
-    }
+//    public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
+//        return mock.perform(post("/api/v1/credential")
+//                .header("Authorization", String.format("BEARER %s", token))
+//                .contentType("application/json")
+//                .content(credentialRequestString)
+//        );
+//    }
 
     public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk) throws JOSEException {
         return createHolderProof(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, new Date());
@@ -134,44 +117,44 @@ public class TestUtils {
 //        return JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject();
 //    }
 
-    public static void verifyVC(SdjwtProperties sdjwtProperties, String vc, Map<String, String> credentialSubjectData) throws Exception {
+//    public static void verifyVC(SdjwtProperties sdjwtProperties, String vc, Map<String, String> credentialSubjectData) throws Exception {
+//
+//        var keyPair = ECKey.parseFromPEMEncodedObjects(sdjwtProperties.getPrivateKey());
+//        var publicJWK = keyPair.toPublicJWK();
+//        var sdJwtTokenParts = vc.split("~");
+//        var jwt = sdJwtTokenParts[0];
+//        var disclosures = List.of(sdJwtTokenParts).subList(1, sdJwtTokenParts.length);
+//
+//        // vc must end with "~" as it has no holder binding
+//        assert (vc.endsWith("~"));
+//
+//        assertTrue(verifyToken(jwt, publicJWK.toJSONString()));
+//
+//        List<Disclosure> disclosureList = disclosures.stream().map(Disclosure::parse).toList();
+//
+//        assertEquals(credentialSubjectData.size(), disclosureList.size());
+//
+//        disclosureList.forEach(disclosure -> {
+//            assertNotNull(disclosure.getClaimName());
+//            assertEquals(credentialSubjectData.get(disclosure.getClaimName()), disclosure.getClaimValue());
+//        });
+//    }
 
-        var keyPair = ECKey.parseFromPEMEncodedObjects(sdjwtProperties.getPrivateKey());
-        var publicJWK = keyPair.toPublicJWK();
-        var sdJwtTokenParts = vc.split("~");
-        var jwt = sdJwtTokenParts[0];
-        var disclosures = List.of(sdJwtTokenParts).subList(1, sdJwtTokenParts.length);
-
-        // vc must end with "~" as it has no holder binding
-        assert (vc.endsWith("~"));
-
-        assertTrue(verifyToken(jwt, publicJWK.toJSONString()));
-
-        List<Disclosure> disclosureList = disclosures.stream().map(Disclosure::parse).toList();
-
-        assertEquals(credentialSubjectData.size(), disclosureList.size());
-
-        disclosureList.forEach(disclosure -> {
-            assertNotNull(disclosure.getClaimName());
-            assertEquals(credentialSubjectData.get(disclosure.getClaimName()), disclosure.getClaimValue());
-        });
-    }
-
-    public static boolean verifyToken(String token, String publicKeyJwk) {
-        try {
-            SignedJWT signedJWT = SignedJWT.parse(token);
-
-            // Parse the public key JWK
-            JWK jwk = JWK.parse(publicKeyJwk);
-
-            // Create a JWSVerifier with the public key
-            JWSVerifier verifier = new ECDSAVerifier(jwk.toECKey());
-
-            // Verify the signature
-            return signedJWT.verify(verifier);
-        } catch (ParseException | JOSEException e) {
-            return false;
-        }
-    }
+//    public static boolean verifyToken(String token, String publicKeyJwk) {
+//        try {
+//            SignedJWT signedJWT = SignedJWT.parse(token);
+//
+//            // Parse the public key JWK
+//            JWK jwk = JWK.parse(publicKeyJwk);
+//
+//            // Create a JWSVerifier with the public key
+//            JWSVerifier verifier = new ECDSAVerifier(jwk.toECKey());
+//
+//            // Verify the signature
+//            return signedJWT.verify(verifier);
+//        } catch (ParseException | JOSEException e) {
+//            return false;
+//        }
+//    }
 
 }

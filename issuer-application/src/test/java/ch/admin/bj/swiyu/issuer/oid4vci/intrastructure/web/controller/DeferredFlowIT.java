@@ -4,13 +4,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestUtils;
+import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
+import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JOSEException;
@@ -38,7 +39,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestUtils.requestCredential;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -103,10 +104,10 @@ class DeferredFlowIT {
     @Test
     void testBoundDeferredFlow_thenSuccess() throws Exception {
 
-        var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
 
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -130,16 +131,16 @@ class DeferredFlowIT {
                 .andReturn();
 
         var vc = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject().get("credential").getAsString();
-        TestUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
+        TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
     }
 
     @Test
     void testBoundDeferredFlow_thenIssuancePendingException() throws Exception {
 
-        var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
 
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -161,7 +162,7 @@ class DeferredFlowIT {
     @Test
     void testBoundDeferredFlowWithInvalidTransactionId_thenInvalidCredentialRequestException() throws Exception {
 
-        var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
 
         String transactionId = "00000000-0000-0000-0000-000000000000";
@@ -177,9 +178,9 @@ class DeferredFlowIT {
 
     @Test
     void testWrongBearer_thenInvalidCredentialRequestException() throws Exception {
-        var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -206,13 +207,13 @@ class DeferredFlowIT {
     @Test
     void testWrongTransactionIdToken_thenInvalidCredentialRequestException() throws Exception {
 
-        var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         // wrong token
-        var otherTokenResponse = TestUtils.fetchOAuthToken(mock, notDeferredPreAuthCode.toString());
+        var otherTokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, notDeferredPreAuthCode.toString());
         var otherToken = otherTokenResponse.get("access_token");
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -239,10 +240,10 @@ class DeferredFlowIT {
     @Test
     void testBoundDeferredFlowWithAlreadyIssuedCredential_thenInvalidCredentialRequestException() throws Exception {
 
-        var tokenResponse = TestUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
         String token = (String) tokenResponse.get("access_token");
 
-        String proof = TestUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -261,7 +262,7 @@ class DeferredFlowIT {
                 .andReturn();
 
         var vc = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject().get("credential").getAsString();
-        TestUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
+        TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isBadRequest())
