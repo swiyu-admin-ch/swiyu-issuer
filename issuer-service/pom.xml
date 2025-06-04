@@ -15,6 +15,7 @@
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-issuer-parent</artifactId>
         <version>1.2.0-SNAPSHOT</version>
+        <relativePath/>
     </parent>
 
     <artifactId>swiyu-issuer-service</artifactId>
