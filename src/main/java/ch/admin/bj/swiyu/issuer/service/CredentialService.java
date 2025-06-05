@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
@@ -61,7 +62,7 @@ public class CredentialService {
     private final ApplicationProperties applicationProperties;
     private final OpenIdIssuerConfiguration openIDConfiguration;
     private final DataIntegrityService dataIntegrityService;
-
+    private final WebhookService webhookService;
 
     @Transactional // not readonly since expired credentails gets updated here automatically
     public Object getCredentialOffer(UUID credentialId) {
@@ -112,7 +113,7 @@ public class CredentialService {
     /**
      * Returns the credential offer for the given id.
      * <p>
-     * Attention: If it is expired it will updated its state before returning it.
+     * Attention: If it is expired it will update its state before returning it.
      */
     private CredentialOffer getCredential(UUID credentialId) {
 
@@ -158,7 +159,9 @@ public class CredentialService {
         }
 
         log.info(String.format("Updating %s from %s to %s", credential.getId(), currentStatus, newStatus));
-        return this.credentialOfferRepository.save(credential);
+        var updatedCredentialOffer = this.credentialOfferRepository.save(credential);
+        webhookService.produceStateChangeEvent(updatedCredentialOffer.getId(), updatedCredentialOffer.getCredentialStatus());
+        return updatedCredentialOffer;
     }
 
     /**
@@ -310,6 +313,9 @@ public class CredentialService {
         }
 
         if (credentialOffer.hasTokenExpirationPassed()) {
+            webhookService.produceErrorEvent(credentialOffer.getId(),
+                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
+                    "AccessToken expired, offer possibly stuck in IN_PROGRESS");
             throw OAuthException.invalidRequest("AccessToken expired.");
         }
 
@@ -320,7 +326,13 @@ public class CredentialService {
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT, "Mismatch between requested and offered format.");
         }
 
-        var holderPublicKey = getHolderPublicKey(credentialRequest, credentialOffer);
+        Optional<String> holderPublicKey;
+        try {
+            holderPublicKey = getHolderPublicKey(credentialRequest, credentialOffer);
+        } catch (Oid4vcException e) {
+            webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, e.getMessage());
+            throw e;
+        }
 
         var vcBuilder = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
@@ -344,6 +356,7 @@ public class CredentialService {
         }
 
         credentialOfferRepository.save(credentialOffer);
+        webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
         return responseEnvelope;
     }
 
@@ -385,6 +398,8 @@ public class CredentialService {
         credentialOffer.markAsIssued();
 
         credentialOfferRepository.save(credentialOffer);
+        webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+
         return vc;
     }
 
@@ -407,6 +422,7 @@ public class CredentialService {
         offer.setTokenIssuanceTimestamp(applicationProperties.getTokenTTL());
 
         credentialOfferRepository.save(offer);
+        webhookService.produceStateChangeEvent(offer.getId(), offer.getCredentialStatus());
 
         return OAuthTokenDto.builder()
                 .accessToken(offer.getAccessToken().toString())

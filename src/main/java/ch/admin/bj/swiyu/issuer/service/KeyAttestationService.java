@@ -32,14 +32,14 @@ public class KeyAttestationService {
             }
 
             if (!attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage())) {
-                throw new Oid4vcException(INVALID_PROOF, "Attestation was invalid or not matching the attack resistance for the credential!");
+                throw new Oid4vcException(INVALID_PROOF, "Key attestation was invalid or not matching the attack resistance for the credential!");
             }
         } catch (ParseException e) {
-            throw new Oid4vcException(e, INVALID_PROOF, "Attestation is malformed!");
+            throw new Oid4vcException(e, INVALID_PROOF, "Key attestation is malformed!");
         } catch (IllegalArgumentException e) {
             throw new Oid4vcException(e, INVALID_PROOF, String.format("Attestation has been rejected! %s", e.getMessage()));
         } catch (JOSEException e) {
-            throw new Oid4vcException(e, INVALID_PROOF, "Attestation key is not supported or not matching the signature!");
+            throw new Oid4vcException(e, INVALID_PROOF, "Key attestation key is not supported or not matching the signature!");
         }
 
     }

@@ -1,16 +1,19 @@
-package ch.admin.bj.swiyu.issuer.infrastructure.callback;
+package ch.admin.bj.swiyu.issuer.domain.callback;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.time.Instant;
 import java.util.UUID;
+
 @Entity
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA
+@NoArgsConstructor(access = AccessLevel.PUBLIC) // JPA
 @Table(name="callback_event")
 public class CallbackEvent {
 
@@ -32,12 +35,16 @@ public class CallbackEvent {
     private String event;
 
     @Column
+    @Nullable
+    private String eventDescription;
+
+    @Column
     @Enumerated(EnumType.STRING)
     private CallbackEventType type;
 
     @Column
     @CreatedDate
-    private Instant createdAt;
+    private Instant timestamp;
 
 
 }

@@ -1,5 +1,6 @@
-package ch.admin.bj.swiyu.issuer.infrastructure.config;
+package ch.admin.bj.swiyu.issuer.common.config;
 
+import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -8,6 +9,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 @ConfigurationProperties("webhook")
 public class WebhookProperties {
+    @Nullable
     private String callbackUri;
-    private String apiKey;
+    @Nullable
+    private String apiKeyHeader;
+    @Nullable
+    private String apiKeyValue;
 }

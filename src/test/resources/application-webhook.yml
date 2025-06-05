@@ -2,6 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 webhook:
-  callback-uri: "http://www.example.com"
+  callback-uri: "http://www.example.com/test/callback"
   api-key-header: "x-api-key"
   api-key-value: "TEST_API_KEY"

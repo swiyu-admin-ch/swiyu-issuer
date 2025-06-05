@@ -100,7 +100,7 @@ class KeyAttestationFlowIT {
         mockDidResolve(jwk.toPublicJWK());
         var response = TestUtils.requestFailingCredential(mock, fetchData.token, fetchData.credentialRequestString);
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
-        Assertions.assertThat(response.get("error_description").getAsString()).contains("Attestation");
+        Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
     }
 
     @Test
@@ -132,7 +132,7 @@ class KeyAttestationFlowIT {
         mockDidResolve(new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate().toPublicJWK());
         var response = TestUtils.requestFailingCredential(mock, fetchData.token, fetchData.credentialRequestString);
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
-        Assertions.assertThat(response.get("error_description").getAsString()).contains("Attestation");
+        Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
     }
 
 

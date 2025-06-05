@@ -452,6 +452,29 @@ For example we could use the file `/cfg-files/vct-test.json` by setting
 The content of vct-test.json will then be available at `$EXTERNAL_URL/vct/testv1`
 
 
+#### Webhook Callbacks
+It is possible to configure a Webhook Callback endpoint, optionally secured by API Key.  
+
+| Variable                      | Description                                                                                                                                                                           |
+|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| WEBHOOK_CALLBACK_URI | Full URI of the REST endpoint where webhooks shall be sent to. No Callback events will be created if not set.                                                                         |
+| WEBHOOK_API_KEY_HEADER | (Optional) API key header, if the callback uri has a api key for protection. Will be used as HTTP header key.                                                                         |
+| WEBHOOK_API_KEY_VALUE | (Optional, Required if WEBHOOK_API_KEY_HEADER is set) The API key used.                                                                                                               |
+| WEBHOOK_INTERVAL | How often the collected events are sent. Value interpreted as millisends if given a plain integer or an [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). | 
+
+Callbacks will be sent on change of VC state, such as when the VC is issued to a holder or is deferred. 
+Errors which concern the issuing process also create callbacks.
+
+Callback Object Structure
+
+| Field | Description                                                                                                             |
+| --- |-------------------------------------------------------------------------------------------------------------------------|
+| subject_id | ID of the element the callback is about. For now the management id of the credential                                    |
+| event_type | VC_STATUS_CHANGED or ISSUANCE_ERROR                                                                                     |
+| event | The new VC state if event_type is VC_STATUS_CHANGED. If ISSUANCE_ERROR one of OAUTH_TOKEN_EXPIRED or KEY_BINDING_ERROR  |
+| event_description | Human readable details.                                                                                                 |
+| timestamp | timestamp the event occured. Can differ from the time it is sent.                                                       |
+
 ## Data Structure
 
 ```mermaid

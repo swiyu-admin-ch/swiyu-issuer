@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.infrastructure.callback;
+package ch.admin.bj.swiyu.issuer.domain.callback;
 
 /**
  * The Event which sparked the callback

@@ -1,7 +1,10 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
+import ch.admin.bj.swiyu.issuer.api.callback.CallbackEventTypeDto;
+import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.service.WebhookService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.assertj.core.api.Assertions;
@@ -22,7 +25,10 @@ import java.util.concurrent.TimeUnit;
  */
 @SpringBootTest
 @Transactional
-class CallbackFlowIT {
+/**
+ * Test Webhook Callbacks including if the RestClient has been used correctly.
+ */
+class WebhookIT {
     static final String API_KEY_HEADER = "x-api-key";
     static final String API_KEY_VALUE = "1235";
 
@@ -31,6 +37,8 @@ class CallbackFlowIT {
     private static MockWebServer mockWebServer;
     @Autowired
     private WebhookService webhookService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @DynamicPropertySource
     static void callbackServerProperties(DynamicPropertyRegistry registry) {
@@ -51,7 +59,7 @@ class CallbackFlowIT {
     }
 
     @Test
-    void testHighLevelCallback() throws InterruptedException {
+    void testHighLevelCallback() throws InterruptedException, IOException {
         // Note: This is in one single test as failing tests would influence other running tests
         // through the enqueued responses.
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
@@ -63,7 +71,9 @@ class CallbackFlowIT {
         Assertions.assertThat(request).isNotNull();
         Assertions.assertThat(request.getMethod()).isEqualTo("POST");
         Assertions.assertThat(request.getHeader(API_KEY_HEADER)).isEqualTo(API_KEY_VALUE);
-
+        var dto = objectMapper.readValue(request.getBody().readByteArray(), WebhookCallbackDto.class);
+        Assertions.assertThat(dto.getEvent()).isEqualTo(CredentialStatusType.ISSUED.getDisplayName());
+        Assertions.assertThat(dto.getEventType()).isEqualTo(CallbackEventTypeDto.VC_STATUS_CHANGED);
         // When triggered again, should not send a callback again
         // We need to enqueue a possible successful response, if we should receive a request
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));

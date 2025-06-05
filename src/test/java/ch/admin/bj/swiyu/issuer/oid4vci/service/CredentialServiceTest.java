@@ -15,10 +15,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
-import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
-import ch.admin.bj.swiyu.issuer.service.CredentialService;
-import ch.admin.bj.swiyu.issuer.service.DataIntegrityService;
-import ch.admin.bj.swiyu.issuer.service.StatusListService;
+import ch.admin.bj.swiyu.issuer.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JWSSigner;
 import org.junit.jupiter.api.Test;
@@ -59,11 +56,13 @@ class CredentialServiceTest {
     private OpenIdIssuerConfiguration openIDConfiguration;
     @Mock
     private DataIntegrityService dataIntegrityService;
+    @Mock
+    private WebhookService webhookService;
 
     @Test
     void givenExpiredToken_whenGetCredential_thenThrowOAuthException() throws OAuthException {
         // Given
-        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService);
+        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService, webhookService);
         var uuid = UUID.randomUUID();
         var offerData = new HashMap<String, Object>() {{
             put("data", "data");
@@ -91,7 +90,7 @@ class CredentialServiceTest {
     @Test
     void givenExpiredOffer_whenCredentialIsCreated_throws() {
         // GIVEN
-        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService);
+        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService, webhookService);
         var uuid = UUID.randomUUID();
         var preAuthorizedCode = UUID.randomUUID();
         var offerData = new HashMap<String, Object>() {{
@@ -123,7 +122,7 @@ class CredentialServiceTest {
     void givenExpiredOffer_whenTokenIsCreated_throws() {
         // GIVEN
         var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper,
-                statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService);
+                statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService, webhookService);
         var uuid = UUID.randomUUID();
         var offerData = new HashMap<String, Object>() {{
             put("data", "data");

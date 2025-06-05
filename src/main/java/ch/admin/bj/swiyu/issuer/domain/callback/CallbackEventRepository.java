@@ -1,11 +1,11 @@
-package ch.admin.bj.swiyu.issuer.infrastructure.callback;
+package ch.admin.bj.swiyu.issuer.domain.callback;
 
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
-import org.hibernate.query.spi.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.lang.NonNull;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,5 +18,6 @@ public interface CallbackEventRepository extends JpaRepository<CallbackEvent, UU
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(value = { @QueryHint(name="jakarta.persistence.lock.timeout", value = "-2")})
-    List<CallbackEvent> find(Limit limit);
+    @NonNull
+    List<CallbackEvent> findAll();
 }
