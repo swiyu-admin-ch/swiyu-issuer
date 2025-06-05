@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Swiss Confederation
+#
+# SPDX-License-Identifier: MIT
+webhook:
+  callback-uri: "http://www.example.com"
+  api-key-header: "x-api-key"
+  api-key-value: "TEST_API_KEY"
