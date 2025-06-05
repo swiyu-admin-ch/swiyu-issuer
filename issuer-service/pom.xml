@@ -301,6 +301,45 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator-maven-plugin.version}</version>
+                <configuration>
+                    <configOptions>
+                        <inputSpecRootDirectory>${project.basedir}/specs</inputSpecRootDirectory>
+                        <sourceFolder>main/java</sourceFolder>
+                        <interfaceOnly>true</interfaceOnly>
+                        <dateLibrary>java21</dateLibrary>
+                        <useJakartaEe>true</useJakartaEe>
+                        <openApiNullable>false</openApiNullable>
+                    </configOptions>
+                    <output>${project.build.directory}/generated-sources</output>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>swiyu-core-status-registry-client-generator</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <generatorName>java</generatorName>
+                            <library>restclient</library>
+                            <modelPackage>ch.admin.bj.swiyu.core.status.registry.client.model</modelPackage>
+                            <apiPackage>ch.admin.bj.swiyu.core.status.registry.client.api</apiPackage>
+                            <invokerPackage>ch.admin.bj.swiyu.core.status.registry.client.invoker
+                            </invokerPackage>
+                            <groupId>ch.admin.bj.swiyu</groupId>
+                            <artifactId>swiyu-core-status-registry-api-client</artifactId>
+                            <artifactVersion>${project.version}</artifactVersion>
+                            <generateApiTests>false</generateApiTests>
+                            <inputSpec>${project.basedir}/specs/SWIYU_Core_Business_status.yaml</inputSpec>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
