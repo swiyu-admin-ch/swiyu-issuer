@@ -9,10 +9,13 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.OauthAccessTokenRequestDto;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.service.CredentialService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -42,18 +45,10 @@ public class IssuanceController {
 
     private final CredentialService credentialService;
 
-    /**
-     * Endpoint for the wallet to fetch the token required for getting the credential
-     * Does not yet support pin.
-     *
-     * @param grantType   should be always urn:ietf:params:oauth:grant-type:pre-authorized_code
-     * @param preAuthCode single use code to get the token
-     * @return OAuth Token or raises an exception
-     */
     @Timed
     @PostMapping(value = {"/token"},
             produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Collect Bearer token with pre-authorized code")
+    @Operation(summary = "Collect Bearer token with pre-authorized code", hidden = true)
     public OAuthTokenDto oauthAccessToken(
             @RequestParam(name = "grant_type", defaultValue = OID4VCI_GRANT_TYPE) String grantType,
             @RequestParam(name = "pre-authorized_code") String preAuthCode) {
@@ -62,6 +57,27 @@ public class IssuanceController {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
         return credentialService.issueOAuthToken(preAuthCode);
+    }
+
+    @Timed
+    @PostMapping(value = {"/token"}, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @Operation(summary = "Submit form data",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Form data to be submitted",
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+                            schema = @Schema(implementation = OauthAccessTokenRequestDto.class)
+                    )
+            )
+    )
+    public OAuthTokenDto oauthAccessToken(
+            @ModelAttribute OauthAccessTokenRequestDto oauthAccessTokenRequestDto) {
+
+        if (!OID4VCI_GRANT_TYPE.equals(oauthAccessTokenRequestDto.grant_type())) {
+            throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
+        }
+        return credentialService.issueOAuthToken(oauthAccessTokenRequestDto.preauthorized_code());
     }
 
     @Timed

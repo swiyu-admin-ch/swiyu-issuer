@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -225,6 +226,24 @@ class IssuanceControllerIT {
     void testUnboundCredentialFlow_thenSuccess() throws Exception {
         var vc = getUnboundVc();
         TestUtils.verifyVC(sdjwtProperties, vc, getUnboundCredentialSubjectData());
+    }
+
+    @Test
+    void testDeprecatedTokenEndpoint_thenSuccess() throws Exception {
+        mock.perform(post("/api/v1/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                        .param("pre-authorized_code", validPreAuthCode.toString()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testNewTokenEndpoint_thenSuccess() throws Exception {
+        mock.perform(post("/api/v1/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                        .param("pre-authorized_code", validPreAuthCode.toString()))
+                .andExpect(status().isOk());
     }
 
     @Test
