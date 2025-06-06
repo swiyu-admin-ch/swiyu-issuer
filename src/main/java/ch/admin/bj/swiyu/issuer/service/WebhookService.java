@@ -82,6 +82,8 @@ public class WebhookService {
                     .toBodilessEntity();
             callbackEventRepository.delete(event);
         } catch (RestClientResponseException e) {
+            // Note; If delivery failed we will keep retrying to send the message ad-infinitum.
+            // This is intended behaviour as we have to guarantee an at-least-once delivery.
             log.error("Callback to {} failed with status code {} with message {}", webhookProperties.getCallbackUri(), e.getStatusCode(), e.getMessage());
         }
     }

@@ -453,7 +453,10 @@ The content of vct-test.json will then be available at `$EXTERNAL_URL/vct/testv1
 
 
 #### Webhook Callbacks
-It is possible to configure a Webhook Callback endpoint, optionally secured by API Key.  
+For issuers it can be useful to have up-to-date information about offered credentials. 
+It is possible to configure a Webhook Callback endpoint, optionally secured by API Key. Please note that delivery of
+callback events will be retried until successful, to guarantee an at-least-once delivery.
+Failed deliveries will create error logs and be retried in the next interval.
 
 | Variable                      | Description                                                                                                                                                                           |
 |-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
