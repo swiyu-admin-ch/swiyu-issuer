@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
-  title: Issuer management API
-  description: Generic Issuer management service
+  title: Issuer Service API
+  description: Generic swiyu Issuer Service service
 servers:
 - url: http://localhost:8080
   description: Generated server url
@@ -508,7 +508,7 @@ paths:
       tags:
       - Well-known endpoints
       summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfiguration_1
+      operationId: getOpenIDConfigurationForOauthAuthServer
       responses:
         "404":
           description: Not Found
@@ -525,9 +525,9 @@ components:
       - access_token
       type: object
       properties:
-        refresh_token:
-          type: string
         token_type:
+          type: string
+        refresh_token:
           type: string
         scope:
           type: string

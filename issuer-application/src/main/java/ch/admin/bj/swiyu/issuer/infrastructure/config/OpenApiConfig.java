@@ -19,8 +19,8 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI openApi() {
         return new OpenAPI().info(new io.swagger.v3.oas.models.info.Info()
-                .title("Issuer management API")
-                .description("Generic Issuer management service")
+                .title("Issuer Service API")
+                .description("Generic swiyu Issuer Service service")
         );
 
     }
