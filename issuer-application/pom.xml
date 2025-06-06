@@ -21,16 +21,11 @@
     <name>Swiyu issuer-application - Spring-Boot-Application</name>
     <description>Generic issuer for public beta</description>
 
-
     <dependencies>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
-            <version>1.14.2</version>
-        </dependency>
+        <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -38,32 +33,22 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-database-postgresql</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-json</artifactId>
         </dependency>
 
+        <!-- Spring Boot Tools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -72,17 +57,17 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-docker-compose</artifactId>
-            <scope>runtime</scope>
+            <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
+            <artifactId>spring-boot-docker-compose</artifactId>
+            <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring Cloud -->
+        <!-- Spring Cloud / Kubernetes -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-kubernetes-fabric8-config</artifactId>
@@ -92,37 +77,38 @@
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
 
-        <!-- Crypto Library JWT -->
+        <!-- Database Drivers and Migration -->
         <dependency>
-            <groupId>com.nimbusds</groupId>
-            <artifactId>nimbus-jose-jwt</artifactId>
-            <version>${nimbus-jose-jwt.version}</version>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
         </dependency>
 
-        <!-- To load pem files with nimbus -->
+        <!-- Monitoring & Tracing -->
         <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>${bouncycastle.version}</version>
-        </dependency>
-
-        <!-- HSM -->
-        <dependency>
-            <groupId>com.securosys.primus</groupId>
-            <artifactId>jce</artifactId>
-            <version>${primus-jce.version}</version>
-        </dependency>
-
-        <!-- Resolve DID -->
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>5.16.0</version>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <version>1.14.2</version>
         </dependency>
         <dependency>
-            <groupId>io.github.swiyu-admin-ch</groupId>
-            <artifactId>didresolver</artifactId>
-            <version>2.0.1</version>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-brave</artifactId>
         </dependency>
 
         <!-- Logging -->
@@ -139,23 +125,31 @@
             <artifactId>logstash-logback-encoder</artifactId>
             <version>${logstash-logback-encoder.version}</version>
         </dependency>
-        <!-- End Logging -->
 
+        <!-- OpenAPI / Documentation -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc-openapi-starter-webmvc-ui.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Internal Shared Module -->
+        <dependency>
+            <groupId>ch.admin.bj.swiyu</groupId>
+            <artifactId>swiyu-issuer-service</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- Miscellaneous / Utility -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- Tracing -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-tracing</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-tracing-bridge-brave</artifactId>
-        </dependency>
 
+
+        <!-- Test Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -168,99 +162,25 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>${springdoc-openapi-starter-webmvc-ui.version}</version>
-            <optional>true</optional>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>${archunit-junit5.verion}</version>
+            <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>net.javacrumbs.shedlock</groupId>
-            <artifactId>shedlock-spring</artifactId>
-            <version>${javacrumbs.shedlock.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>net.javacrumbs.shedlock</groupId>
-            <artifactId>shedlock-provider-jdbc-template</artifactId>
-            <version>${javacrumbs.shedlock.version}</version>
-        </dependency>
-        <!-- Tracing -->
-        <!--        <dependency>-->
-        <!--            <groupId>io.micrometer</groupId>-->
-        <!--            <artifactId>micrometer-tracing</artifactId>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>io.micrometer</groupId>-->
-        <!--            <artifactId>micrometer-tracing-bridge-brave</artifactId>-->
-        <!--        </dependency>-->
-
-        <!-- test dependencies -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5</artifactId>
-            <version>${archunit-junit5.verion}</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- end test dependencies -->
-        <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-json</artifactId>
-        </dependency>
-        <!-- To load pem files with nimbus -->
-
-        <!-- Logging -->
-
-        <!-- End Logging -->
-
-        <!-- SD-JWT -->
-        <!-- https://mvnrepository.com/artifact/com.authlete/sd-jwt -->
-        <dependency>
-            <groupId>com.authlete</groupId>
-            <artifactId>sd-jwt</artifactId>
-            <version>${authlete.version}</version>
-        </dependency>
-        <!-- End SD-JWT -->
-
-        <!-- Dependency to the issuer Service -->
-        <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>${revision}</version> <!-- Use the same version as the parent pom -->
-        </dependency>
-
-        <dependency>
-            <groupId>ch.admin.bj.swiyu</groupId>
-            <artifactId>swiyu-issuer-service</artifactId>
-            <version>${revision}</version> <!-- Use the same version as the parent pom -->
+            <version>${revision}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
-
-        <!-- this is a test dependency, it is used to test the verifier service with the mocks defined in verifer-service-->
-<!--        <dependency>-->
-<!--            <groupId>ch.admin.bj.swiyu</groupId>-->
-<!--            <artifactId>swiyu-verifier-service</artifactId>-->
-<!--            <version>1.1.0-SNAPSHOT</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>ch.admin.bj.swiyu</groupId>-->
-<!--            <artifactId>swiyu-verifier-service</artifactId>-->
-<!--            <version>1.1.0-SNAPSHOT</version>-->
-<!--            <classifier>tests</classifier>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-
-
     </dependencies>
+
     <dependencyManagement>
         <dependencies>
             <dependency>

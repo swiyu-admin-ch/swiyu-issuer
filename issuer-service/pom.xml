@@ -22,44 +22,16 @@
     <description>Generic issuer for public beta</description>
 
     <dependencies>
+        <!-- Spring Boot Starters -->
         <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
-            <version>1.14.2</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-
-        <!-- Crypto Library JWT -->
+        <!-- Database and Data Layer -->
         <dependency>
-            <groupId>com.nimbusds</groupId>
-            <artifactId>nimbus-jose-jwt</artifactId>
-            <version>${nimbus-jose-jwt.version}</version>
-        </dependency>
-
-        <!-- To load pem files with nimbus -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>${bouncycastle.version}</version>
-        </dependency>
-
-        <!-- HSM -->
-        <dependency>
-            <groupId>com.securosys.primus</groupId>
-            <artifactId>jce</artifactId>
-            <version>${primus-jce.version}</version>
-        </dependency>
-
-        <!-- Resolve DID -->
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>5.16.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.swiyu-admin-ch</groupId>
-            <artifactId>didresolver</artifactId>
-            <version>2.0.1</version>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-commons</artifactId>
         </dependency>
 
         <!-- Logging -->
@@ -76,14 +48,13 @@
             <artifactId>logstash-logback-encoder</artifactId>
             <version>${logstash-logback-encoder.version}</version>
         </dependency>
-        <!-- End Logging -->
 
+        <!-- Monitoring & Tracing -->
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <version>1.14.2</version>
         </dependency>
-        <!-- Tracing -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-tracing</artifactId>
@@ -93,6 +64,70 @@
             <artifactId>micrometer-tracing-bridge-brave</artifactId>
         </dependency>
 
+        <!-- Security & JWT / Crypto -->
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>${nimbus-jose-jwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.securosys.primus</groupId>
+            <artifactId>jce</artifactId>
+            <version>${primus-jce.version}</version>
+        </dependency>
+
+        <!-- Decentralized Identity (DID) -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.16.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.swiyu-admin-ch</groupId>
+            <artifactId>didresolver</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+
+        <!-- Scheduling / Locking -->
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>${javacrumbs.shedlock.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-jdbc-template</artifactId>
+            <version>${javacrumbs.shedlock.version}</version>
+        </dependency>
+
+        <!-- SD-JWT (JWT Standardization) -->
+        <dependency>
+            <groupId>com.authlete</groupId>
+            <artifactId>sd-jwt</artifactId>
+            <version>${authlete.version}</version>
+        </dependency>
+
+        <!-- Utility / Miscellaneous -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Documentation (OpenAPI) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc-openapi-starter-webmvc-ui.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Testing Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -105,93 +140,19 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>${springdoc-openapi-starter-webmvc-ui.version}</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>net.javacrumbs.shedlock</groupId>
-            <artifactId>shedlock-spring</artifactId>
-            <version>${javacrumbs.shedlock.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>net.javacrumbs.shedlock</groupId>
-            <artifactId>shedlock-provider-jdbc-template</artifactId>
-            <version>${javacrumbs.shedlock.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>jakarta.annotation</groupId>
-            <artifactId>jakarta.annotation-api</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-        <!-- Tracing -->
-        <!--        <dependency>-->
-        <!--            <groupId>io.micrometer</groupId>-->
-        <!--            <artifactId>micrometer-tracing</artifactId>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>io.micrometer</groupId>-->
-        <!--            <artifactId>micrometer-tracing-bridge-brave</artifactId>-->
-        <!--        </dependency>-->
-
-        <!-- test dependencies -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
             <version>${archunit-junit5.verion}</version>
             <scope>test</scope>
         </dependency>
-        <!-- end test dependencies -->
-
-        <!-- To load pem files with nimbus -->
-
-        <!-- Logging -->
-
-        <!-- End Logging -->
-
-        <!-- SD-JWT -->
-        <!-- https://mvnrepository.com/artifact/com.authlete/sd-jwt -->
         <dependency>
-            <groupId>com.authlete</groupId>
-            <artifactId>sd-jwt</artifactId>
-            <version>${authlete.version}</version>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
         </dependency>
-        <!-- End SD-JWT -->
-
-        <!-- this is a test dependency, it is used to test the verifier service with the mocks defined in verifer-service-->
-<!--        <dependency>-->
-<!--            <groupId>ch.admin.bj.swiyu</groupId>-->
-<!--            <artifactId>swiyu-verifier-service</artifactId>-->
-<!--            <version>1.1.0-SNAPSHOT</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>ch.admin.bj.swiyu</groupId>-->
-<!--            <artifactId>swiyu-verifier-service</artifactId>-->
-<!--            <version>1.1.0-SNAPSHOT</version>-->
-<!--            <classifier>tests</classifier>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-commons</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-
 
     </dependencies>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
