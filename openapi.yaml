@@ -503,6 +503,21 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OpenIdConfiguration"
+  /.well-known/oauth-authorization-server:
+    get:
+      tags:
+      - Well-known endpoints
+      summary: OpenID Connect information required for issuing VCs
+      operationId: getOpenIDConfiguration_1
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OpenIdConfiguration"
 components:
   schemas:
     OAuthToken:
@@ -510,9 +525,9 @@ components:
       - access_token
       type: object
       properties:
-        token_type:
-          type: string
         refresh_token:
+          type: string
+        token_type:
           type: string
         scope:
           type: string
