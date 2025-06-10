@@ -11,6 +11,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * This filter is exclusively used to rename form fields in requests with content type application/x-www-form-urlencoded.
+ * It is needed to handle the pre-authorized_code request in the OIDC4VCI flow as the field name cannot be handled by spring.
+ */
 @Component
 public class FormFieldRenamingFilter implements Filter {
 
