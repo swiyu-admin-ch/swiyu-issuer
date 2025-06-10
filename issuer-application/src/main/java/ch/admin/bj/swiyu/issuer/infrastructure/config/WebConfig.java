@@ -9,6 +9,8 @@ package ch.admin.bj.swiyu.issuer.infrastructure.config;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import lombok.Data;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.format.FormatterRegistry;
@@ -30,6 +32,15 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins("https://confluence.bit.admin.ch")
                 .allowedMethods("*");
+    }
+
+    @Bean
+    public FilterRegistrationBean<FormFieldRenamingFilter> headerValidatorFilter() {
+        FilterRegistrationBean<FormFieldRenamingFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new FormFieldRenamingFilter());
+        registrationBean.addUrlPatterns("/api/v1/token");
+
+        return registrationBean;
     }
 
     static class StringToEnumConverter implements Converter<String, CredentialStatusTypeDto> {

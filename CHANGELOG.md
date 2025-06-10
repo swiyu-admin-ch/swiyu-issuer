@@ -24,7 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added Documentation in the issuer-agent-management repository.
     - Added new credential request errors that are necessary for the deferred flow: ISSUANCE_PENDING,
       INVALID_TRANSACTION_ID
-    - Fixed incorrect error code when access token is wrong to INVALID_TOKEN instead of INVALID_CREDENTIAL.
 
 Example response of the credential endpoint `/credential` ("deferred: true") is:
 
@@ -51,6 +50,10 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
   more details.
 - Enable receiving and verification of Key Attestations in Credential Request Proofs. Verifying the integrity of the
   attestation and checking if it was issued by one of the issuers trusted in TRUSTED_ATTESTATION_PROVIDERS.
+- Fixed incorrect error code when access token is wrong to INVALID_TOKEN instead of INVALID_CREDENTIAL.
+- Expanded `/token` functionality. The endpoint accepts now `application/x-www-urlencoded` and no content-type.
+  It still accepts the values in the url as request-params (this functionality will be removed in the future) and
+  as `x-www-form-urlencoded` body.
 
 ### Fixed
 
