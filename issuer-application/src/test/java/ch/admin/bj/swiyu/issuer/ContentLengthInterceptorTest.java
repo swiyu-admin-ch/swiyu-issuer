@@ -17,21 +17,21 @@ import static org.mockito.Mockito.when;
 
 class ContentLengthInterceptorTest {
 
-    private final int maxSize = 1024; // Example max size
+    private final int exampleMaxSize = 1024;
     private ContentLengthInterceptor interceptor;
 
     @BeforeEach
     void setUp() {
-        interceptor = new ContentLengthInterceptor(maxSize);
+        interceptor = new ContentLengthInterceptor(exampleMaxSize);
     }
 
     @Test
-    void testInterceptWithinLimit() throws IOException {
+    void testInterceptWithinLimit_thenSuccess() throws IOException {
         HttpRequest request = mock(HttpRequest.class);
         ClientHttpResponse response = mock(ClientHttpResponse.class);
         ClientHttpRequestExecution execution = mock(ClientHttpRequestExecution.class);
 
-        var headers = createHttpHeadersWithContentLength(maxSize - 1); // Set content length within limit
+        var headers = createHttpHeadersWithContentLength(exampleMaxSize - 1);
 
         when(request.getURI()).thenReturn(URI.create("http://example.com"));
         when(response.getHeaders()).thenReturn(headers);
@@ -43,12 +43,12 @@ class ContentLengthInterceptorTest {
     }
 
     @Test
-    void testInterceptExceedsLimit() throws IOException {
+    void testInterceptExceedsLimit_thenFailure() throws IOException {
         HttpRequest request = mock(HttpRequest.class);
         ClientHttpResponse response = mock(ClientHttpResponse.class);
         ClientHttpRequestExecution execution = mock(ClientHttpRequestExecution.class);
 
-        var headers = createHttpHeadersWithContentLength(maxSize + 1); // Set content length exceeding limit
+        var headers = createHttpHeadersWithContentLength(exampleMaxSize + 1);
 
         when(request.getURI()).thenReturn(URI.create("http://example.com"));
         when(response.getHeaders()).thenReturn(headers);
