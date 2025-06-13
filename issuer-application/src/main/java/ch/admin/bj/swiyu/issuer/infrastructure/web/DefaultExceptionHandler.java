@@ -10,7 +10,6 @@ import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
-import ch.admin.bj.swiyu.issuer.service.WebhookService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,19 +37,18 @@ import static org.springframework.http.HttpStatus.*;
 public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(OAuthException.class)
-    ResponseEntity<OAuthErrorResponseDto> handleOAuthException(final OAuthException exception) {
+    public ResponseEntity<OAuthErrorResponseDto> handleOAuthException(final OAuthException exception) {
         var resp = toOAuthErrorResponseDto(exception);
         return new ResponseEntity<>(resp, resp.error().getHttpStatus());
     }
 
     @ExceptionHandler(Oid4vcException.class)
-    ResponseEntity<CredentialRequestErrorResponseDto> handleOID4VCException(final Oid4vcException exception) {
+    public ResponseEntity<CredentialRequestErrorResponseDto> handleOID4VCException(final Oid4vcException exception) {
         return new ResponseEntity<>(toCredentialRequestErrorResponseDto(exception), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    protected ResponseEntity<ApiErrorDto> handleResourceNotFoundException(
-            final ResourceNotFoundException exception, final WebRequest request) {
+    public ResponseEntity<ApiErrorDto> handleResourceNotFoundException(final ResourceNotFoundException exception) {
         final ApiErrorDto apiError = new ApiErrorDto(NOT_FOUND, exception.getMessage());
         log.debug("Resource not found", exception);
         return new ResponseEntity<>(apiError, apiError.status());
@@ -64,7 +62,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler({CreateStatusListException.class, UpdateStatusListException.class})
-    public ResponseEntity<ApiErrorDto> handleCreateStatusListException(final Exception exception) {
+    public ResponseEntity<ApiErrorDto> handleStatusListException(final Exception exception) {
         var exceptionMessage = exception.getMessage();
         if (exception.getCause() != null) {
             exceptionMessage += " - caused by - " + exception.getCause().getMessage();
@@ -88,7 +86,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler
-    public ResponseEntity<ApiErrorDto> handle(final Exception exception, final WebRequest request) {
+    public ResponseEntity<ApiErrorDto> handle(final Exception exception) {
         final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, null);
         log.error("Unknown Exception occurred", exception);
         return new ResponseEntity<>(apiError, apiError.status());

@@ -17,5 +17,5 @@ import jakarta.validation.constraints.NotNull;
 @Schema(name = "OAuthErrorResponse")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record OAuthErrorResponseDto(@JsonProperty("error") @NotNull OAuthErrorDto error,
-                                    @JsonProperty("error_description") String error_description) {
+                                    @JsonProperty("error_description") String errorDescription) {
 }
