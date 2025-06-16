@@ -30,7 +30,10 @@ import java.util.Map;
 @RestController
 @AllArgsConstructor
 @Slf4j
-@Tag(name = "Well-known endpoints", description = "OpenID .well-known endpoints for issuer configuration and credentials API")
+@Tag(name = "Well-known endpoints API", description = "Exposes OpenID .well-known endpoints for issuer configuration " +
+        "and credential metadata as required by the OID4VCI specification. Provides endpoints for OpenID Connect " +
+        "issuer configuration, OAuth authorization server information, and issuer metadata describing supported " +
+        "verifiable credentials (IF-112)")
 @RequestMapping(".well-known")
 public class WellKnownController {
 
