@@ -54,7 +54,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiError, apiError.status());
     }
 
-    @ExceptionHandler(BadRequestException.class)
+    @ExceptionHandler({BadRequestException.class, CredentialException.class})
     public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
         final ApiErrorDto apiError = new ApiErrorDto(BAD_REQUEST, exception.getMessage());
         log.debug("Bad Request intercepted", exception);

@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
@@ -107,6 +108,9 @@ public class StatusList {
     }
 
     public void incrementNextFreeIndex() {
+        if (maxLength <= nextFreeIndex) {
+            throw new CredentialException(String.format("Max length %s exceeded for status list %s", maxLength, uri));
+        }
         this.nextFreeIndex++;
     }
 }
