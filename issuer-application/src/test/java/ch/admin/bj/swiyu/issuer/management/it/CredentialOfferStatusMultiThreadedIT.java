@@ -71,7 +71,7 @@ class CredentialOfferStatusMultiThreadedIT {
     @BeforeEach
     void setupTest() throws Exception {
         testHelper = new CredentialOfferTestHelper(mvc, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository,
-                statusListUUID, statusRegistryUrl);
+                statusRegistryUrl);
 
         var statusListEntryCreationDto = new StatusListEntryCreationDto();
         statusListEntryCreationDto.setId(statusListUUID);

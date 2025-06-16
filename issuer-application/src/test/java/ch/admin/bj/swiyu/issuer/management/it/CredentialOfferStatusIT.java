@@ -12,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,6 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class CredentialOfferStatusIT {
 
+    private static final int STATUS_LIST_MAX_LENGTH = 2;
+
     private final UUID statusListUUID = UUID.randomUUID();
     private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
             .formatted(statusListUUID);
@@ -49,26 +52,21 @@ class CredentialOfferStatusIT {
 
     @Autowired
     protected MockMvc mvc;
-
+    protected CredentialOfferTestHelper testHelper;
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired
     private StatusListRepository statusListRepository;
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
-
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
-
     private UUID id;
-
-    protected CredentialOfferTestHelper testHelper;
-
 
     @BeforeEach
     void setupTest() throws Exception {
         testHelper = new CredentialOfferTestHelper(mvc, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository,
-                statusListUUID, statusRegistryUrl);
+                statusRegistryUrl);
         var statusListEntryCreationDto = new StatusListEntryCreationDto();
         statusListEntryCreationDto.setId(statusListUUID);
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
@@ -81,7 +79,7 @@ class CredentialOfferStatusIT {
         mvc.perform(post("/api/v1/status-list")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
+                                "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": %s,\"config\": {\"bits\": 2}}".formatted(STATUS_LIST_MAX_LENGTH)))
                 .andExpect(status().isOk());
         // Add Test Offer
         id = testHelper.createBasicOfferJsonAndGetUUID();
@@ -164,6 +162,25 @@ class CredentialOfferStatusIT {
                 statusList.getStatusZipped());
         assertEquals(1, tokenStatusList.getStatus(0), "Should be still revoked");
         assertEquals(0, tokenStatusList.getStatus(1), "Should not be suspended any more");
+    }
+
+    @Test
+    void testCreateOfferWhenExceedStatusListMaximum_thenBadRequest() throws Exception {
+        for (var i = 0; i < STATUS_LIST_MAX_LENGTH; i++) {
+            testHelper.createStatusListLinkedOfferAndGetUUID();
+        }
+        String payload = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+                .formatted(statusRegistryUrl);
+        mvc
+                .perform(post(CredentialOfferTestHelper.BASE_URL).contentType("application/json").content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail")
+                        .value(
+                                Matchers.allOf(
+                                        Matchers.containsString(statusRegistryUrl),
+                                        Matchers.containsString("exceed"),
+                                        Matchers.containsString(String.valueOf(STATUS_LIST_MAX_LENGTH)))));
+
     }
 
     @Nested
@@ -303,7 +320,7 @@ class CredentialOfferStatusIT {
         @ValueSource(strings = {"OFFERED", "IN_PROGRESS", "DEFERRED", "READY"})
         void testUpdateOfferStatusWhenPreIssuedWithRevoked_thenIsOk(String value) throws Exception {
             var vcId = testHelper.createStatusListLinkedOfferAndGetUUID();
-            testHelper.changeOfferStatus(id,CredentialStatusType.valueOf(value));
+            testHelper.changeOfferStatus(id, CredentialStatusType.valueOf(value));
 
             mvc.perform(patch(testHelper.getUpdateUrl(vcId, newStatus)))
                     .andExpect(status().isOk())
