@@ -384,7 +384,7 @@ class CredentialOfferStatusIT {
         private final CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.CANCELLED;
 
         @ParameterizedTest
-        @ValueSource(strings = {"OFFERED", "IN_PROGRESS", "DEFERRED", "READY", "CANCELLED"})
+        @ValueSource(strings = {"OFFERED", "IN_PROGRESS", "DEFERRED", "READY", "CANCELLED", "REVOKED"})
         void testCancelWhenPreIssued_thenOk(String value) throws Exception {
             var vcId = testHelper.createStatusListLinkedOfferAndGetUUID();
             testHelper.changeOfferStatus(id, CredentialStatusType.valueOf(value));
