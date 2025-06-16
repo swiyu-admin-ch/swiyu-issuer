@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
 @Table(name = "status_list")
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter // do not apply generell setters on entities
+@Getter
 @Setter
 @Builder
 @EntityListeners(AuditingEntityListener.class)
@@ -101,10 +101,6 @@ public class StatusList {
                     uuidPattern));
             throw new IllegalArgumentException("No UUID found in the provided URL.");
         }
-    }
-
-    public void setStatusZipped(String statusZipped) {
-        this.statusZipped = statusZipped;
     }
 
     public void incrementNextFreeIndex() {
