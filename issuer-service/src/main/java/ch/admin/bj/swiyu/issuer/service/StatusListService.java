@@ -59,7 +59,7 @@ public class StatusListService {
     @Transactional
     public StatusListDto createStatusList(StatusListCreateDto request) {
         try {
-            // use explicit transaction, since we want to handle data integrety exceptions
+            // use explicit transaction, since we want to handle data integrity exceptions
             // after commit
             var newStatusList = transaction.execute(status -> {
                 var statusListType = request.getType();
@@ -155,7 +155,7 @@ public class StatusListService {
                 .nextFreeIndex(0)
                 .maxLength(statusListCreateDto.getMaxLength())
                 .build();
-
+        log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits()*statusList.getMaxLength());
         updateRegistry(statusList, token);
         return statusList;
     }
@@ -170,7 +170,7 @@ public class StatusListService {
 
     private StatusListEntryCreationDto createEmptyRegistryEntry() {
 
-        return statusRegistryClient.createStatusList();
+        return statusRegistryClient.createStatusListEntry();
     }
 
     private void updateRegistry(StatusList statusListEntity, TokenStatusListToken token) {
@@ -183,7 +183,7 @@ public class StatusListService {
             log.error("Failed to sign status list JWT with the provided key.", e);
             throw new ConfigurationException("Failed to sign status list JWT with the provided key.");
         }
-        statusRegistryClient.updateStatusList(statusListEntity, statusListJWT.serialize());
+        statusRegistryClient.updateStatusListEntry(statusListEntity, statusListJWT.serialize());
     }
 
     private SignedJWT buildStatusListJWT(StatusList statusListEntity, TokenStatusListToken token) {

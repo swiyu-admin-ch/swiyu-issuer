@@ -158,7 +158,7 @@ public class CredentialService {
             handlePostIssuanceStatusChange(credential, newStatus);
         }
 
-        log.info("Updating {} from {} to {}", credential.getId(), currentStatus, newStatus);
+        log.debug("Updating credential {} from {} to {}", credential.getId(), currentStatus, newStatus);
         var updatedCredentialOffer = this.credentialOfferRepository.save(credential);
         webhookService.produceStateChangeEvent(updatedCredentialOffer.getId(), updatedCredentialOffer.getCredentialStatus());
         return updatedCredentialOffer;
@@ -244,7 +244,7 @@ public class CredentialService {
                 .credentialMetadata(Optional.ofNullable(requestDto.getCredentialMetadata()).orElse(new HashMap<>()))
                 .build();
         entity = this.credentialOfferRepository.save(entity);
-
+        log.debug("Created Credential offer {} valid until {}", entity.getId(), expiration.toEpochMilli());
         // Add Status List links
         for (StatusList statusList : statusLists) {
             var offerStatusKey = CredentialOfferStatusKey.builder()
@@ -257,7 +257,9 @@ public class CredentialService {
                     .build();
             credentialOfferStatusRepository.save(offerStatus);
             statusListService.incrementNextFreeIndex(statusList.getId());
+            log.debug("Credential offer {} uses status list {} index {}",  entity.getId(), statusList.getUri(), offerStatus.getIndex());
         }
+
         return entity;
     }
 
@@ -306,6 +308,7 @@ public class CredentialService {
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
         if (!credentialOffer.getCredentialStatus().equals(CredentialStatusType.IN_PROGRESS)) {
+            log.info("Credential offer {} failed to create VC, as state was not IN_PROGRESS instead was {}", credentialOffer.getId(), credentialOffer.getCredentialStatus());
             throw OAuthException.invalidGrant(String.format(
                     "Offer is not valid anymore. The current offer state is %s." +
                             "The user should probably contact the business issuer about this.",
@@ -313,6 +316,7 @@ public class CredentialService {
         }
 
         if (credentialOffer.hasTokenExpirationPassed()) {
+            log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
             webhookService.produceErrorEvent(credentialOffer.getId(),
                     CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
                     "AccessToken expired, offer possibly stuck in IN_PROGRESS");
@@ -323,6 +327,7 @@ public class CredentialService {
                 credentialOffer.getMetadataCredentialSupportedId().getFirst());
 
         if (!credentialConfiguration.getFormat().equals(credentialRequest.getFormat())) {
+            // This should only occur when the wallet has a bug
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT, "Mismatch between requested and offered format.");
         }
 
@@ -374,6 +379,10 @@ public class CredentialService {
         }
 
         if (credentialOffer.hasTokenExpirationPassed()) {
+            log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
+            webhookService.produceErrorEvent(credentialOffer.getId(),
+                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
+                    "AccessToken expired, offer is stuck in READY");
             throw OAuthException.invalidRequest("AccessToken expired.");
         }
 
@@ -414,6 +423,7 @@ public class CredentialService {
         var offer = getCredentialOfferByPreAuthCode(preAuthCode);
 
         if (offer.getCredentialStatus() != CredentialStatusType.OFFERED) {
+            log.debug("Refused to issue OAuth token. Credential offer {} has already state {}.", offer.getId(), offer.getCredentialStatus());
             throw OAuthException.invalidGrant("Credential has already been used");
         }
         log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {} and new status is {}",
