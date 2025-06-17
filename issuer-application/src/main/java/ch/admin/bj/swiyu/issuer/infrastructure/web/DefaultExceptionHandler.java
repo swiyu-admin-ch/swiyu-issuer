@@ -39,11 +39,13 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(OAuthException.class)
     public ResponseEntity<OAuthErrorResponseDto> handleOAuthException(final OAuthException exception) {
         var resp = toOAuthErrorResponseDto(exception);
+        log.debug("OAuthException: {}", exception.getMessage());
         return new ResponseEntity<>(resp, resp.error().getHttpStatus());
     }
 
     @ExceptionHandler(Oid4vcException.class)
     public ResponseEntity<CredentialRequestErrorResponseDto> handleOID4VCException(final Oid4vcException exception) {
+        log.debug("Oid4vcException: {}", exception.getMessage());
         return new ResponseEntity<>(toCredentialRequestErrorResponseDto(exception), HttpStatus.BAD_REQUEST);
     }
 
