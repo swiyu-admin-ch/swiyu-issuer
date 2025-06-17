@@ -83,7 +83,7 @@ public class CredentialService {
         return toUpdateStatusResponseDto(credential);
     }
 
-    @Transactional // not readonly since expired credentails gets updated here automatically
+    @Transactional // not readonly since expired credentials gets updated here automatically
     public StatusResponseDto getCredentialStatus(UUID credentialId) {
         CredentialOffer credential = this.getCredential(credentialId);
         return toStatusResponseDto(credential);
@@ -158,7 +158,7 @@ public class CredentialService {
             handlePostIssuanceStatusChange(credential, newStatus);
         }
 
-        log.info(String.format("Updating %s from %s to %s", credential.getId(), currentStatus, newStatus));
+        log.info("Updating {} from {} to {}", credential.getId(), currentStatus, newStatus);
         var updatedCredentialOffer = this.credentialOfferRepository.save(credential);
         webhookService.produceStateChangeEvent(updatedCredentialOffer.getId(), updatedCredentialOffer.getCredentialStatus());
         return updatedCredentialOffer;
@@ -406,7 +406,7 @@ public class CredentialService {
     /**
      * Issues an OAuth token for a given pre-authorization code created by issuer mgmt
      *
-     * @param preAuthCode Pre authorization code of holder
+     * @param preAuthCode Pre-authorization code of holder
      * @return OAuth authorization token which can be used in credential service endpoint
      */
     @Transactional

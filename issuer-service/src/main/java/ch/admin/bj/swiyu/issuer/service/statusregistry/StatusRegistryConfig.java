@@ -12,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.lock.GlobalLocksType;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenApi;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +27,7 @@ import java.time.Instant;
  * Provides api clients for the swiyu ecosystem status registry to the
  * application.
  */
+@Slf4j
 @Configuration
 @AllArgsConstructor
 public class StatusRegistryConfig {
@@ -47,6 +49,7 @@ public class StatusRegistryConfig {
                 .build();
         var adapter = RestClientAdapter.create(restClient);
         var factory = HttpServiceProxyFactory.builderFor(adapter).build();
+        log.info("Initializing status registry token api for {}", swiyuProperties.statusRegistry().tokenUrl().toExternalForm());
         return factory.createClient(TokenApi.class);
     }
 
