@@ -321,10 +321,9 @@
                 <artifactId>springdoc-openapi-maven-plugin</artifactId>
                 <version>1.4</version>
                 <configuration>
-                    <attachArtifact>true</attachArtifact>
-                    <outputDir>${project.basedir}</outputDir>
-                    <outputFileName>openapi.yaml</outputFileName>
                     <apiDocsUrl>http://localhost:8080/v3/api-docs.yaml</apiDocsUrl>
+                    <outputDir>${project.parent.basedir}</outputDir>
+                    <outputFileName>openapi.yaml</outputFileName>
                     <skip>${skip.doc-generate}</skip>
                 </configuration>
                 <executions>
