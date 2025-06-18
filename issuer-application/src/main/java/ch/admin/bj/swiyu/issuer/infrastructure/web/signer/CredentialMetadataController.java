@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 @Slf4j
 @Tag(name = "Credential Metadata API", description = "Provide metadata related to verifiable credentials, including " +
-        "credential type metadata, JSON schemas, and Overlays Capture Architecture (OCA) data. IF-110")
+        "credential type metadata, JSON schemas, and Overlays Capture Architecture (OCA) data. (IF-110)")
 public class CredentialMetadataController {
 
     private CredentialMetadataService credentialMetadataService;
