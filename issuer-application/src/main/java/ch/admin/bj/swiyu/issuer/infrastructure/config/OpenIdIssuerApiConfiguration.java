@@ -32,6 +32,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.OPEN_ID_CONFIGURATION_CACHE;
+
 @Configuration
 @Data
 @Slf4j
@@ -49,7 +51,7 @@ public class OpenIdIssuerApiConfiguration {
     @Value("${application.metadata-file}")
     private Resource issuerMetadataResource;
 
-    @Cacheable("OpenIdConfiguration")
+    @Cacheable(OPEN_ID_CONFIGURATION_CACHE)
     public OpenIdConfigurationDto getOpenIdConfiguration() throws IOException {
         return resourceToMappedData(openIdResource, OpenIdConfigurationDto.class);
     }

@@ -11,11 +11,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.JWK;
 import lombok.AllArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.net.URI;
 import java.text.ParseException;
+
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.PUBLIC_KEY_CACHE;
 
 @Service
 @AllArgsConstructor
@@ -28,6 +31,7 @@ public class DidTdwKeyResolver implements KeyResolver {
      * @return JWK fetched from the did document
      */
     @Override
+    @Cacheable(PUBLIC_KEY_CACHE)
     public JWK resolveKey(String keyId) {
         var didLog = fetchDidLog(keyId);
         DidDoc didDoc = getDidDoc(keyId, didLog);
