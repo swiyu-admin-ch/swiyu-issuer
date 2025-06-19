@@ -15,6 +15,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.common.exception.UpdateStatusListException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -22,6 +23,7 @@ import org.springframework.web.client.HttpClientErrorException;
 /**
  * A service to interact with the status registry from the swiyu ecosystem.
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class StatusRegistryClient {
@@ -29,10 +31,15 @@ public class StatusRegistryClient {
     private final SwiyuProperties swiyuProperties;
     private final StatusBusinessApiApi statusBusinessApi;
 
-    public StatusListEntryCreationDto createStatusList() {
+    /**
+     * Creates a status list entry for the configured business partner
+     * @return response of the status registry
+     */
+    public StatusListEntryCreationDto createStatusListEntry() {
 
         var businessPartnerId = swiyuProperties.businessPartnerId();
         try {
+            log.debug("Creating status list entry for business partner id {} on {}", businessPartnerId, statusBusinessApi.getApiClient().getBasePath());
             return statusBusinessApi.createStatusListEntry(businessPartnerId);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
@@ -51,9 +58,10 @@ public class StatusRegistryClient {
         }
     }
 
-    public void updateStatusList(StatusList target, String statusListJWT) {
+    public void updateStatusListEntry(StatusList target, String statusListJWT) {
 
         try {
+            log.debug("Updating status list entry {} for business partner id {} on {}", target.getUri(), swiyuProperties.businessPartnerId(), statusBusinessApi.getApiClient().getBasePath());
             statusBusinessApi.updateStatusListEntry(
                     swiyuProperties.businessPartnerId(),
                     target.getRegistryId(),

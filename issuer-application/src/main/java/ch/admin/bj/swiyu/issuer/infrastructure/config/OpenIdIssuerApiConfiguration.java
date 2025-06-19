@@ -67,7 +67,7 @@ public class OpenIdIssuerApiConfiguration {
                 .map(v -> String.format("- Invalid value for %s. Current is %s but the constraint is %s", v.getPropertyPath().toString(), v.getInvalidValue(), v.getMessage()))
                 .collect(Collectors.joining("\n"));
         if (!validationResult.isEmpty()) {
-            throw new IllegalArgumentException(String.format("An invalid issuer metadata configuration was provided. Please adapt the following values:\n%s", validationResult));
+            throw new IllegalArgumentException(String.format("An invalid issuer metadata configuration was provided. Please adapt the following values:%n%s", validationResult));
         }
         return mapped;
     }
