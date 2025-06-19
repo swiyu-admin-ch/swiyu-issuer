@@ -49,21 +49,16 @@ class CredentialOfferStatusIT {
 
     @Autowired
     protected MockMvc mvc;
-
+    protected CredentialOfferTestHelper testHelper;
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired
     private StatusListRepository statusListRepository;
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
-
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
-
     private UUID id;
-
-    protected CredentialOfferTestHelper testHelper;
-
 
     @BeforeEach
     void setupTest() throws Exception {
@@ -78,7 +73,7 @@ class CredentialOfferStatusIT {
 
         // Mock removing access to registry
         // Add status list
-        mvc.perform(post("/api/v1/status-list")
+        mvc.perform(post("/management/api/v1/status-list")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
                                 "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
@@ -303,7 +298,7 @@ class CredentialOfferStatusIT {
         @ValueSource(strings = {"OFFERED", "IN_PROGRESS", "DEFERRED", "READY"})
         void testUpdateOfferStatusWhenPreIssuedWithRevoked_thenIsOk(String value) throws Exception {
             var vcId = testHelper.createStatusListLinkedOfferAndGetUUID();
-            testHelper.changeOfferStatus(id,CredentialStatusType.valueOf(value));
+            testHelper.changeOfferStatus(id, CredentialStatusType.valueOf(value));
 
             mvc.perform(patch(testHelper.getUpdateUrl(vcId, newStatus)))
                     .andExpect(status().isOk())
