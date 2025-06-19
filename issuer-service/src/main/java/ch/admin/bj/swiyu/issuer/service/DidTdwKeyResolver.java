@@ -31,7 +31,7 @@ public class DidTdwKeyResolver implements KeyResolver {
      * @return JWK fetched from the did document
      */
     @Override
-    @Cacheable(value = PUBLIC_KEY_CACHE, key = "#keyId")
+    @Cacheable(PUBLIC_KEY_CACHE)
     public JWK resolveKey(String keyId) {
         var didLog = fetchDidLog(keyId);
         DidDoc didDoc = getDidDoc(keyId, didLog);
