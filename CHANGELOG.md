@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Breaking! updated url path to distinguish management and oid4vci urls
 - Added new endpoint `/.well-known/oauth-authorization-server` that provides the same information as the
   `/.well-known/openid-configuration` endpoint but in a OAuth2-centric way.
 - The `/.well-known/openid-configuration` still exists and is not deprecated.
