@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -61,6 +63,8 @@ class CredentialOfferStatusIT {
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
+    @Mock
+    private ApiClient mockApiClient;
     private UUID id;
 
     @BeforeEach
@@ -73,6 +77,8 @@ class CredentialOfferStatusIT {
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
                 .thenReturn(statusListEntryCreationDto);
+        when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
+        when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
 
         // Mock removing access to registry
         // Add status list
