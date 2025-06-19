@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.ISSUER_METADATA_CACHE;
+
 @Configuration
 @Data
 public class OpenIdIssuerConfiguration {
@@ -30,7 +32,7 @@ public class OpenIdIssuerConfiguration {
      * @return the full Issuer Metadata in a recursive Map
      * @throws IOException if the Issuer Metadata json file is not found
      */
-    @Cacheable("IssuerMetadata")
+    @Cacheable(ISSUER_METADATA_CACHE)
     public Map<String, Object> getIssuerMetadata() throws IOException {
         return resourceToMappedData(issuerMetadataResource, HashMap.class);
     }

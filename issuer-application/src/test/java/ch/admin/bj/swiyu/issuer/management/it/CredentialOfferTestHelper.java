@@ -19,25 +19,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class CredentialOfferTestHelper {
 
+    public static final String BASE_URL = "/api/v1/credentials";
+
     private final MockMvc mvc;
     private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
     private final StatusListRepository statusListRepository;
 
-    private final String BASE_URL = "/api/v1/credentials";
-    private final UUID statusListUUID;
     private final String statusRegistryUrl;
 
 
     public CredentialOfferTestHelper(MockMvc mvc,
                                      CredentialOfferRepository credentialOfferRepository,
                                      CredentialOfferStatusRepository credentialOfferStatusRepository,
-                                     StatusListRepository statusListRepository, UUID unsetStatusListUUID, String unsetStatusRegistryUrl) {
+                                     StatusListRepository statusListRepository, String unsetStatusRegistryUrl) {
         this.mvc = mvc;
         this.credentialOfferRepository = credentialOfferRepository;
         this.credentialOfferStatusRepository = credentialOfferStatusRepository;
         this.statusListRepository = statusListRepository;
-        statusListUUID = unsetStatusListUUID;
         statusRegistryUrl = unsetStatusRegistryUrl;
     }
 
@@ -57,6 +56,7 @@ public class CredentialOfferTestHelper {
 
         MvcResult result = mvc
                 .perform(post(BASE_URL).contentType("application/json").content(payload))
+                .andExpect(status().isOk())
                 .andReturn();
 
         try {
@@ -66,6 +66,7 @@ public class CredentialOfferTestHelper {
                     result.getResponse().getStatus(), result.getResponse().getContentAsString()), e);
         }
     }
+
 
     public CredentialOffer updateStatusForEntity(UUID id, CredentialStatusType status) {
         CredentialOffer credentialOffer = credentialOfferRepository.findById(id).orElseThrow();
@@ -114,12 +115,6 @@ public class CredentialOfferTestHelper {
         offer.changeStatus(status);
         credentialOfferRepository.save(offer);
     }
-
-//    void changeOfferStatus(CredentialStatusType status) {
-//        var offer = credentialOfferRepository.findById(id).get();
-//        offer.changeStatus(status);
-//        credentialOfferRepository.save(offer);
-//    }
 
         /**
      * Creates an offer with a linked status list, set the state to issued and then

@@ -32,6 +32,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.OPEN_ID_CONFIGURATION_CACHE;
+
 @Configuration
 @Data
 @Slf4j
@@ -49,7 +51,7 @@ public class OpenIdIssuerApiConfiguration {
     @Value("${application.metadata-file}")
     private Resource issuerMetadataResource;
 
-    @Cacheable("OpenIdConfiguration")
+    @Cacheable(OPEN_ID_CONFIGURATION_CACHE)
     public OpenIdConfigurationDto getOpenIdConfiguration() throws IOException {
         return resourceToMappedData(openIdResource, OpenIdConfigurationDto.class);
     }
@@ -67,7 +69,7 @@ public class OpenIdIssuerApiConfiguration {
                 .map(v -> String.format("- Invalid value for %s. Current is %s but the constraint is %s", v.getPropertyPath().toString(), v.getInvalidValue(), v.getMessage()))
                 .collect(Collectors.joining("\n"));
         if (!validationResult.isEmpty()) {
-            throw new IllegalArgumentException(String.format("An invalid issuer metadata configuration was provided. Please adapt the following values:\n%s", validationResult));
+            throw new IllegalArgumentException(String.format("An invalid issuer metadata configuration was provided. Please adapt the following values:%n%s", validationResult));
         }
         return mapped;
     }
