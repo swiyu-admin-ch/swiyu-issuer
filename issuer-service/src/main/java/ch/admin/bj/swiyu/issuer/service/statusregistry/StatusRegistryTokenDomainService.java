@@ -49,11 +49,11 @@ public class StatusRegistryTokenDomainService {
     void bootstrapTokenSetRefresh() {
         lockingTaskExecutor.executeWithLock(
                 (Runnable) () -> {
-                    log.info("Bootstrapping token set with this instance.");
+                    log.info("Bootstrapping Status Registry OAuth token set with this instance.");
                     try {
                         requestNewTokenSet();
                     } catch (Exception e) {
-                        log.error("Could not update token set. Refresh token might be already used.", e);
+                        log.error("Could not update Status Registry OAuth token set. Refresh token might be already used.", e);
                     }
                 },
                 statusRegistryTokenApiLockConfiguration);
@@ -66,7 +66,7 @@ public class StatusRegistryTokenDomainService {
     void refreshTokenSets() {
         lockingTaskExecutor.executeWithLock(
                 (Runnable) () -> {
-                    log.info("Refresh token set with this instance.");
+                    log.debug("Refresh token set with this instance.");
                     try {
                         var dbData = tokenSetRepository.findById(STATUS_REGISTRY);
                         if (dbData.isEmpty() || Instant.now().plusSeconds(1).isAfter(
@@ -78,7 +78,7 @@ public class StatusRegistryTokenDomainService {
                         }
                     } catch (Exception e) {
                         log.error(
-                                "Could not update token set. Are credentials (might be the refresh token) out of sync?",
+                                "Could not update token set. Are credentials or refresh token out of sync or incorrect?",
                                 e);
                     }
 
@@ -124,24 +124,24 @@ public class StatusRegistryTokenDomainService {
      */
     private TokenApi.TokenResponse getTokenResponse(String refreshToken) {
         var prop = swiyuProperties.statusRegistry();
-        TokenApi.TokenResponse token_result;
+        TokenApi.TokenResponse tokenResponse;
 
         if (prop.enableRefreshTokenFlow() && refreshToken != null) {
-            log.debug("Refreshing token set with grant_type: refresh_token");
-            token_result = statusRegistryTokenApi.getNewToken(
+            log.info("Refreshing Status Registry OAuth access and refresh token with existing refresh token and secret grant_type: refresh_token");
+            tokenResponse = statusRegistryTokenApi.getNewToken(
                     prop.customerKey(),
                     prop.customerSecret(),
                     refreshToken,
                     "refresh_token");
 
         } else {
-            log.debug("Refreshing token set with grant_type: client_credentials");
-            token_result = statusRegistryTokenApi.getNewToken(
+            log.info("Refreshing token set with grant_type: client_credentials");
+            tokenResponse = statusRegistryTokenApi.getNewToken(
                     prop.customerKey(),
                     prop.customerSecret(),
                     "client_credentials");
         }
-        return token_result;
+        return tokenResponse;
     }
 
     /**
@@ -160,25 +160,25 @@ public class StatusRegistryTokenDomainService {
         if (dbData.isEmpty()) {
             // if not initialized: try it with the bootstrap token
             tokenResponse = getTokenResponse(swiyuProperties.statusRegistry().bootstrapRefreshToken());
-            log.debug("Refreshed token set based on bootstrap configuration.");
+            log.info("Status Registry OAuth refresh token set based on bootstrap configuration.");
         } else {
             try {
                 // if initialized: try it with the token in the DB
                 tokenResponse = getTokenResponse(dbData.get().getRefreshToken());
-                log.debug("Refreshed token set based on refresh token in db.");
+                log.info("Status Registry OAuth refresh token set based on refresh token in db.");
             } catch (Exception e) {
                 // if initialized, but it did not work with the DB token: try with the bootstrap
                 // token
                 // this is the case after the service did not run the auth flow for more than 7
                 // days
                 tokenResponse = getTokenResponse(swiyuProperties.statusRegistry().bootstrapRefreshToken());
-                log.debug("Refreshed token set based on bootstrap token as token in db was invalid.");
+                log.info("Status Registry OAuth refresh token set based on bootstrap token as token in db was invalid.");
             }
         }
         // save new token set data to db
         TokenSet saveTo = dbData.orElseGet(TokenSet::new);
         saveTo.apply(STATUS_REGISTRY, tokenResponse);
-        log.debug("Token set update successfully.");
+        log.info("Status Registry OAuth token set update successfully.");
         return tokenSetRepository.save(saveTo);
     }
 }

@@ -6,54 +6,60 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
-- name: Well-known endpoints
-  description: OpenID .well-known endpoints for issuer configuration and credentials
-    API
-- name: Credential
-  description: Credential Management API
-- name: Status List
-  description: Status List Management API
+- name: Status List API
+  description: Exposes API endpoints for managing status lists used in verifiable
+    credential status tracking. Supports creating and initializing new status lists
+    and retrieving status list information by ID. Ensures status list configuration
+    is immutable after initialization. (IF-113)
+- name: Credential Metadata API
+  description: "Provide metadata related to verifiable credentials, including credential\
+    \ type metadata, JSON schemas, and Overlays Capture Architecture (OCA) data. IF-110"
 - name: Actuator
   description: Monitor and interact
   externalDocs:
     description: Spring Boot Actuator Web API Documentation
     url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
-- name: Issuer OID4VCI
-  description: OpenID for Verifiable Credential Issuance API
-- name: Credential Metadata
-  description: Metadata for Verifiable Credentials
+- name: Credential API
+  description: "Exposes API endpoints for managing credential offers and their statuses.\
+    \ Supports creating new credential offers, retrieving offer data and deeplinks,\
+    \ and updating or querying the status of offers and issued verifiable credentials.\
+    \ (IF-114)"
+- name: Well-known endpoints API
+  description: "Exposes OpenID .well-known endpoints for issuer configuration and\
+    \ credential metadata as required by the OID4VCI specification. Provides endpoints\
+    \ for OpenID Connect issuer configuration, OAuth authorization server information,\
+    \ and issuer metadata describing supported verifiable credentials (IF-112)"
+- name: Issuer OID4VCI API
+  description: "Handles OpenID for Verifiable Credential Issuance (OID4VCI) API endpoints,\
+    \ including issuing OAuth tokens for credential requests, issuing verifiable credentials,\
+    \ and supporting deferred credential issuance (IF-111)"
 paths:
   /api/v1/token:
     post:
       tags:
-      - Issuer OID4VCI
-      summary: Collect Bearer token with pre-authorized code
+      - Issuer OID4VCI API
+      summary: Submit form data
       operationId: oauthAccessToken
-      parameters:
-      - name: grant_type
-        in: query
-        required: false
-        schema:
-          type: string
-          default: urn:ietf:params:oauth:grant-type:pre-authorized_code
-      - name: pre-authorized_code
-        in: query
+      requestBody:
+        description: Form data to be submitted
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/OauthAccessTokenRequest"
         required: true
-        schema:
-          type: string
       responses:
         "404":
           description: Not Found
         "200":
           description: OK
           content:
-            application/json:
+            '*/*':
               schema:
                 $ref: "#/components/schemas/OAuthToken"
   /api/v1/status-list:
     post:
       tags:
-      - Status List
+      - Status List API
       summary: Create and initialize a new status list.
       description: "Initialize and link a status list slot to to this service. This\
         \ process can be only done once per status list! Status List type, configuration\
@@ -77,7 +83,7 @@ paths:
   /api/v1/deferred_credential:
     post:
       tags:
-      - Issuer OID4VCI
+      - Issuer OID4VCI API
       summary: Collect credential associated with the bearer token and the transaction
         id. This endpoint is used for deferred issuance.
       operationId: createDeferredCredential
@@ -108,7 +114,7 @@ paths:
   /api/v1/credentials:
     post:
       tags:
-      - Credential
+      - Credential API
       summary: Create a generic credential offer with the given content
       description: |
         Create a new credential offer, which can the be collected by the holder.
@@ -141,7 +147,7 @@ paths:
   /api/v1/credential:
     post:
       tags:
-      - Issuer OID4VCI
+      - Issuer OID4VCI API
       summary: Collect credential associated with the bearer token with the requested
         credential properties.
       operationId: createCredential_1
@@ -172,7 +178,7 @@ paths:
   /api/v1/credentials/{credentialId}/status:
     get:
       tags:
-      - Credential
+      - Credential API
       summary: "Get the current status of an offer or the verifiable credential, if\
         \ already issued."
       operationId: getCredentialStatus
@@ -194,7 +200,7 @@ paths:
                 $ref: "#/components/schemas/StatusResponse"
     patch:
       tags:
-      - Credential
+      - Credential API
       summary: Set the status of an offer or the verifiable credential associated
         with the id.
       operationId: updateCredentialStatus
@@ -222,7 +228,7 @@ paths:
   /vct/{metadataKey}:
     get:
       tags:
-      - Credential Metadata
+      - Credential Metadata API
       operationId: getCredentialTypeMetadata
       parameters:
       - name: metadataKey
@@ -242,7 +248,7 @@ paths:
   /oca/{ocaKey}:
     get:
       tags:
-      - Credential Metadata
+      - Credential Metadata API
       operationId: getOverlaysCaptureArchitecture
       parameters:
       - name: ocaKey
@@ -262,7 +268,7 @@ paths:
   /json-schema/{schemaKey}:
     get:
       tags:
-      - Credential Metadata
+      - Credential Metadata API
       operationId: getJsonSchema
       parameters:
       - name: schemaKey
@@ -282,7 +288,7 @@ paths:
   /api/v1/status-list/{statusListId}:
     get:
       tags:
-      - Status List
+      - Status List API
       summary: Get the status information of a status list.
       operationId: getStatusListInformation
       parameters:
@@ -304,7 +310,7 @@ paths:
   /api/v1/credentials/{credentialId}:
     get:
       tags:
-      - Credential
+      - Credential API
       summary: "Get the offer data, if any is still cached"
       operationId: getCredentialOffer
       parameters:
@@ -334,7 +340,7 @@ paths:
   /api/v1/credentials/{credentialId}/offer_deeplink:
     get:
       tags:
-      - Credential
+      - Credential API
       summary: Get the offer deeplink
       operationId: getCredentialOfferDeeplink
       parameters:
@@ -474,7 +480,7 @@ paths:
   /.well-known/openid-credential-issuer:
     get:
       tags:
-      - Well-known endpoints
+      - Well-known endpoints API
       summary: Information about credentials which can be issued.
       operationId: getIssuerMetadata
       responses:
@@ -491,7 +497,7 @@ paths:
   /.well-known/openid-configuration:
     get:
       tags:
-      - Well-known endpoints
+      - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
       operationId: getOpenIDConfiguration
       responses:
@@ -506,7 +512,7 @@ paths:
   /.well-known/oauth-authorization-server:
     get:
       tags:
-      - Well-known endpoints
+      - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
       operationId: getOpenIDConfigurationForOauthAuthServer
       responses:
@@ -520,14 +526,26 @@ paths:
                 $ref: "#/components/schemas/OpenIdConfiguration"
 components:
   schemas:
+    OauthAccessTokenRequest:
+      required:
+      - grant_type
+      - pre-authorized_code
+      type: object
+      properties:
+        grant_type:
+          type: string
+          description: The type of grant being requested. Must be 'urn:ietf:params:oauth:grant-type:pre-authorized_code'.
+          default: urn:ietf:params:oauth:grant-type:pre-authorized_code
+        pre-authorized_code:
+          type: string
     OAuthToken:
       required:
       - access_token
       type: object
       properties:
-        token_type:
-          type: string
         refresh_token:
+          type: string
+        token_type:
           type: string
         scope:
           type: string

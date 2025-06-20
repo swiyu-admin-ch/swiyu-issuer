@@ -274,13 +274,19 @@ The Generic Issuer Agent is configured using environment variables.
 | SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
 | SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal.   |
 
-#### Monitoring
+#### Caching
 
 | Variable                       | Description                                                                           |
 |:-------------------------------|:--------------------------------------------------------------------------------------|
 | MONITORING_BASIC_AUTH_ENABLED  | Enables basic auth protection of the /actuator/prometheus endpoint. (Default: false)  |
 | MONITORING_BASIC_AUTH_USERNAME | Sets the username for the basic auth protection of the /actuator/prometheus endpoint. |
 | MONITORING_BASIC_AUTH_PASSWORD | Sets the password for the basic auth protection of the /actuator/prometheus endpoint. |
+
+#### Monitoring
+
+| Variable                   | Description                                                       | Type | Default      |
+|----------------------------|-------------------------------------------------------------------|------|--------------| 
+| PUBLIC_KEY_CACHE_TTL_MILLI | TTL in milliseconds how long a public key result should be cached | int  | 3600000 (1h) |
 
 #### JWT Based Data Integrity
 

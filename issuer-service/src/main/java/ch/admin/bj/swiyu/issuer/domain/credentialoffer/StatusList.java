@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
@@ -38,7 +39,7 @@ import java.util.regex.Pattern;
 @Table(name = "status_list")
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter // do not apply generell setters on entities
+@Getter
 @Setter
 @Builder
 @EntityListeners(AuditingEntityListener.class)
@@ -102,11 +103,10 @@ public class StatusList {
         }
     }
 
-    public void setStatusZipped(String statusZipped) {
-        this.statusZipped = statusZipped;
-    }
-
     public void incrementNextFreeIndex() {
+        if (maxLength <= nextFreeIndex) {
+            throw new CredentialException(String.format("Max length %s exceeded for status list %s", maxLength, uri));
+        }
         this.nextFreeIndex++;
     }
 }

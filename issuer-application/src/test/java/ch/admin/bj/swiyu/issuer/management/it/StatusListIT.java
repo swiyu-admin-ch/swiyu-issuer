@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
@@ -14,6 +15,7 @@ import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,9 +47,11 @@ class StatusListIT {
     private MockMvc mvc;
     @Autowired
     private StatusListProperties statusListProperties;
-
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
+    @Mock
+    private ApiClient mockApiClient;
+
 
     @BeforeEach
     void setUp() {
@@ -57,6 +61,8 @@ class StatusListIT {
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
                 .thenReturn(statusListEntryCreationDto);
+        when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
+        when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
     }
 
     @Test
