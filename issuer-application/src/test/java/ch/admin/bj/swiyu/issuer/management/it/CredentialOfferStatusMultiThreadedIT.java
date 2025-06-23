@@ -85,7 +85,7 @@ class CredentialOfferStatusMultiThreadedIT {
 
         // Mock removing access to registry
         // Add status list
-        mvc.perform(post("/management/api/v1/status-list")
+        mvc.perform(post("/api/v1/private/status-list")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
                                 "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))

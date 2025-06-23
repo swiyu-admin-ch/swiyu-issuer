@@ -18,13 +18,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class CredentialOfferTestHelper {
 
-    public static final String BASE_URL = "/management/api/v1/credentials";
+    public static final String BASE_URL = "/api/v1/private/credentials";
 
     private final MockMvc mvc;
     private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
     private final StatusListRepository statusListRepository;
-    
+
     private final String statusRegistryUrl;
 
 
