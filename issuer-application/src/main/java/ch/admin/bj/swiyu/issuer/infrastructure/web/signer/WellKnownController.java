@@ -34,7 +34,7 @@ import java.util.Map;
         "and credential metadata as required by the OID4VCI specification. Provides endpoints for OpenID Connect " +
         "issuer configuration, OAuth authorization server information, and issuer metadata describing supported " +
         "verifiable credentials (IF-112)")
-@RequestMapping(".well-known")
+@RequestMapping("/oid4vci/.well-known")
 public class WellKnownController {
 
     private final OpenIdIssuerApiConfiguration openIDConfigurationDto;

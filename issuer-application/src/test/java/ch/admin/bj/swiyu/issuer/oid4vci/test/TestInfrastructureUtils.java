@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class TestInfrastructureUtils {
     public static Map<String, Object> fetchOAuthToken(MockMvc mock, String preAuthCode) throws Exception {
-        var response = mock.perform(post("/api/v1/token")
+        var response = mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", preAuthCode))
                 .andExpect(status().isOk())
@@ -46,7 +46,7 @@ public class TestInfrastructureUtils {
     }
 
     public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
-        return mock.perform(post("/api/v1/credential")
+        return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
                 .contentType("application/json")
                 .content(credentialRequestString)

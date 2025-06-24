@@ -69,9 +69,6 @@ class CredentialOfferStatusMultiThreadedIT {
 
     private CredentialOfferTestHelper testHelper;
 
-    private UUID id;
-
-
     @BeforeEach
     void setupTest() throws Exception {
         testHelper = new CredentialOfferTestHelper(mvc, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository,
@@ -88,13 +85,11 @@ class CredentialOfferStatusMultiThreadedIT {
 
         // Mock removing access to registry
         // Add status list
-        mvc.perform(post("/api/v1/status-list")
+        mvc.perform(post("/management/api/status-list")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
                                 "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
                 .andExpect(status().isOk());
-        // Add Test Offer
-        id = testHelper.createBasicOfferJsonAndGetUUID();
     }
 
     @AfterEach

@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(value = {"/api/v1/credentials"})
+@RequestMapping(value = {"/management/api/credentials"})
 @AllArgsConstructor
 @Tag(name = "Credential API", description = "Exposes API endpoints for managing credential offers and their statuses. " +
         "Supports creating new credential offers, retrieving offer data and deeplinks, and updating or querying the " +

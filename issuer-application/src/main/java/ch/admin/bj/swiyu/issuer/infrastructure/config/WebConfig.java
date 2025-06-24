@@ -38,7 +38,7 @@ public class WebConfig implements WebMvcConfigurer {
     public FilterRegistrationBean<FormFieldRenamingFilter> headerValidatorFilter() {
         FilterRegistrationBean<FormFieldRenamingFilter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(new FormFieldRenamingFilter());
-        registrationBean.addUrlPatterns("/api/v1/token");
+        registrationBean.addUrlPatterns("/oid4vci/api/token");
 
         return registrationBean;
     }

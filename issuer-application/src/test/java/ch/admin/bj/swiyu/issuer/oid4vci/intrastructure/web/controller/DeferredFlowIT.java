@@ -52,6 +52,7 @@ class DeferredFlowIT {
     private final UUID notDeferredPreAuthCode = UUID.randomUUID();
     private final Instant validFrom = Instant.now();
     private final Instant validUntil = Instant.now().plus(30, ChronoUnit.DAYS);
+    private final String deferredCredentialEndpoint = "/oid4vci/api/deferred_credential";
     @Autowired
     private MockMvc mock;
     @Autowired
@@ -123,7 +124,7 @@ class DeferredFlowIT {
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(transactionId);
 
-        var credentialResponse = mock.perform(post("/api/v1/deferred_credential")
+        var credentialResponse = mock.perform(post(deferredCredentialEndpoint)
                         .header("Authorization", String.format("BEARER %s", token))
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
@@ -150,7 +151,7 @@ class DeferredFlowIT {
         // to get token now should end up in a bad request
         String transactionId = JsonPath.read(response.getResponse().getContentAsString(), "$.transaction_id");
         String deferredCredentialRequestString = getDeferredCredentialRequestString(transactionId);
-        mock.perform(post("/api/v1/deferred_credential")
+        mock.perform(post(deferredCredentialEndpoint)
                         .header("Authorization", String.format("BEARER %s", token))
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
@@ -167,7 +168,7 @@ class DeferredFlowIT {
 
         String transactionId = "00000000-0000-0000-0000-000000000000";
         String deferredCredentialRequestString = getDeferredCredentialRequestString(transactionId);
-        mock.perform(post("/api/v1/deferred_credential")
+        mock.perform(post(deferredCredentialEndpoint)
                         .header("Authorization", String.format("BEARER %s", token))
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
@@ -194,7 +195,7 @@ class DeferredFlowIT {
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(transactionId);
 
-        mock.perform(post("/api/v1/deferred_credential")
+        mock.perform(post(deferredCredentialEndpoint)
                         .header("Authorization", String.format("BEARER %s", UUID.randomUUID()))
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
@@ -227,7 +228,7 @@ class DeferredFlowIT {
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(transactionId);
 
-        mock.perform(post("/api/v1/deferred_credential")
+        mock.perform(post(deferredCredentialEndpoint)
                         .header("Authorization", String.format("BEARER %s", otherToken))
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
@@ -278,7 +279,7 @@ class DeferredFlowIT {
     }
 
     private ResultActions getDeferredCallResultActions(Object token, String deferredCredentialRequestString) throws Exception {
-        return mock.perform(post("/api/v1/deferred_credential")
+        return mock.perform(post(deferredCredentialEndpoint)
                 .header("Authorization", String.format("BEARER %s", token))
                 .contentType("application/json")
                 .content(deferredCredentialRequestString));

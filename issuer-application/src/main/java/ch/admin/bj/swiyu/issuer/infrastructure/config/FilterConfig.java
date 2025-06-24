@@ -10,14 +10,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FilterConfig {
 
-    private final ApplicationProperties applicationProperties;
-
     private static final String[] URL_PATTERNS = {
-            "/api/v1/credentials",
-            "/api/v1/credentials/*",
-            "/api/v1/status-list",
-            "/api/v1/status-list/*",
+            "/management/api/credentials",
+            "/management/api/credentials/*",
+            "/management/api/status-list",
+            "/management/api/status-list/*",
     };
+    private final ApplicationProperties applicationProperties;
 
     @Bean
     public JWTFilter jwtFilter() {

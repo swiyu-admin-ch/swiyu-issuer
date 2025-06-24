@@ -1,8 +1,6 @@
 package ch.admin.bj.swiyu.issuer.management.it;
 
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
-
-
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -13,13 +11,14 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class CredentialOfferTestHelper {
 
-    public static final String BASE_URL = "/api/v1/credentials";
+    public static final String BASE_URL = "/management/api/credentials";
 
     private final MockMvc mvc;
     private final CredentialOfferRepository credentialOfferRepository;
@@ -83,7 +82,8 @@ public class CredentialOfferTestHelper {
             try {
                 var tokenState = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusZipped(), 204800).getStatus(status.getIndex());
                 var expectedState = switch (state) {
-                    case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED -> TokenStatusListBit.VALID.getValue();
+                    case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED ->
+                            TokenStatusListBit.VALID.getValue();
                     case SUSPENDED -> TokenStatusListBit.SUSPEND.getValue();
                     case REVOKED -> TokenStatusListBit.REVOKE.getValue();
                 };
@@ -116,7 +116,7 @@ public class CredentialOfferTestHelper {
         credentialOfferRepository.save(offer);
     }
 
-        /**
+    /**
      * Creates an offer with a linked status list, set the state to issued and then
      * revokes it
      */

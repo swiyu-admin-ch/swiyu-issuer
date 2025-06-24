@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
 @Tag(name = "Issuer OID4VCI API", description = "Handles OpenID for Verifiable Credential Issuance (OID4VCI) API " +
         "endpoints, including issuing OAuth tokens for credential requests, issuing verifiable credentials, " +
         "and supporting deferred credential issuance (IF-111)")
-@RequestMapping(value = {"/api/v1"})
+@RequestMapping(value = {"/oid4vci/api"})
 public class IssuanceController {
     private static final String OID4VCI_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
 

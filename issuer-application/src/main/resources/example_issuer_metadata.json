@@ -1,6 +1,6 @@
 {
   "credential_issuer": "${external-url}",
-  "credential_endpoint": "${external-url}/api/v1/credential",
+  "credential_endpoint": "${external-url}/api/credential",
   "credential_response_encryption": {
     "encryption_required": false,
     "alg_values_supported": [
@@ -184,7 +184,9 @@
             "ES256"
           ],
           "key_attestations_required": {
-            "key_storage": ["iso_18045_high"]
+            "key_storage": [
+              "iso_18045_high"
+            ]
           }
         }
       },

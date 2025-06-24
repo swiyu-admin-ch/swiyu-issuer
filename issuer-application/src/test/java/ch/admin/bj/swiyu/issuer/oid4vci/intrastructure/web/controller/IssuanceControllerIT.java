@@ -38,7 +38,6 @@ import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,8 +50,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class IssuanceControllerIT {
 
     private static UUID offerId;
-    private static UUID unboundOfferId;
-    private static UUID allValuesOfferId;
     private static ECKey jwk;
     private final UUID validPreAuthCode = UUID.randomUUID();
     private final UUID allValuesPreAuthCode = UUID.randomUUID();
@@ -101,10 +98,8 @@ class IssuanceControllerIT {
         offerId = offer.getId();
         var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
         saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, statusList);
-        allValuesOfferId = allValuesPreAuthCodeOffer.getId();
         var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialStatusType.OFFERED);
         saveStatusListLinkedOffer(unboundOffer, statusList);
-        unboundOfferId = unboundOffer.getId();
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
@@ -121,7 +116,7 @@ class IssuanceControllerIT {
 
     @Test
     void testGetOpenIdConfiguration_thenSuccess() throws Exception {
-        mock.perform(get("/.well-known/openid-configuration"))
+        mock.perform(get("/oid4vci/.well-known/openid-configuration"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("token_endpoint")))
                 .andExpect(content().string(not(containsString("${external-url}"))));
@@ -129,7 +124,7 @@ class IssuanceControllerIT {
 
     @Test
     void testGetOauthAuthorizationServer_thenSuccess() throws Exception {
-        mock.perform(get("/.well-known/oauth-authorization-server"))
+        mock.perform(get("/oid4vci/.well-known/oauth-authorization-server"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("token_endpoint")))
                 .andExpect(content().string(not(containsString("${external-url}"))));
@@ -137,7 +132,7 @@ class IssuanceControllerIT {
 
     @Test
     void testGetIssuerMetadata_thenSuccess() throws Exception {
-        mock.perform(get("/.well-known/openid-credential-issuer"))
+        mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("${external-url}"))))
                 .andExpect(content().string(containsString("credential_endpoint")))
@@ -232,7 +227,7 @@ class IssuanceControllerIT {
 
     @Test
     void testDeprecatedTokenEndpoint_thenSuccess() throws Exception {
-        mock.perform(post("/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
@@ -241,7 +236,7 @@ class IssuanceControllerIT {
 
     @Test
     void testNewTokenEndpoint_thenSuccess() throws Exception {
-        mock.perform(post("/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
@@ -252,14 +247,14 @@ class IssuanceControllerIT {
     void testInvalidPreAuthCode_thenBadRequest() throws Exception {
         var grantType = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
 
-        mock.perform(post("/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("INVALID_GRANT")));
 
         // check that correct preauthcode is used
-        mock.perform(post("/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
@@ -269,14 +264,14 @@ class IssuanceControllerIT {
     @Test
     void testInvalidGrantType_thenBadRequest() throws Exception {
         // With Valid preauth code
-        mock.perform(post("/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "deadbeef-dead-dead-dead-deaddeafbeef"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("INVALID_REQUEST")));
 
         // With Invalid preauth code
-        mock.perform(post("/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())

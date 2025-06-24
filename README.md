@@ -138,7 +138,7 @@ integrity [sri](https://developer.mozilla.org/de/docs/Web/Security/Subresource_I
 The integrity hash is provided with each created credential offer in the offer metadata while issuing the credential.
 The integrity can be calculated using shell commands.
 
-`echo "sha256-$(wget -O- http://localhost:8080/vct/my-vct-v01 | openssl dgst -binary -sha256 | openssl base64 -A)"`
+`echo "sha256-$(wget -O- http://localhost:8080/oid4vci/vct/my-vct-v01 | openssl dgst -binary -sha256 | openssl base64 -A)"`
 
 ```json
 {
@@ -365,7 +365,7 @@ By default, the external-url can be always used.
 ```
 {
   "issuer": "${external-url}",
-  "token_endpoint": "${external-url}/token"
+  "token_endpoint": "${external-url}/oid4vci/token"
 }
 ```
 

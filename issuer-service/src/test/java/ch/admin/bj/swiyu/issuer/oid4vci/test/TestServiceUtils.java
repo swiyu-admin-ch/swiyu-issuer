@@ -6,12 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
-import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import com.nimbusds.jose.*;
@@ -22,33 +16,20 @@ import com.nimbusds.jwt.SignedJWT;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class TestServiceUtils {
-//    public static Map<String, Object> fetchOAuthToken(MockMvc mock, String preAuthCode) throws Exception {
-//        var response = mock.perform(post("/api/v1/token")
-//                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
-//                        .param("pre-authorized_code", preAuthCode))
-//                .andExpect(status().isOk())
-//                .andExpect(content().string(containsString("expires_in")))
-//                .andExpect(content().string(containsString("access_token")))
-//                .andExpect(content().string(containsString("BEARER")))
-//                .andReturn();
-//        return new ObjectMapper().readValue(response.getResponse().getContentAsString(), HashMap.class);
-//    }
+import java.time.Instant;
+import java.util.Date;
+import java.util.List;
 
-//    public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
-//        return mock.perform(post("/api/v1/credential")
-//                .header("Authorization", String.format("BEARER %s", token))
-//                .contentType("application/json")
-//                .content(credentialRequestString)
-//        );
-//    }
+public class TestServiceUtils {
 
     public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk) throws JOSEException {
         return createHolderProof(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, new Date());
     }
+
     public static String createAttestedHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, AttackPotentialResistance attestationLevel, String attestationIssuerDid) throws JOSEException {
         return createHolderproofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, new Date(), attestationLevel, attestationIssuerDid);
     }
+
     public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, Date issueTime) throws JOSEException {
         return createHolderproofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, issueTime, null, null);
     }
@@ -66,7 +47,7 @@ public class TestServiceUtils {
         }
         // Add attestation if required
         if (attestationLevel != null) {
-            var attestation = createKeyAttestation(attestationLevel, holderPrivateKey.toPublicJWK(), attestationIssuerDid == null ? "did:test:test-attestation-builder": attestationIssuerDid);
+            var attestation = createKeyAttestation(attestationLevel, holderPrivateKey.toPublicJWK(), attestationIssuerDid == null ? "did:test:test-attestation-builder" : attestationIssuerDid);
             attestation.sign(signer);
             headerBuilder.customParam("key_attestation", attestation.serialize());
         }
@@ -86,7 +67,7 @@ public class TestServiceUtils {
     private static SignedJWT createKeyAttestation(AttackPotentialResistance attestationLevel, ECKey publicJWK, String attestationIssuerDid) {
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType("key-attestation+jwt"))
-                .keyID(attestationIssuerDid+"#key-1")
+                .keyID(attestationIssuerDid + "#key-1")
                 .build();
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .issuer(attestationIssuerDid)
