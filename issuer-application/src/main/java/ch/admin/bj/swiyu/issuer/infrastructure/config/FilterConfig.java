@@ -11,10 +11,10 @@ import org.springframework.context.annotation.Configuration;
 public class FilterConfig {
 
     private static final String[] URL_PATTERNS = {
-            "/management/api/v1/credentials",
-            "/management/api/v1/credentials/*",
-            "/management/api/v1/status-list",
-            "/management/api/v1/status-list/*",
+            "/management/api/credentials",
+            "/management/api/credentials/*",
+            "/management/api/status-list",
+            "/management/api/status-list/*",
     };
     private final ApplicationProperties applicationProperties;
 

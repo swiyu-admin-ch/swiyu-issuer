@@ -227,7 +227,7 @@ class IssuanceControllerIT {
 
     @Test
     void testDeprecatedTokenEndpoint_thenSuccess() throws Exception {
-        mock.perform(post("/oid4vci/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
@@ -236,7 +236,7 @@ class IssuanceControllerIT {
 
     @Test
     void testNewTokenEndpoint_thenSuccess() throws Exception {
-        mock.perform(post("/oid4vci/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
@@ -247,14 +247,14 @@ class IssuanceControllerIT {
     void testInvalidPreAuthCode_thenBadRequest() throws Exception {
         var grantType = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
 
-        mock.perform(post("/oid4vci/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("INVALID_GRANT")));
 
         // check that correct preauthcode is used
-        mock.perform(post("/oid4vci/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
@@ -264,14 +264,14 @@ class IssuanceControllerIT {
     @Test
     void testInvalidGrantType_thenBadRequest() throws Exception {
         // With Valid preauth code
-        mock.perform(post("/oid4vci/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "deadbeef-dead-dead-dead-deaddeafbeef"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("INVALID_REQUEST")));
 
         // With Invalid preauth code
-        mock.perform(post("/oid4vci/api/v1/token")
+        mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())

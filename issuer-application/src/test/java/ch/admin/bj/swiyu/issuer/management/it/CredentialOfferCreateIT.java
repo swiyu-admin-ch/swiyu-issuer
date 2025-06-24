@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class CredentialOfferCreateIT {
 
-    private static final String BASE_URL = "/management/api/v1/credentials";
+    private static final String BASE_URL = "/management/api/credentials";
 
     @Autowired
     private ObjectMapper objectMapper;

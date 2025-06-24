@@ -52,7 +52,7 @@ class DeferredFlowIT {
     private final UUID notDeferredPreAuthCode = UUID.randomUUID();
     private final Instant validFrom = Instant.now();
     private final Instant validUntil = Instant.now().plus(30, ChronoUnit.DAYS);
-    private final String deferredCredentialEndpoint = "/oid4vci/api/v1/deferred_credential";
+    private final String deferredCredentialEndpoint = "/oid4vci/api/deferred_credential";
     @Autowired
     private MockMvc mock;
     @Autowired

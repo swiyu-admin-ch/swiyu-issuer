@@ -36,8 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class StatusListIT {
 
-    public static final String STATUS_LIST_BASE_URL = "/management/api/v1/status-list";
-    private static final String BASE_URL = "/management/api/v1/credentials";
+    public static final String STATUS_LIST_BASE_URL = "/management/api/status-list";
+    private static final String BASE_URL = "/management/api/credentials";
     private final UUID statusListUUID = UUID.randomUUID();
     private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
             .formatted(statusListUUID);

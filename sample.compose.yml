@@ -71,13 +71,13 @@ configs:
     content: |
       {
         "issuer": "${EXTERNAL_URL}",
-        "token_endpoint": "${EXTERNAL_URL}/api/v1/token"
+        "token_endpoint": "${EXTERNAL_URL}/api/token"
       }
   issuer_metadata:
     content: |
       {
         "credential_issuer": "${EXTERNAL_URL}",
-        "credential_endpoint": "${EXTERNAL_URL}/api/v1/credential",
+        "credential_endpoint": "${EXTERNAL_URL}/api/credential",
         "version": "1.0",
         "display": [
           {
