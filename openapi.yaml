@@ -6,19 +6,14 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
+- name: Credential Metadata API
+  description: "Provide metadata related to verifiable credentials, including credential\
+    \ type metadata, JSON schemas, and Overlays Capture Architecture (OCA) data. (IF-110)"
 - name: Status List API
   description: Exposes API endpoints for managing status lists used in verifiable
     credential status tracking. Supports creating and initializing new status lists
     and retrieving status list information by ID. Ensures status list configuration
     is immutable after initialization. (IF-113)
-- name: Credential Metadata API
-  description: "Provide metadata related to verifiable credentials, including credential\
-    \ type metadata, JSON schemas, and Overlays Capture Architecture (OCA) data. IF-110"
-- name: Actuator
-  description: Monitor and interact
-  externalDocs:
-    description: Spring Boot Actuator Web API Documentation
-    url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
 - name: Credential API
   description: "Exposes API endpoints for managing credential offers and their statuses.\
     \ Supports creating new credential offers, retrieving offer data and deeplinks,\
@@ -33,8 +28,13 @@ tags:
   description: "Handles OpenID for Verifiable Credential Issuance (OID4VCI) API endpoints,\
     \ including issuing OAuth tokens for credential requests, issuing verifiable credentials,\
     \ and supporting deferred credential issuance (IF-111)"
+- name: Actuator
+  description: Monitor and interact
+  externalDocs:
+    description: Spring Boot Actuator Web API Documentation
+    url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
 paths:
-  /api/v1/token:
+  /oid4vci/api/token:
     post:
       tags:
       - Issuer OID4VCI API
@@ -56,31 +56,7 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OAuthToken"
-  /api/v1/status-list:
-    post:
-      tags:
-      - Status List API
-      summary: Create and initialize a new status list.
-      description: "Initialize and link a status list slot to to this service. This\
-        \ process can be only done once per status list! Status List type, configuration\
-        \ or length can not be changed after initialization!"
-      operationId: createStatusList
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/StatusListCreate"
-        required: true
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/StatusList"
-  /api/v1/deferred_credential:
+  /oid4vci/api/deferred_credential:
     post:
       tags:
       - Issuer OID4VCI API
@@ -111,46 +87,13 @@ paths:
             application/jwt:
               schema:
                 type: string
-  /api/v1/credentials:
-    post:
-      tags:
-      - Credential API
-      summary: Create a generic credential offer with the given content
-      description: |
-        Create a new credential offer, which can the be collected by the holder.
-        The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
-        The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
-        Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
-      operationId: createCredential
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateCredentialRequest"
-        required: true
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: Credential offer created
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/CredentialWithDeeplinkResponse"
-        "400":
-          description: |
-            Bad request due to user content or internal call to external service like statuslist
-          content:
-            '*/*':
-              schema:
-                type: object
-  /api/v1/credential:
+  /oid4vci/api/credential:
     post:
       tags:
       - Issuer OID4VCI API
       summary: Collect credential associated with the bearer token with the requested
         credential properties.
-      operationId: createCredential_1
+      operationId: createCredential
       parameters:
       - name: Authorization
         in: header
@@ -175,7 +118,64 @@ paths:
             application/jwt:
               schema:
                 type: string
-  /api/v1/credentials/{credentialId}/status:
+  /management/api/status-list:
+    post:
+      tags:
+      - Status List API
+      summary: Create and initialize a new status list.
+      description: "Initialize and link a status list slot to to this service. This\
+        \ process can be only done once per status list! Status List type, configuration\
+        \ or length can not be changed after initialization!"
+      operationId: createStatusList
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusListCreate"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StatusList"
+  /management/api/credentials:
+    post:
+      tags:
+      - Credential API
+      summary: Create a generic credential offer with the given content
+      description: |
+        Create a new credential offer, which can the be collected by the holder.
+        The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
+        The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
+        Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
+      operationId: createCredential_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCredentialRequest"
+        required: true
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: Credential offer created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CredentialWithDeeplinkResponse"
+        "400":
+          description: |
+            Bad request due to user content or internal call to external service like statuslist
+          content:
+            '*/*':
+              schema:
+                type: object
+  /management/api/credentials/{credentialId}/status:
     get:
       tags:
       - Credential API
@@ -225,7 +225,7 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UpdateStatusResponse"
-  /vct/{metadataKey}:
+  /oid4vci/vct/{metadataKey}:
     get:
       tags:
       - Credential Metadata API
@@ -245,7 +245,7 @@ paths:
             application/json:
               schema:
                 type: string
-  /oca/{ocaKey}:
+  /oid4vci/oca/{ocaKey}:
     get:
       tags:
       - Credential Metadata API
@@ -265,7 +265,7 @@ paths:
             application/json:
               schema:
                 type: string
-  /json-schema/{schemaKey}:
+  /oid4vci/json-schema/{schemaKey}:
     get:
       tags:
       - Credential Metadata API
@@ -285,7 +285,54 @@ paths:
             application/schema+json:
               schema:
                 type: string
-  /api/v1/status-list/{statusListId}:
+  /oid4vci/.well-known/openid-credential-issuer:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Information about credentials which can be issued.
+      operationId: getIssuerMetadata
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+  /oid4vci/.well-known/openid-configuration:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: OpenID Connect information required for issuing VCs
+      operationId: getOpenIDConfiguration
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OpenIdConfiguration"
+  /oid4vci/.well-known/oauth-authorization-server:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: OpenID Connect information required for issuing VCs
+      operationId: getOpenIDConfigurationForOauthAuthServer
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OpenIdConfiguration"
+  /management/api/status-list/{statusListId}:
     get:
       tags:
       - Status List API
@@ -307,7 +354,7 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/StatusList"
-  /api/v1/credentials/{credentialId}:
+  /management/api/credentials/{credentialId}:
     get:
       tags:
       - Credential API
@@ -337,7 +384,7 @@ paths:
                   value:
                     lastName: Example
                     firstName: Edward
-  /api/v1/credentials/{credentialId}/offer_deeplink:
+  /management/api/credentials/{credentialId}/offer_deeplink:
     get:
       tags:
       - Credential API
@@ -477,53 +524,6 @@ paths:
             application/json:
               schema:
                 type: object
-  /.well-known/openid-credential-issuer:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Information about credentials which can be issued.
-      operationId: getIssuerMetadata
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: object
-  /.well-known/openid-configuration:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfiguration
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/OpenIdConfiguration"
-  /.well-known/oauth-authorization-server:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfigurationForOauthAuthServer
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/OpenIdConfiguration"
 components:
   schemas:
     OauthAccessTokenRequest:
@@ -555,6 +555,53 @@ components:
           type: integer
           format: int64
         c_nonce:
+          type: string
+    DeferredCredentialRequest:
+      required:
+      - transaction_id
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          description: Id received from the create credential request for the deferred
+            flow.
+          format: uuid
+        proof:
+          type: object
+          additionalProperties:
+            type: object
+            description: Proof for holder binding. Can be in key:did or cnf format.
+          description: Proof for holder binding. Can be in key:did or cnf format.
+    CredentialRequest:
+      required:
+      - format
+      type: object
+      properties:
+        format:
+          pattern: ^vc\+sd-jwt$
+          type: string
+        proof:
+          type: object
+          additionalProperties:
+            type: object
+            description: Proof for holder binding. Can be in key:did or cnf format.
+          description: Proof for holder binding. Can be in key:did or cnf format.
+        credential_response_encryption:
+          $ref: "#/components/schemas/CredentialResponseEncryption"
+    CredentialResponseEncryption:
+      required:
+      - alg
+      - enc
+      - jwk
+      type: object
+      properties:
+        jwk:
+          type: object
+          additionalProperties:
+            type: object
+        alg:
+          type: string
+        enc:
           type: string
     StatusListCreate:
       required:
@@ -656,22 +703,6 @@ components:
                  for a bit string status list for suspension
           example:
             bits: 2
-    DeferredCredentialRequest:
-      required:
-      - transaction_id
-      type: object
-      properties:
-        transaction_id:
-          type: string
-          description: Id received from the create credential request for the deferred
-            flow.
-          format: uuid
-        proof:
-          type: object
-          additionalProperties:
-            type: object
-            description: Proof for holder binding. Can be in key:did or cnf format.
-          description: Proof for holder binding. Can be in key:did or cnf format.
     CredentialWithDeeplinkResponse:
       type: object
       properties:
@@ -743,37 +774,6 @@ components:
           items:
             type: string
       description: Initial credential creation request to start the offering process.
-    CredentialRequest:
-      required:
-      - format
-      type: object
-      properties:
-        format:
-          pattern: ^vc\+sd-jwt$
-          type: string
-        proof:
-          type: object
-          additionalProperties:
-            type: object
-            description: Proof for holder binding. Can be in key:did or cnf format.
-          description: Proof for holder binding. Can be in key:did or cnf format.
-        credential_response_encryption:
-          $ref: "#/components/schemas/CredentialResponseEncryption"
-    CredentialResponseEncryption:
-      required:
-      - alg
-      - enc
-      - jwk
-      type: object
-      properties:
-        jwk:
-          type: object
-          additionalProperties:
-            type: object
-        alg:
-          type: string
-        enc:
-          type: string
     UpdateCredentialStatusRequestType:
       type: string
       description: |2
@@ -821,6 +821,13 @@ components:
           format: uuid
         status:
           $ref: "#/components/schemas/CredentialStatusType"
+    OpenIdConfiguration:
+      type: object
+      properties:
+        issuer:
+          type: string
+        token_endpoint:
+          type: string
     StatusResponse:
       type: object
       properties:
@@ -833,10 +840,3 @@ components:
           type: string
         templated:
           type: boolean
-    OpenIdConfiguration:
-      type: object
-      properties:
-        issuer:
-          type: string
-        token_endpoint:
-          type: string
