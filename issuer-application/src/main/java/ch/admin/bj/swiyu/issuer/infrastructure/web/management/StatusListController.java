@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping(value = {"/api/v1/private/status-list"})
+@RequestMapping(value = {"/management/api/v1/status-list"})
 @AllArgsConstructor
 @Tag(name = "Status List API", description = "Exposes API endpoints for managing status lists used in verifiable " +
         "credential status tracking. Supports creating and initializing new status lists and retrieving status list " +

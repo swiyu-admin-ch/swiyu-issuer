@@ -82,7 +82,7 @@ class CredentialOfferStatusIT {
 
         // Mock removing access to registry
         // Add status list
-        mvc.perform(post("/api/v1/private/status-list")
+        mvc.perform(post("/management/api/v1/status-list")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
                                 "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": %s,\"config\": {\"bits\": 2}}".formatted(STATUS_LIST_MAX_LENGTH)))

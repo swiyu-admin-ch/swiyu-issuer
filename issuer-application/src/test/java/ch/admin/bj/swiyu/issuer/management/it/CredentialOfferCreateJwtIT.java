@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class CredentialOfferCreateJwtIT {
 
-    private static final String BASE_URL = "/api/v1/private/credentials";
+    private static final String BASE_URL = "/management/api/v1/credentials";
 
     @Autowired
     private MockMvc mvc;
