@@ -12,7 +12,7 @@ EXPOSE 8080
 
 COPY scripts/entrypoint.sh /app/
 
-ARG JAR_FILE=target/*.jar
+ARG JAR_FILE=issuer-application/target/*.jar
 ADD ${JAR_FILE} /app/app.jar
 
 RUN set -uxe && \
