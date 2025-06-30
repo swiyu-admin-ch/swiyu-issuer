@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Expanded cnf to contain correct structure while still providing the old one. Example:
+
+```json
+{
+    "cnf": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "...",
+        "y": "...",
+        "jwk": {
+            "kty": "EC",
+            "crv": "P-256",
+            "x": "...",
+            "y": "..."
+        }
+    }
+}
+```
+
 - Breaking! updated url path to distinguish management (with `/management`) and oid4vci (with `/oid4vci`) urls
 - Added new endpoint `/.well-known/oauth-authorization-server` that provides the same information as the
   `/.well-known/openid-configuration` endpoint but in a OAuth2-centric way.
