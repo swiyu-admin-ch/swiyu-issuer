@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-# This code will be replaced by the content of the local.Dockerfile by the open source helper 
-
 FROM eclipse-temurin:21
 
 USER 0
