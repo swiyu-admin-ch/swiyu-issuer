@@ -37,7 +37,7 @@ services:
 
       # Environment specific values. Please consult the main manual
       SWIYU_STATUS_REGISTRY_TOKEN_URL: ${SWIYU_STATUS_REGISTRY_TOKEN_URL}
-      SWIYU_STATUS_REGISTRY_API_URL: ${SWIYU_STATUS_REGISTRY_TOKEN_URL}
+      SWIYU_STATUS_REGISTRY_API_URL: ${SWIYU_STATUS_REGISTRY_API_URL}
 
       # Default settings for the application. Only change these if you know what you are doing
       LOGGING_LEVEL_CH_ADMIN_BIT_EID: DEBUG

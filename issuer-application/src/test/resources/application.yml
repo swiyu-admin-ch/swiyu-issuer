@@ -70,3 +70,9 @@ monitoring:
 http:
   max-redirects: 5
   object-size-limit: 1048576 # 1MB - DID log with ~400 entries.
+
+webhook:
+  callback-interval: 5000
+
+caching:
+  publicKeyCacheTTL: 5000
