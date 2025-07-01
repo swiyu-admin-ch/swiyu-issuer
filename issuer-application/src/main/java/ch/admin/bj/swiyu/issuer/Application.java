@@ -19,7 +19,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableConfigurationProperties
 @ConfigurationPropertiesScan
 @EnableScheduling
-@EnableSchedulerLock(defaultLockAtMostFor = "5m")
+@EnableSchedulerLock(defaultLockAtMostFor = "10m")
 @Slf4j
 public class Application {
 
