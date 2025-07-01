@@ -72,7 +72,7 @@ http:
   object-size-limit: 1048576 # 1MB - DID log with ~400 entries.
 
 webhook:
-  callback-interval: 5
+  callback-interval: 5000
 
 caching:
-  publicKeyCacheTTL: 5
+  publicKeyCacheTTL: 5000
