@@ -77,7 +77,19 @@ class CredentialOfferCreateJwtIT {
     @Test
     void createOfferWithJWTAndInnerJWT() throws Exception {
         // Offer data we want to use in the VC as JWT
-        String offerData = "eyJraWQiOiJ0ZXN0a2V5IiwiYWxnIjoiRVMyNTYifQ.eyJkYXRhIjoie1xuICBcIm1ldGFkYXRhX2NyZWRlbnRpYWxfc3VwcG9ydGVkX2lkXCI6IFtcInRlc3RcIl0sXG4gIFwiY3JlZGVudGlhbF9zdWJqZWN0X2RhdGFcIjogXCJleUpoYkdjaU9pSklVekkxTmlJc0luUjVjQ0k2SWtwWFZDSjkuZXlKc1lYTjBUbUZ0WlNJNklrVjRZVzF3YkdVaUxDSm1hWEp6ZEU1aGJXVWlPaUpGWkhkaGNtUWlMQ0prWVhSbFQyWkNhWEowYUNJNklqRXVNUzR4T1Rjd0luMC4yVk1qajFScEo3alVqbjFTSkhEd3d6cXgza3lnbjg4VXhTc0c1ajF1WEc4XCIsXG4gIFwib2ZmZXJfdmFsaWRpdHlfc2Vjb25kc1wiOiAzNjAwMFxufVxuIn0.Cf8abrwYa9aK8V0XYblrW5HoeVX-dz_AdvF3f7rgCW4FvEKFc4i2jZpx3O7lS5Vn6a4AmXPyRm-IaHrPxqJgNQ";
+        String offerData = """
+                {
+                    "lastName": "Example",
+                    "firstName": "Edward",
+                    "dateOfBirth": "1.1.1970"
+                  }""";
+        // Build the JWT
+        ECKey ecJWK = ECKey.parse(ApplicationIT.privateKey);
+        var claims = JWTClaimsSet.parse(offerData);
+
+        SignedJWT jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("testkey").build(), claims);
+        jwt.sign(new ECDSASigner(ecJWK));
+        String payload = jwt.serialize();
         // Adding in the offer data is done in the same way as without data integrity
         String jsonPayload = String.format("""
                 {
@@ -85,9 +97,10 @@ class CredentialOfferCreateJwtIT {
                   "credential_subject_data": "%s",
                   "offer_validity_seconds": 36000
                 }
-                """, offerData);
+                """, payload);
         var resp = testJWTCreateOffer(jsonPayload);
-        assert resp.getResponse().getContentAsString().equals(offerData);
+        // When fetching the data it should be visible that it is still a jwt on the DB - as sent
+        assert resp.getResponse().getContentAsString().equals(payload);
     }
 
     @Test

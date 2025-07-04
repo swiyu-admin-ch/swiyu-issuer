@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -86,21 +87,56 @@ class CredentialOfferCreateIT {
     }
 
     @Test
-    void testCreateOffer_noMilliseconds_thenSuccess() throws Exception {
-        String minPayloadWithEmptySubject = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}}",
-                "test");
-        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.management_id").isNotEmpty())
-                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty());
-
+    void testCreateOffer_InPast_thenFailure() throws Exception {
         String now = "2025-02-25T15:55:11Z";
         String minPayloadWithValidUntil = String.format(
                 "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}",
                 "test", now);
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(Matchers.containsString("expired")))                                                   ;
+    }
+
+    @Test
+    void testCreateOffer_unexpectedClaim_thenBadRequest() throws Exception {
+        String minPayloadWithValidUntil = String.format(
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"%s\": \"arbitrary claim\"}}",
+                "test", UUID.randomUUID());
+        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(Matchers.containsString("Unexpected credential claims found")));
+    }
+
+    @Test
+    void testCreateOffer_missingClaim_thenBadRequest() throws Exception {
+        String minPayloadWithValidUntil = String.format(
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"average_grade\": 5.5}}",
+                "university_example_sd_jwt");
+        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(Matchers.containsString("Mandatory credential claims are missing")));
+    }
+
+    @Test
+    void testCreateOffer_noMilliseconds_thenSuccess() throws Exception {
+        String validUntilNoMilliseconds = "3025-02-25T15:55:11Z";
+        String minPayloadWithValidUntil = String.format(
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}",
+                "test", validUntilNoMilliseconds);
+        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void testCreateOffer_validFrom_after_validUntil_thenBadRequest() throws Exception {
+        String validUntilNoMilliseconds = "3025-02-25T15:55:11Z";
+        String validFromNoMilliseconds = "4025-02-25T15:55:11Z";
+        String minPayloadWithValidUntil = String.format(
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\", \"credential_valid_from\" : \"%s\"}",
+                "test", validUntilNoMilliseconds, validFromNoMilliseconds);
+        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(Matchers.containsString("Credential would never be valid")));
     }
 
     @Test
@@ -142,6 +178,34 @@ class CredentialOfferCreateIT {
 
     @Test
     void testGetOfferData_thenSuccess() throws Exception {
+
+        String offerData = "{\"hello\":\"world\"}";
+
+        String jsonPayload = """
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": {
+                    "hello": "world"
+                  },
+                  "offer_validity_seconds": 36000
+                }
+                """;
+
+        MvcResult result = mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String id = JsonPath.read(result.getResponse().getContentAsString(), "$.management_id");
+
+        mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(offerData));
+    }
+
+    @Test
+    void testCreateOfferUsupportedMetadataType_thenFailure() throws Exception {
 
         String offerData = "{\"hello\":\"world\"}";
 
