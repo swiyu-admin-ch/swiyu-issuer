@@ -21,6 +21,11 @@ RUN set -uxe && \
 
 WORKDIR /app
 
+# All image-specific envvars can easiliy be printed out by simply running:
+#     podman inspect <IMAGE_NAME> --format='{{json .Config.Env}}' | jq -r '.[]|select(startswith("ISSUER_"))'
+ENV ISSUER_BOOTCLASSPATH "./lib"
+VOLUME ${ISSUER_BOOTCLASSPATH}
+
 USER 1001
 
 ENTRYPOINT ["/app/entrypoint.sh","app.jar"]
