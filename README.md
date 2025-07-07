@@ -288,6 +288,25 @@ The Generic Issuer Agent is configured using environment variables.
 |----------------------------|-------------------------------------------------------------------|------|--------------| 
 | PUBLIC_KEY_CACHE_TTL_MILLI | TTL in milliseconds how long a public key result should be cached | int  | 3600000 (1h) |
 
+#### Security
+
+Management Endpoints can be secured as OAuth2 Resource Server using Spring Security.
+
+For more details see the official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
+
+For easy playground setup security starts deactivated. It is activated when the appropriate environment variables are set.
+
+##### Fixed single asymmetric key
+| Variable         | Description                                                                                                                                                                                        | Type                                               |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------| 
+| SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_PUBLICKEYLOCATION | URI path to a single public key in pem format. [See Details](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#oauth2resourceserver-jwt-decoder-public-key) | URI eg: file:/app/public-key.pem |
+
+
+
+Multitenancy is not supported.
+
+
+
 #### JWT Based Data Integrity
 
 If there is the need to further protect the API / Data Integrity it is possible to enable the feature with a flag and
