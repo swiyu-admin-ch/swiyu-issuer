@@ -78,7 +78,7 @@ class CredentialOfferCreateIT {
         String preAuthorizedCode = credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString();
         assertNotSame(preAuthorizedCode, managementId);
 
-        String now = new SimpleDateFormat(ISO8601_FORMAT).format(new Date());
+        String now = new SimpleDateFormat(ISO8601_FORMAT).format(new Date(new Date().getTime()+1000));
         String minPayloadWithValidUntil = String.format(
                 "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}",
                 "test", now);
