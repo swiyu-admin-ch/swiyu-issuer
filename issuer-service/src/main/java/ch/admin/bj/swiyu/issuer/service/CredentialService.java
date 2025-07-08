@@ -447,7 +447,7 @@ public class CredentialService {
      * Validates a credential offer create request, doing sanity checks with configurations
      * @param credentialOffer the offer to be validated
      */
-    public void validateCredentialOffer(CredentialOffer credentialOffer) {
+    private void validateCredentialOffer(CredentialOffer credentialOffer) {
         var credentialOfferMetadata = credentialOffer.getMetadataCredentialSupportedId().getFirst();
         if (!issuerMetadata.getCredentialConfigurationSupported().containsKey(credentialOfferMetadata)){
             throw new BadRequestException("Credential offer metadata %s is not supported - should be one of %s".formatted(credentialOfferMetadata, String.join(", ", issuerMetadata.getCredentialConfigurationSupported().keySet())));
@@ -502,11 +502,10 @@ public class CredentialService {
                 throw new BadRequestException("Credential is already expired (would only be valid until %s, server time is %s)".formatted(validUntil, Instant.now()));
             }
            var validFrom = credentialOffer.getCredentialValidFrom();
-            if (validFrom != null) {
-                if (validFrom.isAfter(validUntil)) {
+            if (validFrom != null && validFrom.isAfter(validUntil)) {
                     throw new BadRequestException("Credential would never be valid - Valid from %s until %s".formatted(validFrom, validUntil));
                 }
-            }
+
         }
     }
 
