@@ -41,7 +41,7 @@ public class CredentialConfiguration {
      * Optional
      */
     @JsonProperty("claims")
-    private HashMap<String, Object> claims;
+    private HashMap<String, CredentialClaim> claims;
 
     /**
      * Field for VC not SD-JWT (VC Signed as JWT or JSON-LD)

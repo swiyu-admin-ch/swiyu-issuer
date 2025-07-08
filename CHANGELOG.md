@@ -74,6 +74,7 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
 - Expanded `/token` functionality. The endpoint accepts now `application/x-www-urlencoded` and no content-type.
   It still accepts the values in the url as request-params (this functionality will be removed in the future) and
   as `x-www-form-urlencoded` body.
+- Credential Offer is now validated according to the published metadata.
 
 ### Fixed
 

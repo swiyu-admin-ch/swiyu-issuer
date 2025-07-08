@@ -19,6 +19,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestableProof;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Proof;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -92,6 +93,7 @@ public class CredentialService {
     @Transactional
     public CredentialWithDeeplinkResponseDto createCredential(@Valid CreateCredentialRequestDto request) {
         var credential = this.createCredentialOffer(request);
+        validateCredentialOffer(credential);
         var offerLinkString = this.getOfferDeeplinkFromCredential(credential);
         return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(credential, offerLinkString);
     }
@@ -439,6 +441,72 @@ public class CredentialService {
                 .expiresIn(applicationProperties.getTokenTTL())
                 .cNonce(offer.getNonce().toString())
                 .build();
+    }
+
+    /**
+     * Validates a credential offer create request, doing sanity checks with configurations
+     * @param credentialOffer the offer to be validated
+     */
+    private void validateCredentialOffer(CredentialOffer credentialOffer) {
+        var credentialOfferMetadata = credentialOffer.getMetadataCredentialSupportedId().getFirst();
+        if (!issuerMetadata.getCredentialConfigurationSupported().containsKey(credentialOfferMetadata)){
+            throw new BadRequestException("Credential offer metadata %s is not supported - should be one of %s".formatted(credentialOfferMetadata, String.join(", ", issuerMetadata.getCredentialConfigurationSupported().keySet())));
+        }
+        // Date checks, if exists
+        validateOfferedCredentialValiditySpan(credentialOffer);
+        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
+        var metadataClaims = credentialConfiguration.getClaims().keySet();
+        if ("vc+sd-jwt".equals(credentialConfiguration.getFormat())) {
+            var offerData = dataIntegrityService.getVerifiedOfferData(credentialOffer.getOfferData(), credentialOffer.getId());
+            if (offerData == null) {
+                if (credentialOffer.isDeferred()) {
+                    // Data will be provided during issuance process when going from DEFERRED to READY state
+                    return;
+                }
+                throw new BadRequestException("Credential claims (credential subject data) is missing!");
+            }
+
+            validiteClaimsMissing(metadataClaims, offerData, credentialConfiguration);
+            validateClaimsSurplus(metadataClaims, offerData);
+        }
+    }
+
+    /**
+     * Checks the offerData for claims not expected in the metadata
+     */
+    private static void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
+        var surplusOfferedClaims = new HashSet<>(offerData.keySet());
+        surplusOfferedClaims.removeAll(metadataClaims);
+        if (!surplusOfferedClaims.isEmpty()) {
+            throw new BadRequestException("Unexpected credential claims found! %s".formatted(String.join(",", surplusOfferedClaims)));
+        }
+    }
+
+    /**
+     * checks if all claims published as mandatory in the metadata are present in the offer
+     */
+    private static void validiteClaimsMissing(Set<String> metadataClaims, Map<String, Object> offerData, CredentialConfiguration credentialConfiguration) {
+        var missingOfferedClaims = new HashSet<>(metadataClaims);
+        missingOfferedClaims.removeAll(offerData.keySet());
+        // Remove optional claims
+        missingOfferedClaims.removeIf(claimKey -> !credentialConfiguration.getClaims().get(claimKey).isMandatory());
+        if (!missingOfferedClaims.isEmpty()) {
+            throw new BadRequestException("Mandatory credential claims are missing! %s".formatted(String.join(",", missingOfferedClaims)));
+        }
+    }
+
+    private static void validateOfferedCredentialValiditySpan(CredentialOffer credentialOffer) {
+        var validUntil = credentialOffer.getCredentialValidUntil();
+        if (validUntil != null) {
+            if (validUntil.isBefore(Instant.now())) {
+                throw new BadRequestException("Credential is already expired (would only be valid until %s, server time is %s)".formatted(validUntil, Instant.now()));
+            }
+           var validFrom = credentialOffer.getCredentialValidFrom();
+            if (validFrom != null && validFrom.isAfter(validUntil)) {
+                    throw new BadRequestException("Credential would never be valid - Valid from %s until %s".formatted(validFrom, validUntil));
+                }
+
+        }
     }
 
     private Optional<CredentialOffer> getNonExpiredCredentialOffer(Optional<CredentialOffer> credentialOffer) {
