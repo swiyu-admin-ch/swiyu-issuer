@@ -27,7 +27,7 @@ fi
 #
 #    On Windows, semicolons (;) separate entities in this list; on other platforms it is a colon (:).
 #
-test -d "${ISSUER_BOOTCLASSPATH}" && bootclasspath_java_opt=-Xbootclasspath/a:$(find "${ISSUER_BOOTCLASSPATH}" -type f -name "*.jar" | xargs -I {} echo {} | tr '\n' ':')
+test -d "${JAVA_BOOTCLASSPATH}" && bootclasspath_java_opt=-Xbootclasspath/a:$(find "${JAVA_BOOTCLASSPATH}" -type f -name "*.jar" | xargs -I {} echo {} | tr '\n' ':')
 
 java -Duser.timezone=Europe/Zurich \
 -Dspring.config.location=classpath:bootstrap.yml,classpath:application.yml,optional:file:/vault/secrets/database-credentials.yml \
