@@ -10,11 +10,13 @@ import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.context.annotation.*;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -25,10 +27,15 @@ public class WebSecurityConfig {
     private final OAuth2ResourceServerProperties oAuth2ResourceServerProperties;
 
     @Bean
+    @Order(99)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
+        return allowAccessTo(http, "/oid4vci/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**");
+    }
+
+    private static DefaultSecurityFilterChain allowAccessTo(HttpSecurity http, String... paths) throws Exception {
         http
                 // Apply security settings to API endpoints, Swagger UI, API documentation and actuator endpoints
-                .securityMatchers(matchers -> matchers.requestMatchers("/oid4vci/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**"))
+                .securityMatchers(matchers -> matchers.requestMatchers(paths))
                 // Disable CSRF protection since this is a stateless API (no browser sessions)
                 .csrf(AbstractHttpConfigurer::disable)
                 // Define authorization rules for different endpoints
@@ -41,9 +48,10 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @Order(100)
     public SecurityFilterChain managmentSecurityFilterChain(HttpSecurity http) throws Exception {
         if (!hasAnyOAuthProperty()){
-            return http.build();
+            return allowAccessTo(http, "/management/**");
         }
         http.securityMatchers(matchers -> matchers.requestMatchers("/management/**"))
                 .csrf(AbstractHttpConfigurer::disable)
