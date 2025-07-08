@@ -17,6 +17,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,7 +47,7 @@ class CredentialServiceTest {
     private CredentialOffer expiredInProgress;
     private CredentialOffer valid;
     private CredentialOffer issued;
-    private CredentialOffer expired;
+    private CredentialOffer suspended;
 
     @BeforeEach
     void setUp() {
@@ -64,25 +65,26 @@ class CredentialServiceTest {
         expiredOffer = getCredentialOffer(CredentialStatusType.OFFERED, now().minusSeconds(1).getEpochSecond(), offerData);
         expiredInProgress = getCredentialOffer(CredentialStatusType.IN_PROGRESS, now().minusSeconds(1).getEpochSecond(), offerData);
         valid = getCredentialOffer(CredentialStatusType.OFFERED, now().plusSeconds(1000).getEpochSecond(), offerData);
-        expired = getCredentialOffer(CredentialStatusType.EXPIRED, now().plusSeconds(1000).getEpochSecond(), offerData);
+        suspended = getCredentialOffer(CredentialStatusType.SUSPENDED, now().plusSeconds(1000).getEpochSecond(), offerData);
         issued = getCredentialOffer(CredentialStatusType.ISSUED, now().minusSeconds(1).getEpochSecond(), null);
 
         when(credentialOfferRepository.findById(expiredOffer.getId())).thenReturn(Optional.of(expiredOffer));
         when(credentialOfferRepository.findById(expiredInProgress.getId())).thenReturn(Optional.of(expiredInProgress));
         when(credentialOfferRepository.findById(valid.getId())).thenReturn(Optional.of(valid));
         when(credentialOfferRepository.findById(issued.getId())).thenReturn(Optional.of(issued));
-        when(credentialOfferRepository.findById(expired.getId())).thenReturn(Optional.of(expired));
+        when(credentialOfferRepository.findById(suspended.getId())).thenReturn(Optional.of(suspended));
 
         when(credentialOfferRepository.findByIdForUpdate(expiredOffer.getId())).thenReturn(Optional.of(expiredOffer));
         when(credentialOfferRepository.findByIdForUpdate(expiredInProgress.getId())).thenReturn(Optional.of(expiredInProgress));
         when(credentialOfferRepository.findByIdForUpdate(valid.getId())).thenReturn(Optional.of(valid));
         when(credentialOfferRepository.findByIdForUpdate(issued.getId())).thenReturn(Optional.of(issued));
-        when(credentialOfferRepository.findByIdForUpdate(expired.getId())).thenReturn(Optional.of(expired));
+        when(credentialOfferRepository.findByIdForUpdate(suspended.getId())).thenReturn(Optional.of(suspended));
 
         when(credentialOfferRepository.save(expiredOffer)).thenReturn(expiredOffer);
         when(credentialOfferRepository.save(expiredInProgress)).thenReturn(expiredInProgress);
         when(credentialOfferRepository.save(valid)).thenReturn(valid);
         when(credentialOfferRepository.save(issued)).thenReturn(issued);
+        when(credentialOfferRepository.save(suspended)).thenReturn(suspended);
 
         credentialService = new CredentialService(
                 credentialOfferRepository,
@@ -155,12 +157,7 @@ class CredentialServiceTest {
     @Test
     void updateCredentialStatus_shouldUpdateStatusToRevoked() {
 
-        Set<CredentialOfferStatus> offerStatusSet = Set.of(
-                CredentialOfferStatus.builder()
-                        .id(new CredentialOfferStatusKey(issued.getId(), UUID.randomUUID()))
-                        .index(1)
-                        .build()
-        );
+        Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
         when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
 
@@ -260,6 +257,77 @@ class CredentialServiceTest {
         assertNull(offer.getOfferData());
         assertEquals("INVALID_GRANT", ex.getError().toString());
         assertEquals("Invalid preAuthCode", ex.getMessage());
+    }
+
+    @Test
+    void testHandlePostIssuanceStatusChangeRevoked_thenCallCorrectFunction() {
+
+        Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
+
+        when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
+
+        Mockito.doNothing().when(statusListService).revoke(offerStatusSet);
+
+        credentialService.updateCredentialStatus(issued.getId(), UpdateCredentialStatusRequestTypeDto.REVOKED);
+
+        Mockito.verify(statusListService, Mockito.times(1)).revoke(offerStatusSet);
+    }
+
+    @Test
+    void testHandlePostIssuanceStatusChangeSuspended_thenCallCorrectFunction() {
+
+        Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
+
+        when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
+
+        Mockito.doNothing().when(statusListService).revoke(offerStatusSet);
+
+        credentialService.updateCredentialStatus(issued.getId(), UpdateCredentialStatusRequestTypeDto.SUSPENDED);
+
+        Mockito.verify(statusListService, Mockito.times(1)).suspend(offerStatusSet);
+    }
+
+    @Test
+    void testHandlePostIssuanceStatusChangeIssued_thenCallCorrectFunction() {
+
+        Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
+
+        when(credentialOfferStatusRepository.findByOfferStatusId(suspended.getId())).thenReturn(offerStatusSet);
+
+        Mockito.doNothing().when(statusListService).revoke(offerStatusSet);
+
+        credentialService.updateCredentialStatus(suspended.getId(), UpdateCredentialStatusRequestTypeDto.ISSUED);
+
+        Mockito.verify(statusListService, Mockito.times(1)).revalidate(offerStatusSet);
+    }
+
+//    @Test
+//    void testCreateCredentialOffer_checkExpiration() {
+//
+//        CreateCredentialRequestDto dto = CreateCredentialRequestDto.builder()
+//                .metadataCredentialSupportedId(List.of("test"))
+//                .credentialSubjectData(offerData)
+//                .offerValiditySeconds(3600)
+//                .build();
+//
+//        credentialService.createCredential(dto);
+//
+//        // Check that the offer is created with the correct expiration time
+//        Mockito.verify(credentialOfferRepository, Mockito.times(1)).save(any(CredentialOffer.class));
+//        Mockito.verify(webhookService, Mockito.times(1)).produceStateChangeEvent(any(UUID.class), any(CredentialStatusType.class));
+//
+//        // Verify that the offer expiration timestamp is set correctly
+//        var createdOffer = credentialOfferRepository.findByIdForUpdate(any(UUID.class)).orElseThrow();
+//        assertTrue(createdOffer.getOfferExpirationTimestamp() > Instant.now().getEpochSecond());
+//    }
+
+    private @NotNull Set<CredentialOfferStatus> getCredentialOfferStatusSet() {
+        return Set.of(
+                CredentialOfferStatus.builder()
+                        .id(new CredentialOfferStatusKey(issued.getId(), UUID.randomUUID()))
+                        .index(1)
+                        .build()
+        );
     }
 
     private CredentialOffer getCredentialOffer(CredentialStatusType statusType, long offerExpirationTimestamp, Map<String, Object> offerData) {

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.it;
+package ch.admin.bj.swiyu.issuer.management;
 
 import ch.admin.bj.swiyu.issuer.infrastructure.web.management.CredentialController;
 import com.nimbusds.jose.*;

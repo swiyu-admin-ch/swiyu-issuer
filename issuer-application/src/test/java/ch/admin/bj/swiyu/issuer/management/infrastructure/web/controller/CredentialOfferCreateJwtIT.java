@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.it;
+package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
+import ch.admin.bj.swiyu.issuer.management.ApplicationIT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JWSAlgorithm;
