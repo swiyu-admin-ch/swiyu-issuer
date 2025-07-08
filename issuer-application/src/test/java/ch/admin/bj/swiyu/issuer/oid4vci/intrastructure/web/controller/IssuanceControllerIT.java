@@ -348,8 +348,19 @@ class IssuanceControllerIT {
         var jwt = SignedJWT.parse(sdjwtVc.split("~")[0]);
         var claims = jwt.getPayload().toJSONObject();
         assertTrue(claims.containsKey("cnf"));
-        var holderbindingJwk = JWK.parse((Map<String, Object>) claims.get("cnf"));
-        assertEquals(holderbindingJwk.toECKey().getX(), jwk.toECKey().getX());
+        Map<String, Object> cnf = (Map<String, Object>) claims.get("cnf");
+
+        // Todo: Refactor this once wallet migration is finished
+        // cnf jwk must contain old and expanded jwk
+        var holderbindingJwk = JWK.parse((cnf));
+        assertEquals(jwk.toECKey().getX(), holderbindingJwk.toECKey().getX());
+        assertEquals(KeyType.EC, holderbindingJwk.getKeyType());
+
+        // test expanded jwk
+        assertTrue(cnf.containsKey("jwk"));
+        var expandedJWK = JWK.parse((Map<String, Object>) cnf.get("jwk"));
+        assertEquals(KeyType.EC, expandedJWK.getKeyType());
+        assertEquals(jwk.toECKey().getX(), holderbindingJwk.toECKey().getX());
 
         var statusListType = (String) ((Map<String, Object>) ((Map<String, Object>) claims.get("status")).get("status_list")).get("type");
         assertEquals("SwissTokenStatusList-1.0", statusListType);

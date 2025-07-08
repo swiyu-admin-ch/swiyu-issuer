@@ -18,7 +18,6 @@ import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyType;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +46,9 @@ public class DataIntegrityService {
     /**
      * Unpacks the credential offer data and returns is as HashMap.
      * If Data integrity checks are available performs these.
+     *
+     * @param offerData the data to be verified if needed
+     * @param offerId id of the offer used only for logging purposes - nullable
      *
      * @return the Offered Credential Subject Data.
      */

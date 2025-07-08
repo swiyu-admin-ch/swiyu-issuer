@@ -22,10 +22,7 @@ import com.nimbusds.jwt.SignedJWT;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.getUnixTimeStamp;
 import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToUnixTimestamp;
@@ -71,7 +68,13 @@ public class SdJwtCredential extends CredentialBuilder {
 
         getHolderBinding().ifPresent(didJwk -> {
             try {
-                builder.putClaim("cnf", didJwk.getJWK().toJSONObject());
+                // Todo: Refactor this once wallet migration is finished
+                var cnf = didJwk.getJWK().toJSONObject();
+                var cnfClaim = new HashMap<>();
+                cnfClaim.put("jwk", cnf);
+                cnfClaim.putAll(cnf);
+
+                builder.putClaim("cnf", cnfClaim);
             } catch (ParseException e) {
                 throw new Oid4vcException(
                         e,

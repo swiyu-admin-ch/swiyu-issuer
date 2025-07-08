@@ -137,8 +137,8 @@ class StatusListIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        String offerCred = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
-                .formatted(RandomStringUtils.insecure().next(10), statusRegistryUrl);
+        String offerCred = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+                .formatted(statusRegistryUrl);
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(offerCred))
                 .andExpect(status().isOk())
