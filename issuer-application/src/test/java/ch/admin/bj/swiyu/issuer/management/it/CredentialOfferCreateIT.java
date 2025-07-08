@@ -214,5 +214,4 @@ class CredentialOfferCreateIT {
                 .andExpect(jsonPath("$.detail").value("The following claims are not allowed in the credentialSubjectData: [%s]".formatted(claim)))
                 .andReturn();
     }
-
 }

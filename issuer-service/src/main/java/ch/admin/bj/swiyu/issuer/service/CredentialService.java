@@ -79,7 +79,10 @@ public class CredentialService {
     @Transactional
     public UpdateStatusResponseDto updateCredentialStatus(@NotNull UUID credentialId,
                                                           @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
-        var credential = updateCredentialStatus(getCredentialForUpdate(credentialId), toCredentialStatusType(requestedNewStatus));
+        var credentialOfferForUpdate = getCredentialForUpdate(credentialId);
+        var newStatus = toCredentialStatusType(requestedNewStatus);
+        var credential = updateCredentialStatus(credentialOfferForUpdate, newStatus);
+
         return toUpdateStatusResponseDto(credential);
     }
 
@@ -257,7 +260,7 @@ public class CredentialService {
                     .build();
             credentialOfferStatusRepository.save(offerStatus);
             statusListService.incrementNextFreeIndex(statusList.getId());
-            log.debug("Credential offer {} uses status list {} index {}",  entity.getId(), statusList.getUri(), offerStatus.getIndex());
+            log.debug("Credential offer {} uses status list {} index {}", entity.getId(), statusList.getUri(), offerStatus.getIndex());
         }
 
         return entity;
