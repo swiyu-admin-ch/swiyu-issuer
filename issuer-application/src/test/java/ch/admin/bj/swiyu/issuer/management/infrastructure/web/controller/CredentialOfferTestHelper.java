@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.management.it;
+package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
