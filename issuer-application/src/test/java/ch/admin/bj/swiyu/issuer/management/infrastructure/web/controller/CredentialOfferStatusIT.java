@@ -122,7 +122,6 @@ class CredentialOfferStatusIT {
 
         mvc.perform(patch(testHelper.getUpdateUrl(id, newStatus)))
                 .andExpect(status().isBadRequest());
-        // todo check!! message
     }
 
     @Test
@@ -365,7 +364,6 @@ class CredentialOfferStatusIT {
          */
         @Test
         void testUpdateOfferStatusWithRevokedWhenIssuedWithoutStatusList_thenBadRequest() throws Exception {
-            CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.REVOKED;
 
             testHelper.updateStatusForEntity(id, CredentialStatusType.ISSUED);
 
@@ -375,8 +373,6 @@ class CredentialOfferStatusIT {
 
         @Test
         void testUpdateOfferStatusWithRevokedWhenRevoked_thenOk() throws Exception {
-
-            CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.REVOKED;
 
             mvc.perform(patch(testHelper.getUpdateUrl(id, newStatus)))
                     .andExpect(status().isOk());

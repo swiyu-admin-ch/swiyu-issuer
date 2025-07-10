@@ -10,9 +10,8 @@ import java.util.Base64;
 
 public class JwtTestUtils {
 
-    private final static int HEADER_POSITION = 0;
-    private final static int PAYLOAD_POSITION = 1;
-    private final static String SPLIT_SIGNAL = "\\.";
+    private static final int PAYLOAD_POSITION = 1;
+    private static final String SPLIT_SIGNAL = "\\.";
 
     public static String getJWTPayload(String credential) {
         Base64.Decoder decoder = Base64.getUrlDecoder();

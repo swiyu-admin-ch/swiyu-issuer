@@ -93,25 +93,22 @@ public class SdJwtCredential extends CredentialBuilder {
         // Optional claims as disclosures
         // Code below follows example from https://github.com/authlete/sd-jwt?tab=readme-ov-file#credential-jwt
         List<Disclosure> disclosures = new ArrayList<>();
-        for (var entry : getOfferData().entrySet()) {
 
-            // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
-            // Registered JWT claims MUST be included not as always disclosed
-            // sub & iat may explicitly be selectively disclosed
+        for (var entry : getOfferData().entrySet()) {
+            // Check if it's a protected claim
             if (SDJWT_PROTECTED_CLAIMS.contains(entry.getKey())) {
                 // We only log the issue and do not add the claim.
                 log.warn("Upstream application tried to override protected claim {} in credential offer {}. Original value has been retained",
                         entry.getKey(), getCredentialOffer().getId());
-                continue;
             }
-            if (entry.getValue() == null) {
-                // 20250314 - Despite claiming it works, authlete will crash with a nullpointer when given a null value
-                continue;
+            // Only process entries that are not protected claims and not null
+            else if (entry.getValue() != null) {
+                // TODO: EID-1782; Handle mandatory subject fields using issuer metadata
+                Disclosure dis = new Disclosure(entry.getKey(), entry.getValue());
+                disclosures.add(dis);
+                builder.putSDClaim(dis);
             }
-            // TODO: EID-1782; Handle mandatory subject fields using issuer metadata
-            Disclosure dis = new Disclosure(entry.getKey(), entry.getValue());
-            disclosures.add(dis);
-            builder.putSDClaim(dis);
+            // Skip null values without any action
         }
 
         try {

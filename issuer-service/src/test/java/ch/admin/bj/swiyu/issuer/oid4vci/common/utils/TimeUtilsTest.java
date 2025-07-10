@@ -13,7 +13,7 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TimeUtilsTest {
+class TimeUtilsTest {
 
     @Test
     void testInstantToUnixTimestamp() {

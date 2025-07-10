@@ -54,7 +54,6 @@ public class TokenStatusListToken {
      */
     public TokenStatusListToken(int bits, int statusListLength) {
         this.bits = bits;
-        //TODO gapa: statusList = new byte[statusListLength]; is there a reason why this was ficed in one project but not in the other?
         statusList = new byte[(int) Math.ceil(statusListLength * bits / 8.0)];
     }
 
@@ -165,8 +164,7 @@ public class TokenStatusListToken {
         var maskedByte = entryByte & mask;
         // Shift the status to the start of the byte so 1 = revoked, 2 = suspended, etc,
         // also removes all bits smaller than our status
-        var vcStatus = maskedByte >> bitIndex;
-        return vcStatus;
+        return maskedByte >> bitIndex;
     }
 
     /**

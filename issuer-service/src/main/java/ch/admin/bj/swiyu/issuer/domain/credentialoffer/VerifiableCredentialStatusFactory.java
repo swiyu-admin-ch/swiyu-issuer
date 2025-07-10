@@ -22,14 +22,17 @@ public class VerifiableCredentialStatusFactory {
     public Map<String, Object> mergeStatus(Map<String, Object> accumulator, Map<String, Object> statusMap) {
         Set<String> mergeConflicts = setIntersection(accumulator.keySet(), statusMap.keySet());
 
-        for (String key : statusMap.keySet()) {
+
+        for (Map.Entry<String, Object> entry : statusMap.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
             if (mergeConflicts.contains(key)) {
-                if (accumulator.get(key) instanceof Map && statusMap.get(key) instanceof Map) {
-                    mergeStatus((Map<String, Object>) accumulator.get(key), (Map<String, Object>) statusMap.get(key));
+                if (accumulator.get(key) instanceof Map && value instanceof Map) {
+                    mergeStatus((Map<String, Object>) accumulator.get(key), (Map<String, Object>) value);
                 }
                 // If we can't merge it we ignore it
             } else {
-                accumulator.put(key, statusMap.get(key));
+                accumulator.put(key, value);
             }
         }
         return accumulator;
