@@ -44,8 +44,7 @@ public class WebSecurityConfig {
                         .anyRequest().permitAll()
                 );
 
-        return http.build();
-    }
+            }
 
     @Bean
     @Order(100)
