@@ -1,10 +1,10 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.holderbinding;
 
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -141,6 +141,7 @@ public class ProofJwtTest {
                 }},
                 new HashMap<>(),
                 UUID.randomUUID(),
+                null,
                 null,
                 null,
                 Instant.now().plusSeconds(600).getEpochSecond(),

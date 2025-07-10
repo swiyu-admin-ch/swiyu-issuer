@@ -59,6 +59,28 @@ class CredentialServiceTest {
     @Mock
     private WebhookService webhookService;
 
+    private static CredentialOffer getCredentialOffer(CredentialStatusType status, HashMap<String, Object> offerData, UUID accessToken, UUID preAuthorizedCode, UUID nonce) {
+
+        return new CredentialOffer(
+                UUID.randomUUID(),
+                status,
+                Collections.emptyList(),
+                offerData,
+                new HashMap<>(),
+                accessToken,
+                null,
+                null,
+                null,
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                nonce,
+                preAuthorizedCode,
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                Instant.now(),
+                Instant.now(),
+                null
+        );
+    }
+
     @Test
     void givenExpiredToken_whenGetCredential_thenThrowOAuthException() throws OAuthException {
         // Given
@@ -80,7 +102,7 @@ class CredentialServiceTest {
                 new HashMap<>(),
                 null
         );
-        var ex = assertThrows(OAuthException.class, () -> service.createCredential(credentialRequestDto, uuid.toString()));
+        var ex = assertThrows(OAuthException.class, () -> service.createCredential(credentialRequestDto, uuid.toString(), null));
 
         // THEN Status is changed and offer data is cleared
         assertEquals("INVALID_REQUEST", ex.getError().toString());
@@ -109,7 +131,7 @@ class CredentialServiceTest {
                 new HashMap<>(),
                 null
         );
-        var ex = assertThrows(OAuthException.class, () -> service.createCredential(credentialRequestDto, uuid.toString()));
+        var ex = assertThrows(OAuthException.class, () -> service.createCredential(credentialRequestDto, uuid.toString(), null));
 
         // THEN Status is changed and offer data is cleared
         assertEquals(CredentialStatusType.EXPIRED, offer.getCredentialStatus());
@@ -140,26 +162,5 @@ class CredentialServiceTest {
         assertNull(offer.getOfferData());
         assertEquals("INVALID_GRANT", ex.getError().toString());
         assertEquals("Invalid preAuthCode", ex.getMessage());
-    }
-
-    private static CredentialOffer getCredentialOffer(CredentialStatusType status, HashMap<String, Object> offerData, UUID accessToken, UUID preAuthorizedCode, UUID nonce) {
-
-        return new CredentialOffer(
-                UUID.randomUUID(),
-                status,
-                Collections.emptyList(),
-                offerData,
-                new HashMap<>(),
-                accessToken,
-                null,
-                null,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                nonce,
-                preAuthorizedCode,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                Instant.now(),
-                Instant.now(),
-                null
-        );
     }
 }

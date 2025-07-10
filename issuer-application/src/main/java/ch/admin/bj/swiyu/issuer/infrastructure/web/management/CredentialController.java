@@ -25,6 +25,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -128,6 +129,27 @@ public class CredentialController {
     @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
         return this.credentialService.getCredentialStatus(credentialId);
+    }
+
+    @Timed
+    @PatchMapping("/{credentialId}")
+    @Operation(summary = "Update the status of an offer or the verifiable credential associated with the id. This is only for deferred flows. The status is set to ready for issuance",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential status updated",
+                            content = @Content(schema = @Schema(implementation = UpdateStatusResponseDto.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Bad request due to user content or internal call to external service like statuslist",
+                            content = @Content(schema = @Schema(implementation = Object.class))
+                    )
+            }
+    )
+    public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialId, @RequestBody Map<String, Object> credentialOffer) {
+
+        return this.credentialService.updateOfferDataForDeferred(credentialId, credentialOffer);
     }
 
     @Timed

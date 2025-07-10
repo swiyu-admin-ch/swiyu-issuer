@@ -17,11 +17,8 @@ import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestableProof;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Proof;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -65,6 +62,44 @@ public class CredentialService {
     private final DataIntegrityService dataIntegrityService;
     private final WebhookService webhookService;
 
+    /**
+     * Checks the offerData for claims not expected in the metadata
+     */
+    private static void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
+        var surplusOfferedClaims = new HashSet<>(offerData.keySet());
+        surplusOfferedClaims.removeAll(metadataClaims);
+        if (!surplusOfferedClaims.isEmpty()) {
+            throw new BadRequestException("Unexpected credential claims found! %s".formatted(String.join(",", surplusOfferedClaims)));
+        }
+    }
+
+    /**
+     * checks if all claims published as mandatory in the metadata are present in the offer
+     */
+    private static void validiteClaimsMissing(Set<String> metadataClaims, Map<String, Object> offerData, CredentialConfiguration credentialConfiguration) {
+        var missingOfferedClaims = new HashSet<>(metadataClaims);
+        missingOfferedClaims.removeAll(offerData.keySet());
+        // Remove optional claims
+        missingOfferedClaims.removeIf(claimKey -> !credentialConfiguration.getClaims().get(claimKey).isMandatory());
+        if (!missingOfferedClaims.isEmpty()) {
+            throw new BadRequestException("Mandatory credential claims are missing! %s".formatted(String.join(",", missingOfferedClaims)));
+        }
+    }
+
+    private static void validateOfferedCredentialValiditySpan(CredentialOffer credentialOffer) {
+        var validUntil = credentialOffer.getCredentialValidUntil();
+        if (validUntil != null) {
+            if (validUntil.isBefore(Instant.now())) {
+                throw new BadRequestException("Credential is already expired (would only be valid until %s, server time is %s)".formatted(validUntil, Instant.now()));
+            }
+            var validFrom = credentialOffer.getCredentialValidFrom();
+            if (validFrom != null && validFrom.isAfter(validUntil)) {
+                throw new BadRequestException("Credential would never be valid - Valid from %s until %s".formatted(validFrom, validUntil));
+            }
+
+        }
+    }
+
     @Transactional // not readonly since expired credentails gets updated here automatically
     public Object getCredentialOffer(UUID credentialId) {
         return toCredentialWithDeeplinkResponseDto(this.getCredential(credentialId));
@@ -96,6 +131,26 @@ public class CredentialService {
         validateCredentialOffer(credential);
         var offerLinkString = this.getOfferDeeplinkFromCredential(credential);
         return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(credential, offerLinkString);
+    }
+
+    @Transactional
+    public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialId, Map<String, Object> mimi) {
+        var storedCredentialOffer = getCredentialForUpdate(credentialId);
+
+        // Check if is deferred credential and in deferred state
+        if (!storedCredentialOffer.isDeferred() && storedCredentialOffer.getCredentialStatus() == CredentialStatusType.DEFERRED) {
+            throw new BadRequestException("Credential is either not deferred or has an incorrect status, cannot update offer data");
+        }
+
+        // check if offerData matches the expected metadata claims
+        var offerData = readOfferData(mimi);
+        validateOfferData(offerData);
+
+        // update the offer data
+        storedCredentialOffer.markAsReadyForIssuance(offerData);
+        credentialOfferRepository.save(storedCredentialOffer);
+
+        return toUpdateStatusResponseDto(storedCredentialOffer);
     }
 
     /**
@@ -259,7 +314,7 @@ public class CredentialService {
                     .build();
             credentialOfferStatusRepository.save(offerStatus);
             statusListService.incrementNextFreeIndex(statusList.getId());
-            log.debug("Credential offer {} uses status list {} index {}",  entity.getId(), statusList.getUri(), offerStatus.getIndex());
+            log.debug("Credential offer {} uses status list {} index {}", entity.getId(), statusList.getUri(), offerStatus.getIndex());
         }
 
         return entity;
@@ -301,7 +356,7 @@ public class CredentialService {
     }
 
     @Transactional
-    public CredentialEnvelopeDto createCredential(CredentialRequestDto credentialRequestDto, String accessToken) {
+    public CredentialEnvelopeDto createCredential(CredentialRequestDto credentialRequestDto, String accessToken, ClientAgentInfo clientInfo) {
 
         var credentialRequest = toCredentialRequest(credentialRequestDto);
 
@@ -356,16 +411,34 @@ public class CredentialService {
             var deferredData = new DeferredDataDto(UUID.randomUUID());
 
             responseEnvelope = vcBuilder.buildEnvelopeDto(deferredData);
-            credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest, holderPublicKey.orElse(null));
+            credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest, holderPublicKey.orElse(null), clientInfo);
+            credentialOfferRepository.save(credentialOffer);
+            webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
         } else {
             responseEnvelope = vcBuilder.buildCredential();
             credentialOffer.markAsIssued();
+            credentialOfferRepository.save(credentialOffer);
+            webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
         }
 
-        credentialOfferRepository.save(credentialOffer);
-        webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
         return responseEnvelope;
     }
+
+//    private CredentialEnvelopeDto handleDeferred(CredentialBuilder vcBuilder,
+//                                                 CredentialOffer credentialOffer,
+//                                                 CredentialRequestClass credentialRequest,
+//                                                 Optional<String> holderPublicKey) {
+//        CredentialEnvelopeDto responseEnvelope;
+//
+//        var deferredData = new DeferredDataDto(UUID.randomUUID());
+//
+//        responseEnvelope = vcBuilder.buildEnvelopeDto(deferredData);
+//        credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest, holderPublicKey.orElse(null));
+//        credentialOfferRepository.save(credentialOffer);
+//        webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+//
+//        return responseEnvelope;
+//    }
 
     @Transactional
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(DeferredCredentialRequestDto deferredCredentialRequest,
@@ -445,11 +518,12 @@ public class CredentialService {
 
     /**
      * Validates a credential offer create request, doing sanity checks with configurations
+     *
      * @param credentialOffer the offer to be validated
      */
     private void validateCredentialOffer(CredentialOffer credentialOffer) {
         var credentialOfferMetadata = credentialOffer.getMetadataCredentialSupportedId().getFirst();
-        if (!issuerMetadata.getCredentialConfigurationSupported().containsKey(credentialOfferMetadata)){
+        if (!issuerMetadata.getCredentialConfigurationSupported().containsKey(credentialOfferMetadata)) {
             throw new BadRequestException("Credential offer metadata %s is not supported - should be one of %s".formatted(credentialOfferMetadata, String.join(", ", issuerMetadata.getCredentialConfigurationSupported().keySet())));
         }
         // Date checks, if exists
@@ -468,44 +542,6 @@ public class CredentialService {
 
             validiteClaimsMissing(metadataClaims, offerData, credentialConfiguration);
             validateClaimsSurplus(metadataClaims, offerData);
-        }
-    }
-
-    /**
-     * Checks the offerData for claims not expected in the metadata
-     */
-    private static void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
-        var surplusOfferedClaims = new HashSet<>(offerData.keySet());
-        surplusOfferedClaims.removeAll(metadataClaims);
-        if (!surplusOfferedClaims.isEmpty()) {
-            throw new BadRequestException("Unexpected credential claims found! %s".formatted(String.join(",", surplusOfferedClaims)));
-        }
-    }
-
-    /**
-     * checks if all claims published as mandatory in the metadata are present in the offer
-     */
-    private static void validiteClaimsMissing(Set<String> metadataClaims, Map<String, Object> offerData, CredentialConfiguration credentialConfiguration) {
-        var missingOfferedClaims = new HashSet<>(metadataClaims);
-        missingOfferedClaims.removeAll(offerData.keySet());
-        // Remove optional claims
-        missingOfferedClaims.removeIf(claimKey -> !credentialConfiguration.getClaims().get(claimKey).isMandatory());
-        if (!missingOfferedClaims.isEmpty()) {
-            throw new BadRequestException("Mandatory credential claims are missing! %s".formatted(String.join(",", missingOfferedClaims)));
-        }
-    }
-
-    private static void validateOfferedCredentialValiditySpan(CredentialOffer credentialOffer) {
-        var validUntil = credentialOffer.getCredentialValidUntil();
-        if (validUntil != null) {
-            if (validUntil.isBefore(Instant.now())) {
-                throw new BadRequestException("Credential is already expired (would only be valid until %s, server time is %s)".formatted(validUntil, Instant.now()));
-            }
-           var validFrom = credentialOffer.getCredentialValidFrom();
-            if (validFrom != null && validFrom.isAfter(validUntil)) {
-                    throw new BadRequestException("Credential would never be valid - Valid from %s until %s".formatted(validFrom, validUntil));
-                }
-
         }
     }
 
@@ -589,33 +625,10 @@ public class CredentialService {
                 throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
             }
 
-            var attestationRequirement = bindingProofType.getKeyAttestationRequirement();
-            checkHolderKeyAttestation(attestationRequirement, requestProof);
-
+            keyAttestationService.checkHolderKeyAttestation(bindingProofType, requestProof);
 
             return Optional.of(requestProof.getBinding());
         }
         return Optional.empty();
     }
-
-    private void checkHolderKeyAttestation(KeyAttestationRequirement attestationRequirement, Proof requestProof) throws Oid4vcException {
-        // No Attestation required, no further checks needed
-        if (attestationRequirement == null) {
-            return;
-        }
-
-        // Proof type cannot hold an attestation
-        if (!(requestProof instanceof AttestableProof)) {
-            throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
-        }
-
-
-        var attestation = ((AttestableProof) requestProof).getAttestationJwt();
-        if (attestation == null) {
-            throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
-        }
-
-        keyAttestationService.throwIfInvalidAttestation(attestationRequirement, attestation);
-    }
-
 }

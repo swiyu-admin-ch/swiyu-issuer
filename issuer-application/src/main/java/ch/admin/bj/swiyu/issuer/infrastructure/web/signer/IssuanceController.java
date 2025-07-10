@@ -11,12 +11,15 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OauthAccessTokenRequestDto;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.service.CredentialService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,10 +88,20 @@ public class IssuanceController {
     @Timed
     @PostMapping(value = {"/credential"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
     @Operation(summary = "Collect credential associated with the bearer token with the requested credential properties.")
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
-                                                   @Validated @RequestBody CredentialRequestDto credentialRequestDto) {
+                                                   @Validated @RequestBody CredentialRequestDto credentialRequestDto,
+                                                   HttpServletRequest request) {
 
-        var credentialEnvelope = credentialService.createCredential(credentialRequestDto, getAccessToken(bearerToken));
+        // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
+        ClientAgentInfo clientInfo = new ClientAgentInfo(
+                request.getRemoteAddr(),
+                request.getHeader("user-agent"),
+                request.getHeader("accept-language"),
+                request.getHeader("accept-encoding")
+        );
+
+        var credentialEnvelope = credentialService.createCredential(credentialRequestDto, getAccessToken(bearerToken), clientInfo);
 
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
