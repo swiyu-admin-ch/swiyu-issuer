@@ -76,7 +76,7 @@ public class CredentialService {
 
     @Transactional
     public UpdateStatusResponseDto updateCredentialStatus(@NotNull UUID credentialId,
-            @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
+                                                          @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
         var credentialOfferForUpdate = getCredentialForUpdate(credentialId);
         var newStatus = toCredentialStatusType(requestedNewStatus);
         var credential = updateCredentialStatus(credentialOfferForUpdate, newStatus);
@@ -99,7 +99,7 @@ public class CredentialService {
     }
 
     @Transactional
-    public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialId, Map<String, Object> mimi) {
+    public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialId, Map<String, Object> offerDataMap) {
         var storedCredentialOffer = getCredentialForUpdate(credentialId);
 
         // Check if is deferred credential and in deferred state
@@ -110,7 +110,7 @@ public class CredentialService {
         }
 
         // check if offerData matches the expected metadata claims
-        var offerData = readOfferData(mimi);
+        var offerData = readOfferData(offerDataMap);
         validateOfferData(offerData);
 
         // update the offer data
@@ -165,7 +165,7 @@ public class CredentialService {
      * @return the updated CredentialOffer
      */
     private CredentialOffer updateCredentialStatus(@NotNull CredentialOffer credential,
-            @NotNull CredentialStatusType newStatus) {
+                                                   @NotNull CredentialStatusType newStatus) {
 
         var currentStatus = credential.getCredentialStatus();
 
@@ -200,8 +200,8 @@ public class CredentialService {
      * Handles status changes before issuance (status cancelled, ready and expired)
      */
     private void handlePreIssuanceStatusChange(CredentialOffer credential,
-            CredentialStatusType currentStatus,
-            CredentialStatusType newStatus) {
+                                               CredentialStatusType currentStatus,
+                                               CredentialStatusType newStatus) {
 
         // if the new status is READY, then we can only set it if the old status was
         // deferred
@@ -339,7 +339,7 @@ public class CredentialService {
 
     @Transactional
     public CredentialEnvelopeDto createCredential(CredentialRequestDto credentialRequestDto, String accessToken,
-            ClientAgentInfo clientInfo) {
+                                                  ClientAgentInfo clientInfo) {
 
         var credentialRequest = toCredentialRequest(credentialRequestDto);
 
@@ -410,24 +410,6 @@ public class CredentialService {
         return responseEnvelope;
     }
 
-    // private CredentialEnvelopeDto handleDeferred(CredentialBuilder vcBuilder,
-    // CredentialOffer credentialOffer,
-    // CredentialRequestClass credentialRequest,
-    // Optional<String> holderPublicKey) {
-    // CredentialEnvelopeDto responseEnvelope;
-    //
-    // var deferredData = new DeferredDataDto(UUID.randomUUID());
-    //
-    // responseEnvelope = vcBuilder.buildEnvelopeDto(deferredData);
-    // credentialOffer.markAsDeferred(deferredData.transactionId(),
-    // credentialRequest, holderPublicKey.orElse(null));
-    // credentialOfferRepository.save(credentialOffer);
-    // webhookService.produceStateChangeEvent(credentialOffer.getId(),
-    // credentialOffer.getCredentialStatus());
-    //
-    // return responseEnvelope;
-    // }
-
     @Transactional
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(
             DeferredCredentialRequestDto deferredCredentialRequest,
@@ -482,7 +464,7 @@ public class CredentialService {
      *
      * @param preAuthCode Pre-authorization code of holder
      * @return OAuth authorization token which can be used in credential service
-     *         endpoint
+     * endpoint
      */
     @Transactional
     public OAuthTokenDto issueOAuthToken(String preAuthCode) {
@@ -559,7 +541,7 @@ public class CredentialService {
      * the offer
      */
     private void validiteClaimsMissing(Set<String> metadataClaims, Map<String, Object> offerData,
-            CredentialConfiguration credentialConfiguration) {
+                                       CredentialConfiguration credentialConfiguration) {
         var missingOfferedClaims = new HashSet<>(metadataClaims);
         missingOfferedClaims.removeAll(offerData.keySet());
         // Remove optional claims
@@ -637,11 +619,11 @@ public class CredentialService {
      * @param credentialRequest the credential request to be processed
      * @param credentialOffer   the credential offer for which the request was sent
      * @return the holder's public key or an empty optional
-     *         if for the offered credential no holder binding is required
+     * if for the offered credential no holder binding is required
      * @throws Oid4vcException if the credential request is invalid in some form
      */
     private Optional<String> getHolderPublicKey(CredentialRequestClass credentialRequest,
-            CredentialOffer credentialOffer) {
+                                                CredentialOffer credentialOffer) {
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst());
 

@@ -9,6 +9,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.service;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
+import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
@@ -37,8 +38,7 @@ import static java.time.Instant.now;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class CredentialServiceTest {
     private final Map<String, Object> offerData = Map.of("hello", "world");
@@ -57,28 +57,6 @@ class CredentialServiceTest {
     private CredentialOffer suspended;
     private StatusList statusList;
     private CreateCredentialRequestDto createCredentialRequestDto;
-
-    private static CredentialOffer getCredentialOffer(CredentialStatusType status, HashMap<String, Object> offerData, UUID accessToken, UUID preAuthorizedCode, UUID nonce) {
-
-        return new CredentialOffer(
-                UUID.randomUUID(),
-                status,
-                Collections.emptyList(),
-                offerData,
-                new HashMap<>(),
-                accessToken,
-                null,
-                null,
-                null,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                nonce,
-                preAuthorizedCode,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                Instant.now(),
-                Instant.now(),
-                null
-        );
-    }
 
     @BeforeEach
     void setUp() {
@@ -205,7 +183,7 @@ class CredentialServiceTest {
 
         when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
 
-        Mockito.doNothing().when(statusListService).revoke(offerStatusSet);
+        doNothing().when(statusListService).revoke(offerStatusSet);
 
         var updated = credentialService.updateCredentialStatus(issued.getId(), UpdateCredentialStatusRequestTypeDto.REVOKED);
 
@@ -315,7 +293,7 @@ class CredentialServiceTest {
 
         when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
 
-        Mockito.doNothing().when(statusListService).revoke(offerStatusSet);
+        doNothing().when(statusListService).revoke(offerStatusSet);
 
         credentialService.updateCredentialStatus(issued.getId(), UpdateCredentialStatusRequestTypeDto.REVOKED);
 
@@ -329,7 +307,7 @@ class CredentialServiceTest {
 
         when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
 
-        Mockito.doNothing().when(statusListService).revoke(offerStatusSet);
+        doNothing().when(statusListService).revoke(offerStatusSet);
 
         credentialService.updateCredentialStatus(issued.getId(), UpdateCredentialStatusRequestTypeDto.SUSPENDED);
 
@@ -343,7 +321,7 @@ class CredentialServiceTest {
 
         when(credentialOfferStatusRepository.findByOfferStatusId(suspended.getId())).thenReturn(offerStatusSet);
 
-        Mockito.doNothing().when(statusListService).revoke(offerStatusSet);
+        doNothing().when(statusListService).revoke(offerStatusSet);
 
         credentialService.updateCredentialStatus(suspended.getId(), UpdateCredentialStatusRequestTypeDto.ISSUED);
 
@@ -577,6 +555,76 @@ class CredentialServiceTest {
         });
 
         assertDoesNotThrow(() -> credentialService.createCredential(createCredentialRequestDto));
+    }
+
+    @Test
+    void updateOfferDataForDeferred_shouldUpdateOfferData_whenDeferredAndInDeferredState() {
+        // Arrange
+        UUID credentialId = UUID.randomUUID();
+        Map<String, Object> mimi = Map.of("claim", "value");
+        CredentialOffer credentialOffer = mock(CredentialOffer.class);
+
+        when(credentialOffer.isDeferred()).thenReturn(true);
+        when(credentialOffer.getCredentialStatus()).thenReturn(CredentialStatusType.DEFERRED);
+        when(credentialOfferRepository.findByIdForUpdate(credentialId)).thenReturn(Optional.of(credentialOffer));
+        doNothing().when(credentialOffer).markAsReadyForIssuance(any());
+        when(credentialOfferRepository.save(credentialOffer)).thenReturn(credentialOffer);
+
+        // Act
+        UpdateStatusResponseDto response = credentialService.updateOfferDataForDeferred(credentialId, mimi);
+
+        // Assert
+        verify(credentialOfferRepository).findByIdForUpdate(credentialId);
+        verify(credentialOffer).markAsReadyForIssuance(any());
+        verify(credentialOfferRepository).save(credentialOffer);
+        assertNotNull(response);
+    }
+
+    @Test
+    void updateOfferDataForDeferred_shouldThrow_whenNotDeferredOrNotInDeferredState() {
+        // Arrange
+        UUID credentialId = UUID.randomUUID();
+        Map<String, Object> offerDataMap = Map.of("claim", "value");
+        CredentialOffer credentialOffer = mock(CredentialOffer.class);
+
+        when(credentialOffer.isDeferred()).thenReturn(false);
+        when(credentialOffer.getCredentialStatus()).thenReturn(CredentialStatusType.DEFERRED);
+        when(credentialOfferRepository.findByIdForUpdate(credentialId)).thenReturn(Optional.of(credentialOffer));
+
+        // Act & Assert
+        assertThrows(BadRequestException.class, () -> credentialService.updateOfferDataForDeferred(credentialId, offerDataMap));
+    }
+
+    @Test
+    void updateOfferDataForDeferred_shouldUpdateCredentialOfferData() {
+        // Arrange
+        UUID credentialId = UUID.randomUUID();
+        Map<String, Object> offerDataMap = Map.of("claim", "value");
+        CredentialOffer credentialOffer = new CredentialOffer(
+                credentialId,
+                CredentialStatusType.DEFERRED,
+                Collections.emptyList(),
+                null,
+                Map.of("deferred", true),
+                UUID.randomUUID(),
+                null,
+                null,
+                null,
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                Instant.now(),
+                Instant.now(),
+                null
+        );
+
+        when(credentialOfferRepository.findByIdForUpdate(credentialId)).thenReturn(Optional.of(credentialOffer));
+        when(credentialOfferRepository.save(credentialOffer)).thenReturn(credentialOffer);
+
+        credentialService.updateOfferDataForDeferred(credentialId, offerDataMap);
+
+        verify(credentialOfferRepository, times(1)).save(credentialOffer);
     }
 
     private @NotNull Set<CredentialOfferStatus> getCredentialOfferStatusSet() {
