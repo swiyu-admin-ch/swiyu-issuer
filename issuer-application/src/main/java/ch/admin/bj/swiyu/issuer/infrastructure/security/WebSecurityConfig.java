@@ -29,29 +29,28 @@ public class WebSecurityConfig {
     @Bean
     @Order(99)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
-        return allowAccessTo(http, "/oid4vci/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**");
+        return allowAccessTo(http, "/oid4vci/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**").build();
     }
 
-    private static DefaultSecurityFilterChain allowAccessTo(HttpSecurity http, String... paths) throws Exception {
-        http
-                // Apply security settings to API endpoints, Swagger UI, API documentation and actuator endpoints
-                .securityMatchers(matchers -> matchers.requestMatchers(paths))
-                // Disable CSRF protection since this is a stateless API (no browser sessions)
-                .csrf(AbstractHttpConfigurer::disable)
-                // Define authorization rules for different endpoints
-                .authorizeHttpRequests(authorize -> authorize
-                        // Allow public access to all endpoints as auth is handled via filter
-                        .anyRequest().permitAll()
-                );
+    private static HttpSecurity allowAccessTo(HttpSecurity http, String... paths) throws Exception {
+        return http
+            // Apply security settings to API endpoints, Swagger UI, API documentation and actuator endpoints
+            .securityMatchers(matchers -> matchers.requestMatchers(paths))
+            // Disable CSRF protection since this is a stateless API (no browser sessions)
+            .csrf(AbstractHttpConfigurer::disable)
+            // Define authorization rules for different endpoints
+            .authorizeHttpRequests(authorize -> authorize
+                    // Allow public access to all endpoints as auth is handled via filter
+                    .anyRequest().permitAll()
+            );
 
-        return http.build();
     }
 
     @Bean
     @Order(100)
     public SecurityFilterChain managmentSecurityFilterChain(HttpSecurity http) throws Exception {
         if (!hasAnyOAuthProperty()){
-            return allowAccessTo(http, "/management/**");
+            return allowAccessTo(http, "/management/**").build();
         }
         http.securityMatchers(matchers -> matchers.requestMatchers("/management/**"))
                 .csrf(AbstractHttpConfigurer::disable)
