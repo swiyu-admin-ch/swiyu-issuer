@@ -29,7 +29,7 @@ public class WebSecurityConfig {
     @Bean
     @Order(99)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
-        return allowAccessTo(http, "/oid4vci/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**");
+        return allowAccessTo(http, "/oid4vci/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**").build();
     }
 
     private static DefaultSecurityFilterChain allowAccessTo(HttpSecurity http, String... paths) throws Exception {
