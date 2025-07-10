@@ -50,7 +50,6 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
         var mapper = new ObjectMapper();
         String jwtString = request.getReader().lines().collect(Collectors.joining());
         this.jwt = SignedJWT.parse(jwtString);
-        // Todo check
         this.dataClaim = mapper.readTree(jwt.getJWTClaimsSet().getStringClaim("data")).toString();
     }
 

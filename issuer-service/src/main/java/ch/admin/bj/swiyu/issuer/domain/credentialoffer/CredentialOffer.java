@@ -156,8 +156,8 @@ public class CredentialOffer {
      * @return offerdata map
      */
     public static Map<String, Object> readOfferData(Object offerData) {
-        if (offerData instanceof String) {
-            return readOfferDataString((String) offerData);
+        if (offerData instanceof String string) {
+            return readOfferDataString(string);
         } else if (offerData instanceof Map<?, ?>) {
             return readOfferDataMap((Map<?, ?>) offerData);
         } else {

@@ -56,7 +56,13 @@ class ProofJwtTest {
 
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
-        var exc = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getOfferExpirationTimestamp()));
+
+        var audience = "http://issuer.com";
+        var algorithms = List.of("ES256");
+        var offerNonce = offer.getNonce();
+        var expirationTimestamp = offer.getOfferExpirationTimestamp();
+        var exc = assertThrows(Oid4vcException.class,
+                () -> proofJwt.isValidHolderBinding(audience, algorithms, offerNonce, expirationTimestamp));
         assertTrue(exc.getMessage().contains("None of the supported binding method/s was found in the header"));
     }
 
@@ -81,7 +87,14 @@ class ProofJwtTest {
 
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
-        var exc = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
+
+        String audience = "http://issuer.com";
+        List<String> algorithms = List.of("ES256");
+        UUID offerNonce = offer.getNonce();
+        Long expirationTimestamp = offer.getTokenExpirationTimestamp();
+        var exc = assertThrows(Oid4vcException.class,
+                () -> proofJwt.isValidHolderBinding(audience, algorithms, offerNonce, expirationTimestamp));
+
         assertTrue(exc.getMessage().contains("Did method provided in kid attribute did:tdw is not supported"));
     }
 
@@ -106,7 +119,12 @@ class ProofJwtTest {
 
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
-        var exc = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
+        String audience = "http://issuer.com";
+        List<String> algorithms = List.of("ES256");
+        UUID offerNonce = offer.getNonce();
+        Long expirationTimestamp = offer.getTokenExpirationTimestamp();
+        var exc = assertThrows(Oid4vcException.class,
+                () -> proofJwt.isValidHolderBinding(audience, algorithms, offerNonce, expirationTimestamp));
         assertTrue(exc.getMessage().contains("could not be parsed to a JWK"));
     }
 

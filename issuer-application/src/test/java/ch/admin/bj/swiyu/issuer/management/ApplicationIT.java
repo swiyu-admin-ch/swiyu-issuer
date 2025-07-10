@@ -105,7 +105,7 @@ public class ApplicationIT {
     }
 
     @Test
-    public void testHttpMaxRedirectsSystemPropertyIsSet() {
+    void testHttpMaxRedirectsSystemPropertyIsSet() {
         var maxRedirects = System.getProperty("http.maxRedirects");
         assertEquals("5", maxRedirects);
     }
