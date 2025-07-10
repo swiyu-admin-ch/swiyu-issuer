@@ -87,7 +87,7 @@ public class WebSecurityConfig {
      */
     public boolean hasOAuthOpaqueTokenProperty() {
         var opaqueProperties = oAuth2ResourceServerProperties.getOpaquetoken();
-        return !StringUtils.isNotEmpty(opaqueProperties.getIntrospectionUri())
+        return StringUtils.isNotEmpty(opaqueProperties.getIntrospectionUri())
                 && StringUtils.isNotEmpty(opaqueProperties.getClientId())
                 && StringUtils.isNotEmpty(opaqueProperties.getClientSecret());
     }
