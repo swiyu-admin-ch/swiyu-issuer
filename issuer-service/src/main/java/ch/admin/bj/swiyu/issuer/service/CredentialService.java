@@ -439,14 +439,14 @@ public class CredentialService {
         }
 
         // Get holder public key which was stored in the credential request
-        Optional<String> holderPublicKey = Optional.of(credentialOffer.getHolderJWK());
+        var holderJWK = credentialOffer.getHolderJWK();
 
         CredentialEnvelopeDto vc = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
-                .holderBinding(holderPublicKey)
+                .holderBinding(holderJWK != null ? Optional.of(holderJWK) : Optional.empty())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredential();
 
