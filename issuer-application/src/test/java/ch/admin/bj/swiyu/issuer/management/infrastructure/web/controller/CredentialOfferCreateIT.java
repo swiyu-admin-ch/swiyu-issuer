@@ -204,33 +204,6 @@ class CredentialOfferCreateIT {
                 .andExpect(content().string(offerData));
     }
 
-    @Test
-    void testCreateOfferUsupportedMetadataType_thenFailure() throws Exception {
-
-        String offerData = "{\"hello\":\"world\"}";
-
-        String jsonPayload = """
-                {
-                  "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": {
-                    "hello": "world"
-                  },
-                  "offer_validity_seconds": 36000
-                }
-                """;
-
-        MvcResult result = mvc.perform(post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPayload))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String id = JsonPath.read(result.getResponse().getContentAsString(), "$.management_id");
-
-        mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
-                .andExpect(status().isOk())
-                .andExpect(content().string(offerData));
-    }
 
     @Test
     void testCreateOfferVcMetadata_thenSuccess() throws Exception {

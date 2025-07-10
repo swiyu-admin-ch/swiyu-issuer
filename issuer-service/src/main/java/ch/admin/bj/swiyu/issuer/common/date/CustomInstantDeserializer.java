@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.common.date;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -18,7 +17,7 @@ public class CustomInstantDeserializer extends JsonDeserializer<Instant> {
             .ofPattern(DateTimeUtils.ISO8601_FORMAT_WITHOUT_MS)
             .withZone(ZoneOffset.UTC);
     @Override
-    public Instant deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException {
+    public Instant deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
         String text = jsonParser.getText();
         try {
             return Instant.from(ISO8601.parse(text));

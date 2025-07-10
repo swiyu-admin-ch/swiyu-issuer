@@ -245,7 +245,7 @@ public class ArchitectureTest {
                 .areInterfaces()
                 .should()
                 .haveSimpleNameContaining("Interface")
-                .allowEmptyShould(true);;
+                .allowEmptyShould(true);
 
         @ArchTest
         static final ArchRule interfaces_must_not_be_placed_in_implementation_packages = noClasses()

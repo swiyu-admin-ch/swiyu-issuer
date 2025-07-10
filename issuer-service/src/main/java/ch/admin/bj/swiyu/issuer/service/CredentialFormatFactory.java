@@ -12,7 +12,6 @@ import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
-import com.nimbusds.jose.JWSSigner;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 

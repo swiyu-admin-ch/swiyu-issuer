@@ -16,7 +16,7 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TokenStatusListTokenTest {
+class TokenStatusListTokenTest {
     @Test
     void testCreateNewStatusList_thenSuccess() throws IOException {
         /*
