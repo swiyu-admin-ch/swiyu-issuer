@@ -51,7 +51,7 @@ public class WebSecurityConfig {
     @Order(100)
     public SecurityFilterChain managmentSecurityFilterChain(HttpSecurity http) throws Exception {
         if (!hasAnyOAuthProperty()){
-            return allowAccessTo(http, "/management/**");
+            return allowAccessTo(http, "/management/**").build();
         }
         http.securityMatchers(matchers -> matchers.requestMatchers("/management/**"))
                 .csrf(AbstractHttpConfigurer::disable)
