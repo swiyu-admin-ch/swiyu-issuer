@@ -74,8 +74,9 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
 - Expanded `/token` functionality. The endpoint accepts now `application/x-www-urlencoded` and no content-type.
   It still accepts the values in the url as request-params (this functionality will be removed in the future) and
   as `x-www-form-urlencoded` body.
-- Credential Offer is now validated according to the published metadata.
-
+- Credential Offer is now validated according to the published metadata. Additional 'surprise' claims are no longer supported.
+- Optional OAuth security with bearer tokens on `/management` endpoints. 
+  It can be activated and configured via spring environment variables.
 ### Fixed
 
 - Checks for protected claims are now done in the create-offer-flow (1 step) instead of the issuance flow.
