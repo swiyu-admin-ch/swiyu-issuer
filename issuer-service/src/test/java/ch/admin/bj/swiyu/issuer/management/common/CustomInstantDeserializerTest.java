@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class CustomInstantDeserializerTest {
+public class CustomInstantDeserializerTest {
 
     private CustomInstantDeserializer deserializer;
     private JsonParser jsonParser;
@@ -27,7 +27,7 @@ class CustomInstantDeserializerTest {
     }
 
     @Test
-    void testDeserialize_withMilliseconds() throws IOException {
+    public void testDeserialize_withMilliseconds() throws IOException {
         String dateTimeWithMs = "2023-02-25T16:50:48.123Z";
         when(jsonParser.getText()).thenReturn(dateTimeWithMs);
 
@@ -38,7 +38,7 @@ class CustomInstantDeserializerTest {
     }
 
     @Test
-    void testDeserialize_withoutMilliseconds() throws IOException {
+    public void testDeserialize_withoutMilliseconds() throws IOException {
         String dateTimeWithoutMs = "2023-02-25T16:50:48Z";
         when(jsonParser.getText()).thenReturn(dateTimeWithoutMs);
 
@@ -49,7 +49,7 @@ class CustomInstantDeserializerTest {
     }
 
     @Test
-    void testDeserialize_invalidFormat() throws IOException {
+    public void testDeserialize_invalidFormat() throws IOException {
         String invalidDateTime = "invalid-date-time";
         when(jsonParser.getText()).thenReturn(invalidDateTime);
 
