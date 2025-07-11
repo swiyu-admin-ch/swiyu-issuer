@@ -82,7 +82,10 @@ public class CredentialService {
     @Transactional
     public UpdateStatusResponseDto updateCredentialStatus(@NotNull UUID credentialId,
                                                           @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
-        var credential = updateCredentialStatus(getCredentialForUpdate(credentialId), toCredentialStatusType(requestedNewStatus));
+        var credentialOfferForUpdate = getCredentialForUpdate(credentialId);
+        var newStatus = toCredentialStatusType(requestedNewStatus);
+        var credential = updateCredentialStatus(credentialOfferForUpdate, newStatus);
+
         return toUpdateStatusResponseDto(credential);
     }
 
@@ -261,7 +264,7 @@ public class CredentialService {
                     .build();
             credentialOfferStatusRepository.save(offerStatus);
             statusListService.incrementNextFreeIndex(statusList.getId());
-            log.debug("Credential offer {} uses status list {} index {}",  entity.getId(), statusList.getUri(), offerStatus.getIndex());
+            log.debug("Credential offer {} uses status list {} index {}", entity.getId(), statusList.getUri(), offerStatus.getIndex());
         }
 
         return entity;
@@ -447,11 +450,12 @@ public class CredentialService {
 
     /**
      * Validates a credential offer create request, doing sanity checks with configurations
+     *
      * @param credentialOffer the offer to be validated
      */
     private void validateCredentialOffer(CredentialOffer credentialOffer) {
         var credentialOfferMetadata = credentialOffer.getMetadataCredentialSupportedId().getFirst();
-        if (!issuerMetadata.getCredentialConfigurationSupported().containsKey(credentialOfferMetadata)){
+        if (!issuerMetadata.getCredentialConfigurationSupported().containsKey(credentialOfferMetadata)) {
             throw new BadRequestException("Credential offer metadata %s is not supported - should be one of %s".formatted(credentialOfferMetadata, String.join(", ", issuerMetadata.getCredentialConfigurationSupported().keySet())));
         }
         // Date checks, if exists
@@ -460,7 +464,7 @@ public class CredentialService {
         var metadataClaims = credentialConfiguration.getClaims().keySet();
         if ("vc+sd-jwt".equals(credentialConfiguration.getFormat())) {
             var offerData = dataIntegrityService.getVerifiedOfferData(credentialOffer.getOfferData(), credentialOffer.getId());
-            if (offerData == null) {
+            if (offerData == null || offerData.isEmpty()) {
                 if (credentialOffer.isDeferred()) {
                     // Data will be provided during issuance process when going from DEFERRED to READY state
                     return;
@@ -472,11 +476,11 @@ public class CredentialService {
             validateClaimsSurplus(metadataClaims, offerData);
         }
     }
-
+    
     /**
      * Checks the offerData for claims not expected in the metadata
      */
-    private static void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
+    private void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
         var surplusOfferedClaims = new HashSet<>(offerData.keySet());
         surplusOfferedClaims.removeAll(metadataClaims);
         if (!surplusOfferedClaims.isEmpty()) {
@@ -487,7 +491,7 @@ public class CredentialService {
     /**
      * checks if all claims published as mandatory in the metadata are present in the offer
      */
-    private static void validiteClaimsMissing(Set<String> metadataClaims, Map<String, Object> offerData, CredentialConfiguration credentialConfiguration) {
+    private void validiteClaimsMissing(Set<String> metadataClaims, Map<String, Object> offerData, CredentialConfiguration credentialConfiguration) {
         var missingOfferedClaims = new HashSet<>(metadataClaims);
         missingOfferedClaims.removeAll(offerData.keySet());
         // Remove optional claims
@@ -497,17 +501,16 @@ public class CredentialService {
         }
     }
 
-    private static void validateOfferedCredentialValiditySpan(CredentialOffer credentialOffer) {
+    private void validateOfferedCredentialValiditySpan(CredentialOffer credentialOffer) {
         var validUntil = credentialOffer.getCredentialValidUntil();
         if (validUntil != null) {
             if (validUntil.isBefore(Instant.now())) {
                 throw new BadRequestException("Credential is already expired (would only be valid until %s, server time is %s)".formatted(validUntil, Instant.now()));
             }
-           var validFrom = credentialOffer.getCredentialValidFrom();
+            var validFrom = credentialOffer.getCredentialValidFrom();
             if (validFrom != null && validFrom.isAfter(validUntil)) {
-                    throw new BadRequestException("Credential would never be valid - Valid from %s until %s".formatted(validFrom, validUntil));
-                }
-
+                throw new BadRequestException("Credential would never be valid - Valid from %s until %s".formatted(validFrom, validUntil));
+            }
         }
     }
 
@@ -626,5 +629,4 @@ public class CredentialService {
 
         keyAttestationService.throwIfInvalidAttestation(attestationRequirement, attestation);
     }
-
 }

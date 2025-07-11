@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.it;
+package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
@@ -278,5 +278,4 @@ class CredentialOfferCreateIT {
                 .andExpect(jsonPath("$.detail").value("The following claims are not allowed in the credentialSubjectData: [%s]".formatted(claim)))
                 .andReturn();
     }
-
 }

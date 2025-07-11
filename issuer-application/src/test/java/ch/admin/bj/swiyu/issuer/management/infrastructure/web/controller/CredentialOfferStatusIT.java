@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.management.it;
+package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
