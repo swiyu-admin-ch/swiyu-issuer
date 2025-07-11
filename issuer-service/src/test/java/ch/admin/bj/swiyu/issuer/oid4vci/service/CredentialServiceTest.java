@@ -19,18 +19,13 @@ import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,10 +47,10 @@ import static org.mockito.Mockito.*;
 
 class CredentialServiceTest {
     private final Map<String, Object> offerData = Map.of("hello", "world");
+    private final ObjectMapper objectMapper = new ObjectMapper();
     @Mock
     CredentialOfferRepository credentialOfferRepository;
     CredentialService credentialService;
-    private ECKey jwk;
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     private StatusListService statusListService;
     private ApplicationProperties applicationProperties;
@@ -133,12 +128,6 @@ class CredentialServiceTest {
                 .offerValiditySeconds(3600)
                 .statusLists(statusListUris)
                 .build();
-
-        jwk = new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID("Test-Key")
-                .issueTime(new Date())
-                .generate();
     }
 
     @Test
@@ -245,7 +234,8 @@ class CredentialServiceTest {
 
         // WHEN credential is created for offer with expired timestamp
         var credentialRequestDto = getCredentialRequestDto();
-        var ex = assertThrows(OAuthException.class, () -> credentialService.createCredential(credentialRequestDto, uuid.toString(), null));
+        var accessToken = uuid.toString();
+        var ex = assertThrows(OAuthException.class, () -> credentialService.createCredential(credentialRequestDto, accessToken, null));
 
         // THEN Status is changed and offer data is cleared
         assertEquals("INVALID_REQUEST", ex.getError().toString());
@@ -408,8 +398,9 @@ class CredentialServiceTest {
         when(credentialOfferRepository.findByAccessToken(credentialOffer.getAccessToken())).thenReturn(Optional.of(credentialOffer));
         when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credConfig);
 
+        var accessToken = credentialOffer.getAccessToken().toString();
         var exception = assertThrows(Oid4vcException.class, () ->
-                credentialService.createCredential(credentialRequestDto, credentialOffer.getAccessToken().toString(), clientInfo));
+                credentialService.createCredential(credentialRequestDto, accessToken, clientInfo));
 
         assertTrue(exception.getMessage().contains("Mismatch between requested and offered format."));
     }
@@ -605,7 +596,7 @@ class CredentialServiceTest {
     }
 
     @Test
-    void testCreateCredential_deferred() {
+    void testCreateCredential_deferred() throws JsonProcessingException {
 
         var credentialRequestDto = getCredentialRequestDto();
         var clientInfo = getClientInfo();
@@ -649,13 +640,14 @@ class CredentialServiceTest {
 
         // check if is issued && data removed
         assertEquals(CredentialStatusType.DEFERRED, credentialOffer.getCredentialStatus());
+        String clientInfoString = objectMapper.writeValueAsString(clientInfo);
+        verify(webhookService).produceDeferredEvent(credentialOffer.getId(), CredentialStatusType.DEFERRED, clientInfoString);
     }
 
     @Test
     void updateOfferDataForDeferred_shouldUpdateOfferData_whenDeferredAndInDeferredState() {
         // Arrange
         UUID credentialId = UUID.randomUUID();
-        Map<String, Object> mimi = Map.of("claim", "value");
         CredentialOffer credentialOffer = mock(CredentialOffer.class);
 
         when(credentialOffer.isDeferred()).thenReturn(true);
@@ -664,7 +656,7 @@ class CredentialServiceTest {
         doNothing().when(credentialOffer).markAsReadyForIssuance(any());
         when(credentialOfferRepository.save(credentialOffer)).thenReturn(credentialOffer);
 
-        UpdateStatusResponseDto response = credentialService.updateOfferDataForDeferred(credentialId, mimi);
+        UpdateStatusResponseDto response = credentialService.updateOfferDataForDeferred(credentialId, offerData);
 
         verify(credentialOfferRepository).findByIdForUpdate(credentialId);
         verify(credentialOffer).markAsReadyForIssuance(any());
@@ -767,9 +759,7 @@ class CredentialServiceTest {
     }
 
     @Test
-    void testCreateCredentialFromDeferredRequest_success() throws JOSEException {
-        // Arrange
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), valid.getNonce().toString(), ProofType.JWT.getClaimTyp(), false);
+    void testCreateCredentialFromDeferredRequest_success() {
 
         UUID transactionId = UUID.randomUUID();
         UUID accessToken = UUID.randomUUID();

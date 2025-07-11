@@ -399,7 +399,12 @@ public class CredentialService {
             credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest,
                     holderPublicKey.orElse(null), clientInfo);
             credentialOfferRepository.save(credentialOffer);
-            webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+            try {
+                var clientInfoString = objectMapper.writeValueAsString(clientInfo);
+                webhookService.produceDeferredEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus(), clientInfoString);
+            } catch (JsonProcessingException e) {
+                throw new JsonException("Error processing client info for deferred credential offer", e);
+            }
         } else {
             responseEnvelope = vcBuilder.buildCredential();
             credentialOffer.markAsIssued();

@@ -41,6 +41,12 @@ public class WebhookService {
         createEvent(credentialOfferId, CallbackEventType.ERROR, errorCode.name(), errorMessage);
     }
 
+    @Transactional
+    public void produceDeferredEvent(UUID credentialOfferId, CredentialStatusType state, String clientAgentInfo) {
+
+        createEvent(credentialOfferId, CallbackEventType.VC_DEFERRED, state.getDisplayName(), clientAgentInfo);
+    }
+
     private void createEvent(UUID subjectId, CallbackEventType callbackEventType, String message, String description) {
         if (StringUtils.isBlank(webhookProperties.getCallbackUri())) {
             // No Callback URI defined; We can not do callbacks
