@@ -10,7 +10,6 @@ import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredDataDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
@@ -142,11 +141,11 @@ class DeferredFlowIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        var tokenDto = objectMapper.readValue(tokenResponse.getResponse().getContentAsString(), OAuthTokenDto.class);
+        var tokenDto = objectMapper.readValue(tokenResponse.getResponse().getContentAsString(), Map.class);
 
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenDto.getCNonce(), ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), (String) tokenDto.get("c_nonce"), ProofType.JWT.getClaimTyp(), false);
 
-        var deferredCredentialResponse = requestCredential(mock, tokenDto.getAccessToken(), getCredentialRequestString(proof))
+        var deferredCredentialResponse = requestCredential(mock, (String) tokenDto.get("access_token"), getCredentialRequestString(proof))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -177,7 +176,7 @@ class DeferredFlowIT {
         String deferredCredentialRequestString = getDeferredCredentialRequestString(deferredDataDto.transactionId().toString());
 
         var credentialResponse = mock.perform(post(deferredCredentialEndpoint)
-                        .header("Authorization", String.format("BEARER %s", tokenDto.getAccessToken()))
+                        .header("Authorization", String.format("BEARER %s", tokenDto.get("access_token")))
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isOk())

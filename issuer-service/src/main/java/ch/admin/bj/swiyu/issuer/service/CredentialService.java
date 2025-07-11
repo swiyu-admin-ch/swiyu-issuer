@@ -63,8 +63,11 @@ public class CredentialService {
     private final WebhookService webhookService;
 
     @Transactional // not readonly since expired credentails gets updated here automatically
-    public Object getCredentialOffer(UUID credentialId) {
-        return toCredentialWithDeeplinkResponseDto(this.getCredential(credentialId));
+    public CredentialInfoResponseDto getCredentialOfferInformation(UUID credentialId) {
+        var credential = this.getCredential(credentialId);
+        var deeplink = getOfferDeeplinkFromCredential(credential);
+
+        return toCredentialInfoResponseDto(credential, deeplink);
     }
 
     @Transactional // not readonly since expired credentails gets updated here automatically
@@ -401,7 +404,7 @@ public class CredentialService {
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);
-                webhookService.produceDeferredEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus(), clientInfoString);
+                webhookService.produceDeferredEvent(credentialOffer.getId(), clientInfoString);
             } catch (JsonProcessingException e) {
                 throw new JsonException("Error processing client info for deferred credential offer", e);
             }

@@ -6,16 +6,20 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.ClientAgentInfoDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
 
+import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toCredentialStatusTypeDto;
 
 @UtilityClass
@@ -27,6 +31,33 @@ public class CredentialOfferMapper {
                 .managementId(credential.getId())
                 .offerDeeplink(offerDeeplinkString)
                 .build();
+    }
+
+    public static CredentialInfoResponseDto toCredentialInfoResponseDto(CredentialOffer credential, String offerDeeplinkString) {
+        return new CredentialInfoResponseDto(
+                toCredentialStatusTypeDto(credential.getCredentialStatus()),
+                credential.getMetadataCredentialSupportedId(),
+                credential.getCredentialMetadata(),
+                credential.getHolderJWK(),
+                toClientAgentInfoDto(credential.getClientAgentInfo()),
+                credential.getOfferExpirationTimestamp(),
+                credential.getCredentialValidFrom(),
+                credential.getCredentialValidUntil(),
+                toCredentialRequest(credential.getCredentialRequest()),
+                offerDeeplinkString
+        );
+    }
+
+    public static ClientAgentInfoDto toClientAgentInfoDto(ClientAgentInfo clientAgentInfo) {
+        if (clientAgentInfo == null) {
+            return null;
+        }
+        return new ClientAgentInfoDto(
+                clientAgentInfo.remoteAddr(),
+                clientAgentInfo.userAgent(),
+                clientAgentInfo.acceptLanguage(),
+                clientAgentInfo.acceptEncoding()
+        );
     }
 
     public static Object toCredentialWithDeeplinkResponseDto(CredentialOffer credential) {

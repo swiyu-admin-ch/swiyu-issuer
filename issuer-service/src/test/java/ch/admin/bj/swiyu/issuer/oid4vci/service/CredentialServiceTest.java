@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
@@ -25,7 +26,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.service.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JOSEException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +66,7 @@ class CredentialServiceTest {
     private CredentialFormatFactory credentialFormatFactory;
 
     @BeforeEach
-    void setUp() throws JOSEException {
+    void setUp() {
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         statusListService = Mockito.mock(StatusListService.class);
         KeyAttestationService keyAttestationService = Mockito.mock(KeyAttestationService.class);
@@ -148,13 +148,14 @@ class CredentialServiceTest {
 
         // note: getting an expired offer will immediately update it to expired
         var expiredOfferId = expiredOffer.getId();
-        var response = credentialService.getCredentialOffer(expiredOfferId);
+        var response = credentialService.getCredentialOfferInformation(expiredOfferId);
 
         Mockito.verify(credentialOfferRepository, Mockito.times(1)).findByIdForUpdate(expiredOfferId);
         Mockito.verify(credentialOfferRepository, Mockito.times(1)).save(any());
 
         // offer data should be null after expiration therefore no offer data or deeplink should be returned
-        assertNull(response);
+        assertNull(response.holderJWK());
+        assertNull(response.clientAgentInfo());
 
         var statusResponse = credentialService.getCredentialStatus(expiredOfferId);
 
@@ -175,10 +176,11 @@ class CredentialServiceTest {
     @Test
     void getCredentialOfferWhenNotExpired_thenSuccess() {
 
-        Map<String, String> response = (Map<String, String>) credentialService.getCredentialOffer(valid.getId());
+        when(applicationProperties.getDeeplinkSchema()).thenReturn("test-swiyu");
+        CredentialInfoResponseDto response = credentialService.getCredentialOfferInformation(valid.getId());
 
         assertNotNull(response);
-        assertEquals(offerData.get("hello"), response.get("hello"));
+        assertTrue(response.offerDeeplink().startsWith("test-swiyu://"));
 
         credentialService.getCredentialOfferDeeplink(valid.getId());
     }
@@ -641,7 +643,7 @@ class CredentialServiceTest {
         // check if is issued && data removed
         assertEquals(CredentialStatusType.DEFERRED, credentialOffer.getCredentialStatus());
         String clientInfoString = objectMapper.writeValueAsString(clientInfo);
-        verify(webhookService).produceDeferredEvent(credentialOffer.getId(), CredentialStatusType.DEFERRED, clientInfoString);
+        verify(webhookService).produceDeferredEvent(credentialOffer.getId(), clientInfoString);
     }
 
     @Test

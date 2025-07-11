@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
+import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
@@ -78,7 +79,7 @@ class CredentialOfferCreateIT {
         String preAuthorizedCode = credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString();
         assertNotSame(preAuthorizedCode, managementId);
 
-        String now = new SimpleDateFormat(ISO8601_FORMAT).format(new Date(new Date().getTime()+1000));
+        String now = new SimpleDateFormat(ISO8601_FORMAT).format(new Date(new Date().getTime() + 1000));
         String minPayloadWithValidUntil = String.format(
                 "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}",
                 "test", now);
@@ -94,7 +95,7 @@ class CredentialOfferCreateIT {
                 "test", now);
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(Matchers.containsString("expired")))                                                   ;
+                .andExpect(content().string(Matchers.containsString("expired")));
     }
 
     @Test
@@ -179,8 +180,6 @@ class CredentialOfferCreateIT {
     @Test
     void testGetOfferData_thenSuccess() throws Exception {
 
-        String offerData = "{\"hello\":\"world\"}";
-
         String jsonPayload = """
                 {
                   "metadata_credential_supported_id": ["test"],
@@ -201,35 +200,13 @@ class CredentialOfferCreateIT {
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(offerData));
-    }
-
-    @Test
-    void testCreateOfferUsupportedMetadataType_thenFailure() throws Exception {
-
-        String offerData = "{\"hello\":\"world\"}";
-
-        String jsonPayload = """
-                {
-                  "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": {
-                    "hello": "world"
-                  },
-                  "offer_validity_seconds": 36000
-                }
-                """;
-
-        MvcResult result = mvc.perform(post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPayload))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String id = JsonPath.read(result.getResponse().getContentAsString(), "$.management_id");
-
-        mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
-                .andExpect(status().isOk())
-                .andExpect(content().string(offerData));
+                .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.OFFERED.name()))
+                .andExpect(jsonPath("$.metadata_credential_supported_id").isArray())
+                .andExpect(jsonPath("$.credential_metadata").isMap())
+                .andExpect(jsonPath("$.credential_metadata").isEmpty())
+                .andExpect(jsonPath("$.holder_jwk").isEmpty())
+                .andExpect(jsonPath("$.client_agent_info").isEmpty())
+                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty());
     }
 
     @Test

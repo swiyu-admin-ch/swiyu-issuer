@@ -42,9 +42,10 @@ public class WebhookService {
     }
 
     @Transactional
-    public void produceDeferredEvent(UUID credentialOfferId, CredentialStatusType state, String clientAgentInfo) {
+    public void produceDeferredEvent(UUID credentialOfferId, String clientAgentInfo) {
 
-        createEvent(credentialOfferId, CallbackEventType.VC_DEFERRED, state.getDisplayName(), clientAgentInfo);
+        var message = CredentialStatusType.DEFERRED.getDisplayName();
+        createEvent(credentialOfferId, CallbackEventType.VC_DEFERRED, message, clientAgentInfo);
     }
 
     private void createEvent(UUID subjectId, CallbackEventType callbackEventType, String message, String description) {
