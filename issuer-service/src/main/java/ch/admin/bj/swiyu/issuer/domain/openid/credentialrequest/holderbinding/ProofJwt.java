@@ -32,17 +32,19 @@ public class ProofJwt extends Proof implements AttestableProof {
      * Time window (now +/-) in which the proof jwt must have been issued at
      */
     private final int acceptableProofTimeWindowSeconds;
+    private final int nonceLifetimeSeconds;
     private String holderKeyJson;
     private SignedJWT signedJWT;
 
     public ProofJwt(ProofType proofType, String jwt) {
-        this(proofType, jwt, 10);
+        this(proofType, jwt, 10, 120);
     }
 
-    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds) {
+    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds,  int nonceLifetimeSeconds) {
         super(proofType);
         this.jwt = jwt;
         this.acceptableProofTimeWindowSeconds = acceptableProofTimeWindowSeconds;
+        this.nonceLifetimeSeconds = nonceLifetimeSeconds;
     }
 
     /**
@@ -97,9 +99,22 @@ public class ProofJwt extends Proof implements AttestableProof {
             }
 
             // the nonce claim matches the server-provided c_nonce value, if the server had previously provided a c_nonce,
-            var nonceString = nonce.toString();
-            if (nonceString != null && !nonceString.equals(signedJWT.getJWTClaimsSet().getStringClaim("nonce"))) {
-                throw proofException("Nonce claim does not match the server-provided c_nonce value");
+            var presentedNonce = getNonce();
+
+            if (presentedNonce.contains("::")) {
+                // Self-contained nonce
+                var selfContainedNonce = new SelfContainedNonce(presentedNonce);
+                if (!selfContainedNonce.isValid(nonceLifetimeSeconds)) {
+                    throw proofException("Nonce is expired");
+                }
+
+            } else {
+                // fixed nonce
+                // Once ready to contract -> Remove fixed token based nonce (EIDOMNI-166)
+                var nonceString = nonce.toString();
+                if (nonceString != null && !nonceString.equals(presentedNonce)) {
+                    throw proofException("Nonce claim does not match the server-provided c_nonce value");
+                }
             }
 
             if (tokenExpirationTimestamp != null && Instant.now().isAfter(Instant.ofEpochSecond(tokenExpirationTimestamp))) {
@@ -115,6 +130,15 @@ public class ProofJwt extends Proof implements AttestableProof {
         }
 
         return true;
+    }
+
+    @Override
+    public String getNonce() {
+        try {
+            return signedJWT.getJWTClaimsSet().getStringClaim("nonce");
+        } catch (ParseException e) {
+            throw proofException("Provided Proof JWT is not parseable; " + e.getMessage());
+        }
     }
 
     @Override

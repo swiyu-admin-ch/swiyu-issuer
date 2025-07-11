@@ -6,12 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OauthAccessTokenRequestDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.service.CredentialService;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -46,6 +44,7 @@ public class IssuanceController {
     private static final String OID4VCI_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
 
     private final CredentialService credentialService;
+    private final NonceService nonceService;
 
     @Timed
     @PostMapping(value = {"/token"},
@@ -80,6 +79,13 @@ public class IssuanceController {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
         return credentialService.issueOAuthToken(oauthAccessTokenRequestDto.preauthorized_code());
+    }
+
+    @Timed
+    @PostMapping(value = {"/nonce"})
+    @Operation(summary = "Provide a self-contained nonce.")
+    public NonceResponseDto createNonce() {
+        return nonceService.createNonce();
     }
 
     @Timed

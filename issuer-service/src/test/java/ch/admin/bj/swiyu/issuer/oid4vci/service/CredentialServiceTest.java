@@ -58,11 +58,13 @@ class CredentialServiceTest {
     private DataIntegrityService dataIntegrityService;
     @Mock
     private WebhookService webhookService;
+    @Mock
+    private NonceService nonceService;
 
     @Test
     void givenExpiredToken_whenGetCredential_thenThrowOAuthException() throws OAuthException {
         // Given
-        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService, webhookService);
+        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService, webhookService, nonceService);
         var uuid = UUID.randomUUID();
         var offerData = new HashMap<String, Object>() {{
             put("data", "data");
@@ -90,7 +92,7 @@ class CredentialServiceTest {
     @Test
     void givenExpiredOffer_whenCredentialIsCreated_throws() {
         // GIVEN
-        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService, webhookService);
+        var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper, statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService, webhookService, nonceService);
         var uuid = UUID.randomUUID();
         var preAuthorizedCode = UUID.randomUUID();
         var offerData = new HashMap<String, Object>() {{
@@ -122,7 +124,7 @@ class CredentialServiceTest {
     void givenExpiredOffer_whenTokenIsCreated_throws() {
         // GIVEN
         var service = new CredentialService(credentialOfferRepository, credentialOfferStatusRepository, objectMapper,
-                statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService, webhookService);
+                statusListService, null, issuerMetadata, vcFormatFactory, applicationProperties, openIDConfiguration, dataIntegrityService, webhookService, nonceService);
         var uuid = UUID.randomUUID();
         var offerData = new HashMap<String, Object>() {{
             put("data", "data");
