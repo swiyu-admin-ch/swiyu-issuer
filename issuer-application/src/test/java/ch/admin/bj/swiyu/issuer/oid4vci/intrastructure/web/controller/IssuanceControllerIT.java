@@ -36,6 +36,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -226,6 +227,13 @@ class IssuanceControllerIT {
 
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
 
+    }
+
+    @Test
+    void testNonceHeaderCacheControl_noStore() throws Exception {
+        mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk())
+                // nonce cache must be at least no-store; checking that spring default which contains no-store has not been changed
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate"));
     }
 
     @Test
