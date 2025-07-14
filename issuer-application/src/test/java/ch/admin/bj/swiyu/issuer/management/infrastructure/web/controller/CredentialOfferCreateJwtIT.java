@@ -39,6 +39,65 @@ class CredentialOfferCreateJwtIT {
     @Autowired
     private MockMvc mvc;
 
+    /**
+     * Create an offer with Issuer Agent Management configured to require the
+     * request
+     * being a JWT with the signature matching one of the entries in the whitelist
+     * of the config
+     */
+    @Test
+    void createOfferWithJWT() throws Exception {
+        // This offerData is the data we want to offer in the Verifiable Credential
+        String offerData = """
+                {
+                    "lastName": "Example",
+                    "firstName": "Edward",
+                    "dateOfBirth": "1.1.1970"
+                  }""";
+        // We add the data to the other parts needed for offering a credential
+        String jsonPayload = String.format("""
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": %s,
+                  "offer_validity_seconds": 36000
+                }
+                """, offerData);
+        testJWTCreateOffer(jsonPayload);
+    }
+
+    /**
+     * Create an offer with Issuer Agent Management configured to require the
+     * request.
+     * Issuer Agent OID4VCI is also configured to require data integrity checking
+     * the signature with another whitelist configured there.
+     */
+    @Test
+    void createOfferWithJWTAndInnerJWT() throws Exception {
+        // Offer data we want to use in the VC as JWT
+        String offerData = """
+                {
+                    "lastName": "Example",
+                    "firstName": "Edward",
+                    "dateOfBirth": "1.1.1970"
+                  }""";
+        // Build the JWT
+        ECKey ecJWK = ECKey.parse(ApplicationIT.privateKey);
+        var claims = JWTClaimsSet.parse(offerData);
+
+        SignedJWT jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("testkey").build(), claims);
+        jwt.sign(new ECDSASigner(ecJWK));
+        String payload = jwt.serialize();
+        // Adding in the offer data is done in the same way as without data integrity
+        String jsonPayload = String.format("""
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": "%s",
+                  "offer_validity_seconds": 36000
+                }
+                """, payload);
+        testJWTCreateOffer(jsonPayload);
+    }
+
     @Test
     void createOfferWithJWTAndInnerJWTInvalidKey_thenBadRequest() throws Exception {
         // Offer data we want to use in the VC as JWT
