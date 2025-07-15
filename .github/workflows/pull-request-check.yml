@@ -21,7 +21,10 @@ jobs:
     steps:
         - name: Checkout repository
           uses: actions/checkout@v4
-          
+        - name: Initialize CodeQL
+          uses: github/codeql-action/init@v3
+          with:
+            languages: java
         - name: Set up Java
           uses: actions/setup-java@v4
           with:
@@ -30,6 +33,9 @@ jobs:
             cache: 'maven'
         - name: Build with Maven
           run: mvn --batch-mode clean generate-resources install
+          # Note: codeQL MUST be after the compile step
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@v3
         - name: Build and push docker image
           id: push
           uses: docker/build-push-action@v6
