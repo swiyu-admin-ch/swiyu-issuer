@@ -12,7 +12,6 @@ import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
-import com.nimbusds.jose.JWSSigner;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -45,7 +44,7 @@ public class CredentialFormatFactory {
                 try {
                     yield new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, signatureService.defaultSigner(sdjwtProperties), statusListRepository, credentialOfferStatusRepository);
                 } catch (Exception e) {
-                    throw new ConfigurationException("Signing Key Configuration could not be used for signature",e);
+                    throw new ConfigurationException("Signing Key Configuration could not be used for signature", e);
                 }
             }
             default -> throw new IllegalArgumentException("Unknown format: " + configuration.getFormat());

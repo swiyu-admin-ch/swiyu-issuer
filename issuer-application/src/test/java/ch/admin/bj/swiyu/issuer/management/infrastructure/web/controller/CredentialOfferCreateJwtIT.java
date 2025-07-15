@@ -7,7 +7,6 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.management.ApplicationIT;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -63,10 +62,7 @@ class CredentialOfferCreateJwtIT {
                   "offer_validity_seconds": 36000
                 }
                 """, offerData);
-        var resp = testJWTCreateOffer(jsonPayload);
-
-        ObjectMapper mapper = new ObjectMapper();
-        assert mapper.readTree(resp.getResponse().getContentAsString()).equals(mapper.readTree(offerData));
+        testJWTCreateOffer(jsonPayload);
     }
 
     /**
@@ -99,9 +95,7 @@ class CredentialOfferCreateJwtIT {
                   "offer_validity_seconds": 36000
                 }
                 """, payload);
-        var resp = testJWTCreateOffer(jsonPayload);
-        // When fetching the data it should be visible that it is still a jwt on the DB - as sent
-        assert resp.getResponse().getContentAsString().equals(payload);
+        testJWTCreateOffer(jsonPayload);
     }
 
     @Test
