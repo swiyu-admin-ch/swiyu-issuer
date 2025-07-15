@@ -36,10 +36,6 @@ public class ProofJwt extends Proof implements AttestableProof {
     private String holderKeyJson;
     private SignedJWT signedJWT;
 
-    public ProofJwt(ProofType proofType, String jwt) {
-        this(proofType, jwt, 10, 120);
-    }
-
     public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds,  int nonceLifetimeSeconds) {
         super(proofType);
         this.jwt = jwt;
@@ -72,25 +68,7 @@ public class ProofJwt extends Proof implements AttestableProof {
                 throw proofException("Proof Signing Algorithm is not supported");
             }
 
-            // Check jwt body values:
-            var claimSet = signedJWT.getJWTClaimsSet();
-
-            // aud: REQUIRED (string). The value of this claim MUST be the Credential Issuer Identifier.
-            if (claimSet.getAudience().isEmpty() || !claimSet.getAudience().contains(issuerId)) {
-                throw proofException("Audience claim is missing or incorrect");
-            }
-
-            // iat: REQUIRED (integer or floating-point number). The value of this claim MUST be the time at which the key proof was issued
-            // 12.5 Proof Replay protection with issued at
-            if (claimSet.getIssueTime() == null) {
-                throw proofException("Issue Time claim is missing");
-            }
-            var proofIssueTime = signedJWT.getJWTClaimsSet().getIssueTime().toInstant();
-            var now = Instant.now();
-            if (proofIssueTime.isBefore(now.minusSeconds(acceptableProofTimeWindowSeconds))
-                    || proofIssueTime.isAfter(now.plusSeconds(acceptableProofTimeWindowSeconds))) {
-                throw proofException(String.format("Holder Binding proof was not issued at an acceptable time. Expected %d +/- %d seconds", now.getEpochSecond(), acceptableProofTimeWindowSeconds));
-            }
+            validateJwtClaims(issuerId);
 
             ECKey holderKey = getNormalizedECKey(header);
             JWSVerifier verifier = new ECDSAVerifier(holderKey);
@@ -98,24 +76,7 @@ public class ProofJwt extends Proof implements AttestableProof {
                 throw proofException("Proof JWT is not valid!");
             }
 
-            // the nonce claim matches the server-provided c_nonce value, if the server had previously provided a c_nonce,
-            var presentedNonce = getNonce();
-
-            if (presentedNonce.contains("::")) {
-                // Self-contained nonce
-                var selfContainedNonce = new SelfContainedNonce(presentedNonce);
-                if (!selfContainedNonce.isValid(nonceLifetimeSeconds)) {
-                    throw proofException("Nonce is expired");
-                }
-
-            } else {
-                // fixed nonce
-                // Once ready to contract -> Remove fixed token based nonce (EIDOMNI-166)
-                var nonceString = nonce.toString();
-                if (nonceString != null && !nonceString.equals(presentedNonce)) {
-                    throw proofException("Nonce claim does not match the server-provided c_nonce value");
-                }
-            }
+            validateNonce(nonce);
 
             if (tokenExpirationTimestamp != null && Instant.now().isAfter(Instant.ofEpochSecond(tokenExpirationTimestamp))) {
                 throw proofException("Token is expired");
@@ -130,6 +91,52 @@ public class ProofJwt extends Proof implements AttestableProof {
         }
 
         return true;
+    }
+
+    /**
+     * Check if the JWT claims are as expected
+     */
+    private void validateJwtClaims(String issuerId) throws ParseException {
+        // Check jwt body values:
+        var claimSet = signedJWT.getJWTClaimsSet();
+
+        // aud: REQUIRED (string). The value of this claim MUST be the Credential Issuer Identifier.
+        if (claimSet.getAudience().isEmpty() || !claimSet.getAudience().contains(issuerId)) {
+            throw proofException("Audience claim is missing or incorrect");
+        }
+
+        // iat: REQUIRED (integer or floating-point number). The value of this claim MUST be the time at which the key proof was issued
+        // 12.5 Proof Replay protection with issued at
+        if (claimSet.getIssueTime() == null) {
+            throw proofException("Issue Time claim is missing");
+        }
+        var proofIssueTime = signedJWT.getJWTClaimsSet().getIssueTime().toInstant();
+        var now = Instant.now();
+        if (proofIssueTime.isBefore(now.minusSeconds(acceptableProofTimeWindowSeconds))
+                || proofIssueTime.isAfter(now.plusSeconds(acceptableProofTimeWindowSeconds))) {
+            throw proofException(String.format("Holder Binding proof was not issued at an acceptable time. Expected %d +/- %d seconds", now.getEpochSecond(), acceptableProofTimeWindowSeconds));
+        }
+    }
+
+    private void validateNonce(UUID nonce) {
+        // the nonce claim matches the server-provided c_nonce value, if the server had previously provided a c_nonce,
+        var presentedNonce = getNonce();
+
+        if (presentedNonce.contains("::")) {
+            // Self-contained nonce
+            var selfContainedNonce = new SelfContainedNonce(presentedNonce);
+            if (!selfContainedNonce.isValid(nonceLifetimeSeconds)) {
+                throw proofException("Nonce is expired");
+            }
+
+        } else {
+            // fixed nonce
+            // Once ready to contract -> Remove fixed token based nonce (EIDOMNI-166)
+            var nonceString = nonce.toString();
+            if (nonceString != null && !nonceString.equals(presentedNonce)) {
+                throw proofException("Nonce claim does not match the server-provided c_nonce value");
+            }
+        }
     }
 
     @Override
