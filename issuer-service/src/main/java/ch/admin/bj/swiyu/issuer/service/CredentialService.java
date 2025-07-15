@@ -17,10 +17,9 @@ import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestableProof;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Proof;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -63,10 +62,14 @@ public class CredentialService {
     private final OpenIdIssuerConfiguration openIDConfiguration;
     private final DataIntegrityService dataIntegrityService;
     private final WebhookService webhookService;
+    private final NonceService nonceService;
 
     @Transactional // not readonly since expired credentails gets updated here automatically
-    public Object getCredentialOffer(UUID credentialId) {
-        return toCredentialWithDeeplinkResponseDto(this.getCredential(credentialId));
+    public CredentialInfoResponseDto getCredentialOfferInformation(UUID credentialId) {
+        var credential = this.getCredential(credentialId);
+        var deeplink = getOfferDeeplinkFromCredential(credential);
+
+        return toCredentialInfoResponseDto(credential, deeplink);
     }
 
     @Transactional // not readonly since expired credentails gets updated here automatically
@@ -79,7 +82,10 @@ public class CredentialService {
     @Transactional
     public UpdateStatusResponseDto updateCredentialStatus(@NotNull UUID credentialId,
                                                           @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
-        var credential = updateCredentialStatus(getCredentialForUpdate(credentialId), toCredentialStatusType(requestedNewStatus));
+        var credentialOfferForUpdate = getCredentialForUpdate(credentialId);
+        var newStatus = toCredentialStatusType(requestedNewStatus);
+        var credential = updateCredentialStatus(credentialOfferForUpdate, newStatus);
+
         return toUpdateStatusResponseDto(credential);
     }
 
@@ -92,12 +98,36 @@ public class CredentialService {
     @Transactional
     public CredentialWithDeeplinkResponseDto createCredential(@Valid CreateCredentialRequestDto request) {
         var credential = this.createCredentialOffer(request);
+        validateCredentialOffer(credential);
         var offerLinkString = this.getOfferDeeplinkFromCredential(credential);
         return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(credential, offerLinkString);
     }
 
+    @Transactional
+    public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialId, Map<String, Object> offerDataMap) {
+        var storedCredentialOffer = getCredentialForUpdate(credentialId);
+
+        // Check if is deferred credential and in deferred state
+        if (!storedCredentialOffer.isDeferred()
+                && storedCredentialOffer.getCredentialStatus() == CredentialStatusType.DEFERRED) {
+            throw new BadRequestException(
+                    "Credential is either not deferred or has an incorrect status, cannot update offer data");
+        }
+
+        // check if offerData matches the expected metadata claims
+        var offerData = readOfferData(offerDataMap);
+        validateOfferData(offerData);
+
+        // update the offer data
+        storedCredentialOffer.markAsReadyForIssuance(offerData);
+        credentialOfferRepository.save(storedCredentialOffer);
+
+        return toUpdateStatusResponseDto(storedCredentialOffer);
+    }
+
     /**
-     * Set the state of all expired credential offers to expired and delete the person data associated with it.
+     * Set the state of all expired credential offers to expired and delete the
+     * person data associated with it.
      */
     @Scheduled(initialDelay = 0, fixedDelayString = "${application.offer-expiration-interval}")
     @SchedulerLock(name = "expireOffers")
@@ -105,8 +135,10 @@ public class CredentialService {
     public void expireOffers() {
         var expireStates = CredentialStatusType.getExpirableStates();
         var expireTimeStamp = Instant.now().getEpochSecond();
-        log.info("Expiring {} offers", credentialOfferRepository.countByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp));
-        var expiredOffers = credentialOfferRepository.findByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp);
+        log.info("Expiring {} offers", credentialOfferRepository
+                .countByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp));
+        var expiredOffers = credentialOfferRepository
+                .findByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp);
         expiredOffers.forEach(offer -> updateCredentialStatus(offer, CredentialStatusType.EXPIRED));
     }
 
@@ -121,8 +153,10 @@ public class CredentialService {
         return this.credentialOfferRepository.findById(credentialId)
                 .map(offer -> {
                     // Make sure only offer is returned if it is not expired
-                    if (CredentialStatusType.getExpirableStates().contains(offer.getCredentialStatus()) && offer.hasExpirationTimeStampPassed()) {
-                        return updateCredentialStatus(getCredentialForUpdate(offer.getId()), CredentialStatusType.EXPIRED);
+                    if (CredentialStatusType.getExpirableStates().contains(offer.getCredentialStatus())
+                            && offer.hasExpirationTimeStampPassed()) {
+                        return updateCredentialStatus(getCredentialForUpdate(offer.getId()),
+                                CredentialStatusType.EXPIRED);
                     }
                     return offer;
                 })
@@ -140,14 +174,16 @@ public class CredentialService {
 
         var currentStatus = credential.getCredentialStatus();
 
-        // Ignore no status changes and return. This needs to be checked first to prevent unnecessary errors
+        // Ignore no status changes and return. This needs to be checked first to
+        // prevent unnecessary errors
         if (currentStatus == newStatus) {
             return credential;
         }
 
         // status is already in a terminal state and cannot be changed
         if (currentStatus.isTerminalState()) {
-            throw new BadRequestException(String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
+            throw new BadRequestException(
+                    String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
         }
 
         if (newStatus == CredentialStatusType.EXPIRED) {
@@ -160,7 +196,8 @@ public class CredentialService {
 
         log.debug("Updating credential {} from {} to {}", credential.getId(), currentStatus, newStatus);
         var updatedCredentialOffer = this.credentialOfferRepository.save(credential);
-        webhookService.produceStateChangeEvent(updatedCredentialOffer.getId(), updatedCredentialOffer.getCredentialStatus());
+        webhookService.produceStateChangeEvent(updatedCredentialOffer.getId(),
+                updatedCredentialOffer.getCredentialStatus());
         return updatedCredentialOffer;
     }
 
@@ -171,7 +208,8 @@ public class CredentialService {
                                                CredentialStatusType currentStatus,
                                                CredentialStatusType newStatus) {
 
-        // if the new status is READY, then we can only set it if the old status was deferred
+        // if the new status is READY, then we can only set it if the old status was
+        // deferred
         if (currentStatus == CredentialStatusType.DEFERRED && newStatus == CredentialStatusType.READY) {
             credential.changeStatus(CredentialStatusType.READY);
             return;
@@ -191,11 +229,12 @@ public class CredentialService {
      */
     private void handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
 
-
-        final Set<CredentialOfferStatus> offerStatusSet = credentialOfferStatusRepository.findByOfferStatusId(credential.getId());
+        final Set<CredentialOfferStatus> offerStatusSet = credentialOfferStatusRepository
+                .findByOfferStatusId(credential.getId());
 
         if (offerStatusSet.isEmpty()) {
-            throw new BadRequestException("No associated status lists found. Can not set a status to an already issued credential");
+            throw new BadRequestException(
+                    "No associated status lists found. Can not set a status to an already issued credential");
         }
 
         switch (newStatus) {
@@ -203,7 +242,8 @@ public class CredentialService {
             case SUSPENDED -> statusListService.suspend(offerStatusSet);
             case ISSUED -> statusListService.revalidate(offerStatusSet);
             default -> throw new BadRequestException(String.format(
-                    "Illegal state transition - Status cannot be updated from %s to %s", credential.getCredentialStatus(), newStatus));
+                    "Illegal state transition - Status cannot be updated from %s to %s",
+                    credential.getCredentialStatus(), newStatus));
         }
 
         credential.changeStatus(newStatus);
@@ -257,7 +297,8 @@ public class CredentialService {
                     .build();
             credentialOfferStatusRepository.save(offerStatus);
             statusListService.incrementNextFreeIndex(statusList.getId());
-            log.debug("Credential offer {} uses status list {} index {}",  entity.getId(), statusList.getUri(), offerStatus.getIndex());
+            log.debug("Credential offer {} uses status list {} index {}", entity.getId(), statusList.getUri(),
+                    offerStatus.getIndex());
         }
 
         return entity;
@@ -272,7 +313,8 @@ public class CredentialService {
                 .toList());
 
         if (!duplicates.isEmpty()) {
-            throw new BadRequestException("The following claims are not allowed in the credentialSubjectData: " + duplicates);
+            throw new BadRequestException(
+                    "The following claims are not allowed in the credentialSubjectData: " + duplicates);
         }
     }
 
@@ -292,14 +334,17 @@ public class CredentialService {
             credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOffer),
                     Charset.defaultCharset());
         } catch (JsonProcessingException e) {
-            throw new JsonException("Error processing credential offer for credential with id %s".formatted(credential.getId()), e);
+            throw new JsonException(
+                    "Error processing credential offer for credential with id %s".formatted(credential.getId()), e);
         }
 
-        return String.format("%s://?credential_offer=%s", applicationProperties.getDeeplinkSchema(), credentialOfferString);
+        return String.format("%s://?credential_offer=%s", applicationProperties.getDeeplinkSchema(),
+                credentialOfferString);
     }
 
     @Transactional
-    public CredentialEnvelopeDto createCredential(CredentialRequestDto credentialRequestDto, String accessToken) {
+    public CredentialEnvelopeDto createCredential(CredentialRequestDto credentialRequestDto, String accessToken,
+                                                  ClientAgentInfo clientInfo) {
 
         var credentialRequest = toCredentialRequest(credentialRequestDto);
 
@@ -308,7 +353,8 @@ public class CredentialService {
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
         if (!credentialOffer.getCredentialStatus().equals(CredentialStatusType.IN_PROGRESS)) {
-            log.info("Credential offer {} failed to create VC, as state was not IN_PROGRESS instead was {}", credentialOffer.getId(), credentialOffer.getCredentialStatus());
+            log.info("Credential offer {} failed to create VC, as state was not IN_PROGRESS instead was {}",
+                    credentialOffer.getId(), credentialOffer.getCredentialStatus());
             throw OAuthException.invalidGrant(String.format(
                     "Offer is not valid anymore. The current offer state is %s." +
                             "The user should probably contact the business issuer about this.",
@@ -335,7 +381,8 @@ public class CredentialService {
         try {
             holderPublicKey = getHolderPublicKey(credentialRequest, credentialOffer);
         } catch (Oid4vcException e) {
-            webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, e.getMessage());
+            webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
+                    e.getMessage());
             throw e;
         }
 
@@ -354,20 +401,29 @@ public class CredentialService {
             var deferredData = new DeferredDataDto(UUID.randomUUID());
 
             responseEnvelope = vcBuilder.buildEnvelopeDto(deferredData);
-            credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest, holderPublicKey.orElse(null));
+            credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest,
+                    holderPublicKey.orElse(null), clientInfo);
+            credentialOfferRepository.save(credentialOffer);
+            try {
+                var clientInfoString = objectMapper.writeValueAsString(clientInfo);
+                webhookService.produceDeferredEvent(credentialOffer.getId(), clientInfoString);
+            } catch (JsonProcessingException e) {
+                throw new JsonException("Error processing client info for deferred credential offer", e);
+            }
         } else {
             responseEnvelope = vcBuilder.buildCredential();
             credentialOffer.markAsIssued();
+            credentialOfferRepository.save(credentialOffer);
+            webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
         }
 
-        credentialOfferRepository.save(credentialOffer);
-        webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
         return responseEnvelope;
     }
 
     @Transactional
-    public CredentialEnvelopeDto createCredentialFromDeferredRequest(DeferredCredentialRequestDto deferredCredentialRequest,
-                                                                     String accessToken) {
+    public CredentialEnvelopeDto createCredentialFromDeferredRequest(
+            DeferredCredentialRequestDto deferredCredentialRequest,
+            String accessToken) {
         CredentialOffer credentialOffer = getCredentialOfferByTransactionIdAndAccessToken(
                 deferredCredentialRequest.transactionId(),
                 accessToken);
@@ -393,14 +449,14 @@ public class CredentialService {
         }
 
         // Get holder public key which was stored in the credential request
-        Optional<String> holderPublicKey = Optional.of(credentialOffer.getHolderJWK());
+        var holderJWK = credentialOffer.getHolderJWK();
 
         CredentialEnvelopeDto vc = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
-                .holderBinding(holderPublicKey)
+                .holderBinding(holderJWK != null ? Optional.of(holderJWK) : Optional.empty())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredential();
 
@@ -413,17 +469,20 @@ public class CredentialService {
     }
 
     /**
-     * Issues an OAuth token for a given pre-authorization code created by issuer mgmt
+     * Issues an OAuth token for a given pre-authorization code created by issuer
+     * mgmt
      *
      * @param preAuthCode Pre-authorization code of holder
-     * @return OAuth authorization token which can be used in credential service endpoint
+     * @return OAuth authorization token which can be used in credential service
+     * endpoint
      */
     @Transactional
     public OAuthTokenDto issueOAuthToken(String preAuthCode) {
         var offer = getCredentialOfferByPreAuthCode(preAuthCode);
 
         if (offer.getCredentialStatus() != CredentialStatusType.OFFERED) {
-            log.debug("Refused to issue OAuth token. Credential offer {} has already state {}.", offer.getId(), offer.getCredentialStatus());
+            log.debug("Refused to issue OAuth token. Credential offer {} has already state {}.", offer.getId(),
+                    offer.getCredentialStatus());
             throw OAuthException.invalidGrant("Credential has already been used");
         }
         log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {} and new status is {}",
@@ -439,6 +498,84 @@ public class CredentialService {
                 .expiresIn(applicationProperties.getTokenTTL())
                 .cNonce(offer.getNonce().toString())
                 .build();
+    }
+
+    /**
+     * Validates a credential offer create request, doing sanity checks with
+     * configurations
+     *
+     * @param credentialOffer the offer to be validated
+     */
+    private void validateCredentialOffer(CredentialOffer credentialOffer) {
+        var credentialOfferMetadata = credentialOffer.getMetadataCredentialSupportedId().getFirst();
+        if (!issuerMetadata.getCredentialConfigurationSupported().containsKey(credentialOfferMetadata)) {
+            throw new BadRequestException("Credential offer metadata %s is not supported - should be one of %s"
+                    .formatted(credentialOfferMetadata,
+                            String.join(", ", issuerMetadata.getCredentialConfigurationSupported().keySet())));
+        }
+        // Date checks, if exists
+        validateOfferedCredentialValiditySpan(credentialOffer);
+        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
+        var metadataClaims = credentialConfiguration.getClaims().keySet();
+        if ("vc+sd-jwt".equals(credentialConfiguration.getFormat())) {
+            var offerData = dataIntegrityService.getVerifiedOfferData(credentialOffer.getOfferData(),
+                    credentialOffer.getId());
+            if (offerData == null || offerData.isEmpty()) {
+                if (credentialOffer.isDeferred()) {
+                    // Data will be provided during issuance process when going from DEFERRED to
+                    // READY state
+                    return;
+                }
+                throw new BadRequestException("Credential claims (credential subject data) is missing!");
+            }
+
+            validiteClaimsMissing(metadataClaims, offerData, credentialConfiguration);
+            validateClaimsSurplus(metadataClaims, offerData);
+        }
+    }
+
+    /**
+     * Checks the offerData for claims not expected in the metadata
+     */
+    private void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
+        var surplusOfferedClaims = new HashSet<>(offerData.keySet());
+        surplusOfferedClaims.removeAll(metadataClaims);
+        if (!surplusOfferedClaims.isEmpty()) {
+            throw new BadRequestException(
+                    "Unexpected credential claims found! %s".formatted(String.join(",", surplusOfferedClaims)));
+        }
+    }
+
+    /**
+     * checks if all claims published as mandatory in the metadata are present in
+     * the offer
+     */
+    private void validiteClaimsMissing(Set<String> metadataClaims, Map<String, Object> offerData,
+                                       CredentialConfiguration credentialConfiguration) {
+        var missingOfferedClaims = new HashSet<>(metadataClaims);
+        missingOfferedClaims.removeAll(offerData.keySet());
+        // Remove optional claims
+        missingOfferedClaims.removeIf(claimKey -> !credentialConfiguration.getClaims().get(claimKey).isMandatory());
+        if (!missingOfferedClaims.isEmpty()) {
+            throw new BadRequestException(
+                    "Mandatory credential claims are missing! %s".formatted(String.join(",", missingOfferedClaims)));
+        }
+    }
+
+    private void validateOfferedCredentialValiditySpan(CredentialOffer credentialOffer) {
+        var validUntil = credentialOffer.getCredentialValidUntil();
+        if (validUntil != null) {
+            if (validUntil.isBefore(Instant.now())) {
+                throw new BadRequestException(
+                        "Credential is already expired (would only be valid until %s, server time is %s)"
+                                .formatted(validUntil, Instant.now()));
+            }
+            var validFrom = credentialOffer.getCredentialValidFrom();
+            if (validFrom != null && validFrom.isAfter(validUntil)) {
+                throw new BadRequestException(
+                        "Credential would never be valid - Valid from %s until %s".formatted(validFrom, validUntil));
+            }
+        }
     }
 
     private Optional<CredentialOffer> getNonExpiredCredentialOffer(Optional<CredentialOffer> credentialOffer) {
@@ -495,14 +632,15 @@ public class CredentialService {
      * if for the offered credential no holder binding is required
      * @throws Oid4vcException if the credential request is invalid in some form
      */
-    private Optional<String> getHolderPublicKey(CredentialRequestClass credentialRequest, CredentialOffer credentialOffer) {
+    private Optional<String> getHolderPublicKey(CredentialRequestClass credentialRequest,
+                                                CredentialOffer credentialOffer) {
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst());
 
         // Process Holder Binding if a Proof Type is required
         var supportedProofTypes = credentialConfiguration.getProofTypesSupported();
         if (supportedProofTypes != null && !supportedProofTypes.isEmpty()) {
-            var requestProof = credentialRequest.getProof(applicationProperties.getAcceptableProofTimeWindowSeconds())
+            var requestProof = credentialRequest.getProof(applicationProperties.getAcceptableProofTimeWindowSeconds(), applicationProperties.getAcceptableProofTimeWindowSeconds())
                     .orElseThrow(
                             () -> new Oid4vcException(INVALID_PROOF,
                                     "Proof must be provided for the requested credential"));
@@ -517,37 +655,21 @@ public class CredentialService {
                         credentialOffer.getTokenExpirationTimestamp())) {
                     throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
                 }
+                var nonce = new SelfContainedNonce(requestProof.getNonce());
+                if (nonce.isSelfContainedNonce()) {
+                    if (nonceService.isUsedNonce(nonce)) {
+                        throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
+                    }
+                    nonceService.registerNonce(nonce);
+                }
             } catch (IOException e) {
                 throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
             }
 
-            var attestationRequirement = bindingProofType.getKeyAttestationRequirement();
-            checkHolderKeyAttestation(attestationRequirement, requestProof);
-
+            keyAttestationService.checkHolderKeyAttestation(bindingProofType, requestProof);
 
             return Optional.of(requestProof.getBinding());
         }
         return Optional.empty();
     }
-
-    private void checkHolderKeyAttestation(KeyAttestationRequirement attestationRequirement, Proof requestProof) throws Oid4vcException {
-        // No Attestation required, no further checks needed
-        if (attestationRequirement == null) {
-            return;
-        }
-
-        // Proof type cannot hold an attestation
-        if (!(requestProof instanceof AttestableProof)) {
-            throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
-        }
-
-
-        var attestation = ((AttestableProof) requestProof).getAttestationJwt();
-        if (attestation == null) {
-            throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
-        }
-
-        keyAttestationService.throwIfInvalidAttestation(attestationRequirement, attestation);
-    }
-
 }

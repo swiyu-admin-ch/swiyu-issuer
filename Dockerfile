@@ -13,13 +13,18 @@ EXPOSE 8080
 COPY scripts/entrypoint.sh /app/
 
 ARG JAR_FILE=issuer-application/target/*.jar
-COPY ${JAR_FILE} /app/app.jar
+ADD ${JAR_FILE} /app/app.jar
 
 RUN set -uxe && \
     chmod g=u /app/entrypoint.sh &&\
     chmod +x /app/entrypoint.sh
 
 WORKDIR /app
+
+# All image-specific envvars can easiliy be printed out by simply running:
+#     podman inspect <IMAGE_NAME> --format='{{json .Config.Env}}' | jq -r '.[]|select(startswith("ISSUER_"))'
+ENV JAVA_BOOTCLASSPATH "./lib"
+VOLUME ${JAVA_BOOTCLASSPATH}
 
 USER 1001
 

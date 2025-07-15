@@ -73,6 +73,16 @@
             <artifactId>spring-cloud-starter-kubernetes-fabric8-config</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.squareup.okio</groupId>
+            <artifactId>okio</artifactId>
+            <version>3.12.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>mockwebserver</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
@@ -138,7 +148,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>${revision}</version>
+            <version>1.2.0-SNAPSHOT</version>
         </dependency>
 
         <!-- Miscellaneous / Utility -->
@@ -175,20 +185,8 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>${revision}</version>
+            <version>1.2.0-SNAPSHOT</version>
             <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okio</groupId>
-            <artifactId>okio</artifactId>
-            <version>3.12.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>mockwebserver</artifactId>
-            <version>4.12.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -202,13 +200,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- fix CVE-2023-3635, delete once fabric8 is updated -->
-            <dependency>
-                <groupId>com.squareup.okio</groupId>
-                <artifactId>okio</artifactId>
-                <version>1.17.6</version>
-            </dependency>
-            <!-- end fix -->
         </dependencies>
     </dependencyManagement>
 

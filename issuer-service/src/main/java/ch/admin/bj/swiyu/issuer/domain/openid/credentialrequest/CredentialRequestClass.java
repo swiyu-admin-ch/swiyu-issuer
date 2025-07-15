@@ -36,7 +36,7 @@ public class CredentialRequestClass {
      */
     private CredentialResponseEncryptionClass credentialResponseEncryption;
 
-    public Optional<Proof> getProof(int acceptableProofTimeWindow) {
+    public Optional<Proof> getProof(int acceptableProofTimeWindow, int nonceLifetimeSeconds) {
         final var PROOF_TYPE_KEY = "proof_type";
         // No Proof provided by Holder
         if (proof == null) {
@@ -49,7 +49,7 @@ public class CredentialRequestClass {
                     .filter(String.class::isInstance)
                     .map(String.class::cast)
                     .orElseThrow(() -> new IllegalArgumentException("jwt property needs to be present when proof_type is jwt"));
-            return Optional.of(new ProofJwt(ProofType.JWT, proofJwt, acceptableProofTimeWindow));
+            return Optional.of(new ProofJwt(ProofType.JWT, proofJwt, acceptableProofTimeWindow, nonceLifetimeSeconds));
         } else {
             throw new IllegalArgumentException("Any other proof type than jwt is not supported");
         }

@@ -120,8 +120,10 @@ application:
   #eg:  openid_file: "file:///data/myapplication_metadata.json"
   metadata-file: "${METADATA_CONFIG_FILE:}"
 
+  # Duration a self-contained nonce is valid for
+  nonce-lifetime-seconds: ${NONCE_LIFETIME_S:120}
   # Verification of Key Binding Proof issue at time window
-  acceptable-proof-time-window-seconds: ${VERIFICATION_PROOF_TIME_WINDOW_MS:120}
+  acceptable-proof-time-window-seconds: ${VERIFICATION_PROOF_TIME_WINDOW_S:120}
 
   # map of vct metadata files. They key will become part of the url
   #  vct-metadata-files:
@@ -166,6 +168,7 @@ application:
       # eg: did:tdw:<base-registry-url>:<issuer_uuid>#<sdjwt-public-key-fragment>
       verification-method: "${DID_SDJWT_VERIFICATION_METHOD:}"
 
+
 logging:
   level:
     ch.admin.bj.swiyu.issuer.management.infrastructure.logging.RequestLoggingFilter: DEBUG
@@ -187,7 +190,7 @@ webhook:
   callback-uri: "${WEBHOOK_CALLBACK_URI:}"
   api-key-header: "${WEBHOOK_API_KEY_HEADER:}"
   api-key-value: "${WEBHOOK_API_KEY_VALUE:}"
-  callback-interval: ${WEBHOOK_INTERVAL:}
+  callback-interval: ${WEBHOOK_INTERVAL:2000} # Every 2 seconds
 
 monitoring:
   basic-auth:

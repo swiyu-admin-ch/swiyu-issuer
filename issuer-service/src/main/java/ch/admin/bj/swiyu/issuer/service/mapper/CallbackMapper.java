@@ -19,6 +19,7 @@ public class CallbackMapper {
     public static CallbackEventTypeDto toCallbackEventTypeDto(CallbackEventType eventType) {
         return switch (eventType) {
             case VC_STATUS_CHANGED -> CallbackEventTypeDto.VC_STATUS_CHANGED;
+            case VC_DEFERRED -> CallbackEventTypeDto.VC_DEFERRED;
             case ERROR -> CallbackEventTypeDto.ISSUANCE_ERROR;
 
         };

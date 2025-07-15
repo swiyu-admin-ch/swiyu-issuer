@@ -288,6 +288,36 @@ The Generic Issuer Agent is configured using environment variables.
 |----------------------------|-------------------------------------------------------------------|------|--------------| 
 | PUBLIC_KEY_CACHE_TTL_MILLI | TTL in milliseconds how long a public key result should be cached | int  | 3600000 (1h) |
 
+#### Security
+
+Management Endpoints can be secured as OAuth2 Resource Server using Spring Security.
+
+For more details see the official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
+
+For easy playground setup security starts deactivated. It is activated when the appropriate environment variables are set.
+
+##### Fixed single asymmetric key
+| Variable         | Description                                                                                                                                                                                        | Type                                               |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------| 
+| SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_PUBLICKEYLOCATION | URI path to a single public key in pem format. [See Details](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#oauth2resourceserver-jwt-decoder-public-key) | URI eg: file:/app/public-key.pem |
+ 
+
+##### Authorization Server
+| Variable                                                | Description                                                                                                                                                                                                                                                                        | Type        |
+|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------| 
+| SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI     | URI to the issuer including path component. Will be resolved to <issuer-uri>/.well-known/openid-configuration to fetch the public key [See Details](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#_specifying_the_authorization_server) | URI / String |
+| SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI     | URI directly to fetch directly the jwk-set instead of fetching the openid connect first.                                                                                                                                                                                           | URI / String |
+| SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWSALGORITHMS | List of algorithms supported for the key of the jkw-set. Defaults to only RS256.                                                                                                                                                                                                     | String |
+
+Other properties as defined by spring can be used.
+
+
+
+
+Multitenancy is not supported.
+
+
+
 #### JWT Based Data Integrity
 
 If there is the need to further protect the API / Data Integrity it is possible to enable the feature with a flag and
@@ -335,6 +365,9 @@ Instead, a connection is created to the HSM via JCA. This can be with
 the [Sun PKCS11 provider](https://docs.oracle.com/en/java/javase/22/security/pkcs11-reference-guide1.html) or a vendor
 specific option.
 Note that for creating the keys it is expected that the public key is provided as self-signed certificated.
+
+For vendor specific options it is necessary to provide the library in the java classpath. For this mount or add the necessary jars to the docker container.
+Provide the environment variable `JAVA_BOOTCLASSPATH` to the directory which should be added to the classpath. 
 
 | Variable                      | Description                                                                                                                                                                                |
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

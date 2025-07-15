@@ -1,4 +1,4 @@
 {
   "issuer": "${external-url}",
-  "token_endpoint": "${external-url}/api/token"
+  "token_endpoint": "${external-url}/oid4vci/api/token"
 }

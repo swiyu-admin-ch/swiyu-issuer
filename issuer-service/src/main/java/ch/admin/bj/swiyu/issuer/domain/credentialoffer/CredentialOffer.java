@@ -21,7 +21,10 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static java.util.Objects.nonNull;
 
@@ -111,6 +114,12 @@ public class CredentialOffer {
      */
     @Column(name = "holder_jwk")
     private String holderJWK;
+
+    /**
+     * Value used to store client agent infos for the deferred flow
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    private ClientAgentInfo clientAgentInfo;
 
     /**
      * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
@@ -225,12 +234,21 @@ public class CredentialOffer {
 
     public void markAsDeferred(UUID transactionId,
                                CredentialRequestClass credentialRequest,
-                               String holderPublicKey) {
+                               String holderPublicKey,
+                               ClientAgentInfo clientAgentInfo) {
         this.credentialStatus = CredentialStatusType.DEFERRED;
         this.credentialRequest = credentialRequest;
         this.transactionId = transactionId;
         this.holderJWK = holderPublicKey;
+        this.clientAgentInfo = clientAgentInfo;
         log.info("Deferred credential response for offer {}. Management-ID is {} and status is {}. ",
+                this.metadataCredentialSupportedId, this.id, this.credentialStatus);
+    }
+
+    public void markAsReadyForIssuance(Map<String, Object> offerData) {
+        this.credentialStatus = CredentialStatusType.READY;
+        this.setOfferData(offerData);
+        log.info("Deferred Credential ready for issuance for offer {}. Management-ID is {} and status is {}. ",
                 this.metadataCredentialSupportedId, this.id, this.credentialStatus);
     }
 
@@ -250,5 +268,6 @@ public class CredentialOffer {
         this.transactionId = null;
         this.credentialRequest = null;
         this.holderJWK = null;
+        this.clientAgentInfo = null;
     }
 }

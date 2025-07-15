@@ -17,7 +17,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +40,7 @@ public class CredentialConfiguration {
      * Optional
      */
     @JsonProperty("claims")
-    private HashMap<String, Object> claims;
+    private Map<String, CredentialClaim> claims;
 
     /**
      * Field for VC not SD-JWT (VC Signed as JWT or JSON-LD)
@@ -60,7 +59,7 @@ public class CredentialConfiguration {
      */
     @JsonProperty("cryptographic_binding_methods_supported")
     @Valid
-    private List<@Pattern(regexp = "^(did:)?jwk$", message = "Only jwk and did:jwk are supported")String> cryptographicBindingMethodsSupported;
+    private List<@Pattern(regexp = "^(did:)?jwk$", message = "Only jwk and did:jwk are supported") String> cryptographicBindingMethodsSupported;
 
     /**
      * Case-sensitive strings that identify the algorithms that the Issuer uses to sign the issued Credential
@@ -80,7 +79,7 @@ public class CredentialConfiguration {
 
     @PostConstruct
     public void postConstruct() {
-        if(!proofTypesSupported.isEmpty() && cryptographicBindingMethodsSupported.isEmpty()) {
+        if (!proofTypesSupported.isEmpty() && cryptographicBindingMethodsSupported.isEmpty()) {
             throw new IllegalArgumentException("If proof types are supported, cryptographic binding methods must be specified as well");
         }
     }

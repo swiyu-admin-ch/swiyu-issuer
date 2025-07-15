@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Expanded cnf to contain correct structure while still providing the old one. Example:
+
+```json
+{
+    "cnf": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "...",
+        "y": "...",
+        "jwk": {
+            "kty": "EC",
+            "crv": "P-256",
+            "x": "...",
+            "y": "..."
+        }
+    }
+}
+```
+
+- Breaking! Refactored the getCredentialOffer endpoint which now returns all the credential offer information (but not
+  the offer data, which is not needed)
+    - Deprecated the getCredentialOfferDeeplink endpoint, which is now replaced by the getCredentialOffer endpoint (as
+      it delivers the same information)
+    - Added new endpoint patch `/management/api/credentials{credentialId}` which updates / creates the credential offer
+      for a deferred endpoint.
+    - Added a new ClientAgentInfoDto which are used for the deferred credential flow. This is stored in the database
+      (db migration is necessary & included)
 - Breaking! updated url path to distinguish management (with `/management`) and oid4vci (with `/oid4vci`) urls
 - Added new endpoint `/.well-known/oauth-authorization-server` that provides the same information as the
   `/.well-known/openid-configuration` endpoint but in a OAuth2-centric way.
@@ -55,6 +82,10 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
 - Expanded `/token` functionality. The endpoint accepts now `application/x-www-urlencoded` and no content-type.
   It still accepts the values in the url as request-params (this functionality will be removed in the future) and
   as `x-www-form-urlencoded` body.
+- Credential Offer is now validated according to the published metadata. Additional 'surprise' claims are no longer
+  supported.
+- Optional OAuth security with bearer tokens on `/management` endpoints.
+  It can be activated and configured via spring environment variables.
 
 ### Fixed
 

@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer;
+package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.config;
 
 import ch.admin.bj.swiyu.issuer.infrastructure.config.ContentLengthInterceptor;
 import org.junit.jupiter.api.BeforeEach;
