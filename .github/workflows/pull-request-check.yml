@@ -36,15 +36,14 @@ jobs:
           with:
             context: .
             load: true
-            tags: ${{ steps.meta.outputs.tags }}
-            labels: ${{ steps.meta.outputs.labels }}
+            tags: pull_request_check:latest
             build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
             file: Dockerfile
         
         - name: Run Trivy vulnerability scan
           uses: aquasecurity/trivy-action@0.30.0
           with:
-            image-ref: '${{ steps.meta.outputs.tags }}'
+            image-ref: pull_request_check:latest
             severity: 'CRITICAL,HIGH'
             exit-code: 1
-            format: 'table'
+            format: table
