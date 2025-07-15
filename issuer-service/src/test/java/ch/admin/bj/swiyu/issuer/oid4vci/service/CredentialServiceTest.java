@@ -56,6 +56,7 @@ class CredentialServiceTest {
     private ApplicationProperties applicationProperties;
     private IssuerMetadataTechnical issuerMetadata;
     private DataIntegrityService dataIntegrityService;
+    private NonceService nonceService;
     private WebhookService webhookService;
     private CredentialOffer expiredOffer;
     private CredentialOffer valid;
@@ -77,7 +78,7 @@ class CredentialServiceTest {
         dataIntegrityService = Mockito.mock(DataIntegrityService.class);
         webhookService = Mockito.mock(WebhookService.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
-
+        nonceService = Mockito.mock(NonceService.class);
         expiredOffer = getCredentialOffer(CredentialStatusType.OFFERED, now().minusSeconds(1).getEpochSecond(), offerData);
         valid = getCredentialOffer(CredentialStatusType.OFFERED, now().plusSeconds(1000).getEpochSecond(), offerData);
         suspended = getCredentialOffer(CredentialStatusType.SUSPENDED, now().plusSeconds(1000).getEpochSecond(), offerData);
@@ -109,7 +110,8 @@ class CredentialServiceTest {
                 applicationProperties,
                 openIdIssuerConfiguration,
                 dataIntegrityService,
-                webhookService
+                webhookService,
+                nonceService
         );
 
         var statusListUris = List.of("https://example.com/status-list");

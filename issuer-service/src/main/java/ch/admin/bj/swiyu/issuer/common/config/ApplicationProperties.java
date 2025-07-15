@@ -83,6 +83,8 @@ public class ApplicationProperties {
 
     @NotNull
     private int acceptableProofTimeWindowSeconds;
+    @NotNull
+    private int nonceLifetimeSeconds;
 
     private String dataIntegrityJwks;
 

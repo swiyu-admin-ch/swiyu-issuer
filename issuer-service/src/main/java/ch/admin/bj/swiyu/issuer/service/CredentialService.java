@@ -17,6 +17,7 @@ import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -61,6 +62,7 @@ public class CredentialService {
     private final OpenIdIssuerConfiguration openIDConfiguration;
     private final DataIntegrityService dataIntegrityService;
     private final WebhookService webhookService;
+    private final NonceService nonceService;
 
     @Transactional // not readonly since expired credentails gets updated here automatically
     public CredentialInfoResponseDto getCredentialOfferInformation(UUID credentialId) {
@@ -638,7 +640,7 @@ public class CredentialService {
         // Process Holder Binding if a Proof Type is required
         var supportedProofTypes = credentialConfiguration.getProofTypesSupported();
         if (supportedProofTypes != null && !supportedProofTypes.isEmpty()) {
-            var requestProof = credentialRequest.getProof(applicationProperties.getAcceptableProofTimeWindowSeconds())
+            var requestProof = credentialRequest.getProof(applicationProperties.getAcceptableProofTimeWindowSeconds(), applicationProperties.getAcceptableProofTimeWindowSeconds())
                     .orElseThrow(
                             () -> new Oid4vcException(INVALID_PROOF,
                                     "Proof must be provided for the requested credential"));
@@ -652,6 +654,13 @@ public class CredentialService {
                         credentialOffer.getNonce(),
                         credentialOffer.getTokenExpirationTimestamp())) {
                     throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
+                }
+                var nonce = new SelfContainedNonce(requestProof.getNonce());
+                if (nonce.isSelfContainedNonce()) {
+                    if (nonceService.isUsedNonce(nonce)) {
+                        throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
+                    }
+                    nonceService.registerNonce(nonce);
                 }
             } catch (IOException e) {
                 throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");

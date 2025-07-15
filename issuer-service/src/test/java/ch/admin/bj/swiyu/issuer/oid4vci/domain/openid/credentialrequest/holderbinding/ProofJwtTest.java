@@ -23,7 +23,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ProofJwtTest {
+class ProofJwtTest {
 
     private static ECKey jwk;
 
@@ -54,7 +54,7 @@ public class ProofJwtTest {
         jwt.sign(signer);
         var proof = jwt.serialize();
 
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
         var exc = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getOfferExpirationTimestamp()));
         assertTrue(exc.getMessage().contains("None of the supported binding method/s was found in the header"));
@@ -79,7 +79,7 @@ public class ProofJwtTest {
         jwt.sign(signer);
         var proof = jwt.serialize();
 
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
         var exc = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
         assertTrue(exc.getMessage().contains("Did method provided in kid attribute did:tdw is not supported"));
@@ -104,7 +104,7 @@ public class ProofJwtTest {
         jwt.sign(signer);
         var proof = jwt.serialize();
 
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
         var exc = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
         assertTrue(exc.getMessage().contains("could not be parsed to a JWK"));
@@ -115,7 +115,7 @@ public class ProofJwtTest {
         // Check holder proof with didJwk
         var nonce = UUID.randomUUID();
         String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), true);
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
         assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
     }
@@ -125,7 +125,7 @@ public class ProofJwtTest {
         // Check holder proof with didJwk
         var nonce = UUID.randomUUID();
         String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), false);
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
         assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
     }

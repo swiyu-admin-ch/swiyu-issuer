@@ -19,5 +19,7 @@ public abstract class Proof {
 
     public abstract boolean isValidHolderBinding(String issuerId, List<String> supportedSigningAlgorithms, UUID nonce, Long tokenExpirationTimestamp);
 
+    public abstract String getNonce();
+
     public abstract String getBinding();
 }

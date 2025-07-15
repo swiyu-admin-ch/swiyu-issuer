@@ -6,13 +6,11 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OauthAccessTokenRequestDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.service.CredentialService;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,7 +39,7 @@ import java.util.regex.Pattern;
 @RestController
 @AllArgsConstructor
 @Slf4j
-@Tag(name = "Issuer OID4VCI API", description = "Handles OpenID for Verifiable Credential Issuance (OID4VCI) API " +
+@Tag(name = "Issuer OID4VCI API", description = "Public OpenID for Verifiable Credential Issuance (OID4VCI) API " +
         "endpoints, including issuing OAuth tokens for credential requests, issuing verifiable credentials, " +
         "and supporting deferred credential issuance (IF-111)")
 @RequestMapping(value = {"/oid4vci/api"})
@@ -49,11 +47,12 @@ public class IssuanceController {
     private static final String OID4VCI_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
 
     private final CredentialService credentialService;
+    private final NonceService nonceService;
 
     @Timed
     @PostMapping(value = {"/token"},
             produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Collect Bearer token with pre-authorized code", hidden = true)
+    @Operation(summary = "Create a Bearer token with pre-authorized code", hidden = true)
     public OAuthTokenDto oauthAccessToken(
             @RequestParam(name = "grant_type", defaultValue = OID4VCI_GRANT_TYPE) String grantType,
             @RequestParam(name = "pre-authorized_code") String preAuthCode) {
@@ -83,6 +82,19 @@ public class IssuanceController {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
         return credentialService.issueOAuthToken(oauthAccessTokenRequestDto.preauthorized_code());
+    }
+
+    @Timed
+    @PostMapping(value = {"/nonce"})
+    @Operation(summary = "Provide a self-contained nonce in a publicly accessible endpoint.",
+            description = """
+                    Provide nonces for proof of possessions in a manner not requiring the service to save it.
+                    The nonce should be used only once. The nonce has a (very) limit lifetime.
+                    The response should not be cached.
+                    For more information see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-7.2">OID4VCI Nonce Endpoint specification</a>
+                    """)
+    public NonceResponseDto createNonce() {
+        return nonceService.createNonce();
     }
 
     @Timed
