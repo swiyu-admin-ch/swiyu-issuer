@@ -28,26 +28,23 @@ jobs:
             distribution: 'temurin'
             java-version: '21'
             cache: 'maven'
-        # Install Securosys JCE provider locally
-        - name: Install Securosys JCE locally
-          run: mvn install:install-file -Dfile=lib/primusX-java11-2.4.4.jar -DgroupId=com.securosys.primus -DartifactId=jce -Dversion=2.4.4 -Dpackaging=jar
         - name: Build with Maven
           run: mvn --batch-mode clean generate-resources install
-        - name: Build Docker image
-          run: |
-            docker build -t ${{ github.repository }}:latest .
+        - name: Build and push docker image
+          id: push
+          uses: docker/build-push-action@v6
+          with:
+            context: .
+            load: true
+            tags: ${{ steps.meta.outputs.tags }}
+            labels: ${{ steps.meta.outputs.labels }}
+            build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
+            file: Dockerfile
         
         - name: Run Trivy vulnerability scan
           uses: aquasecurity/trivy-action@0.30.0
           with:
-            image-ref: '${{ github.repository }}:latest'
+            image-ref: '${{ steps.meta.outputs.tags }}'
             severity: 'CRITICAL,HIGH'
-            # exit-code: 1
-            # TODO: Publish report once it's public
-            # format: 'sarif'
-            # output: 'trivy-results.sarif'
-
-        # - name: Upload Trivy scan results to GitHub Security tab
-        #   uses: github/codeql-action/upload-sarif@v3
-        #   with:
-        #     sarif_file: 'trivy-results.sarif'
+            exit-code: 1
+            format: 'table'
