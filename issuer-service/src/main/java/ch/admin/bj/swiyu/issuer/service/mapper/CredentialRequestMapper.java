@@ -23,6 +23,19 @@ public class CredentialRequestMapper {
         );
     }
 
+    public static CredentialRequestDto toCredentialRequest(CredentialRequestClass clazz) {
+
+        if (clazz == null) {
+            return null;
+        }
+        
+        return new CredentialRequestDto(
+                clazz.getFormat(),
+                clazz.getProof(),
+                toCredentialResponseEncryptionDto(clazz.getCredentialResponseEncryption())
+        );
+    }
+
     public static CredentialResponseEncryptionClass toCredentialResponseEncryption(CredentialResponseEncryptionDto credentialRequestDto) {
         if (credentialRequestDto == null) {
             return null;
@@ -32,6 +45,18 @@ public class CredentialRequestMapper {
                 credentialRequestDto.jwk(),
                 credentialRequestDto.alg(),
                 credentialRequestDto.enc()
+        );
+    }
+
+    public static CredentialResponseEncryptionDto toCredentialResponseEncryptionDto(CredentialResponseEncryptionClass credentialResponseEncryptionClass) {
+        if (credentialResponseEncryptionClass == null) {
+            return null;
+        }
+
+        return new CredentialResponseEncryptionDto(
+                credentialResponseEncryptionClass.getJwk(),
+                credentialResponseEncryptionClass.getAlg(),
+                credentialResponseEncryptionClass.getEnc()
         );
     }
 }

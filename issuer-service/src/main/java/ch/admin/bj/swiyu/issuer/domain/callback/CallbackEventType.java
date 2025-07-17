@@ -5,5 +5,6 @@ package ch.admin.bj.swiyu.issuer.domain.callback;
  */
 public enum CallbackEventType {
     VC_STATUS_CHANGED,
+    VC_DEFERRED,
     ERROR
 }

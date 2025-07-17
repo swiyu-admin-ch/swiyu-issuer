@@ -1,6 +1,7 @@
 {
   "credential_issuer": "${external-url}",
-  "credential_endpoint": "${external-url}/api/credential",
+  "credential_endpoint": "${external-url}/oid4vci/api/credential",
+  "deferred_credential_endpoint": "${external-url}/oid4vci/api/deferred_credential",
   "credential_response_encryption": {
     "encryption_required": false,
     "alg_values_supported": [

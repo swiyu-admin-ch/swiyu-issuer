@@ -9,6 +9,10 @@ tags:
 - name: Credential Metadata API
   description: "Provide metadata related to verifiable credentials, including credential\
     \ type metadata, JSON schemas, and Overlays Capture Architecture (OCA) data. (IF-110)"
+- name: Issuer OID4VCI API
+  description: "Public OpenID for Verifiable Credential Issuance (OID4VCI) API endpoints,\
+    \ including issuing OAuth tokens for credential requests, issuing verifiable credentials,\
+    \ and supporting deferred credential issuance (IF-111)"
 - name: Status List API
   description: Exposes API endpoints for managing status lists used in verifiable
     credential status tracking. Supports creating and initializing new status lists
@@ -24,10 +28,6 @@ tags:
     \ credential metadata as required by the OID4VCI specification. Provides endpoints\
     \ for OpenID Connect issuer configuration, OAuth authorization server information,\
     \ and issuer metadata describing supported verifiable credentials (IF-112)"
-- name: Issuer OID4VCI API
-  description: "Handles OpenID for Verifiable Credential Issuance (OID4VCI) API endpoints,\
-    \ including issuing OAuth tokens for credential requests, issuing verifiable credentials,\
-    \ and supporting deferred credential issuance (IF-111)"
 - name: Actuator
   description: Monitor and interact
   externalDocs:
@@ -56,6 +56,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OAuthToken"
+  /oid4vci/api/nonce:
+    post:
+      tags:
+      - Issuer OID4VCI API
+      summary: Provide a self-contained nonce in a publicly accessible endpoint.
+      description: |
+        Provide nonces for proof of possessions in a manner not requiring the service to save it.
+        The nonce should be used only once. The nonce has a (very) limit lifetime.
+        The response should not be cached.
+        For more information see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-7.2">OID4VCI Nonce Endpoint specification</a>
+      operationId: createNonce
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NonceResponse"
   /oid4vci/api/deferred_credential:
     post:
       tags:
@@ -556,6 +576,15 @@ components:
           format: int64
         c_nonce:
           type: string
+    NonceResponse:
+      required:
+      - c_nonce
+      type: object
+      properties:
+        c_nonce:
+          type: string
+          description: String containing an unpredictable challenge to be used when
+            creating a proof of possession of the key.
     DeferredCredentialRequest:
       required:
       - transaction_id

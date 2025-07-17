@@ -1,10 +1,10 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.holderbinding;
 
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -54,7 +54,7 @@ class ProofJwtTest {
         jwt.sign(signer);
         var proof = jwt.serialize();
 
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
 
         var audience = "http://issuer.com";
@@ -85,7 +85,7 @@ class ProofJwtTest {
         jwt.sign(signer);
         var proof = jwt.serialize();
 
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
 
         String audience = "http://issuer.com";
@@ -117,7 +117,7 @@ class ProofJwtTest {
         jwt.sign(signer);
         var proof = jwt.serialize();
 
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
         String audience = "http://issuer.com";
         List<String> algorithms = List.of("ES256");
@@ -133,7 +133,7 @@ class ProofJwtTest {
         // Check holder proof with didJwk
         var nonce = UUID.randomUUID();
         String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), true);
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
         assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
     }
@@ -143,7 +143,7 @@ class ProofJwtTest {
         // Check holder proof with didJwk
         var nonce = UUID.randomUUID();
         String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), false);
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
         assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
     }
@@ -159,6 +159,7 @@ class ProofJwtTest {
                 }},
                 new HashMap<>(),
                 UUID.randomUUID(),
+                null,
                 null,
                 null,
                 Instant.now().plusSeconds(600).getEpochSecond(),

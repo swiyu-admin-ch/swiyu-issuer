@@ -44,7 +44,7 @@ public class CredentialFormatFactory {
                 try {
                     yield new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, signatureService.defaultSigner(sdjwtProperties), statusListRepository, credentialOfferStatusRepository);
                 } catch (Exception e) {
-                    throw new ConfigurationException("Signing Key Configuration could not be used for signature",e);
+                    throw new ConfigurationException("Signing Key Configuration could not be used for signature", e);
                 }
             }
             default -> throw new IllegalArgumentException("Unknown format: " + configuration.getFormat());

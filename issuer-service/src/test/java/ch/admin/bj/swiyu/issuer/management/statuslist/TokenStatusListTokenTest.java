@@ -6,6 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.management.statuslist;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -15,10 +19,6 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 class TokenStatusListTokenTest {
     @Test
