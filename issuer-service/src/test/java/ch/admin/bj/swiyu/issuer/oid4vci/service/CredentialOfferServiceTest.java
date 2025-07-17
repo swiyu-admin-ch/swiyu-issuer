@@ -527,8 +527,7 @@ class CredentialOfferServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                Map.of("deferred", true),
-                null);
+                Map.of("deferred", true));
 
         when(credentialOfferRepository.findByIdForUpdate(credentialId)).thenReturn(Optional.of(credentialOffer));
         when(credentialOfferRepository.save(credentialOffer)).thenReturn(credentialOffer);
@@ -563,7 +562,7 @@ class CredentialOfferServiceTest {
                 offerData,
                 offerMetadata,
                 accessToken,
-                transactionId,
+                null,
                 null,
                 null,
                 Instant.now().plusSeconds(600).getEpochSecond(),
