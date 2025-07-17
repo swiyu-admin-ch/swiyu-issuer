@@ -26,7 +26,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -101,7 +100,7 @@ class CredentialOfferStatusMultiThreadedIT {
 
 
     @Test
-    void testCreateOfferMultiThreaded_thenSuccess() throws Exception {
+    void testCreateOfferMultiThreaded_thenSuccess() {
         // create some offers in a multithreaded manner
         // When increasing this too much spring boot will throw 'Failed to read request'
         // in a non-deterministic way...
@@ -177,10 +176,4 @@ class CredentialOfferStatusMultiThreadedIT {
         var restoredStatusListToken = testHelper.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
         assertEquals(initialStatusListToken.getStatusListData(), restoredStatusListToken.getStatusListData(), "Bitstring should be same again");
     }
-
-    private TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws IOException {
-        return TokenStatusListToken.loadTokenStatusListToken(bits, lst, 204800);
-    }
-
-
 }
