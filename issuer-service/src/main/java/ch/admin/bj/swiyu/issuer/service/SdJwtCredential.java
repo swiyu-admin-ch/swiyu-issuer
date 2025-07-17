@@ -32,6 +32,8 @@ import static java.util.Objects.nonNull;
 @Slf4j
 public class SdJwtCredential extends CredentialBuilder {
 
+    public static final String SD_JWT_FORMAT = "vc+sd-jwt";
+
     public static final List<String> SDJWT_PROTECTED_CLAIMS = List.of("sub", "iss", "nbf", "exp", "iat", "cnf", "vct", "status", "_sd", "_sd_alg", "sd_hash", "...");
 
     private final SdjwtProperties sdjwtProperties;
@@ -94,7 +96,7 @@ public class SdJwtCredential extends CredentialBuilder {
         // Code below follows example from https://github.com/authlete/sd-jwt?tab=readme-ov-file#credential-jwt
         List<Disclosure> disclosures = new ArrayList<>();
 
-         // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
+        // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
         for (var entry : getOfferData().entrySet()) {
             // Check if it's a protected claim
             if (SDJWT_PROTECTED_CLAIMS.contains(entry.getKey())) {
@@ -114,7 +116,7 @@ public class SdJwtCredential extends CredentialBuilder {
 
         try {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
-                    .type(new JOSEObjectType("vc+sd-jwt"))
+                    .type(new JOSEObjectType(SD_JWT_FORMAT))
                     .keyID(sdjwtProperties.getVerificationMethod())
                     .customParam("ver", sdjwtProperties.getVersion())
                     .build();
