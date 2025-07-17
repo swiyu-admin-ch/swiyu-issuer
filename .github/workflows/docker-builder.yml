@@ -7,6 +7,9 @@ run-name: ${{ github.repository }} is building and publishing a docker image
 on:
   release:
     types: [ published ]
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
