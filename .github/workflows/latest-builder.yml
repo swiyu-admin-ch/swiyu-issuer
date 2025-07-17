@@ -2,27 +2,20 @@
 #
 # SPDX-License-Identifier: MIT
 
-name: Publish Docker Image
-run-name: ${{ github.repository }} is building and publishing a docker image
+name: latest-builder.yml
 on:
-  release:
-    types: [ published ]
-  workflow_dispatch:
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
-# Github documentation
+  push:
+    branches:
+      - main
 jobs:
-  build-and-publish-image:
+  build-and-publish-latest:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
+
 
     steps:
       - name: Checkout repository
@@ -35,8 +28,6 @@ jobs:
           java-version: '21'
           cache: 'maven'
       - name: Build with Maven
-        # run: mvn versions:set -DnewVersion=${{ github.ref_name }} && mvn --batch-mode clean generate-resources install
-        # TODO: Setting the version breaks the build dependencies. The version is not correctly propagated
         run: mvn --batch-mode clean generate-resources install
 
       - name: Login to Container Registry
@@ -56,7 +47,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: latest
           build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
           file: Dockerfile
