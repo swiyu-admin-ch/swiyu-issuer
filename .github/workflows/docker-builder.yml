@@ -35,8 +35,6 @@ jobs:
           java-version: '21'
           cache: 'maven'
       - name: Build with Maven
-        # run: mvn versions:set -DnewVersion=${{ github.ref_name }} && mvn --batch-mode clean generate-resources install
-        # TODO: Setting the version breaks the build dependencies. The version is not correctly propagated
         run: mvn --batch-mode clean generate-resources install
 
       - name: Login to Container Registry
