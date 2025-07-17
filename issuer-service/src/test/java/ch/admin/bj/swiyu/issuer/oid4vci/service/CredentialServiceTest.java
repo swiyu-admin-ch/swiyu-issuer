@@ -9,6 +9,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.service;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
@@ -49,11 +50,13 @@ class CredentialServiceTest {
     @BeforeEach
     void setUp() {
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
-        HolderPublicKeyService holderPublicKeyService = Mockito.mock(HolderPublicKeyService.class);
+        OpenIdIssuerConfiguration openIdIssuerConfiguration = Mockito.mock(OpenIdIssuerConfiguration.class);
+        NonceService nonceService = Mockito.mock(NonceService.class);
         statusListService = Mockito.mock(StatusListService.class);
         issuerMetadata = Mockito.mock(IssuerMetadataTechnical.class);
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
+        KeyAttestationService keyAttestationService = Mockito.mock(KeyAttestationService.class);
         webhookService = Mockito.mock(WebhookService.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
 
@@ -64,7 +67,9 @@ class CredentialServiceTest {
                 credentialFormatFactory,
                 applicationProperties,
                 webhookService,
-                holderPublicKeyService
+                openIdIssuerConfiguration,
+                nonceService,
+                keyAttestationService
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
@@ -335,7 +340,7 @@ class CredentialServiceTest {
                 .index(1)
                 .build();
     }
-    
+
     private CredentialOffer getCredentialOffer(CredentialStatusType status, long offerExpirationTimestamp, Map<String, Object> offerData, UUID accessToken, UUID preAuthorizedCode, UUID nonce, Map<String, Object> offerMetadata, UUID transactionId) {
 
         return new CredentialOffer(
