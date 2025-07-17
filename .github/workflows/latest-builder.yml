@@ -3,10 +3,16 @@
 # SPDX-License-Identifier: MIT
 
 name: latest-builder.yml
+run-name: ${{ github.repository }} is building and publishing the latest image.
 on:
   push:
     branches:
       - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   build-and-publish-latest:
     runs-on: ubuntu-latest
