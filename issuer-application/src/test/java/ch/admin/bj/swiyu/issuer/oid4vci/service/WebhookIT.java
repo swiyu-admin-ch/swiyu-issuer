@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
+import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
@@ -12,9 +13,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -24,6 +27,8 @@ import java.util.concurrent.TimeUnit;
  * Collection of flows we expect a callback
  */
 @SpringBootTest
+@Testcontainers
+@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
 /**
  * Test Webhook Callbacks including if the RestClient has been used correctly.
