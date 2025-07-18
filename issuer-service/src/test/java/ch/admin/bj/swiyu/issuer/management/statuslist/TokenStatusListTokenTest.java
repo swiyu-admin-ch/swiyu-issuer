@@ -89,7 +89,7 @@ public class TokenStatusListTokenTest {
     }
 
     @Test
-    void testLargeStatusList() throws IOException {
+    void testLargeStatusList() {
         // Playground for the size of the data
         var entries = (int) (Math.pow(10, 7)); // 10 mio entries
         var statusList = new TokenStatusListToken(2, entries);
