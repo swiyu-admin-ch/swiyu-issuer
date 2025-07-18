@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-# This code will be replaced by the content of the local.Dockerfile by the open source helper 
 ARG SOURCE_IMAGE=bit-base-images-docker-hosted.nexus.bit.admin.ch/bit/eclipse-temurin:21-jre-ubi9-minimal
 FROM ${SOURCE_IMAGE}
 
