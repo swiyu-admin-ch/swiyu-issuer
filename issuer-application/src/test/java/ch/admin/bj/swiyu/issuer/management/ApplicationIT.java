@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.management;
 
+import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.management.CredentialController;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -18,6 +19,8 @@ import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.text.ParseException;
 
@@ -26,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
+@Testcontainers
+@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 public class ApplicationIT {
 
     public static final String privateKey = """

@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
+import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
@@ -22,8 +23,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +45,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Nested
 @DisplayName("Create Offer")
 @AutoConfigureMockMvc
+@Testcontainers
+@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class CredentialOfferCreateIT {
 
     private static final String BASE_URL = "/management/api/credentials";
