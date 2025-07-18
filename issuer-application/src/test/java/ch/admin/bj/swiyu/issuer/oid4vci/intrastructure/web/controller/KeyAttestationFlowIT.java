@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
+import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
@@ -24,9 +25,11 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -37,6 +40,8 @@ import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.crea
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Testcontainers
+@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
 class KeyAttestationFlowIT {
     private static ECKey jwk;
@@ -140,6 +145,7 @@ class KeyAttestationFlowIT {
     private CredentialFetchData prepareAttestedVC(UUID offerId, AttackPotentialResistance resistance) throws Exception {
         return prepareAttestedVC(offerId, resistance, null);
     }
+
     private CredentialFetchData prepareAttestedVC(UUID offerId, AttackPotentialResistance resistance, String attestationIssuerDid) throws Exception {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, offerId.toString());
         var token = tokenResponse.get("access_token");

@@ -1,11 +1,14 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
+import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -16,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @SpringBootTest
+@Testcontainers
+@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class NonceServiceTest {
     @Autowired
     private ApplicationProperties applicationProperties;
@@ -33,7 +38,7 @@ class NonceServiceTest {
         service.registerNonce(nonce);
         assertTrue(service.isUsedNonce(nonce));
 
-        var expiredNonce = new SelfContainedNonce(UUID.randomUUID()+"::"+ Instant.now().minus(lifetime+2, ChronoUnit.SECONDS));
+        var expiredNonce = new SelfContainedNonce(UUID.randomUUID() + "::" + Instant.now().minus(lifetime + 2, ChronoUnit.SECONDS));
         assertFalse(expiredNonce.isValid(lifetime));
         assertFalse(service.isUsedNonce(expiredNonce));
         service.registerNonce(expiredNonce);

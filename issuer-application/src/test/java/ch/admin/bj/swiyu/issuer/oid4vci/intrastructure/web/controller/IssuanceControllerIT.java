@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
+import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
@@ -38,8 +39,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -56,6 +59,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Testcontainers
+@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
 class IssuanceControllerIT {
 
@@ -108,7 +113,7 @@ class IssuanceControllerIT {
 
     @BeforeEach
     void setUp() throws JOSEException {
-        testStatusList = createStatusList();
+        testStatusList = saveStatusList(createStatusList());
         var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
         saveStatusListLinkedOffer(offer, testStatusList);
         offerId = offer.getId();
@@ -202,7 +207,7 @@ class IssuanceControllerIT {
 
     @Test
     void testNonceOutdated_thenBadRequest() throws Exception {
-        var outdatedNonce = new SelfContainedNonce(UUID.randomUUID()+"::"+ Instant.now().minus(applicationProperties.getNonceLifetimeSeconds()+1, ChronoUnit.SECONDS));
+        var outdatedNonce = new SelfContainedNonce(UUID.randomUUID() + "::" + Instant.now().minus(applicationProperties.getNonceLifetimeSeconds() + 1, ChronoUnit.SECONDS));
         // Outdated Nonce not valid
         assertFalse(outdatedNonce.isValid(applicationProperties.getNonceLifetimeSeconds()));
         // Create Credential Request with Proof using outdated nonce
@@ -221,7 +226,7 @@ class IssuanceControllerIT {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans =  {true, false})
+    @ValueSource(booleans = {true, false})
     void testCredentialFlow_thenSuccess(boolean useNewNonce) throws Exception {
         String vc = getBoundVc(useNewNonce);
 
@@ -529,10 +534,14 @@ class IssuanceControllerIT {
 
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
         credentialOfferRepository.save(offer);
-        statusListRepository.save(statusList);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
         statusList.incrementNextFreeIndex();
     }
+
+    private StatusList saveStatusList(StatusList statusList) {
+        return statusListRepository.save(statusList);
+    }
+
 
     @NotNull
     private SelfContainedNonce fetchSelfContainedNonce() throws Exception {
