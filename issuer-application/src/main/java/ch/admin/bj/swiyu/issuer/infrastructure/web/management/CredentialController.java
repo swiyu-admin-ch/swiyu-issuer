@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.service.CredentialService;
+import ch.admin.bj.swiyu.issuer.service.CredentialManagementService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,7 +36,7 @@ import java.util.UUID;
         "status of offers and issued verifiable credentials. (IF-114)")
 public class CredentialController {
 
-    private final CredentialService credentialService;
+    private final CredentialManagementService credentialManagementService;
 
     @Timed
     @PostMapping("")
@@ -64,7 +64,7 @@ public class CredentialController {
             }
     )
     public CredentialWithDeeplinkResponseDto createCredential(@Valid @RequestBody CreateCredentialRequestDto request) {
-        return this.credentialService.createCredential(request);
+        return this.credentialManagementService.createCredentialOfferAndGetDeeplink(request);
     }
 
     @Timed
@@ -79,7 +79,7 @@ public class CredentialController {
             }
     )
     public CredentialInfoResponseDto getCredentialInformation(@PathVariable UUID credentialId) {
-        return this.credentialService.getCredentialOfferInformation(credentialId);
+        return this.credentialManagementService.getCredentialOfferInformation(credentialId);
     }
 
     @Deprecated(forRemoval = true)
@@ -90,14 +90,14 @@ public class CredentialController {
      */
     @GetMapping("/{credentialId}/offer_deeplink")
     public String getCredentialOfferDeeplink(@PathVariable UUID credentialId) {
-        return this.credentialService.getCredentialOfferDeeplink(credentialId);
+        return this.credentialManagementService.getCredentialOfferDeeplink(credentialId);
     }
 
     @Timed
     @GetMapping("/{credentialId}/status")
     @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
-        return this.credentialService.getCredentialStatus(credentialId);
+        return this.credentialManagementService.getCredentialStatus(credentialId);
     }
 
     @Timed
@@ -118,7 +118,7 @@ public class CredentialController {
     )
     public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialId, @RequestBody Map<String, Object> credentialOffer) {
 
-        return this.credentialService.updateOfferDataForDeferred(credentialId, credentialOffer);
+        return this.credentialManagementService.updateOfferDataForDeferred(credentialId, credentialOffer);
     }
 
     @Timed
@@ -128,6 +128,6 @@ public class CredentialController {
                                                           @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = UpdateCredentialStatusRequestTypeDto.class))
                                                           @RequestParam("credentialStatus") UpdateCredentialStatusRequestTypeDto credentialStatus) {
 
-        return this.credentialService.updateCredentialStatus(credentialId, credentialStatus);
+        return this.credentialManagementService.updateCredentialStatus(credentialId, credentialStatus);
     }
 }

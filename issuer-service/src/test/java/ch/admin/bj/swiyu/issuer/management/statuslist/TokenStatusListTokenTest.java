@@ -6,10 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.management.statuslist;
 
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -19,6 +15,10 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 class TokenStatusListTokenTest {
     @Test
@@ -89,7 +89,7 @@ class TokenStatusListTokenTest {
     }
 
     @Test
-    void testLargeStatusList() throws IOException {
+    void testLargeStatusList() {
         // Playground for the size of the data
         var entries = (int) (Math.pow(10, 7)); // 10 mio entries
         var statusList = new TokenStatusListToken(2, entries);
