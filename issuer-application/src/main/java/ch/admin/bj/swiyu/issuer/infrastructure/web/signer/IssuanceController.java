@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.service.CredentialService;
@@ -21,6 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -106,12 +108,7 @@ public class IssuanceController {
                                                    HttpServletRequest request) {
 
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
-        ClientAgentInfo clientInfo = new ClientAgentInfo(
-                request.getRemoteAddr(),
-                request.getHeader("user-agent"),
-                request.getHeader("accept-language"),
-                request.getHeader("accept-encoding")
-        );
+        var clientInfo = getClientAgentInfo(request);
 
         var credentialEnvelope = credentialService.createCredential(credentialRequestDto, getAccessToken(bearerToken), clientInfo);
 
@@ -120,6 +117,27 @@ public class IssuanceController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(credentialEnvelope.getOid4vciCredentialJson());
+    }
+
+    @Timed
+    @PostMapping(value = {"/credential"}, consumes = {"application/vnd.api.v2+json"}, produces = {"application/vnd.api.v2+json"})
+    @Operation(summary = "Collect credential associated with the bearer token with the requested credential properties.")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public Object createCredentialV2(@RequestHeader("Authorization") String bearerToken,
+                                     @Validated @RequestBody CredentialRequestDtoV2 requestDto,
+                                     HttpServletRequest request) {
+
+        var clientInfo = getClientAgentInfo(request);
+        var credentialEnvelope = credentialService.createCredentialV2(requestDto, getAccessToken(bearerToken), clientInfo);
+
+        // deferred must return 202
+        if (credentialEnvelope.transactionId() != null) {
+            return ResponseEntity.accepted()
+                    .body(credentialEnvelope);
+        }
+
+        return ResponseEntity.ok()
+                .body(credentialEnvelope);
     }
 
     @Timed
@@ -148,5 +166,15 @@ public class IssuanceController {
         }
 
         return matcher.group(1);
+    }
+
+    private @NotNull ClientAgentInfo getClientAgentInfo(HttpServletRequest request) {
+        // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
+        return new ClientAgentInfo(
+                request.getRemoteAddr(),
+                request.getHeader("user-agent"),
+                request.getHeader("accept-language"),
+                request.getHeader("accept-encoding")
+        );
     }
 }

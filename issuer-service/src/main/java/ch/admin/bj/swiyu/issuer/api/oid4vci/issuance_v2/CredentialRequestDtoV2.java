@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialResponseEncryptionDto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 // TODO check if CredentialResponseEncryptionDto still correct
 // TODO "format": "dc+sd-jwt"
@@ -25,7 +24,6 @@ public record CredentialRequestDtoV2(
         /*
          * Object providing one or more proof of possessions of the cryptographic key material to which the issued Credential instances will be bound to. The proofs parameter contains exactly one parameter
          */
-        @NotNull
         @Valid ProofsDto proofs,
 
         @JsonProperty("credential_response_encryption")
