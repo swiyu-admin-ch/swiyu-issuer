@@ -9,7 +9,6 @@ package ch.admin.bj.swiyu.issuer.oid4vci.service;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
@@ -44,21 +43,20 @@ class CredentialServiceTest {
     private StatusListService statusListService;
     private IssuerMetadataTechnical issuerMetadata;
     private WebhookService webhookService;
+    private HolderBindingService holderBindingService;
     private StatusList statusList;
     private CredentialFormatFactory credentialFormatFactory;
 
     @BeforeEach
     void setUp() {
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
-        OpenIdIssuerConfiguration openIdIssuerConfiguration = Mockito.mock(OpenIdIssuerConfiguration.class);
-        NonceService nonceService = Mockito.mock(NonceService.class);
         statusListService = Mockito.mock(StatusListService.class);
         issuerMetadata = Mockito.mock(IssuerMetadataTechnical.class);
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
-        KeyAttestationService keyAttestationService = Mockito.mock(KeyAttestationService.class);
         webhookService = Mockito.mock(WebhookService.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
+        holderBindingService = Mockito.mock(HolderBindingService.class);
 
         credentialService = new CredentialService(
                 credentialOfferRepository,
@@ -67,9 +65,7 @@ class CredentialServiceTest {
                 credentialFormatFactory,
                 applicationProperties,
                 webhookService,
-                openIdIssuerConfiguration,
-                nonceService,
-                keyAttestationService
+                holderBindingService
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
@@ -327,7 +323,7 @@ class CredentialServiceTest {
         assertEquals(CredentialStatusType.ISSUED, credentialOffer.getCredentialStatus());
         assertNull(credentialOffer.getOfferData());
         assertNull(credentialOffer.getTransactionId());
-        assertNull(credentialOffer.getHolderJWK());
+        assertNull(credentialOffer.getHolderJWKs());
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);

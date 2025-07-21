@@ -112,8 +112,8 @@ public class CredentialOffer {
     /**
      * Value used for the store the public key from the holder received in the deferred flow
      */
-    @Column(name = "holder_jwk")
-    private String holderJWK;
+    @Column(name = "holder_jwks")
+    private List<String> holderJWKs;
 
     /**
      * Value used to store client agent infos for the deferred flow
@@ -234,12 +234,12 @@ public class CredentialOffer {
 
     public void markAsDeferred(UUID transactionId,
                                CredentialRequestClass credentialRequest,
-                               String holderPublicKey,
+                               List<String> holderPublicKey,
                                ClientAgentInfo clientAgentInfo) {
         this.credentialStatus = CredentialStatusType.DEFERRED;
         this.credentialRequest = credentialRequest;
         this.transactionId = transactionId;
-        this.holderJWK = holderPublicKey;
+        this.holderJWKs = !holderPublicKey.isEmpty() ? holderPublicKey : null;
         this.clientAgentInfo = clientAgentInfo;
         log.info("Deferred credential response for offer {}. Management-ID is {} and status is {}. ",
                 this.metadataCredentialSupportedId, this.id, this.credentialStatus);
@@ -267,7 +267,7 @@ public class CredentialOffer {
         this.offerData = null;
         this.transactionId = null;
         this.credentialRequest = null;
-        this.holderJWK = null;
+        this.holderJWKs = null;
         this.clientAgentInfo = null;
     }
 }
