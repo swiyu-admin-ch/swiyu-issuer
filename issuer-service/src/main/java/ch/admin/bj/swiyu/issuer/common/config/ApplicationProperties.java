@@ -6,10 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.common.config;
 
-import java.text.ParseException;
-import java.util.List;
-import java.util.Map;
-
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import com.nimbusds.jose.jwk.JWKSet;
 import jakarta.annotation.Nullable;
@@ -21,6 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
+
+import java.text.ParseException;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Configuration
@@ -40,6 +40,9 @@ public class ApplicationProperties {
 
     @NotNull
     private Long offerValidity;
+
+    @NotNull
+    private Long minDeferredOfferWaitingSeconds;
 
     /**
      * List of DIDs of Attestation Providers deemed trustworthy for verifying the Key Attestation.

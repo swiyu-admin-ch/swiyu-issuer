@@ -33,6 +33,7 @@ application:
   acceptable-proof-time-window-seconds: 120
   nonce-lifetime-seconds: 120
   openid-file: "classpath:example_openid.json"
+  min-deferred-offer-waiting-seconds: 600
   metadata-file: "classpath:example_issuer_metadata.json"
   # vct metadata files. They key will become part of the url
   vct-metadata-files:

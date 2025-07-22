@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 
 // TODO check if CredentialResponseEncryptionDto still correct
 // TODO "format": "dc+sd-jwt"
+// TODO "remove offer deeplink"
 // TODO check if comments make sense, or if they are too verbose
 
 /**
