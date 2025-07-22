@@ -62,7 +62,7 @@ public class CredentialRequestClass {
 
     public List<ProofJwt> getProofs(int acceptableProofTimeWindow, int nonceLifetimeSeconds) {
 
-        if (proof == null) {
+        if (proof == null || proof.isEmpty()) {
             return List.of();
         }
 

@@ -130,14 +130,12 @@ public class IssuanceController {
         var clientInfo = getClientAgentInfo(request);
         var credentialEnvelope = credentialService.createCredentialV2(requestDto, getAccessToken(bearerToken), clientInfo);
 
-        // deferred must return 202
-        if (credentialEnvelope.transactionId() != null) {
-            return ResponseEntity.accepted()
-                    .body(credentialEnvelope);
-        }
+        var headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
 
         return ResponseEntity.ok()
-                .body(credentialEnvelope);
+                .headers(headers)
+                .body(credentialEnvelope.getOid4vciCredentialJson());
     }
 
     @Timed
