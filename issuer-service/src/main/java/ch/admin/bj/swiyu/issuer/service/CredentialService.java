@@ -8,10 +8,9 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
@@ -20,6 +19,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,7 +49,9 @@ public class CredentialService {
     private final CredentialFormatFactory vcFormatFactory;
     private final ApplicationProperties applicationProperties;
     private final WebhookService webhookService;
-    private final HolderBindingService holderBindingService;
+    private final OpenIdIssuerConfiguration openIDConfiguration;
+    private final NonceService nonceService;
+    private final KeyAttestationService keyAttestationService;
 
     @Transactional
     public CredentialEnvelopeDto createCredential(CredentialRequestDto credentialRequestDto, String accessToken,
@@ -60,47 +64,13 @@ public class CredentialService {
     }
 
     @Transactional
-    public CredentialResponseDtoV2 createCredentialV2(CredentialRequestDtoV2 credentialRequestDto, String accessToken,
-                                                      ClientAgentInfo clientInfo) {
+    public CredentialEnvelopeDto createCredentialV2(CredentialRequestDtoV2 credentialRequestDto, String accessToken,
+                                                    ClientAgentInfo clientInfo) {
 
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
         CredentialOffer credentialOffer = getCredentialOfferByAccessToken(accessToken);
 
-        // We have to check again that the Credential Status has not been changed to
-        // catch race condition between holder & issuer
-        validateCredentialRequest(credentialOffer, credentialRequest);
-
-        var proofs = holderBindingService.getHolderPublicKeys(credentialRequest, credentialOffer);
-
-        if (credentialOffer.isDeferred()) {
-            var transactionId = UUID.randomUUID();
-
-            credentialOffer.markAsDeferred(transactionId, credentialRequest, proofs, clientInfo);
-            credentialOfferRepository.save(credentialOffer);
-
-            try {
-                var clientInfoString = objectMapper.writeValueAsString(clientInfo);
-                webhookService.produceDeferredEvent(credentialOffer.getId(), clientInfoString);
-            } catch (JsonProcessingException e) {
-                throw new JsonException("Error processing client info for deferred credential offer", e);
-            }
-
-            return new CredentialResponseDtoV2(null, transactionId.toString(), applicationProperties.getMinDeferredOfferWaitingSeconds());
-        }
-
-        // if no proof we only issue 1 credential without holder binding
-        if (proofs.isEmpty()) {
-            var credential = createCredentialString(credentialOffer, Optional.empty());
-
-            return new CredentialResponseDtoV2(List.of(new CredentialObjectDtoV2(credential)), null, null);
-        }
-
-        List<CredentialObjectDtoV2> credentials = proofs.stream().map(holderPublicKey -> {
-            var credential = createCredentialString(credentialOffer, Optional.of(holderPublicKey));
-            return new CredentialObjectDtoV2(credential);
-        }).toList();
-
-        return new CredentialResponseDtoV2(credentials, null, null);
+        return createCredentialEnvelopeDto(credentialOffer, credentialRequest, clientInfo);
     }
 
     @Transactional
@@ -132,14 +102,14 @@ public class CredentialService {
         }
 
         // Get holder public key which was stored in the credential request
-        var holderJWK = credentialOffer.getHolderJWKs() != null ? credentialOffer.getHolderJWKs().getFirst() : null;
+        Optional<String> holderJWK = credentialOffer.getHolderJWKs() != null ? Optional.of(credentialOffer.getHolderJWKs().getFirst()) : Optional.empty();
 
         CredentialEnvelopeDto vc = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
-                .holderBinding(holderJWK != null ? Optional.of(holderJWK) : Optional.empty())
+                .holderBinding(holderJWK)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredential();
 
@@ -183,20 +153,9 @@ public class CredentialService {
                 .build();
     }
 
-    private String createCredentialString(CredentialOffer credentialOffer, Optional<String> holderPublicKey) {
-
-        return vcFormatFactory
-                // get first entry because we expect the list to only contain one item
-                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
-                .credentialOffer(credentialOffer)
-                // TODO check if this is the correct place
-                //.credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
-                .holderBinding(holderPublicKey)
-                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .getCredential();
-    }
-
-    private void validateCredentialRequest(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest) {
+    private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
+        // We have to check again that the Credential Status has not been changed to
+        // catch race condition between holder & issuer
         if (!credentialOffer.getCredentialStatus().equals(CredentialStatusType.IN_PROGRESS)) {
             log.info("Credential offer {} failed to create VC, as state was not IN_PROGRESS instead was {}",
                     credentialOffer.getId(), credentialOffer.getCredentialStatus());
@@ -222,19 +181,17 @@ public class CredentialService {
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT, "Mismatch between requested and offered format.");
         }
 
-        if (credentialRequest.getCredentialConfigurationId() != null && !credentialOffer.getMetadataCredentialSupportedId().getFirst().equals(credentialRequest.getCredentialConfigurationId())) {
+
+        if (credentialRequest.getCredentialConfigurationId() != null && credentialOffer.getMetadataCredentialSupportedId().getFirst().equals(credentialRequest.getCredentialConfigurationId())) {
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_TYPE, "Mismatch between requested and offered credential configuration id.");
         }
-    }
 
-    private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
-        // We have to check again that the Credential Status has not been changed to
-        // catch race condition between holder & issuer
-        validateCredentialRequest(credentialOffer, credentialRequest);
+        var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(), applicationProperties.getAcceptableProofTimeWindowSeconds());
+        Optional<ProofJwt> proofJwt = proofsJwt.isEmpty() ? Optional.empty() : Optional.of(proofsJwt.getFirst());
 
         Optional<String> holderPublicKey;
         try {
-            holderPublicKey = holderBindingService.getHolderPublicKey(credentialRequest, credentialOffer);
+            holderPublicKey = getHolderPublicKey(proofJwt, credentialOffer);
         } catch (Oid4vcException e) {
             webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
                     e.getMessage());
@@ -318,5 +275,53 @@ public class CredentialService {
             throw OAuthException.invalidRequest("Expecting a correct UUID");
         }
         return offerId;
+    }
+
+    /**
+     * Validate and process the credentialRequest
+     *
+     * @param proofJwt        the proof JWT that contains the holder's public key
+     * @param credentialOffer the credential offer for which the request was sent
+     * @return the holder's public key or an empty optional
+     * if for the offered credential no holder binding is required
+     * @throws Oid4vcException if the credential request is invalid in some form
+     */
+    private Optional<String> getHolderPublicKey(Optional<ProofJwt> proofJwt,
+                                                CredentialOffer credentialOffer) {
+        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst());
+
+        // Process Holder Binding if a Proof Type is required
+        var supportedProofTypes = credentialConfiguration.getProofTypesSupported();
+        if (supportedProofTypes != null && !supportedProofTypes.isEmpty()) {
+            var requestProof = proofJwt.orElseThrow(() -> new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
+            var bindingProofType = Optional.of(supportedProofTypes.get(requestProof.proofType.toString()))
+                    .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
+                            "Provided proof is not supported for the credential requested."));
+            try {
+                if (!requestProof.isValidHolderBinding(
+                        (String) openIDConfiguration.getIssuerMetadata().get("credential_issuer"),
+                        bindingProofType.getSupportedSigningAlgorithms(),
+                        credentialOffer.getNonce(),
+                        credentialOffer.getTokenExpirationTimestamp())) {
+                    throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
+                }
+                var nonce = new SelfContainedNonce(requestProof.getNonce());
+                if (nonce.isSelfContainedNonce()) {
+                    if (nonceService.isUsedNonce(nonce)) {
+                        throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
+                    }
+                    nonceService.registerNonce(nonce);
+                }
+            } catch (IOException e) {
+                throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
+            }
+
+            keyAttestationService.checkHolderKeyAttestation(bindingProofType, requestProof);
+
+            return Optional.of(requestProof.getBinding());
+        }
+
+        return Optional.empty();
     }
 }
