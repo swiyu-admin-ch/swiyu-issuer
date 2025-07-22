@@ -15,6 +15,6 @@ public record CredentialResponseDtoV2(
         String transactionId,
 
         //  REQUIRED if transaction_id is present. Contains a positive number that represents the minimum amount of time in seconds that the Wallet
-        Integer interval
+        Long interval
 ) {
 }

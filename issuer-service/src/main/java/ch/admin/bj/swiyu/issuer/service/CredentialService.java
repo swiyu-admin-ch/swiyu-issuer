@@ -11,7 +11,6 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.DeferredDataDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
@@ -74,11 +73,9 @@ public class CredentialService {
         var proofs = holderBindingService.getHolderPublicKeys(credentialRequest, credentialOffer);
 
         if (credentialOffer.isDeferred()) {
-            var deferredData = new DeferredDataDtoV2(UUID.randomUUID(), 122);
+            var transactionId = UUID.randomUUID();
 
-            // At the moment only the first proof is used for deferred credential offers
-
-            credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest, proofs, clientInfo);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, proofs, clientInfo);
             credentialOfferRepository.save(credentialOffer);
 
             try {
@@ -87,13 +84,23 @@ public class CredentialService {
             } catch (JsonProcessingException e) {
                 throw new JsonException("Error processing client info for deferred credential offer", e);
             }
+
+            return new CredentialResponseDtoV2(null, transactionId.toString(), applicationProperties.getMinDeferredOfferWaitingSeconds());
         }
 
-        Optional<String> proofs2 = proofs.isEmpty() ? Optional.empty() : Optional.of(proofs.getFirst());
+        // if no proof we only issue 1 credential without holder binding
+        if (proofs.isEmpty()) {
+            var credential = createCredentialString(credentialOffer, Optional.empty());
 
-        var credential = createCredentialString(credentialOffer, credentialRequest, proofs2);
+            return new CredentialResponseDtoV2(List.of(new CredentialObjectDtoV2(credential)), null, null);
+        }
 
-        return new CredentialResponseDtoV2(List.of(new CredentialObjectDtoV2(credential)), null, null);
+        List<CredentialObjectDtoV2> credentials = proofs.stream().map(holderPublicKey -> {
+            var credential = createCredentialString(credentialOffer, Optional.of(holderPublicKey));
+            return new CredentialObjectDtoV2(credential);
+        }).toList();
+
+        return new CredentialResponseDtoV2(credentials, null, null);
     }
 
     @Transactional
@@ -176,14 +183,14 @@ public class CredentialService {
                 .build();
     }
 
-    private String createCredentialString(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, Optional<String> holderPublicKey) {
+    private String createCredentialString(CredentialOffer credentialOffer, Optional<String> holderPublicKey) {
 
         return vcFormatFactory
                 // get first entry because we expect the list to only contain one item
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
                 // TODO check if this is the correct place
-                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                //.credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
                 .holderBinding(holderPublicKey)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .getCredential();
