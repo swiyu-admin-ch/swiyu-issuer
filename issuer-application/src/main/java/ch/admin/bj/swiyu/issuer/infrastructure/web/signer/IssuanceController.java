@@ -139,7 +139,7 @@ public class IssuanceController {
     }
 
     @Timed
-    @PostMapping(value = {"/deferred_credential"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
+    @PostMapping(value = {"/deferred_credential"}, consumes = {"application/json"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
     @Operation(summary = "Collect credential associated with the bearer token and the transaction id. This endpoint is used for deferred issuance.")
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
                                                            @Valid @RequestBody DeferredCredentialRequestDto deferredCredentialRequestDto) {
@@ -149,6 +149,21 @@ public class IssuanceController {
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
         return ResponseEntity.ok()
+                .headers(headers)
+                .body(credentialEnvelope.getOid4vciCredentialJson());
+    }
+
+    @Timed
+    @PostMapping(value = {"/deferred_credential"}, consumes = {"application/vnd.api.v2+json"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
+    @Operation(summary = "Collect credential associated with the bearer token and the transaction id. This endpoint is used for deferred issuance.")
+    public ResponseEntity<String> createDeferredCredentialV2(@RequestHeader("Authorization") String bearerToken,
+                                                             @Valid @RequestBody DeferredCredentialRequestDto deferredCredentialRequestDto) {
+
+        var credentialEnvelope = credentialService.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, getAccessToken(bearerToken));
+
+        var headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
+        return ResponseEntity.status(credentialEnvelope.getHttpStatus())
                 .headers(headers)
                 .body(credentialEnvelope.getOid4vciCredentialJson());
     }

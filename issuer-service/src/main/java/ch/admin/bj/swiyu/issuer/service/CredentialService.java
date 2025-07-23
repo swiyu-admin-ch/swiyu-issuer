@@ -77,29 +77,10 @@ public class CredentialService {
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(
             DeferredCredentialRequestDto deferredCredentialRequest,
             String accessToken) {
-        CredentialOffer credentialOffer = getCredentialOfferByTransactionIdAndAccessToken(
-                deferredCredentialRequest.transactionId(),
-                accessToken);
 
-        // We have to check again that the Credential Status has not been changed to
-        // catch race condition between holder & issuer
-        if (credentialOffer.getCredentialStatus() != CredentialStatusType.READY) {
-            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued");
-        }
-
-        if (credentialOffer.hasTokenExpirationPassed()) {
-            log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
-            webhookService.produceErrorEvent(credentialOffer.getId(),
-                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
-                    "AccessToken expired, offer is stuck in READY");
-            throw OAuthException.invalidRequest("AccessToken expired.");
-        }
+        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest, accessToken);
 
         var credentialRequest = credentialOffer.getCredentialRequest();
-
-        if (isNull(credentialRequest)) {
-            throw new IllegalArgumentException("Credential Request is missing");
-        }
 
         // Get holder public key which was stored in the credential request
         Optional<String> holderJWK = credentialOffer.getHolderJWKs() != null ? Optional.of(credentialOffer.getHolderJWKs().getFirst()) : Optional.empty();
@@ -112,6 +93,35 @@ public class CredentialService {
                 .holderBinding(holderJWK)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredential();
+
+        credentialOffer.markAsIssued();
+
+        credentialOfferRepository.save(credentialOffer);
+        webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+
+        return vc;
+    }
+
+    @Transactional
+    public CredentialEnvelopeDto createCredentialFromDeferredRequestV2(
+            DeferredCredentialRequestDto deferredCredentialRequest,
+            String accessToken) {
+
+        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest, accessToken);
+
+        var credentialRequest = credentialOffer.getCredentialRequest();
+
+        // Get holder public key which was stored in the credential request
+        Optional<String> holderJWK = credentialOffer.getHolderJWKs() != null ? Optional.of(credentialOffer.getHolderJWKs().getFirst()) : Optional.empty();
+
+        CredentialEnvelopeDto vc = vcFormatFactory
+                // get first entry because we expect the list to only contain one item
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .holderBinding(holderJWK)
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredentialV2();
 
         credentialOffer.markAsIssued();
 
@@ -151,6 +161,33 @@ public class CredentialService {
                 .expiresIn(applicationProperties.getTokenTTL())
                 .cNonce(offer.getNonce().toString())
                 .build();
+    }
+
+    private CredentialOffer getAndValidateCredentialOfferForDeferred(DeferredCredentialRequestDto deferredCredentialRequest,
+                                                                     String accessToken) {
+        CredentialOffer credentialOffer = getCredentialOfferByTransactionIdAndAccessToken(
+                deferredCredentialRequest.transactionId(),
+                accessToken);
+
+        // We have to check again that the Credential Status has not been changed to
+        // catch race condition between holder & issuer
+        if (credentialOffer.getCredentialStatus() != CredentialStatusType.READY) {
+            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued");
+        }
+
+        if (credentialOffer.hasTokenExpirationPassed()) {
+            log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
+            webhookService.produceErrorEvent(credentialOffer.getId(),
+                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
+                    "AccessToken expired, offer is stuck in READY");
+            throw OAuthException.invalidRequest("AccessToken expired.");
+        }
+
+        if (isNull(credentialOffer.getCredentialRequest())) {
+            throw new IllegalArgumentException("Credential Request is missing");
+        }
+
+        return credentialOffer;
     }
 
     private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
