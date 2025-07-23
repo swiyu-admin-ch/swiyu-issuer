@@ -260,6 +260,7 @@ The Generic Issuer Agent is configured using environment variables.
 | METADATA_CONFIG_FILE                 | The OID4VCI Metadata as a json. Placeholder replacement is done as described in Config File Placeholders. For details on the OID4VCI Metadata consult the OID4VCI Specification.                                                                                                         |
 | SDJWT_KEY (Optional - See HSM)       | The private key used to sign SD-JWT Credentials. The matching public key must be published on the base registry for verification. - Not recommended.                                                                                                                                     |
 | DID_SDJWT_VERIFICATION_METHOD        | The full DID with fragment as used to find the public key for sd-jwt VCs in the DID Document. eg: `did:tdw:<base-registry-url>:<issuer_uuid>#<sd-jwt-public-key-fragment>`                                                                                                               |
+| MIN_DEFERRED_OFFER_WAITING_SECONDS   | For the deferred flow. Defines how long a wallet should wait, after receiving the transaction_id, until it tries to fetch the actual credential.                                                                                                                                         |
 
 #### Status List
 
