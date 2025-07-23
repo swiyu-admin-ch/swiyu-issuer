@@ -2,11 +2,19 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.KeyUse;
@@ -50,6 +58,8 @@ class IssuanceV2IT {
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired
     private ApplicationProperties applicationProperties;
+    @Autowired
+    private SdjwtProperties sdjwtProperties;
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -102,6 +112,45 @@ class IssuanceV2IT {
                 .andExpect(jsonPath("$.transaction_id").doesNotExist())
                 .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
+    }
+
+    @Test
+    void testSdJwtOffer_withResponseEncryption_thenSuccess() throws Exception {
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+
+        ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
+                .keyID("transportEncKeyEC")
+                .generate();
+
+        var responseEncryptionJson = String.format("""
+                {
+                    "alg": "%s",
+                    "enc": "%s",
+                    "jwk": %s
+                }
+                """, JWEAlgorithm.ECDH_ES_A128KW.getName(), EncryptionMethod.A128CBC_HS256.getName(), ecJWK.toPublicJWK().toJSONString());
+
+        // credential_response_encryption
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+        var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}", "university_example_sd_jwt", responseEncryptionJson, proof);
+
+        var response = requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/jwt"))
+                .andExpect(jsonPath("$").isNotEmpty())
+                .andReturn();
+
+        var jwe = JWEObject.parse(response.getResponse().getContentAsString());
+        jwe.decrypt(new ECDHDecrypter(ecJWK.toECPrivateKey()));
+        var jweContent = jwe.getPayload().toString();
+        JsonObject credentialResponse = JsonParser.parseString(jweContent).getAsJsonObject();
+        JsonArray credentials = credentialResponse.get("credentials").getAsJsonArray();
+        JsonObject credential = credentials.get(0).getAsJsonObject();
+        var vc = credential.get("credential").getAsString();
+
+        TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
     }
 
     private String getCredentialRequestString(Map<String, Object> tokenResponse, String configurationId) throws JOSEException {
