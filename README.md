@@ -568,14 +568,17 @@ erDiagram
     CREDENTIAL_OFFER {
         uuid id PK
         text credential_status
-        text metadata_credential_supported_id
+        array[text] metadata_credential_supported_id
         jsonb offer_data
         jsonb credential_metadata
         jsonb credential_request
         uuid transaction_id
-        text holder_jwk
+        array[text] holder_jwks
+        jsonb client_agent_info
         uuid holder_binding_nonce
         uuid access_token
+        uuid nonce
+        uuid pre_authorized_code
         integer offer_expiration_timestamp
         text credential_valid_from
         text credential_valid_until
