@@ -70,7 +70,7 @@ public class CredentialService {
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
         CredentialOffer credentialOffer = getCredentialOfferByAccessToken(accessToken);
 
-        return createCredentialEnvelopeDto(credentialOffer, credentialRequest, clientInfo);
+        return createCredentialEnvelopeDtoV2(credentialOffer, credentialRequest, clientInfo);
     }
 
     @Transactional
@@ -156,35 +156,7 @@ public class CredentialService {
     private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
-        if (!credentialOffer.getCredentialStatus().equals(CredentialStatusType.IN_PROGRESS)) {
-            log.info("Credential offer {} failed to create VC, as state was not IN_PROGRESS instead was {}",
-                    credentialOffer.getId(), credentialOffer.getCredentialStatus());
-            throw OAuthException.invalidGrant(String.format(
-                    "Offer is not valid anymore. The current offer state is %s." +
-                            "The user should probably contact the business issuer about this.",
-                    credentialOffer.getCredentialStatus()));
-        }
-
-        if (credentialOffer.hasTokenExpirationPassed()) {
-            log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
-            webhookService.produceErrorEvent(credentialOffer.getId(),
-                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
-                    "AccessToken expired, offer possibly stuck in IN_PROGRESS");
-            throw OAuthException.invalidRequest("AccessToken expired.");
-        }
-
-        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
-                credentialOffer.getMetadataCredentialSupportedId().getFirst());
-
-        if (!credentialConfiguration.getFormat().equals(credentialRequest.getFormat())) {
-            // This should only occur when the wallet has a bug
-            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT, "Mismatch between requested and offered format.");
-        }
-
-
-        if (credentialRequest.getCredentialConfigurationId() != null && credentialOffer.getMetadataCredentialSupportedId().getFirst().equals(credentialRequest.getCredentialConfigurationId())) {
-            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_TYPE, "Mismatch between requested and offered credential configuration id.");
-        }
+        validateCredentialRequest(credentialOffer, credentialRequest);
 
         var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(), applicationProperties.getAcceptableProofTimeWindowSeconds());
         Optional<ProofJwt> proofJwt = proofsJwt.isEmpty() ? Optional.empty() : Optional.of(proofsJwt.getFirst());
@@ -230,6 +202,87 @@ public class CredentialService {
         }
 
         return responseEnvelope;
+    }
+
+    private CredentialEnvelopeDto createCredentialEnvelopeDtoV2(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
+        validateCredentialRequest(credentialOffer, credentialRequest);
+
+        var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(), applicationProperties.getAcceptableProofTimeWindowSeconds());
+        Optional<ProofJwt> proofJwt = proofsJwt.isEmpty() ? Optional.empty() : Optional.of(proofsJwt.getFirst());
+
+        Optional<String> holderPublicKey;
+        try {
+            holderPublicKey = getHolderPublicKey(proofJwt, credentialOffer);
+        } catch (Oid4vcException e) {
+            webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
+                    e.getMessage());
+            throw e;
+        }
+
+        var vcBuilder = vcFormatFactory
+                // get first entry because we expect the list to only contain one item at the moment
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .holderBinding(holderPublicKey)
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId());
+
+        CredentialEnvelopeDto responseEnvelope;
+
+        if (credentialOffer.isDeferred()) {
+            var transactionId = UUID.randomUUID();
+
+            responseEnvelope = vcBuilder.buildDeferredCredentialV2(transactionId);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKey.map(List::of).orElseGet(List::of), clientInfo);
+            credentialOfferRepository.save(credentialOffer);
+            try {
+                var clientInfoString = objectMapper.writeValueAsString(clientInfo);
+                webhookService.produceDeferredEvent(credentialOffer.getId(), clientInfoString);
+            } catch (JsonProcessingException e) {
+                throw new JsonException("Error processing client info for deferred credential offer", e);
+            }
+        } else {
+            responseEnvelope = vcBuilder.buildCredentialV2();
+            credentialOffer.markAsIssued();
+            credentialOfferRepository.save(credentialOffer);
+            webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        }
+
+        return responseEnvelope;
+    }
+
+    private void validateCredentialRequest(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest) {
+        // We have to check again that the Credential Status has not been changed to
+        // catch race condition between holder & issuer
+        if (!credentialOffer.getCredentialStatus().equals(CredentialStatusType.IN_PROGRESS)) {
+            log.info("Credential offer {} failed to create VC, as state was not IN_PROGRESS instead was {}",
+                    credentialOffer.getId(), credentialOffer.getCredentialStatus());
+            throw OAuthException.invalidGrant(String.format(
+                    "Offer is not valid anymore. The current offer state is %s." +
+                            "The user should probably contact the business issuer about this.",
+                    credentialOffer.getCredentialStatus()));
+        }
+
+        if (credentialOffer.hasTokenExpirationPassed()) {
+            log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
+            webhookService.produceErrorEvent(credentialOffer.getId(),
+                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
+                    "AccessToken expired, offer possibly stuck in IN_PROGRESS");
+            throw OAuthException.invalidRequest("AccessToken expired.");
+        }
+
+        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst());
+
+        if (!credentialConfiguration.getFormat().equals(credentialRequest.getFormat())) {
+            // This should only occur when the wallet has a bug
+            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT, "Mismatch between requested and offered format.");
+        }
+
+
+        if (credentialRequest.getCredentialConfigurationId() != null && !credentialOffer.getMetadataCredentialSupportedId().getFirst().equals(credentialRequest.getCredentialConfigurationId())) {
+            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_TYPE, "Mismatch between requested and offered credential configuration id.");
+        }
     }
 
     private Optional<CredentialOffer> getNonExpiredCredentialOffer(Optional<CredentialOffer> credentialOffer) {

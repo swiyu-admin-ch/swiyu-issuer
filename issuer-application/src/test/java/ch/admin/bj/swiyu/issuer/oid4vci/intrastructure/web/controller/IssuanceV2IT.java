@@ -38,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class IssuanceV2IT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
+    private final UUID preAuthCode = UUID.randomUUID();
     private ECKey jwk;
     @Autowired
     private MockMvc mock;
@@ -60,6 +61,14 @@ class IssuanceV2IT {
                 .keyID("Test-Key")
                 .issueTime(new Date())
                 .generate();
+
+        var unboundOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt");
+        saveStatusListLinkedOffer(unboundOffer, testStatusList);
+        jwk = new ECKeyGenerator(Curve.P_256)
+                .keyUse(KeyUse.SIGNATURE)
+                .keyID("Test-Key")
+                .issueTime(new Date())
+                .generate();
     }
 
     @Test
@@ -71,7 +80,7 @@ class IssuanceV2IT {
 
         requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
-                .andExpect(content().contentType("application/vnd.api.v2+json"))
+                .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
                 .andExpect(jsonPath("$.transaction_id").doesNotExist())
                 .andExpect(jsonPath("$.interval").doesNotExist())
@@ -81,14 +90,14 @@ class IssuanceV2IT {
     @Test
     void testSdJwtOffer_withoutProof_thenSuccess() throws Exception {
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, preAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\"}", "university_example_sd_jwt");
+        var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\"}", "unbound_example_sd_jwt");
 
         // assumption if no proofs provided then only 1 credential is issued
         requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
-                .andExpect(content().contentType("application/vnd.api.v2+json"))
+                .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
                 .andExpect(jsonPath("$.transaction_id").doesNotExist())
                 .andExpect(jsonPath("$.interval").doesNotExist())

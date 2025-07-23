@@ -84,7 +84,7 @@ class DeferredIssuanceV2IT {
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
-                .andExpect(content().contentType("application/vnd.api.v2+json"))
+                .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").doesNotExist())
                 .andExpect(jsonPath("$.transaction_id").isNotEmpty())
                 .andExpect(jsonPath("$.interval").isNotEmpty())

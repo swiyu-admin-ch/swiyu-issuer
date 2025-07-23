@@ -133,7 +133,7 @@ public class IssuanceController {
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
 
-        return ResponseEntity.ok()
+        return ResponseEntity.status(credentialEnvelope.getHttpStatus())
                 .headers(headers)
                 .body(credentialEnvelope.getOid4vciCredentialJson());
     }
