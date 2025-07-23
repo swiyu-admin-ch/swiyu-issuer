@@ -293,31 +293,29 @@ The Generic Issuer Agent is configured using environment variables.
 
 Management Endpoints can be secured as OAuth2 Resource Server using Spring Security.
 
-For more details see the official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
+For more details see the
+official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
 
-For easy playground setup security starts deactivated. It is activated when the appropriate environment variables are set.
+For easy playground setup security starts deactivated. It is activated when the appropriate environment variables are
+set.
 
 ##### Fixed single asymmetric key
-| Variable         | Description                                                                                                                                                                                        | Type                                               |
-|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------| 
+
+| Variable                                                    | Description                                                                                                                                                                                        | Type                             |
+|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------| 
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_PUBLICKEYLOCATION | URI path to a single public key in pem format. [See Details](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#oauth2resourceserver-jwt-decoder-public-key) | URI eg: file:/app/public-key.pem |
- 
 
 ##### Authorization Server
-| Variable                                                | Description                                                                                                                                                                                                                                                                        | Type        |
-|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------| 
+
+| Variable                                                | Description                                                                                                                                                                                                                                                                        | Type         |
+|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------| 
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI     | URI to the issuer including path component. Will be resolved to <issuer-uri>/.well-known/openid-configuration to fetch the public key [See Details](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#_specifying_the_authorization_server) | URI / String |
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI     | URI directly to fetch directly the jwk-set instead of fetching the openid connect first.                                                                                                                                                                                           | URI / String |
-| SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWSALGORITHMS | List of algorithms supported for the key of the jkw-set. Defaults to only RS256.                                                                                                                                                                                                     | String |
+| SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWSALGORITHMS | List of algorithms supported for the key of the jkw-set. Defaults to only RS256.                                                                                                                                                                                                   | String       |
 
 Other properties as defined by spring can be used.
 
-
-
-
 Multitenancy is not supported.
-
-
 
 #### JWT Based Data Integrity
 
@@ -367,8 +365,9 @@ the [Sun PKCS11 provider](https://docs.oracle.com/en/java/javase/22/security/pkc
 specific option.
 Note that for creating the keys it is expected that the public key is provided as self-signed certificated.
 
-For vendor specific options it is necessary to provide the library in the java classpath. For this mount or add the necessary jars to the docker container.
-Provide the environment variable `JAVA_BOOTCLASSPATH` to the directory which should be added to the classpath. 
+For vendor specific options it is necessary to provide the library in the java classpath. For this mount or add the
+necessary jars to the docker container.
+Provide the environment variable `JAVA_BOOTCLASSPATH` to the directory which should be added to the classpath.
 
 | Variable                      | Description                                                                                                                                                                                |
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -535,14 +534,17 @@ erDiagram
     CREDENTIAL_OFFER {
         uuid id PK
         text credential_status
-        text metadata_credential_supported_id
+        array[text] metadata_credential_supported_id
         jsonb offer_data
         jsonb credential_metadata
         jsonb credential_request
         uuid transaction_id
-        text holder_jwk
+        array[text] holder_jwks
+        jsonb client_agent_info
         uuid holder_binding_nonce
         uuid access_token
+        uuid nonce
+        uuid pre_authorized_code
         integer offer_expiration_timestamp
         text credential_valid_from
         text credential_valid_until
@@ -724,7 +726,10 @@ Updates to the status registry will fail as long as the auth flow is not restart
 
 ## Missing Features and Known Issues
 
-The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. The [feature roadmap](https://github.com/orgs/swiyu-admin-ch/projects/1/views/7) shows the current discrepancies between Public Beta and the targeted productive Trust Infrastructure. There may still be minor bugs or security vulnerabilities in the test system. These are marked as [‘KnownIssues’](../../issues) in each repository.
+The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem
+participants. The [feature roadmap](https://github.com/orgs/swiyu-admin-ch/projects/1/views/7) shows the current
+discrepancies between Public Beta and the targeted productive Trust Infrastructure. There may still be minor bugs or
+security vulnerabilities in the test system. These are marked as [‘KnownIssues’](../../issues) in each repository.
 
 ## Contributions and feedback
 
