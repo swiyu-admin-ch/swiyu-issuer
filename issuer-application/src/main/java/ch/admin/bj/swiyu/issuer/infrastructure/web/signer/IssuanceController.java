@@ -120,7 +120,7 @@ public class IssuanceController {
     }
 
     @Timed
-    @PostMapping(value = {"/credential"}, consumes = {"application/vnd.api.v2+json"}, produces = {"application/vnd.api.v2+json"})
+    @PostMapping(value = {"/credential"}, consumes = {"application/vnd.api.v2+json"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
     @Operation(summary = "Collect credential associated with the bearer token with the requested credential properties.")
     @SecurityRequirement(name = "Bearer Authentication")
     public Object createCredentialV2(@RequestHeader("Authorization") String bearerToken,

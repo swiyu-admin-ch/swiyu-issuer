@@ -10,6 +10,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import com.nimbusds.jose.jwk.JWKSet;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -42,7 +43,8 @@ public class ApplicationProperties {
     private Long offerValidity;
 
     @NotNull
-    private Long minDeferredOfferWaitingSeconds;
+    @Min(value = 5, message = "Minimal deferred offer interval must be at least 5 seconds")
+    private Long minDeferredOfferIntervalSeconds;
 
     /**
      * List of DIDs of Attestation Providers deemed trustworthy for verifying the Key Attestation.

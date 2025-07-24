@@ -83,7 +83,7 @@ public abstract class CredentialBuilder {
     }
 
     public CredentialEnvelopeDto buildDeferredCredentialV2(UUID transactionId) {
-        var credentialResponseDtoV2 = new CredentialResponseDtoV2(null, transactionId.toString(), applicationProperties.getMinDeferredOfferWaitingSeconds());
+        var credentialResponseDtoV2 = new CredentialResponseDtoV2(null, transactionId.toString(), applicationProperties.getMinDeferredOfferIntervalSeconds());
 
         return buildEnvelopeDto(credentialResponseDtoV2, HttpStatus.ACCEPTED);
     }
