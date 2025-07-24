@@ -160,7 +160,7 @@ class DeferredIssuanceV2IT {
         assertFalse(deferredCredential.has("credentials"));
         assertTrue(deferredCredential.has("transaction_id"));
         assertTrue(deferredCredential.has("interval"));
-        assertEquals(applicationProperties.getMinDeferredOfferWaitingSeconds(), deferredCredential.get("interval").getAsLong());
+        assertEquals(applicationProperties.getMinDeferredOfferIntervalSeconds(), deferredCredential.get("interval").getAsLong());
 
         // check status from business issuer perspective
         mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offer.getId(), CredentialStatusTypeDto.READY.name()))
