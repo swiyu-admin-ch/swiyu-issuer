@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest
 @Testcontainers
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-class NonceServiceTest {
+class NonceServiceIT {
     @Autowired
     private ApplicationProperties applicationProperties;
 
