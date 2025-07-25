@@ -38,7 +38,7 @@ public class CredentialOfferMapper {
                 toCredentialStatusTypeDto(credential.getCredentialStatus()),
                 credential.getMetadataCredentialSupportedId(),
                 credential.getCredentialMetadata(),
-                credential.getHolderJWK(),
+                credential.getHolderJWKs() != null ? credential.getHolderJWKs().getFirst() : null,
                 toClientAgentInfoDto(credential.getClientAgentInfo()),
                 credential.getOfferExpirationTimestamp(),
                 credential.getCredentialValidFrom(),
