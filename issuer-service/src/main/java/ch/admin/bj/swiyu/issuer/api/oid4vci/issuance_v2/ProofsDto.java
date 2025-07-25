@@ -7,7 +7,6 @@ import java.util.List;
 
 /**
  * ProofsDto represents the proofs object in the OID4VCI Credential Request.
- * TODO At the moment only the jwt part is implemented
  *
  * @param jwt see: <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#proof-types">...</a>
  */
