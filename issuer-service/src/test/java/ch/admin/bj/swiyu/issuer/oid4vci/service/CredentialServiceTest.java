@@ -250,7 +250,7 @@ class CredentialServiceTest {
                 Map.of("deferred", true),
                 UUID.randomUUID());
 
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(credentialOffer.getTransactionId(), new HashMap<>());
+        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(credentialOffer.getTransactionId());
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
@@ -269,7 +269,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         UUID accessToken = UUID.randomUUID();
 
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId, new HashMap<>());
+        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId);
 
         CredentialOffer credentialOffer = getCredentialOffer(
                 CredentialStatusType.DEFERRED,
@@ -297,7 +297,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         UUID accessToken = UUID.randomUUID();
 
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId, new HashMap<>());
+        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId);
 
         CredentialOffer credentialOffer = getCredentialOffer(
                 CredentialStatusType.READY,
@@ -327,7 +327,7 @@ class CredentialServiceTest {
         assertEquals(CredentialStatusType.ISSUED, credentialOffer.getCredentialStatus());
         assertNull(credentialOffer.getOfferData());
         assertNull(credentialOffer.getTransactionId());
-        assertNull(credentialOffer.getHolderJWK());
+        assertNull(credentialOffer.getHolderJWKs());
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);

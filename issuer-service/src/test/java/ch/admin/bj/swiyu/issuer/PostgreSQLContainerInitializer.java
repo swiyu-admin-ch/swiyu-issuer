@@ -15,7 +15,7 @@ public class PostgreSQLContainerInitializer implements ApplicationContextInitial
     private static PostgreSQLContainer<?> getDatabase() {
         if (database == null) {
             database = new PostgreSQLContainer<>(
-                    DockerImageName.parse("postgres:15.13")
+                    DockerImageName.parse("postgres:15.8")
             );
             database.start();
             log.info("PostgreSQL container started at: {}", database.getJdbcUrl());

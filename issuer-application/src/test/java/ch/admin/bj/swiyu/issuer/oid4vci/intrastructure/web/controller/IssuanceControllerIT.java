@@ -29,7 +29,6 @@ import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -126,13 +125,6 @@ class IssuanceControllerIT {
                 .keyID("Test-Key")
                 .issueTime(new Date())
                 .generate();
-    }
-
-    @AfterEach
-    void tearDown() {
-        credentialOfferStatusRepository.deleteAll();
-        credentialOfferRepository.deleteAll();
-        statusListRepository.deleteAll();
     }
 
     @Test
