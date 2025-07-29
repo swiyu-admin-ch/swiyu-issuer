@@ -20,6 +20,8 @@ import org.springframework.web.client.RestClientResponseException;
 import java.time.Instant;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toCredentialStatusTypeDto;
+
 /**
  * Service collecting functions for the Webhook functionality.
  */
@@ -33,7 +35,7 @@ public class WebhookService {
 
     @Transactional
     public void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusType state) {
-        createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, state.getDisplayName(), null);
+        createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null);
     }
 
     @Transactional

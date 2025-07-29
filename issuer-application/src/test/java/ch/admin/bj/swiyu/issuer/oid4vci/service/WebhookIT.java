@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.service;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
+import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.service.WebhookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,7 +78,7 @@ class WebhookIT {
         Assertions.assertThat(request.getMethod()).isEqualTo("POST");
         Assertions.assertThat(request.getHeader(API_KEY_HEADER)).isEqualTo(API_KEY_VALUE);
         var dto = objectMapper.readValue(request.getBody().readByteArray(), WebhookCallbackDto.class);
-        Assertions.assertThat(dto.getEvent()).isEqualTo(CredentialStatusType.ISSUED.getDisplayName());
+        Assertions.assertThat(dto.getEvent()).isEqualTo(CredentialStatusTypeDto.ISSUED.name());
         Assertions.assertThat(dto.getEventType()).isEqualTo(CallbackEventTypeDto.VC_STATUS_CHANGED);
         // When triggered again, should not send a callback again
         // We need to enqueue a possible successful response, if we should receive a request
