@@ -118,7 +118,7 @@ class DeferredIssuanceV2IT {
         mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
                         .contentType("application/json")
-                        .header("SWIYU-API-VERSION", "2")
+                        .header("SWIYU-API-Version", "2")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
@@ -174,7 +174,7 @@ class DeferredIssuanceV2IT {
 
         var credentialsWrapperResponse = mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
-                        .header("SWIYU-API-VERSION", "2")
+                        .header("SWIYU-API-Version", "2")
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isOk())
@@ -211,7 +211,7 @@ class DeferredIssuanceV2IT {
     private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
         return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
-                .header("SWIYU-API-VERSION", "2")
+                .header("SWIYU-API-Version", "2")
                 .contentType("application/json")
                 .content(credentialRequestString)
         );

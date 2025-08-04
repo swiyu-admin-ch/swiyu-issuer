@@ -172,7 +172,7 @@ class IssuanceV2IT {
         return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
                 .contentType("application/json")
-                .header("SWIYU-API-VERSION", "2")
+                .header("SWIYU-API-Version", "2")
                 .content(credentialRequestString)
         );
     }

@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.DeferredDataDtoV2;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.service.CredentialService;
@@ -16,8 +17,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -107,10 +111,61 @@ public class IssuanceController {
 
     @Timed
     @PostMapping(value = {"/credential"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
-    @Operation(summary = "Collect credential associated with the bearer token with the requested credential properties.")
+    @Operation(
+            summary = "Collect credential associated with the bearer token with the requested credential properties.",
+            description = "Issues a credential for a given bearer token and credential request. Supports API versioning via SWIYU-API-Version header. Returns the issued credential in JSON or JWT format.",
+            parameters = {
+                    @Parameter(
+                            name = "Authorization",
+                            description = "Bearer token for authentication. Format: 'Bearer ...",
+                            required = true,
+                            in = ParameterIn.HEADER
+                    ),
+                    @Parameter(
+                            name = "SWIYU-API-Version",
+                            description = "Optional API version, set to '2' for v2 requests",
+                            in = ParameterIn.HEADER
+                    )
+            },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = {
+                            @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(oneOf = {CredentialRequestDto.class, CredentialRequestDtoV2.class})
+                            )
+                    }
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential issued successfully.",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = CredentialEnvelopeDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential issued successfully with encryption.",
+                            content = @Content(
+                                    mediaType = "application/jwt",
+                                    schema = @Schema(implementation = String.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "202",
+                            description = "Successful deferred credential. The credential will be issued later",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(oneOf = {DeferredDataDto.class, DeferredDataDtoV2.class})
+                            )
+                    )
+            }
+    )
     @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
-                                                   @RequestHeader(name = "SWIYU-API-VERSION", required = false) String version,
+                                                   @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
                                                    @NotNull @RequestBody String requestDto,
                                                    HttpServletRequest request) throws JsonProcessingException {
 
@@ -140,9 +195,51 @@ public class IssuanceController {
 
     @Timed
     @PostMapping(value = {"/deferred_credential"}, consumes = {"application/json"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
-    @Operation(summary = "Collect credential associated with the bearer token and the transaction id. This endpoint is used for deferred issuance.")
+    @Operation(
+            summary = "Collect credential associated with the bearer token and the transaction id. This endpoint is used for deferred issuance.",
+            description = "Issues a credential for a deferred transaction. Requires a valid bearer token and transaction details in the request body.",
+            parameters = {
+                    @Parameter(
+                            name = "Authorization",
+                            description = "Bearer token for authentication",
+                            required = true,
+                            in = ParameterIn.HEADER
+                    ),
+                    @Parameter(
+                            name = "SWIYU-API-Version",
+                            description = "Optional API version, set to '2' for v2 requests",
+                            in = ParameterIn.HEADER
+                    )
+            },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(oneOf = {DeferredCredentialRequestDto.class, DeferredDataDtoV2.class})
+                            )
+                    }
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential issued successfully",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = CredentialEnvelopeDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid request or validation error"
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Unauthorized"
+                    )
+            }
+    )
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
-                                                           @RequestHeader(name = "SWIYU-API-VERSION", required = false) String version,
+                                                           @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
                                                            @NotNull @RequestBody String deferredCredentialRequestDto) throws JsonProcessingException {
 
         CredentialEnvelopeDto credentialEnvelope;
