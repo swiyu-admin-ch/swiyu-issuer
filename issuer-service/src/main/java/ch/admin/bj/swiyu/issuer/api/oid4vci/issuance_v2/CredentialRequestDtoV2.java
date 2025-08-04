@@ -37,10 +37,11 @@ public record CredentialRequestDtoV2(
         @Schema(description = """
                 Optional object providing information how to encrypt the Credential Response, if present.
                 """, example = """
-                "credential_response_encryption": {
+                {
                    "alg": "ECDH-ES+A128KW",
                    "enc": "A128CBC-HS256",
-                   "jwk": {"kty":"EC","crv":"P-256","kid":"transportEncKeyEC","x":"DTaouFJpyVkLvfhoOvuTDR6_nmTt7YTvEHsHzK0Ingk","y":"vOipfo61Sy64XpneRyR5g6NCGXLv_Q7f3-kEDMT-G9U"}
+                   "jwk": {"kty":"EC","crv":"P-256","kid":"transportEncKeyEC","x":"DTaouFJpyVkLvfhoOvuTDR6_nmTt7YTvEHsHzK0Ingk","y":"vOipfo61Sy64XpneRyR5g6NCGXLv_Q7f3-kEDMT-G9U"
+                }
                 """)
         @JsonProperty("credential_response_encryption")
         CredentialResponseEncryptionDto credentialResponseEncryption

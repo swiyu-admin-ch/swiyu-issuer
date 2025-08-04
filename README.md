@@ -221,7 +221,7 @@ swiyu:
 To start the application locally you can run:
 
 ```shell
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn -f issuer-application  spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 Note: This spins up a local PostgreSQL database via docker. Once running, Openapi-Documentation can be
@@ -711,6 +711,22 @@ If this is the case you need to manually create a new refresh token in the api s
 issuer agent managment component with this token.  
 The application does log an appropriate error if it detects such an issue but will still start up.  
 Updates to the status registry will fail as long as the auth flow is not restarted with a valid bootstrap token.
+
+### Latest development
+
+The current default implementation of the issuer agent management component is based on
+the [OID4VCI specs DRAFT 13](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html).
+But there are already some features from
+the [OID4VCI specs DRAFT 16](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) implemented for
+example the:
+
+* new credential-endpoint (with corresponding response)
+  defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-endpoint)
+* new deferred credential endpoint
+  defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin)
+
+These endpoints can be used if the custom header `SWIYU-API-Version=2` is set in the request. These endpoints are not
+yet pentested.
 
 #### Setup a local environment
 
