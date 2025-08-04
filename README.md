@@ -43,6 +43,7 @@ flowchart LR
     iss ---> isdb
     wallet --Web Access--> iss
 ```
+
 A possible deployment configuration of the issuer service. Issuer Business System as well as API
 
 # Deployment
@@ -172,13 +173,17 @@ of [SD-JWT-based Verifiable Credentials](https://datatracker.ietf.org/doc/draft-
 compatibility with other ecosystem participants, please use the adoptions as shown in the swiss profile.
 
 ### Deployment considerations
-Please note that by default configuration the issuer service is set up in a way to easily gain experience with the issuance process,
-not as a productive deployment. With the configurations found bellow, it can be configured and set up for productive use.
 
-We recommend to not expose the service directly to the web. The focus of the application lies in the functionality of the issuance.
+Please note that by default configuration the issuer service is set up in a way to easily gain experience with the
+issuance process,
+not as a productive deployment. With the configurations found bellow, it can be configured and set up for productive
+use.
+
+We recommend to not expose the service directly to the web. The focus of the application lies in the functionality of
+the issuance.
 Using API Gateway or Web Application Firewall can decrease the attack surface significantly.
 
-To prevent misuse, the management endpoints should be protected by either by network infrastructure (for example mTLS) 
+To prevent misuse, the management endpoints should be protected by either by network infrastructure (for example mTLS)
 or using OAuth.
 
 ```mermaid
@@ -196,7 +201,6 @@ flowchart LR
     issint --Get OAuth2.0 Token--> auth
     iss --Validate OAuth2.0 Token--> auth
 ```
-
 
 # Development
 
@@ -323,31 +327,29 @@ The Generic Issuer Agent is configured using environment variables.
 
 Management Endpoints can be secured as OAuth2 Resource Server using Spring Security.
 
-For more details see the official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
+For more details see the
+official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
 
-For easy playground setup security starts deactivated. It is activated when the appropriate environment variables are set.
+For easy playground setup security starts deactivated. It is activated when the appropriate environment variables are
+set.
 
 ##### Fixed single asymmetric key
-| Variable         | Description                                                                                                                                                                                        | Type                                               |
-|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------| 
+
+| Variable                                                    | Description                                                                                                                                                                                        | Type                             |
+|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------| 
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_PUBLICKEYLOCATION | URI path to a single public key in pem format. [See Details](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#oauth2resourceserver-jwt-decoder-public-key) | URI eg: file:/app/public-key.pem |
- 
 
 ##### Authorization Server
-| Variable                                                | Description                                                                                                                                                                                                                                                                        | Type        |
-|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------| 
+
+| Variable                                                | Description                                                                                                                                                                                                                                                                        | Type         |
+|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------| 
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI     | URI to the issuer including path component. Will be resolved to <issuer-uri>/.well-known/openid-configuration to fetch the public key [See Details](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#_specifying_the_authorization_server) | URI / String |
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI     | URI directly to fetch directly the jwk-set instead of fetching the openid connect first.                                                                                                                                                                                           | URI / String |
-| SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWSALGORITHMS | List of algorithms supported for the key of the jkw-set. Defaults to only RS256.                                                                                                                                                                                                     | String |
+| SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWSALGORITHMS | List of algorithms supported for the key of the jkw-set. Defaults to only RS256.                                                                                                                                                                                                   | String       |
 
 Other properties as defined by spring can be used.
 
-
-
-
 Multitenancy is not supported.
-
-
 
 #### JWT Based Data Integrity
 
@@ -397,8 +399,9 @@ the [Sun PKCS11 provider](https://docs.oracle.com/en/java/javase/22/security/pkc
 specific option.
 Note that for creating the keys it is expected that the public key is provided as self-signed certificated.
 
-For vendor specific options it is necessary to provide the library in the java classpath. For this mount or add the necessary jars to the docker container.
-Provide the environment variable `JAVA_BOOTCLASSPATH` to the directory which should be added to the classpath. 
+For vendor specific options it is necessary to provide the library in the java classpath. For this mount or add the
+necessary jars to the docker container.
+Provide the environment variable `JAVA_BOOTCLASSPATH` to the directory which should be added to the classpath.
 
 | Variable                      | Description                                                                                                                                                                                |
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -656,7 +659,11 @@ sequenceDiagram
 
             alt STATUS is Deferred
                 BUSINESS->>BUSINESS : Some additional process
-                BUSINESS->>+ISS : Set status READY
+                alt offer data is already set
+                    BUSINESS->>+ISS : Set status READY
+                else
+                    BUSINESS->>+ISS : Set offer data (STATUS is set to READY)
+                end
                 ISS->>DB : Store offer
                 ISS-->>-BUSINESS : 
             end
@@ -686,8 +693,15 @@ sequenceDiagram
         ISS->>+DB : Remove offer data
         ISS-->>-BUSINESS : Status
     end
-
 ```
+
+> [!NOTE]  
+> If you use the deferred flow, you need to set the `deferred: true` in the `credentialMetadata` of the credential offer
+> request.
+
+The credential offer data is not required when the deferred flow is used. It can be set on a later point in time with
+the `patch /management/api/credentials/{credentialId}` endpoint. This endpoint also changes the status from `DEFERRED`
+to `READY`.
 
 ## Credential Status
 
@@ -754,7 +768,10 @@ Updates to the status registry will fail as long as the auth flow is not restart
 
 ## Missing Features and Known Issues
 
-The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. The [feature roadmap](https://github.com/orgs/swiyu-admin-ch/projects/1/views/7) shows the current discrepancies between Public Beta and the targeted productive Trust Infrastructure. There may still be minor bugs or security vulnerabilities in the test system. These are marked as [‘KnownIssues’](../../issues) in each repository.
+The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem
+participants. The [feature roadmap](https://github.com/orgs/swiyu-admin-ch/projects/1/views/7) shows the current
+discrepancies between Public Beta and the targeted productive Trust Infrastructure. There may still be minor bugs or
+security vulnerabilities in the test system. These are marked as [‘KnownIssues’](../../issues) in each repository.
 
 ## Contributions and feedback
 
