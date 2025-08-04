@@ -7,7 +7,7 @@
 # Docker Compose for running a DB locally
 services:
   postgres:
-    image: postgres:15.8-alpine
+    image: postgres:15-alpine
     environment:
       POSTGRES_USER: "issuer_mgmt_user"
       POSTGRES_PASSWORD: "secret"

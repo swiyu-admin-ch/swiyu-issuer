@@ -6,6 +6,8 @@ SPDX-License-Identifier: MIT
 
 ![github-banner](https://github.com/swiyu-admin-ch/swiyu-admin-ch.github.io/blob/main/assets/images/github-banner.jpg)
 
+# Warning - This Version is work in progress and NOT PEN-TESTED
+
 # Generic issuer service
 
 This software is a web server implementing the technical standards as specified in
@@ -34,13 +36,14 @@ instance of the service.
 ```mermaid
 flowchart LR
     issint[\Issuer Business System\]
-    iss(Issuer Agent)
+    iss(Issuer Service)
     isdb[(Postgres)]
     wallet[Wallet]
     issint --Internal Network--> iss
     iss ---> isdb
     wallet --Web Access--> iss
 ```
+A possible deployment configuration of the issuer service. Issuer Business System as well as API
 
 # Deployment
 
@@ -167,6 +170,33 @@ the [swiss profile](https://github.com/e-id-admin/open-source-community/blob/mai
 and the latest version
 of [SD-JWT-based Verifiable Credentials](https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/). For
 compatibility with other ecosystem participants, please use the adoptions as shown in the swiss profile.
+
+### Deployment considerations
+Please note that by default configuration the issuer service is set up in a way to easily gain experience with the issuance process,
+not as a productive deployment. With the configurations found bellow, it can be configured and set up for productive use.
+
+We recommend to not expose the service directly to the web. The focus of the application lies in the functionality of the issuance.
+Using API Gateway or Web Application Firewall can decrease the attack surface significantly.
+
+To prevent misuse, the management endpoints should be protected by either by network infrastructure (for example mTLS) 
+or using OAuth.
+
+```mermaid
+flowchart LR
+    issint[\Issuer Business System\]
+    iss(Issuer Service)
+    isdb[(Postgres)]
+    wallet[Wallet]
+    apigw[\API Gateway\]
+    auth[\Authentication Server\]
+    issint --Internal network calls--> iss
+    iss ---> isdb
+    wallet --Web calls--> apigw
+    apigw --Filtered calls--> iss
+    issint --Get OAuth2.0 Token--> auth
+    iss --Validate OAuth2.0 Token--> auth
+```
+
 
 # Development
 

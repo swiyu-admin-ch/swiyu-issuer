@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -124,7 +125,8 @@ public class CredentialOffer {
     /**
      * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
      */
-    private long tokenExpirationTimestamp;
+    @Nullable
+    private Long tokenExpirationTimestamp;
 
     /**
      * Value used in the holder binding process to prevent replay attacks
