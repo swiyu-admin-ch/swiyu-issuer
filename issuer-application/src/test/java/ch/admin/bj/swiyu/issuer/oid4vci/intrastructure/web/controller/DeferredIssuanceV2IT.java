@@ -106,7 +106,7 @@ class DeferredIssuanceV2IT {
 
         // check status from business issuer perspective
         mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offer.getId(), CredentialStatusTypeDto.READY.name()))
-                        .contentType("application/vnd.api.v2+json"))
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("READY"))
                 .andReturn();
@@ -117,7 +117,8 @@ class DeferredIssuanceV2IT {
 
         mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
-                        .contentType("application/vnd.api.v2+json")
+                        .contentType("application/json")
+                        .header("SWIYU-API-VERSION", "2")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
@@ -164,7 +165,7 @@ class DeferredIssuanceV2IT {
 
         // check status from business issuer perspective
         mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offer.getId(), CredentialStatusTypeDto.READY.name()))
-                        .contentType("application/vnd.api.v2+json"))
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("READY"))
                 .andReturn();
@@ -173,7 +174,8 @@ class DeferredIssuanceV2IT {
 
         var credentialsWrapperResponse = mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
-                        .contentType("application/vnd.api.v2+json")
+                        .header("SWIYU-API-VERSION", "2")
+                        .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/jwt"))
@@ -209,7 +211,8 @@ class DeferredIssuanceV2IT {
     private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
         return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
-                .contentType("application/vnd.api.v2+json")
+                .header("SWIYU-API-VERSION", "2")
+                .contentType("application/json")
                 .content(credentialRequestString)
         );
     }

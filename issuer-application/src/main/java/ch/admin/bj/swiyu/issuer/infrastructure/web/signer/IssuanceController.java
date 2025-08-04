@@ -12,6 +12,8 @@ import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.service.CredentialService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,16 +21,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -50,6 +54,8 @@ public class IssuanceController {
 
     private final CredentialService credentialService;
     private final NonceService nonceService;
+    private final Validator validator;
+    private final ObjectMapper objectMapper;
 
     @Timed
     @PostMapping(value = {"/token"},
@@ -104,31 +110,25 @@ public class IssuanceController {
     @Operation(summary = "Collect credential associated with the bearer token with the requested credential properties.")
     @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
-                                                   @Validated @RequestBody CredentialRequestDto credentialRequestDto,
-                                                   HttpServletRequest request) {
+                                                   @RequestHeader(name = "SWIYU-API-VERSION", required = false) String version,
+                                                   @NotNull @RequestBody String requestDto,
+                                                   HttpServletRequest request) throws JsonProcessingException {
 
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
         var clientInfo = getClientAgentInfo(request);
 
-        var credentialEnvelope = credentialService.createCredential(credentialRequestDto, getAccessToken(bearerToken), clientInfo);
+        CredentialEnvelopeDto credentialEnvelope;
 
-        var headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(credentialEnvelope.getOid4vciCredentialJson());
-    }
+        if (version != null && version.equals("2")) {
+            var dto = objectMapper.readValue(requestDto, CredentialRequestDtoV2.class);
+            validateRequestDtoOrThrow(dto, validator);
+            credentialEnvelope = credentialService.createCredentialV2(dto, getAccessToken(bearerToken), clientInfo);
+        } else {
+            var dto = objectMapper.readValue(requestDto, CredentialRequestDto.class);
+            validateRequestDtoOrThrow(dto, validator);
 
-    @Timed
-    @PostMapping(value = {"/credential"}, consumes = {"application/vnd.api.v2+json"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
-    @Operation(summary = "Collect credential associated with the bearer token with the requested credential properties.")
-    @SecurityRequirement(name = "Bearer Authentication")
-    public Object createCredentialV2(@RequestHeader("Authorization") String bearerToken,
-                                     @Validated @RequestBody CredentialRequestDtoV2 requestDto,
-                                     HttpServletRequest request) {
-
-        var clientInfo = getClientAgentInfo(request);
-        var credentialEnvelope = credentialService.createCredentialV2(requestDto, getAccessToken(bearerToken), clientInfo);
+            credentialEnvelope = credentialService.createCredential(dto, getAccessToken(bearerToken), clientInfo);
+        }
 
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
@@ -142,24 +142,21 @@ public class IssuanceController {
     @PostMapping(value = {"/deferred_credential"}, consumes = {"application/json"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
     @Operation(summary = "Collect credential associated with the bearer token and the transaction id. This endpoint is used for deferred issuance.")
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
-                                                           @Valid @RequestBody DeferredCredentialRequestDto deferredCredentialRequestDto) {
+                                                           @RequestHeader(name = "SWIYU-API-VERSION", required = false) String version,
+                                                           @NotNull @RequestBody String deferredCredentialRequestDto) throws JsonProcessingException {
 
-        var credentialEnvelope = credentialService.createCredentialFromDeferredRequest(deferredCredentialRequestDto, getAccessToken(bearerToken));
+        CredentialEnvelopeDto credentialEnvelope;
 
-        var headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(credentialEnvelope.getOid4vciCredentialJson());
-    }
+        if (version != null && version.equals("2")) {
+            var dto = objectMapper.readValue(deferredCredentialRequestDto, DeferredCredentialRequestDto.class);
+            validateRequestDtoOrThrow(dto, validator);
+            credentialEnvelope = credentialService.createCredentialFromDeferredRequestV2(dto, getAccessToken(bearerToken));
+        } else {
+            var dto = objectMapper.readValue(deferredCredentialRequestDto, DeferredCredentialRequestDto.class);
+            validateRequestDtoOrThrow(dto, validator);
 
-    @Timed
-    @PostMapping(value = {"/deferred_credential"}, consumes = {"application/vnd.api.v2+json"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
-    @Operation(summary = "Collect credential associated with the bearer token and the transaction id. This endpoint is used for deferred issuance.")
-    public ResponseEntity<String> createDeferredCredentialV2(@RequestHeader("Authorization") String bearerToken,
-                                                             @Valid @RequestBody DeferredCredentialRequestDto deferredCredentialRequestDto) {
-
-        var credentialEnvelope = credentialService.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, getAccessToken(bearerToken));
+            credentialEnvelope = credentialService.createCredentialFromDeferredRequest(dto, getAccessToken(bearerToken));
+        }
 
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
@@ -189,5 +186,16 @@ public class IssuanceController {
                 request.getHeader("accept-language"),
                 request.getHeader("accept-encoding")
         );
+    }
+
+    private <T> void validateRequestDtoOrThrow(T dto, Validator validator) {
+        Set<ConstraintViolation<T>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (ConstraintViolation<T> constraintViolation : violations) {
+                sb.append(String.format("%s: %s", constraintViolation.getPropertyPath(), constraintViolation.getMessage()));
+            }
+            throw new ConstraintViolationException(sb.toString(), violations);
+        }
     }
 }
