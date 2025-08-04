@@ -171,7 +171,8 @@ class IssuanceV2IT {
     private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
         return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
-                .contentType("application/vnd.api.v2+json")
+                .contentType("application/json")
+                .header("SWIYU-API-VERSION", "2")
                 .content(credentialRequestString)
         );
     }
