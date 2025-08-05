@@ -50,6 +50,9 @@ public class IssuerMetadataTechnical {
     @Valid
     private IssuerCredentialResponseEncryption responseEncryption;
 
+    @JsonProperty("batch_credential_issuance")
+    private CatchCredentialIssuance batchCredentialIssuance;
+
     @JsonProperty("version")
     @NotNull
     @Pattern(regexp = "^1\\.0$", message = "Only version 1.0 is supported")

@@ -9,7 +9,6 @@ package ch.admin.bj.swiyu.issuer.oid4vci.service;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
@@ -50,13 +49,11 @@ class CredentialServiceTest {
     @BeforeEach
     void setUp() {
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
-        OpenIdIssuerConfiguration openIdIssuerConfiguration = Mockito.mock(OpenIdIssuerConfiguration.class);
-        NonceService nonceService = Mockito.mock(NonceService.class);
         statusListService = Mockito.mock(StatusListService.class);
         issuerMetadata = Mockito.mock(IssuerMetadataTechnical.class);
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
-        KeyAttestationService keyAttestationService = Mockito.mock(KeyAttestationService.class);
+        HolderBindingService holderBindingService = Mockito.mock(HolderBindingService.class);
         webhookService = Mockito.mock(WebhookService.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
 
@@ -67,9 +64,7 @@ class CredentialServiceTest {
                 credentialFormatFactory,
                 applicationProperties,
                 webhookService,
-                openIdIssuerConfiguration,
-                nonceService,
-                keyAttestationService
+                holderBindingService
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
@@ -210,7 +205,7 @@ class CredentialServiceTest {
         when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialResponseEncryption(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.holderBinding(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
 
@@ -317,7 +312,7 @@ class CredentialServiceTest {
         when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialResponseEncryption(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.holderBinding(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
 
         // Act

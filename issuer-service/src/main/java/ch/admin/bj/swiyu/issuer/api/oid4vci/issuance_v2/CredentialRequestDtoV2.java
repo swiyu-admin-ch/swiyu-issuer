@@ -46,4 +46,8 @@ public record CredentialRequestDtoV2(
         @JsonProperty("credential_response_encryption")
         CredentialResponseEncryptionDto credentialResponseEncryption
 ) {
+
+    public boolean hasProofs() {
+        return proofs != null && proofs.jwt() != null && !proofs.jwt().isEmpty();
+    }
 }

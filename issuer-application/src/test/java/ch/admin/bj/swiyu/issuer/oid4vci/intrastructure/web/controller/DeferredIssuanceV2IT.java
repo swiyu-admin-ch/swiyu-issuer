@@ -20,26 +20,26 @@ import com.nimbusds.jose.JWEObject;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
-import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -82,11 +82,7 @@ class DeferredIssuanceV2IT {
 
         offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", deferredMetadata);
         saveStatusListLinkedOffer(offer, testStatusList);
-        jwk = new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID("Test-Key")
-                .issueTime(new Date())
-                .generate();
+        jwk = createPrivateKeyV2("Test-Key");
     }
 
     @Test
@@ -94,9 +90,9 @@ class DeferredIssuanceV2IT {
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestStringV2(mock, List.of(jwk), applicationProperties);
 
-        var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
+        var deferredCredentialResponse = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").doesNotExist())
@@ -115,7 +111,7 @@ class DeferredIssuanceV2IT {
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(deferredDataDto.transactionId().toString());
 
-        mock.perform(post("/oid4vci/api/deferred_credential")
+        var response = mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
                         .contentType("application/json")
                         .header("SWIYU-API-Version", "2")
@@ -126,6 +122,66 @@ class DeferredIssuanceV2IT {
                 .andExpect(jsonPath("$.transaction_id").doesNotExist())
                 .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
+
+        var credentials = extractCredentialsV2(response);
+
+        assertEquals(1, credentials.size());
+        var credential = credentials.get(0).getAsJsonObject();
+        var credentialString = credential.get("credential").getAsString();
+        testHolderBindingV2(credentialString, jwk);
+    }
+
+
+    @Test
+    void testDeferredOffer_withMultipleProofs_thenSuccess() throws Exception {
+
+        var numberOfProofs = 3;
+
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+
+        var deferredCredentialResponse = requestCredentialV2(mock, (String) token, credentialRequestString)
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.credentials").doesNotExist())
+                .andExpect(jsonPath("$.transaction_id").isNotEmpty())
+                .andExpect(jsonPath("$.interval").isNotEmpty())
+                .andReturn();
+
+        // check status from business issuer perspective
+        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offer.getId(), CredentialStatusTypeDto.READY.name()))
+                        .header("SWIYU-API-Version", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("READY"))
+                .andReturn();
+
+        DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
+
+        String deferredCredentialRequestString = getDeferredCredentialRequestString(deferredDataDto.transactionId().toString());
+
+        var response = mock.perform(post("/oid4vci/api/deferred_credential")
+                        .header("Authorization", String.format("BEARER %s", token))
+                        .header("SWIYU-API-Version", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(deferredCredentialRequestString))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.credentials").isNotEmpty())
+                .andExpect(jsonPath("$.transaction_id").doesNotExist())
+                .andExpect(jsonPath("$.interval").doesNotExist())
+                .andReturn();
+
+        var credentials = extractCredentialsV2(response);
+
+        assertEquals(numberOfProofs, credentials.size());
+        for (int j = 0; j < numberOfProofs; j++) {
+            var credential = credentials.get(j).getAsJsonObject();
+            var credentialString = credential.get("credential").getAsString();
+            testHolderBindingV2(credentialString, holderPrivateKeys.get(j));
+        }
     }
 
     @Test
@@ -150,7 +206,7 @@ class DeferredIssuanceV2IT {
         String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}", "university_example_sd_jwt", responseEncryptionJson, proof);
 
-        var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
+        var deferredCredentialResponse = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
                 .andExpect(content().contentType("application/jwt"))
                 .andExpect(jsonPath("$").isNotEmpty())
@@ -193,11 +249,6 @@ class DeferredIssuanceV2IT {
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
     }
 
-    private String getCredentialRequestString(Map<String, Object> tokenResponse, String configurationId) throws JOSEException {
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
-        return String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}", configurationId, proof);
-    }
-
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
         credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
@@ -206,15 +257,6 @@ class DeferredIssuanceV2IT {
 
     private StatusList saveStatusList(StatusList statusList) {
         return statusListRepository.save(statusList);
-    }
-
-    private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
-        return mock.perform(post("/oid4vci/api/credential")
-                .header("Authorization", String.format("BEARER %s", token))
-                .header("SWIYU-API-Version", "2")
-                .contentType("application/json")
-                .content(credentialRequestString)
-        );
     }
 
     private JsonObject getEncryptedPayload(MvcResult deferredCredentialResponse, ECKey ecJWK) throws ParseException, UnsupportedEncodingException, JOSEException {

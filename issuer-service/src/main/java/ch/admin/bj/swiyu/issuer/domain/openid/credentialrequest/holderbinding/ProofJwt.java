@@ -36,11 +36,15 @@ public class ProofJwt extends Proof implements AttestableProof {
     private String holderKeyJson;
     private SignedJWT signedJWT;
 
-    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds,  int nonceLifetimeSeconds) {
+    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds) {
         super(proofType);
         this.jwt = jwt;
         this.acceptableProofTimeWindowSeconds = acceptableProofTimeWindowSeconds;
         this.nonceLifetimeSeconds = nonceLifetimeSeconds;
+    }
+
+    private static Oid4vcException proofException(String errorDescription) {
+        return new Oid4vcException(CredentialRequestError.INVALID_PROOF, errorDescription);
     }
 
     /**
@@ -141,6 +145,11 @@ public class ProofJwt extends Proof implements AttestableProof {
 
     @Override
     public String getNonce() {
+
+        if (signedJWT == null) {
+            throw new IllegalStateException("Must first call isValidHolderBinding");
+        }
+        
         try {
             return signedJWT.getJWTClaimsSet().getStringClaim("nonce");
         } catch (ParseException e) {
@@ -157,7 +166,6 @@ public class ProofJwt extends Proof implements AttestableProof {
     }
 
     /**
-     *
      * @return the Attestation JWT if present. If not present returns null
      */
     @Override
@@ -170,11 +178,6 @@ public class ProofJwt extends Proof implements AttestableProof {
             return null;
         }
         return attestation.toString();
-    }
-
-
-    private static Oid4vcException proofException(String errorDescription) {
-        return new Oid4vcException(CredentialRequestError.INVALID_PROOF, errorDescription);
     }
 
     /**

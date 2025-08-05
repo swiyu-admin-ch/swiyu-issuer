@@ -59,7 +59,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredential();
+                .buildCredentialEnvelope();
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
 
@@ -98,7 +98,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredential();
+                .buildCredentialEnvelope();
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
         String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
@@ -131,7 +131,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredential();
+                .buildCredentialEnvelope();
 
         String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
         String payload = getJWTPayload(credential);

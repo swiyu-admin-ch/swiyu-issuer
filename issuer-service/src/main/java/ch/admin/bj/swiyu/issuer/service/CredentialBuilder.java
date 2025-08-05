@@ -40,7 +40,7 @@ public abstract class CredentialBuilder {
     private CredentialResponseEncryptor credentialResponseEncryptor;
     private CredentialOffer credentialOffer;
     private CredentialConfiguration credentialConfiguration;
-    private Optional<DidJwk> holderBinding;
+    private List<DidJwk> holderBindings = new ArrayList<>();
     private List<String> metadataCredentialsSupportedIds;
 
     CredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata,
@@ -49,7 +49,6 @@ public abstract class CredentialBuilder {
         this.applicationProperties = applicationProperties;
         this.issuerMetadata = issuerMetadata;
         this.dataIntegrityService = dataIntegrityService;
-        this.holderBinding = Optional.empty();
         this.signer = signer;
         this.statusListRepository = statusListRepository;
         this.credentialOfferStatusRepository = credentialOfferStatusRepository;
@@ -66,18 +65,27 @@ public abstract class CredentialBuilder {
         return this;
     }
 
-    public CredentialEnvelopeDto buildCredential() {
-        var credential = getCredential();
+    public CredentialEnvelopeDto buildCredentialEnvelope() {
+        var credential = getCredential(this.holderBindings.isEmpty() ? null : this.holderBindings.getFirst());
         var oid4vciCredential = new HashMap<String, String>();
         oid4vciCredential.put("format", this.credentialConfiguration.getFormat());
         oid4vciCredential.put("credential", credential);
         return buildEnvelopeDto(oid4vciCredential);
     }
 
-    public CredentialEnvelopeDto buildCredentialV2() {
-        // at the moment there is only 1 credential
-        var credential = getCredential();
-        var credentialResponseDtoV2 = new CredentialResponseDtoV2(List.of(new CredentialObjectDtoV2(credential)), null, null);
+    public CredentialEnvelopeDto buildCredentialEnvelopeV2() {
+        // if no holder bindings are set, we only create 1 credential
+        List<CredentialObjectDtoV2> credentials = new ArrayList<>();
+        if (this.holderBindings == null || this.holderBindings.isEmpty()) {
+            var credential = new CredentialObjectDtoV2(getCredential(null));
+            credentials.add(credential);
+        } else {
+            credentials.addAll(this.holderBindings.stream()
+                    .map(this::getCredential)
+                    .map(CredentialObjectDtoV2::new)
+                    .toList());
+        }
+        var credentialResponseDtoV2 = new CredentialResponseDtoV2(credentials, null, null);
 
         return buildEnvelopeDto(credentialResponseDtoV2);
     }
@@ -110,10 +118,13 @@ public abstract class CredentialBuilder {
     }
 
     /**
-     * @param holderKeyJson Optional of the holderKey formatted as a json web key
+     * Sets the holder binding for the credential. If not set, the credential will be issued without a holder binding.
+     *
+     * @param holderKeys List of JSON string representing the holder's JWK.
+     * @return the updated CredentialBuilder instance.
      */
-    public CredentialBuilder holderBinding(Optional<String> holderKeyJson) {
-        this.holderBinding = holderKeyJson.map(s -> DidJwk.createFromJsonString(holderKeyJson.get()));
+    public CredentialBuilder holderBindings(List<String> holderKeys) {
+        this.holderBindings = holderKeys.stream().map(DidJwk::createFromJsonString).toList();
         return this;
     }
 
@@ -174,7 +185,7 @@ public abstract class CredentialBuilder {
                 .orElseThrow(() -> new CredentialException("StatusList not found for ID: " + credentialOfferStatus.getId().getStatusListId()));
     }
 
-    abstract String getCredential();
+    abstract String getCredential(DidJwk didJwk);
 
     // abstract String getCredential(String proof);
 

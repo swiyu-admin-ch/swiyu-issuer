@@ -50,6 +50,7 @@ public class CredentialManagementService {
     @Transactional // not readonly since expired credentails gets updated here automatically
     public CredentialInfoResponseDto getCredentialOfferInformation(UUID credentialId) {
         var credential = this.getCredential(credentialId);
+        
         var deeplink = getOfferDeeplinkFromCredential(credential);
 
         return toCredentialInfoResponseDto(credential, deeplink);
