@@ -6,13 +6,17 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
@@ -45,6 +49,9 @@ class CredentialServiceTest {
     private WebhookService webhookService;
     private StatusList statusList;
     private CredentialFormatFactory credentialFormatFactory;
+    private ApplicationProperties applicationProperties;
+    private HolderBindingService holderBindingService;
+    private CredentialConfiguration credentialConfiguration;
 
     @BeforeEach
     void setUp() {
@@ -52,8 +59,8 @@ class CredentialServiceTest {
         statusListService = Mockito.mock(StatusListService.class);
         issuerMetadata = Mockito.mock(IssuerMetadataTechnical.class);
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);
-        ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
-        HolderBindingService holderBindingService = Mockito.mock(HolderBindingService.class);
+        applicationProperties = Mockito.mock(ApplicationProperties.class);
+        holderBindingService = Mockito.mock(HolderBindingService.class);
         webhookService = Mockito.mock(WebhookService.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
 
@@ -75,6 +82,15 @@ class CredentialServiceTest {
                 .nextFreeIndex(0)
                 .maxLength(10000)
                 .build();
+
+        credentialConfiguration = mock(CredentialConfiguration.class);
+        when(credentialConfiguration.getCredentialDefinition()).thenReturn(null);
+        when(credentialConfiguration.getClaims()).thenReturn(Map.of("claim1", new CredentialClaim()));
+        when(credentialConfiguration.getFormat()).thenReturn("vc+sd-jwt");
+        when(credentialConfiguration.getVct()).thenReturn("test-vct");
+
+        when(issuerMetadata.getCredentialConfigurationById("test-metadata")).thenReturn(credentialConfiguration);
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", credentialConfiguration));
 
     }
 
@@ -124,7 +140,7 @@ class CredentialServiceTest {
     }
 
     @Test
-    void givenExpiredOffer_whenTokenIsCreated_throws() {
+    void givenExpiredOffer_whenTokenIsCreated_throwsOAuthException() {
         var uuid = UUID.randomUUID();
         var expirationTimeStamp = Instant.now().minusSeconds(10).getEpochSecond();
         var offer = getCredentialOffer(CredentialStatusType.OFFERED, expirationTimeStamp, offerData, uuid, uuid, UUID.randomUUID(), Map.of(), null);
@@ -172,7 +188,7 @@ class CredentialServiceTest {
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("different-test-metadata", mock(CredentialConfiguration.class)));
         when(credentialOfferRepository.findByAccessToken(credentialOffer.getAccessToken())).thenReturn(Optional.of(credentialOffer));
-        when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credConfig);
+        when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credConfig);
 
         var accessToken = credentialOffer.getAccessToken().toString();
         var exception = assertThrows(Oid4vcException.class, () ->
@@ -205,8 +221,8 @@ class CredentialServiceTest {
         when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialResponseEncryption(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.holderBindings(anyList())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialType(anyList())).thenReturn(sdJwtCredential);
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
 
         var claim = new CredentialClaim();
@@ -327,6 +343,148 @@ class CredentialServiceTest {
 
         verify(credentialOfferRepository).save(credentialOffer);
         verify(webhookService).produceStateChangeEvent(any(), any());
+    }
+
+    @Test
+    void issueOAuthToken_thenSuccess() {
+        UUID preAuthCode = UUID.randomUUID();
+        UUID accessToken = UUID.randomUUID();
+
+        CredentialOffer credentialOffer = getCredentialOffer(
+                CredentialStatusType.OFFERED,
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                offerData,
+                accessToken,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                null, null);
+        when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(credentialOffer));
+        when(applicationProperties.getTokenTTL()).thenReturn(600L);
+
+        OAuthTokenDto token = credentialService.issueOAuthToken(preAuthCode.toString());
+
+        assertEquals(credentialOffer.getAccessToken().toString(), token.getAccessToken());
+        assertEquals(600, token.getExpiresIn());
+        assertEquals(credentialOffer.getNonce().toString(), token.getCNonce());
+        verify(credentialOfferRepository).save(credentialOffer);
+        verify(webhookService).produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+    }
+
+    @Test
+    void issueOAuthToken_invalidStatus_throwsException() {
+        UUID preAuthCode = UUID.randomUUID();
+        UUID accessToken = UUID.randomUUID();
+
+        CredentialOffer credentialOffer = getCredentialOffer(
+                CredentialStatusType.READY,
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                offerData,
+                accessToken,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                null, null);
+        when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(credentialOffer));
+        when(applicationProperties.getTokenTTL()).thenReturn(600L);
+
+        var exception = assertThrows(OAuthException.class, () -> {
+            credentialService.issueOAuthToken(preAuthCode.toString());
+        });
+
+        assertEquals("Credential has already been used", exception.getMessage());
+    }
+
+    @Test
+    void createCredentialV2_deferred_thenSuccess() throws Exception {
+        // Arrange
+        CredentialRequestDtoV2 requestDto = mock(CredentialRequestDtoV2.class);
+        UUID accessToken = UUID.randomUUID();
+
+        CredentialRequestClass credentialRequest = mock(CredentialRequestClass.class);
+        ClientAgentInfo clientInfo = mock(ClientAgentInfo.class);
+
+        CredentialOffer credentialOffer = mockCredentialOffer(CredentialStatusType.IN_PROGRESS, accessToken, true);
+
+        when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
+        when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.of(credentialOffer));
+        when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
+
+        List<ProofJwt> proofs = List.of(mock(ProofJwt.class));
+        when(credentialRequest.getProofs(anyInt(), anyInt())).thenReturn(proofs);
+
+        List<String> holderJwkList = List.of("jwk1");
+        when(holderBindingService.validateHolderPublicKeys(proofs, credentialOffer)).thenReturn(holderJwkList);
+
+        mockVCBuilder(credentialOffer);
+        when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
+
+        credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo);
+
+        verify(credentialOffer).markAsDeferred(any(), any(), any(), any());
+        verify(credentialOfferRepository).save(credentialOffer);
+        verify(webhookService).produceDeferredEvent(any(), any());
+    }
+
+    @Test
+    void createCredentialV2_nonDeferred_thenSuccess() throws Exception {
+        // Arrange
+        CredentialRequestDtoV2 requestDto = mock(CredentialRequestDtoV2.class);
+        UUID accessToken = UUID.randomUUID();
+
+        CredentialRequestClass credentialRequest = mock(CredentialRequestClass.class);
+        ClientAgentInfo clientInfo = mock(ClientAgentInfo.class);
+        CredentialOffer credentialOffer = mockCredentialOffer(CredentialStatusType.IN_PROGRESS, accessToken, false);
+
+        when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
+        when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.of(credentialOffer));
+        when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
+
+        List<ProofJwt> proofs = List.of(mock(ProofJwt.class));
+        when(credentialRequest.getProofs(anyInt(), anyInt())).thenReturn(proofs);
+
+        List<String> holderJwkList = List.of("jwk1");
+        when(holderBindingService.validateHolderPublicKeys(proofs, credentialOffer)).thenReturn(holderJwkList);
+
+        mockVCBuilder(credentialOffer);
+        when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
+
+        credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo);
+
+        verify(credentialOffer).markAsIssued();
+        verify(credentialOfferRepository, atLeastOnce()).save(credentialOffer);
+        verify(webhookService).produceStateChangeEvent(any(), any());
+    }
+
+    private CredentialOffer mockCredentialOffer(CredentialStatusType status, UUID accessToken, boolean isDeferred) {
+        CredentialOffer credentialOffer = mock(CredentialOffer.class);
+
+        when(credentialOffer.getCredentialStatus()).thenReturn(status);
+        when(credentialOffer.getMetadataCredentialSupportedId()).thenReturn(List.of("test-metadata"));
+
+        when(credentialOffer.getAccessToken()).thenReturn(accessToken);
+        if (isDeferred) {
+            when(credentialOffer.isDeferred()).thenReturn(true);
+        } else {
+            when(credentialOffer.isDeferred()).thenReturn(false);
+        }
+        when(credentialOffer.getTransactionId()).thenReturn(UUID.randomUUID());
+        when(credentialOffer.getNonce()).thenReturn(UUID.randomUUID());
+
+        return credentialOffer;
+    }
+
+    private void mockVCBuilder(CredentialOffer credentialOffer) {
+        SdJwtCredential vcBuilder = mock(SdJwtCredential.class);
+        when(credentialFormatFactory.getFormatBuilder("test-metadata")).thenReturn(vcBuilder);
+        when(vcBuilder.credentialOffer(credentialOffer)).thenReturn(vcBuilder);
+        when(vcBuilder.credentialResponseEncryption(any())).thenReturn(vcBuilder);
+        when(vcBuilder.holderBindings(anyList())).thenReturn(vcBuilder);
+        when(vcBuilder.credentialType(anyList())).thenReturn(vcBuilder);
+
+        CredentialEnvelopeDto deferredEnvelope = mock(CredentialEnvelopeDto.class);
+        when(vcBuilder.buildDeferredCredentialV2(any(UUID.class))).thenReturn(deferredEnvelope);
+
+        CredentialEnvelopeDto issuedEnvelope = mock(CredentialEnvelopeDto.class);
+        when(vcBuilder.buildCredentialEnvelopeV2()).thenReturn(issuedEnvelope);
     }
 
     private CredentialOfferStatus getCredentialOfferStatus(UUID offerId, UUID statusId) {
