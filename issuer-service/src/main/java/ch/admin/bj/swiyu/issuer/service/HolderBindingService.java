@@ -85,7 +85,7 @@ public class HolderBindingService {
         var supportedProofTypes = credentialConfiguration.getProofTypesSupported();
         if (supportedProofTypes != null && !supportedProofTypes.isEmpty()) {
             var requestProof = proofJwt.orElseThrow(() -> new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
-            var bindingProofType = Optional.of(supportedProofTypes.get(requestProof.proofType.toString()))
+            var bindingProofType = Optional.of(supportedProofTypes.get(requestProof.getProofType().toString()))
                     .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
                             "Provided proof is not supported for the credential requested."));
             try {
@@ -122,9 +122,9 @@ public class HolderBindingService {
         var requestProof = proofJwt.orElseThrow(() ->
                 new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
 
-        var bindingProofType = supportedProofTypes.get(requestProof.proofType.toString());
+        var bindingProofType = supportedProofTypes.get(requestProof.getProofType().toString());
 
-        if (supportedProofTypes.get(requestProof.proofType.toString()) == null) {
+        if (bindingProofType == null) {
             throw new Oid4vcException(INVALID_PROOF, "Provided proof is not supported for the credential requested.");
         }
 

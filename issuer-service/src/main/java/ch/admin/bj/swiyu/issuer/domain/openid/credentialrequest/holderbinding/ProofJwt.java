@@ -149,7 +149,7 @@ public class ProofJwt extends Proof implements AttestableProof {
         if (signedJWT == null) {
             throw new IllegalStateException("Must first call isValidHolderBinding");
         }
-        
+
         try {
             return signedJWT.getJWTClaimsSet().getStringClaim("nonce");
         } catch (ParseException e) {
@@ -163,6 +163,11 @@ public class ProofJwt extends Proof implements AttestableProof {
             throw new IllegalStateException("Must first call isValidHolderBinding");
         }
         return this.holderKeyJson;
+    }
+
+    @Override
+    public ProofType getProofType() {
+        return proofType;
     }
 
     /**
