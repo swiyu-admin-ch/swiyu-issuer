@@ -57,6 +57,10 @@ public class IssuanceController {
             @RequestParam(name = "grant_type", defaultValue = OID4VCI_GRANT_TYPE) String grantType,
             @RequestParam(name = "pre-authorized_code") String preAuthCode) {
 
+        if (preAuthCode == null || preAuthCode.isBlank()) {
+            throw OAuthException.invalidRequest("Pre-authorized code is required");
+        }
+
         if (!OID4VCI_GRANT_TYPE.equals(grantType)) {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
@@ -77,6 +81,14 @@ public class IssuanceController {
     )
     public OAuthTokenDto oauthAccessToken(
             @ModelAttribute OauthAccessTokenRequestDto oauthAccessTokenRequestDto) {
+
+        if (oauthAccessTokenRequestDto == null) {
+            throw OAuthException.invalidRequest("The request is missing a required parameter");
+        }
+
+        if (oauthAccessTokenRequestDto.preauthorized_code() == null || oauthAccessTokenRequestDto.preauthorized_code().isBlank()) {
+            throw OAuthException.invalidRequest("Pre-authorized code is required");
+        }
 
         if (!OID4VCI_GRANT_TYPE.equals(oauthAccessTokenRequestDto.grant_type())) {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");

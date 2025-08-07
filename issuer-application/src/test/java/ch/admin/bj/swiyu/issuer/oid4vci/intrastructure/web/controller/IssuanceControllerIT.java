@@ -321,7 +321,6 @@ class IssuanceControllerIT {
     @Test
     void testDeprecatedTokenEndpoint_thenSuccess() throws Exception {
         mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
                 .andExpect(status().isOk());
@@ -352,6 +351,20 @@ class IssuanceControllerIT {
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("INVALID_GRANT")));
+    }
+
+    @Test
+    void noPreauthCode_thenException() throws Exception {
+        mock.perform(post("/oid4vci/api/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code"))
+                .andExpect(status().isBadRequest());
+
+        mock.perform(post("/oid4vci/api/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                        .param("pre-authorized_code", ""))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
