@@ -524,11 +524,11 @@ documented in [Config File Templating](#config-file-templating)
 
 Placeholders in these files will be replaced as well.
 
-| Variable Map                                          | Destination                |
-|-------------------------------------------------------|----------------------------|
-| APPLICATION_VCTMETADATAFILES_                         | $EXTERNAL_URL/vct/         |
-| APPLICATION_JSONSCHEMAMETADATAFILES_                  | $EXTERNAL_URL/json-schema/ |
-| APPLICATION_OVERLAYSCAPTUREARCHITECTUREMETADATAFILES_ | $EXTERNAL_URL/oca/         |
+| Variable Map                                          | Destination                        |
+|-------------------------------------------------------|------------------------------------|
+| APPLICATION_VCTMETADATAFILES_                         | $EXTERNAL_URL/oid4vci/vct/         |
+| APPLICATION_JSONSCHEMAMETADATAFILES_                  | $EXTERNAL_URL/oid4vci/json-schema/ |
+| APPLICATION_OVERLAYSCAPTUREARCHITECTUREMETADATAFILES_ | $EXTERNAL_URL/oid4vci/oca/         |
 
 For example we could use the file `/cfg-files/vct-test.json` by setting
 `APPLICATION_VCTMETADATAFILES_TESTV1=file:/cfg-files/vct-test.json`.
