@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -68,9 +69,7 @@ public abstract class CredentialBuilder {
 
     public CredentialEnvelopeDto buildCredential() {
         var credential = getCredential();
-        var oid4vciCredential = new HashMap<String, String>();
-        oid4vciCredential.put("format", this.credentialConfiguration.getFormat());
-        oid4vciCredential.put("credential", credential);
+        var oid4vciCredential = new CredentialResponseDto(this.credentialConfiguration.getFormat(), credential, null);
         return buildEnvelopeDto(oid4vciCredential);
     }
 

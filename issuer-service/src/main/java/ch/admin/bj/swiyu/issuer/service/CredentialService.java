@@ -219,7 +219,7 @@ public class CredentialService {
 
         // for deferred check if flag in the metadata set
         if (credentialOffer.isDeferred()) {
-            var deferredData = new DeferredDataDto(UUID.randomUUID());
+            var deferredData = new CredentialResponseDto(null, null, UUID.randomUUID());
 
             responseEnvelope = vcBuilder.buildEnvelopeDto(deferredData);
             credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest,

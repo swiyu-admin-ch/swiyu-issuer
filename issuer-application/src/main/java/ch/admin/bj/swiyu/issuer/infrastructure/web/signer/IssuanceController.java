@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.DeferredDataDtoV2;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
@@ -142,15 +143,7 @@ public class IssuanceController {
                             description = "Credential issued successfully.",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = CredentialEnvelopeDto.class)
-                            )
-                    ),
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Credential issued successfully with encryption.",
-                            content = @Content(
-                                    mediaType = "application/jwt",
-                                    schema = @Schema(implementation = String.class)
+                                    schema = @Schema(oneOf = {CredentialResponseDto.class, CredentialResponseDtoV2.class})
                             )
                     ),
                     @ApiResponse(
@@ -225,7 +218,7 @@ public class IssuanceController {
                             description = "Credential issued successfully",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = CredentialEnvelopeDto.class)
+                                    schema = @Schema(oneOf = {CredentialResponseDto.class, CredentialResponseDtoV2.class})
                             )
                     ),
                     @ApiResponse(
@@ -238,6 +231,7 @@ public class IssuanceController {
                     )
             }
     )
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
                                                            @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
                                                            @NotNull @RequestBody String deferredCredentialRequestDto) throws JsonProcessingException {
