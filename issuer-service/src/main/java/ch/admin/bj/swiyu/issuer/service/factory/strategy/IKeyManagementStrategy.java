@@ -11,7 +11,7 @@ import java.security.Provider;
 import java.security.interfaces.ECPrivateKey;
 
 public interface IKeyManagementStrategy {
-    JWSSigner createSigner(SignatureConfiguration signatureConfiguration) throws Exception;
+    JWSSigner createSigner(SignatureConfiguration signatureConfiguration) throws KeyStrategyException;
 
     /**
      * @param privateKey The private key loaded with ECKey.load from the keystore

@@ -6,7 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.api.statuslist;
 
+import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -48,4 +51,10 @@ public class StatusListCreateDto {
             {"bits": 2}
             """)
     private StatusListConfigDto config;
+
+    @Schema(description = "Optional Parameter to override configured parameters, such as the DID used or the HSM key used in singing the request object")
+    @Valid
+    @Nullable
+    @JsonProperty("configuration_override")
+    private ConfigurationOverrideDto configurationOverride;
 }

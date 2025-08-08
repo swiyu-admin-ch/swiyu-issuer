@@ -32,6 +32,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.io.IOException;
 import java.util.*;
 
+import static ch.admin.bj.swiyu.issuer.service.CredentialOfferMapper.toConfigurationOverride;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusListMapper.toStatusListDto;
 
 @Slf4j
@@ -154,6 +155,7 @@ public class StatusListService {
                 .statusZipped(token.getStatusListData())
                 .nextFreeIndex(0)
                 .maxLength(statusListCreateDto.getMaxLength())
+                .configurationOverride(toConfigurationOverride(statusListCreateDto.getConfigurationOverride()))
                 .build();
         log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits()*statusList.getMaxLength());
         updateRegistry(statusList, token);
@@ -178,7 +180,7 @@ public class StatusListService {
         SignedJWT statusListJWT = buildStatusListJWT(statusListEntity, token);
 
         try {
-            statusListJWT.sign(signatureService.defaultSigner(statusListProperties));
+            statusListJWT.sign(signatureService.createSigner(statusListProperties));
         } catch (Exception e) {
             log.error("Failed to sign status list JWT with the provided key.", e);
             throw new ConfigurationException("Failed to sign status list JWT with the provided key.");

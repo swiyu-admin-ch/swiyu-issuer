@@ -18,6 +18,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -279,6 +280,8 @@ public class CredentialManagementService {
                     statusLists.stream().map(StatusList::getUri).collect(Collectors.joining(", "))));
         }
 
+        ensureMatchingIssuerDids(requestDto, statusLists);
+
         var entity = CredentialOffer.builder()
                 .credentialStatus(CredentialStatusType.OFFERED)
                 .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
@@ -290,6 +293,7 @@ public class CredentialManagementService {
                 .credentialValidFrom(requestDto.getCredentialValidFrom())
                 .credentialValidUntil(requestDto.getCredentialValidUntil())
                 .credentialMetadata(Optional.ofNullable(requestDto.getCredentialMetadata()).orElse(new HashMap<>()))
+                .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
                 .build();
         entity = this.credentialOfferRepository.save(entity);
         log.debug("Created Credential offer {} valid until {}", entity.getId(), expiration.toEpochMilli());
@@ -310,6 +314,26 @@ public class CredentialManagementService {
         }
 
         return entity;
+    }
+
+    /**
+     * The issuer did (iss) of VCs and the linked status lists have to be the same or verifications will fail.
+     */
+    private void ensureMatchingIssuerDids(CreateCredentialRequestDto requestDto, List<StatusList> statusLists) {
+        // Ensure that chosen stats lists issuer dids match the vc issuer did
+        var override = requestDto.getConfigurationOverride();
+        String issuerDid;
+        if (override != null && StringUtils.isNotEmpty(override.issuerDid())) {
+            issuerDid = override.issuerDid();
+        } else {
+            issuerDid = applicationProperties.getIssuerId();
+        }
+
+        var mismatchingStatusLists = statusLists.stream().filter(statusList -> !Objects.requireNonNullElseGet(statusList.getConfigurationOverride().issuerDid(), applicationProperties::getIssuerId).equals(issuerDid)).toList();
+        if (!mismatchingStatusLists.isEmpty()) {
+            throw new BadRequestException(String.format("Status List issuer did is not the same as credential issuer did for %s",
+                    mismatchingStatusLists.stream().map(StatusList::getUri).collect(Collectors.joining(", "))));
+        }
     }
 
     /**
