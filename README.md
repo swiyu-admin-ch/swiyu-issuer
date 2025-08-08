@@ -255,7 +255,7 @@ swiyu:
 To start the application locally you can run:
 
 ```shell
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn -f issuer-application  spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 Note: This spins up a local PostgreSQL database via docker. Once running, Openapi-Documentation can be
@@ -294,6 +294,7 @@ The Generic Issuer Agent is configured using environment variables.
 | METADATA_CONFIG_FILE                 | The OID4VCI Metadata as a json. Placeholder replacement is done as described in Config File Placeholders. For details on the OID4VCI Metadata consult the OID4VCI Specification.                                                                                                         |
 | SDJWT_KEY (Optional - See HSM)       | The private key used to sign SD-JWT Credentials. The matching public key must be published on the base registry for verification. - Not recommended.                                                                                                                                     |
 | DID_SDJWT_VERIFICATION_METHOD        | The full DID with fragment as used to find the public key for sd-jwt VCs in the DID Document. eg: `did:tdw:<base-registry-url>:<issuer_uuid>#<sd-jwt-public-key-fragment>`                                                                                                               |
+| MIN_DEFERRED_OFFER_WAITING_SECONDS   | For the deferred flow. Polling interval for the deferred flow. Defines how long a wallet should wait after receiving the transaction_id until it tries to fetch the actual credential. This value will be shown as `interval` in the deferred response.                                  |
 
 #### Status List
 
@@ -568,14 +569,17 @@ erDiagram
     CREDENTIAL_OFFER {
         uuid id PK
         text credential_status
-        text metadata_credential_supported_id
+        array[text] metadata_credential_supported_id
         jsonb offer_data
         jsonb credential_metadata
         jsonb credential_request
         uuid transaction_id
-        text holder_jwk
+        array[text] holder_jwks
+        jsonb client_agent_info
         uuid holder_binding_nonce
         uuid access_token
+        uuid nonce
+        uuid pre_authorized_code
         integer offer_expiration_timestamp
         text credential_valid_from
         text credential_valid_until
@@ -752,6 +756,22 @@ If this is the case you need to manually create a new refresh token in the api s
 issuer agent managment component with this token.  
 The application does log an appropriate error if it detects such an issue but will still start up.  
 Updates to the status registry will fail as long as the auth flow is not restarted with a valid bootstrap token.
+
+### Latest development
+
+The current default implementation of the issuer agent management component is based on
+the [OID4VCI specs DRAFT 13](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html).
+But there are already some features from
+the [OID4VCI specs DRAFT 16](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) implemented for
+example the:
+
+* new credential-endpoint (with corresponding response)
+  defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-endpoint)
+* new deferred credential endpoint
+  defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin)
+
+These endpoints can be used if the custom header `SWIYU-API-Version=2` is set in the request. These endpoints are not
+yet pentested.
 
 #### Setup a local environment
 

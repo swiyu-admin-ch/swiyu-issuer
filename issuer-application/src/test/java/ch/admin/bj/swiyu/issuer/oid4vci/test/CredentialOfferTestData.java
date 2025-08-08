@@ -29,6 +29,10 @@ public class CredentialOfferTestData {
         return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, null);
     }
 
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Map<String, Object> metadata) {
+        return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), metadata);
+    }
+
     public static StatusList createStatusList() {
         var statusListToken = new TokenStatusListToken(2, 10000);
         return StatusList.builder().type(StatusListType.TOKEN_STATUS_LIST)

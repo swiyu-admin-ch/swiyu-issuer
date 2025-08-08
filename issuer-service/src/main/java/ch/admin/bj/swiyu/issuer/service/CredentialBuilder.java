@@ -7,6 +7,9 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialResponseDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
@@ -20,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JWSSigner;
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 import java.util.*;
@@ -65,13 +69,30 @@ public abstract class CredentialBuilder {
 
     public CredentialEnvelopeDto buildCredential() {
         var credential = getCredential();
-        var oid4vciCredential = new HashMap<String, String>();
-        oid4vciCredential.put("format", this.credentialConfiguration.getFormat());
-        oid4vciCredential.put("credential", credential);
+        var oid4vciCredential = new CredentialResponseDto(this.credentialConfiguration.getFormat(), credential, null);
         return buildEnvelopeDto(oid4vciCredential);
     }
 
+    public CredentialEnvelopeDto buildCredentialV2() {
+        // at the moment there is only 1 credential
+        var credential = getCredential();
+        var credentialResponseDtoV2 = new CredentialResponseDtoV2(List.of(new CredentialObjectDtoV2(credential)), null, null);
+
+        return buildEnvelopeDto(credentialResponseDtoV2);
+    }
+
+    public CredentialEnvelopeDto buildDeferredCredentialV2(UUID transactionId) {
+        var credentialResponseDtoV2 = new CredentialResponseDtoV2(null, transactionId.toString(), applicationProperties.getMinDeferredOfferIntervalSeconds());
+
+        return buildEnvelopeDto(credentialResponseDtoV2, HttpStatus.ACCEPTED);
+    }
+
     public CredentialEnvelopeDto buildEnvelopeDto(Object payload) {
+
+        return buildEnvelopeDto(payload, HttpStatus.OK);
+    }
+
+    public CredentialEnvelopeDto buildEnvelopeDto(Object payload, HttpStatus httpStatus) {
         var payloadJson = "";
         try {
             payloadJson = new ObjectMapper().writeValueAsString(payload);
@@ -83,7 +104,8 @@ public abstract class CredentialBuilder {
             payloadJson = getCredentialResponseEncryptor().encryptResponse(payloadJson);
             contentType = "application/jwt";
         }
-        return new CredentialEnvelopeDto(contentType, payloadJson);
+
+        return new CredentialEnvelopeDto(contentType, payloadJson, httpStatus);
     }
 
     /**
@@ -152,6 +174,8 @@ public abstract class CredentialBuilder {
     }
 
     abstract String getCredential();
+
+    // abstract String getCredential(String proof);
 
     /**
      * Gets the credential configuration form the issuer metadata matching the credential supported id of the offer

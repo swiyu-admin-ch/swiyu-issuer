@@ -100,7 +100,7 @@ public class CredentialOfferTestHelper {
         return TokenStatusListToken.loadTokenStatusListToken(bits, lst, 204800);
     }
 
-    String getUpdateUrl(UUID id, CredentialStatusTypeDto credentialStatus) {
+    public String getUpdateUrl(UUID id, CredentialStatusTypeDto credentialStatus) {
         return String.format("%s?credentialStatus=%s", getUrl(id), credentialStatus);
     }
 

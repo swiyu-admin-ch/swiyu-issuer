@@ -10,6 +10,7 @@ import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
+import jakarta.validation.ConstraintViolationException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -79,6 +80,15 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, exception.getMessage());
         log.error("Configuration Exception intercepted", exception);
         return new ResponseEntity<>(apiError, apiError.status());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiErrorDto> handleConstraintViolationException(final Exception exception) {
+        var errors = exception.getMessage();
+
+        log.info("Received bad request. Details: {}", errors);
+
+        return new ResponseEntity<>(new ApiErrorDto(HttpStatus.UNPROCESSABLE_ENTITY, errors), HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     @ExceptionHandler(io.fabric8.kubernetes.client.ResourceNotFoundException.class)
