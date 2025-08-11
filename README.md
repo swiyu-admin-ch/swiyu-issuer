@@ -55,8 +55,6 @@ A possible deployment configuration of the issuer service. Issuer Business Syste
 > - Registered yourself on the swiyuprobeta portal
 > - Registered yourself on the api self service portal
 
-> Are you a third-party user? Then you're right here! Otherwhise go to [gov internal usage](#Gov-internal-usage)
-
 ## 1. Set the environment variables
 
 A sample compose file for an entire setup of both components and a database can be found
@@ -255,7 +253,7 @@ swiyu:
 To start the application locally you can run:
 
 ```shell
-mvn -f issuer-application  spring-boot:run -Dspring-boot.run.profiles=local
+./mvnw -f issuer-application  spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 Note: This spins up a local PostgreSQL database via docker. Once running, Openapi-Documentation can be
@@ -377,7 +375,7 @@ Note that this is only affects writing calls.
 
 To provide a data integrity check with the issuer it is possible to provide the credential subject data as JWT.
 
-See [CredentialOfferCreateJWTIT.java](src/test/java/ch/admin/bj/swiyu/issuer/management/it/CredentialOfferCreateJwtIT.java)
+See [CredentialOfferCreateJWTIT.java](issuer-application/src/test/java/ch/admin/bj/swiyu/issuer/management/infrastructure/web/controller/CredentialOfferCreateJwtIT.java)
 for examples on how to use.
 
 #### Kubernetes Vault Keys
@@ -698,6 +696,11 @@ sequenceDiagram
         ISS-->>-BUSINESS : Status
     end
 ```
+
+To get more information about the different calls please check the detail documentations:
+
+* [Credential issuance flow](./issuance.md)
+* [Deferred issuance flow](./deferred.md)
 
 > [!NOTE]  
 > If you use the deferred flow, you need to set the `deferred: true` in the `credentialMetadata` of the credential offer
