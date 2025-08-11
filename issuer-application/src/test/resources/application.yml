@@ -15,7 +15,7 @@ application:
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
   trusted-attestation-providers: [ "did:test:test-attestation-builder" ]
   template-replacement:
-    external-url: "http://localhost:8080/oid4vci"
+    external-url: "http://localhost:8080"
     stage: "local-"
   status-list:
     private-key: |

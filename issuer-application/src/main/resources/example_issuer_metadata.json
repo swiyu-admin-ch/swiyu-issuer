@@ -117,7 +117,7 @@
           ]
         }
       },
-      "vct": "${external-url}/vct/my-vct-v01",
+      "vct": "${external-url}/oid4vci/vct/my-vct-v01",
       "claims": {
         "type": {
           "mandatory": true,
@@ -190,7 +190,7 @@
           }
         }
       },
-      "vct": "${external-url}/vct/my-vct-v01",
+      "vct": "${external-url}/oid4vci/vct/my-vct-v01",
       "claims": {
         "type": {
           "mandatory": true,
@@ -240,7 +240,7 @@
           "key_attestations_required": {}
         }
       },
-      "vct": "${external-url}/vct/my-vct-v01",
+      "vct": "${external-url}/oid4vci/vct/my-vct-v01",
       "claims": {
         "type": {
           "mandatory": true,

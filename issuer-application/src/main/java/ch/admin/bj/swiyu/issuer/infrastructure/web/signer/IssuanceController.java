@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.DeferredDataDtoV2;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
@@ -30,6 +31,7 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -69,6 +71,10 @@ public class IssuanceController {
             @RequestParam(name = "grant_type", defaultValue = OID4VCI_GRANT_TYPE) String grantType,
             @RequestParam(name = "pre-authorized_code") String preAuthCode) {
 
+        if (StringUtils.isBlank(preAuthCode)) {
+            throw OAuthException.invalidRequest("Pre-authorized code is required");
+        }
+
         if (!OID4VCI_GRANT_TYPE.equals(grantType)) {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
@@ -89,6 +95,14 @@ public class IssuanceController {
     )
     public OAuthTokenDto oauthAccessToken(
             @ModelAttribute OauthAccessTokenRequestDto oauthAccessTokenRequestDto) {
+
+        if (oauthAccessTokenRequestDto == null) {
+            throw OAuthException.invalidRequest("The request is missing a required parameter");
+        }
+
+        if (StringUtils.isBlank(oauthAccessTokenRequestDto.preauthorized_code())) {
+            throw OAuthException.invalidRequest("Pre-authorized code is required");
+        }
 
         if (!OID4VCI_GRANT_TYPE.equals(oauthAccessTokenRequestDto.grant_type())) {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
@@ -142,15 +156,7 @@ public class IssuanceController {
                             description = "Credential issued successfully.",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = CredentialEnvelopeDto.class)
-                            )
-                    ),
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Credential issued successfully with encryption.",
-                            content = @Content(
-                                    mediaType = "application/jwt",
-                                    schema = @Schema(implementation = String.class)
+                                    schema = @Schema(oneOf = {CredentialResponseDto.class, CredentialResponseDtoV2.class})
                             )
                     ),
                     @ApiResponse(
@@ -225,7 +231,7 @@ public class IssuanceController {
                             description = "Credential issued successfully",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = CredentialEnvelopeDto.class)
+                                    schema = @Schema(oneOf = {CredentialResponseDto.class, CredentialResponseDtoV2.class})
                             )
                     ),
                     @ApiResponse(
@@ -238,6 +244,7 @@ public class IssuanceController {
                     )
             }
     )
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
                                                            @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
                                                            @NotNull @RequestBody String deferredCredentialRequestDto) throws JsonProcessingException {

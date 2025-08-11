@@ -248,7 +248,7 @@ class DeferredIssuanceV2IT {
 
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
     }
-
+    
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
         credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));

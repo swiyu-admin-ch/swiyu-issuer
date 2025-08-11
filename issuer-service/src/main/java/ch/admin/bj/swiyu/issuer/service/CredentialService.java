@@ -73,7 +73,8 @@ public class CredentialService {
             DeferredCredentialRequestDto deferredCredentialRequest,
             String accessToken) {
 
-        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest, accessToken);
+        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest,
+                accessToken);
 
         var credentialRequest = credentialOffer.getCredentialRequest();
 
@@ -82,7 +83,7 @@ public class CredentialService {
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
-                //.holderBinding(holderJWK)
+                // .holderBinding(holderJWK)
                 .holderBindings(credentialOffer.getHolderJWKs())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
@@ -100,7 +101,8 @@ public class CredentialService {
             DeferredCredentialRequestDto deferredCredentialRequest,
             String accessToken) {
 
-        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest, accessToken);
+        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest,
+                accessToken);
 
         var credentialRequest = credentialOffer.getCredentialRequest();
 
@@ -153,8 +155,9 @@ public class CredentialService {
                 .build();
     }
 
-    private CredentialOffer getAndValidateCredentialOfferForDeferred(DeferredCredentialRequestDto deferredCredentialRequest,
-                                                                     String accessToken) {
+    private CredentialOffer getAndValidateCredentialOfferForDeferred(
+            DeferredCredentialRequestDto deferredCredentialRequest,
+            String accessToken) {
         CredentialOffer credentialOffer = getCredentialOfferByTransactionIdAndAccessToken(
                 deferredCredentialRequest.transactionId(),
                 accessToken);
@@ -180,12 +183,14 @@ public class CredentialService {
         return credentialOffer;
     }
 
-    private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
+    private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
+                                                              CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
         validateCredentialRequest(credentialOffer, credentialRequest);
 
-        var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(), applicationProperties.getAcceptableProofTimeWindowSeconds());
+        var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(),
+                applicationProperties.getAcceptableProofTimeWindowSeconds());
         Optional<ProofJwt> proofJwt = proofsJwt.isEmpty() ? Optional.empty() : Optional.of(proofsJwt.getFirst());
 
         Optional<String> holderPublicKey;
@@ -209,7 +214,7 @@ public class CredentialService {
 
         // for deferred check if flag in the metadata set
         if (credentialOffer.isDeferred()) {
-            var deferredData = new DeferredDataDto(UUID.randomUUID());
+            var deferredData = new CredentialResponseDto(null, null, UUID.randomUUID());
 
             responseEnvelope = vcBuilder.buildEnvelopeDto(deferredData);
             credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest,
@@ -231,7 +236,8 @@ public class CredentialService {
         return responseEnvelope;
     }
 
-    private CredentialEnvelopeDto createCredentialEnvelopeDtoV2(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
+    private CredentialEnvelopeDto createCredentialEnvelopeDtoV2(CredentialOffer credentialOffer,
+                                                                CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
         validateCredentialRequest(credentialOffer, credentialRequest);
 
         List<ProofJwt> proofs = credentialRequest.getProofs(
@@ -248,7 +254,8 @@ public class CredentialService {
         }
 
         var vcBuilder = vcFormatFactory
-                // get first entry because we expect the list to only contain one item at the moment
+                // get first entry because we expect the list to only contain one item at the
+                // moment
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
@@ -307,9 +314,11 @@ public class CredentialService {
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT, "Mismatch between requested and offered format.");
         }
 
-
-        if (credentialRequest.getCredentialConfigurationId() != null && !credentialOffer.getMetadataCredentialSupportedId().getFirst().equals(credentialRequest.getCredentialConfigurationId())) {
-            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_TYPE, "Mismatch between requested and offered credential configuration id.");
+        if (credentialRequest.getCredentialConfigurationId() != null
+                && !credentialOffer.getMetadataCredentialSupportedId().getFirst()
+                .equals(credentialRequest.getCredentialConfigurationId())) {
+            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_TYPE,
+                    "Mismatch between requested and offered credential configuration id.");
         }
     }
 

@@ -45,7 +45,8 @@ public abstract class CredentialBuilder {
 
     CredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata,
                       DataIntegrityService dataIntegrityService, JWSSigner signer,
-                      StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
+                      StatusListRepository statusListRepository,
+                      CredentialOfferStatusRepository credentialOfferStatusRepository) {
         this.applicationProperties = applicationProperties;
         this.issuerMetadata = issuerMetadata;
         this.dataIntegrityService = dataIntegrityService;
@@ -60,8 +61,10 @@ public abstract class CredentialBuilder {
         return this;
     }
 
-    public CredentialBuilder credentialResponseEncryption(CredentialResponseEncryptionClass credentialResponseEncryption) {
-        this.credentialResponseEncryptor = new CredentialResponseEncryptor(issuerMetadata.getResponseEncryption(), credentialResponseEncryption);
+    public CredentialBuilder credentialResponseEncryption(
+            CredentialResponseEncryptionClass credentialResponseEncryption) {
+        this.credentialResponseEncryptor = new CredentialResponseEncryptor(issuerMetadata.getResponseEncryption(),
+                credentialResponseEncryption);
         return this;
     }
 
@@ -91,7 +94,8 @@ public abstract class CredentialBuilder {
     }
 
     public CredentialEnvelopeDto buildDeferredCredentialV2(UUID transactionId) {
-        var credentialResponseDtoV2 = new CredentialResponseDtoV2(null, transactionId.toString(), applicationProperties.getMinDeferredOfferIntervalSeconds());
+        var credentialResponseDtoV2 = new CredentialResponseDtoV2(null, transactionId.toString(),
+                applicationProperties.getMinDeferredOfferIntervalSeconds());
 
         return buildEnvelopeDto(credentialResponseDtoV2, HttpStatus.ACCEPTED);
     }
@@ -118,7 +122,8 @@ public abstract class CredentialBuilder {
     }
 
     /**
-     * Sets the holder binding for the credential. If not set, the credential will be issued without a holder binding.
+     * Sets the holder binding for the credential. If not set, the credential will
+     * be issued without a holder binding.
      *
      * @param holderKeys List of JSON string representing the holder's JWK.
      * @return the updated CredentialBuilder instance.
@@ -145,13 +150,17 @@ public abstract class CredentialBuilder {
      * @return the data as to be used in credentialSubject
      */
     protected Map<String, Object> getOfferData() {
-        return this.dataIntegrityService.getVerifiedOfferData(this.credentialOffer.getOfferData(), this.credentialOffer.getId());
+        return this.dataIntegrityService.getVerifiedOfferData(this.credentialOffer.getOfferData(),
+                this.credentialOffer.getId());
     }
 
     /**
-     * Create all status list references in the way they are to be added to the VC JSON
+     * Create all status list references in the way they are to be added to the VC
+     * JSON
      * eg
-     * <pre><code>
+     *
+     * <pre>
+     * <code>
      *    {
      *      "status": {
      *           "status_list": {
@@ -167,38 +176,43 @@ public abstract class CredentialBuilder {
      *          "statusListCredential": "https://university.example/credentials/status/3"
      *      }
      *   }
-     *  </code></pre>
+     *  </code>
+     * </pre>
      */
     protected Map<String, Object> getStatusReferences() {
         VerifiableCredentialStatusFactory statusFactory = new VerifiableCredentialStatusFactory();
         HashMap<String, Object> statuses = new HashMap<>();
-        Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(this.credentialOffer.getId());
+        Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository
+                .findByOfferStatusId(this.credentialOffer.getId());
 
         return byOfferStatusId.stream()
-                .map((CredentialOfferStatus credentialOfferStatus) -> statusFactory.createStatusListReference(credentialOfferStatus.getIndex(), getStatusList(credentialOfferStatus)))
+                .map((CredentialOfferStatus credentialOfferStatus) -> statusFactory.createStatusListReference(
+                        credentialOfferStatus.getIndex(), getStatusList(credentialOfferStatus)))
                 .map(VerifiableCredentialStatusReference::createVCRepresentation)
                 .reduce(statuses, statusFactory::mergeStatus);
     }
 
     private StatusList getStatusList(CredentialOfferStatus credentialOfferStatus) {
         return statusListRepository.findById(credentialOfferStatus.getId().getStatusListId())
-                .orElseThrow(() -> new CredentialException("StatusList not found for ID: " + credentialOfferStatus.getId().getStatusListId()));
+                .orElseThrow(() -> new CredentialException(
+                        "StatusList not found for ID: " + credentialOfferStatus.getId().getStatusListId()));
     }
 
     abstract String getCredential(DidJwk didJwk);
 
-    // abstract String getCredential(String proof);
-
     /**
-     * Gets the credential configuration form the issuer metadata matching the credential supported id of the offer
+     * Gets the credential configuration form the issuer metadata matching the
+     * credential supported id of the offer
      *
      * @param offer
      * @return the Credential Configuration
      */
     private CredentialConfiguration getOfferCredentialConfiguration(CredentialOffer offer) {
         return Optional.ofNullable(issuerMetadata.getCredentialConfigurationSupported().get(
-                offer.getMetadataCredentialSupportedId().getFirst())).orElseThrow(() ->
-                new Oid4vcException(INVALID_CREDENTIAL_REQUEST, "Requested Credential is not offered (anymore). Credential supported id was " + offer.getMetadataCredentialSupportedId().getFirst()));
+                        offer.getMetadataCredentialSupportedId().getFirst()))
+                .orElseThrow(() -> new Oid4vcException(INVALID_CREDENTIAL_REQUEST,
+                        "Requested Credential is not offered (anymore). Credential supported id was "
+                                + offer.getMetadataCredentialSupportedId().getFirst()));
     }
 
 }
