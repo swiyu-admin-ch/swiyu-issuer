@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
@@ -18,6 +19,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,44 +64,64 @@ public class CredentialService {
     }
 
     @Transactional
+    public CredentialEnvelopeDto createCredentialV2(CredentialRequestDtoV2 credentialRequestDto, String accessToken,
+                                                    ClientAgentInfo clientInfo) {
+
+        CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
+        CredentialOffer credentialOffer = getCredentialOfferByAccessToken(accessToken);
+
+        return createCredentialEnvelopeDtoV2(credentialOffer, credentialRequest, clientInfo);
+    }
+
+    @Transactional
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(
             DeferredCredentialRequestDto deferredCredentialRequest,
             String accessToken) {
-        CredentialOffer credentialOffer = getCredentialOfferByTransactionIdAndAccessToken(
-                deferredCredentialRequest.transactionId(),
-                accessToken);
 
-        // We have to check again that the Credential Status has not been changed to
-        // catch race condition between holder & issuer
-        if (credentialOffer.getCredentialStatus() != CredentialStatusType.READY) {
-            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued");
-        }
-
-        if (credentialOffer.hasTokenExpirationPassed()) {
-            log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
-            webhookService.produceErrorEvent(credentialOffer.getId(),
-                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
-                    "AccessToken expired, offer is stuck in READY");
-            throw OAuthException.invalidRequest("AccessToken expired.");
-        }
+        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest, accessToken);
 
         var credentialRequest = credentialOffer.getCredentialRequest();
 
-        if (isNull(credentialRequest)) {
-            throw new IllegalArgumentException("Credential Request is missing");
-        }
-
         // Get holder public key which was stored in the credential request
-        var holderJWK = credentialOffer.getHolderJWK();
+        Optional<String> holderJWK = credentialOffer.getHolderJWKs() != null ? Optional.of(credentialOffer.getHolderJWKs().getFirst()) : Optional.empty();
 
         CredentialEnvelopeDto vc = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
-                .holderBinding(holderJWK != null ? Optional.of(holderJWK) : Optional.empty())
+                .holderBinding(holderJWK)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredential();
+
+        credentialOffer.markAsIssued();
+
+        credentialOfferRepository.save(credentialOffer);
+        webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+
+        return vc;
+    }
+
+    @Transactional
+    public CredentialEnvelopeDto createCredentialFromDeferredRequestV2(
+            DeferredCredentialRequestDto deferredCredentialRequest,
+            String accessToken) {
+
+        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest, accessToken);
+
+        var credentialRequest = credentialOffer.getCredentialRequest();
+
+        // Get holder public key which was stored in the credential request
+        Optional<String> holderJWK = credentialOffer.getHolderJWKs() != null ? Optional.of(credentialOffer.getHolderJWKs().getFirst()) : Optional.empty();
+
+        CredentialEnvelopeDto vc = vcFormatFactory
+                // get first entry because we expect the list to only contain one item
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .holderBinding(holderJWK)
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredentialV2();
 
         credentialOffer.markAsIssued();
 
@@ -140,7 +163,132 @@ public class CredentialService {
                 .build();
     }
 
+    private CredentialOffer getAndValidateCredentialOfferForDeferred(DeferredCredentialRequestDto deferredCredentialRequest,
+                                                                     String accessToken) {
+        CredentialOffer credentialOffer = getCredentialOfferByTransactionIdAndAccessToken(
+                deferredCredentialRequest.transactionId(),
+                accessToken);
+
+        // We have to check again that the Credential Status has not been changed to
+        // catch race condition between holder & issuer
+        if (credentialOffer.getCredentialStatus() != CredentialStatusType.READY) {
+            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued");
+        }
+
+        if (credentialOffer.hasTokenExpirationPassed()) {
+            log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
+            webhookService.produceErrorEvent(credentialOffer.getId(),
+                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
+                    "AccessToken expired, offer is stuck in READY");
+            throw OAuthException.invalidRequest("AccessToken expired.");
+        }
+
+        if (isNull(credentialOffer.getCredentialRequest())) {
+            throw new IllegalArgumentException("Credential Request is missing");
+        }
+
+        return credentialOffer;
+    }
+
     private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
+        // We have to check again that the Credential Status has not been changed to
+        // catch race condition between holder & issuer
+        validateCredentialRequest(credentialOffer, credentialRequest);
+
+        var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(), applicationProperties.getAcceptableProofTimeWindowSeconds());
+        Optional<ProofJwt> proofJwt = proofsJwt.isEmpty() ? Optional.empty() : Optional.of(proofsJwt.getFirst());
+
+        Optional<String> holderPublicKey;
+        try {
+            holderPublicKey = getHolderPublicKey(proofJwt, credentialOffer);
+        } catch (Oid4vcException e) {
+            webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
+                    e.getMessage());
+            throw e;
+        }
+
+        var vcBuilder = vcFormatFactory
+                // get first entry because we expect the list to only contain one item
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .holderBinding(holderPublicKey)
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId());
+
+        CredentialEnvelopeDto responseEnvelope;
+
+        // for deferred check if flag in the metadata set
+        if (credentialOffer.isDeferred()) {
+            var deferredData = new CredentialResponseDto(null, null, UUID.randomUUID());
+
+            responseEnvelope = vcBuilder.buildEnvelopeDto(deferredData);
+            credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest,
+                    holderPublicKey.map(List::of).orElseGet(List::of), clientInfo);
+            credentialOfferRepository.save(credentialOffer);
+            try {
+                var clientInfoString = objectMapper.writeValueAsString(clientInfo);
+                webhookService.produceDeferredEvent(credentialOffer.getId(), clientInfoString);
+            } catch (JsonProcessingException e) {
+                throw new JsonException("Error processing client info for deferred credential offer", e);
+            }
+        } else {
+            responseEnvelope = vcBuilder.buildCredential();
+            credentialOffer.markAsIssued();
+            credentialOfferRepository.save(credentialOffer);
+            webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        }
+
+        return responseEnvelope;
+    }
+
+    private CredentialEnvelopeDto createCredentialEnvelopeDtoV2(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
+        validateCredentialRequest(credentialOffer, credentialRequest);
+
+        var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(), applicationProperties.getAcceptableProofTimeWindowSeconds());
+        Optional<ProofJwt> proofJwt = proofsJwt.isEmpty() ? Optional.empty() : Optional.of(proofsJwt.getFirst());
+
+        Optional<String> holderPublicKey;
+        try {
+            holderPublicKey = getHolderPublicKey(proofJwt, credentialOffer);
+        } catch (Oid4vcException e) {
+            webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
+                    e.getMessage());
+            throw e;
+        }
+
+        var vcBuilder = vcFormatFactory
+                // get first entry because we expect the list to only contain one item at the moment
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .holderBinding(holderPublicKey)
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId());
+
+        CredentialEnvelopeDto responseEnvelope;
+
+        if (credentialOffer.isDeferred()) {
+            var transactionId = UUID.randomUUID();
+
+            responseEnvelope = vcBuilder.buildDeferredCredentialV2(transactionId);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKey.map(List::of).orElseGet(List::of), clientInfo);
+            credentialOfferRepository.save(credentialOffer);
+            try {
+                var clientInfoString = objectMapper.writeValueAsString(clientInfo);
+                webhookService.produceDeferredEvent(credentialOffer.getId(), clientInfoString);
+            } catch (JsonProcessingException e) {
+                throw new JsonException("Error processing client info for deferred credential offer", e);
+            }
+        } else {
+            responseEnvelope = vcBuilder.buildCredentialV2();
+            credentialOffer.markAsIssued();
+            credentialOfferRepository.save(credentialOffer);
+            webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        }
+
+        return responseEnvelope;
+    }
+
+    private void validateCredentialRequest(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest) {
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
         if (!credentialOffer.getCredentialStatus().equals(CredentialStatusType.IN_PROGRESS)) {
@@ -168,52 +316,10 @@ public class CredentialService {
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT, "Mismatch between requested and offered format.");
         }
 
-        /* For later ;)
-        if (credentialRequest.getCredentialConfigurationId() != null && credentialOffer.getMetadataCredentialSupportedId().getFirst().equals(credentialRequest.getCredentialConfigurationId())) {
+
+        if (credentialRequest.getCredentialConfigurationId() != null && !credentialOffer.getMetadataCredentialSupportedId().getFirst().equals(credentialRequest.getCredentialConfigurationId())) {
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_TYPE, "Mismatch between requested and offered credential configuration id.");
-        }*/
-
-        Optional<String> holderPublicKey;
-        try {
-            holderPublicKey = getHolderPublicKey(credentialRequest, credentialOffer);
-        } catch (Oid4vcException e) {
-            webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
-                    e.getMessage());
-            throw e;
         }
-
-        var vcBuilder = vcFormatFactory
-                // get first entry because we expect the list to only contain one item
-                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
-                .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
-                .holderBinding(holderPublicKey)
-                .credentialType(credentialOffer.getMetadataCredentialSupportedId());
-
-        CredentialEnvelopeDto responseEnvelope;
-
-        // for deferred check if flag in the metadata set
-        if (credentialOffer.isDeferred()) {
-            var deferredData = new DeferredDataDto(UUID.randomUUID());
-
-            responseEnvelope = vcBuilder.buildEnvelopeDto(deferredData);
-            credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest,
-                    holderPublicKey.orElse(null), clientInfo);
-            credentialOfferRepository.save(credentialOffer);
-            try {
-                var clientInfoString = objectMapper.writeValueAsString(clientInfo);
-                webhookService.produceDeferredEvent(credentialOffer.getId(), clientInfoString);
-            } catch (JsonProcessingException e) {
-                throw new JsonException("Error processing client info for deferred credential offer", e);
-            }
-        } else {
-            responseEnvelope = vcBuilder.buildCredential();
-            credentialOffer.markAsIssued();
-            credentialOfferRepository.save(credentialOffer);
-            webhookService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
-        }
-
-        return responseEnvelope;
     }
 
     private Optional<CredentialOffer> getNonExpiredCredentialOffer(Optional<CredentialOffer> credentialOffer) {
@@ -264,13 +370,13 @@ public class CredentialService {
     /**
      * Validate and process the credentialRequest
      *
-     * @param credentialRequest the credential request to be processed
-     * @param credentialOffer   the credential offer for which the request was sent
+     * @param proofJwt        the proof JWT that contains the holder's public key
+     * @param credentialOffer the credential offer for which the request was sent
      * @return the holder's public key or an empty optional
      * if for the offered credential no holder binding is required
      * @throws Oid4vcException if the credential request is invalid in some form
      */
-    private Optional<String> getHolderPublicKey(CredentialRequestClass credentialRequest,
+    private Optional<String> getHolderPublicKey(Optional<ProofJwt> proofJwt,
                                                 CredentialOffer credentialOffer) {
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst());
@@ -278,10 +384,7 @@ public class CredentialService {
         // Process Holder Binding if a Proof Type is required
         var supportedProofTypes = credentialConfiguration.getProofTypesSupported();
         if (supportedProofTypes != null && !supportedProofTypes.isEmpty()) {
-            var requestProof = credentialRequest.getProof(applicationProperties.getAcceptableProofTimeWindowSeconds(), applicationProperties.getAcceptableProofTimeWindowSeconds())
-                    .orElseThrow(
-                            () -> new Oid4vcException(INVALID_PROOF,
-                                    "Proof must be provided for the requested credential"));
+            var requestProof = proofJwt.orElseThrow(() -> new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
             var bindingProofType = Optional.of(supportedProofTypes.get(requestProof.proofType.toString()))
                     .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
                             "Provided proof is not supported for the credential requested."));

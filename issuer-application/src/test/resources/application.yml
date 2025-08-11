@@ -15,7 +15,7 @@ application:
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
   trusted-attestation-providers: [ "did:test:test-attestation-builder" ]
   template-replacement:
-    external-url: "http://localhost:8080/oid4vci"
+    external-url: "http://localhost:8080"
     stage: "local-"
   status-list:
     private-key: |
@@ -33,6 +33,7 @@ application:
   acceptable-proof-time-window-seconds: 120
   nonce-lifetime-seconds: 120
   openid-file: "classpath:example_openid.json"
+  min-deferred-offer-interval-seconds: 10
   metadata-file: "classpath:example_issuer_metadata.json"
   # vct metadata files. They key will become part of the url
   vct-metadata-files:
