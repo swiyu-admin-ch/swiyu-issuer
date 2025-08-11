@@ -537,6 +537,7 @@ Callback Object Structure
 erDiagram
     CREDENTIAL_OFFER {
         uuid id PK
+        enbedded audit_metadata
         text credential_status
         array[text] metadata_credential_supported_id
         jsonb offer_data
@@ -545,7 +546,7 @@ erDiagram
         uuid transaction_id
         array[text] holder_jwks
         jsonb client_agent_info
-        uuid holder_binding_nonce
+        long token_expiration_timestamp tokenExpirationTimestam
         uuid access_token
         uuid nonce
         uuid pre_authorized_code
@@ -556,8 +557,9 @@ erDiagram
 
     CREDENTIAL_OFFER_STATUS {
         uuid credential_offer_id PK, FK
-        uuid status_id PK, FK
+        uuid status_list_id PK, FK
         integer index
+        enbedded audit_metadata
     }
 
     STATUS_LIST {
@@ -566,8 +568,9 @@ erDiagram
         jsonb config
         text uri
         text status_zipped
-        int last_used_index
+        int next_free_index
         int max_length
+        enbedded audit_metadata
     }
 
     CREDENTIAL_OFFER one to many CREDENTIAL_OFFER_STATUS: "has status"

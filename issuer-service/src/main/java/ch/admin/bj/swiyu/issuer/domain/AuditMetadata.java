@@ -24,5 +24,4 @@ public class AuditMetadata {
     @Column
     @CreatedDate
     private Instant createdAt;
-
 }
