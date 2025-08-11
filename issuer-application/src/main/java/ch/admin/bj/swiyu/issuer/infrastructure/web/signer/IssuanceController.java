@@ -87,7 +87,7 @@ public class IssuanceController {
             throw OAuthException.invalidRequest("The request is missing a required parameter");
         }
 
-        if (oauthAccessTokenRequestDto.preauthorized_code() == null || oauthAccessTokenRequestDto.preauthorized_code().isBlank()) {
+        if (StringUtils.isBlank(oauthAccessTokenRequestDto.preauthorized_code())) {
             throw OAuthException.invalidRequest("Pre-authorized code is required");
         }
 
