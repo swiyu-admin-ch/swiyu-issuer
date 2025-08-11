@@ -31,6 +31,7 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -70,6 +71,10 @@ public class IssuanceController {
             @RequestParam(name = "grant_type", defaultValue = OID4VCI_GRANT_TYPE) String grantType,
             @RequestParam(name = "pre-authorized_code") String preAuthCode) {
 
+        if (StringUtils.isBlank(preAuthCode)) {
+            throw OAuthException.invalidRequest("Pre-authorized code is required");
+        }
+
         if (!OID4VCI_GRANT_TYPE.equals(grantType)) {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
@@ -90,6 +95,14 @@ public class IssuanceController {
     )
     public OAuthTokenDto oauthAccessToken(
             @ModelAttribute OauthAccessTokenRequestDto oauthAccessTokenRequestDto) {
+
+        if (oauthAccessTokenRequestDto == null) {
+            throw OAuthException.invalidRequest("The request is missing a required parameter");
+        }
+
+        if (StringUtils.isBlank(oauthAccessTokenRequestDto.preauthorized_code())) {
+            throw OAuthException.invalidRequest("Pre-authorized code is required");
+        }
 
         if (!OID4VCI_GRANT_TYPE.equals(oauthAccessTokenRequestDto.grant_type())) {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
