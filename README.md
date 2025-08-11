@@ -79,7 +79,7 @@ list of your issuer so that you can issue credentials with a status.
 
 It is possible to issue credentials without status. Be wary though, as these credentials can not be revoked anymore!
 
-**Request to create an status list slot**  
+**Request to create a status list slot**  
 The url you'll receive in the response will be used in the next request as STATUS_JWT_URL
 
 ```bash
@@ -105,30 +105,6 @@ curl -X POST https://<EXTERNAL_URL of swiyu-issuer-service>/status-list \
     }
   }'
 
-```
-
-## 4. Issue credential
-
-You're now ready to issue credentials by using the swiyu-issuer-service API which is accessible under
-https://<EXTERNAL_URL of swiyu-issuer-service>**/swagger-ui/index.html#/Credential%20API/createCredential** to create
-a credential offer for a holder. Here is an example of a request body for the offer creation
-
-```json
-{
-    "metadata_credential_supported_id": [
-        "myIssuerMetadataCredentialSupportedId"
-    ],
-    "credential_subject_data": {
-        "lastName": "Example",
-        "firstName": "Edward"
-    },
-    "offer_validity_seconds": 86400,
-    "credential_valid_until": "2030-01-01T19:23:24Z",
-    "credential_valid_from": "2010-01-01T18:23:24Z",
-    "status_lists": [
-        "https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt"
-    ]
-}
 ```
 
 ### VCT - verifiable credential type
@@ -173,13 +149,11 @@ compatibility with other ecosystem participants, please use the adoptions as sho
 ### Deployment considerations
 
 Please note that by default configuration the issuer service is set up in a way to easily gain experience with the
-issuance process,
-not as a productive deployment. With the configurations found bellow, it can be configured and set up for productive
-use.
+issuance process, not as a productive deployment. With the configurations found below, it can be configured and set up
+for productive use.
 
 We recommend to not expose the service directly to the web. The focus of the application lies in the functionality of
-the issuance.
-Using API Gateway or Web Application Firewall can decrease the attack surface significantly.
+the issuance. Using API Gateway or Web Application Firewall can decrease the attack surface significantly.
 
 To prevent misuse, the management endpoints should be protected by either by network infrastructure (for example mTLS)
 or using OAuth.
@@ -203,8 +177,7 @@ flowchart LR
 # Development
 
 > Please be aware that this section **focus on the development of the issuer agent service**. For the deployment of
-> the
-> component please consult [deployment section](#Deployment).
+> the component please consult [deployment section](#Deployment).
 
 ## Setup
 
@@ -275,11 +248,11 @@ The Generic Issuer Agent is configured using environment variables.
 
 #### DB Connection
 
-| Variable          | Description                                                                                     |
-|:------------------|:------------------------------------------------------------------------------------------------|
-| POSTGRES_USER     | Username to connect to the Issuer Agent Database shared with the issuer agent managment service |
-| POSTGRES_PASSWORD | Username to connect to the Issuer Agent Database                                                |
-| POSTGRES_JDBC     | JDBC Connection string to the shared DB                                                         |
+| Variable          | Description                                                                                      |
+|:------------------|:-------------------------------------------------------------------------------------------------|
+| POSTGRES_USER     | Username to connect to the Issuer Agent Database shared with the issuer agent management service |
+| POSTGRES_PASSWORD | Username to connect to the Issuer Agent Database                                                 |
+| POSTGRES_JDBC     | JDBC Connection string to the shared DB                                                          |
 
 #### Verifiable Credential Issuing
 
@@ -303,10 +276,10 @@ The Generic Issuer Agent is configured using environment variables.
 | SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                         |
 | SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                       |
 | SWIYU_STATUS_REGISTRY_TOKEN_URL                      | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                               |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self managment portal.                                     |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                  |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self management portal.                                    |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self management portal.                                 |
 | SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
-| SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal.   |
+| SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal.  |
 
 #### Caching
 
@@ -365,9 +338,8 @@ set the environment variables with the allowed public key as a JSON Web Key Set
     JWKS_ALLOWLIST={"keys":[{"kty":"EC","crv":"P-256","kid":"testkey","x":"_gHQsZT-CB_KvIfpvJsDxVSXkuwRJsuof-oMihcupQU","y":"71y_zEPAglUXBghaBxypTAzlNx57KNY9lv8LTbPkmZA"}]}
 ```
 
-If the JWT based authentication is activated it's expected to all in calls be wrapped in a signed JWT with the claim "
-data".
-The value of the data claim will contain the full json body of the normal request.
+If the JWT based authentication is activated, all calls must be wrapped in a signed JWT with the claim "data" other
+calls will be rejected. The value of the data claim will contain the full json body of the normal request.
 
 Note that this is only affects writing calls.
 
@@ -380,15 +352,15 @@ for examples on how to use.
 
 #### Kubernetes Vault Keys
 
-| Variable                                             | Description                                                                                                                                           |
-|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| secret.db.username                                   | Username to connect to the Issuer Agent Database shared with the issuer agent managment service                                                       |
-| secret.db.password                                   | Username to connect to the Issuer Agent Database                                                                                                      |
-| secret.key.sdjwt.key                                 | Private Key used to sign jwt_vc / SD-JWT Verifiable Credentials                                                                                       |
-| secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                          |
-| secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self managment portal.                                   |
-| secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self managment portal.                                |
-| secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self managment portal. |
+| Variable                                             | Description                                                                                                                                            |
+|------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| secret.db.username                                   | Username to connect to the Issuer Agent Database shared with the issuer agent management service                                                       |
+| secret.db.password                                   | Username to connect to the Issuer Agent Database                                                                                                       |
+| secret.key.sdjwt.key                                 | Private Key used to sign jwt_vc / SD-JWT Verifiable Credentials                                                                                        |
+| secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                           |
+| secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self management portal.                                   |
+| secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self management portal.                                |
+| secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal. |
 
 #### HSM - Hardware Security Module
 
@@ -396,7 +368,7 @@ For operations with an HSM, the keys need not be mounted directly into the envir
 Instead, a connection is created to the HSM via JCA. This can be with
 the [Sun PKCS11 provider](https://docs.oracle.com/en/java/javase/22/security/pkcs11-reference-guide1.html) or a vendor
 specific option.
-Note that for creating the keys it is expected that the public key is provided as self-signed certificated.
+Note that for creating the keys it is expected that the public key is provided as self-signed certificate.
 
 For vendor specific options it is necessary to provide the library in the java classpath. For this mount or add the
 necessary jars to the docker container.
@@ -439,8 +411,7 @@ Using Spring environment variables arbitrary environment variables can be used f
 
 Let's say we want to add a prefix to the display name for your VC depending on the environment your issuer runs on.
 This can be achieved by adding in a template value, which is in essence an arbitrary string decorated by ${}.
-In this case we choose "stage". The environment variables are all in caps.
-See
+In this case we choose "stage". The environment variables are all in caps. See
 the [official Spring documentation](https://docs.spring.io/spring-boot/docs/2.6.1/reference/html/features.html#features.external-config.typesafe-configuration-properties.relaxed-binding.environment-variables)
 for further information.
 
@@ -529,23 +500,23 @@ Placeholders in these files will be replaced as well.
 | APPLICATION_JSONSCHEMAMETADATAFILES_                  | $EXTERNAL_URL/oid4vci/json-schema/ |
 | APPLICATION_OVERLAYSCAPTUREARCHITECTUREMETADATAFILES_ | $EXTERNAL_URL/oid4vci/oca/         |
 
-For example we could use the file `/cfg-files/vct-test.json` by setting
+For example, we could use the file `/cfg-files/vct-test.json` by setting
 `APPLICATION_VCTMETADATAFILES_TESTV1=file:/cfg-files/vct-test.json`.
 The content of vct-test.json will then be available at `$EXTERNAL_URL/vct/testv1`
 
 #### Webhook Callbacks
 
-For issuers it can be useful to have up-to-date information about offered credentials.
+For the business-issuer it can be useful to have up-to-date information about offered credentials.
 It is possible to configure a Webhook Callback endpoint, optionally secured by API Key. Please note that delivery of
 callback events will be retried until successful, to guarantee an at-least-once delivery.
 Failed deliveries will create error logs and be retried in the next interval.
 
-| Variable               | Description                                                                                                                                                                           |
-|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| WEBHOOK_CALLBACK_URI   | Full URI of the REST endpoint where webhooks shall be sent to. No Callback events will be created if not set.                                                                         |
-| WEBHOOK_API_KEY_HEADER | (Optional) API key header, if the callback uri has a api key for protection. Will be used as HTTP header key.                                                                         |
-| WEBHOOK_API_KEY_VALUE  | (Optional, Required if WEBHOOK_API_KEY_HEADER is set) The API key used.                                                                                                               |
-| WEBHOOK_INTERVAL       | How often the collected events are sent. Value interpreted as millisends if given a plain integer or an [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). | 
+| Variable               | Description                                                                                                                                                                             |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| WEBHOOK_CALLBACK_URI   | Full URI of the REST endpoint where webhooks shall be sent to. No Callback events will be created if not set.                                                                           |
+| WEBHOOK_API_KEY_HEADER | (Optional) API key header, if the callback uri has a api key for protection. Will be used as HTTP header key.                                                                           |
+| WEBHOOK_API_KEY_VALUE  | (Optional, Required if WEBHOOK_API_KEY_HEADER is set) The API key used.                                                                                                                 |
+| WEBHOOK_INTERVAL       | How often the collected events are sent. Value interpreted as milliseconds if given a plain integer or an [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). | 
 
 Callbacks will be sent on change of VC state, such as when the VC is issued to a holder or is deferred.
 Errors which concern the issuing process also create callbacks.
@@ -558,7 +529,7 @@ Callback Object Structure
 | event_type        | VC_STATUS_CHANGED or ISSUANCE_ERROR                                                                                    |
 | event             | The new VC state if event_type is VC_STATUS_CHANGED. If ISSUANCE_ERROR one of OAUTH_TOKEN_EXPIRED or KEY_BINDING_ERROR |
 | event_description | Human readable details.                                                                                                |
-| timestamp         | timestamp the event occured. Can differ from the time it is sent.                                                      |
+| timestamp         | timestamp the event occurred. Can differ from the time it is sent.                                                     |
 
 ## Data Structure
 
@@ -702,14 +673,6 @@ To get more information about the different calls please check the detail docume
 * [Credential issuance flow](./issuance.md)
 * [Deferred issuance flow](./deferred.md)
 
-> [!NOTE]  
-> If you use the deferred flow, you need to set the `deferred: true` in the `credentialMetadata` of the credential offer
-> request.
-
-The credential offer data is not required when the deferred flow is used. It can be set on a later point in time with
-the `patch /management/api/credentials/{credentialId}` endpoint. This endpoint also changes the status from `DEFERRED`
-to `READY`.
-
 ## Credential Status
 
 ```mermaid
@@ -752,11 +715,11 @@ To get the appropriate credentials please visit the swiyu portal application on 
 For access to the swiyu api you need a refresh token along with your other credentials, please see the `SWIYU_*`
 environment variables for further details.
 
-The refresh token can only be used one time, but dont worry: the application does manage the refresh tokens itself.  
+The refresh token can only be used one time, but don't worry: the application does manage the refresh tokens itself.  
 But if your issuer agent component does not run for over a week it might be possible that the refresh token
 saved in the database is no longer valid and cannot be used to start the api auth flow.  
-If this is the case you need to manually create a new refresh token in the api self service portal and bootstrap your
-issuer agent managment component with this token.  
+If this is the case you need to manually create a new refresh token in the api self-service portal and bootstrap your
+issuer agent management component with this token.  
 The application does log an appropriate error if it detects such an issue but will still start up.  
 Updates to the status registry will fail as long as the auth flow is not restarted with a valid bootstrap token.
 
@@ -774,7 +737,7 @@ example the:
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin)
 
 These endpoints can be used if the custom header `SWIYU-API-Version=2` is set in the request. These endpoints are not
-yet pentested.
+yet pen-tested.
 
 #### Setup a local environment
 
@@ -784,7 +747,7 @@ yet pentested.
 4. Navigate again to ePortal
 5. Search and select the application **API Selfservice Portal**
 6. Select the API **swiyucorebusiness_status**
-7. Click the blue botton "Abonnieren Sie"
+7. Click the blue button "Abonnieren Sie"
 8. Create a new application for this instance
 9. Use Customer Key & Secret to configure application-local.yml
 10. Onboard via API Gateway (TODO)

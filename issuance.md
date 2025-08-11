@@ -90,6 +90,10 @@ With the response:
 > If `"credential_metadata": { "vct#integrity": "sha256-0000000000000000000000000000000000000000000=" }, vct#integrity`
 > is set then the `vct#integrity` claim is added to the final credential.
 
+The integrity hash is provided with each created credential offer in the offer metadata while issuing the credential.
+The integrity can be calculated using shell commands.
+`echo "sha256-$(wget -O- http://localhost:8080/oid4vci/vct/my-vct-v01 | openssl dgst -binary -sha256 | openssl base64 -A)"`
+
 ```bash
 curl -X 'POST' \
   'http://localhost:8080/management/api/credentials' \
