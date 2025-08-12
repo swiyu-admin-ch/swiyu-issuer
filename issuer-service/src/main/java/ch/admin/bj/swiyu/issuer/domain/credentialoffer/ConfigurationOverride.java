@@ -17,12 +17,4 @@ public record ConfigurationOverride(
     public String verificationMethodOrDefault(String defaultValue) {
         return StringUtils.getIfBlank(verificationMethod, () -> defaultValue);
     }
-
-    public String keyIdOrDefault(String defaultValue) {
-        return StringUtils.getIfBlank(keyId, () -> defaultValue);
-    }
-
-    public String keyPinOrDefault(String defaultValue) {
-        return StringUtils.getIfBlank(keyPin, () -> defaultValue);
-    }
 }
