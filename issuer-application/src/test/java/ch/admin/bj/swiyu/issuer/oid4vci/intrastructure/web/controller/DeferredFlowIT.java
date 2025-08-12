@@ -25,6 +25,7 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.SignedJWT;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -162,6 +163,12 @@ class DeferredFlowIT {
         mock.perform(get("/management/api/credentials/" + credentialWithDeeplinkResponseDto.getManagementId() + "/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DEFERRED"))
+                .andReturn();
+
+        mock.perform(get("/management/api/credentials/" + credentialWithDeeplinkResponseDto.getManagementId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DEFERRED"))
+                .andExpect(jsonPath("$.holder_jwks[0]").value(SignedJWT.parse(proof).getHeader().getJWK().toJSONString()))
                 .andReturn();
 
         mock.perform(patch("/management/api/credentials/" + credentialWithDeeplinkResponseDto.getManagementId())
