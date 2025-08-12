@@ -386,8 +386,9 @@ class CredentialServiceTest {
         when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(credentialOffer));
         when(applicationProperties.getTokenTTL()).thenReturn(600L);
 
+        var preAuthCodeString = preAuthCode.toString();
         var exception = assertThrows(OAuthException.class, () -> {
-            credentialService.issueOAuthToken(preAuthCode.toString());
+            credentialService.issueOAuthToken(preAuthCodeString);
         });
 
         assertEquals("Credential has already been used", exception.getMessage());
@@ -402,7 +403,7 @@ class CredentialServiceTest {
         CredentialRequestClass credentialRequest = mock(CredentialRequestClass.class);
         ClientAgentInfo clientInfo = mock(ClientAgentInfo.class);
 
-        CredentialOffer credentialOffer = mockCredentialOffer(CredentialStatusType.IN_PROGRESS, accessToken, true);
+        CredentialOffer credentialOffer = mockCredentialOffer(accessToken, true);
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.of(credentialOffer));
@@ -432,7 +433,7 @@ class CredentialServiceTest {
 
         CredentialRequestClass credentialRequest = mock(CredentialRequestClass.class);
         ClientAgentInfo clientInfo = mock(ClientAgentInfo.class);
-        CredentialOffer credentialOffer = mockCredentialOffer(CredentialStatusType.IN_PROGRESS, accessToken, false);
+        CredentialOffer credentialOffer = mockCredentialOffer(accessToken, false);
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.of(credentialOffer));
@@ -454,10 +455,10 @@ class CredentialServiceTest {
         verify(webhookService).produceStateChangeEvent(any(), any());
     }
 
-    private CredentialOffer mockCredentialOffer(CredentialStatusType status, UUID accessToken, boolean isDeferred) {
+    private CredentialOffer mockCredentialOffer(UUID accessToken, boolean isDeferred) {
         CredentialOffer credentialOffer = mock(CredentialOffer.class);
 
-        when(credentialOffer.getCredentialStatus()).thenReturn(status);
+        when(credentialOffer.getCredentialStatus()).thenReturn(CredentialStatusType.IN_PROGRESS);
         when(credentialOffer.getMetadataCredentialSupportedId()).thenReturn(List.of("test-metadata"));
 
         when(credentialOffer.getAccessToken()).thenReturn(accessToken);

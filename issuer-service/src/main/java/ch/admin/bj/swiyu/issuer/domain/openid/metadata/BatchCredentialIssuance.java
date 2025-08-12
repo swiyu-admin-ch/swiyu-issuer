@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
  * This record is used to specify the batch size for credential issuance in the metadata.
  * see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-issuer-metadata-p">...</a>
  */
-public record CatchCredentialIssuance(
+public record BatchCredentialIssuance(
         @JsonProperty("batch_size")
         @NotNull
         @Min(value = 2, message = "Batch size must be at least 2")

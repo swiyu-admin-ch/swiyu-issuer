@@ -51,7 +51,7 @@ public class IssuerMetadataTechnical {
     private IssuerCredentialResponseEncryption responseEncryption;
 
     @JsonProperty("batch_credential_issuance")
-    private CatchCredentialIssuance batchCredentialIssuance;
+    private BatchCredentialIssuance batchCredentialIssuance;
 
     @JsonProperty("version")
     @NotNull
