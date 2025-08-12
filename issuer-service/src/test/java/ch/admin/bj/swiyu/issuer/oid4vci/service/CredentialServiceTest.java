@@ -310,7 +310,7 @@ class CredentialServiceTest {
 
         DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId);
 
-        CredentialOffer credentialOffer = getCredentialOffer(
+        CredentialOffer credentialOffer = spy(getCredentialOffer(
                 CredentialStatusType.READY,
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 offerData,
@@ -318,7 +318,7 @@ class CredentialServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 Map.of("deferred", true),
-                transactionId);
+                transactionId));
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
@@ -343,6 +343,51 @@ class CredentialServiceTest {
 
         verify(credentialOfferRepository).save(credentialOffer);
         verify(webhookService).produceStateChangeEvent(any(), any());
+        verify(credentialOffer).markAsIssued();
+    }
+
+    @Test
+    void testCreateCredentialFromDeferredRequestV2_success() {
+
+        UUID transactionId = UUID.randomUUID();
+        UUID accessToken = UUID.randomUUID();
+
+        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId);
+
+        CredentialOffer credentialOffer = spy(getCredentialOffer(
+                CredentialStatusType.READY,
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                offerData,
+                accessToken,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                Map.of("deferred", true),
+                transactionId));
+
+        when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
+        when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
+
+        // Mock the factory to return the builder
+        var sdJwtCredential = mock(SdJwtCredential.class);
+        when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialResponseEncryption(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
+
+        // Act
+        credentialService.createCredentialFromDeferredRequestV2(deferredRequest, accessToken.toString());
+
+        // check if is issued && data removed
+        assertEquals(CredentialStatusType.ISSUED, credentialOffer.getCredentialStatus());
+        assertNull(credentialOffer.getOfferData());
+        assertNull(credentialOffer.getTransactionId());
+        assertNull(credentialOffer.getHolderJWKs());
+        assertNull(credentialOffer.getClientAgentInfo());
+
+        verify(credentialOfferRepository).save(credentialOffer);
+        verify(webhookService).produceStateChangeEvent(any(), any());
+        verify(credentialOffer).markAsIssued();
     }
 
     @Test
@@ -387,15 +432,13 @@ class CredentialServiceTest {
         when(applicationProperties.getTokenTTL()).thenReturn(600L);
 
         var preAuthCodeString = preAuthCode.toString();
-        var exception = assertThrows(OAuthException.class, () -> {
-            credentialService.issueOAuthToken(preAuthCodeString);
-        });
+        var exception = assertThrows(OAuthException.class, () -> credentialService.issueOAuthToken(preAuthCodeString));
 
         assertEquals("Credential has already been used", exception.getMessage());
     }
 
     @Test
-    void createCredentialV2_deferred_thenSuccess() throws Exception {
+    void createCredentialV2_deferred_thenSuccess() {
         // Arrange
         CredentialRequestDtoV2 requestDto = mock(CredentialRequestDtoV2.class);
         UUID accessToken = UUID.randomUUID();
@@ -426,7 +469,7 @@ class CredentialServiceTest {
     }
 
     @Test
-    void createCredentialV2_nonDeferred_thenSuccess() throws Exception {
+    void createCredentialV2_nonDeferred_thenSuccess() {
         // Arrange
         CredentialRequestDtoV2 requestDto = mock(CredentialRequestDtoV2.class);
         UUID accessToken = UUID.randomUUID();

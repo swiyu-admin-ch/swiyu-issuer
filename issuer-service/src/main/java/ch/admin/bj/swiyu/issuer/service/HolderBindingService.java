@@ -58,6 +58,12 @@ public class HolderBindingService {
                 .map(pk -> validateHolderPublicKeyV2(Optional.of(pk), credentialOffer, supportedProofTypes))
                 .toList();
 
+        // check if proof is unique
+        // todo move up once proof jwt is refactored
+        if (holderPublicKeys.stream().map(ProofJwt::getBinding).distinct().count() != holderPublicKeys.size()) {
+            throw new Oid4vcException(INVALID_PROOF, "Proofs should not be duplicated for the same credential request");
+        }
+
         List<String> nonces = holderPublicKeys.stream()
                 .map(ProofJwt::getNonce)
                 .toList();

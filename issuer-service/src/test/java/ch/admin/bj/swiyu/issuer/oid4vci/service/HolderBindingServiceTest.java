@@ -102,13 +102,34 @@ class HolderBindingServiceTest {
     }
 
     @Test
+    void validateHolderPublicKeys_reusedProof_throwsOID4VCIException() {
+        CredentialOffer offer = mock(CredentialOffer.class);
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
+        CredentialConfiguration config = mock(CredentialConfiguration.class);
+        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
+        when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
+        mockBatchCredentialIssuance(2);
+
+        List<ProofJwt> proofs = List.of(mock(ProofJwt.class), mock(ProofJwt.class));
+
+        holderBindingService = spy(holderBindingService);
+
+        doReturn("credential").when(holderBindingService).validateHolderPublicKeyV2(any(), any(), any());
+
+        var e = assertThrows(Oid4vcException.class, () ->
+                holderBindingService.validateHolderPublicKeys(proofs, offer));
+        assertEquals("Proofs should not be duplicated for the same credential request", e.getMessage());
+    }
+
+
+    @Test
     void throwsIfProofsExceedBatchSize() {
         CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
         CredentialConfiguration config = mock(CredentialConfiguration.class);
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
-        mockBatchCredentialIssuance();
+        mockBatchCredentialIssuance(1);
 
         ProofJwt proof1 = mock(ProofJwt.class);
         ProofJwt proof2 = mock(ProofJwt.class);
@@ -209,8 +230,8 @@ class HolderBindingServiceTest {
         assertEquals("Presented proof was reused!", e.getMessage());
     }
 
-    private void mockBatchCredentialIssuance() {
-        var batchCredentialIssuance = new BatchCredentialIssuance(1);
+    private void mockBatchCredentialIssuance(int batchSize) {
+        var batchCredentialIssuance = new BatchCredentialIssuance(batchSize);
         when(issuerMetadata.getBatchCredentialIssuance()).thenReturn(batchCredentialIssuance);
     }
 
