@@ -4,37 +4,41 @@
 
 ```mermaid
 sequenceDiagram
-    actor BUSINESS as Business Issuer 
-
+    actor BUSINESS as Business Issuer
     participant ISS as Issuer Agent
     participant DB as Issuer DB
     participant STATUS as Status Registry
-
     actor WALLET as Holder
 
-    # Create offer
-    BUSINESS->>+ISS: Create offer
+# Create status list
+    BUSINESS ->>+ ISS: Create status list
+    ISS ->>+ DB: Store status list metadata
+DB-->>-ISS: 
     ISS->>+STATUS: Create status list entry
-    STATUS->>-ISS: 
-    ISS->>+DB : Store offer
-    DB-->>-ISS : 
-    ISS-->>-BUSINESS : Return offer details (incl. deeplink)
+STATUS->>-ISS:
+ISS-->>-BUSINESS :
 
-    # Pass deeplink to WALLET
-    BUSINESS-->>+WALLET : Pass deeplink to wallet
-    Note over BUSINESS,WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
+# Create offer
+BUSINESS->>+ISS: Create offer
+ISS->>+DB: Store offer
+DB-->>-ISS:
+ISS-->>-BUSINESS: Return offer details (incl. deeplink)
 
-    loop Status check
-        BUSINESS->>+ISS: Get status
-        ISS-->>-BUSINESS : 
-    end
+# Pass deeplink to WALLET
+BUSINESS-->>+WALLET: Pass deeplink to wallet
+Note over BUSINESS, WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
 
-    # Get credential
-    WALLET->>+ISS : Get openid metadata
-    ISS-->>-WALLET : 
+loop Status check
+BUSINESS->>+ISS: Get status
+ISS-->>-BUSINESS:
+end
 
-    WALLET->>+ISS : Get issuer metadata
-    ISS-->>-WALLET : 
+# Get credential
+WALLET->>+ISS: Get openid metadata
+ISS-->>-WALLET:
+
+WALLET->>+ISS: Get issuer metadata
+ISS-->>-WALLET: 
 ```
 
 ### Create status list entry
@@ -303,25 +307,24 @@ used in production.
 ```mermaid
 sequenceDiagram
     actor WALLET as Holder
-
     participant ISS as Issuer Agent
     participant DB as Issuer DB
 
-    # Get credential
-    WALLET->>+ISS : Get openid metadata
-    ISS-->>-WALLET : 
+# Get credential
+    WALLET ->>+ ISS: Get openid metadata
+ISS-->>-WALLET: 
 
-    WALLET->>+ISS : Get issuer metadata
-    ISS-->>-WALLET : 
+WALLET->>+ISS: Get issuer metadata
+ISS-->>-WALLET:
 
-    WALLET->>+ISS : Get oauth token
-    ISS-->>-WALLET : Oauth token
+WALLET->>+ISS: Get oauth token
+ISS-->>-WALLET : Oauth token
 
-     
-    WALLET->>+ISS: Get credential
-    ISS->>+DB : Get offer data and status list INFO
-    DB-->>-ISS : 
-    ISS-->>-WALLET : VC
+
+WALLET->>+ISS: Get credential
+ISS->>+DB: Get offer data and status list INFO
+DB-->>-ISS:
+ISS-->>-WALLET: VC
 
 ```
 
@@ -367,29 +370,29 @@ sequenceDiagram
     participant ISS as Issuer Agent
     participant DB as Issuer DB
 
-    # Get credential
-    WALLET->>+ISS : Get openid metadata
-    ISS-->>-WALLET : 
+# Get credential
+    WALLET ->>+ ISS: Get openid metadata
+ISS-->>-WALLET: 
 
-    WALLET->>+ISS : Get issuer metadata
-    ISS-->>-WALLET : 
+WALLET->>+ISS: Get issuer metadata
+ISS-->>-WALLET:
 
-    WALLET->>+ISS : Get oauth token
-    ISS-->>-WALLET : Oauth token
+WALLET->>+ISS: Get oauth token
+ISS-->>-WALLET : Oauth token
 
-    WALLET->>+ISS : Get Nonce
-    ISS->>+DB : Store Nonce
-    DB-->>-ISS : 
-    ISS-->>-WALLET : 
+WALLET->>+ISS: Get Nonce
+ISS->>+DB: Store Nonce
+DB-->>-ISS:
+ISS-->>-WALLET:
 
-    WALLET->>+ISS: Get credential
-    ISS->>+DB : Get offer data and status list INFO
-    DB-->>-ISS : 
-    ISS->>+DB : Get Nonce
-    DB-->>-ISS :
-    ISS->>ISS : Check Nonce
-    ISS->>+DB : Invalidate Nonce
-    ISS-->>-WALLET : VC
+WALLET->>+ISS: Get credential
+ISS->>+DB: Get offer data and status list INFO
+DB-->>-ISS:
+ISS->>+DB: Get Nonce
+DB-->>-ISS:
+ISS->>ISS: Check Nonce
+ISS->>+DB: Invalidate Nonce
+ISS-->>-WALLET: VC
 ```
 
 ### Get Nonce

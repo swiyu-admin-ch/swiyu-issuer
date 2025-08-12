@@ -39,9 +39,9 @@ flowchart LR
     iss(Issuer Service)
     isdb[(Postgres)]
     wallet[Wallet]
-    issint --Internal Network--> iss
+    issint -- Internal Network --> iss
     iss ---> isdb
-    wallet --Web Access--> iss
+    wallet -- Web Access --> iss
 ```
 
 A possible deployment configuration of the issuer service. Issuer Business System as well as API
@@ -78,34 +78,6 @@ Once the swiyu-issuer-service and postgres instance are up and running you need 
 list of your issuer so that you can issue credentials with a status.
 
 It is possible to issue credentials without status. Be wary though, as these credentials can not be revoked anymore!
-
-**Request to create a status list slot**  
-The url you'll receive in the response will be used in the next request as STATUS_JWT_URL
-
-```bash
-curl -X POST https://<SWIYU_STATUS_REGISTRY_API_URL>/api/v1/status/business-entities/<SWIYU_PARTNER_ID>/status-list-entries/ \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <SWIYU_STATUS_REGISTRY_ACCESS_TOKEN>" \
-  -d '{}'
-
-
-```
-
-The following request needs to be run on your swiyu-issuer-service instance.
-
-```bash
-curl -X POST https://<EXTERNAL_URL of swiyu-issuer-service>/status-list \
--H "Content-Type: application/json" \
--d '{
-    "uri": "<STATUS_JWT_URL>",
-    "type": "TOKEN_STATUS_LIST",
-    "maxLength": 100000,
-    "config": {
-    "bits": 2
-    }
-  }'
-
-```
 
 ### VCT - verifiable credential type
 
@@ -166,12 +138,12 @@ flowchart LR
     wallet[Wallet]
     apigw[\API Gateway\]
     auth[\Authentication Server\]
-    issint --Internal network calls--> iss
+    issint -- Internal network calls --> iss
     iss ---> isdb
-    wallet --Web calls--> apigw
-    apigw --Filtered calls--> iss
-    issint --Get OAuth2.0 Token--> auth
-    iss --Validate OAuth2.0 Token--> auth
+    wallet -- Web calls --> apigw
+    apigw -- Filtered calls --> iss
+    issint -- Get OAuth2 . 0 Token --> auth
+    iss -- Validate OAuth2 . 0 Token --> auth
 ```
 
 # Development
@@ -536,45 +508,45 @@ Callback Object Structure
 ```mermaid
 erDiagram
     CREDENTIAL_OFFER {
-        uuid id PK
-        enbedded audit_metadata
-        text credential_status
-        array[text] metadata_credential_supported_id
-        jsonb offer_data
-        jsonb credential_metadata
-        jsonb credential_request
-        uuid transaction_id
-        array[text] holder_jwks
-        jsonb client_agent_info
-        long token_expiration_timestamp tokenExpirationTimestam
+uuid id PK
+enbedded audit_metadata
+text credential_status
+array[text] metadata_credential_supported_id
+jsonb offer_data
+jsonb credential_metadata
+jsonb credential_request
+uuid transaction_id
+array[text] holder_jwks
+jsonb client_agent_info
+long token_expiration_timestamp tokenExpirationTimestam
         uuid access_token
-        uuid nonce
-        uuid pre_authorized_code
-        integer offer_expiration_timestamp
-        text credential_valid_from
-        text credential_valid_until
-    }
+uuid nonce
+uuid pre_authorized_code
+integer offer_expiration_timestamp
+text credential_valid_from
+text credential_valid_until
+}
 
-    CREDENTIAL_OFFER_STATUS {
-        uuid credential_offer_id PK, FK
-        uuid status_list_id PK, FK
-        integer index
-        enbedded audit_metadata
-    }
+CREDENTIAL_OFFER_STATUS {
+uuid credential_offer_id PK, FK
+uuid status_list_id PK, FK
+integer index
+enbedded audit_metadata
+}
 
-    STATUS_LIST {
-        uuid id PK
-        text type
-        jsonb config
-        text uri
-        text status_zipped
-        int next_free_index
-        int max_length
-        enbedded audit_metadata
-    }
+STATUS_LIST {
+uuid id PK
+text type
+jsonb config
+text uri
+text status_zipped
+int next_free_index
+int max_length
+enbedded audit_metadata
+}
 
-    CREDENTIAL_OFFER one to many CREDENTIAL_OFFER_STATUS: "has status"
-    STATUS_LIST one to many CREDENTIAL_OFFER_STATUS: "is referenced in"
+CREDENTIAL_OFFER one to many CREDENTIAL_OFFER_STATUS: "has status"
+STATUS_LIST one to many CREDENTIAL_OFFER_STATUS: "is referenced in"
 ```
 
 Note: Status List info comes from config and are populated to the DB the first time a Credential uses the status.
@@ -586,89 +558,87 @@ revoke the credential later on.
 
 ```mermaid
 sequenceDiagram
-    actor BUSINESS as Business Issuer 
-
+    actor BUSINESS as Business Issuer
     participant ISS as Issuer Agent
     participant DB as Issuer DB
     participant STATUS as Status Registry
-
     actor WALLET as Holder
 
-    # Create offer
-    BUSINESS->>+ISS: Create offer
-    ISS->>+STATUS: Create status list entry
-    STATUS->>-ISS: 
-    ISS->>+DB : Store offer
-    DB-->>-ISS : 
-    ISS-->>-BUSINESS : Return offer details (incl. deeplink)
+# Create offer
+    BUSINESS ->>+ ISS: Create offer
+    ISS ->>+ STATUS: Create status list entry
+STATUS->>-ISS: 
+    ISS->>+DB: Store offer
+DB-->>-ISS:
+ISS-->>-BUSINESS: Return offer details (incl. deeplink)
 
-    # Pass deeplink to WALLET
-    BUSINESS-->>+WALLET : Pass deeplink to wallet
-    Note over BUSINESS,WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
+# Pass deeplink to WALLET
+BUSINESS-->>+WALLET: Pass deeplink to wallet
+Note over BUSINESS, WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
 
-    loop Status check
-        BUSINESS->>+ISS: Get status
-        ISS-->>-BUSINESS : 
-    end
+loop Status check
+BUSINESS->>+ISS: Get status
+ISS-->>-BUSINESS:
+end
 
-    # Get credential
-    WALLET->>+ISS : Get openid metadata
-    ISS-->>-WALLET : 
+# Get credential
+WALLET->>+ISS: Get openid metadata
+ISS-->>-WALLET:
 
-    WALLET->>+ISS : Get issuer metadata
-    ISS-->>-WALLET : 
+WALLET->>+ISS : Get issuer metadata
+ISS-->>-WALLET:
 
-    WALLET->>+ISS : Get oauth token
-    ISS-->>-WALLET : Oauth token
+WALLET->>+ISS: Get oauth token
+ISS-->>-WALLET: Oauth token
 
-    alt Deferred = true
-        WALLET->>+ISS : Redeem offer
-        ISS->>+DB : Get offer data and status list INFO
-        DB-->-ISS : 
-        ISS->>+DB : Set STATUS = Deferred
-        DB-->-ISS : 
-        ISS-->>-WALLET : Transaction id
+alt Deferred = true
+WALLET->>+ISS: Redeem offer
+ISS->>+DB: Get offer data and status list INFO
+DB-->-ISS :
+ISS->>+DB: Set STATUS = Deferred
+DB-->-ISS:
+ISS-->>-WALLET: Transaction id
 
-        loop get status
-            BUSINESS->>+ISS: Get status
-            ISS-->>-BUSINESS : Status
+loop get status
+BUSINESS->>+ISS: Get status
+ISS-->>-BUSINESS: Status
 
-            alt STATUS is Deferred
-                BUSINESS->>BUSINESS : Some additional process
-                alt offer data is already set
-                    BUSINESS->>+ISS : Set status READY
-                else
-                    BUSINESS->>+ISS : Set offer data (STATUS is set to READY)
-                end
-                ISS->>DB : Store offer
-                ISS-->>-BUSINESS : 
-            end
-        end
+alt STATUS is Deferred
+BUSINESS->>BUSINESS: Some additional process
+alt offer data is already set
+BUSINESS->>+ISS: Set status READY
+else
+BUSINESS->>+ISS: Set offer data (STATUS is set to READY)
+end
+ISS->>DB: Store offer
+ISS-->>-BUSINESS:
+end
+end
 
-        loop Get deferred credential
-            alt STATUS is not READY
-                WALLET->>+ISS: Get credential from deferred_credential
-                ISS->>+DB : Get offer data and status list INF
-                DB-->-ISS : 
-                ISS-->>-WALLET : issuance_pending
-            else
-                WALLET->>+ISS: Get credential from deferred_credential
-                ISS->>+DB : Get offer data and status list INFO
-                DB-->-ISS : 
-                ISS-->>-WALLET : VC
-            end
-        end
-    else 
-        WALLET->>+ISS: Get credential
-        ISS->>+DB : Get offer data and status list INFO
-        ISS-->>-WALLET : VC
-    end
+loop Get deferred credential
+alt STATUS is not READY
+WALLET->>+ISS: Get credential from deferred_credential
+ISS->>+DB: Get offer data and status list INF
+DB-->-ISS :
+ISS-->>-WALLET: issuance_pending
+else
+WALLET->>+ISS: Get credential from deferred_credential
+ISS->>+DB: Get offer data and status list INFO
+DB-->-ISS:
+ISS-->>-WALLET: VC
+end
+end
+else
+WALLET->>+ISS: Get credential
+ISS->>+DB: Get offer data and status list INFO
+ISS-->>-WALLET: VC
+end
 
-    loop STATUS is ISSUED
-        BUSINESS->>+ISS: Get status
-        ISS->>+DB : Remove offer data
-        ISS-->>-BUSINESS : Status
-    end
+loop STATUS is ISSUED
+BUSINESS->>+ISS: Get status
+ISS->>+DB: Remove offer data
+ISS-->>-BUSINESS: Status
+end
 ```
 
 To get more information about the different calls please check the detail documentations:
@@ -691,15 +661,15 @@ stateDiagram-v2
     SUSPENDED
     REVOKED
     [*] --> OFFERED
-    OFFERED --> CANCELLED : Process can be "cancelled as long as the vc is not ISSUED"
+    OFFERED --> CANCELLED: Process can be "cancelled as long as the vc is not ISSUED"
     CANCELLED --> [*]
     OFFERED --> IN_PROGRESS
     IN_PROGRESS --> fork_state
-    fork_state --> DEFERRED : Credential endpoint called by Holder and (deferred = true)
-    fork_state --> join_state : Non-deferred flow
-    IN_PROGRESS --> EXPIRED : Can expire on status (OFFERED, IN_PROGRESS, DEFERRED, READY)
+    fork_state --> DEFERRED: Credential endpoint called by Holder and (deferred = true)
+    fork_state --> join_state: Non-deferred flow
+    IN_PROGRESS --> EXPIRED: Can expire on status (OFFERED, IN_PROGRESS, DEFERRED, READY)
     EXPIRED --> [*]
-    DEFERRED --> READY : Status READY must be set by the business issuer
+    DEFERRED --> READY: Status READY must be set by the business issuer
     READY --> join_state
     join_state --> ISSUED
     ISSUED --> SUSPENDED

@@ -4,84 +4,88 @@
 
 ```mermaid
 sequenceDiagram
-    actor BUSINESS as Business Issuer 
-
+    actor BUSINESS as Business Issuer
     participant ISS as Issuer Agent
     participant DB as Issuer DB
     participant STATUS as Status Registry
-
     actor WALLET as Holder
 
-    # Create offer
-    BUSINESS->>+ISS: Create offer
+# Create status list
+    BUSINESS ->>+ ISS: Create status list
+    ISS ->>+ DB: Store status list metadata
+DB-->>-ISS: 
     ISS->>+STATUS: Create status list entry
-    STATUS->>-ISS: 
-    ISS->>+DB : Store offer
-    DB-->>-ISS : 
-    ISS-->>-BUSINESS : Return offer details (incl. deeplink)
+STATUS->>-ISS:
+ISS-->>-BUSINESS :
 
-    # Pass deeplink to WALLET
-    BUSINESS-->>+WALLET : Pass deeplink to wallet
-    Note over BUSINESS,WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
+# Create offer
+BUSINESS->>+ISS: Create offer
+ISS->>+DB: Store offer
+DB-->>-ISS:
+ISS-->>-BUSINESS: Return offer details (incl. deeplink)
 
-    loop Status check
-        BUSINESS->>+ISS: Get status
-        ISS-->>-BUSINESS : 
-    end
+# Pass deeplink to WALLET
+BUSINESS-->>+WALLET: Pass deeplink to wallet
+Note over BUSINESS, WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
 
-    # Get credential
-    WALLET->>+ISS : Get openid metadata
-    ISS-->>-WALLET : 
+loop Status check
+BUSINESS->>+ISS: Get status
+ISS-->>-BUSINESS:
+end
 
-    WALLET->>+ISS : Get issuer metadata
-    ISS-->>-WALLET : 
+# Get credential
+WALLET->>+ISS: Get openid metadata
+ISS-->>-WALLET:
 
-    WALLET->>+ISS : Get oauth token
-    ISS-->>-WALLET : Oauth token
+WALLET->>+ISS: Get issuer metadata
+ISS-->>-WALLET:
 
-    WALLET->>+ISS : Redeem offer
-    ISS->>+DB : Get offer data and status list INFO
-    DB-->-ISS : 
-    ISS->>+DB : Set STATUS = Deferred
-    DB-->-ISS : 
-    ISS-->>-WALLET : Transaction id
+WALLET->>+ISS: Get oauth token
+ISS-->>-WALLET: Oauth token
 
-    loop get status
-        BUSINESS->>+ISS: Get status
-        ISS-->>-BUSINESS : Status
+WALLET->>+ISS: Redeem offer
+ISS->>+DB: Get offer data and status list INFO
+DB-->-ISS:
+ISS->>+DB: Set STATUS = Deferred
+DB-->-ISS:
+ISS-->>-WALLET : Transaction id
 
-        alt STATUS is Deferred
-            BUSINESS->>BUSINESS : Some additional process
-            alt offer data is already set
-                BUSINESS->>+ISS : Set status READY
-            else
-                BUSINESS->>+ISS : Set offer data (STATUS is set to READY)
-            end
-            ISS->>DB : Store offer
-            ISS-->>-BUSINESS : 
-        end
-    end
+loop get status
+BUSINESS->>+ISS: Get status
+ISS-->>-BUSINESS: Status
 
-    loop Get deferred credential
-        alt STATUS is not READY
-            WALLET->>+ISS: Get credential from deferred_credential
-            ISS->>+DB : Get offer data and status list INF
-            DB-->-ISS : 
-            ISS-->>-WALLET : issuance_pending
-        else
-            WALLET->>+ISS: Get credential from deferred_credential
-            ISS->>+DB : Get offer data and status list INFO
-            DB-->-ISS : 
-            ISS-->>-WALLET : VC
-        end
-    end
-    
+alt STATUS is Deferred
+BUSINESS->>BUSINESS: Some additional process
+alt offer data is already set
+BUSINESS->>+ISS: Set status READY
+else
+BUSINESS->>+ISS : Set offer data (STATUS is set to READY)
+end
+ISS->>DB: Store offer
+ISS-->>-BUSINESS:
+end
+end
 
-    loop STATUS is ISSUED
-        BUSINESS->>+ISS: Get status
-        ISS->>+DB : Remove offer data
-        ISS-->>-BUSINESS : Status
-    end
+loop Get deferred credential
+alt STATUS is not READY
+WALLET->>+ISS: Get credential from deferred_credential
+ISS->>+DB: Get offer data and status list INF
+DB-->-ISS:
+ISS-->>-WALLET: issuance_pending
+else
+WALLET->>+ISS: Get credential from deferred_credential
+ISS->>+DB: Get offer data and status list INFO
+DB-->-ISS:
+ISS-->>-WALLET: VC
+end
+end
+
+
+loop STATUS is ISSUED
+BUSINESS->>+ISS: Get status
+ISS->>+DB: Remove offer data
+ISS-->>-BUSINESS: Status
+end
 ```
 
 ### Create status list entry
