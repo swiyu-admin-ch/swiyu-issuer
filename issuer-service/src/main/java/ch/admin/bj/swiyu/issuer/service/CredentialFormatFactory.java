@@ -42,7 +42,14 @@ public class CredentialFormatFactory {
         return switch (configuration.getFormat()) {
             case "vc+sd-jwt" -> {
                 try {
-                    yield new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, signatureService.createSigner(sdjwtProperties), statusListRepository, credentialOfferStatusRepository);
+                    yield new SdJwtCredential(
+                            applicationProperties,
+                            issuerMetadata,
+                            dataIntegrityService,
+                            sdjwtProperties,
+                            signatureService,
+                            statusListRepository,
+                            credentialOfferStatusRepository);
                 } catch (Exception e) {
                     throw new ConfigurationException("Signing Key Configuration could not be used for signature", e);
                 }

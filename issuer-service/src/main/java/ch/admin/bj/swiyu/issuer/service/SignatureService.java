@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.service.factory.KeyManagementStrategyFactory;
+import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategy;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +10,7 @@ import com.nimbusds.jose.JWSSigner;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -26,26 +28,26 @@ public class SignatureService {
 
     private final KeyManagementStrategyFactory strategyFactory;
     private final ObjectMapper objectMapper;
+    private final KeyStrategy key;
 
 
     /**
      * Create Signer with overridden keyId & keyPin
      */
     @Cacheable(JWS_SIGNER_CACHE)
-    public JWSSigner createSigner(@NotNull SignatureConfiguration signatureConfiguration, String keyId, @Nullable String keyPin) throws KeyStrategyException {
+    public JWSSigner createSigner(@NotNull SignatureConfiguration signatureConfiguration, @Nullable String keyId, @Nullable String keyPin) throws KeyStrategyException {
         try {
             var config = objectMapper.readValue(objectMapper.writeValueAsString(signatureConfiguration), SignatureConfiguration.class);
-            config.getHsm().setKeyId(keyId);
-            config.getHsm().setKeyPin(keyPin);
+            if (StringUtils.isNotEmpty(keyId)) {
+                config.getHsm().setKeyId(keyId);
+            }
+            if (StringUtils.isNotEmpty(keyPin)) {
+                config.getHsm().setKeyPin(keyPin);
+            }
             return buildSigner(config);
         } catch (JsonProcessingException e) {
             throw new KeyStrategyException("Failed to copy signature configuration", e);
         }
-    }
-
-    @Cacheable(JWS_SIGNER_CACHE)
-    public JWSSigner createSigner(SignatureConfiguration signatureConfiguration) throws KeyStrategyException {
-        return buildSigner(signatureConfiguration);
     }
 
     private JWSSigner buildSigner(SignatureConfiguration signatureConfiguration) throws KeyStrategyException {
