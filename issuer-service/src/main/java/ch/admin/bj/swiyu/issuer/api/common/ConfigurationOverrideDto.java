@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 
-@Schema(description = "Override for configuration to be use for the created entity")
+@Schema(name = "ConfigurationOverride", description = "Override for configuration to be use for the created entity")
 public record ConfigurationOverrideDto(
         @Schema(description = "Override to be used in place of the ISSUER_ID")
         @Nullable
