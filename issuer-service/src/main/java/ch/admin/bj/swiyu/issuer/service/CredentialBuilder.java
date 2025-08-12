@@ -24,6 +24,7 @@ import com.nimbusds.jose.JWSSigner;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 
@@ -79,7 +80,7 @@ public abstract class CredentialBuilder {
     public CredentialEnvelopeDto buildCredentialEnvelopeV2() {
         // if no holder bindings are set, we only create 1 credential
         List<CredentialObjectDtoV2> credentials = new ArrayList<>();
-        if (this.holderBindings == null || this.holderBindings.isEmpty()) {
+        if (CollectionUtils.isEmpty(this.holderBindings)) {
             var credential = new CredentialObjectDtoV2(getCredential(null));
             credentials.add(credential);
         } else {
