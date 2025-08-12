@@ -37,6 +37,7 @@ public class SignatureService {
     @Cacheable(JWS_SIGNER_CACHE)
     public JWSSigner createSigner(@NotNull SignatureConfiguration signatureConfiguration, @Nullable String keyId, @Nullable String keyPin) throws KeyStrategyException {
         try {
+            // Deep copy of Signature Configuration, so that we do not override the defaults
             var config = objectMapper.readValue(objectMapper.writeValueAsString(signatureConfiguration), SignatureConfiguration.class);
             if (StringUtils.isNotEmpty(keyId)) {
                 config.getHsm().setKeyId(keyId);
