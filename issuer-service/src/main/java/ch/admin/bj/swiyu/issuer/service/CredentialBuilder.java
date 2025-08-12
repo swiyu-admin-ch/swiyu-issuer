@@ -44,9 +44,12 @@ public abstract class CredentialBuilder {
     private Optional<DidJwk> holderBinding;
     private List<String> metadataCredentialsSupportedIds;
 
-    CredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata,
+    CredentialBuilder(ApplicationProperties applicationProperties,
+                      IssuerMetadataTechnical issuerMetadata,
                       DataIntegrityService dataIntegrityService,
-                      StatusListRepository statusListRepository, SignatureService signatureService, CredentialOfferStatusRepository credentialOfferStatusRepository) {
+                      StatusListRepository statusListRepository,
+                      SignatureService signatureService,
+                      CredentialOfferStatusRepository credentialOfferStatusRepository) {
         this.applicationProperties = applicationProperties;
         this.issuerMetadata = issuerMetadata;
         this.dataIntegrityService = dataIntegrityService;
