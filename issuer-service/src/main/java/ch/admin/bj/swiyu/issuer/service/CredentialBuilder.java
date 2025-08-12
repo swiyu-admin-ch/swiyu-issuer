@@ -35,25 +35,28 @@ public abstract class CredentialBuilder {
     private final ApplicationProperties applicationProperties;
     private final IssuerMetadataTechnical issuerMetadata;
     private final DataIntegrityService dataIntegrityService;
-    private final JWSSigner signer;
     private final StatusListRepository statusListRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
+    private final SignatureService signatureService;
     private CredentialResponseEncryptor credentialResponseEncryptor;
     private CredentialOffer credentialOffer;
     private CredentialConfiguration credentialConfiguration;
     private Optional<DidJwk> holderBinding;
     private List<String> metadataCredentialsSupportedIds;
 
-    CredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata,
-                      DataIntegrityService dataIntegrityService, JWSSigner signer,
-                      StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
+    CredentialBuilder(ApplicationProperties applicationProperties,
+                      IssuerMetadataTechnical issuerMetadata,
+                      DataIntegrityService dataIntegrityService,
+                      StatusListRepository statusListRepository,
+                      SignatureService signatureService,
+                      CredentialOfferStatusRepository credentialOfferStatusRepository) {
         this.applicationProperties = applicationProperties;
         this.issuerMetadata = issuerMetadata;
         this.dataIntegrityService = dataIntegrityService;
         this.holderBinding = Optional.empty();
-        this.signer = signer;
         this.statusListRepository = statusListRepository;
         this.credentialOfferStatusRepository = credentialOfferStatusRepository;
+        this.signatureService = signatureService;
     }
 
     public CredentialBuilder credentialOffer(CredentialOffer credentialOffer) {
@@ -136,6 +139,8 @@ public abstract class CredentialBuilder {
         return this.dataIntegrityService.getVerifiedOfferData(this.credentialOffer.getOfferData(), this.credentialOffer.getId());
     }
 
+    abstract JWSSigner createSigner();
+
     /**
      * Create all status list references in the way they are to be added to the VC JSON
      * eg
@@ -174,8 +179,6 @@ public abstract class CredentialBuilder {
     }
 
     abstract String getCredential();
-
-    // abstract String getCredential(String proof);
 
     /**
      * Gets the credential configuration form the issuer metadata matching the credential supported id of the offer

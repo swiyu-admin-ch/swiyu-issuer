@@ -10,15 +10,16 @@ import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreati
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.*;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.io.IOException;
 import java.util.*;
 
+import static ch.admin.bj.swiyu.issuer.service.CredentialOfferMapper.toConfigurationOverride;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusListMapper.toStatusListDto;
 
 @Slf4j
@@ -45,7 +47,6 @@ public class StatusListService {
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
     private final SignatureService signatureService;
-    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public StatusListDto getStatusListInformation(UUID statusListId) {
@@ -115,7 +116,7 @@ public class StatusListService {
      * @param offerStatus
      * @param bit         the statusBit to be set
      */
-    private void updateTokenStatusList(CredentialOfferStatus offerStatus, TokenStatusListBit bit) {
+    protected void updateTokenStatusList(CredentialOfferStatus offerStatus, TokenStatusListBit bit) {
         StatusList statusList = statusListRepository.findByIdForUpdate(offerStatus.getId().getStatusListId()).orElseThrow();
         if ((Integer) statusList.getConfig().get("bits") < bit.getValue()) {
             throw new BadRequestException(String.format("Attempted to update a status list %s to a status not supported %s", statusList.getUri(), bit.name()));
@@ -154,8 +155,9 @@ public class StatusListService {
                 .statusZipped(token.getStatusListData())
                 .nextFreeIndex(0)
                 .maxLength(statusListCreateDto.getMaxLength())
+                .configurationOverride(toConfigurationOverride(statusListCreateDto.getConfigurationOverride()))
                 .build();
-        log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits()*statusList.getMaxLength());
+        log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits() * statusList.getMaxLength());
         updateRegistry(statusList, token);
         return statusList;
     }
@@ -176,9 +178,9 @@ public class StatusListService {
     private void updateRegistry(StatusList statusListEntity, TokenStatusListToken token) {
         // Build JWT
         SignedJWT statusListJWT = buildStatusListJWT(statusListEntity, token);
-
+        var override = statusListEntity.getConfigurationOverride();
         try {
-            statusListJWT.sign(signatureService.defaultSigner(statusListProperties));
+            statusListJWT.sign(signatureService.createSigner(statusListProperties, override.keyId(), override.keyPin()));
         } catch (Exception e) {
             log.error("Failed to sign status list JWT with the provided key.", e);
             throw new ConfigurationException("Failed to sign status list JWT with the provided key.");
@@ -187,12 +189,14 @@ public class StatusListService {
     }
 
     private SignedJWT buildStatusListJWT(StatusList statusListEntity, TokenStatusListToken token) {
+        var override = statusListEntity.getConfigurationOverride();
+
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(statusListProperties.getVerificationMethod())
+                .keyID(override.verificationMethodOrDefault(statusListProperties.getVerificationMethod()))
                 .type(new JOSEObjectType("statuslist+jwt")).build();
         JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
                 .subject(statusListEntity.getUri())
-                .issuer(applicationProperties.getIssuerId())
+                .issuer(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
                 .issueTime(new Date())
                 .claim("status_list", token.getStatusListClaims())
                 .build();

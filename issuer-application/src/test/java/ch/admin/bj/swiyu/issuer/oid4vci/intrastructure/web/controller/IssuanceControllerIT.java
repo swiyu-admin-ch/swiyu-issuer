@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -108,6 +109,12 @@ class IssuanceControllerIT {
                 .nonce(UUID.randomUUID())
                 .preAuthorizedCode(preAuthCode)
                 .build();
+    }
+
+    private void addOverride(UUID preAuthCode, ConfigurationOverride override) {
+        var offer = credentialOfferRepository.findByPreAuthorizedCode(preAuthCode);
+        assert offer.isPresent();
+        offer.get().setConfigurationOverride(override);
     }
 
     @BeforeEach
@@ -218,12 +225,26 @@ class IssuanceControllerIT {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void testCredentialFlow_thenSuccess(boolean useNewNonce) throws Exception {
-        String vc = getBoundVc(useNewNonce);
+    @CsvSource({"true,", "false,", "true,did:example:override", "false,did:example:override"})
+    void testCredentialFlow_thenSuccess(boolean useNewNonce, String overrideId) throws Exception {
+        ConfigurationOverride override = null;
+        String expectedIssuer;
+        String expectedVerificationMethod;
+        if (overrideId != null) {
+            expectedIssuer = overrideId;
+            expectedVerificationMethod = overrideId + "#key1";
+            override = new ConfigurationOverride(overrideId, overrideId + "#key1", null, null);
+        } else {
+            expectedIssuer = applicationProperties.getIssuerId();
+            expectedVerificationMethod = sdjwtProperties.getVerificationMethod();
+        }
+        String vc = getBoundVc(useNewNonce, override);
 
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
+        var jwt = SignedJWT.parse(vc.split("~")[0]);
 
+        assertEquals(expectedIssuer, jwt.getJWTClaimsSet().getIssuer());
+        assertEquals(expectedVerificationMethod, jwt.getHeader().getKeyID());
     }
 
     @Test
@@ -496,6 +517,13 @@ class IssuanceControllerIT {
     }
 
     private String getBoundVc(boolean useNonceEndpoint) throws Exception {
+        return getBoundVc(useNonceEndpoint, null);
+    }
+
+    private String getBoundVc(boolean useNonceEndpoint, ConfigurationOverride override) throws Exception {
+        if (override != null) {
+            addOverride(validPreAuthCode, override);
+        }
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         var nonce = tokenResponse.get("c_nonce").toString();

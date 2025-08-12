@@ -22,10 +22,7 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.Objects.nonNull;
 
@@ -152,6 +149,13 @@ public class CredentialOffer {
     private CredentialRequestClass credentialRequest;
 
     /**
+     * Overrides for a single status list's configuration normally injected via application properties
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name="configuration_override", columnDefinition = "jsonb")
+    private ConfigurationOverride configurationOverride;
+
+    /**
      * Read the offer data depending on input type and add it to offer
      *
      * @param offerData can be string or map -> other will throw exception
@@ -263,6 +267,11 @@ public class CredentialOffer {
             return false;
         }
         return nonNull(credentialMetadata.get("deferred")) && (boolean) credentialMetadata.get("deferred");
+    }
+
+    @NotNull
+    public ConfigurationOverride getConfigurationOverride() {
+        return Objects.requireNonNullElseGet(this.configurationOverride, () -> new ConfigurationOverride(null, null, null, null));
     }
 
     private void invalidateOfferData() {

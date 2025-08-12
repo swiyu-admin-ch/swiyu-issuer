@@ -6,14 +6,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Se
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.transaction.annotation.Transactional;
 
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 

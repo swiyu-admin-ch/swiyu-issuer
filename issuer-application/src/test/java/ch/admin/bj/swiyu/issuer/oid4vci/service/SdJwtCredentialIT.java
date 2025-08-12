@@ -9,18 +9,21 @@ package ch.admin.bj.swiyu.issuer.oid4vci.service;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
 import com.jayway.jsonpath.JsonPath;
+import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -141,5 +144,28 @@ class SdJwtCredentialIT {
         List<String> sd = JsonPath.read(payload, "$._sd");
         assertEquals(3
                 , sd.size());
+    }
+
+    @Test
+    void getSdJwtCredentialTestSD_whenOverriding_thenSuccess() throws ParseException {
+        var overrideDid = "did:example:override";
+        var overrideVerificationMethod = overrideDid + "#key1";
+
+        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", new ConfigurationOverride(overrideDid, overrideVerificationMethod, null, null));
+
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
+        credentialRequest.setCredentialResponseEncryption(null);
+
+        var vc = vcFormatFactory
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredential();
+
+        String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
+        var issuedJwt = SignedJWT.parse(credential.split("~")[0]);
+        assertEquals(overrideVerificationMethod, issuedJwt.getHeader().getKeyID());
+        assertEquals(overrideDid, issuedJwt.getJWTClaimsSet().getIssuer());
     }
 }

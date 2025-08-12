@@ -73,6 +73,8 @@ class CredentialOfferServiceTest {
         suspended = getCredentialOffer(CredentialStatusType.SUSPENDED, now().plusSeconds(1000).getEpochSecond(), offerData);
         issued = getCredentialOffer(CredentialStatusType.ISSUED, now().minusSeconds(1).getEpochSecond(), null);
 
+        when(applicationProperties.getIssuerId()).thenReturn("did:example:123456789");
+
         when(credentialOfferRepository.findById(expiredOffer.getId())).thenReturn(Optional.of(expiredOffer));
         when(credentialOfferRepository.findById(valid.getId())).thenReturn(Optional.of(valid));
         when(credentialOfferRepository.findById(issued.getId())).thenReturn(Optional.of(issued));
@@ -571,7 +573,8 @@ class CredentialOfferServiceTest {
                 offerExpirationTimestamp,
                 Instant.now(),
                 Instant.now(),
-                new CredentialRequestClass("vc+sd-jwt", null, null)
+                new CredentialRequestClass("vc+sd-jwt", null, null),
+                null
         );
     }
 }
