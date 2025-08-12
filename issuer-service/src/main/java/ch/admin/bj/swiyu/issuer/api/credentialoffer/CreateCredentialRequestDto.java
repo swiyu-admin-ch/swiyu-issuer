@@ -61,7 +61,8 @@ public class CreateCredentialRequestDto {
             """,
             example = """
                     {
-                        "vct#integrity": "sha256-0000000000000000000000000000000000000000000="
+                        "vct#integrity": "sha256-0000000000000000000000000000000000000000000=",
+                        "deferred": false
                     }
                     """)
     private Map<String, Object> credentialMetadata;
