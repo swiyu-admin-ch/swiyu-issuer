@@ -643,6 +643,8 @@ sequenceDiagram
     end
 ```
 
+## Credential Flow Api details
+
 To get more information about the different calls please check the detail documentations:
 
 * [Credential issuance flow](./issuance.md)
