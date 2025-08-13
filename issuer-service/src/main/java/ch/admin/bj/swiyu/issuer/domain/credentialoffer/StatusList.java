@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -18,6 +19,7 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -81,6 +83,13 @@ public class StatusList {
     @NotNull
     private Integer maxLength;
 
+    /**
+     * Overrides for a single status list's configuration normally injected via application properties
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name="configuration_override", columnDefinition = "jsonb")
+    private ConfigurationOverride configurationOverride;
+
     public UUID getRegistryId() {
         /**
          * Currently we have a public interface which inputs only the whole URL for the
@@ -108,5 +117,10 @@ public class StatusList {
             throw new CredentialException(String.format("Max length %s exceeded for status list %s", maxLength, uri));
         }
         this.nextFreeIndex++;
+    }
+
+    @NotNull
+    public ConfigurationOverride getConfigurationOverride() {
+        return Objects.requireNonNullElseGet(this.configurationOverride, () -> new ConfigurationOverride(null, null, null, null));
     }
 }

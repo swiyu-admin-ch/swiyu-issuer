@@ -556,7 +556,8 @@ class CredentialServiceTest {
                 offerExpirationTimestamp,
                 Instant.now(),
                 Instant.now(),
-                new CredentialRequestClass("vc+sd-jwt", null, null)
+                new CredentialRequestClass("vc+sd-jwt", null, null),
+                null
         );
     }
 

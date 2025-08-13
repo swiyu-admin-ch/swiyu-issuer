@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.ClientAgentInfoDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
@@ -13,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import lombok.experimental.UtilityClass;
@@ -103,5 +105,12 @@ public class CredentialOfferMapper {
             case SUSPENDED -> CredentialStatusType.SUSPENDED;
             case REVOKED -> CredentialStatusType.REVOKED;
         };
+    }
+
+    public static ConfigurationOverride toConfigurationOverride(ConfigurationOverrideDto source) {
+        if (source == null) {
+            return null;
+        }
+        return new ConfigurationOverride(source.issuerDid(), source.verificationMethod(), source.keyId(), source.keyPin());
     }
 }

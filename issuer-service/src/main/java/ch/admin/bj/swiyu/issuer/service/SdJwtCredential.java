@@ -14,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepo
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
 import com.authlete.sd.SDObjectBuilder;
@@ -40,17 +41,31 @@ public class SdJwtCredential extends CredentialBuilder {
     private final SdjwtProperties sdjwtProperties;
 
 
-    public SdJwtCredential(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata, DataIntegrityService dataIntegrityService, SdjwtProperties sdjwtProperties, JWSSigner signer, StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
-        super(applicationProperties, issuerMetadata, dataIntegrityService, signer, statusListRepository, credentialOfferStatusRepository);
+    public SdJwtCredential(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata, DataIntegrityService dataIntegrityService, SdjwtProperties sdjwtProperties, SignatureService signatureService, StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
+        super(applicationProperties, issuerMetadata, dataIntegrityService, statusListRepository, signatureService, credentialOfferStatusRepository);
         this.sdjwtProperties = sdjwtProperties;
     }
 
     @Override
+    JWSSigner createSigner() {
+        var override = this.getCredentialOffer().getConfigurationOverride();
+        try {
+            return getSignatureService().createSigner(
+                    sdjwtProperties,
+                    override.keyId(),
+                    override.keyPin());
+        } catch (KeyStrategyException e) {
+            throw new CredentialException(e);
+        }
+    }
+
+    @Override
     public String getCredential(DidJwk didJwk) {
+        var override = getCredentialOffer().getConfigurationOverride();
         SDObjectBuilder builder = new SDObjectBuilder();
 
         // Mandatory claims or claims which always need to be disclosed according to SD-JWT VC specification
-        builder.putClaim("iss", getApplicationProperties().getIssuerId());
+        builder.putClaim("iss", override.issuerDidOrDefault(getApplicationProperties().getIssuerId()));
         // Get first entry because we expect the list to only contain one item
         var metadataId = getMetadataCredentialsSupportedIds().getFirst();
         builder.putClaim("vct", getIssuerMetadata().getCredentialConfigurationById(metadataId).getVct());
@@ -117,13 +132,13 @@ public class SdJwtCredential extends CredentialBuilder {
         try {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                     .type(new JOSEObjectType(SD_JWT_FORMAT))
-                    .keyID(sdjwtProperties.getVerificationMethod())
+                    .keyID(override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()))
                     .customParam("ver", sdjwtProperties.getVersion())
                     .build();
             JWTClaimsSet claimsSet = JWTClaimsSet.parse(builder.build(true));
             SignedJWT jwt = new SignedJWT(header, claimsSet);
 
-            jwt.sign(this.getSigner());
+            jwt.sign(this.createSigner());
 
             return new SDJWT(jwt.serialize(), disclosures).toString();
         } catch (ParseException | JOSEException e) {

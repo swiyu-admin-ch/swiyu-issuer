@@ -25,6 +25,10 @@ public class CredentialOfferTestData {
         return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), null);
     }
 
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, ConfigurationOverride override) {
+        return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), null, override);
+    }
+
     public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Instant validFrom, Instant validUntil) {
         return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, null);
     }
@@ -50,6 +54,16 @@ public class CredentialOfferTestData {
                                                   Instant validFrom,
                                                   Instant validUntil,
                                                   Map<String, Object> credentialMetadata) {
+        return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, credentialMetadata, null);
+    }
+
+    public static CredentialOffer createTestOffer(UUID preAuthCode,
+                                                  CredentialStatusType status,
+                                                  String metadataId,
+                                                  Instant validFrom,
+                                                  Instant validUntil,
+                                                  Map<String, Object> credentialMetadata,
+                                                  ConfigurationOverride override) {
         Map<String, Object> defaultCredentialMetadata = Map.of("vct#integrity", "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=");
         HashMap<String, Object> offerData = new HashMap<>();
         offerData.put("data", new GsonBuilder().create().toJson(addIllegalClaims(getUniversityCredentialSubjectData())));
@@ -65,6 +79,7 @@ public class CredentialOfferTestData {
                 .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
                 .credentialValidFrom(validFrom)
                 .credentialValidUntil(validUntil)
+                .configurationOverride(override)
                 .build();
     }
 

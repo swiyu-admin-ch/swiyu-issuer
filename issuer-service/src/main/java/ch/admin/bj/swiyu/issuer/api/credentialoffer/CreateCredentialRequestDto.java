@@ -6,11 +6,14 @@
 
 package ch.admin.bj.swiyu.issuer.api.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -58,7 +61,8 @@ public class CreateCredentialRequestDto {
             """,
             example = """
                     {
-                        "vct#integrity": "sha256-0000000000000000000000000000000000000000000="
+                        "vct#integrity": "sha256-0000000000000000000000000000000000000000000=",
+                        "deferred": false
                     }
                     """)
     private Map<String, Object> credentialMetadata;
@@ -103,4 +107,11 @@ public class CreateCredentialRequestDto {
         }
         return statusLists;
     }
+
+    @Schema(description = "Optional Parameter to override configured parameters, such as the DID used or the HSM key used in singing the request object")
+    @Valid
+    @Nullable
+    @JsonProperty("configuration_override")
+    private ConfigurationOverrideDto configurationOverride;
+
 }
