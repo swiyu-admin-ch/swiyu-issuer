@@ -245,7 +245,7 @@ public class CredentialService {
 
         List<String> holderJwkList;
         try {
-            holderJwkList = holderBindingService.validateHolderPublicKeys(proofs, credentialOffer);
+            holderJwkList = holderBindingService.getValidateHolderPublicKeys(proofs, credentialOffer);
         } catch (Oid4vcException e) {
             webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
                     e.getMessage());

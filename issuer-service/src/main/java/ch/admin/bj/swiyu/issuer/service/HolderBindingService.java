@@ -26,8 +26,8 @@ public class HolderBindingService {
     private final NonceService nonceService;
     private final KeyAttestationService keyAttestationService;
 
-    public List<String> validateHolderPublicKeys(List<ProofJwt> holderPublicKeys,
-                                                 CredentialOffer credentialOffer) throws Oid4vcException {
+    public List<String> getValidateHolderPublicKeys(List<ProofJwt> holderPublicKeys,
+                                                    CredentialOffer credentialOffer) throws Oid4vcException {
 
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst());
@@ -68,7 +68,7 @@ public class HolderBindingService {
                 .map(ProofJwt::getNonce)
                 .toList();
 
-        invalidateSelfContainedNonce(nonces);
+        nonceService.invalidateSelfContainedNonce(nonces);
 
         return result;
     }
@@ -155,14 +155,5 @@ public class HolderBindingService {
         keyAttestationService.checkHolderKeyAttestation(bindingProofType, requestProof);
 
         return requestProof.getBinding();
-    }
-
-    private void invalidateSelfContainedNonce(List<String> nonces) {
-        nonces.forEach(nonce -> {
-            var selfContainedNonce = new SelfContainedNonce(nonce);
-            if (selfContainedNonce.isSelfContainedNonce()) {
-                nonceService.registerNonce(selfContainedNonce);
-            }
-        });
     }
 }

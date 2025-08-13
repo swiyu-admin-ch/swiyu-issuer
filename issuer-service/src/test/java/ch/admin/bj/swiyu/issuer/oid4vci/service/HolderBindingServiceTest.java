@@ -62,7 +62,7 @@ class HolderBindingServiceTest {
         var proof = createHolderProof(test, "test-issuer", "nonce", ProofType.JWT.getDisplayName(), false);
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 100, 100);
 
-        List<String> result = holderBindingService.validateHolderPublicKeys(List.of(proofJwt), offer);
+        List<String> result = holderBindingService.getValidateHolderPublicKeys(List.of(proofJwt), offer);
         assertTrue(result.isEmpty());
     }
 
@@ -80,7 +80,7 @@ class HolderBindingServiceTest {
 
         List<ProofJwt> holderPublicKeys = List.of();
         var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.validateHolderPublicKeys(holderPublicKeys, offer));
+                holderBindingService.getValidateHolderPublicKeys(holderPublicKeys, offer));
 
         assertEquals("Proof must be provided for the requested credential", e.getMessage());
     }
@@ -97,7 +97,7 @@ class HolderBindingServiceTest {
         List<ProofJwt> proofs = List.of(mock(ProofJwt.class), mock(ProofJwt.class));
 
         var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.validateHolderPublicKeys(proofs, offer));
+                holderBindingService.getValidateHolderPublicKeys(proofs, offer));
         assertEquals("Multiple proofs are not allowed for this credential request", e.getMessage());
     }
 
@@ -117,7 +117,7 @@ class HolderBindingServiceTest {
         doReturn("credential").when(holderBindingService).validateHolderPublicKeyV2(any(), any(), any());
 
         var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.validateHolderPublicKeys(proofs, offer));
+                holderBindingService.getValidateHolderPublicKeys(proofs, offer));
         assertEquals("Proofs should not be duplicated for the same credential request", e.getMessage());
     }
 
@@ -137,7 +137,7 @@ class HolderBindingServiceTest {
         var holderPublicKeys = List.of(proof1, proof2);
 
         var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.validateHolderPublicKeys(holderPublicKeys, offer));
+                holderBindingService.getValidateHolderPublicKeys(holderPublicKeys, offer));
         assertEquals("The number of proofs exceeds the batch size limit", e.getMessage());
     }
 

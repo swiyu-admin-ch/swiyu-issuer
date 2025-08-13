@@ -456,7 +456,7 @@ class CredentialServiceTest {
         when(credentialRequest.getProofs(anyInt(), anyInt())).thenReturn(proofs);
 
         List<String> holderJwkList = List.of("jwk1");
-        when(holderBindingService.validateHolderPublicKeys(proofs, credentialOffer)).thenReturn(holderJwkList);
+        when(holderBindingService.getValidateHolderPublicKeys(proofs, credentialOffer)).thenReturn(holderJwkList);
 
         mockVCBuilder(credentialOffer);
         when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
@@ -486,7 +486,7 @@ class CredentialServiceTest {
         when(credentialRequest.getProofs(anyInt(), anyInt())).thenReturn(proofs);
 
         List<String> holderJwkList = List.of("jwk1");
-        when(holderBindingService.validateHolderPublicKeys(proofs, credentialOffer)).thenReturn(holderJwkList);
+        when(holderBindingService.getValidateHolderPublicKeys(proofs, credentialOffer)).thenReturn(holderJwkList);
 
         mockVCBuilder(credentialOffer);
         when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
