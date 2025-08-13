@@ -105,7 +105,7 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttestedVC(testOfferHighAttestationId, resistance);
         mockDidResolve(jwk.toPublicJWK());
         var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token, fetchData.credentialRequestString);
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.toString());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
     }
 
@@ -116,7 +116,7 @@ class KeyAttestationFlowIT {
         mockDidResolve(jwk.toPublicJWK());
         var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token, fetchData.credentialRequestString);
         // Proof should be invalid when untrusted
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.toString());
         // We want the error description to be helpful telling about the current issuer and the expected issuers.
         Assertions.assertThat(response.get("error_description").getAsString()).contains(untrustedIssuer).contains(applicationProperties.getTrustedAttestationProviders().getFirst());
     }
@@ -128,7 +128,7 @@ class KeyAttestationFlowIT {
         String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true);
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
         var response = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.toString());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Attestation");
     }
 
@@ -137,7 +137,7 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttestedVC(testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate().toPublicJWK());
         var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token, fetchData.credentialRequestString);
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.toString());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
     }
 
