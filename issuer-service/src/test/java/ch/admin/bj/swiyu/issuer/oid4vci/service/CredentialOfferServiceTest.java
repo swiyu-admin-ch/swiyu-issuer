@@ -142,7 +142,7 @@ class CredentialOfferServiceTest {
         Mockito.verify(credentialOfferRepository, Mockito.times(1)).save(any());
 
         // offer data should be null after expiration therefore no offer data or deeplink should be returned
-        assertNull(response.holderJWK());
+        assertNull(response.holderJWKs());
         assertNull(response.clientAgentInfo());
 
         var statusResponse = credentialService.getCredentialStatus(expiredOfferId);

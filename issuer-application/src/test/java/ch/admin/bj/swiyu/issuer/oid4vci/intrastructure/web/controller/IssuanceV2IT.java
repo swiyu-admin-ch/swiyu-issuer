@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.google.gson.JsonArray;
@@ -17,7 +18,6 @@ import com.nimbusds.jose.JWEObject;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,17 +25,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.Date;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doReturn;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -47,6 +48,7 @@ class IssuanceV2IT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
     private final UUID preAuthCode = UUID.randomUUID();
+    CredentialOffer offer;
     private ECKey jwk;
     @Autowired
     private MockMvc mock;
@@ -60,25 +62,18 @@ class IssuanceV2IT {
     private ApplicationProperties applicationProperties;
     @Autowired
     private SdjwtProperties sdjwtProperties;
+    @MockitoSpyBean
+    private IssuerMetadataTechnical issuerMetadataTechnical;
 
     @BeforeEach
     void setUp() throws JOSEException {
         var testStatusList = saveStatusList(createStatusList());
-        var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
         saveStatusListLinkedOffer(offer, testStatusList);
-        jwk = new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID("Test-Key")
-                .issueTime(new Date())
-                .generate();
+        jwk = createPrivateKeyV2("Test-Key");
 
         var unboundOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt");
         saveStatusListLinkedOffer(unboundOffer, testStatusList);
-        jwk = new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID("Test-Key")
-                .issueTime(new Date())
-                .generate();
     }
 
     @Test
@@ -86,15 +81,22 @@ class IssuanceV2IT {
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestStringV2(mock, List.of(jwk), applicationProperties);
 
-        requestCredential(mock, (String) token, credentialRequestString)
+        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
                 .andExpect(jsonPath("$.transaction_id").doesNotExist())
                 .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
+
+        var credentials = extractCredentialsV2(response);
+
+        assertEquals(1, credentials.size());
+        var credential = credentials.get(0).getAsJsonObject();
+        var credentialString = credential.get("credential").getAsString();
+        testHolderBindingV2(credentialString, jwk);
     }
 
     @Test
@@ -102,16 +104,22 @@ class IssuanceV2IT {
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, preAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\"}", "unbound_example_sd_jwt");
+        var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\"}",
+                "unbound_example_sd_jwt");
 
         // assumption if no proofs provided then only 1 credential is issued
-        requestCredential(mock, (String) token, credentialRequestString)
+        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
                 .andExpect(jsonPath("$.transaction_id").doesNotExist())
                 .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
+
+        var credentials = extractCredentialsV2(response);
+
+        // without proof only 1 credential is issued
+        assertEquals(1, credentials.size());
     }
 
     @Test
@@ -125,18 +133,23 @@ class IssuanceV2IT {
                 .generate();
 
         var responseEncryptionJson = String.format("""
-                {
-                    "alg": "%s",
-                    "enc": "%s",
-                    "jwk": %s
-                }
-                """, JWEAlgorithm.ECDH_ES_A128KW.getName(), EncryptionMethod.A128CBC_HS256.getName(), ecJWK.toPublicJWK().toJSONString());
+                        {
+                            "alg": "%s",
+                            "enc": "%s",
+                            "jwk": %s
+                        }
+                        """, JWEAlgorithm.ECDH_ES_A128KW.getName(), EncryptionMethod.A128CBC_HS256.getName(),
+                ecJWK.toPublicJWK().toJSONString());
 
         // credential_response_encryption
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
-        var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}", "university_example_sd_jwt", responseEncryptionJson, proof);
+        String proof = TestServiceUtils.createHolderProof(jwk,
+                applicationProperties.getTemplateReplacement().get("external-url"),
+                tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+        var credentialRequestString = String.format(
+                "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}",
+                "university_example_sd_jwt", responseEncryptionJson, proof);
 
-        var response = requestCredential(mock, (String) token, credentialRequestString)
+        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/jwt"))
                 .andExpect(jsonPath("$").isNotEmpty())
@@ -153,9 +166,68 @@ class IssuanceV2IT {
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
     }
 
-    private String getCredentialRequestString(Map<String, Object> tokenResponse, String configurationId) throws JOSEException {
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
-        return String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}", configurationId, proof);
+    @Test
+    void testSdJwtOffer_withMultipleProof_thenSuccess() throws Exception {
+
+        var numberOfProofs = 3;
+
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+
+        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.credentials").isNotEmpty())
+                .andExpect(jsonPath("$.transaction_id").doesNotExist())
+                .andExpect(jsonPath("$.interval").doesNotExist())
+                .andReturn();
+
+        var credentials = extractCredentialsV2(response);
+
+        assertEquals(numberOfProofs, credentials.size());
+
+        for (int j = 0; j < numberOfProofs; j++) {
+            var credential = credentials.get(j).getAsJsonObject();
+            var credentialString = credential.get("credential").getAsString();
+            testHolderBindingV2(credentialString, holderPrivateKeys.get(j));
+        }
+    }
+
+    @Test
+    void testSdJwtOffer_exceedsBatchSize_thenException() throws Exception {
+
+        var numberOfProofs = 4;
+
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+
+        requestCredentialV2(mock, (String) token, credentialRequestString)
+                .andExpect(status().isBadRequest())
+                .andReturn();
+    }
+
+    @Test
+    void testSdJwtOffer_noBatchIssuanceAllowed_thenException() throws Exception {
+
+        doReturn(null).when(issuerMetadataTechnical).getBatchCredentialIssuance();
+
+        var numberOfProofs = 2;
+
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+
+        requestCredentialV2(mock, (String) token, credentialRequestString)
+                .andExpect(status().isBadRequest())
+                .andReturn();
     }
 
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
@@ -166,14 +238,5 @@ class IssuanceV2IT {
 
     private StatusList saveStatusList(StatusList statusList) {
         return statusListRepository.save(statusList);
-    }
-
-    private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
-        return mock.perform(post("/oid4vci/api/credential")
-                .header("Authorization", String.format("BEARER %s", token))
-                .contentType("application/json")
-                .header("SWIYU-API-Version", "2")
-                .content(credentialRequestString)
-        );
     }
 }

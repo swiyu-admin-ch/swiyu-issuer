@@ -280,5 +280,7 @@ public class CredentialOffer {
         this.credentialRequest = null;
         this.holderJWKs = null;
         this.clientAgentInfo = null;
+        this.preAuthorizedCode = null;
+        this.offerExpirationTimestamp = 0L;
     }
 }

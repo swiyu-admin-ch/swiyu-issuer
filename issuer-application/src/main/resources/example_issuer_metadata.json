@@ -29,6 +29,9 @@
       }
     }
   ],
+  "batch_credential_issuance": {
+    "batch_size": 3
+  },
   "credential_configurations_supported": {
     "${stage}university_example_sd_jwt": {
       "format": "vc+sd-jwt",

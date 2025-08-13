@@ -209,7 +209,7 @@ class CredentialOfferCreateIT {
                 .andExpect(jsonPath("$.metadata_credential_supported_id").isArray())
                 .andExpect(jsonPath("$.credential_metadata").isMap())
                 .andExpect(jsonPath("$.credential_metadata").isEmpty())
-                .andExpect(jsonPath("$.holder_jwk").isEmpty())
+                .andExpect(jsonPath("$.holder_jwks").isEmpty())
                 .andExpect(jsonPath("$.client_agent_info").isEmpty())
                 .andExpect(jsonPath("$.offer_deeplink").isNotEmpty());
     }
