@@ -161,7 +161,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredential();
+                .buildCredentialEnvelope();
 
         String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
         var issuedJwt = SignedJWT.parse(credential.split("~")[0]);

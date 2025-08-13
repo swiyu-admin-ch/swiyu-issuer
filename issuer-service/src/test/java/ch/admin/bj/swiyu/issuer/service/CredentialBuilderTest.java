@@ -52,11 +52,12 @@ class CredentialBuilderTest {
         issuerMetadata = mock(IssuerMetadataTechnical.class);
         DataIntegrityService dataIntegrityService = mock(DataIntegrityService.class);
         JWSSigner signer = mock(JWSSigner.class);
+        SignatureService signatureService = mock(SignatureService.class);
         StatusListRepository statusListRepository = mock(StatusListRepository.class);
         CredentialOfferStatusRepository credentialOfferStatusRepository = mock(CredentialOfferStatusRepository.class);
         objectMapper = new ObjectMapper();
 
-        builder = spy(new TestCredentialBuilder(applicationProperties, issuerMetadata, dataIntegrityService, signer,
+        builder = spy(new TestCredentialBuilder(applicationProperties, issuerMetadata, dataIntegrityService, signatureService,
                 statusListRepository, credentialOfferStatusRepository));
     }
 
@@ -219,9 +220,14 @@ class CredentialBuilderTest {
 
     // subclass for testing
     static class TestCredentialBuilder extends CredentialBuilder {
-        TestCredentialBuilder(ApplicationProperties ap, IssuerMetadataTechnical im, DataIntegrityService dis, JWSSigner signer,
-                              StatusListRepository slr, CredentialOfferStatusRepository cosr) {
-            super(ap, im, dis, signer, slr, cosr);
+        TestCredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata, DataIntegrityService dataIntegrityService, SignatureService signatureService,
+                              StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
+            super(applicationProperties, issuerMetadata, dataIntegrityService, statusListRepository, signatureService, credentialOfferStatusRepository);
+        }
+
+        @Override
+        JWSSigner createSigner() {
+            return null;
         }
 
         @Override
