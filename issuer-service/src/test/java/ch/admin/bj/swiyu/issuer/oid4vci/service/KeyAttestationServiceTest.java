@@ -86,7 +86,7 @@ class KeyAttestationServiceTest {
             staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
             when(attestationJwt.isValidAttestation(keyResolver, List.of(AttackPotentialResistance.ISO_18045_HIGH))).thenReturn(true);
-            assertDoesNotThrow(() -> keyAttestationService.throwIfInvalidAttestation(requirement, jwt));
+            assertDoesNotThrow(() -> keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
         }
     }
 
@@ -103,7 +103,7 @@ class KeyAttestationServiceTest {
             doThrow(new IllegalArgumentException("untrusted")).when(attestationJwt).throwIfNotTrustedAttestationProvider(anyList());
 
             Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                    keyAttestationService.throwIfInvalidAttestation(requirement, jwt));
+                    keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
             assertTrue(ex.getMessage().contains("Attestation has been rejected"));
         }
     }
@@ -121,7 +121,7 @@ class KeyAttestationServiceTest {
             when(attestationJwt.isValidAttestation(keyResolver, List.of(AttackPotentialResistance.ISO_18045_HIGH))).thenReturn(false);
 
             Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                    keyAttestationService.throwIfInvalidAttestation(requirement, jwt));
+                    keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
             assertTrue(ex.getMessage().contains("Key attestation was invalid or not matching the attack resistance for the credential!"));
         }
     }
@@ -137,7 +137,7 @@ class KeyAttestationServiceTest {
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
 
             Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                    keyAttestationService.throwIfInvalidAttestation(requirement, jwt));
+                    keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
             assertTrue(ex.getMessage().contains("Key attestation is malformed!"));
         }
     }
@@ -153,7 +153,7 @@ class KeyAttestationServiceTest {
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
 
             Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                    keyAttestationService.throwIfInvalidAttestation(requirement, jwt));
+                    keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
             assertTrue(ex.getMessage().contains("not supported"));
         }
     }
