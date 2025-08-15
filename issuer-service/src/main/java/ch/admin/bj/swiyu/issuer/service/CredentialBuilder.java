@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -101,6 +102,12 @@ public abstract class CredentialBuilder {
                 applicationProperties.getMinDeferredOfferIntervalSeconds());
 
         return buildEnvelopeDto(credentialResponseDtoV2, HttpStatus.ACCEPTED);
+    }
+
+    public CredentialEnvelopeDto buildDeferredCredential(UUID transactionId) {
+        var deferredResponse = new DeferredDataDto(transactionId);
+
+        return buildEnvelopeDto(deferredResponse, HttpStatus.ACCEPTED);
     }
 
     public CredentialEnvelopeDto buildEnvelopeDto(Object payload) {
