@@ -80,13 +80,14 @@ class KeyAttestationServiceTest {
         KeyAttestationRequirement requirement = mock(KeyAttestationRequirement.class);
         when(requirement.getKeyStorage()).thenReturn(List.of(AttackPotentialResistance.ISO_18045_HIGH));
         String jwt = "jwt";
+        ProofJwt proofJwt = mock(ProofJwt.class);
         AttestationJwt attestationJwt = mock(AttestationJwt.class);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
             staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
             when(attestationJwt.isValidAttestation(keyResolver, List.of(AttackPotentialResistance.ISO_18045_HIGH))).thenReturn(true);
-            assertDoesNotThrow(() -> keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
+            assertDoesNotThrow(() -> keyAttestationService.getAndValidateKeyAttestation(requirement, proofJwt));
         }
     }
 
@@ -95,6 +96,7 @@ class KeyAttestationServiceTest {
         KeyAttestationRequirement requirement = mock(KeyAttestationRequirement.class);
         when(requirement.getKeyStorage()).thenReturn(List.of(AttackPotentialResistance.ISO_18045_HIGH));
         String jwt = "jwt";
+        ProofJwt proofJwt = mock(ProofJwt.class);
         AttestationJwt attestationJwt = mock(AttestationJwt.class);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
@@ -103,7 +105,7 @@ class KeyAttestationServiceTest {
             doThrow(new IllegalArgumentException("untrusted")).when(attestationJwt).throwIfNotTrustedAttestationProvider(anyList());
 
             Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                    keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
+                    keyAttestationService.getAndValidateKeyAttestation(requirement, proofJwt));
             assertTrue(ex.getMessage().contains("Attestation has been rejected"));
         }
     }
@@ -113,6 +115,7 @@ class KeyAttestationServiceTest {
         KeyAttestationRequirement requirement = mock(KeyAttestationRequirement.class);
         when(requirement.getKeyStorage()).thenReturn(List.of(AttackPotentialResistance.ISO_18045_HIGH));
         String jwt = "jwt";
+        ProofJwt proofJwt = mock(ProofJwt.class);
         AttestationJwt attestationJwt = mock(AttestationJwt.class);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
@@ -121,7 +124,7 @@ class KeyAttestationServiceTest {
             when(attestationJwt.isValidAttestation(keyResolver, List.of(AttackPotentialResistance.ISO_18045_HIGH))).thenReturn(false);
 
             Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                    keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
+                    keyAttestationService.getAndValidateKeyAttestation(requirement, proofJwt));
             assertTrue(ex.getMessage().contains("Key attestation was invalid or not matching the attack resistance for the credential!"));
         }
     }
@@ -130,6 +133,7 @@ class KeyAttestationServiceTest {
     void throwIfInvalidAttestation_parseException_throwsException() {
         KeyAttestationRequirement requirement = mock(KeyAttestationRequirement.class);
         String jwt = "jwt";
+        ProofJwt proofJwt = mock(ProofJwt.class);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
             staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenThrow(new ParseException("ParseException", 0));
@@ -137,7 +141,7 @@ class KeyAttestationServiceTest {
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
 
             Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                    keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
+                    keyAttestationService.getAndValidateKeyAttestation(requirement, proofJwt));
             assertTrue(ex.getMessage().contains("Key attestation is malformed!"));
         }
     }
@@ -146,6 +150,7 @@ class KeyAttestationServiceTest {
     void throwIfInvalidAttestation_joseException_throwsException() throws JOSEException {
         KeyAttestationRequirement requirement = mock(KeyAttestationRequirement.class);
         String jwt = "jwt";
+        ProofJwt proofJwt = mock(ProofJwt.class);
         AttestationJwt attestationJwt = mock(AttestationJwt.class);
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
             staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
@@ -153,7 +158,7 @@ class KeyAttestationServiceTest {
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
 
             Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                    keyAttestationService.getAndValidateKeyAttestation(requirement, jwt));
+                    keyAttestationService.getAndValidateKeyAttestation(requirement, proofJwt));
             assertTrue(ex.getMessage().contains("not supported"));
         }
     }

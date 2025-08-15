@@ -12,8 +12,11 @@ import com.nimbusds.jose.JOSEException;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 
@@ -36,20 +39,54 @@ public class KeyAttestationService {
             return null;
         }
 
+        return getAndValidateKeyAttestation(attestationRequirement, requestProof);
+    }
+
+    public List<String> checkHolderKeyAttestation(SupportedProofType supportedProofType, List<Proof> requestProofs) throws Oid4vcException {
+
+        List<String> attestations = new ArrayList<>();
+        // check if proof type is requested
+        if (supportedProofType == null) {
+            return attestations;
+        }
+
+        var attestationRequirement = supportedProofType.getKeyAttestationRequirement();
+
+        // if attestation is not required, no further checks needed
+        if (attestationRequirement == null) {
+            return attestations;
+        }
+
+        // check if any proofs provided
+        if (CollectionUtils.isEmpty(requestProofs)) {
+            return List.of();
+        }
+
+        // get and validate key attestations for each proof
+        return requestProofs.stream().map(
+                proof -> {
+                    try {
+                        return getAndValidateKeyAttestation(attestationRequirement, proof);
+                    } catch (Oid4vcException e) {
+                        // If one attestation is invalid, we throw an exception
+                        throw new Oid4vcException(e, INVALID_PROOF, "Key attestation is invalid for one of the proofs!");
+                    }
+                }
+        ).toList();
+    }
+
+    public String getAndValidateKeyAttestation(@NotNull KeyAttestationRequirement attestationRequirement, @NotNull Proof requestProof) throws Oid4vcException {
+
         // Proof type cannot hold an attestation
         if (!(requestProof instanceof AttestableProof)) {
             throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
         }
 
-        var attestation = ((AttestableProof) requestProof).getAttestationJwt();
-        if (attestation == null) {
+        var attestationJwt = ((AttestableProof) requestProof).getAttestationJwt();
+        if (attestationJwt == null) {
             throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
         }
 
-        return getAndValidateKeyAttestation(attestationRequirement, attestation);
-    }
-
-    public String getAndValidateKeyAttestation(@NotNull KeyAttestationRequirement attestationRequirement, @NotNull String attestationJwt) throws Oid4vcException {
         try {
             AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt);
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
