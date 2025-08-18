@@ -82,6 +82,7 @@ class KeyAttestationServiceTest {
         String jwt = "jwt";
         ProofJwt proofJwt = mock(ProofJwt.class);
         AttestationJwt attestationJwt = mock(AttestationJwt.class);
+        when(proofJwt.getAttestationJwt()).thenReturn(jwt);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
             staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
@@ -98,6 +99,7 @@ class KeyAttestationServiceTest {
         String jwt = "jwt";
         ProofJwt proofJwt = mock(ProofJwt.class);
         AttestationJwt attestationJwt = mock(AttestationJwt.class);
+        when(proofJwt.getAttestationJwt()).thenReturn(jwt);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
             staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
@@ -117,6 +119,7 @@ class KeyAttestationServiceTest {
         String jwt = "jwt";
         ProofJwt proofJwt = mock(ProofJwt.class);
         AttestationJwt attestationJwt = mock(AttestationJwt.class);
+        when(proofJwt.getAttestationJwt()).thenReturn(jwt);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
             staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
@@ -134,6 +137,7 @@ class KeyAttestationServiceTest {
         KeyAttestationRequirement requirement = mock(KeyAttestationRequirement.class);
         String jwt = "jwt";
         ProofJwt proofJwt = mock(ProofJwt.class);
+        when(proofJwt.getAttestationJwt()).thenReturn(jwt);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
             staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenThrow(new ParseException("ParseException", 0));
@@ -151,6 +155,7 @@ class KeyAttestationServiceTest {
         KeyAttestationRequirement requirement = mock(KeyAttestationRequirement.class);
         String jwt = "jwt";
         ProofJwt proofJwt = mock(ProofJwt.class);
+        when(proofJwt.getAttestationJwt()).thenReturn(jwt);
         AttestationJwt attestationJwt = mock(AttestationJwt.class);
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
             staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);

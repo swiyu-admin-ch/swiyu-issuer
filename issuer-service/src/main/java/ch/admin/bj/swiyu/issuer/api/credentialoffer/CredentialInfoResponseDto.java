@@ -19,6 +19,8 @@ public record CredentialInfoResponseDto(
         Map<String, Object> credentialMetadata,
         @JsonProperty("holder_jwks")
         List<String> holderJWKs,
+        @JsonProperty("key_attestations")
+        List<String> keyAttestations,
         @JsonProperty("client_agent_info")
         ClientAgentInfoDto clientAgentInfo,
         @JsonProperty("offer_expiration_timestamp")
