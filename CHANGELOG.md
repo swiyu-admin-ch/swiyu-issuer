@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Updated ApiErrorDto and reused it for every error response. This allows for a more consistent error
+  response structure.
 - Expanded the credential endpoint to accept the new credential-endpoint (with corresponding response)
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-endpoint),
   and the deferred credential endpoint which is
