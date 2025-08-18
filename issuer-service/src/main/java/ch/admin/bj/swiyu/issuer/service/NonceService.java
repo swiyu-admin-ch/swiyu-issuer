@@ -35,13 +35,6 @@ public class NonceService {
     }
 
     @Transactional
-    public void registerNonces(List<SelfContainedNonce> nonces) {
-        var cachedNonces = nonces.stream()
-                .map(nonce -> new CachedNonce(nonce.getNonceId(), nonce.getNonceInstant()))
-                .toList();
-        cachedNonceRepository.saveAll(cachedNonces);
-    }
-
     public void invalidateSelfContainedNonce(List<String> nonces) {
 
         var selfContainedNonces = nonces.stream()
@@ -50,7 +43,10 @@ public class NonceService {
                 .toList();
 
         if (!selfContainedNonces.isEmpty()) {
-            registerNonces(selfContainedNonces);
+            List<CachedNonce> cachedNonces = selfContainedNonces.stream()
+                    .map(nonce -> new CachedNonce(nonce.getNonceId(), nonce.getNonceInstant()))
+                    .toList();
+            cachedNonceRepository.saveAll(cachedNonces);
         }
     }
 
