@@ -105,7 +105,7 @@ public class HolderBindingService {
         var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(),
                 applicationProperties.getAcceptableProofTimeWindowSeconds());
 
-        if (CollectionUtils.isEmpty(proofsJwt) && proofsJwt.getFirst() == null) {
+        if (CollectionUtils.isEmpty(proofsJwt) || proofsJwt.getFirst() == null) {
             throw new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential");
         }
 

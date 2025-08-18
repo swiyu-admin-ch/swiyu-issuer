@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `key_attestations` to the `CredentialInfoResponseDto.java` to support key attestations in the deferred
+  credential flow.
+  the credential request.
 - Expanded the credential endpoint to accept the new credential-endpoint (with corresponding response)
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-endpoint),
   and the deferred credential endpoint which is
