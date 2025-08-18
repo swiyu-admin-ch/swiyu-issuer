@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web;
 
-import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDtoV2;
+import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import jakarta.validation.ConstraintViolationException;
 import lombok.NonNull;
@@ -37,14 +37,14 @@ import static org.springframework.http.HttpStatus.*;
 public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(OAuthException.class)
-    public ResponseEntity<ApiErrorDtoV2> handleOAuthException(final OAuthException exception) {
-        ApiErrorDtoV2 apiError = oauthErrorToApiErrorDto(exception);
+    public ResponseEntity<ApiErrorDto> handleOAuthException(final OAuthException exception) {
+        ApiErrorDto apiError = oauthErrorToApiErrorDto(exception);
         log.debug("OAuthException: {}", exception.getMessage());
         return new ResponseEntity<>(apiError, apiError.getStatus());
     }
 
     @ExceptionHandler(Oid4vcException.class)
-    public ResponseEntity<ApiErrorDtoV2> handleOID4VCException(final Oid4vcException exception) {
+    public ResponseEntity<ApiErrorDto> handleOID4VCException(final Oid4vcException exception) {
         log.debug("Oid4vcException: {}", exception.getMessage());
         var apiError = toCredentialRequestErrorResponseDto(exception);
 
@@ -52,8 +52,8 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiErrorDtoV2> handleResourceNotFoundException(final ResourceNotFoundException exception) {
-        final ApiErrorDtoV2 apiErrorV2 = ApiErrorDtoV2.builder()
+    public ResponseEntity<ApiErrorDto> handleResourceNotFoundException(final ResourceNotFoundException exception) {
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(NOT_FOUND.getReasonPhrase())
                 .errorDetails(exception.getMessage())
                 .status(NOT_FOUND)
@@ -63,8 +63,8 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler({BadRequestException.class, CredentialException.class})
-    public ResponseEntity<ApiErrorDtoV2> handleBadRequestException(final Exception exception) {
-        final ApiErrorDtoV2 apiErrorV2 = ApiErrorDtoV2.builder()
+    public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(BAD_REQUEST.getReasonPhrase())
                 .errorDetails(exception.getMessage())
                 .status(BAD_REQUEST)
@@ -74,13 +74,13 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler({CreateStatusListException.class, UpdateStatusListException.class})
-    public ResponseEntity<ApiErrorDtoV2> handleStatusListException(final Exception exception) {
+    public ResponseEntity<ApiErrorDto> handleStatusListException(final Exception exception) {
         var exceptionMessage = exception.getMessage();
         if (exception.getCause() != null) {
             exceptionMessage += " - caused by - " + exception.getCause().getMessage();
         }
 
-        final ApiErrorDtoV2 apiErrorV2 = ApiErrorDtoV2.builder()
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(INTERNAL_SERVER_ERROR.getReasonPhrase())
                 .errorDetails(exceptionMessage)
                 .status(INTERNAL_SERVER_ERROR)
@@ -90,8 +90,8 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(ConfigurationException.class)
-    public ResponseEntity<ApiErrorDtoV2> handleConfigurationException(final Exception exception) {
-        final ApiErrorDtoV2 apiErrorV2 = ApiErrorDtoV2.builder()
+    public ResponseEntity<ApiErrorDto> handleConfigurationException(final Exception exception) {
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(INTERNAL_SERVER_ERROR.getReasonPhrase())
                 .errorDetails(exception.getMessage())
                 .status(INTERNAL_SERVER_ERROR)
@@ -114,8 +114,8 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler
-    public ResponseEntity<ApiErrorDtoV2> handle(final Exception exception) {
-        final ApiErrorDtoV2 apiErrorV2 = ApiErrorDtoV2.builder()
+    public ResponseEntity<ApiErrorDto> handle(final Exception exception) {
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(INTERNAL_SERVER_ERROR.getReasonPhrase())
                 .status(INTERNAL_SERVER_ERROR)
                 .build();
@@ -144,7 +144,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     private ResponseEntity<Object> handleUnprocessableEntity(String errors) {
         log.info("Received bad request. Details: {}", errors);
 
-        final ApiErrorDtoV2 apiErrorV2 = ApiErrorDtoV2.builder()
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(UNPROCESSABLE_ENTITY.getReasonPhrase())
                 .errorDetails(errors)
                 .status(UNPROCESSABLE_ENTITY)

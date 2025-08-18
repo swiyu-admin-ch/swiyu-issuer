@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDtoV2;
+import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
@@ -19,10 +19,10 @@ import org.springframework.http.HttpStatus;
 @UtilityClass
 public class CredentialMapper {
 
-    public static ApiErrorDtoV2 oauthErrorToApiErrorDto(OAuthException exception) {
+    public static ApiErrorDto oauthErrorToApiErrorDto(OAuthException exception) {
         var error = toOAuthErrorDto(exception.getError());
 
-        return ApiErrorDtoV2.builder()
+        return ApiErrorDto.builder()
                 .errorCode(error.getErrorCode())
                 .errorDescription(exception.getMessage())
                 .status(error.getHttpStatus())
@@ -41,8 +41,8 @@ public class CredentialMapper {
         };
     }
 
-    public static ApiErrorDtoV2 toCredentialRequestErrorResponseDto(Oid4vcException exception) {
-        return ApiErrorDtoV2.builder()
+    public static ApiErrorDto toCredentialRequestErrorResponseDto(Oid4vcException exception) {
+        return ApiErrorDto.builder()
                 .errorCode(toCredentialRequestError(exception.getError()).toString())
                 .errorDescription(exception.getMessage())
                 .status(HttpStatus.BAD_REQUEST)

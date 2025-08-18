@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer;
 
-import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDtoV2;
+import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
@@ -32,7 +32,7 @@ class DefaultExceptionHandlerTest {
         OAuthError error = OAuthError.valueOf(errorEnum.name());
         OAuthException ex = new OAuthException(error, errorMessage);
 
-        ResponseEntity<ApiErrorDtoV2> response = handler.handleOAuthException(ex);
+        ResponseEntity<ApiErrorDto> response = handler.handleOAuthException(ex);
         var body = response.getBody();
 
         // Then
@@ -49,7 +49,7 @@ class DefaultExceptionHandlerTest {
         CredentialRequestError error = CredentialRequestError.valueOf(errorEnum.name());
         Oid4vcException ex = new Oid4vcException(error, errorMessage);
 
-        ResponseEntity<ApiErrorDtoV2> response = handler.handleOID4VCException(ex);
+        ResponseEntity<ApiErrorDto> response = handler.handleOID4VCException(ex);
         var body = response.getBody();
 
         // Then
@@ -63,7 +63,7 @@ class DefaultExceptionHandlerTest {
     void handleResourceNotFoundException_shouldReturnNotFound() {
         var errorMessage = "Resource not found";
         var exception = new ResourceNotFoundException("Resource not found");
-        ResponseEntity<ApiErrorDtoV2> response = handler.handleResourceNotFoundException(exception);
+        ResponseEntity<ApiErrorDto> response = handler.handleResourceNotFoundException(exception);
         var body = response.getBody();
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -75,7 +75,7 @@ class DefaultExceptionHandlerTest {
     void handleBadRequestException_shouldReturnBadRequest() {
         var errorMessage = "Bad Request error message";
         var exception = new BadRequestException(errorMessage);
-        ResponseEntity<ApiErrorDtoV2> response = handler.handleBadRequestException(exception);
+        ResponseEntity<ApiErrorDto> response = handler.handleBadRequestException(exception);
         var body = response.getBody();
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -87,7 +87,7 @@ class DefaultExceptionHandlerTest {
     void handleStatusListException_shouldReturnInternalServerError() {
         var errorMessage = "Create StatusList error message";
         var exception = new CreateStatusListException(errorMessage);
-        ResponseEntity<ApiErrorDtoV2> response = handler.handleStatusListException(exception);
+        ResponseEntity<ApiErrorDto> response = handler.handleStatusListException(exception);
         var body = response.getBody();
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
@@ -101,7 +101,7 @@ class DefaultExceptionHandlerTest {
         var errorMessage = "Create StatusList error message";
         var expectedErrorMessage = "Create StatusList error message - caused by - %s".formatted(statusListException.getMessage());
         var exception = new CreateStatusListException(errorMessage, statusListException);
-        ResponseEntity<ApiErrorDtoV2> response = handler.handleStatusListException(exception);
+        ResponseEntity<ApiErrorDto> response = handler.handleStatusListException(exception);
         var body = response.getBody();
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
@@ -113,7 +113,7 @@ class DefaultExceptionHandlerTest {
     void handleUpdateStatusListException_shouldReturnInternalServerError() {
         var errorMessage = "Update StatusList error message";
         var exception = new UpdateStatusListException(errorMessage);
-        ResponseEntity<ApiErrorDtoV2> response = handler.handleStatusListException(exception);
+        ResponseEntity<ApiErrorDto> response = handler.handleStatusListException(exception);
         var body = response.getBody();
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
@@ -125,7 +125,7 @@ class DefaultExceptionHandlerTest {
     void handleConfigurationException_shouldReturnInternalServerError() {
         var errorMessage = "Configuration error message";
         var exception = new ConfigurationException(errorMessage);
-        ResponseEntity<ApiErrorDtoV2> response = handler.handleConfigurationException(exception);
+        ResponseEntity<ApiErrorDto> response = handler.handleConfigurationException(exception);
         var body = response.getBody();
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
@@ -137,7 +137,7 @@ class DefaultExceptionHandlerTest {
     void handleFabricConfigurationException_shouldReturnInternalServerError() {
         var errorMessage = "Configuration error message";
         var exception = new io.fabric8.kubernetes.client.ResourceNotFoundException(errorMessage);
-        ResponseEntity<ApiErrorDtoV2> response = handler.handleConfigurationException(exception);
+        ResponseEntity<ApiErrorDto> response = handler.handleConfigurationException(exception);
         var body = response.getBody();
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
@@ -149,7 +149,7 @@ class DefaultExceptionHandlerTest {
     void handleDefaultException_shouldReturnInternalServerError() {
         var errorMessage = "Default error message";
         var exception = new Exception(errorMessage);
-        ResponseEntity<ApiErrorDtoV2> response = handler.handle(exception);
+        ResponseEntity<ApiErrorDto> response = handler.handle(exception);
         var body = response.getBody();
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
