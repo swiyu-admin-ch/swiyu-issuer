@@ -23,7 +23,7 @@ public class CredentialMapper {
         var error = toOAuthErrorDto(exception.getError());
 
         return ApiErrorDto.builder()
-                .errorCode(error.getErrorCode())
+                .errorCode(error.name())
                 .errorDescription(exception.getMessage())
                 .status(error.getHttpStatus())
                 .build();
@@ -43,7 +43,7 @@ public class CredentialMapper {
 
     public static ApiErrorDto toCredentialRequestErrorResponseDto(Oid4vcException exception) {
         return ApiErrorDto.builder()
-                .errorCode(toCredentialRequestError(exception.getError()).toString())
+                .errorCode(toCredentialRequestError(exception.getError()).name())
                 .errorDescription(exception.getMessage())
                 .status(HttpStatus.BAD_REQUEST)
                 .build();

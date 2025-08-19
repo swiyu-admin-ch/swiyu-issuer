@@ -48,6 +48,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import static ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
+import static ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto.INVALID_GRANT;
+import static ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto.INVALID_REQUEST;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
 import static org.hamcrest.Matchers.containsString;
@@ -264,7 +267,7 @@ class IssuanceControllerIT {
 
         requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_proof"))
+                .andExpect(jsonPath("$.error").value(INVALID_PROOF.name()))
                 .andExpect(jsonPath("$.error_description").value("Nonce claim does not match the server-provided c_nonce value"))
                 .andReturn();
     }
@@ -278,7 +281,7 @@ class IssuanceControllerIT {
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
 
-        assertEquals("invalid_proof", credentialResponse.get("error").getAsString());
+        assertEquals(INVALID_PROOF.name(), credentialResponse.get("error").getAsString());
     }
 
     @Test
@@ -289,7 +292,7 @@ class IssuanceControllerIT {
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
 
-        assertEquals("invalid_proof", credentialResponse.get("error").getAsString());
+        assertEquals(INVALID_PROOF.name(), credentialResponse.get("error").getAsString());
     }
 
     @Test
@@ -300,7 +303,7 @@ class IssuanceControllerIT {
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
 
-        assertEquals("invalid_proof", credentialResponse.get("error").getAsString());
+        assertEquals(INVALID_PROOF.name(), credentialResponse.get("error").getAsString());
     }
 
     @Test
@@ -322,7 +325,7 @@ class IssuanceControllerIT {
         String credentialRequestString = "{ \"format\": \"vc+sd-jwt\" }";
         requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_proof"));
+                .andExpect(jsonPath("$.error").value(INVALID_PROOF.name()));
     }
 
     @Test
@@ -356,14 +359,14 @@ class IssuanceControllerIT {
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("invalid_grant")));
+                .andExpect(content().string(containsString(INVALID_GRANT.name())));
 
         // check that correct preauthcode is used
         mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("invalid_grant")));
+                .andExpect(content().string(containsString(INVALID_GRANT.name())));
     }
 
     @Test
@@ -387,14 +390,14 @@ class IssuanceControllerIT {
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "deadbeef-dead-dead-dead-deaddeafbeef"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("invalid_request")));
+                .andExpect(content().string(containsString(INVALID_REQUEST.name())));
 
         // With Invalid preauth code
         mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("invalid_request")));
+                .andExpect(content().string(containsString(INVALID_REQUEST.name())));
     }
 
     @Test

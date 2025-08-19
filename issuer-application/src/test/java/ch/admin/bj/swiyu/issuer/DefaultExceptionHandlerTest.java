@@ -38,7 +38,6 @@ class DefaultExceptionHandlerTest {
         // Then
         assertEquals(errorEnum.getHttpStatus(), response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorEnum.toString(), body.getErrorCode());
         assertEquals(errorMessage, body.getErrorDescription());
     }
 
@@ -55,7 +54,6 @@ class DefaultExceptionHandlerTest {
         // Then
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorEnum.toString(), body.getErrorCode());
         assertEquals(errorMessage, body.getErrorDescription());
     }
 

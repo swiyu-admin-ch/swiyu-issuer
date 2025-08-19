@@ -214,7 +214,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("issuance_pending"))
+                .andExpect(jsonPath("$.error").value("ISSUANCE_PENDING"))
                 .andReturn();
     }
 
@@ -231,7 +231,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_transaction_id"))
+                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
                 .andReturn();
     }
 
@@ -258,7 +258,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_token"))
+                .andExpect(jsonPath("$.error").value("INVALID_TOKEN"))
                 .andExpect(jsonPath("$.error_description").value("Invalid accessToken"))
                 .andReturn();
     }
@@ -291,7 +291,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_transaction_id"))
+                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
                 .andExpect(jsonPath("$.error_description").value("Invalid transactional id"))
                 .andReturn();
     }
@@ -325,7 +325,7 @@ class DeferredFlowIT {
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_transaction_id"))
+                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
                 .andReturn();
     }
 
