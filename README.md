@@ -324,12 +324,12 @@ for examples on how to use.
 
 #### Kubernetes Vault Keys
 
-| Variable                                             | Description                                                                                                                                           |
-|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| secret.db.username                                   | Username to connect to the Issuer Service Database.                                                                                                   |
-| secret.db.password                                   | Password to connect to the Issuer Service Database                                                                                                    |
-| secret.key.sdjwt.key                                 | Private Key used to sign jwt_vc / SD-JWT Verifiable Credentials                                                                                       |
-| secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                          |
+| Variable                                             | Description                                                                                                                                         |
+|------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| secret.db.username                                   | Username to connect to the Issuer Service Database.                                                                                                 |
+| secret.db.password                                   | Password to connect to the Issuer Service Database                                                                                                  |
+| secret.key.sdjwt.key                                 | Private Key used to sign jwt_vc / SD-JWT Verifiable Credentials                                                                                     |
+| secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                        |
 | secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                   |
 | secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                |
 | secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self-service portal. |
@@ -517,6 +517,7 @@ erDiagram
         jsonb credential_request
         uuid transaction_id
         array[text] holder_jwks
+        array[text] key_attestations
         jsonb client_agent_info
         long token_expiration_timestamp tokenExpirationTimestam
         uuid access_token
