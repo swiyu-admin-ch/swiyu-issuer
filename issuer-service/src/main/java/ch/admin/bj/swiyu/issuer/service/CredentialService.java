@@ -7,7 +7,10 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
@@ -219,10 +222,10 @@ public class CredentialService {
 
         // for deferred check if flag in the metadata set
         if (credentialOffer.isDeferred()) {
-            var deferredData = new CredentialResponseDto(null, null, UUID.randomUUID());
+            var transactionId = UUID.randomUUID();
 
-            responseEnvelope = vcBuilder.buildEnvelopeDto(deferredData);
-            credentialOffer.markAsDeferred(deferredData.transactionId(), credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo);
+            responseEnvelope = vcBuilder.buildDeferredCredential(transactionId);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo);
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);

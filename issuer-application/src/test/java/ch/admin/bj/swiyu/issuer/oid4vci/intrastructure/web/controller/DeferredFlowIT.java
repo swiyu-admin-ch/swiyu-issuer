@@ -159,7 +159,7 @@ class DeferredFlowIT {
         String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), (String) tokenDto.get("c_nonce"), ProofType.JWT.getClaimTyp(), false);
 
         var deferredCredentialResponse = requestCredential(mock, (String) tokenDto.get("access_token"), getCredentialRequestString(proof))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andReturn();
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
@@ -254,7 +254,7 @@ class DeferredFlowIT {
                 null);
 
         var deferredCredentialResponse = requestCredential(mock, (String) tokenDto.get("access_token"), String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andReturn();
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
@@ -313,7 +313,7 @@ class DeferredFlowIT {
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andReturn();
 
         // to get token now should end up in a bad request
@@ -353,7 +353,7 @@ class DeferredFlowIT {
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.transaction_id").isNotEmpty())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andReturn();
@@ -386,7 +386,7 @@ class DeferredFlowIT {
         var otherToken = otherTokenResponse.get("access_token");
 
         var response = requestCredential(mock, token, credentialRequestString)
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.transaction_id").isNotEmpty())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andReturn();
@@ -416,7 +416,7 @@ class DeferredFlowIT {
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andReturn();
 
         String transactionId = JsonPath.read(response.getResponse().getContentAsString(), "$.transaction_id");
