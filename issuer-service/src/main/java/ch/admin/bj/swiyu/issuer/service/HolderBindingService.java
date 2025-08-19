@@ -133,7 +133,7 @@ public class HolderBindingService {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
         }
 
-        keyAttestationService.checkHolderKeyAttestation(bindingProofType, requestProof);
+        keyAttestationService.valdidateAndGetHolderKeyAttestation(bindingProofType, requestProof);
 
         return Optional.of(requestProof);
     }
@@ -169,7 +169,7 @@ public class HolderBindingService {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
         }
 
-        keyAttestationService.checkHolderKeyAttestation(bindingProofType, requestProof);
+        keyAttestationService.valdidateAndGetHolderKeyAttestation(bindingProofType, requestProof);
 
         return requestProof;
     }
