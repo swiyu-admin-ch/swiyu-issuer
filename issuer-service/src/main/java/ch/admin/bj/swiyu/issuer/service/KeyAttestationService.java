@@ -23,32 +23,36 @@ public class KeyAttestationService {
     private final KeyResolver keyResolver;
     private final ApplicationProperties applicationProperties;
 
-    public void checkHolderKeyAttestation(SupportedProofType supportedProofType, Proof requestProof) throws Oid4vcException {
+    public String valdidateAndGetHolderKeyAttestation(SupportedProofType supportedProofType, Proof requestProof) throws Oid4vcException {
+
+        if (supportedProofType == null) {
+            return null;
+        }
 
         var attestationRequirement = supportedProofType.getKeyAttestationRequirement();
 
         // No Attestation required, no further checks needed
         if (attestationRequirement == null) {
-            return;
+            return null;
         }
+
+        return getAndValidateKeyAttestation(attestationRequirement, requestProof);
+    }
+
+    public String getAndValidateKeyAttestation(@NotNull KeyAttestationRequirement attestationRequirement, @NotNull Proof requestProof) throws Oid4vcException {
 
         // Proof type cannot hold an attestation
         if (!(requestProof instanceof AttestableProof)) {
             throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
         }
 
-
-        var attestation = ((AttestableProof) requestProof).getAttestationJwt();
-        if (attestation == null) {
+        var attestationJwt = ((AttestableProof) requestProof).getAttestationJwt();
+        if (attestationJwt == null) {
             throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
         }
 
-        throwIfInvalidAttestation(attestationRequirement, attestation);
-    }
-
-    public void throwIfInvalidAttestation(@NotNull KeyAttestationRequirement attestationRequirement, @NotNull String attestationJwt) throws Oid4vcException {
         try {
-            var attestation = AttestationJwt.parseJwt(attestationJwt);
+            AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt);
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
 
             // If trusted Attestation Services is empty, all attestation services are trusted for ease of trying out things.
@@ -59,6 +63,8 @@ public class KeyAttestationService {
             if (!attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage())) {
                 throw new Oid4vcException(INVALID_PROOF, "Key attestation was invalid or not matching the attack resistance for the credential!");
             }
+
+            return attestation.toJsonString();
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Key attestation is malformed!");
         } catch (IllegalArgumentException e) {
