@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.At
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.DidKeyResolverApiClient;
 import ch.admin.bj.swiyu.issuer.service.DidTdwKeyResolver;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
@@ -38,6 +39,7 @@ import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.prepareAttestedVC;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -62,6 +64,8 @@ class KeyAttestationFlowIT {
     ApplicationProperties applicationProperties;
     @Autowired
     private DidTdwKeyResolver didTdwKeyResolver;
+    @Autowired
+    private DidKeyResolverApiClient didKeyResolverApiClient;
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -79,21 +83,24 @@ class KeyAttestationFlowIT {
     void testAnyKeyAttestationFlow(AttackPotentialResistance resistance) throws Exception {
         var fetchData = prepareAttested(mock, testOfferAnyAttestationId, resistance);
         mockDidResolve(jwk.toPublicJWK());
-        TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        assertNotNull(result);
     }
 
     @Test
     void testSuperfluousAttestation() throws Exception {
         var fetchData = prepareAttested(mock, testOfferNoAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(jwk.toPublicJWK());
-        TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        assertNotNull(result);
     }
 
     @Test
     void testHighAttestation() throws Exception {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH);
         mockDidResolve(jwk.toPublicJWK());
-        TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        assertNotNull(result);
     }
 
     /**

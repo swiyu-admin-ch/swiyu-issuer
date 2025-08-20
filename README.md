@@ -238,6 +238,7 @@ The Generic Issuer service is configured using environment variables.
 | SDJWT_KEY (Optional - See HSM)       | The private key used to sign SD-JWT Credentials. The matching public key must be published on the base registry for verification. - Not recommended.                                                                                                                                     |
 | DID_SDJWT_VERIFICATION_METHOD        | The full DID with fragment as used to find the public key for sd-jwt VCs in the DID Document. eg: `did:tdw:<base-registry-url>:<issuer_uuid>#<sd-jwt-public-key-fragment>`                                                                                                               |
 | MIN_DEFERRED_OFFER_WAITING_SECONDS   | For the deferred flow. Polling interval for the deferred flow. Defines how long a wallet should wait after receiving the transaction_id until it tries to fetch the actual credential. This value will be shown as `interval` in the deferred response.                                  |
+| URL_REWRITE_MAPPING                  | Json object for url replacements during rest client call. Key represents the original url and value the one which should be used instead (e.g. {"https://mysample1.ch":"https://somethingdiffeerent1.ch"})                                                                               |
 
 #### Status List
 

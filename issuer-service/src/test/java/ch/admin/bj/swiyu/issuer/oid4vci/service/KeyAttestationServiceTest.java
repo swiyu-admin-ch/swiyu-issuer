@@ -37,7 +37,7 @@ class KeyAttestationServiceTest {
         when(supportedProofType.getKeyAttestationRequirement()).thenReturn(null);
         Proof proof = mock(Proof.class);
 
-        assertDoesNotThrow(() -> keyAttestationService.valdidateAndGetHolderKeyAttestation(supportedProofType, proof));
+        assertDoesNotThrow(() -> keyAttestationService.validateAndGetHolderKeyAttestation(supportedProofType, proof));
     }
 
     @Test
@@ -47,7 +47,7 @@ class KeyAttestationServiceTest {
         Proof proof = mock(Proof.class);
 
         Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                keyAttestationService.valdidateAndGetHolderKeyAttestation(supportedProofType, proof));
+                keyAttestationService.validateAndGetHolderKeyAttestation(supportedProofType, proof));
 
         assertTrue(ex.getMessage().contains("Attestation was requested, but presented proof is not attestable!"));
     }
@@ -59,7 +59,7 @@ class KeyAttestationServiceTest {
         ProofJwt proof = mock(ProofJwt.class);
 
         Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                keyAttestationService.valdidateAndGetHolderKeyAttestation(supportedProofType, proof));
+                keyAttestationService.validateAndGetHolderKeyAttestation(supportedProofType, proof));
         assertTrue(ex.getMessage().contains("Attestation was not provided"));
     }
 
@@ -71,7 +71,7 @@ class KeyAttestationServiceTest {
         when(proof.getAttestationJwt()).thenReturn("malformed-key-attestation-jwt");
 
         Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
-                keyAttestationService.valdidateAndGetHolderKeyAttestation(supportedProofType, proof));
+                keyAttestationService.validateAndGetHolderKeyAttestation(supportedProofType, proof));
         assertTrue(ex.getMessage().contains("Key attestation is malformed!"));
     }
 

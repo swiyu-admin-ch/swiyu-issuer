@@ -168,6 +168,8 @@ application:
       # Data used to interact with other parties in this case the public key => verifies that the signer can use the associated private key
       # eg: did:tdw:<base-registry-url>:<issuer_uuid>#<sdjwt-public-key-fragment>
       verification-method: "${DID_SDJWT_VERIFICATION_METHOD:}"
+  url-rewrite:
+    mapping: "${URL_REWRITE_MAPPING:{}}"
 
 
 logging:
