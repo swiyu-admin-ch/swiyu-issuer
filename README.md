@@ -519,7 +519,8 @@ erDiagram
         array[text] holder_jwks
         array[text] key_attestations
         jsonb client_agent_info
-        long token_expiration_timestamp tokenExpirationTimestam
+        uuid holder_binding_nonce
+        long token_expiration_timestamp
         uuid access_token
         uuid nonce
         uuid pre_authorized_code
@@ -667,7 +668,7 @@ stateDiagram-v2
     SUSPENDED
     REVOKED
     [*] --> OFFERED
-    OFFERED --> CANCELLED : Process can be "cancelled as long as the vc is not ISSUED"
+    OFFERED --> CANCELLED : Process can be cancelled as long as the vc is not ISSUED
     CANCELLED --> [*]
     OFFERED --> IN_PROGRESS
     IN_PROGRESS --> fork_state
