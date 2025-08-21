@@ -54,6 +54,5 @@ class IssuerMetadataTechnicalIT {
         assertNotNull(allowedAttackPotentialResistanceOptions);
         assertEquals(1, allowedAttackPotentialResistanceOptions.size());
         assertTrue(allowedAttackPotentialResistanceOptions.contains(AttackPotentialResistance.ISO_18045_HIGH));
-
     }
 }

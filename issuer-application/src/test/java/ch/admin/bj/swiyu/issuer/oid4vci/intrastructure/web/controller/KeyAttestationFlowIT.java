@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,6 +45,7 @@ import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.prep
 @Testcontainers
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
+@ActiveProfiles("test")
 class KeyAttestationFlowIT {
     private static ECKey jwk;
     private final UUID testOfferNoAttestationId = UUID.randomUUID();

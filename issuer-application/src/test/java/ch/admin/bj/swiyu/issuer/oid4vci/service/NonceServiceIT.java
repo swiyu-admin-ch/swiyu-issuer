@@ -42,6 +42,8 @@ class NonceServiceIT {
         assertFalse(expiredNonce.isValid(lifetime));
         assertFalse(service.isUsedNonce(expiredNonce));
         service.registerNonce(expiredNonce);
+
+        // TODO fails sometimes, but not always
         assertTrue(service.isUsedNonce(expiredNonce));
 
         // After clearing the cache the expired nonce should be removed, as it is not valid in any check
