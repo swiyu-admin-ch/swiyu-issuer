@@ -99,6 +99,7 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
 
 ### Fixed
 
+- Fixed offers in status `DEFERRED` or `READY` expire when the `offer_expiration_timestamp` has passed.
 - Checks for protected claims are now done in the create-offer-flow (1 step) instead of the issuance flow.
 - Business Issuer is directly informed when the payload cannot be processed later.
 - Fix status code when jwt filter criteria are not met from a 500 to 401.
