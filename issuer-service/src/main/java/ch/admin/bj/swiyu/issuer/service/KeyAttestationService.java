@@ -23,7 +23,7 @@ public class KeyAttestationService {
     private final KeyResolver keyResolver;
     private final ApplicationProperties applicationProperties;
 
-    public String valdidateAndGetHolderKeyAttestation(SupportedProofType supportedProofType, Proof requestProof) throws Oid4vcException {
+    public String validateAndGetHolderKeyAttestation(SupportedProofType supportedProofType, Proof requestProof) throws Oid4vcException {
 
         if (supportedProofType == null) {
             return null;
@@ -73,5 +73,4 @@ public class KeyAttestationService {
             throw new Oid4vcException(e, INVALID_PROOF, "Key attestation key is not supported or not matching the signature!");
         }
     }
-
 }

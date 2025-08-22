@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added new environment variable `URL_REWRITE_MAPPING` to allow rewriting of URLs to support the check of
+  key-attestation
 - Added `key_attestations` to `CredentialInfoResponseDto.java` to support key attestations in the deferred
   credential flow.
   the credential request.
