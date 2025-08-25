@@ -57,7 +57,7 @@ public class DataIntegrityService {
         if (offerData == null || !offerData.containsKey("data")) {
             log.error(String.format("Issuer Management Error - Offer %s lacks any offer data", offerIdentifier));
             throw new BadRequestException("No offer data found");
-        } else if (offerData.containsKey("data_integrity")) {
+        } else if (offerData.containsKey("data_integrity") || applicationProperties.isDataIntegrityEnforced()) {
             // Data Integrity Checks
             try {
                 SignedJWT dataIntegrityJWT = SignedJWT.parse((String) offerData.get("data"));

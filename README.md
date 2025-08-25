@@ -323,6 +323,14 @@ To provide a data integrity check with the issuer it is possible to provide the 
 See [CredentialOfferCreateJWTIT.java](issuer-application/src/test/java/ch/admin/bj/swiyu/issuer/management/infrastructure/web/controller/CredentialOfferCreateJwtIT.java)
 for examples on how to use.
 
+The keys are also set with the environment variable `JWKS_ALLOWLIST`.
+
+The Data integrity check can be enforced to be always used by setting the environment variable.
+
+| Variable                 | Description                                                                                                                               |
+|:-------------------------|:------------------------------------------------------------------------------------------------------------------------------------------|
+| DATA_INTEGRITY_ENFORCED  | Enforce to always do the data integrity check. This will break all existing offers which have been offered without data integrity check!  |
+
 #### Kubernetes Vault Keys
 
 | Variable                                             | Description                                                                                                                                         |
