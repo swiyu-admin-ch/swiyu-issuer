@@ -9,10 +9,6 @@ queries:
     uses: security-extended
   - name: security-and-quality
     uses: security-and-quality
-  - name: java-security
-    uses: java/ql/src/Security
-  - name: spring-specific
-    uses: java/ql/src/experimental/Security
 
 # Zusätzliche Abfragen für erweiterte Sicherheitsanalyse
 query-filters:
