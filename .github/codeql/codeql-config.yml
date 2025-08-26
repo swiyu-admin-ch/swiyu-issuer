@@ -5,31 +5,31 @@
 name: "Advanced CodeQL Configuration"
 
 queries:
-  - name: security-extended
-    uses: security-extended
-  - name: security-and-quality
-    uses: security-and-quality
+  - name: java-security-extended
+    uses: java-security-extended
+  - name: java-security-and-quality
+    uses: java-security-and-quality
 
-# Zusätzliche Abfragen für erweiterte Sicherheitsanalyse
+# Additional queries for extended security analysis
 query-filters:
   - include:
       kind: problem
   - include:
       kind: path-problem
   - include:
-      severity: ["error", "warning"]  # Nur Fehler und Warnungen
+      severity: ["error", "warning"]  # Only errors and warnings
 #  - exclude:
-#      tags: ["external/cwe/cwe-798"] # Bestimmte CWEs ausschließen
+#      tags: ["external/cwe/cwe-798"] # Exclude specific CWEs
 
-# Erweiterte Analyse-Optionen
+# Extended analysis options
 disable-default-queries: false
 
-# Pfade die analysiert werden sollen
+# Paths to be analyzed
 paths:
   - "issuer-application/src"
   - "issuer-service/src"
 
-# Pfade die ignoriert werden sollen
+# Paths to be ignored
 paths-ignore:
   - "issuer-application/target"
   - "issuer-service/target"
