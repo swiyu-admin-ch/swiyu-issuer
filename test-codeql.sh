@@ -15,6 +15,10 @@ echo "🔍 Testing CodeQL Advanced Mode Configuration..."
 CODEQL_HOME="/home/gapa/development/swiyu-issuer-service/codeql"
 DB_NAME="swiyu-issuer-codeql-db"
 
+# Cleanup existing database and results
+echo "🧹 Cleaning up existing database and results..."
+rm -rf $DB_NAME codeql-results.sarif
+
 # Stelle sicher, dass das Projekt gebaut ist
 echo "📦 Building project with Maven..."
 mvn clean compile -q
@@ -24,6 +28,7 @@ echo "🗄️  Creating CodeQL database..."
 $CODEQL_HOME/codeql database create $DB_NAME \
   --language=java \
   --source-root=. \
+  --overwrite \
   --command="mvn compile -q"
 
 # Führe Analyse durch (hier wird die config verwendet)
