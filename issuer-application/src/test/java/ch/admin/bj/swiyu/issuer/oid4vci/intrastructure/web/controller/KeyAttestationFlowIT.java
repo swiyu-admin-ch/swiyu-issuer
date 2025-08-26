@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.At
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.DidKeyResolverApiClient;
 import ch.admin.bj.swiyu.issuer.service.DidTdwKeyResolver;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
@@ -37,6 +38,8 @@ import java.util.Date;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.prepareAttestedVC;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -61,6 +64,8 @@ class KeyAttestationFlowIT {
     ApplicationProperties applicationProperties;
     @Autowired
     private DidTdwKeyResolver didTdwKeyResolver;
+    @Autowired
+    private DidKeyResolverApiClient didKeyResolverApiClient;
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -70,30 +75,32 @@ class KeyAttestationFlowIT {
         jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate();
     }
 
-
     /**
      * We ask for any form of attestation. So we should accept any.
      */
     @ParameterizedTest
     @EnumSource(value = AttackPotentialResistance.class)
     void testAnyKeyAttestationFlow(AttackPotentialResistance resistance) throws Exception {
-        var fetchData = prepareAttestedVC(testOfferAnyAttestationId, resistance);
+        var fetchData = prepareAttested(mock, testOfferAnyAttestationId, resistance);
         mockDidResolve(jwk.toPublicJWK());
-        TestInfrastructureUtils.getCredential(mock, fetchData.token, fetchData.credentialRequestString);
+        var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        assertNotNull(result);
     }
 
     @Test
     void testSuperfluousAttestation() throws Exception {
-        var fetchData = prepareAttestedVC(testOfferNoAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
+        var fetchData = prepareAttested(mock, testOfferNoAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(jwk.toPublicJWK());
-        TestInfrastructureUtils.getCredential(mock, fetchData.token, fetchData.credentialRequestString);
+        var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        assertNotNull(result);
     }
 
     @Test
     void testHighAttestation() throws Exception {
-        var fetchData = prepareAttestedVC(testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH);
+        var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH);
         mockDidResolve(jwk.toPublicJWK());
-        TestInfrastructureUtils.getCredential(mock, fetchData.token, fetchData.credentialRequestString);
+        var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        assertNotNull(result);
     }
 
     /**
@@ -102,9 +109,9 @@ class KeyAttestationFlowIT {
     @ParameterizedTest
     @EnumSource(value = AttackPotentialResistance.class, mode = EnumSource.Mode.EXCLUDE, names = {"ISO_18045_HIGH"})
     void testTooLowAttestation_thenFail(AttackPotentialResistance resistance) throws Exception {
-        var fetchData = prepareAttestedVC(testOfferHighAttestationId, resistance);
+        var fetchData = prepareAttested(mock, testOfferHighAttestationId, resistance);
         mockDidResolve(jwk.toPublicJWK());
-        var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token, fetchData.credentialRequestString);
+        var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
     }
@@ -112,9 +119,9 @@ class KeyAttestationFlowIT {
     @Test
     void testUntrustedAttestationIssuer() throws Exception {
         var untrustedIssuer = "did:example:untrusted";
-        var fetchData = prepareAttestedVC(testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH, untrustedIssuer);
+        var fetchData = prepareAttestedVC(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH, untrustedIssuer, jwk, applicationProperties.getTemplateReplacement().get("external-url"));
         mockDidResolve(jwk.toPublicJWK());
-        var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token, fetchData.credentialRequestString);
+        var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
         // Proof should be invalid when untrusted
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         // We want the error description to be helpful telling about the current issuer and the expected issuers.
@@ -134,41 +141,18 @@ class KeyAttestationFlowIT {
 
     @Test
     void testInvalidAttestationSignature_thenFail() throws Exception {
-        var fetchData = prepareAttestedVC(testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
+        var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate().toPublicJWK());
-        var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token, fetchData.credentialRequestString);
+        var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
-    }
-
-
-    private CredentialFetchData prepareAttestedVC(UUID offerId, AttackPotentialResistance resistance) throws Exception {
-        return prepareAttestedVC(offerId, resistance, null);
-    }
-
-    private CredentialFetchData prepareAttestedVC(UUID offerId, AttackPotentialResistance resistance, String attestationIssuerDid) throws Exception {
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, offerId.toString());
-        var token = tokenResponse.get("access_token");
-        Assertions.assertThat(token).isNotNull();
-        Assertions.assertThat(tokenResponse).containsKey("c_nonce");
-        String proof = TestServiceUtils.createAttestedHolderProof(
-                jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"),
-                tokenResponse.get("c_nonce").toString(),
-                ProofType.JWT.getClaimTyp(),
-                false,
-                resistance,
-                attestationIssuerDid);
-        String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
-
-        return new CredentialFetchData(token, credentialRequestString);
     }
 
     private void mockDidResolve(JWK key) {
         Mockito.when(didTdwKeyResolver.resolveKey(Mockito.any())).thenReturn(key);
     }
 
-    record CredentialFetchData(Object token, String credentialRequestString) {
+    private TestInfrastructureUtils.CredentialFetchData prepareAttested(MockMvc mock, UUID offerId, AttackPotentialResistance resistance) throws Exception {
+        return prepareAttestedVC(mock, offerId, resistance, null, jwk, applicationProperties.getTemplateReplacement().get("external-url"));
     }
-
 }

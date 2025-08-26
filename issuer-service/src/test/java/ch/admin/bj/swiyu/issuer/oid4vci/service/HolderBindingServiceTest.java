@@ -1,8 +1,10 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
@@ -13,56 +15,55 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.KeyAttestationService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.createHolderProof;
+import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SD_JWT_FORMAT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class HolderBindingServiceTest {
 
+    private final String supportedCredentialId = "this-is-a-supported-credential-id";
     private IssuerMetadataTechnical issuerMetadata;
     private NonceService nonceService;
     private HolderBindingService holderBindingService;
-    private ECKey test;
 
     @BeforeEach
-    void setUp() throws JOSEException {
+    void setUp() {
         issuerMetadata = mock(IssuerMetadataTechnical.class);
         OpenIdIssuerConfiguration openIdIssuerConfiguration = mock(OpenIdIssuerConfiguration.class);
         nonceService = mock(NonceService.class);
         KeyAttestationService keyAttestationService = mock(KeyAttestationService.class);
+        ApplicationProperties applicationProperties = mock(ApplicationProperties.class);
         holderBindingService = new HolderBindingService(
-                issuerMetadata, openIdIssuerConfiguration, nonceService, keyAttestationService
+                issuerMetadata, openIdIssuerConfiguration, nonceService, keyAttestationService, applicationProperties
         );
-        test = createPrivateKey();
     }
 
     @Test
-    void returnsEmptyListIfNoProofTypesSupported() throws JOSEException {
+    void returnsEmptyListIfNoProofTypesSupported() {
         SupportedProofType proofType = new SupportedProofType();
         proofType.setSupportedSigningAlgorithms(List.of("ES256"));
         CredentialOffer offer = mock(CredentialOffer.class);
         CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
 
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(null);
-        var proof = createHolderProof(test, "test-issuer", "nonce", ProofType.JWT.getDisplayName(), false);
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 100, 100);
+        List<String> proofs = List.of("Proof1", "Proof2");
 
-        List<String> result = holderBindingService.getValidateHolderPublicKeys(List.of(proofJwt), offer);
+        CredentialRequestClass credentialRequest = new CredentialRequestClass(
+                SD_JWT_FORMAT,
+                Map.of(ProofType.JWT.toString(), proofs),
+                null,
+                supportedCredentialId);
+
+        List<ProofJwt> result = holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer);
         assertTrue(result.isEmpty());
     }
 
@@ -73,14 +74,19 @@ class HolderBindingServiceTest {
         Map<String, SupportedProofType> proofTypesSupported = Map.of("jwt", proofType);
         CredentialOffer offer = mock(CredentialOffer.class);
         CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
 
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(proofTypesSupported);
 
-        List<ProofJwt> holderPublicKeys = List.of();
+        CredentialRequestClass credentialRequest = new CredentialRequestClass(
+                SD_JWT_FORMAT,
+                Map.of(ProofType.JWT.toString(), List.of()),
+                null,
+                supportedCredentialId);
+
         var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.getValidateHolderPublicKeys(holderPublicKeys, offer));
+                holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer));
 
         assertEquals("Proof must be provided for the requested credential", e.getMessage());
     }
@@ -88,16 +94,22 @@ class HolderBindingServiceTest {
     @Test
     void throwsIfMultipleProofsAndNoBatchIssuance() {
         CredentialOffer offer = mock(CredentialOffer.class);
-        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
         CredentialConfiguration config = mock(CredentialConfiguration.class);
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
         when(issuerMetadata.getBatchCredentialIssuance()).thenReturn(null);
 
-        List<ProofJwt> proofs = List.of(mock(ProofJwt.class), mock(ProofJwt.class));
+        List<String> proofs = List.of("Proof1", "Proof2");
+
+        CredentialRequestClass credentialRequest = new CredentialRequestClass(
+                SD_JWT_FORMAT,
+                Map.of(ProofType.JWT.toString(), proofs),
+                null,
+                supportedCredentialId);
 
         var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.getValidateHolderPublicKeys(proofs, offer));
+                holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer));
         assertEquals("Multiple proofs are not allowed for this credential request", e.getMessage());
     }
 
@@ -110,14 +122,25 @@ class HolderBindingServiceTest {
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
         mockBatchCredentialIssuance(2);
 
-        List<ProofJwt> proofs = List.of(mock(ProofJwt.class), mock(ProofJwt.class));
+        List<String> proofs = List.of("Proof1", "Proof1");
+        var proofJwt = mock(ProofJwt.class);
+        when(proofJwt.getProofType()).thenReturn(ProofType.JWT);
+        when(proofJwt.isValidHolderBinding(anyString(), anyList(), any(), anyLong())).thenReturn(true);
+        when(proofJwt.getBinding()).thenReturn("binding");
 
         holderBindingService = spy(holderBindingService);
 
-        doReturn("credential").when(holderBindingService).validateHolderPublicKeyV2(any(), any(), any());
+        doReturn(proofJwt).when(holderBindingService).validateHolderPublicKeyV2(any(), any(), any());
+
+        CredentialRequestClass credentialRequestSpy = spy(new CredentialRequestClass(
+                SD_JWT_FORMAT,
+                Map.of(ProofType.JWT.toString(), proofs),
+                null,
+                supportedCredentialId));
+        when(credentialRequestSpy.getProofs(anyInt(), anyInt())).thenReturn(List.of(proofJwt, proofJwt));
 
         var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.getValidateHolderPublicKeys(proofs, offer));
+                holderBindingService.getValidateHolderPublicKeys(credentialRequestSpy, offer));
         assertEquals("Proofs should not be duplicated for the same credential request", e.getMessage());
     }
 
@@ -131,13 +154,16 @@ class HolderBindingServiceTest {
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
         mockBatchCredentialIssuance(1);
 
-        ProofJwt proof1 = mock(ProofJwt.class);
-        ProofJwt proof2 = mock(ProofJwt.class);
+        List<String> proofs = List.of("Proof1", "Proof2");
 
-        var holderPublicKeys = List.of(proof1, proof2);
+        CredentialRequestClass credentialRequest = new CredentialRequestClass(
+                SD_JWT_FORMAT,
+                Map.of(ProofType.JWT.toString(), proofs),
+                null,
+                supportedCredentialId);
 
         var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.getValidateHolderPublicKeys(holderPublicKeys, offer));
+                holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer));
         assertEquals("The number of proofs exceeds the batch size limit", e.getMessage());
     }
 
@@ -233,13 +259,5 @@ class HolderBindingServiceTest {
     private void mockBatchCredentialIssuance(int batchSize) {
         var batchCredentialIssuance = new BatchCredentialIssuance(batchSize);
         when(issuerMetadata.getBatchCredentialIssuance()).thenReturn(batchCredentialIssuance);
-    }
-
-    private ECKey createPrivateKey() throws JOSEException {
-        return new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID("test-key")
-                .issueTime(new Date())
-                .generate();
     }
 }

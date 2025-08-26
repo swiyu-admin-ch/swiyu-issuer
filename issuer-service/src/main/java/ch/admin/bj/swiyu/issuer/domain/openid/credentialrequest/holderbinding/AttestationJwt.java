@@ -20,19 +20,25 @@ import java.util.stream.Collectors;
 @Getter
 public class AttestationJwt {
 
-    private final SignedJWT signedJWT;
-    private final List<AttackPotentialResistance> attestedAttackPotentialResistance;
-
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
     // OID4VCI 0.15 specifies keyattestion+jwt, in IANA they registered key-attestation+jwt
     private static final Set<String> ALLOWED_TYPES = Set.of("keyattestation+jwt", "key-attestation+jwt");
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
+    private final SignedJWT signedJWT;
+    private final List<AttackPotentialResistance> attestedAttackPotentialResistance;
     private final JWTClaimsSet claims;
+
+    private AttestationJwt(SignedJWT signedJWT, List<AttackPotentialResistance> attestedAttackPotentialResistance) throws ParseException {
+        this.signedJWT = signedJWT;
+        this.attestedAttackPotentialResistance = attestedAttackPotentialResistance;
+        this.claims = signedJWT.getJWTClaimsSet();
+    }
 
     /**
      * Creates an Attestation JWT from a base64 encoded JWT, performing basic validation.
-     * @param jwt  base64 encoded JWT
+     *
+     * @param jwt base64 encoded JWT
      * @return a AttestationJwt
      * @throws ParseException if the JWT is malformed (not a valid JWT)
      */
@@ -46,18 +52,6 @@ public class AttestationJwt {
     }
 
     /**
-     *
-     * @param trustedAttestationProviders list of trusted issuers
-     * @throws IllegalArgumentException if the issuer of the jwt is not matching the list of trusted attestation providers
-     */
-    public void throwIfNotTrustedAttestationProvider(@NotNull List<String> trustedAttestationProviders) throws IllegalArgumentException {
-        if (!trustedAttestationProviders.contains(claims.getIssuer())) {
-            throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted issuers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
-        }
-    }
-
-    /**
-     *
      * @param jwtClaimsSet The JWT Body to be checked for Attestation JWT Required attributes
      * @throws IllegalArgumentException if one of the checks fails
      */
@@ -101,7 +95,6 @@ public class AttestationJwt {
     }
 
     /**
-     *
      * @param header The JWSHeader to be checked for Attestation JWT Required attributes
      * @throws IllegalArgumentException if one of the checks fails
      */
@@ -122,16 +115,19 @@ public class AttestationJwt {
         }
     }
 
-    private AttestationJwt(SignedJWT signedJWT, List<AttackPotentialResistance> attestedAttackPotentialResistance) throws ParseException {
-        this.signedJWT = signedJWT;
-        this.attestedAttackPotentialResistance = attestedAttackPotentialResistance;
-        this.claims = signedJWT.getJWTClaimsSet();
+    /**
+     * @param trustedAttestationProviders list of trusted issuers
+     * @throws IllegalArgumentException if the issuer of the jwt is not matching the list of trusted attestation providers
+     */
+    public void throwIfNotTrustedAttestationProvider(@NotNull List<String> trustedAttestationProviders) throws IllegalArgumentException {
+        if (!trustedAttestationProviders.contains(claims.getIssuer())) {
+            throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted issuers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
+        }
     }
 
     /**
-     *
      * @param keyResolver service to resolve the public JWK with
-     * @param resistance Which resistance must be attested
+     * @param resistance  Which resistance must be attested
      * @return true if the attestation is valid and the resistance is matching
      * @throws JOSEException if the fetched Key can not be parsed as a supported JWSVerifier
      */
@@ -141,12 +137,20 @@ public class AttestationJwt {
         if (!signedJWT.verify(new ECDSAVerifier(key.toECKey()))) {
             throw new JOSEException("JWT verification failed");
         }
-        if (resistance.isEmpty()){
+        if (resistance.isEmpty()) {
             return true;
         }
         var providedResistanceSet = new HashSet<>(attestedAttackPotentialResistance);
         providedResistanceSet.retainAll(resistance);
         // We only care IF we have a matching resistance spec
         return !providedResistanceSet.isEmpty();
+    }
+
+    public String toJsonString() throws ParseException {
+        if (signedJWT == null) {
+            throw new IllegalStateException("Signed JWT is not initialized");
+        }
+
+        return this.getSignedJWT().getHeader().toString() + "." + this.getSignedJWT().getJWTClaimsSet().toString();
     }
 }

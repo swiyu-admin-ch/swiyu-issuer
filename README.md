@@ -238,6 +238,7 @@ The Generic Issuer service is configured using environment variables.
 | SDJWT_KEY (Optional - See HSM)       | The private key used to sign SD-JWT Credentials. The matching public key must be published on the base registry for verification. - Not recommended.                                                                                                                                     |
 | DID_SDJWT_VERIFICATION_METHOD        | The full DID with fragment as used to find the public key for sd-jwt VCs in the DID Document. eg: `did:tdw:<base-registry-url>:<issuer_uuid>#<sd-jwt-public-key-fragment>`                                                                                                               |
 | MIN_DEFERRED_OFFER_WAITING_SECONDS   | For the deferred flow. Polling interval for the deferred flow. Defines how long a wallet should wait after receiving the transaction_id until it tries to fetch the actual credential. This value will be shown as `interval` in the deferred response.                                  |
+| URL_REWRITE_MAPPING                  | Json object for url replacements during rest client call. Key represents the original url and value the one which should be used instead (e.g. {"https://mysample1.ch":"https://somethingdiffeerent1.ch"})                                                                               |
 
 #### Status List
 
@@ -322,14 +323,22 @@ To provide a data integrity check with the issuer it is possible to provide the 
 See [CredentialOfferCreateJWTIT.java](issuer-application/src/test/java/ch/admin/bj/swiyu/issuer/management/infrastructure/web/controller/CredentialOfferCreateJwtIT.java)
 for examples on how to use.
 
+The keys are also set with the environment variable `JWKS_ALLOWLIST`.
+
+The Data integrity check can be enforced to be always used by setting the environment variable.
+
+| Variable                 | Description                                                                                                                               |
+|:-------------------------|:------------------------------------------------------------------------------------------------------------------------------------------|
+| DATA_INTEGRITY_ENFORCED  | Enforce to always do the data integrity check. This will break all existing offers which have been offered without data integrity check!  |
+
 #### Kubernetes Vault Keys
 
-| Variable                                             | Description                                                                                                                                           |
-|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| secret.db.username                                   | Username to connect to the Issuer Service Database.                                                                                                   |
-| secret.db.password                                   | Password to connect to the Issuer Service Database                                                                                                    |
-| secret.key.sdjwt.key                                 | Private Key used to sign jwt_vc / SD-JWT Verifiable Credentials                                                                                       |
-| secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                          |
+| Variable                                             | Description                                                                                                                                         |
+|------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| secret.db.username                                   | Username to connect to the Issuer Service Database.                                                                                                 |
+| secret.db.password                                   | Password to connect to the Issuer Service Database                                                                                                  |
+| secret.key.sdjwt.key                                 | Private Key used to sign jwt_vc / SD-JWT Verifiable Credentials                                                                                     |
+| secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                        |
 | secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                   |
 | secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                |
 | secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self-service portal. |
@@ -517,8 +526,10 @@ erDiagram
         jsonb credential_request
         uuid transaction_id
         array[text] holder_jwks
+        array[text] key_attestations
         jsonb client_agent_info
-        long token_expiration_timestamp tokenExpirationTimestam
+        uuid holder_binding_nonce
+        long token_expiration_timestamp
         uuid access_token
         uuid nonce
         uuid pre_authorized_code
@@ -666,7 +677,7 @@ stateDiagram-v2
     SUSPENDED
     REVOKED
     [*] --> OFFERED
-    OFFERED --> CANCELLED : Process can be "cancelled as long as the vc is not ISSUED"
+    OFFERED --> CANCELLED : Process can be cancelled as long as the vc is not ISSUED
     CANCELLED --> [*]
     OFFERED --> IN_PROGRESS
     IN_PROGRESS --> fork_state

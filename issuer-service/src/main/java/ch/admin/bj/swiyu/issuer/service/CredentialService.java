@@ -191,25 +191,31 @@ public class CredentialService {
         // catch race condition between holder & issuer
         validateCredentialRequest(credentialOffer, credentialRequest);
 
-        var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                applicationProperties.getAcceptableProofTimeWindowSeconds());
-        Optional<ProofJwt> proofJwt = proofsJwt.isEmpty() ? Optional.empty() : Optional.of(proofsJwt.getFirst());
-
-        Optional<String> holderPublicKey;
+        Optional<ProofJwt> holderPublicKey;
         try {
-            holderPublicKey = holderBindingService.getHolderPublicKey(proofJwt, credentialOffer);
+            holderPublicKey = holderBindingService.getHolderPublicKey(credentialRequest, credentialOffer);
         } catch (Oid4vcException e) {
             webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
                     e.getMessage());
             throw e;
         }
 
+        List<String> holderPublicKeyJwkList = holderPublicKey
+                .map(ProofJwt::getBinding)
+                .map(List::of)
+                .orElseGet(List::of);
+
+        List<String> keyAttestationJwkList = holderPublicKey
+                .map(ProofJwt::getAttestationJwt)
+                .map(List::of)
+                .orElseGet(List::of);
+
         var vcBuilder = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
-                .holderBindings(holderPublicKey.map(List::of).orElseGet(List::of))
+                .holderBindings(holderPublicKeyJwkList)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId());
 
         CredentialEnvelopeDto responseEnvelope;
@@ -219,8 +225,7 @@ public class CredentialService {
             var transactionId = UUID.randomUUID();
 
             responseEnvelope = vcBuilder.buildDeferredCredential(transactionId);
-            credentialOffer.markAsDeferred(transactionId, credentialRequest,
-                    holderPublicKey.map(List::of).orElseGet(List::of), clientInfo);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo);
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);
@@ -242,18 +247,18 @@ public class CredentialService {
                                                                 CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
         validateCredentialRequest(credentialOffer, credentialRequest);
 
-        List<ProofJwt> proofs = credentialRequest.getProofs(
-                applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                applicationProperties.getAcceptableProofTimeWindowSeconds());
-
-        List<String> holderJwkList;
+        List<ProofJwt> holderJwkList;
         try {
-            holderJwkList = holderBindingService.getValidateHolderPublicKeys(proofs, credentialOffer);
+            holderJwkList = holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer);
         } catch (Oid4vcException e) {
             webhookService.produceErrorEvent(credentialOffer.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
                     e.getMessage());
             throw e;
         }
+
+        List<String> holderPublicKeyJwkList = holderJwkList.stream()
+                .map(ProofJwt::getBinding)
+                .toList();
 
         var vcBuilder = vcFormatFactory
                 // get first entry because we expect the list to only contain one item at the
@@ -261,7 +266,7 @@ public class CredentialService {
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
-                .holderBindings(holderJwkList)
+                .holderBindings(holderPublicKeyJwkList)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId());
 
         CredentialEnvelopeDto responseEnvelope;
@@ -269,8 +274,10 @@ public class CredentialService {
         if (credentialOffer.isDeferred()) {
             var transactionId = UUID.randomUUID();
 
+            List<String> keyAttestationJwkList = holderJwkList.stream().map(ProofJwt::getAttestationJwt).toList();
+
             responseEnvelope = vcBuilder.buildDeferredCredentialV2(transactionId);
-            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderJwkList, clientInfo);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo);
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);

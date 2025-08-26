@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
 import ch.admin.eid.didresolver.Did;
 import ch.admin.eid.didresolver.DidResolveException;
@@ -13,9 +14,7 @@ import com.nimbusds.jose.jwk.JWK;
 import lombok.AllArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 
-import java.net.URI;
 import java.text.ParseException;
 
 import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.PUBLIC_KEY_CACHE;
@@ -23,8 +22,9 @@ import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.PUBLIC_KEY_CACH
 @Service
 @AllArgsConstructor
 public class DidTdwKeyResolver implements KeyResolver {
-    private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final UrlRewriteProperties urlRewriteProperties;
+    private final DidKeyResolverApiClient didKeyResolverApiClient;
 
     /**
      * @param keyId full did:tdw including #fragment indicating the verification method
@@ -50,9 +50,9 @@ public class DidTdwKeyResolver implements KeyResolver {
 
     private String fetchDidLog(String keyId) {
         try (var did = new Did(keyId)) {
-            var url = did.getUrl();
+            var url = urlRewriteProperties.getRewrittenUrl(did.getUrl());
             // Fetch the did log; throw RestClientResponseException if status >=400
-            return restClient.get().uri(URI.create(url)).retrieve().body(String.class);
+            return didKeyResolverApiClient.fetchDidLog(url);
         } catch (DidResolveException e) {
             throw new IllegalArgumentException("DID Document could not be fetched", e);
         }

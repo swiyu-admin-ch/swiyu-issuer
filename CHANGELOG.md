@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added new environment variable `URL_REWRITE_MAPPING` to allow rewriting of URLs to support the check of
+  key-attestation
+- Added `key_attestations` to `CredentialInfoResponseDto.java` to support key attestations in the deferred
+  credential flow.
+  the credential request.
 - Expanded the credential endpoint to accept the new credential-endpoint (with corresponding response)
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-endpoint),
   and the deferred credential endpoint which is
@@ -94,6 +99,7 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
 
 ### Fixed
 
+- Fixed offers in status `DEFERRED` or `READY` expire when the `offer_expiration_timestamp` has passed.
 - Checks for protected claims are now done in the create-offer-flow (1 step) instead of the issuance flow.
 - Business Issuer is directly informed when the payload cannot be processed later.
 - Fix status code when jwt filter criteria are not met from a 500 to 401.

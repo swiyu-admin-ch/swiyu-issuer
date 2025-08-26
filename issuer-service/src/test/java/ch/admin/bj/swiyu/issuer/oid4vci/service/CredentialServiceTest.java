@@ -454,16 +454,14 @@ class CredentialServiceTest {
 
         List<ProofJwt> proofs = List.of(mock(ProofJwt.class));
         when(credentialRequest.getProofs(anyInt(), anyInt())).thenReturn(proofs);
-
-        List<String> holderJwkList = List.of("jwk1");
-        when(holderBindingService.getValidateHolderPublicKeys(proofs, credentialOffer)).thenReturn(holderJwkList);
+        when(holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer)).thenReturn(proofs);
 
         mockVCBuilder(credentialOffer);
         when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
 
         credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo);
 
-        verify(credentialOffer).markAsDeferred(any(), any(), any(), any());
+        verify(credentialOffer).markAsDeferred(any(), any(), anyList(), anyList(), any());
         verify(credentialOfferRepository).save(credentialOffer);
         verify(webhookService).produceDeferredEvent(any(), any());
     }
@@ -485,8 +483,7 @@ class CredentialServiceTest {
         List<ProofJwt> proofs = List.of(mock(ProofJwt.class));
         when(credentialRequest.getProofs(anyInt(), anyInt())).thenReturn(proofs);
 
-        List<String> holderJwkList = List.of("jwk1");
-        when(holderBindingService.getValidateHolderPublicKeys(proofs, credentialOffer)).thenReturn(holderJwkList);
+        when(holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer)).thenReturn(proofs);
 
         mockVCBuilder(credentialOffer);
         when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
@@ -548,6 +545,7 @@ class CredentialServiceTest {
                 offerMetadata,
                 accessToken,
                 transactionId,
+                null,
                 null,
                 null,
                 Instant.now().plusSeconds(600).getEpochSecond(),
