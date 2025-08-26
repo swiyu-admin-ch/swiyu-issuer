@@ -9,6 +9,10 @@ queries:
     uses: security-extended
   - name: security-and-quality
     uses: security-and-quality
+  - name: java-security
+    uses: java/ql/src/Security
+  - name: spring-specific
+    uses: java/ql/src/experimental/Security
 
 # Zusätzliche Abfragen für erweiterte Sicherheitsanalyse
 query-filters:
@@ -16,6 +20,10 @@ query-filters:
       kind: problem
   - include:
       kind: path-problem
+  - include:
+      severity: ["error", "warning"]  # Nur Fehler und Warnungen
+#  - exclude:
+#      tags: ["external/cwe/cwe-798"] # Bestimmte CWEs ausschließen
 
 # Erweiterte Analyse-Optionen
 disable-default-queries: false
@@ -30,3 +38,5 @@ paths-ignore:
   - "issuer-application/target"
   - "issuer-service/target"
   - "**/test/**"
+
+build-mode: manual
