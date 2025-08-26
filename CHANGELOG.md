@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Latest
+## 1.0.0
 
 ### Added
 
@@ -95,7 +95,7 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
 - Fixed error code when deferred endpoint is called with invalid transaction id to INVALID_TRANSACTION_ID instead of
   INVALID_CREDENTIAL_REQUEST.
 
-## 1.0.0
+## Copied from Issuer Agent Management and Issuer Agent OID4VCI
 
 Merge of issuer-agent-management 1.6.1 and issuer-agent-oid4vci into one service.
 
