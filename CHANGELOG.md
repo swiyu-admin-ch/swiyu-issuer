@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the deferred credential endpoint which is
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin).
   These endpoints can be used by setting the custom header `SWIYU-API-Version=2`. These endpoints are not yet pentested.
+
+### Fixed
+
+- Fixed offers in status `DEFERRED` or `READY` expire when the `offer_expiration_timestamp` has passed.
+
+## 2.0.0
+
+### Added
+
 - Expanded cnf to contain correct structure while still providing the old one. Example:
 
 ```json
@@ -106,7 +115,7 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
 - Fixed error code when deferred endpoint is called with invalid transaction id to INVALID_TRANSACTION_ID instead of
   INVALID_CREDENTIAL_REQUEST.
 
-## 1.0.0
+## Copied from Issuer Agent Management and Issuer Agent OID4VCI
 
 Merge of issuer-agent-management 1.6.1 and issuer-agent-oid4vci into one service.
 
