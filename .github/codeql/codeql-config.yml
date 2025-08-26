@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2025 Swiss Confederation
+#
+# SPDX-License-Identifier: MIT
+
+name: "Advanced CodeQL Configuration"
+
+queries:
+  - name: security-extended
+    uses: security-extended
+  - name: security-and-quality
+    uses: security-and-quality
+
+# Zusätzliche Abfragen für erweiterte Sicherheitsanalyse
+query-filters:
+  - include:
+      kind: problem
+  - include:
+      kind: path-problem
+
+# Erweiterte Analyse-Optionen
+disable-default-queries: false
+
+# Pfade die analysiert werden sollen
+paths:
+  - "issuer-application/src"
+  - "issuer-service/src"
+
+# Pfade die ignoriert werden sollen
+paths-ignore:
+  - "issuer-application/target"
+  - "issuer-service/target"
+  - "**/test/**"
