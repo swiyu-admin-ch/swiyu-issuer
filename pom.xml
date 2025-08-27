@@ -82,6 +82,8 @@
                 <configuration>
                     <printFailingErrors>true</printFailingErrors>
                     <linkXRef>false</linkXRef>
+                    <failOnViolation>true</failOnViolation>
+                    <failurePriority>3</failurePriority>
                 </configuration>
             </plugin>
         </plugins>
