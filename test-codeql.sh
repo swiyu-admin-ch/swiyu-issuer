@@ -12,7 +12,7 @@ set -e
 echo "🔍 Testing CodeQL Advanced Mode Configuration..."
 
 # Pfade
-CODEQL_HOME="/home/gapa/development/swiyu-issuer-service/codeql"
+CODEQL_HOME="./codeql"
 DB_NAME="swiyu-issuer-codeql-db"
 
 # Cleanup existing database and results
@@ -38,6 +38,7 @@ $CODEQL_HOME/codeql database analyze $DB_NAME \
   --output=codeql-results.sarif \
   --sarif-category="/language:java" \
   java-security-extended java-security-and-quality
+
 
 # Zeige Zusammenfassung
 echo "📊 Analysis complete! Results saved to codeql-results.sarif"
