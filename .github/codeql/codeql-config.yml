@@ -24,15 +24,15 @@ query-filters:
 # Extended analysis options
 disable-default-queries: false
 
-# Paths to be analyzed
-paths:
-  - "issuer-application/src"
-  - "issuer-service/src"
-
-# Paths to be ignored
-paths-ignore:
-  - "issuer-application/target"
-  - "issuer-service/target"
-  - "**/test/**"
+## Paths to be analyzed
+#paths:
+#  - "issuer-application/src"
+#  - "issuer-service/src"
+#
+## Paths to be ignored
+#paths-ignore:
+#  - "issuer-application/target"
+#  - "issuer-service/target"
+#  - "**/test/**"
 
 build-mode: manual
