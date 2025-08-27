@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin).
   These endpoints can be used by setting the custom header `SWIYU-API-Version=2`. These endpoints are not yet pentested.
 
+### Changed
+
+- Changed the `didresolver` version from 2.0.1 to 2.1.3.
+
 ### Fixed
 
 - Fixed offers in status `DEFERRED` or `READY` expire when the `offer_expiration_timestamp` has passed.
