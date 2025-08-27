@@ -114,7 +114,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CredentialEnvelope"
+                oneOf:
+                - $ref: "#/components/schemas/CredentialResponse"
+                - $ref: "#/components/schemas/CredentialResponseDtoV2"
         "400":
           description: Invalid request or validation error
           content:
@@ -133,6 +135,8 @@ paths:
             application/jwt:
               schema:
                 type: string
+      security:
+      - Bearer Authentication: []
   /oid4vci/api/credential:
     post:
       tags:
@@ -168,11 +172,13 @@ paths:
         "404":
           description: Not Found
         "200":
-          description: Credential issued successfully with encryption.
+          description: Credential issued successfully.
           content:
-            application/jwt:
+            application/json:
               schema:
-                type: string
+                oneOf:
+                - $ref: "#/components/schemas/CredentialResponse"
+                - $ref: "#/components/schemas/CredentialResponseDtoV2"
         "202":
           description: Successful deferred credential. The credential will be issued
             later
@@ -218,7 +224,7 @@ paths:
         The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
         The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
         Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
-      operationId: createCredential_1
+      operationId: createCredential
       requestBody:
         content:
           application/json:
@@ -262,7 +268,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/CredentialInfoResponseDto"
+                $ref: "#/components/schemas/CredentialInfoResponse"
     patch:
       tags:
       - Credential API
@@ -433,7 +439,7 @@ paths:
       tags:
       - Well-known endpoints API
       summary: Information about credentials which can be issued.
-      operationId: getIssuerMetadata_1
+      operationId: getIssuerMetadata
       responses:
         "404":
           description: Not Found
@@ -465,7 +471,7 @@ paths:
       tags:
       - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfiguration_1
+      operationId: getOpenIDConfiguration
       responses:
         "404":
           description: Not Found
@@ -495,7 +501,7 @@ paths:
       tags:
       - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfigurationForOauthAuthServer_1
+      operationId: getOpenIDConfigurationForOauthAuthServer
       responses:
         "404":
           description: Not Found
@@ -721,85 +727,36 @@ components:
         interval:
           type: integer
           format: int32
-    CredentialEnvelope:
+    CredentialResponse:
       type: object
       properties:
-        contentType:
+        format:
           type: string
-        oid4vciCredentialJson:
+        credential:
           type: string
-        httpStatus:
+        transaction_id:
           type: string
-          enum:
-          - 100 CONTINUE
-          - 101 SWITCHING_PROTOCOLS
-          - 102 PROCESSING
-          - 103 EARLY_HINTS
-          - 103 CHECKPOINT
-          - 200 OK
-          - 201 CREATED
-          - 202 ACCEPTED
-          - 203 NON_AUTHORITATIVE_INFORMATION
-          - 204 NO_CONTENT
-          - 205 RESET_CONTENT
-          - 206 PARTIAL_CONTENT
-          - 207 MULTI_STATUS
-          - 208 ALREADY_REPORTED
-          - 226 IM_USED
-          - 300 MULTIPLE_CHOICES
-          - 301 MOVED_PERMANENTLY
-          - 302 FOUND
-          - 302 MOVED_TEMPORARILY
-          - 303 SEE_OTHER
-          - 304 NOT_MODIFIED
-          - 305 USE_PROXY
-          - 307 TEMPORARY_REDIRECT
-          - 308 PERMANENT_REDIRECT
-          - 400 BAD_REQUEST
-          - 401 UNAUTHORIZED
-          - 402 PAYMENT_REQUIRED
-          - 403 FORBIDDEN
-          - 404 NOT_FOUND
-          - 405 METHOD_NOT_ALLOWED
-          - 406 NOT_ACCEPTABLE
-          - 407 PROXY_AUTHENTICATION_REQUIRED
-          - 408 REQUEST_TIMEOUT
-          - 409 CONFLICT
-          - 410 GONE
-          - 411 LENGTH_REQUIRED
-          - 412 PRECONDITION_FAILED
-          - 413 PAYLOAD_TOO_LARGE
-          - 413 REQUEST_ENTITY_TOO_LARGE
-          - 414 URI_TOO_LONG
-          - 414 REQUEST_URI_TOO_LONG
-          - 415 UNSUPPORTED_MEDIA_TYPE
-          - 416 REQUESTED_RANGE_NOT_SATISFIABLE
-          - 417 EXPECTATION_FAILED
-          - 418 I_AM_A_TEAPOT
-          - 419 INSUFFICIENT_SPACE_ON_RESOURCE
-          - 420 METHOD_FAILURE
-          - 421 DESTINATION_LOCKED
-          - 422 UNPROCESSABLE_ENTITY
-          - 423 LOCKED
-          - 424 FAILED_DEPENDENCY
-          - 425 TOO_EARLY
-          - 426 UPGRADE_REQUIRED
-          - 428 PRECONDITION_REQUIRED
-          - 429 TOO_MANY_REQUESTS
-          - 431 REQUEST_HEADER_FIELDS_TOO_LARGE
-          - 451 UNAVAILABLE_FOR_LEGAL_REASONS
-          - 500 INTERNAL_SERVER_ERROR
-          - 501 NOT_IMPLEMENTED
-          - 502 BAD_GATEWAY
-          - 503 SERVICE_UNAVAILABLE
-          - 504 GATEWAY_TIMEOUT
-          - 505 HTTP_VERSION_NOT_SUPPORTED
-          - 506 VARIANT_ALSO_NEGOTIATES
-          - 507 INSUFFICIENT_STORAGE
-          - 508 LOOP_DETECTED
-          - 509 BANDWIDTH_LIMIT_EXCEEDED
-          - 510 NOT_EXTENDED
-          - 511 NETWORK_AUTHENTICATION_REQUIRED
+          format: uuid
+    CredentialObjectDtoV2:
+      type: object
+      properties:
+        credential:
+          type: string
+          description: |
+            One sdjwt credential as string, if multiple credentials are issued each is wrapped in
+            a separate CredentialObjectDtoV2 object.
+    CredentialResponseDtoV2:
+      type: object
+      properties:
+        credentials:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialObjectDtoV2"
+        transaction_id:
+          type: string
+        interval:
+          type: integer
+          format: int64
     CredentialRequest:
       required:
       - format
@@ -891,6 +848,25 @@ components:
         transaction_id:
           type: string
           format: uuid
+    ConfigurationOverride:
+      type: object
+      properties:
+        issuer_did:
+          type: string
+          description: Override to be used in place of the ISSUER_ID
+        verification_method:
+          type: string
+          description: "Override for the verification method that is looked up in\
+            \ the did document during verification of the entity. Most often the full\
+            \ did and a unique id after #"
+        key_id:
+          type: string
+          description: ID of the key in the HSM
+        key_pin:
+          type: string
+          description: "The pin which protects the key in the hsm, if any. Note that\
+            \ this only the key pin, not hsm password or partition pin."
+      description: Override for configuration to be use for the created entity
     StatusListCreate:
       required:
       - config
@@ -914,6 +890,8 @@ components:
           example: 100000
         config:
           $ref: "#/components/schemas/StatusListCreateConfig"
+        configuration_override:
+          $ref: "#/components/schemas/ConfigurationOverride"
     StatusListCreateConfig:
       required:
       - bits
@@ -1030,10 +1008,12 @@ components:
               Various metadata to be used for credential creation.
             example:
               vct#integrity: sha256-0000000000000000000000000000000000000000000=
+              deferred: false
           description: |
             Various metadata to be used for credential creation.
           example:
             vct#integrity: sha256-0000000000000000000000000000000000000000000=
+            deferred: false
         offer_validity_seconds:
           type: integer
           description: how long the offer should be usable in seconds. Example is
@@ -1061,6 +1041,8 @@ components:
           - https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt
           items:
             type: string
+        configuration_override:
+          $ref: "#/components/schemas/ConfigurationOverride"
       description: Initial credential creation request to start the offering process.
     CredentialStatusType:
       type: string
@@ -1127,7 +1109,7 @@ components:
           type: string
         accept-encoding:
           type: string
-    CredentialInfoResponseDto:
+    CredentialInfoResponse:
       type: object
       properties:
         status:
@@ -1140,8 +1122,14 @@ components:
           type: object
           additionalProperties:
             type: object
-        holder_jwk:
-          type: string
+        holder_jwks:
+          type: array
+          items:
+            type: string
+        key_attestations:
+          type: array
+          items:
+            type: string
         client_agent_info:
           $ref: "#/components/schemas/ClientAgentInfoDto"
         offer_expiration_timestamp:
@@ -1169,6 +1157,26 @@ components:
           type: string
         templated:
           type: boolean
+    WebhookCallback:
+      type: object
+      properties:
+        subject_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+          enum:
+          - VC_STATUS_CHANGED
+          - VC_DEFERRED
+          - ISSUANCE_ERROR
+        event:
+          type: string
+        event_description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      description: Callback transmitting information about an event which occurred.
   securitySchemes:
     Bearer Authentication:
       type: http
