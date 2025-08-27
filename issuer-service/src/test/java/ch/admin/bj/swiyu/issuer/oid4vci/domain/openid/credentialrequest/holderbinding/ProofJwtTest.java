@@ -153,12 +153,13 @@ class ProofJwtTest {
                 UUID.randomUUID(),
                 CredentialStatusType.OFFERED,
                 Collections.emptyList(),
-                new HashMap<String, Object>() {{
+                new HashMap<>() {{
                     put("data", "data");
                     put("otherStuff", "data");
                 }},
                 new HashMap<>(),
                 UUID.randomUUID(),
+                null,
                 null,
                 null,
                 null,

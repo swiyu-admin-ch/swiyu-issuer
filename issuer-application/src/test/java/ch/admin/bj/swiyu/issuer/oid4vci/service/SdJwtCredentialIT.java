@@ -20,6 +20,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Testcontainers
+@ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class SdJwtCredentialIT {
 
@@ -63,7 +65,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredential();
+                .buildCredentialEnvelope();
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
 
@@ -102,7 +104,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredential();
+                .buildCredentialEnvelope();
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
         String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
@@ -135,7 +137,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredential();
+                .buildCredentialEnvelope();
 
         String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
         String payload = getJWTPayload(credential);
@@ -161,7 +163,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredential();
+                .buildCredentialEnvelope();
 
         String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
         var issuedJwt = SignedJWT.parse(credential.split("~")[0]);

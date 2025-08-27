@@ -6,15 +6,12 @@
 
 package ch.admin.bj.swiyu.issuer.service.statusregistry;
 
-import java.time.Instant;
-
-import static ch.admin.bj.swiyu.issuer.domain.ecosystem.EcosystemApiType.STATUS_REGISTRY;
-
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenApi;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenSet;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenSetRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockAssert;
@@ -23,6 +20,10 @@ import net.javacrumbs.shedlock.core.LockingTaskExecutor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+
+import static ch.admin.bj.swiyu.issuer.domain.ecosystem.EcosystemApiType.STATUS_REGISTRY;
 
 /**
  * A service to interact with the status registry token provider from the swiyu
@@ -45,7 +46,7 @@ public class StatusRegistryTokenDomainService {
      * Initial token set refresh flow.
      * Starts once after all other application startup is done.
      */
-    @Scheduled(initialDelay = 0)
+    @PostConstruct
     void bootstrapTokenSetRefresh() {
         lockingTaskExecutor.executeWithLock(
                 (Runnable) () -> {

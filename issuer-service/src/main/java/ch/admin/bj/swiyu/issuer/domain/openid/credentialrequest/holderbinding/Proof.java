@@ -22,4 +22,6 @@ public abstract class Proof {
     public abstract String getNonce();
 
     public abstract String getBinding();
+
+    public abstract ProofType getProofType();
 }

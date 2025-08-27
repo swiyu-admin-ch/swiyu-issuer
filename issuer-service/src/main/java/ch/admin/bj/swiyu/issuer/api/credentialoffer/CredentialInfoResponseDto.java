@@ -3,11 +3,13 @@ package ch.admin.bj.swiyu.issuer.api.credentialoffer;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+@Schema(name = "CredentialInfoResponse")
 public record CredentialInfoResponseDto(
         @JsonProperty("status")
         CredentialStatusTypeDto credentialStatus,
@@ -15,8 +17,10 @@ public record CredentialInfoResponseDto(
         List<String> metadataCredentialSupportedId,
         @JsonProperty("credential_metadata")
         Map<String, Object> credentialMetadata,
-        @JsonProperty("holder_jwk")
-        String holderJWK,
+        @JsonProperty("holder_jwks")
+        List<String> holderJWKs,
+        @JsonProperty("key_attestations")
+        List<String> keyAttestations,
         @JsonProperty("client_agent_info")
         ClientAgentInfoDto clientAgentInfo,
         @JsonProperty("offer_expiration_timestamp")

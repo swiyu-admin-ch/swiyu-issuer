@@ -18,6 +18,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import lombok.experimental.UtilityClass;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Map;
 
@@ -40,7 +41,8 @@ public class CredentialOfferMapper {
                 toCredentialStatusTypeDto(credential.getCredentialStatus()),
                 credential.getMetadataCredentialSupportedId(),
                 credential.getCredentialMetadata(),
-                credential.getHolderJWKs() != null ? credential.getHolderJWKs().getFirst() : null,
+                !CollectionUtils.isEmpty(credential.getHolderJWKs()) ? credential.getHolderJWKs() : null,
+                !CollectionUtils.isEmpty(credential.getKeyAttestations()) ? credential.getKeyAttestations() : null,
                 toClientAgentInfoDto(credential.getClientAgentInfo()),
                 credential.getOfferExpirationTimestamp(),
                 credential.getCredentialValidFrom(),

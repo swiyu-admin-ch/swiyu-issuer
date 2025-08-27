@@ -6,8 +6,11 @@
 
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import lombok.Getter;
+
 import java.util.List;
 
+@Getter
 public enum CredentialStatusType {
     OFFERED("Offered"),
     CANCELLED("Cancelled"),
@@ -28,20 +31,18 @@ public enum CredentialStatusType {
         this.displayName = displayName;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    /**
+     * @return List of CredentialStatusType which can lead to "expire"
+     */
+    public static List<CredentialStatusType> getExpirableStates() {
+        return List.of(CredentialStatusType.OFFERED, CredentialStatusType.IN_PROGRESS, CredentialStatusType.DEFERRED, CredentialStatusType.READY);
     }
 
     @Override
     public String toString() {
         return this.getDisplayName();
     }
-    /**
-     * @return List of CredentialStatusType which can lead to "expire"
-     */
-    public static List<CredentialStatusType> getExpirableStates() {
-        return List.of(CredentialStatusType.OFFERED, CredentialStatusType.IN_PROGRESS);
-    }
+
 
     public boolean isIssuedToHolder() {
         return this != OFFERED && this != IN_PROGRESS && this != CANCELLED && this != DEFERRED && this != READY;
@@ -49,9 +50,5 @@ public enum CredentialStatusType {
 
     public boolean isTerminalState() {
         return this == REVOKED || this == EXPIRED || this == CANCELLED;
-    }
-
-    public boolean isDuringHolderInteraction() {
-        return this == IN_PROGRESS;
     }
 }

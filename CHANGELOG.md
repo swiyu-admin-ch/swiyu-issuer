@@ -9,13 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Updated ApiErrorDto and reused it for every error response. This allows for a more consistent error
-  response structure.
+- Added new environment variable `URL_REWRITE_MAPPING` to allow rewriting of URLs to support the check of
+  key-attestation
+- Added `key_attestations` to `CredentialInfoResponseDto.java` to support key attestations in the deferred
+  credential flow.
+  the credential request.
 - Expanded the credential endpoint to accept the new credential-endpoint (with corresponding response)
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-endpoint),
   and the deferred credential endpoint which is
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin).
   These endpoints can be used by setting the custom header `SWIYU-API-Version=2`. These endpoints are not yet pentested.
+
+### Changed
+
+- Changed the `didresolver` version from 2.0.1 to 2.1.3.
+- Updated ApiErrorDto and reused it for every error response. This allows for a more consistent error
+  response structure.
+
+### Fixed
+
+- Fixed offers in status `DEFERRED` or `READY` expire when the `offer_expiration_timestamp` has passed.
+
+## 2.0.0
+
+### Added
+
 - Expanded cnf to contain correct structure while still providing the old one. Example:
 
 ```json
@@ -96,13 +114,14 @@ Example payload of the request to deferred-credential endpoint`/deferred_credent
 
 ### Fixed
 
+- Fixed offers in status `DEFERRED` or `READY` expire when the `offer_expiration_timestamp` has passed.
 - Checks for protected claims are now done in the create-offer-flow (1 step) instead of the issuance flow.
 - Business Issuer is directly informed when the payload cannot be processed later.
 - Fix status code when jwt filter criteria are not met from a 500 to 401.
 - Fixed error code when deferred endpoint is called with invalid transaction id to INVALID_TRANSACTION_ID instead of
   INVALID_CREDENTIAL_REQUEST.
 
-## 1.0.0
+## Copied from Issuer Agent Management and Issuer Agent OID4VCI
 
 Merge of issuer-agent-management 1.6.1 and issuer-agent-oid4vci into one service.
 

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @AllArgsConstructor
@@ -19,7 +20,7 @@ public class NonceService {
     private final ApplicationProperties applicationProperties;
     private final CachedNonceRepository cachedNonceRepository;
 
-    public NonceResponseDto createNonce(){
+    public NonceResponseDto createNonce() {
         return new NonceResponseDto(new SelfContainedNonce().getNonce());
     }
 
@@ -32,6 +33,23 @@ public class NonceService {
     public void registerNonce(SelfContainedNonce nonce) {
         cachedNonceRepository.save(new CachedNonce(nonce.getNonceId(), nonce.getNonceInstant()));
     }
+
+    @Transactional
+    public void invalidateSelfContainedNonce(List<String> nonces) {
+
+        var selfContainedNonces = nonces.stream()
+                .map(SelfContainedNonce::new)
+                .filter(SelfContainedNonce::isSelfContainedNonce)
+                .toList();
+
+        if (!selfContainedNonces.isEmpty()) {
+            List<CachedNonce> cachedNonces = selfContainedNonces.stream()
+                    .map(nonce -> new CachedNonce(nonce.getNonceId(), nonce.getNonceInstant()))
+                    .toList();
+            cachedNonceRepository.saveAll(cachedNonces);
+        }
+    }
+
 
     @Transactional
     @Scheduled(fixedRateString = "${application.nonce-lifetime-seconds}")

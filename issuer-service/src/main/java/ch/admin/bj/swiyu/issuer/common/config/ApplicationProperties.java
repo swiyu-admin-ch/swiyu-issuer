@@ -15,6 +15,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
@@ -92,16 +93,17 @@ public class ApplicationProperties {
     private int nonceLifetimeSeconds;
 
     private String dataIntegrityJwks;
-
-    public JWKSet getDataIntegrityKeySet() throws ParseException {
-        return JWKSet.parse(dataIntegrityJwks);
-    }
+    private JWKSet dataIntegrityKeySet;
+    private boolean dataIntegrityEnforced;
 
     @PostConstruct
     public void init() {
         try {
             if (enableJwtAuthentication) {
                 allowedKeySet = JWKSet.parse(authenticationJwks);
+            }
+            if (StringUtils.isNotBlank(dataIntegrityJwks)) {
+                dataIntegrityKeySet = JWKSet.parse(dataIntegrityJwks);
             }
         } catch (ParseException e) {
             log.error("Provided Allow JWKSet can not be parsed! %s".formatted(authenticationJwks));

@@ -7,6 +7,8 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import com.authlete.sd.Disclosure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
@@ -17,6 +19,7 @@ import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.SignedJWT;
+import org.assertj.core.api.Assertions;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -25,6 +28,7 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
@@ -112,4 +116,24 @@ public class TestInfrastructureUtils {
         }
     }
 
+    public static CredentialFetchData prepareAttestedVC(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance, String attestationIssuerDid, ECKey jwk, String issuerId) throws Exception {
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, preAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        Assertions.assertThat(token).isNotNull();
+        Assertions.assertThat(tokenResponse).containsKey("c_nonce");
+        String proof = TestServiceUtils.createAttestedHolderProof(
+                jwk,
+                issuerId,
+                tokenResponse.get("c_nonce").toString(),
+                ProofType.JWT.getClaimTyp(),
+                false,
+                resistance,
+                attestationIssuerDid);
+        String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
+
+        return new CredentialFetchData(token, credentialRequestString);
+    }
+
+    public record CredentialFetchData(Object token, String credentialRequestString) {
+    }
 }

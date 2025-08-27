@@ -12,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.authlete.sd.Disclosure;
@@ -59,7 +60,7 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     @Override
-    public String getCredential() {
+    public String getCredential(DidJwk didJwk) {
         var override = getCredentialOffer().getConfigurationOverride();
         SDObjectBuilder builder = new SDObjectBuilder();
 
@@ -82,7 +83,7 @@ public class SdJwtCredential extends CredentialBuilder {
             builder.putClaim("exp", instantToUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
         }
 
-        getHolderBinding().ifPresent(didJwk -> {
+        if (didJwk != null) {
             try {
                 // Todo: Refactor this once wallet migration is finished
                 var cnf = didJwk.getJWK().toJSONObject();
@@ -98,7 +99,7 @@ public class SdJwtCredential extends CredentialBuilder {
                         String.format("Failed expand holder binding %s to cnf", didJwk.getDidJwk())
                 );
             }
-        });
+        }
 
         //Add all status entries (if any)
         for (Map.Entry<String, Object> statusEntry : getStatusReferences().entrySet()) {

@@ -7,15 +7,20 @@ import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.DefaultExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@ExtendWith(OutputCaptureExtension.class)
 class DefaultExceptionHandlerTest {
 
     private DefaultExceptionHandler handler;
@@ -82,7 +87,7 @@ class DefaultExceptionHandlerTest {
     }
 
     @Test
-    void handleStatusListException_shouldReturnInternalServerError() {
+    void handleStatusListException_shouldReturnInternalServerError(CapturedOutput output) {
         var errorMessage = "Create StatusList error message";
         var exception = new CreateStatusListException(errorMessage);
         ResponseEntity<ApiErrorDto> response = handler.handleStatusListException(exception);
@@ -91,10 +96,13 @@ class DefaultExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
         assertEquals(errorMessage, body.getErrorDetails());
+
+        // test if error is logged
+        assertThat(output.getAll()).contains(errorMessage);
     }
 
     @Test
-    void handleStatusListExceptionWithCause_shouldReturnInternalServerError() {
+    void handleStatusListExceptionWithCause_shouldReturnInternalServerError(CapturedOutput output) {
         HttpClientErrorException statusListException = new HttpClientErrorException(HttpStatus.NOT_FOUND, "Not found");
         var errorMessage = "Create StatusList error message";
         var expectedErrorMessage = "Create StatusList error message - caused by - %s".formatted(statusListException.getMessage());
@@ -104,6 +112,9 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
+      
+        // test if error is logged
+        assertThat(output.getAll()).contains("Status List Exception intercepted");
         assertEquals(expectedErrorMessage, body.getErrorDetails());
     }
 
@@ -120,7 +131,7 @@ class DefaultExceptionHandlerTest {
     }
 
     @Test
-    void handleConfigurationException_shouldReturnInternalServerError() {
+    void handleConfigurationException_shouldReturnInternalServerError(CapturedOutput output) {
         var errorMessage = "Configuration error message";
         var exception = new ConfigurationException(errorMessage);
         ResponseEntity<ApiErrorDto> response = handler.handleConfigurationException(exception);
@@ -129,6 +140,9 @@ class DefaultExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
         assertEquals(errorMessage, body.getErrorDetails());
+
+        // test if error is logged
+        assertThat(output.getAll()).contains("Configuration Exception intercepted");
     }
 
     @Test

@@ -114,6 +114,12 @@ public class CredentialOffer {
     private List<String> holderJWKs;
 
     /**
+     * Value used for the store the public key from the holder received in the deferred flow
+     */
+    @Column(name = "key_attestations")
+    private List<String> keyAttestations;
+
+    /**
      * Value used to store client agent infos for the deferred flow
      */
     @JdbcTypeCode(SqlTypes.JSON)
@@ -152,7 +158,7 @@ public class CredentialOffer {
      * Overrides for a single status list's configuration normally injected via application properties
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name="configuration_override", columnDefinition = "jsonb")
+    @Column(name = "configuration_override", columnDefinition = "jsonb")
     private ConfigurationOverride configurationOverride;
 
     /**
@@ -241,12 +247,14 @@ public class CredentialOffer {
     public void markAsDeferred(UUID transactionId,
                                CredentialRequestClass credentialRequest,
                                List<String> holderPublicKey,
+                               List<String> keyAttestationJWTs,
                                ClientAgentInfo clientAgentInfo) {
         this.credentialStatus = CredentialStatusType.DEFERRED;
         this.credentialRequest = credentialRequest;
         this.transactionId = transactionId;
         this.holderJWKs = !holderPublicKey.isEmpty() ? holderPublicKey : null;
         this.clientAgentInfo = clientAgentInfo;
+        this.keyAttestations = keyAttestationJWTs;
         log.info("Deferred credential response for offer {}. Management-ID is {} and status is {}. ",
                 this.metadataCredentialSupportedId, this.id, this.credentialStatus);
     }
@@ -280,5 +288,8 @@ public class CredentialOffer {
         this.credentialRequest = null;
         this.holderJWKs = null;
         this.clientAgentInfo = null;
+        this.preAuthorizedCode = null;
+        this.keyAttestations = null;
+        this.offerExpirationTimestamp = 0L;
     }
 }

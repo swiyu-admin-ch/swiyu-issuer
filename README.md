@@ -148,7 +148,7 @@ flowchart LR
 
 # Development
 
-> Please be aware that this section **focus on the development of the issuer agent service**. For the deployment of
+> Please be aware that this section **focus on the development of the issuer service**. For the deployment of
 > the component please consult [deployment section](#Deployment).
 
 ## Setup
@@ -216,15 +216,15 @@ On the base registry the public key is published. To generate the public key for
 
 ### Configuration Environment Variables
 
-The Generic Issuer Agent is configured using environment variables.
+The Generic Issuer service is configured using environment variables.
 
 #### DB Connection
 
-| Variable          | Description                                                                                      |
-|:------------------|:-------------------------------------------------------------------------------------------------|
-| POSTGRES_USER     | Username to connect to the Issuer Agent Database shared with the issuer agent management service |
-| POSTGRES_PASSWORD | Username to connect to the Issuer Agent Database                                                 |
-| POSTGRES_JDBC     | JDBC Connection string to the shared DB                                                          |
+| Variable          | Description                                        |
+|:------------------|:---------------------------------------------------|
+| POSTGRES_USER     | Username to connect to the Issuer service Database |
+| POSTGRES_PASSWORD | Password to connect to the Issuer service Database |
+| POSTGRES_JDBC     | JDBC Connection string to the shared DB            |
 
 #### Verifiable Credential Issuing
 
@@ -238,6 +238,7 @@ The Generic Issuer Agent is configured using environment variables.
 | SDJWT_KEY (Optional - See HSM)       | The private key used to sign SD-JWT Credentials. The matching public key must be published on the base registry for verification. - Not recommended.                                                                                                                                     |
 | DID_SDJWT_VERIFICATION_METHOD        | The full DID with fragment as used to find the public key for sd-jwt VCs in the DID Document. eg: `did:tdw:<base-registry-url>:<issuer_uuid>#<sd-jwt-public-key-fragment>`                                                                                                               |
 | MIN_DEFERRED_OFFER_WAITING_SECONDS   | For the deferred flow. Polling interval for the deferred flow. Defines how long a wallet should wait after receiving the transaction_id until it tries to fetch the actual credential. This value will be shown as `interval` in the deferred response.                                  |
+| URL_REWRITE_MAPPING                  | Json object for url replacements during rest client call. Key represents the original url and value the one which should be used instead (e.g. {"https://mysample1.ch":"https://somethingdiffeerent1.ch"})                                                                               |
 
 #### Status List
 
@@ -248,8 +249,8 @@ The Generic Issuer Agent is configured using environment variables.
 | SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                         |
 | SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                       |
 | SWIYU_STATUS_REGISTRY_TOKEN_URL                      | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                               |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self management portal.                                    |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self management portal.                                 |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                       |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                    |
 | SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
 | SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal.  |
 
@@ -302,7 +303,7 @@ set the environment variables with the allowed public key as a JSON Web Key Set
 
 | Variable                  | Description                                                                                                                                                                                                                     |
 |:--------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ENABLE_JWT_AUTH           | Enables the requirement of writing calls to the issuer agent to be signed JWT                                                                                                                                                   |
+| ENABLE_JWT_AUTH           | Enables the requirement of writing calls to the issuer service to be signed JWT                                                                                                                                                 |
 | JWKS_ALLOWLIST (Optional) | When ENABLE_JWT_AUTH is set to true with this property the public keys authorized to perform a writing call can be set as a Json Web Key set according to [RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#appendix-A.1) |
 
 ```
@@ -322,17 +323,25 @@ To provide a data integrity check with the issuer it is possible to provide the 
 See [CredentialOfferCreateJWTIT.java](issuer-application/src/test/java/ch/admin/bj/swiyu/issuer/management/infrastructure/web/controller/CredentialOfferCreateJwtIT.java)
 for examples on how to use.
 
+The keys are also set with the environment variable `JWKS_ALLOWLIST`.
+
+The Data integrity check can be enforced to be always used by setting the environment variable.
+
+| Variable                 | Description                                                                                                                               |
+|:-------------------------|:------------------------------------------------------------------------------------------------------------------------------------------|
+| DATA_INTEGRITY_ENFORCED  | Enforce to always do the data integrity check. This will break all existing offers which have been offered without data integrity check!  |
+
 #### Kubernetes Vault Keys
 
-| Variable                                             | Description                                                                                                                                            |
-|------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| secret.db.username                                   | Username to connect to the Issuer Agent Database shared with the issuer agent management service                                                       |
-| secret.db.password                                   | Username to connect to the Issuer Agent Database                                                                                                       |
-| secret.key.sdjwt.key                                 | Private Key used to sign jwt_vc / SD-JWT Verifiable Credentials                                                                                        |
-| secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                           |
-| secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self management portal.                                   |
-| secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self management portal.                                |
-| secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal. |
+| Variable                                             | Description                                                                                                                                         |
+|------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| secret.db.username                                   | Username to connect to the Issuer Service Database.                                                                                                 |
+| secret.db.password                                   | Password to connect to the Issuer Service Database                                                                                                  |
+| secret.key.sdjwt.key                                 | Private Key used to sign jwt_vc / SD-JWT Verifiable Credentials                                                                                     |
+| secret.key.status-list.key                           | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                        |
+| secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                   |
+| secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                |
+| secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self-service portal. |
 
 #### HSM - Hardware Security Module
 
@@ -517,8 +526,10 @@ erDiagram
         jsonb credential_request
         uuid transaction_id
         array[text] holder_jwks
+        array[text] key_attestations
         jsonb client_agent_info
-        long token_expiration_timestamp tokenExpirationTimestam
+        uuid holder_binding_nonce
+        long token_expiration_timestamp
         uuid access_token
         uuid nonce
         uuid pre_authorized_code
@@ -550,7 +561,8 @@ erDiagram
 ```
 
 Note: Status List info comes from config and are populated to the DB the first time a Credential uses the status.
-ID of the credential offer is also the id used by the issuer adapter (the component communicating with the issuer agent)
+ID of the credential offer is also the id used by the issuer adapter (the component communicating with the issuer
+service)
 to revoke the credential. It is returned when a new offer is created. It's recommended to save this id to
 revoke the credential later on.
 
@@ -560,7 +572,7 @@ revoke the credential later on.
 sequenceDiagram
     actor BUSINESS as Business Issuer 
 
-    participant ISS as Issuer Agent
+    participant ISS as Issuer Service
     participant DB as Issuer DB
     participant STATUS as Status Registry
 
@@ -665,7 +677,7 @@ stateDiagram-v2
     SUSPENDED
     REVOKED
     [*] --> OFFERED
-    OFFERED --> CANCELLED : Process can be "cancelled as long as the vc is not ISSUED"
+    OFFERED --> CANCELLED : Process can be cancelled as long as the vc is not ISSUED
     CANCELLED --> [*]
     OFFERED --> IN_PROGRESS
     IN_PROGRESS --> fork_state
@@ -693,16 +705,16 @@ For access to the swiyu api you need a refresh token along with your other crede
 environment variables for further details.
 
 The refresh token can only be used one time, but don't worry: the application does manage the refresh tokens itself.  
-But if your issuer agent component does not run for over a week it might be possible that the refresh token
+But if your issuer service does not run for over a week it might be possible that the refresh token
 saved in the database is no longer valid and cannot be used to start the api auth flow.  
 If this is the case you need to manually create a new refresh token in the api self-service portal and bootstrap your
-issuer agent management component with this token.  
+issuer service with this token.  
 The application does log an appropriate error if it detects such an issue but will still start up.  
 Updates to the status registry will fail as long as the auth flow is not restarted with a valid bootstrap token.
 
 ### Latest development
 
-The current default implementation of the issuer agent management component is based on
+The current default implementation of the issuer service is based on
 the [OID4VCI specs DRAFT 13](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html).
 But there are already some features from
 the [OID4VCI specs DRAFT 16](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) implemented for

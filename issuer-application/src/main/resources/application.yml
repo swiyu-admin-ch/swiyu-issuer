@@ -135,6 +135,7 @@ application:
 
   # List of Json Web Keys which are whitelisted to have signed the offer data
   data-integrity-jwks: ${JWKS_ALLOWLIST:}
+  data-integrity-enforced: ${DATA_INTEGRITY_ENFORCED:false} # If set to true, requires *ALL* saved offers to use data integrity.
   key:
     sdjwt:
       # Method of signing key management
@@ -168,6 +169,8 @@ application:
       # Data used to interact with other parties in this case the public key => verifies that the signer can use the associated private key
       # eg: did:tdw:<base-registry-url>:<issuer_uuid>#<sdjwt-public-key-fragment>
       verification-method: "${DID_SDJWT_VERIFICATION_METHOD:}"
+  url-rewrite:
+    mapping: "${URL_REWRITE_MAPPING:{}}"
 
 
 logging:

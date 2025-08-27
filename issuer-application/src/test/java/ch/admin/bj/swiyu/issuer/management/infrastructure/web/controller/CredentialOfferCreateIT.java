@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -46,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Create Offer")
 @AutoConfigureMockMvc
 @Testcontainers
+@ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class CredentialOfferCreateIT {
 
@@ -209,7 +211,7 @@ class CredentialOfferCreateIT {
                 .andExpect(jsonPath("$.metadata_credential_supported_id").isArray())
                 .andExpect(jsonPath("$.credential_metadata").isMap())
                 .andExpect(jsonPath("$.credential_metadata").isEmpty())
-                .andExpect(jsonPath("$.holder_jwk").isEmpty())
+                .andExpect(jsonPath("$.holder_jwks").isEmpty())
                 .andExpect(jsonPath("$.client_agent_info").isEmpty())
                 .andExpect(jsonPath("$.offer_deeplink").isNotEmpty());
     }
