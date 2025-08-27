@@ -39,6 +39,24 @@ jobs:
           uses: github/codeql-action/analyze@v3
           with:
             category: "/language:java"
+        - name: Run PMD static analysis
+          run: mvn --batch-mode pmd:pmd
+
+        - name: Fail if PMD violations are found
+          run: |
+            if grep -q '<violation' $(find . -name 'pmd.xml'); then
+              echo 'PMD violations found!';
+              exit 1;
+            else
+              echo 'No PMD violations found.';
+            fi
+
+        - name: Upload PMD report
+          uses: actions/upload-artifact@v4
+          with:
+            name: pmd-report
+            path: '**/target/pmd.xml'
+
         - name: Build and push docker image
           id: push
           uses: docker/build-push-action@v6
