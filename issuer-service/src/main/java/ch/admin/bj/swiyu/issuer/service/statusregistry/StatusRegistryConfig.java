@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -43,6 +44,7 @@ public class StatusRegistryConfig {
     }
 
     @Bean
+    @Profile("!test")
     public TokenApi statusRegistryTokenApi(RestClient.Builder builder) {
         RestClient restClient = builder
                 .baseUrl(swiyuProperties.statusRegistry().tokenUrl().toExternalForm())
@@ -51,6 +53,23 @@ public class StatusRegistryConfig {
         var factory = HttpServiceProxyFactory.builderFor(adapter).build();
         log.info("Initializing status registry token api for {}", swiyuProperties.statusRegistry().tokenUrl().toExternalForm());
         return factory.createClient(TokenApi.class);
+    }
+
+    @Bean
+    @Profile("test")
+    public TokenApi statusRegistryTokenApiForTest() {
+        log.info("Initializing status registry token api for {}", swiyuProperties.statusRegistry().tokenUrl().toExternalForm());
+        return new TokenApi() {
+            @Override
+            public TokenApi.TokenResponse getNewToken(String client_id, String client_secret, String grant_type) {
+                return new TokenApi.TokenResponse("testAccessToken", "testRefreshToken");
+            }
+
+            @Override
+            public TokenResponse getNewToken(String client_id, String client_secret, String refresh_token, String grant_type) {
+                return new TokenApi.TokenResponse("testAccessToken", "testRefreshToken");
+            }
+        };
     }
 
     @Bean
