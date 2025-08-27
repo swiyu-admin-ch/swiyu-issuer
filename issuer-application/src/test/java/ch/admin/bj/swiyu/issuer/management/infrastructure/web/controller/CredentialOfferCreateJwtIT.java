@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
-@ActiveProfiles("testjwt")
+@ActiveProfiles({"test", "testjwt"})
 @AutoConfigureMockMvc
 @Testcontainers
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)

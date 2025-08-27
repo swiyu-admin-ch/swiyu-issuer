@@ -1,0 +1,16 @@
+name: "Advanced CodeQL Config"
+disable-default-path-filters: false
+
+paths-ignore:
+  - "issuer-application/target"
+  - "issuer-service/target"
+  - "**/test/**"
+
+paths:
+  - "src"
+  - "issuer-application/src"
+  - "issuer-service/src"
+
+queries:
+  - uses: security-extended
+  - uses: security-and-quality

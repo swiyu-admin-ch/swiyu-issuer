@@ -37,3 +37,5 @@ build/
 .vscode/
 config/*
 !config/application-local-USERNAME.yml
+/codeql/
+/codeql-results.sarif
