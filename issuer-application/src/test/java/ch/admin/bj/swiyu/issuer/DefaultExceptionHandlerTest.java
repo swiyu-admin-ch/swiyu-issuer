@@ -2,9 +2,7 @@ package ch.admin.bj.swiyu.issuer;
 
 import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.DefaultExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,14 +37,13 @@ class DefaultExceptionHandlerTest {
         OAuthError error = OAuthError.valueOf(errorEnum.name());
         OAuthException ex = new OAuthException(error, errorMessage);
 
-        ResponseEntity<OAuthErrorResponseDto> response = handler.handleOAuthException(ex);
+        ResponseEntity<ApiErrorDto> response = handler.handleOAuthException(ex);
         var body = response.getBody();
 
         // Then
         assertEquals(errorEnum.getHttpStatus(), response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorEnum.toString(), body.error().toString());
-        assertEquals(errorMessage, body.errorDescription());
+        assertEquals(errorMessage, body.getErrorDescription());
     }
 
     @ParameterizedTest
@@ -56,14 +53,13 @@ class DefaultExceptionHandlerTest {
         CredentialRequestError error = CredentialRequestError.valueOf(errorEnum.name());
         Oid4vcException ex = new Oid4vcException(error, errorMessage);
 
-        ResponseEntity<CredentialRequestErrorResponseDto> response = handler.handleOID4VCException(ex);
+        ResponseEntity<ApiErrorDto> response = handler.handleOID4VCException(ex);
         var body = response.getBody();
 
         // Then
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorEnum.toString(), body.error().toString());
-        assertEquals(errorMessage, body.errorDescription());
+        assertEquals(errorMessage, body.getErrorDescription());
     }
 
     @Test
@@ -75,7 +71,7 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorMessage, body.detail());
+        assertEquals(errorMessage, body.getErrorDetails());
     }
 
     @Test
@@ -87,7 +83,7 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorMessage, body.detail());
+        assertEquals(errorMessage, body.getErrorDetails());
     }
 
     @Test
@@ -99,7 +95,7 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorMessage, body.detail());
+        assertEquals(errorMessage, body.getErrorDetails());
 
         // test if error is logged
         assertThat(output.getAll()).contains(errorMessage);
@@ -116,10 +112,10 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
-
+      
         // test if error is logged
         assertThat(output.getAll()).contains("Status List Exception intercepted");
-        assertEquals(expectedErrorMessage, body.detail());
+        assertEquals(expectedErrorMessage, body.getErrorDetails());
     }
 
     @Test
@@ -131,7 +127,7 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorMessage, body.detail());
+        assertEquals(errorMessage, body.getErrorDetails());
     }
 
     @Test
@@ -143,7 +139,7 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorMessage, body.detail());
+        assertEquals(errorMessage, body.getErrorDetails());
 
         // test if error is logged
         assertThat(output.getAll()).contains("Configuration Exception intercepted");
@@ -158,7 +154,7 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
-        assertEquals(errorMessage, body.detail());
+        assertEquals(errorMessage, body.getErrorDetails());
     }
 
     @Test

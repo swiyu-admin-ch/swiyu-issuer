@@ -7,13 +7,12 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web;
 
 import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorResponseDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import jakarta.validation.ConstraintViolationException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -28,8 +27,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ch.admin.bj.swiyu.issuer.service.CredentialMapper.oauthErrorToApiErrorDto;
 import static ch.admin.bj.swiyu.issuer.service.CredentialMapper.toCredentialRequestErrorResponseDto;
-import static ch.admin.bj.swiyu.issuer.service.CredentialMapper.toOAuthErrorResponseDto;
 import static org.springframework.http.HttpStatus.*;
 
 @RestControllerAdvice
@@ -38,30 +37,40 @@ import static org.springframework.http.HttpStatus.*;
 public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(OAuthException.class)
-    public ResponseEntity<OAuthErrorResponseDto> handleOAuthException(final OAuthException exception) {
-        var resp = toOAuthErrorResponseDto(exception);
+    public ResponseEntity<ApiErrorDto> handleOAuthException(final OAuthException exception) {
+        ApiErrorDto apiError = oauthErrorToApiErrorDto(exception);
         log.debug("OAuthException: {}", exception.getMessage());
-        return new ResponseEntity<>(resp, resp.error().getHttpStatus());
+        return new ResponseEntity<>(apiError, apiError.getStatus());
     }
 
     @ExceptionHandler(Oid4vcException.class)
-    public ResponseEntity<CredentialRequestErrorResponseDto> handleOID4VCException(final Oid4vcException exception) {
+    public ResponseEntity<ApiErrorDto> handleOID4VCException(final Oid4vcException exception) {
         log.debug("Oid4vcException: {}", exception.getMessage());
-        return new ResponseEntity<>(toCredentialRequestErrorResponseDto(exception), HttpStatus.BAD_REQUEST);
+        var apiError = toCredentialRequestErrorResponseDto(exception);
+
+        return new ResponseEntity<>(apiError, apiError.getStatus());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiErrorDto> handleResourceNotFoundException(final ResourceNotFoundException exception) {
-        final ApiErrorDto apiError = new ApiErrorDto(NOT_FOUND, exception.getMessage());
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
+                .errorDescription(NOT_FOUND.getReasonPhrase())
+                .errorDetails(exception.getMessage())
+                .status(NOT_FOUND)
+                .build();
         log.debug("Resource not found", exception);
-        return new ResponseEntity<>(apiError, apiError.status());
+        return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
     @ExceptionHandler({BadRequestException.class, CredentialException.class})
     public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
-        final ApiErrorDto apiError = new ApiErrorDto(BAD_REQUEST, exception.getMessage());
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
+                .errorDescription(BAD_REQUEST.getReasonPhrase())
+                .errorDetails(exception.getMessage())
+                .status(BAD_REQUEST)
+                .build();
         log.debug("Bad Request intercepted", exception);
-        return new ResponseEntity<>(apiError, apiError.status());
+        return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
     @ExceptionHandler({CreateStatusListException.class, UpdateStatusListException.class})
@@ -70,25 +79,32 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         if (exception.getCause() != null) {
             exceptionMessage += " - caused by - " + exception.getCause().getMessage();
         }
-        final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, exceptionMessage);
+
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
+                .errorDescription(INTERNAL_SERVER_ERROR.getReasonPhrase())
+                .errorDetails(exceptionMessage)
+                .status(INTERNAL_SERVER_ERROR)
+                .build();
         log.error("Status List Exception intercepted", exception);
-        return new ResponseEntity<>(apiError, apiError.status());
+        return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
     @ExceptionHandler(ConfigurationException.class)
     public ResponseEntity<ApiErrorDto> handleConfigurationException(final Exception exception) {
-        final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, exception.getMessage());
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
+                .errorDescription(INTERNAL_SERVER_ERROR.getReasonPhrase())
+                .errorDetails(exception.getMessage())
+                .status(INTERNAL_SERVER_ERROR)
+                .build();
         log.error("Configuration Exception intercepted", exception);
-        return new ResponseEntity<>(apiError, apiError.status());
+        return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiErrorDto> handleConstraintViolationException(final Exception exception) {
+    public ResponseEntity<Object> handleConstraintViolationException(final Exception exception) {
         var errors = exception.getMessage();
 
-        log.info("Received bad request. Details: {}", errors);
-
-        return new ResponseEntity<>(new ApiErrorDto(HttpStatus.UNPROCESSABLE_ENTITY, errors), HttpStatus.UNPROCESSABLE_ENTITY);
+        return handleUnprocessableEntity(errors);
     }
 
     @ExceptionHandler(io.fabric8.kubernetes.client.ResourceNotFoundException.class)
@@ -99,11 +115,16 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ApiErrorDto> handle(final Exception exception) {
-        final ApiErrorDto apiError = new ApiErrorDto(INTERNAL_SERVER_ERROR, null);
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
+                .errorDescription(INTERNAL_SERVER_ERROR.getReasonPhrase())
+                .status(INTERNAL_SERVER_ERROR)
+                .build();
+
         log.error("Unknown Exception occurred", exception);
-        return new ResponseEntity<>(apiError, apiError.status());
+        return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
+    @NotNull
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
                                                                   @NonNull HttpHeaders headers,
@@ -117,8 +138,18 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
                 ).sorted()
                 .collect(Collectors.joining(", "));
 
+        return handleUnprocessableEntity(errors);
+    }
+
+    private ResponseEntity<Object> handleUnprocessableEntity(String errors) {
         log.info("Received bad request. Details: {}", errors);
 
-        return new ResponseEntity<>(new ApiErrorDto(HttpStatus.UNPROCESSABLE_ENTITY, errors), HttpStatus.UNPROCESSABLE_ENTITY);
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
+                .errorDescription(UNPROCESSABLE_ENTITY.getReasonPhrase())
+                .errorDetails(errors)
+                .status(UNPROCESSABLE_ENTITY)
+                .build();
+
+        return new ResponseEntity<>(apiErrorV2, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 }
