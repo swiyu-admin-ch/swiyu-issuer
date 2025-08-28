@@ -40,13 +40,19 @@ jobs:
           with:
             category: "/language:java"
         - name: Run PMD static analysis
-          run: mvn --batch-mode pmd:pmd
-
-        - name: Upload PMD report
-          uses: actions/upload-artifact@v4
+          uses: pmd/pmd-github-action@v2
+          id: pmd
           with:
-            name: pmd-report
-            path: '**/target/pmd.xml'
+            rulesets: 'rulesets/java/quickstart.xml' # Change to your ruleset if needed
+
+        - name: Upload PMD SARIF to GitHub Code Scanning
+          uses: github/codeql-action/upload-sarif@v3
+          with:
+            sarif_file: pmd-report.sarif
+
+        - name: Fail build if there are PMD violations
+          if: steps.pmd.outputs.violations != 0
+          run: exit 1
 
         - name: Build and push docker image
           id: push
