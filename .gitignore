@@ -39,3 +39,4 @@ config/*
 !config/application-local-USERNAME.yml
 /codeql/
 /codeql-results.sarif
+/swiyu-issuer-codeql-db/
