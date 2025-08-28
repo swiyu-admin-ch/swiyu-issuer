@@ -26,12 +26,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import java.time.Instant;
 import java.util.*;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.CREDENTIAL_REQUEST_DENIED;
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -274,6 +277,36 @@ class CredentialServiceTest {
         assertEquals("The credential is not marked as ready to be issued", exception.getMessage());
     }
 
+    @ParameterizedTest
+    @EnumSource(value = CredentialStatusType.class, names = {"CANCELLED", "EXPIRED", "ISSUED", "REVOKED", "SUSPENDED"})
+    void testCreateCredentialFromDeferredRequest_withInvalidStatus_thenException(CredentialStatusType status) {
+
+        UUID accessToken = UUID.randomUUID();
+
+        CredentialOffer credentialOffer = getCredentialOffer(
+                status,
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                Map.of(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                Map.of("deferred", true),
+                UUID.randomUUID());
+
+        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(credentialOffer.getTransactionId());
+
+        when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
+        when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
+
+        // Act
+        var accessTokenString = accessToken.toString();
+        var exception = assertThrows(Oid4vcException.class, () ->
+                credentialService.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
+
+        assertEquals(CREDENTIAL_REQUEST_DENIED, exception.getError());
+        assertEquals("The credential can not be issued anymore, the offer was either cancelled or expired", exception.getMessage());
+    }
+
     @Test
     void testCreateCredentialFromDeferredRequest_accesTokenExpired_thenException() {
 
@@ -503,9 +536,9 @@ class CredentialServiceTest {
 
         when(credentialOffer.getAccessToken()).thenReturn(accessToken);
         if (isDeferred) {
-            when(credentialOffer.isDeferred()).thenReturn(true);
+            when(credentialOffer.isDeferredOffer()).thenReturn(true);
         } else {
-            when(credentialOffer.isDeferred()).thenReturn(false);
+            when(credentialOffer.isDeferredOffer()).thenReturn(false);
         }
         when(credentialOffer.getTransactionId()).thenReturn(UUID.randomUUID());
         when(credentialOffer.getNonce()).thenReturn(UUID.randomUUID());

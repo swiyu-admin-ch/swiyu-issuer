@@ -93,6 +93,7 @@ class DeferredFlowIT {
 
 
     private Map<String, String> offerData;
+    private CredentialOffer deferredOffer;
 
     private static String getCredentialRequestString(String proof) {
         return String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
@@ -109,7 +110,7 @@ class DeferredFlowIT {
     @BeforeEach
     void setUp() throws JOSEException {
         var statusList = saveStatusList(createStatusList());
-        var deferredOffer = createTestOffer(deferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
+        deferredOffer = createTestOffer(deferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
         saveStatusListLinkedOffer(deferredOffer, statusList);
         var notDeferredOffer = createTestOffer(notDeferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false));
         saveStatusListLinkedOffer(notDeferredOffer, statusList);
@@ -439,6 +440,38 @@ class DeferredFlowIT {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
                 .andReturn();
+    }
+
+    @Test
+    void testBoundDeferredFlowWithAlreadyIssuedCredential_thenRequestDeniedException() throws Exception {
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, deferredPreAuthCode.toString());
+        String token = (String) tokenResponse.get("access_token");
+
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+        String credentialRequestString = getCredentialRequestString(proof);
+
+        var response = requestCredential(mock, token, credentialRequestString)
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        String transactionId = JsonPath.read(response.getResponse().getContentAsString(), "$.transaction_id");
+
+        // Mock issuer management interaction
+        setCredentialToReady(token);
+
+        String deferredCredentialRequestString = String.format("{ \"transaction_id\": \"%s\"}}", transactionId);
+
+        // change status to CANCELLED
+        mock.perform(patch("/management/api/credentials/" + deferredOffer.getId() + "/status?credentialStatus=%s".formatted(CredentialStatusType.CANCELLED.name()))
+                        .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andReturn();
+
+        getDeferredCallResultActions(token, deferredCredentialRequestString)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("CREDENTIAL_REQUEST_DENIED"));
     }
 
     private StatusList saveStatusList(StatusList statusList) {

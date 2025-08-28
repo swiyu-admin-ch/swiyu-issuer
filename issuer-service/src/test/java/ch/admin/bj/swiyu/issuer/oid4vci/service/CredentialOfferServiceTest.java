@@ -488,7 +488,7 @@ class CredentialOfferServiceTest {
         UUID credentialId = UUID.randomUUID();
         CredentialOffer credentialOffer = mock(CredentialOffer.class);
 
-        when(credentialOffer.isDeferred()).thenReturn(true);
+        when(credentialOffer.isDeferredOffer()).thenReturn(true);
         when(credentialOffer.getCredentialStatus()).thenReturn(CredentialStatusType.DEFERRED);
         when(credentialOfferRepository.findByIdForUpdate(credentialId)).thenReturn(Optional.of(credentialOffer));
         doNothing().when(credentialOffer).markAsReadyForIssuance(any());
@@ -509,7 +509,7 @@ class CredentialOfferServiceTest {
         Map<String, Object> offerDataMap = Map.of("claim", "value");
         CredentialOffer credentialOffer = mock(CredentialOffer.class);
 
-        when(credentialOffer.isDeferred()).thenReturn(false);
+        when(credentialOffer.isDeferredOffer()).thenReturn(false);
         when(credentialOffer.getCredentialStatus()).thenReturn(CredentialStatusType.DEFERRED);
         when(credentialOfferRepository.findByIdForUpdate(credentialId)).thenReturn(Optional.of(credentialOffer));
 

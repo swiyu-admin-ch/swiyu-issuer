@@ -123,7 +123,7 @@ public class CredentialManagementService {
         var storedCredentialOffer = getCredentialForUpdate(credentialId);
 
         // Check if is deferred credential and in deferred state
-        if (!storedCredentialOffer.isDeferred()
+        if (!storedCredentialOffer.isDeferredOffer()
                 && storedCredentialOffer.getCredentialStatus() == CredentialStatusType.DEFERRED) {
             throw new BadRequestException(
                     "Credential is either not deferred or has an incorrect status, cannot update offer data");
@@ -183,7 +183,7 @@ public class CredentialManagementService {
             var offerData = dataIntegrityService.getVerifiedOfferData(credentialOffer.getOfferData(),
                     credentialOffer.getId());
             if (offerData == null || offerData.isEmpty()) {
-                if (credentialOffer.isDeferred()) {
+                if (credentialOffer.isDeferredOffer()) {
                     // Data will be provided during issuance process when going from DEFERRED to
                     // READY state
                     return;
@@ -360,7 +360,7 @@ public class CredentialManagementService {
 
         if (newStatus == CredentialStatusType.EXPIRED) {
             credential.expire();
-        } else if (!currentStatus.isIssuedToHolder()) {
+        } else if (currentStatus.isProcessable()) {
             handlePreIssuanceStatusChange(credential, currentStatus, newStatus);
         } else {
             handlePostIssuanceStatusChange(credential, newStatus);

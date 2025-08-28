@@ -195,6 +195,46 @@ class DeferredIssuanceV2IT {
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
     }
 
+    @Test
+    void testDeferredOffer_alreadyCancelled_thenSuccess() throws Exception {
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+
+        var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.credentials").doesNotExist())
+                .andExpect(jsonPath("$.transaction_id").isNotEmpty())
+                .andExpect(jsonPath("$.interval").isNotEmpty())
+                .andReturn();
+
+        // check status from business issuer perspective
+        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offer.getId(), CredentialStatusTypeDto.CANCELLED.name()))
+                        .contentType("application/json"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andReturn();
+
+        DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
+
+        String deferredCredentialRequestString = getDeferredCredentialRequestString(deferredDataDto.transactionId().toString());
+
+        mock.perform(post("/oid4vci/api/deferred_credential")
+                        .header("Authorization", String.format("BEARER %s", token))
+                        .contentType("application/json")
+                        .header("SWIYU-API-Version", "2")
+                        .content(deferredCredentialRequestString))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.error").value("CREDENTIAL_REQUEST_DENIED"))
+                .andExpect(jsonPath("$.error_description").value("The credential can not be issued anymore, the offer was either cancelled or expired"))
+                
+                .andReturn();
+    }
+
+
     private String getCredentialRequestString(Map<String, Object> tokenResponse, String configurationId) throws JOSEException {
         String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         return String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}", configurationId, proof);
