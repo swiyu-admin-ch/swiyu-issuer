@@ -10,10 +10,16 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
+import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import com.jayway.jsonpath.JsonPath;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,9 +36,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -50,11 +60,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class CredentialOfferStatusIT {
 
+    public static final String STATUS_LIST_BASE_URL = "/management/api/status-list";
+    public static final String MANAGEMENT_BASE_URL = "/management/api/credentials";
+
     private static final int STATUS_LIST_MAX_LENGTH = 2;
+    private static final String STATUS_REGISTRY_URL_TEMPLATE = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt";
 
     private final UUID statusListUUID = UUID.randomUUID();
-    private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
-            .formatted(statusListUUID);
+    private final String statusRegistryUrl = STATUS_REGISTRY_URL_TEMPLATE.formatted(statusListUUID);
 
     @Autowired
     protected SwiyuProperties swiyuProperties;
@@ -68,6 +81,8 @@ class CredentialOfferStatusIT {
     private StatusListRepository statusListRepository;
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
+    @Autowired
+    private ObjectMapper objectMapper;
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
     @Mock
@@ -77,7 +92,7 @@ class CredentialOfferStatusIT {
     @BeforeEach
     void setupTest() throws Exception {
         testHelper = new CredentialOfferTestHelper(mvc, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository,
-                statusRegistryUrl);
+                statusRegistryUrl, objectMapper);
         var statusListEntryCreationDto = new StatusListEntryCreationDto();
         statusListEntryCreationDto.setId(statusListUUID);
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
@@ -436,4 +451,77 @@ class CredentialOfferStatusIT {
                     .andExpect(jsonPath("$.status").value(originalState.toString()));
         }
     }
+
+    @Test
+    void testCreateCredentialWhenReferencingNewlyCreatedStatusList_thenOk() throws Exception {
+        final UUID statusRegistryId = UUID.randomUUID();
+        final String newStatusRegistryUrl = STATUS_REGISTRY_URL_TEMPLATE.formatted(statusRegistryId);
+
+        final StatusListEntryCreationDto statusListEntryCreationDto = new StatusListEntryCreationDto();
+        statusListEntryCreationDto.setId(statusRegistryId);
+        statusListEntryCreationDto.setStatusRegistryUrl(newStatusRegistryUrl);
+
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(statusListEntryCreationDto);
+        when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
+        when(mockApiClient.getBasePath()).thenReturn(newStatusRegistryUrl);
+
+        final String issuerDid = "did:override:example:com";
+        final String verificationMethod = issuerDid + "#key1";
+        final ConfigurationOverrideDto configurationOverrideDto = new ConfigurationOverrideDto(issuerDid, verificationMethod, null, null);
+
+        final StatusListCreateDto statusListCreateDto = StatusListCreateDto.builder()
+                .type(StatusListTypeDto.TOKEN_STATUS_LIST)
+                .maxLength(255)
+                .config(StatusListConfigDto.builder().purpose("Test purpose").bits(4).build())
+                .configurationOverride(configurationOverrideDto)
+                .build();
+
+        final MvcResult result = mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(statusListCreateDto)))
+                .andExpect(status().isOk()).andReturn();
+
+        final String savedStatusRegistryUrl = JsonPath.read(result.getResponse().getContentAsString(), "$.statusRegistryUrl");
+        assertEquals(newStatusRegistryUrl, savedStatusRegistryUrl);
+
+        final CreateCredentialRequestDto createCredentialRequestDtoValid = CredentialOfferTestHelper
+                .buildCreateCredentialRequestOverride(
+                        List.of(savedStatusRegistryUrl),
+                        issuerDid,
+                        verificationMethod
+                );
+
+        mvc.perform(post(MANAGEMENT_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createCredentialRequestDtoValid)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        final CreateCredentialRequestDto createCredentialRequestDtoInvalidDid = CredentialOfferTestHelper
+                .buildCreateCredentialRequestOverride(
+                        List.of(savedStatusRegistryUrl),
+                        issuerDid + "not-the-same",
+                        verificationMethod
+                );
+
+        mvc.perform(post(MANAGEMENT_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createCredentialRequestDtoInvalidDid)))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        final CreateCredentialRequestDto createCredentialRequestDtoInvalidVerification = CredentialOfferTestHelper
+                .buildCreateCredentialRequestOverride(
+                        List.of(savedStatusRegistryUrl),
+                        issuerDid,
+                        verificationMethod + "not-the-same"
+                );
+
+        mvc.perform(post(MANAGEMENT_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createCredentialRequestDtoInvalidVerification)))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+    }
+
 }
