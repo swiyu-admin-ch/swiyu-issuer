@@ -30,6 +30,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -67,6 +69,8 @@ class CredentialOfferStatusMultiThreadedIT {
     private StatusListRepository statusListRepository;
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
+    @Autowired 
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
@@ -78,7 +82,7 @@ class CredentialOfferStatusMultiThreadedIT {
     @BeforeEach
     void setupTest() throws Exception {
         testHelper = new CredentialOfferTestHelper(mvc, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository,
-                statusRegistryUrl);
+                statusRegistryUrl, objectMapper);
 
         var statusListEntryCreationDto = new StatusListEntryCreationDto();
         statusListEntryCreationDto.setId(statusListUUID);
