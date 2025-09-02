@@ -19,6 +19,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.DidTdwKeyResolver;
+import ch.admin.bj.swiyu.issuer.service.webhook.WebhookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
@@ -39,6 +40,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.TransactionStatus;
@@ -56,6 +58,9 @@ import java.util.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -76,6 +81,8 @@ class DeferredFlowIT {
     private final ObjectMapper objectMapper = new ObjectMapper();
     @MockitoBean
     DidTdwKeyResolver didTdwKeyResolver;
+    @MockitoSpyBean
+    WebhookService webhookService;
     @Autowired
     private MockMvc mock;
     @Autowired
@@ -90,7 +97,6 @@ class DeferredFlowIT {
     private ApplicationProperties applicationProperties;
     @Autowired
     private TransactionTemplate transactionTemplate;
-
 
     private Map<String, String> offerData;
 
@@ -156,6 +162,8 @@ class DeferredFlowIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
+        verify(webhookService, Mockito.times(1)).produceStateChangeEvent(credentialWithDeeplinkResponseDto.getManagementId(), CredentialStatusType.IN_PROGRESS);
+
         var tokenDto = objectMapper.readValue(tokenResponse.getResponse().getContentAsString(), Map.class);
 
         String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), (String) tokenDto.get("c_nonce"), ProofType.JWT.getClaimTyp(), false);
@@ -163,6 +171,8 @@ class DeferredFlowIT {
         var deferredCredentialResponse = requestCredential(mock, (String) tokenDto.get("access_token"), getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
                 .andReturn();
+
+        verify(webhookService, Mockito.times(1)).produceDeferredEvent(eq(credentialWithDeeplinkResponseDto.getManagementId()), anyString());
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
 
@@ -205,6 +215,8 @@ class DeferredFlowIT {
                 .andExpect(jsonPath("$.credential").isNotEmpty())
                 .andExpect(jsonPath("$.format").value("vc+sd-jwt"))
                 .andReturn();
+
+        verify(webhookService, Mockito.times(1)).produceStateChangeEvent(credentialWithDeeplinkResponseDto.getManagementId(), CredentialStatusType.ISSUED);
 
         var vc = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject().get("credential").getAsString();
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, offerData);

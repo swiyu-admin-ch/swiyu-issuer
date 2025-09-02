@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.service;
+package ch.admin.bj.swiyu.issuer.service.webhook;
 
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.WebhookProperties;
