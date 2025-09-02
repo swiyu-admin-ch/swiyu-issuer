@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed the `didresolver` version from 2.0.1 to 2.1.3.
+- Updated ApiErrorDto and reused it for every error response. This allows for a more consistent error
+  response structure.
 
 ### Fixed
 
