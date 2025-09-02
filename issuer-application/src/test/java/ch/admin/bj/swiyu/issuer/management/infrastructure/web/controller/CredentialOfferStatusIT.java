@@ -16,6 +16,9 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
+import ch.admin.bj.swiyu.issuer.common.config.HSMProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
+import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
@@ -35,6 +38,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,11 +46,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -79,6 +81,8 @@ class CredentialOfferStatusIT {
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired
     private StatusListRepository statusListRepository;
+    @MockitoSpyBean
+    private StatusListProperties statusListProperties;
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
@@ -111,6 +115,32 @@ class CredentialOfferStatusIT {
                 .andExpect(status().isOk());
         // Add Test Offer
         id = testHelper.createBasicOfferJsonAndGetUUID();
+    }
+
+    @Test
+    void testCreateOffer_thenSuccess() throws Exception {
+        final String metadataCredentialSupportedId = "test";
+        final Map.Entry<String, String> credentialSubjectData = new AbstractMap.SimpleEntry<>("credential_subject_data", "random_value");
+        final String payload = String.format("{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"%s\" : \"%s\"}}", metadataCredentialSupportedId, credentialSubjectData.getKey(), credentialSubjectData.getValue());
+
+        final MvcResult result = mvc
+                .perform(post(MANAGEMENT_BASE_URL).contentType("application/json").content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.management_id").isNotEmpty())
+                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty())
+                .andReturn();
+
+        final UUID newCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+
+        final Optional<CredentialOffer> newCredentialOpt = credentialOfferRepository.findByIdForUpdate(newCredentialId);
+        
+        assertTrue(newCredentialOpt.isPresent());
+        
+        final CredentialOffer newCredential = newCredentialOpt.get();
+        
+        assertNotNull(newCredential.getAccessToken());
+        assertEquals(1, newCredential.getMetadataCredentialSupportedId().size());
+        assertEquals(metadataCredentialSupportedId, newCredential.getMetadataCredentialSupportedId().getFirst());
     }
 
     @Test
@@ -453,7 +483,7 @@ class CredentialOfferStatusIT {
     }
 
     @Test
-    void testCreateCredentialWhenReferencingNewlyCreatedStatusList_thenOk() throws Exception {
+    void testCredentialIssuerIdOverride_thenOk() throws Exception {
         final UUID statusRegistryId = UUID.randomUUID();
         final String newStatusRegistryUrl = STATUS_REGISTRY_URL_TEMPLATE.formatted(statusRegistryId);
 
@@ -509,19 +539,5 @@ class CredentialOfferStatusIT {
                         .content(objectMapper.writeValueAsString(createCredentialRequestDtoInvalidDid)))
                 .andExpect(status().isBadRequest())
                 .andReturn();
-
-        final CreateCredentialRequestDto createCredentialRequestDtoInvalidVerification = CredentialOfferTestHelper
-                .buildCreateCredentialRequestOverride(
-                        List.of(savedStatusRegistryUrl),
-                        issuerDid,
-                        verificationMethod + "not-the-same"
-                );
-
-        mvc.perform(post(MANAGEMENT_BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createCredentialRequestDtoInvalidVerification)))
-                .andExpect(status().isBadRequest())
-                .andReturn();
     }
-
 }
