@@ -24,6 +24,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -184,12 +185,8 @@ public class CredentialManagementService {
         if ("vc+sd-jwt".equals(credentialConfiguration.getFormat())) {
             var offerData = dataIntegrityService.getVerifiedOfferData(credentialOffer.getOfferData(),
                     credentialOffer.getId());
-            if (offerData == null || offerData.isEmpty()) {
-                if (credentialOffer.isDeferredOffer()) {
-                    // Data will be provided during issuance process when going from DEFERRED to
-                    // READY state
-                    return;
-                }
+
+            if (CollectionUtils.isEmpty(offerData) && !credentialOffer.isDeferredOffer()) {
                 throw new BadRequestException("Credential claims (credential subject data) is missing!");
             }
 
