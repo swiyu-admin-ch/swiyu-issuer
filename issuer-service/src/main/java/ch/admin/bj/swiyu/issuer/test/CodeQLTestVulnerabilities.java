@@ -1,17 +1,21 @@
 package ch.admin.bj.swiyu.issuer.test;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.*;
-import java.sql.*;
-import java.util.logging.Logger;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 
 /**
  * This class intentionally contains security vulnerabilities to test CodeQL detection.
  * It should trigger CodeQL security alerts during pull request checks.
  */
+@Slf4j
 public class CodeQLTestVulnerabilities {
-    
-    private static final Logger logger = Logger.getLogger(CodeQLTestVulnerabilities.class.getName());
+
     
     // CodeQL Violation: SQL Injection vulnerability
     public void sqlInjectionVulnerability(Connection conn, String userInput) throws SQLException {
@@ -34,13 +38,13 @@ public class CodeQLTestVulnerabilities {
     public void hardcodedCredentials() {
         String password = "admin123"; // Hardcoded password
         String apiKey = "sk-1234567890abcdef"; // Hardcoded API key
-        logger.info("Using password: " + password);
+        log.info("Using password: " + password);
     }
     
     // CodeQL Violation: Information disclosure through logging
     public void sensitiveDataLogging(String creditCardNumber, String ssn) {
-        logger.info("Processing credit card: " + creditCardNumber);
-        logger.info("SSN: " + ssn);
+        log.info("Processing credit card: " + creditCardNumber);
+        log.info("SSN: " + ssn);
     }
     
     // CodeQL Violation: Unsafe deserialization

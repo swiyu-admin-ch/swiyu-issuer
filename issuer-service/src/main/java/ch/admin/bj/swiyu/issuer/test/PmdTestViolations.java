@@ -58,16 +58,6 @@ public class PmdTestViolations {
         return new java.util.Vector<>();
     }
     
-    // PMD Violation: Avoid printStackTrace
-    public void catchException() {
-        try {
-            // Some risky operation
-            throw new RuntimeException("Test exception");
-        } catch (Exception e) {
-            e.printStackTrace(); // This should trigger PMD violation
-        }
-    }
-    
     // PMD Violation: Local variable could be final
     public void localVariableCouldBeFinal() {
         String message = "Hello World"; // Should be final
