@@ -10,8 +10,12 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.common.config.HSMProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,16 +24,21 @@ import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,8 +61,10 @@ class StatusListIT {
     private SwiyuProperties swiyuProperties;
     @Autowired
     private MockMvc mvc;
-    @Autowired
+    @MockitoSpyBean
     private StatusListProperties statusListProperties;
+    @Autowired
+    private StatusListRepository statusListRepository;
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
     @Mock
@@ -93,8 +104,10 @@ class StatusListIT {
                 .andExpect(jsonPath("$.config.bits").value(bits))
                 .andReturn();
 
+        final UUID newStatusListId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
+
         // check if get info endpoint return the same values
-        mvc.perform(get(STATUS_LIST_BASE_URL + "/" + JsonPath.read(result.getResponse().getContentAsString(), "$.id")))
+        mvc.perform(get(STATUS_LIST_BASE_URL + "/" + newStatusListId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
@@ -103,6 +116,55 @@ class StatusListIT {
                 .andExpect(jsonPath("$.remainingListEntries").value(maxLength))
                 .andExpect(jsonPath("$.nextFreeIndex").value(0))
                 .andExpect(jsonPath("$.config.bits").value(bits));
+
+        final Optional<StatusList> newStatusListOpt = statusListRepository.findById(newStatusListId);
+        assertTrue(newStatusListOpt.isPresent());
+        final StatusList newStatusList = newStatusListOpt.get();
+        assertNotNull(newStatusList.getUri());
+        assertEquals(type, newStatusList.getType().toString());
+        assertEquals(maxLength, newStatusList.getMaxLength());
+        assertEquals(0, newStatusList.getNextFreeIndex());
+        assertEquals(bits, newStatusList.getConfig().get("bits"));
+        assertNull(newStatusList.getConfigurationOverride().issuerDid());
+        assertNull(newStatusList.getConfigurationOverride().verificationMethod());
+        assertNull(newStatusList.getConfigurationOverride().keyId());
+        assertNull(newStatusList.getConfigurationOverride().keyPin());
+    }
+
+    @Test
+    void createNewStatusListOverrideConfiguration_thenSuccess() throws Exception {
+        HSMProperties hsm = new HSMProperties();
+        doReturn(hsm).when(statusListProperties).getHsm();
+
+        final StatusListType type = StatusListType.TOKEN_STATUS_LIST;
+        final int maxLength = 127;
+        final int bits = 4;
+        final String issuerId = "did:example:offer:override";
+        final String verificationMethod = issuerId + "#key";
+        final String keyId = "1052933";
+        final String keyPin = "209323";
+        final String payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": %s,\"key_pin\": %s}}", type, maxLength, bits, issuerId, verificationMethod, keyId, keyPin);
+
+        MvcResult result = mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        final UUID newStatusListId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
+
+        final Optional<StatusList> newStatusListOpt = statusListRepository.findById(newStatusListId);
+        assertTrue(newStatusListOpt.isPresent());
+        final StatusList newStatusList = newStatusListOpt.get();
+        assertNotNull(newStatusList.getUri());
+        assertEquals(type, newStatusList.getType());
+        assertEquals(maxLength, newStatusList.getMaxLength());
+        assertEquals(0, newStatusList.getNextFreeIndex());
+        assertEquals(bits, newStatusList.getConfig().get("bits"));
+        assertEquals(issuerId, newStatusList.getConfigurationOverride().issuerDid());
+        assertEquals(verificationMethod, newStatusList.getConfigurationOverride().verificationMethod());
+        assertEquals(keyId, newStatusList.getConfigurationOverride().keyId());
+        assertEquals(keyPin, newStatusList.getConfigurationOverride().keyPin());
     }
 
     @Test
@@ -179,7 +241,7 @@ class StatusListIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-
+                
         // check if get info endpoint return the same values
         mvc.perform(get(STATUS_LIST_BASE_URL + "/" + JsonPath.read(newStatusList.getResponse().getContentAsString(), "$.id")))
                 .andExpect(jsonPath("$.config.bits").value(bits))
