@@ -13,7 +13,6 @@ import net.logstash.logback.util.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -39,7 +38,7 @@ public class WebhookService {
         createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void produceErrorEvent(UUID credentialOfferId, CallbackErrorEventTypeDto errorCode, String errorMessage) {
         createEvent(credentialOfferId, CallbackEventType.ERROR, errorCode.name(), errorMessage);
     }

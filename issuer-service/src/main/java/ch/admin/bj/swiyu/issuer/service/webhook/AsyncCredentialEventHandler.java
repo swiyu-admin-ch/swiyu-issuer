@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @AllArgsConstructor
-public class CredentialEventHandler {
+public class AsyncCredentialEventHandler {
 
     private final WebhookService webhookService;
 

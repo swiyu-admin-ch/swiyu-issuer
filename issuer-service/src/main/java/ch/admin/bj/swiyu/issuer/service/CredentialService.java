@@ -178,12 +178,7 @@ public class CredentialService {
         if (credentialOffer.hasTokenExpirationPassed()) {
             log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
 
-            var errorEvent = new ErrorEvent(
-                    "AccessToken expired, offer is stuck in READY",
-                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
-                    credentialOffer.getId()
-            );
-            applicationEventPublisher.publishEvent(errorEvent);
+            produceErrorEvent("AccessToken expired, offer is stuck in READY", CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, credentialOffer);
 
             throw OAuthException.invalidRequest("AccessToken expired.");
         }
@@ -194,6 +189,8 @@ public class CredentialService {
 
         return credentialOffer;
     }
+
+
 
     private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
                                                               CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
@@ -206,12 +203,7 @@ public class CredentialService {
             holderPublicKey = holderBindingService.getHolderPublicKey(credentialRequest, credentialOffer);
         } catch (Oid4vcException e) {
 
-            var errorEvent = new ErrorEvent(
-                    e.getMessage(),
-                    CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
-                    credentialOffer.getId()
-            );
-            applicationEventPublisher.publishEvent(errorEvent);
+            produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, credentialOffer);
 
             throw e;
         }
@@ -273,12 +265,7 @@ public class CredentialService {
         try {
             holderJwkList = holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer);
         } catch (Oid4vcException e) {
-            var errorEvent = new ErrorEvent(
-                    e.getMessage(),
-                    CallbackErrorEventTypeDto.KEY_BINDING_ERROR,
-                    credentialOffer.getId()
-            );
-            applicationEventPublisher.publishEvent(errorEvent);
+            produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, credentialOffer);
 
             throw e;
         }
@@ -340,12 +327,7 @@ public class CredentialService {
 
         if (credentialOffer.hasTokenExpirationPassed()) {
             log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
-            var errorEvent = new ErrorEvent(
-                    "AccessToken expired, offer possibly stuck in IN_PROGRESS",
-                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
-                    credentialOffer.getId()
-            );
-            applicationEventPublisher.publishEvent(errorEvent);
+            produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS", CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, credentialOffer);
 
             throw OAuthException.invalidRequest("AccessToken expired.");
         }
@@ -409,6 +391,15 @@ public class CredentialService {
             throw OAuthException.invalidRequest("Expecting a correct UUID");
         }
         return offerId;
+    }
+
+    private void produceErrorEvent(String errorMessage, CallbackErrorEventTypeDto oauthTokenExpired, CredentialOffer credentialOffer) {
+        var errorEvent = new ErrorEvent(
+                errorMessage,
+                oauthTokenExpired,
+                credentialOffer.getId()
+        );
+        applicationEventPublisher.publishEvent(errorEvent);
     }
 
     private void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusType state) {

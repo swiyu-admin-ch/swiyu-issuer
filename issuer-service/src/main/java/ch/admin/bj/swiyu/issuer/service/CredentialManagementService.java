@@ -11,7 +11,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
-import ch.admin.bj.swiyu.issuer.service.webhook.WebhookService;
+import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +48,7 @@ public class CredentialManagementService {
     private final IssuerMetadataTechnical issuerMetadata;
     private final ApplicationProperties applicationProperties;
     private final DataIntegrityService dataIntegrityService;
-    private final WebhookService webhookService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional // not readonly since expired credentails gets updated here automatically
     public CredentialInfoResponseDto getCredentialOfferInformation(UUID credentialId) {
@@ -369,8 +370,8 @@ public class CredentialManagementService {
 
         log.debug("Updating credential {} from {} to {}", credential.getId(), currentStatus, newStatus);
         var updatedCredentialOffer = this.credentialOfferRepository.save(credential);
-        webhookService.produceStateChangeEvent(updatedCredentialOffer.getId(),
-                updatedCredentialOffer.getCredentialStatus());
+        produceStateChangeEvent(updatedCredentialOffer.getId(), updatedCredentialOffer.getCredentialStatus());
+
         return updatedCredentialOffer;
     }
 
@@ -427,5 +428,13 @@ public class CredentialManagementService {
         }
 
         credential.changeStatus(newStatus);
+    }
+
+    private void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusType state) {
+        var stateChangeEvent = new StateChangeEvent(
+                credentialOfferId,
+                state
+        );
+        applicationEventPublisher.publishEvent(stateChangeEvent);
     }
 }
