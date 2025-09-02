@@ -6,22 +6,27 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import lombok.experimental.UtilityClass;
+import org.springframework.http.HttpStatus;
 
 @UtilityClass
 public class CredentialMapper {
 
-    public static OAuthErrorResponseDto toOAuthErrorResponseDto(OAuthException exception) {
+    public static ApiErrorDto oauthErrorToApiErrorDto(OAuthException exception) {
         var error = toOAuthErrorDto(exception.getError());
-        return new OAuthErrorResponseDto(error, exception.getMessage());
+
+        return ApiErrorDto.builder()
+                .errorCode(error.name())
+                .errorDescription(exception.getMessage())
+                .status(error.getHttpStatus())
+                .build();
     }
 
     public static OAuthErrorDto toOAuthErrorDto(OAuthError error) {
@@ -36,11 +41,15 @@ public class CredentialMapper {
         };
     }
 
-    public static CredentialRequestErrorResponseDto toCredentialRequestErrorResponseDto(Oid4vcException exception) {
-        return new CredentialRequestErrorResponseDto(toCredentialRequestError(exception.getError()), exception.getMessage());
+    public static ApiErrorDto toCredentialRequestErrorResponseDto(Oid4vcException exception) {
+        return ApiErrorDto.builder()
+                .errorCode(toCredentialRequestError(exception.getError()).name())
+                .errorDescription(exception.getMessage())
+                .status(HttpStatus.BAD_REQUEST)
+                .build();
     }
 
-    private static CredentialRequestErrorDto toCredentialRequestError(CredentialRequestError source) {
+    public static CredentialRequestErrorDto toCredentialRequestError(CredentialRequestError source) {
         return switch (source) {
             case INVALID_CREDENTIAL_REQUEST -> CredentialRequestErrorDto.INVALID_CREDENTIAL_REQUEST;
             case UNSUPPORTED_CREDENTIAL_TYPE -> CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE;
