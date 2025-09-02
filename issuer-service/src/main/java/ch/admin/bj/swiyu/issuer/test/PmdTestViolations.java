@@ -23,49 +23,5 @@ public class PmdTestViolations {
                                           String param10, String param11) {
         // Do nothing
     }
-    
-    // PMD Violation: Unused local variable
-    public void methodWithUnusedVariable() {
-        String unusedVariable = "I am not used";
-        System.out.println("Hello World");
-    }
-    
-    // PMD Violation: Assignment in operand (should be ==)
-    public boolean assignmentInOperand(String input) {
-        String value = null;
-        if ((value = input) != null) {
-            return true;
-        }
-        return false;
-    }
-    
-    // PMD Violation: Inefficient use of StringBuffer
-    public String inefficientStringBuffer() {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append("Hello");
-        buffer.append(" ");
-        buffer.append("World");
-        return buffer.toString();
-    }
-    
-    // PMD Violation: Avoid instantiating Boolean objects
-    public Boolean booleanInstantiation() {
-        return new Boolean(true);
-    }
-    
-    // PMD Violation: Use ArrayList instead of Vector
-    public List<String> useVector() {
-        return new java.util.Vector<>();
-    }
-    
-    // PMD Violation: Local variable could be final
-    public void localVariableCouldBeFinal() {
-        String message = "Hello World"; // Should be final
-        System.out.println(message);
-    }
-    
-    // PMD Violation: Avoid using implementation types like ArrayList
-    public ArrayList<String> returnImplementationType() {
-        return new ArrayList<>();
-    }
+
 }
