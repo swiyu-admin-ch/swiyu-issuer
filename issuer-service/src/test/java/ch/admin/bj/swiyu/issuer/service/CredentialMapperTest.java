@@ -1,8 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorResponseDto;
+import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorResponseDto;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
@@ -17,9 +16,9 @@ class CredentialMapperTest {
     void toOAuthErrorResponseDto_mapsAllErrors() {
         for (OAuthError error : OAuthError.values()) {
             OAuthException ex = new OAuthException(error, "msg");
-            OAuthErrorResponseDto dto = CredentialMapper.toOAuthErrorResponseDto(ex);
-            assertEquals(CredentialMapper.toOAuthErrorDto(error), dto.error());
-            assertEquals("msg", dto.errorDescription());
+            ApiErrorDto dto = CredentialMapper.oauthErrorToApiErrorDto(ex);
+            assertEquals(CredentialMapper.toOAuthErrorDto(error).name(), dto.getErrorCode());
+            assertEquals("msg", dto.getErrorDescription());
         }
     }
 
@@ -38,8 +37,8 @@ class CredentialMapperTest {
     void toCredentialRequestErrorResponseDto_mapsAllErrors() {
         for (CredentialRequestError error : CredentialRequestError.values()) {
             Oid4vcException ex = new Oid4vcException(error, "msg");
-            CredentialRequestErrorResponseDto dto = CredentialMapper.toCredentialRequestErrorResponseDto(ex);
-            assertEquals("msg", dto.errorDescription());
+            ApiErrorDto dto = CredentialMapper.toCredentialRequestErrorResponseDto(ex);
+            assertEquals("msg", dto.getErrorDescription());
         }
     }
 }
