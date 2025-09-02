@@ -5,7 +5,7 @@ import ch.admin.bj.swiyu.issuer.api.callback.CallbackEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
-import ch.admin.bj.swiyu.issuer.service.WebhookService;
+import ch.admin.bj.swiyu.issuer.service.webhook.WebhookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
