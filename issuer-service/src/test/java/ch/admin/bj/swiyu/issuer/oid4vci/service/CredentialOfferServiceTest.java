@@ -21,7 +21,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.service.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.DataIntegrityService;
 import ch.admin.bj.swiyu.issuer.service.StatusListService;
-import ch.admin.bj.swiyu.issuer.service.WebhookService;
+import ch.admin.bj.swiyu.issuer.service.webhook.WebhookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
