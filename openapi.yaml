@@ -224,7 +224,7 @@ paths:
         The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
         The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
         Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
-      operationId: createCredential_1
+      operationId: createCredential
       requestBody:
         content:
           application/json:
@@ -268,7 +268,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/CredentialInfoResponseDto"
+                $ref: "#/components/schemas/CredentialInfoResponse"
     patch:
       tags:
       - Credential API
@@ -439,7 +439,7 @@ paths:
       tags:
       - Well-known endpoints API
       summary: Information about credentials which can be issued.
-      operationId: getIssuerMetadata_1
+      operationId: getIssuerMetadata
       responses:
         "404":
           description: Not Found
@@ -471,7 +471,7 @@ paths:
       tags:
       - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfiguration_1
+      operationId: getOpenIDConfiguration
       responses:
         "404":
           description: Not Found
@@ -501,7 +501,7 @@ paths:
       tags:
       - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfigurationForOauthAuthServer_1
+      operationId: getOpenIDConfigurationForOauthAuthServer
       responses:
         "404":
           description: Not Found
@@ -738,8 +738,6 @@ components:
           type: string
           format: uuid
     CredentialObjectDtoV2:
-      required:
-      - credential
       type: object
       properties:
         credential:
@@ -1111,7 +1109,7 @@ components:
           type: string
         accept-encoding:
           type: string
-    CredentialInfoResponseDto:
+    CredentialInfoResponse:
       type: object
       properties:
         status:
@@ -1124,8 +1122,14 @@ components:
           type: object
           additionalProperties:
             type: object
-        holder_jwk:
-          type: string
+        holder_jwks:
+          type: array
+          items:
+            type: string
+        key_attestations:
+          type: array
+          items:
+            type: string
         client_agent_info:
           $ref: "#/components/schemas/ClientAgentInfoDto"
         offer_expiration_timestamp:
@@ -1153,6 +1157,26 @@ components:
           type: string
         templated:
           type: boolean
+    WebhookCallback:
+      type: object
+      properties:
+        subject_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+          enum:
+          - VC_STATUS_CHANGED
+          - VC_DEFERRED
+          - ISSUANCE_ERROR
+        event:
+          type: string
+        event_description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      description: Callback transmitting information about an event which occurred.
   securitySchemes:
     Bearer Authentication:
       type: http
