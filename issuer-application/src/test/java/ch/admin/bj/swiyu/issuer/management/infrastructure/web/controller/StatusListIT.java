@@ -11,12 +11,23 @@ import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.HSMProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
+import ch.admin.bj.swiyu.issuer.service.SignatureService;
+import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.jayway.jsonpath.JsonPath;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.KeyLengthException;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,8 +49,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -61,19 +72,20 @@ class StatusListIT {
     private SwiyuProperties swiyuProperties;
     @Autowired
     private MockMvc mvc;
-    @MockitoSpyBean
     @Autowired
     private StatusListProperties statusListProperties;
     @Autowired
     private StatusListRepository statusListRepository;
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
+    @MockitoBean
+    private SignatureService signatureService;
     @Mock
     private ApiClient mockApiClient;
 
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws JOSEException, KeyStrategyException {
         var statusListEntryCreationDto = new StatusListEntryCreationDto();
         statusListEntryCreationDto.setId(statusListUUID);
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
@@ -82,6 +94,10 @@ class StatusListIT {
                 .thenReturn(statusListEntryCreationDto);
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
+
+        final JWSSigner es256Signer = new ECDSASigner(new ECKeyGenerator(Curve.P_256).keyID("test-key").generate());
+        when(signatureService.createSigner(any(SignatureConfiguration.class), any(), any()))
+                .thenReturn(es256Signer);
     }
 
     @Test
@@ -134,9 +150,6 @@ class StatusListIT {
 
     @Test
     void createNewStatusListOverrideConfiguration_thenSuccess() throws Exception {
-        final HSMProperties hsm = new HSMProperties();
-        doReturn(hsm).when(statusListProperties).getHsm();
-
         final StatusListType type = StatusListType.TOKEN_STATUS_LIST;
         final int maxLength = 127;
         final int bits = 4;
@@ -166,6 +179,12 @@ class StatusListIT {
         assertEquals(verificationMethod, newStatusList.getConfigurationOverride().verificationMethod());
         assertEquals(keyId, newStatusList.getConfigurationOverride().keyId());
         assertEquals(keyPin, newStatusList.getConfigurationOverride().keyPin());
+
+        verify(signatureService, atLeastOnce()).createSigner(
+                same(statusListProperties),
+                eq(keyId),
+                eq(keyPin)
+        );
     }
 
     @Test
