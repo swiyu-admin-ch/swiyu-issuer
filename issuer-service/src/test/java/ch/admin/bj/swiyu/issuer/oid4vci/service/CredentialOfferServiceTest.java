@@ -21,7 +21,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.service.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.DataIntegrityService;
 import ch.admin.bj.swiyu.issuer.service.StatusListService;
-import ch.admin.bj.swiyu.issuer.service.WebhookService;
+import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +32,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.*;
@@ -51,7 +52,8 @@ class CredentialOfferServiceTest {
     private ApplicationProperties applicationProperties;
     private IssuerMetadataTechnical issuerMetadata;
     private DataIntegrityService dataIntegrityService;
-    private WebhookService webhookService;
+    @Mock
+    ApplicationEventPublisher applicationEventPublisher;
     private CredentialOffer expiredOffer;
     private CredentialOffer valid;
     private CredentialOffer issued;
@@ -66,7 +68,7 @@ class CredentialOfferServiceTest {
         issuerMetadata = Mockito.mock(IssuerMetadataTechnical.class);
         applicationProperties = Mockito.mock(ApplicationProperties.class);
         dataIntegrityService = Mockito.mock(DataIntegrityService.class);
-        webhookService = Mockito.mock(WebhookService.class);
+        applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         expiredOffer = getCredentialOffer(CredentialStatusType.OFFERED, now().minusSeconds(1).getEpochSecond(), offerData);
         valid = getCredentialOffer(CredentialStatusType.OFFERED, now().plusSeconds(1000).getEpochSecond(), offerData);
@@ -98,7 +100,7 @@ class CredentialOfferServiceTest {
                 issuerMetadata,
                 applicationProperties,
                 dataIntegrityService,
-                webhookService
+                applicationEventPublisher
         );
 
         var statusListUris = List.of("https://example.com/status-list");
@@ -186,7 +188,7 @@ class CredentialOfferServiceTest {
 
         assertEquals(CredentialStatusTypeDto.REVOKED, updated.getCredentialStatus());
         Mockito.verify(credentialOfferRepository, Mockito.times(1)).save(issued);
-        Mockito.verify(webhookService, Mockito.times(1)).produceStateChangeEvent(issued.getId(), CredentialStatusType.REVOKED);
+        Mockito.verify(applicationEventPublisher).publishEvent(Mockito.any(StateChangeEvent.class));
     }
 
     @ParameterizedTest
