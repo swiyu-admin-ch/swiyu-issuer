@@ -21,6 +21,8 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.service.*;
+import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
+import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.*;
@@ -46,12 +49,12 @@ class CredentialServiceTest {
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     private StatusListService statusListService;
     private IssuerMetadataTechnical issuerMetadata;
-    private WebhookService webhookService;
     private StatusList statusList;
     private CredentialFormatFactory credentialFormatFactory;
     private ApplicationProperties applicationProperties;
     private HolderBindingService holderBindingService;
     private CredentialConfiguration credentialConfiguration;
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @BeforeEach
     void setUp() {
@@ -61,8 +64,8 @@ class CredentialServiceTest {
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);
         applicationProperties = Mockito.mock(ApplicationProperties.class);
         holderBindingService = Mockito.mock(HolderBindingService.class);
-        webhookService = Mockito.mock(WebhookService.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
+        applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
 
         credentialService = new CredentialService(
                 credentialOfferRepository,
@@ -70,8 +73,8 @@ class CredentialServiceTest {
                 issuerMetadata,
                 credentialFormatFactory,
                 applicationProperties,
-                webhookService,
-                holderBindingService
+                holderBindingService,
+                applicationEventPublisher
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
@@ -243,7 +246,8 @@ class CredentialServiceTest {
         // check if is issued && data removed
         assertEquals(CredentialStatusType.DEFERRED, credentialOffer.getCredentialStatus());
         String clientInfoString = objectMapper.writeValueAsString(clientInfo);
-        verify(webhookService).produceDeferredEvent(credentialOffer.getId(), clientInfoString);
+        var stateChangeEvent = new DeferredEvent(credentialOffer.getId(), clientInfoString);
+        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
     }
 
     @Test
@@ -342,7 +346,8 @@ class CredentialServiceTest {
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);
-        verify(webhookService).produceStateChangeEvent(any(), any());
+        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), CredentialStatusType.ISSUED);
+        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
         verify(credentialOffer).markAsIssued();
     }
 
@@ -386,7 +391,8 @@ class CredentialServiceTest {
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);
-        verify(webhookService).produceStateChangeEvent(any(), any());
+        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), CredentialStatusType.ISSUED);
+        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
         verify(credentialOffer).markAsIssued();
     }
 
@@ -412,7 +418,8 @@ class CredentialServiceTest {
         assertEquals(600, token.getExpiresIn());
         assertEquals(credentialOffer.getNonce().toString(), token.getCNonce());
         verify(credentialOfferRepository).save(credentialOffer);
-        verify(webhookService).produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
     }
 
     @Test
@@ -438,7 +445,7 @@ class CredentialServiceTest {
     }
 
     @Test
-    void createCredentialV2_deferred_thenSuccess() {
+    void createCredentialV2_deferred_thenSuccess() throws JsonProcessingException {
         // Arrange
         CredentialRequestDtoV2 requestDto = mock(CredentialRequestDtoV2.class);
         UUID accessToken = UUID.randomUUID();
@@ -463,7 +470,8 @@ class CredentialServiceTest {
 
         verify(credentialOffer).markAsDeferred(any(), any(), anyList(), anyList(), any());
         verify(credentialOfferRepository).save(credentialOffer);
-        verify(webhookService).produceDeferredEvent(any(), any());
+        var stateChangeEvent = new DeferredEvent(credentialOffer.getId(), objectMapper.writeValueAsString(clientInfo));
+        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
     }
 
     @Test
@@ -492,7 +500,8 @@ class CredentialServiceTest {
 
         verify(credentialOffer).markAsIssued();
         verify(credentialOfferRepository, atLeastOnce()).save(credentialOffer);
-        verify(webhookService).produceStateChangeEvent(any(), any());
+        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), CredentialStatusType.IN_PROGRESS);
+        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
     }
 
     private CredentialOffer mockCredentialOffer(UUID accessToken, boolean isDeferred) {
