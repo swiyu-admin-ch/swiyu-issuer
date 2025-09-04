@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
 import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
+import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
@@ -16,6 +17,8 @@ import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.Map;
 
 @AllArgsConstructor
 @Configuration
@@ -45,7 +48,8 @@ public class OpenApiConfig {
 
     @Bean
     public GlobalOpenApiCustomizer openApiCustomizer() {
-        return openApi -> openApi.getComponents().getSchemas().put("WebhookCallback",
-                ModelConverters.getInstance().readAllAsResolvedSchema(WebhookCallbackDto.class).schema);
+        var additionalSchemas = Map.of("WebhookCallback", ModelConverters.getInstance().readAllAsResolvedSchema(WebhookCallbackDto.class).schema,
+                "ApiError", ModelConverters.getInstance().readAllAsResolvedSchema(ApiErrorDto.class).schema);
+        return openApi -> openApi.getComponents().getSchemas().putAll(additionalSchemas);
     }
 }

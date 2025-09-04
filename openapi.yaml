@@ -1157,6 +1157,18 @@ components:
           type: string
         templated:
           type: boolean
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        detail:
+          type: string
+        trace_id:
+          type: string
+      description: Error response object
     WebhookCallback:
       type: object
       properties:
