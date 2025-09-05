@@ -20,7 +20,7 @@ services:
       - db_data:/var/lib/postgresql/data
 
   swiyu-issuer-service:
-    image: ghcr.io/swiyu-admin-ch/eidch-swiyu-issuer-service:latest
+    image: ghcr.io/swiyu-admin-ch/swiyu-issuer:2.0.0
     environment:
       EXTERNAL_URL: ${EXTERNAL_URL}
       SPRING_APPLICATION_NAME: ${SPRING_APPLICATION_NAME}
@@ -71,13 +71,13 @@ configs:
     content: |
       {
         "issuer": "${EXTERNAL_URL}",
-        "token_endpoint": "${EXTERNAL_URL}/api/token"
+        "token_endpoint": "${EXTERNAL_URL}/oid4vci/api/token"
       }
   issuer_metadata:
     content: |
       {
         "credential_issuer": "${EXTERNAL_URL}",
-        "credential_endpoint": "${EXTERNAL_URL}/api/credential",
+        "credential_endpoint": "${EXTERNAL_URL}/oid4vci/api/credential",
         "version": "1.0",
         "display": [
           {

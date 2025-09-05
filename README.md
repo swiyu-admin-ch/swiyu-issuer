@@ -198,7 +198,7 @@ swiyu:
 To start the application locally you can run:
 
 ```shell
-./mvnw -f issuer-application  spring-boot:run -Dspring-boot.run.profiles=local
+./mvnw -f issuer-application spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 Note: This spins up a local PostgreSQL database via docker. Once running, Openapi-Documentation can be
@@ -327,9 +327,9 @@ The keys are also set with the environment variable `JWKS_ALLOWLIST`.
 
 The Data integrity check can be enforced to be always used by setting the environment variable.
 
-| Variable                 | Description                                                                                                                               |
-|:-------------------------|:------------------------------------------------------------------------------------------------------------------------------------------|
-| DATA_INTEGRITY_ENFORCED  | Enforce to always do the data integrity check. This will break all existing offers which have been offered without data integrity check!  |
+| Variable                | Description                                                                                                                              |
+|:------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------|
+| DATA_INTEGRITY_ENFORCED | Enforce to always do the data integrity check. This will break all existing offers which have been offered without data integrity check! |
 
 #### Kubernetes Vault Keys
 
