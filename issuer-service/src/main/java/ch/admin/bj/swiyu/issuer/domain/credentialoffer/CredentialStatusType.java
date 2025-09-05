@@ -43,9 +43,8 @@ public enum CredentialStatusType {
         return this.getDisplayName();
     }
 
-
-    public boolean isIssuedToHolder() {
-        return this != OFFERED && this != IN_PROGRESS && this != CANCELLED && this != DEFERRED && this != READY;
+    public boolean isProcessable() {
+        return this == OFFERED || this == IN_PROGRESS || this == DEFERRED || this == READY;
     }
 
     public boolean isTerminalState() {
