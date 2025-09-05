@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
@@ -42,6 +43,7 @@ import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.prepareAttestedVC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -123,7 +125,12 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
 
-        verify(testEventListener).handleErrorEvent(any(ErrorEvent.class));
+        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
+        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
+        ErrorEvent capturedEvent = errorEventCaptor.getValue();
+
+        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
+        assertEquals("Key attestation was invalid or not matching the attack resistance for the credential!", capturedEvent.errorMessage());
     }
 
     @Test
@@ -137,7 +144,12 @@ class KeyAttestationFlowIT {
         // We want the error description to be helpful telling about the current issuer and the expected issuers.
         Assertions.assertThat(response.get("error_description").getAsString()).contains(untrustedIssuer).contains(applicationProperties.getTrustedAttestationProviders().getFirst());
 
-        verify(testEventListener).handleErrorEvent(any(ErrorEvent.class));
+        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
+        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
+        ErrorEvent capturedEvent = errorEventCaptor.getValue();
+
+        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
+        assertEquals("Attestation has been rejected! The JWT issuer did:example:untrusted is not in the list of trusted issuers did:test:test-attestation-builder.", capturedEvent.errorMessage());
     }
 
     @Test
@@ -150,7 +162,12 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Attestation");
 
-        verify(testEventListener).handleErrorEvent(any(ErrorEvent.class));
+        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
+        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
+        ErrorEvent capturedEvent = errorEventCaptor.getValue();
+
+        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
+        assertEquals("Attestation was not provided!", capturedEvent.errorMessage());
     }
 
     @Test
@@ -161,7 +178,12 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
 
-        verify(testEventListener).handleErrorEvent(any(ErrorEvent.class));
+        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
+        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
+        ErrorEvent capturedEvent = errorEventCaptor.getValue();
+
+        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
+        assertEquals("Key attestation key is not supported or not matching the signature!", capturedEvent.errorMessage());
     }
 
     private void mockDidResolve(JWK key) {
