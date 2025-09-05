@@ -169,7 +169,7 @@ public class IssuanceController {
                     )
             }
     )
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "bearer-jwt")
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
                                                    @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
                                                    @NotNull @RequestBody String requestDto,
@@ -244,7 +244,7 @@ public class IssuanceController {
                     )
             }
     )
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "bearer-jwt")
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
                                                            @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
                                                            @NotNull @RequestBody String deferredCredentialRequestDto) throws JsonProcessingException {

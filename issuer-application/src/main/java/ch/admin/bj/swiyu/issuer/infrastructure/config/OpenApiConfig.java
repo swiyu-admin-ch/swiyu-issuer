@@ -23,10 +23,10 @@ import java.util.Map;
 @AllArgsConstructor
 @Configuration
 @SecurityScheme(
-        name = "Bearer Authentication",
+        name = "bearer-jwt",
         type = SecuritySchemeType.HTTP,
-        bearerFormat = "JWT",
-        scheme = "bearer"
+        scheme = "bearer",
+        bearerFormat = "JWT"
 )
 public class OpenApiConfig {
 

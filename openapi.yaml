@@ -136,7 +136,7 @@ paths:
               schema:
                 type: string
       security:
-      - Bearer Authentication: []
+      - bearer-jwt: []
   /oid4vci/api/credential:
     post:
       tags:
@@ -189,7 +189,7 @@ paths:
                 - $ref: "#/components/schemas/DeferredData"
                 - $ref: "#/components/schemas/DeferredDataDtoV2"
       security:
-      - Bearer Authentication: []
+      - bearer-jwt: []
   /management/api/status-list:
     post:
       tags:
@@ -1190,7 +1190,7 @@ components:
           format: date-time
       description: Callback transmitting information about an event which occurred.
   securitySchemes:
-    Bearer Authentication:
+    bearer-jwt:
       type: http
       scheme: bearer
       bearerFormat: JWT
