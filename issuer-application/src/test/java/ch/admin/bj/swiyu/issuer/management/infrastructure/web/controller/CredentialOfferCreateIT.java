@@ -6,38 +6,49 @@
 
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
+import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
+import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.date.DateTimeUtils.ISO8601_FORMAT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -60,13 +71,34 @@ class CredentialOfferCreateIT {
     private CredentialOfferRepository credentialOfferRepository;
 
     @Autowired
+    private StatusListRepository statusListRepository;
+
+    @Autowired
     private MockMvc mvc;
 
+    @MockitoBean
+    private StatusBusinessApiApi statusBusinessApi;
+
+    @Autowired
+    protected SwiyuProperties swiyuProperties;
+
+    @Mock
+    private ApiClient mockApiClient;
+
+    protected StatusListTestHelper statusListTestHelper;
+
+    @BeforeEach
+    void setUp() {
+        statusListTestHelper = new StatusListTestHelper(mvc, objectMapper);
+    }
+
     @Test
+    @Transactional
     void testCreateOffer_thenSuccess() throws Exception {
+        String metadataCredentialSupportedId = "test";
         String minPayloadWithEmptySubject = String.format(
                 "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}}",
-                "test");
+                metadataCredentialSupportedId);
 
         var test = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
                 .andExpect(status().isOk())
@@ -77,6 +109,18 @@ class CredentialOfferCreateIT {
         // CredentialWithDeeplinkResponseDto
         String urlEncodedDeeplink = JsonPath.read(test.getResponse().getContentAsString(), "$.offer_deeplink");
         String managementId = JsonPath.read(test.getResponse().getContentAsString(), "$.management_id");
+
+        final UUID newCredentialId = UUID.fromString(managementId);
+
+        final Optional<CredentialOffer> newCredentialOpt = credentialOfferRepository.findByIdForUpdate(newCredentialId);
+
+        assertTrue(newCredentialOpt.isPresent());
+
+        final CredentialOffer newCredential = newCredentialOpt.get();
+
+        assertNotNull(newCredential.getAccessToken());
+        assertEquals(1, newCredential.getMetadataCredentialSupportedId().size());
+        assertEquals(metadataCredentialSupportedId, newCredential.getMetadataCredentialSupportedId().getFirst());
 
         // decode deeplink should not throw an exception
         var deeplink = URLDecoder.decode(urlEncodedDeeplink, StandardCharsets.UTF_8);
@@ -89,9 +133,50 @@ class CredentialOfferCreateIT {
         String now = new SimpleDateFormat(ISO8601_FORMAT).format(new Date(new Date().getTime() + 1000));
         String minPayloadWithValidUntil = String.format(
                 "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}",
-                "test", now);
+                metadataCredentialSupportedId, now);
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @Transactional
+    void testCreateOfferOverrideConfiguration_thenSuccess() throws Exception {
+        final String metadataCredentialSupportedId = "test";
+        final Map.Entry<String, String> credentialSubjectData = Map.entry("hello", "world");
+        final String expectedCredentialSubjectData = String.format("{\"%s\":\"%s\"}", credentialSubjectData.getKey(), credentialSubjectData.getValue());
+        final String issuerDid = "did:example:offer";
+        final String verificationMethod = "did:example:offer#key1";
+        final String keyId = "keyidrandom";
+        final String keyPin = "4032";
+        final String payload = String.format(
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"%s\": \"%s\"}, \"configuration_override\":{\"issuer_did\":\"%s\",\"verification_method\":\"%s\",\"key_id\":\"%s\",\"key_pin\":\"%s\"}}",
+                metadataCredentialSupportedId, credentialSubjectData.getKey(), credentialSubjectData.getValue(), issuerDid, verificationMethod, keyId, keyPin);
+
+        final MvcResult result = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.management_id").isNotEmpty())
+                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty())
+                .andReturn();
+
+        final UUID newCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+
+        final Optional<CredentialOffer> newCredentialOpt = credentialOfferRepository.findByIdForUpdate(newCredentialId);
+
+        assertTrue(newCredentialOpt.isPresent());
+
+        final CredentialOffer newCredential = newCredentialOpt.get();
+
+        assertNotNull(newCredential.getAccessToken());
+        assertEquals(1, newCredential.getMetadataCredentialSupportedId().size());
+        assertEquals(metadataCredentialSupportedId, newCredential.getMetadataCredentialSupportedId().getFirst());
+        assertNotNull(newCredential.getOfferData(), "offerData must be persisted");
+        assertEquals(expectedCredentialSubjectData, newCredential.getOfferData().get("data").toString(),
+                "offerData value must match");
+        assertNotNull(newCredential.getConfigurationOverride(), "configurationOverride must be persisted");
+        assertEquals(issuerDid, newCredential.getConfigurationOverride().issuerDid());
+        assertEquals(verificationMethod, newCredential.getConfigurationOverride().verificationMethod());
+        assertEquals(keyId, newCredential.getConfigurationOverride().keyId());
+        assertEquals(keyPin, newCredential.getConfigurationOverride().keyPin());
     }
 
     @Test
@@ -261,5 +346,72 @@ class CredentialOfferCreateIT {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("The following claims are not allowed in the credentialSubjectData: [%s]".formatted(claim)))
                 .andReturn();
+    }
+
+    @Test
+    @Transactional
+    void testCreateOfferOldAndNewStatusList_thenSuccess() throws Exception {
+        final String firstIssuer = "issuer:example:test:first";
+        final String secondIssuer = "issuer:example:test:second";
+
+        final StatusListEntryCreationDto firstStatusListEntry = statusListTestHelper.buildStatusListEntry();
+        final StatusListEntryCreationDto secondStatusListEntry = statusListTestHelper.buildStatusListEntry();
+
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(firstStatusListEntry);
+        when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
+        when(mockApiClient.getBasePath()).thenReturn(firstStatusListEntry.getStatusRegistryUrl());
+
+        final StatusListDto firstStatusListDto = statusListTestHelper.createStatusList(StatusListTypeDto.TOKEN_STATUS_LIST, 127, "Test purpose", 4, firstIssuer, null, null, null);
+
+        final CreateCredentialRequestDto firstCredential = CreateCredentialRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialSubjectData(Map.of("hello", "world"))
+                .statusLists(List.of(firstStatusListDto.getStatusRegistryUrl()))
+                .configurationOverride(new ConfigurationOverrideDto(firstIssuer, null, null, null))
+                .build();
+
+        MvcResult result = mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(firstCredential)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        final UUID firstCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(secondStatusListEntry);
+        when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
+        when(mockApiClient.getBasePath()).thenReturn(secondStatusListEntry.getStatusRegistryUrl());
+
+        final StatusListDto secondStatusListDto = statusListTestHelper.createStatusList(StatusListTypeDto.TOKEN_STATUS_LIST, 255, "Test purpose 2", 2, secondIssuer, null, null, null);
+
+        final CreateCredentialRequestDto secondCredential = CreateCredentialRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialSubjectData(Map.of("hello", "sky"))
+                .statusLists(List.of(secondStatusListDto.getStatusRegistryUrl()))
+                .configurationOverride(new ConfigurationOverrideDto(secondIssuer, null, null, null))
+                .build();
+
+        result = mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(secondCredential)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        final UUID secondCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+
+        final CredentialOffer firstCredentialDb = credentialOfferRepository.findByIdForUpdate(firstCredentialId).get();
+        final CredentialOffer secondCredentialDb = credentialOfferRepository.findByIdForUpdate(secondCredentialId).get();
+
+        assertNotEquals(firstCredentialId.toString(), secondCredentialId.toString());
+        assertNotNull(firstCredentialDb);
+        assertEquals(firstIssuer, firstCredentialDb.getConfigurationOverride().issuerDid());
+        assertNotNull(secondCredentialDb);
+        assertEquals(secondIssuer, secondCredentialDb.getConfigurationOverride().issuerDid());
+
+        final StatusList firstStatusListDb = statusListRepository.findById(firstStatusListDto.getId()).get();
+        final StatusList secondStatusListDb = statusListRepository.findById(secondStatusListDto.getId()).get();
+        assertNotEquals(firstStatusListDb.getId(), secondStatusListDb.getId());
+        assertEquals(1, firstStatusListDb.getNextFreeIndex());
+        assertEquals(1, secondStatusListDb.getNextFreeIndex());
     }
 }
