@@ -165,9 +165,17 @@ public class CredentialService {
     private CredentialOffer getAndValidateCredentialOfferForDeferred(
             DeferredCredentialRequestDto deferredCredentialRequest,
             String accessToken) {
+
+        // check if offer exists and matches with access token -> transaction id is removed when issued
         CredentialOffer credentialOffer = getCredentialOfferByTransactionIdAndAccessToken(
                 deferredCredentialRequest.transactionId(),
                 accessToken);
+
+        // check if credential can still be issued -> throws exception if [EXPIRED, CANCELLED]
+        if (!credentialOffer.isProcessableOffer()) {
+            throw new Oid4vcException(CREDENTIAL_REQUEST_DENIED,
+                    "The credential can not be issued anymore, the offer was either cancelled or expired");
+        }
 
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
@@ -229,7 +237,7 @@ public class CredentialService {
         CredentialEnvelopeDto responseEnvelope;
 
         // for deferred check if flag in the metadata set
-        if (credentialOffer.isDeferred()) {
+        if (credentialOffer.isDeferredOffer()) {
             var transactionId = UUID.randomUUID();
 
             responseEnvelope = vcBuilder.buildDeferredCredential(transactionId);
@@ -285,7 +293,7 @@ public class CredentialService {
 
         CredentialEnvelopeDto responseEnvelope;
 
-        if (credentialOffer.isDeferred()) {
+        if (credentialOffer.isDeferredOffer()) {
             var transactionId = UUID.randomUUID();
 
             List<String> keyAttestationJwkList = holderJwkList.stream().map(ProofJwt::getAttestationJwt).toList();
@@ -325,6 +333,7 @@ public class CredentialService {
                     credentialOffer.getCredentialStatus()));
         }
 
+        // check if the offer is still valid
         if (credentialOffer.hasTokenExpirationPassed()) {
             log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
             produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS", CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, credentialOffer);
