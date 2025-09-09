@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Getter
-public class AttestationJwt {
+public final class AttestationJwt {
 
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
     // OID4VCI 0.15 specifies keyattestion+jwt, in IANA they registered key-attestation+jwt
