@@ -186,7 +186,7 @@ swiyu:
     token-url: "${SWIYU_STATUS_REGISTRY_TOKEN_URL:https://keymanager-prd.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect/token}"
     customer-key: ${secret.swiyu.status-registry.customer-key:${SWIYU_STATUS_REGISTRY_CUSTOMER_KEY:#{null}}}
     customer-secret: ${secret.swiyu.status-registry.customer-secret:${SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET:#{null}}}
-    enable-refresh-token-flow: ${SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW:false}
+    enable-refresh-token-flow: ${SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW:true}
     bootstrap-refresh-token: ${secret.swiyu.status-registry.bootstrap-refresh-token:${SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN:#{null}}}
     token-refresh-interval: "PT12H"
 
