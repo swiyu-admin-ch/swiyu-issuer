@@ -5,15 +5,20 @@ import ch.admin.bj.swiyu.issuer.api.callback.CallbackEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
-import ch.admin.bj.swiyu.issuer.service.WebhookService;
+import ch.admin.bj.swiyu.issuer.service.webhook.WebhookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -23,14 +28,19 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.LogManager;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 /**
  * Collection of flows we expect a callback
  */
 @SpringBootTest
 @Testcontainers
+@ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
+@ExtendWith(OutputCaptureExtension.class)
 /**
  * Test Webhook Callbacks including if the RestClient has been used correctly.
  */
@@ -65,7 +75,7 @@ class WebhookIT {
     }
 
     @Test
-    void testHighLevelCallback() throws InterruptedException, IOException {
+    void testHighLevelCallback(CapturedOutput output) throws InterruptedException, IOException {
         // Note: This is in one single test as failing tests would influence other running tests
         // through the enqueued responses.
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
@@ -114,6 +124,8 @@ class WebhookIT {
         this.webhookService.produceStateChangeEvent(UUID.randomUUID(), CredentialStatusType.ISSUED);
         triggerCallBackProcess(1); // We received a message, but responded with 500
         triggerCallBackProcess(1); // We received a message, now responded with 200
+        // test if error is logged
+        assertThat(output.getAll()).contains("Internal Server Error: [no body]");
     }
 
     /**
@@ -132,5 +144,10 @@ class WebhookIT {
         this.webhookService.triggerProcessCallback();
         var newRequestCount = mockWebServer.getRequestCount();
         Assertions.assertThat(newRequestCount).isEqualTo(oldRequestCount + numExpectedCallbacks);
+    }
+
+    @AfterEach
+    void reset() throws Exception {
+        LogManager.getLogManager().readConfiguration();
     }
 }
