@@ -270,11 +270,15 @@ public class CredentialOffer {
         return Instant.now().isAfter(Instant.ofEpochSecond(this.tokenExpirationTimestamp));
     }
 
-    public boolean isDeferred() {
+    public boolean isDeferredOffer() {
         if (credentialMetadata == null) {
             return false;
         }
         return nonNull(credentialMetadata.get("deferred")) && (boolean) credentialMetadata.get("deferred");
+    }
+
+    public boolean isProcessableOffer() {
+        return this.credentialStatus.isProcessable();
     }
 
     @NotNull

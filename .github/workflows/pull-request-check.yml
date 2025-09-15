@@ -39,7 +39,6 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:java"
-
       - name: Run PMD static analysis
         uses: pmd/pmd-github-action@v2
         id: pmd

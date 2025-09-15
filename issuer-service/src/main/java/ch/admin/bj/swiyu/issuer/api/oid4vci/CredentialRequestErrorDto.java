@@ -16,7 +16,8 @@ public enum CredentialRequestErrorDto {
     INVALID_PROOF("invalid_proof"),
     INVALID_ENCRYPTION_PARAMETERS("invalid_encryption_parameters"),
     ISSUANCE_PENDING("issuance_pending"),
-    INVALID_TRANSACTION_ID("invalid_transaction_id");
+    INVALID_TRANSACTION_ID("invalid_transaction_id"),
+    CREDENTIAL_REQUEST_DENIED("credential_request_denied");
 
     private final String errorCode;
 
