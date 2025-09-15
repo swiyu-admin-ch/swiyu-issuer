@@ -20,7 +20,7 @@ services:
       - db_data:/var/lib/postgresql/data
 
   swiyu-issuer-service:
-    image: ghcr.io/swiyu-admin-ch/swiyu-issuer:2.0.0
+    image: ghcr.io/swiyu-admin-ch/swiyu-issuer:latest
     environment:
       EXTERNAL_URL: ${EXTERNAL_URL}
       SPRING_APPLICATION_NAME: ${SPRING_APPLICATION_NAME}
