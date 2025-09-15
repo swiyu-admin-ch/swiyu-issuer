@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the deferred credential endpoint which is
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin).
   These endpoints can be used by setting the custom header `SWIYU-API-Version=2`. These endpoints are not yet pentested.
+- Added new error code `CREDENTIAL_REQUEST_DENIED` to indicate that the credential request was denied by the
+  issuer and the wallet should not retry.
 
 ### Changed
 
