@@ -291,7 +291,7 @@ public class CredentialManagementService {
                 .preAuthorizedCode(UUID.randomUUID())
                 .credentialValidFrom(requestDto.getCredentialValidFrom())
                 .credentialValidUntil(requestDto.getCredentialValidUntil())
-                .credentialMetadata(Optional.ofNullable(requestDto.getCredentialMetadata()).orElse(new HashMap<>()))
+                .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
                 .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
                 .build();
         entity = this.credentialOfferRepository.save(entity);

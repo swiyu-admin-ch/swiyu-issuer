@@ -56,6 +56,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DeferredIssuanceV2IT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
+    private final UUID validUnboundPreAuthCode = UUID.randomUUID();
     private ECKey jwk;
     @Autowired
     private MockMvc mock;
@@ -72,6 +73,7 @@ class DeferredIssuanceV2IT {
     @Autowired
     private SdjwtProperties sdjwtProperties;
     private CredentialOffer offer;
+    private CredentialOffer unboundOffer;
 
     private static String getDeferredCredentialRequestString(String transactionId) {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
@@ -80,10 +82,12 @@ class DeferredIssuanceV2IT {
     @BeforeEach
     void setUp() throws JOSEException {
         var testStatusList = saveStatusList(createStatusList());
-        Map<String, Object> deferredMetadata = Map.of("deferred", true);
+        var deferredMetadata = new CredentialOfferMetadata(true, null);
 
         offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", deferredMetadata);
+        unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt", deferredMetadata);
         saveStatusListLinkedOffer(offer, testStatusList);
+        saveStatusListLinkedOffer(unboundOffer, testStatusList);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
@@ -230,8 +234,36 @@ class DeferredIssuanceV2IT {
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.error").value("CREDENTIAL_REQUEST_DENIED"))
                 .andExpect(jsonPath("$.error_description").value("The credential can not be issued anymore, the offer was either cancelled or expired"))
-                
+
                 .andReturn();
+    }
+
+    @Test
+    void testDeferredOffer_withoutProof_thenSuccess() throws Exception {
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validUnboundPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestString(tokenResponse, "unbound_example_sd_jwt");
+
+        var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        // check status from business issuer perspective
+        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(unboundOffer.getId(), CredentialStatusTypeDto.READY.name())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
+
+        String deferredCredentialRequestString = getDeferredCredentialRequestString(deferredDataDto.transactionId().toString());
+
+        mock.perform(post("/oid4vci/api/deferred_credential")
+                        .header("Authorization", String.format("BEARER %s", token))
+                        .header("SWIYU-API-Version", "2")
+                        .contentType("application/json")
+                        .content(deferredCredentialRequestString))
+                .andExpect(status().isOk());
     }
 
 

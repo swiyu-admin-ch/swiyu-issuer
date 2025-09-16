@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 @Schema(name = "CredentialInfoResponse")
 public record CredentialInfoResponseDto(
@@ -16,7 +15,7 @@ public record CredentialInfoResponseDto(
         @JsonProperty("metadata_credential_supported_id")
         List<String> metadataCredentialSupportedId,
         @JsonProperty("credential_metadata")
-        Map<String, Object> credentialMetadata,
+        CredentialOfferMetadataDto credentialMetadata,
         @JsonProperty("holder_jwks")
         List<String> holderJWKs,
         @JsonProperty("key_attestations")

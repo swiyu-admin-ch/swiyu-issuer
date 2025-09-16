@@ -9,6 +9,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -75,6 +76,7 @@ class DeferredFlowIT {
     private static ECKey jwk;
     private final UUID deferredPreAuthCode = UUID.randomUUID();
     private final UUID notDeferredPreAuthCode = UUID.randomUUID();
+    private final UUID validUnboundPreAuthCode = UUID.randomUUID();
     private final Instant validFrom = Instant.now();
     private final Instant validUntil = Instant.now().plus(30, ChronoUnit.DAYS);
     private final String deferredCredentialEndpoint = "/oid4vci/api/deferred_credential";
@@ -99,6 +101,7 @@ class DeferredFlowIT {
     private TransactionTemplate transactionTemplate;
     private Map<String, String> offerData;
     private CredentialOffer deferredOffer;
+    private CredentialOffer validUnboundOffer;
 
     private static String getCredentialRequestString(String proof) {
         return String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
@@ -108,8 +111,14 @@ class DeferredFlowIT {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
     }
 
-    private static Map<String, Object> getCredentialMetadata(Boolean deferred) {
-        return Map.of("vct#integrity", "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", "deferred", deferred);
+    private static CredentialOfferMetadata getCredentialMetadata(Boolean deferred) {
+
+
+        return new CredentialOfferMetadata(deferred, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=");
+    }
+
+    private static CredentialOfferMetadataDto getCredentialMetadataDto(Boolean deferred) {
+        return new CredentialOfferMetadataDto(deferred, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=");
     }
 
     @BeforeEach
@@ -117,6 +126,8 @@ class DeferredFlowIT {
         var statusList = saveStatusList(createStatusList());
         deferredOffer = createTestOffer(deferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
         saveStatusListLinkedOffer(deferredOffer, statusList);
+        validUnboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null);
+        validUnboundOffer = saveStatusListLinkedOffer(validUnboundOffer, statusList);
         var notDeferredOffer = createTestOffer(notDeferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false));
         saveStatusListLinkedOffer(notDeferredOffer, statusList);
 
@@ -135,7 +146,7 @@ class DeferredFlowIT {
         var offerRequest = CreateCredentialRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of())
-                .credentialMetadata(getCredentialMetadata(true))
+                .credentialMetadata(getCredentialMetadataDto(true))
                 .build();
 
         var offerRequestString = objectMapper.writeValueAsString(offerRequest);
@@ -226,7 +237,7 @@ class DeferredFlowIT {
         var offerRequest = CreateCredentialRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of())
-                .credentialMetadata(getCredentialMetadata(true))
+                .credentialMetadata(getCredentialMetadataDto(true))
                 .build();
 
         var offerRequestString = objectMapper.writeValueAsString(offerRequest);
@@ -483,14 +494,49 @@ class DeferredFlowIT {
                 .andExpect(jsonPath("$.error").value("CREDENTIAL_REQUEST_DENIED"));
     }
 
+    @Test
+    void testDeferredOffer_withoutProof_thenSuccess() throws Exception {
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validUnboundPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = " { \"format\": \"vc+sd-jwt\"}";
+
+        var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.credentials").doesNotExist())
+                .andExpect(jsonPath("$.transaction_id").isNotEmpty())
+                .andReturn();
+
+        DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
+
+        // check status from business issuer perspective
+        mock.perform(patch("/management/api/credentials/" + validUnboundOffer.getId() + "/status?credentialStatus=%s".formatted(CredentialStatusType.READY.name())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("READY"))
+                .andReturn();
+
+        String deferredCredentialRequestString = getDeferredCredentialRequestString(deferredDataDto.transactionId().toString());
+
+        mock.perform(post(deferredCredentialEndpoint)
+                        .header("Authorization", String.format("BEARER %s", token))
+                        .contentType("application/json")
+                        .content(deferredCredentialRequestString))
+                .andExpect(status().isOk())
+                .andReturn();
+    }
+
+
     private StatusList saveStatusList(StatusList statusList) {
         return statusListRepository.save(statusList);
     }
 
-    private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
-        credentialOfferRepository.save(offer);
+    private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
+        var storedOffer = credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
         statusList.incrementNextFreeIndex();
+
+        return storedOffer;
     }
 
     private ResultActions getDeferredCallResultActions(Object token, String deferredCredentialRequestString) throws Exception {

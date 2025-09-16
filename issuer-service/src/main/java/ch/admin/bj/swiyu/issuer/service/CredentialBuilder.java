@@ -139,7 +139,10 @@ public abstract class CredentialBuilder {
      * @return the updated CredentialBuilder instance.
      */
     public CredentialBuilder holderBindings(List<String> holderKeys) {
-        this.holderBindings = holderKeys.stream().map(DidJwk::createFromJsonString).toList();
+
+        this.holderBindings = !CollectionUtils.isEmpty(holderKeys)
+                ? holderKeys.stream().map(DidJwk::createFromJsonString).toList()
+                : List.of();
         return this;
     }
 

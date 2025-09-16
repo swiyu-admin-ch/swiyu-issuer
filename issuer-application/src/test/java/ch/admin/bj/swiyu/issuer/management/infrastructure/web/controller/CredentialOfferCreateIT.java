@@ -238,7 +238,7 @@ class CredentialOfferCreateIT {
                 .andExpect(status().isOk())
                 .andReturn();
         String id = JsonPath.read(result.getResponse().getContentAsString(), "$.management_id");
-        assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().get("vct#integrity"));
+        assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().vctIntegrity());
     }
 
     @ParameterizedTest

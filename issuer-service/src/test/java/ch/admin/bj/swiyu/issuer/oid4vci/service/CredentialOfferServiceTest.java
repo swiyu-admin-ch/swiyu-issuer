@@ -14,7 +14,6 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDt
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
@@ -37,6 +36,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.time.Instant;
 import java.util.*;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialOffer;
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,13 +47,13 @@ class CredentialOfferServiceTest {
     @Mock
     CredentialOfferRepository credentialOfferRepository;
     CredentialManagementService credentialService;
+    @Mock
+    ApplicationEventPublisher applicationEventPublisher;
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     private StatusListService statusListService;
     private ApplicationProperties applicationProperties;
     private IssuerMetadataTechnical issuerMetadata;
     private DataIntegrityService dataIntegrityService;
-    @Mock
-    ApplicationEventPublisher applicationEventPublisher;
     private CredentialOffer expiredOffer;
     private CredentialOffer valid;
     private CredentialOffer issued;
@@ -70,10 +70,10 @@ class CredentialOfferServiceTest {
         dataIntegrityService = Mockito.mock(DataIntegrityService.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
-        expiredOffer = getCredentialOffer(CredentialStatusType.OFFERED, now().minusSeconds(1).getEpochSecond(), offerData);
-        valid = getCredentialOffer(CredentialStatusType.OFFERED, now().plusSeconds(1000).getEpochSecond(), offerData);
-        suspended = getCredentialOffer(CredentialStatusType.SUSPENDED, now().plusSeconds(1000).getEpochSecond(), offerData);
-        issued = getCredentialOffer(CredentialStatusType.ISSUED, now().minusSeconds(1).getEpochSecond(), null);
+        expiredOffer = createCredentialOffer(CredentialStatusType.OFFERED, now().minusSeconds(1).getEpochSecond(), offerData);
+        valid = createCredentialOffer(CredentialStatusType.OFFERED, now().plusSeconds(1000).getEpochSecond(), offerData);
+        suspended = createCredentialOffer(CredentialStatusType.SUSPENDED, now().plusSeconds(1000).getEpochSecond(), offerData);
+        issued = createCredentialOffer(CredentialStatusType.ISSUED, now().minusSeconds(1).getEpochSecond(), null);
 
         when(applicationProperties.getIssuerId()).thenReturn("did:example:123456789");
 
@@ -195,7 +195,7 @@ class CredentialOfferServiceTest {
     @ValueSource(strings = {"CANCELLED", "REVOKED"})
     void updateCredentialStatus_shouldThrowIfStatusIsTerminal(String type) {
 
-        var offer = getCredentialOffer(CredentialStatusType.EXPIRED, now().plusSeconds(1000).getEpochSecond(), offerData);
+        var offer = createCredentialOffer(CredentialStatusType.EXPIRED, now().plusSeconds(1000).getEpochSecond(), offerData);
         var offerId = offer.getId();
         var requestedNewStatus = UpdateCredentialStatusRequestTypeDto.valueOf(type);
 
@@ -531,7 +531,8 @@ class CredentialOfferServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                Map.of("deferred", true));
+                new CredentialOfferMetadata(true, null),
+                null);
 
         when(credentialOfferRepository.findByIdForUpdate(credentialId)).thenReturn(Optional.of(credentialOffer));
         when(credentialOfferRepository.save(credentialOffer)).thenReturn(credentialOffer);
@@ -552,32 +553,8 @@ class CredentialOfferServiceTest {
                 .build();
     }
 
-    private CredentialOffer getCredentialOffer(CredentialStatusType statusType, long offerExpirationTimestamp, Map<String, Object> offerData) {
+    private CredentialOffer createCredentialOffer(CredentialStatusType statusType, long offerExpirationTimestamp, Map<String, Object> offerData) {
 
-        return getCredentialOffer(statusType, offerExpirationTimestamp, offerData, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), Map.of());
-    }
-
-    private CredentialOffer getCredentialOffer(CredentialStatusType status, long offerExpirationTimestamp, Map<String, Object> offerData, UUID accessToken, UUID preAuthorizedCode, UUID nonce, Map<String, Object> offerMetadata) {
-
-        return new CredentialOffer(
-                UUID.randomUUID(),
-                status,
-                List.of("test"),
-                offerData,
-                offerMetadata,
-                accessToken,
-                null,
-                null,
-                null,
-                null,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                nonce,
-                preAuthorizedCode,
-                offerExpirationTimestamp,
-                Instant.now(),
-                Instant.now(),
-                new CredentialRequestClass("vc+sd-jwt", null, null),
-                null
-        );
+        return getCredentialOffer(statusType, offerExpirationTimestamp, offerData, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null, null);
     }
 }
