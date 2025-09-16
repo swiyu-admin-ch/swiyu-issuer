@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class IssuanceV2IT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
-    private final UUID preAuthCode = UUID.randomUUID();
+    private final UUID validUnboundPreAuthCode = UUID.randomUUID();
     CredentialOffer offer;
     private ECKey jwk;
     @Autowired
@@ -74,7 +74,7 @@ class IssuanceV2IT {
         saveStatusListLinkedOffer(offer, testStatusList);
         jwk = createPrivateKeyV2("Test-Key");
 
-        var unboundOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt");
+        var unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt");
         saveStatusListLinkedOffer(unboundOffer, testStatusList);
     }
 
@@ -104,7 +104,7 @@ class IssuanceV2IT {
     @Test
     void testSdJwtOffer_withoutProof_thenSuccess() throws Exception {
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, preAuthCode.toString());
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validUnboundPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\"}",
                 "unbound_example_sd_jwt");

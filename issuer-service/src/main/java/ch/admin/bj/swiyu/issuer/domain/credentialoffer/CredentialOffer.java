@@ -269,11 +269,7 @@ public class CredentialOffer {
     }
 
     public boolean isDeferredOffer() {
-        if (credentialMetadata == null) {
-            return false;
-        }
-
-        return Boolean.TRUE.equals(credentialMetadata.deferred());
+        return credentialMetadata != null && Boolean.TRUE.equals(credentialMetadata.deferred());
     }
 
     public boolean isProcessableOffer() {
