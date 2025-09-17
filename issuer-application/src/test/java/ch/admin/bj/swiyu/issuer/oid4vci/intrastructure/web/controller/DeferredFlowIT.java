@@ -114,11 +114,11 @@ class DeferredFlowIT {
     private static CredentialOfferMetadata getCredentialMetadata(Boolean deferred) {
 
 
-        return new CredentialOfferMetadata(deferred, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=");
+        return new CredentialOfferMetadata(deferred, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null, null);
     }
 
     private static CredentialOfferMetadataDto getCredentialMetadataDto(Boolean deferred) {
-        return new CredentialOfferMetadataDto(deferred, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=");
+        return new CredentialOfferMetadataDto(deferred, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null, null);
     }
 
     @BeforeEach

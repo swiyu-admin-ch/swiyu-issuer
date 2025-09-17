@@ -10,6 +10,12 @@ public record CredentialOfferMetadataDto(
         @JsonProperty("deferred")
         Boolean deferred,
         @JsonProperty("vct#integrity")
-        String vctIntegrity
+        String vctIntegrity,
+        // TODO: vct_metadata_uri claim is optional, but shall be used to therein reference oca and schema information.
+        @JsonProperty("vct_metadata_uri")
+        String vctMetadataUri,
+        // TODO: vct_metadata_uri#integrity claim is optional - the Integrity String is a Subresource Integrity (SRI)
+        @JsonProperty("vct_metadata_uri#integrity")
+        String vctMetadataUriIntegrity
 ) {
 }
