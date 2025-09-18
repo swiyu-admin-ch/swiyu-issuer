@@ -52,6 +52,7 @@ import java.util.*;
 import static ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
 import static ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto.INVALID_GRANT;
 import static ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto.INVALID_REQUEST;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.getVcClaims;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
 import static org.hamcrest.Matchers.containsString;
@@ -101,10 +102,10 @@ class IssuanceControllerIT {
         return credentialSubjectData;
     }
 
-    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode, CredentialStatusType status) {
+    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode) {
         var offerData = new HashMap<String, Object>();
         offerData.put("data", new GsonBuilder().create().toJson(getUnboundCredentialSubjectData()));
-        return CredentialOffer.builder().credentialStatus(status)
+        return CredentialOffer.builder().credentialStatus(CredentialStatusType.OFFERED)
                 .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
                 .offerData(offerData)
                 .credentialMetadata(null)
@@ -131,7 +132,7 @@ class IssuanceControllerIT {
         offerId = offer.getId();
         var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
         saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, testStatusList);
-        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialStatusType.OFFERED);
+        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode);
         saveStatusListLinkedOffer(unboundOffer, testStatusList);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
@@ -494,6 +495,35 @@ class IssuanceControllerIT {
     }
 
     @Test
+    void testSdJwtOffer_withMetadata_thenSuccess() throws Exception {
+        var vctIntegrity = "vct#integrity";
+        var vctMetadataUri = "vct_metadata_uri";
+        var vctMetadataUriIntegrity = "vct_metadata_uri#integrity";
+
+        var validPreAuthCodeWithMetadata = UUID.randomUUID();
+        var metadata = new CredentialOfferMetadata(null, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
+        var getValidPreAuthCodeWithMetadataOffer = createTestOffer(validPreAuthCodeWithMetadata, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
+        saveStatusListLinkedOffer(getValidPreAuthCodeWithMetadataOffer, testStatusList);
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCodeWithMetadata.toString());
+        var token = tokenResponse.get("access_token");
+        var format = "vc+sd-jwt";
+        var credentialRequestString = getCredentialRequestString(tokenResponse, format);
+
+        var credentialResponse = requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var credentialResponseJson = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject();
+        var credential = credentialResponseJson.get("credential").getAsString();
+        var claims = getVcClaims(credential);
+
+        assertEquals(vctIntegrity, claims.get(vctIntegrity).getAsString());
+        assertEquals(vctMetadataUri, claims.get(vctMetadataUri).getAsString());
+        assertEquals(vctMetadataUriIntegrity, claims.get(vctMetadataUriIntegrity).getAsString());
+    }
+
+    @Test
     void testOfferWrongFormat_thenFailure() throws Exception {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
@@ -518,7 +548,6 @@ class IssuanceControllerIT {
         // Get VC where vct#integrity is not set. Claim should not exist
         var unboundVc = SignedJWT.parse(getUnboundVc());
         assertNull(unboundVc.getJWTClaimsSet().getClaims().get("vc#integrity"));
-
     }
 
     private String getBoundVc(boolean useNonceEndpoint) throws Exception {

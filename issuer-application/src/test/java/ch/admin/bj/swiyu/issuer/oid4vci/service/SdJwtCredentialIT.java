@@ -11,10 +11,13 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Test;
@@ -146,6 +149,60 @@ class SdJwtCredentialIT {
         List<String> sd = JsonPath.read(payload, "$._sd");
         assertEquals(3
                 , sd.size());
+    }
+
+    @Test
+    void getSdJwtCredential_withVctMetadataUri_thenSuccess() {
+
+        var vctIntegrity = "vct#integrity";
+        var vctMetadataUri = "vct_metadata_uri_example";
+        var vctMetadataUriIntegrity = "vct_metadata_uri#integrity_example";
+
+        var credentialOfferMetadata = new CredentialOfferMetadata(null, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
+        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
+
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
+        credentialRequest.setCredentialResponseEncryption(null);
+
+        var vc = vcFormatFactory
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredentialEnvelope();
+
+        JsonObject responseJson = JsonParser.parseString(vc.getOid4vciCredentialJson()).getAsJsonObject();
+        String credential = responseJson.get("credential").getAsString();
+        JsonObject payload = JsonParser.parseString(getJWTPayload(credential)).getAsJsonObject();
+
+        assertEquals(vctIntegrity, payload.get("vct#integrity").getAsString());
+        assertEquals(vctMetadataUri, payload.get("vct_metadata_uri").getAsString());
+        assertEquals(vctMetadataUriIntegrity, payload.get("vct_metadata_uri#integrity").getAsString());
+    }
+
+    @Test
+    void getSdJwtCredential_withoutAnyMetadata_thenSuccess() {
+
+        var credentialOfferMetadata = new CredentialOfferMetadata(null, null, null, null);
+        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
+
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
+        credentialRequest.setCredentialResponseEncryption(null);
+
+        var vc = vcFormatFactory
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredentialEnvelope();
+
+        JsonObject responseJson = JsonParser.parseString(vc.getOid4vciCredentialJson()).getAsJsonObject();
+        String credential = responseJson.get("credential").getAsString();
+        JsonObject payload = JsonParser.parseString(getJWTPayload(credential)).getAsJsonObject();
+
+        assertFalse(payload.has("vct#integrity"));
+        assertFalse(payload.has("vct_metadata_uri"));
+        assertFalse(payload.has("vct_metadata_uri#integrity"));
     }
 
     @Test
