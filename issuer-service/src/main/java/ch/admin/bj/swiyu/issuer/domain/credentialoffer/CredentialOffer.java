@@ -24,8 +24,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 import java.util.*;
 
-import static java.util.Objects.nonNull;
-
 /**
  * Representation of a single offer and the vc which was created using that
  * offer.
@@ -94,7 +92,7 @@ public class CredentialOffer {
      * For example vct#integrity for SD-JWT VC.
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> credentialMetadata;
+    private CredentialOfferMetadata credentialMetadata;
 
     /**
      * Value used for the oid bearer token given to the holder
@@ -271,10 +269,7 @@ public class CredentialOffer {
     }
 
     public boolean isDeferredOffer() {
-        if (credentialMetadata == null) {
-            return false;
-        }
-        return nonNull(credentialMetadata.get("deferred")) && (boolean) credentialMetadata.get("deferred");
+        return credentialMetadata != null && Boolean.TRUE.equals(credentialMetadata.deferred());
     }
 
     public boolean isProcessableOffer() {

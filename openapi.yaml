@@ -1001,19 +1001,7 @@ components:
             lastName: Example
             firstName: Edward
         credential_metadata:
-          type: object
-          additionalProperties:
-            type: object
-            description: |
-              Various metadata to be used for credential creation.
-            example:
-              vct#integrity: sha256-0000000000000000000000000000000000000000000=
-              deferred: false
-          description: |
-            Various metadata to be used for credential creation.
-          example:
-            vct#integrity: sha256-0000000000000000000000000000000000000000000=
-            deferred: false
+          $ref: "#/components/schemas/CredentialOfferMetadataDto"
         offer_validity_seconds:
           type: integer
           description: how long the offer should be usable in seconds. Example is
@@ -1044,6 +1032,18 @@ components:
         configuration_override:
           $ref: "#/components/schemas/ConfigurationOverride"
       description: Initial credential creation request to start the offering process.
+    CredentialOfferMetadataDto:
+      type: object
+      properties:
+        deferred:
+          type: boolean
+        vct#integrity:
+          type: string
+      description: |
+        Various metadata to be used for credential creation.
+      example:
+        vct#integrity: sha256-0000000000000000000000000000000000000000000=
+        deferred: false
     CredentialStatusType:
       type: string
       description: |2
@@ -1119,9 +1119,7 @@ components:
           items:
             type: string
         credential_metadata:
-          type: object
-          additionalProperties:
-            type: object
+          $ref: "#/components/schemas/CredentialOfferMetadataDto"
         holder_jwks:
           type: array
           items:
@@ -1157,18 +1155,6 @@ components:
           type: string
         templated:
           type: boolean
-    ApiError:
-      type: object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-        detail:
-          type: string
-        trace_id:
-          type: string
-      description: Error response object
     WebhookCallback:
       type: object
       properties:
@@ -1189,6 +1175,18 @@ components:
           type: string
           format: date-time
       description: Callback transmitting information about an event which occurred.
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        detail:
+          type: string
+        trace_id:
+          type: string
+      description: Error response object
   securitySchemes:
     bearer-jwt:
       type: http

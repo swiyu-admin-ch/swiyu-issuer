@@ -9,14 +9,12 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.ClientAgentInfoDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.CollectionUtils;
 
@@ -40,7 +38,7 @@ public class CredentialOfferMapper {
         return new CredentialInfoResponseDto(
                 toCredentialStatusTypeDto(credential.getCredentialStatus()),
                 credential.getMetadataCredentialSupportedId(),
-                credential.getCredentialMetadata(),
+                toCredentialOfferMetadata(credential.getCredentialMetadata()),
                 !CollectionUtils.isEmpty(credential.getHolderJWKs()) ? credential.getHolderJWKs() : null,
                 !CollectionUtils.isEmpty(credential.getKeyAttestations()) ? credential.getKeyAttestations() : null,
                 toClientAgentInfoDto(credential.getClientAgentInfo()),
@@ -114,5 +112,19 @@ public class CredentialOfferMapper {
             return null;
         }
         return new ConfigurationOverride(source.issuerDid(), source.verificationMethod(), source.keyId(), source.keyPin());
+    }
+
+    public static CredentialOfferMetadata toCredentialOfferMetadataDto(CredentialOfferMetadataDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        return new CredentialOfferMetadata(dto.deferred(), dto.vctIntegrity());
+    }
+
+    public static CredentialOfferMetadataDto toCredentialOfferMetadata(CredentialOfferMetadata metadata) {
+        if (metadata == null) {
+            return new CredentialOfferMetadataDto(null, null);
+        }
+        return new CredentialOfferMetadataDto(metadata.deferred(), metadata.vctIntegrity());
     }
 }

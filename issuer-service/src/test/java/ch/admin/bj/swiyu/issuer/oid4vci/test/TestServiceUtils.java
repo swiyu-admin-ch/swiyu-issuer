@@ -6,6 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import com.nimbusds.jose.*;
@@ -19,6 +23,8 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class TestServiceUtils {
 
@@ -77,6 +83,30 @@ public class TestServiceUtils {
                 .claim("attested_keys", List.of(publicJWK.toJSONObject()))
                 .build();
         return new SignedJWT(header, claims);
+    }
+
+    public static CredentialOffer getCredentialOffer(CredentialStatusType status, long offerExpirationTimestamp, Map<String, Object> offerData, UUID accessToken, UUID preAuthorizedCode, UUID nonce, CredentialOfferMetadata offerMetadata, UUID transactionId) {
+
+        return new CredentialOffer(
+                UUID.randomUUID(),
+                status,
+                List.of("test"),
+                offerData,
+                offerMetadata,
+                accessToken,
+                transactionId,
+                null,
+                null,
+                null,
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                nonce,
+                preAuthorizedCode,
+                offerExpirationTimestamp,
+                Instant.now(),
+                Instant.now(),
+                new CredentialRequestClass("vc+sd-jwt", null, null),
+                null
+        );
     }
 
 }

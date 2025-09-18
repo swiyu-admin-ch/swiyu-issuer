@@ -38,6 +38,7 @@ import java.time.Instant;
 import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.CREDENTIAL_REQUEST_DENIED;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialOffer;
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -106,7 +107,7 @@ class CredentialServiceTest {
         var uuid = UUID.randomUUID();
 
         var expirationTimeStamp = now().plusSeconds(1000).getEpochSecond();
-        var offer = getCredentialOffer(CredentialStatusType.IN_PROGRESS, expirationTimeStamp, offerData, uuid, uuid, UUID.randomUUID(), Map.of(), null);
+        var offer = getCredentialOffer(CredentialStatusType.IN_PROGRESS, expirationTimeStamp, offerData, uuid, uuid, UUID.randomUUID(), null, null);
         offer.setTokenExpirationTimestamp(Instant.now().minusSeconds(600).getEpochSecond());
 
         when(credentialOfferRepository.findByAccessToken(uuid)).thenReturn(Optional.of(offer));
@@ -128,7 +129,7 @@ class CredentialServiceTest {
         var preAuthorizedCode = UUID.randomUUID();
 
         var expirationTimeStamp = Instant.now().minusSeconds(10).getEpochSecond();
-        var offer = getCredentialOffer(CredentialStatusType.OFFERED, expirationTimeStamp, offerData, uuid, preAuthorizedCode, UUID.randomUUID(), Map.of(), null);
+        var offer = getCredentialOffer(CredentialStatusType.OFFERED, expirationTimeStamp, offerData, uuid, preAuthorizedCode, UUID.randomUUID(), null, null);
 
         when(credentialOfferRepository.findByAccessToken(uuid)).thenReturn(Optional.of(offer));
 
@@ -149,7 +150,7 @@ class CredentialServiceTest {
     void givenExpiredOffer_whenTokenIsCreated_throwsOAuthException() {
         var uuid = UUID.randomUUID();
         var expirationTimeStamp = Instant.now().minusSeconds(10).getEpochSecond();
-        var offer = getCredentialOffer(CredentialStatusType.OFFERED, expirationTimeStamp, offerData, uuid, uuid, UUID.randomUUID(), Map.of(), null);
+        var offer = getCredentialOffer(CredentialStatusType.OFFERED, expirationTimeStamp, offerData, uuid, uuid, UUID.randomUUID(), null, null);
 
         when(credentialOfferRepository.findByPreAuthorizedCode(uuid)).thenReturn(Optional.of(offer));
 
@@ -186,7 +187,7 @@ class CredentialServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                Map.of("deferred", false),
+                new CredentialOfferMetadata(true, null),
                 null);
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
@@ -216,7 +217,7 @@ class CredentialServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                Map.of("deferred", true),
+                new CredentialOfferMetadata(true, null),
                 null);
 
         when(credentialOfferRepository.findByAccessToken(credentialOffer.getAccessToken())).thenReturn(Optional.of(credentialOffer));
@@ -265,7 +266,7 @@ class CredentialServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                Map.of("deferred", true),
+                new CredentialOfferMetadata(true, null),
                 UUID.randomUUID());
 
         DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(credentialOffer.getTransactionId());
@@ -294,7 +295,7 @@ class CredentialServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                Map.of("deferred", true),
+                new CredentialOfferMetadata(true, null),
                 UUID.randomUUID());
 
         DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(credentialOffer.getTransactionId());
@@ -326,7 +327,7 @@ class CredentialServiceTest {
                 accessToken,
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                Map.of("deferred", true),
+                new CredentialOfferMetadata(true, null),
                 transactionId);
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
@@ -354,7 +355,7 @@ class CredentialServiceTest {
                 accessToken,
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                Map.of("deferred", true),
+                new CredentialOfferMetadata(true, null),
                 transactionId));
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
@@ -399,7 +400,7 @@ class CredentialServiceTest {
                 accessToken,
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                Map.of("deferred", true),
+                new CredentialOfferMetadata(true, null),
                 transactionId));
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
@@ -575,30 +576,6 @@ class CredentialServiceTest {
                 .id(new CredentialOfferStatusKey(offerId, statusId))
                 .index(1)
                 .build();
-    }
-
-    private CredentialOffer getCredentialOffer(CredentialStatusType status, long offerExpirationTimestamp, Map<String, Object> offerData, UUID accessToken, UUID preAuthorizedCode, UUID nonce, Map<String, Object> offerMetadata, UUID transactionId) {
-
-        return new CredentialOffer(
-                UUID.randomUUID(),
-                status,
-                List.of("test"),
-                offerData,
-                offerMetadata,
-                accessToken,
-                transactionId,
-                null,
-                null,
-                null,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                nonce,
-                preAuthorizedCode,
-                offerExpirationTimestamp,
-                Instant.now(),
-                Instant.now(),
-                new CredentialRequestClass("vc+sd-jwt", null, null),
-                null
-        );
     }
 
     private @NotNull CredentialRequestDto getCredentialRequestDto() {
