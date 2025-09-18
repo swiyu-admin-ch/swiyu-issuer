@@ -10,8 +10,8 @@ const path = require('path');
 
 // Configuration: list JaCoCo XML report paths with labels & category tags
 const REPORTS = [
-  { path: 'verifier-service/target/site/jacoco/jacoco.xml', label: 'Service Module (Unit Tests)', category: 'unit' },
-  { path: 'verifier-application/target/site/jacoco/jacoco.xml', label: 'Application Module (Integration Tests)', category: 'integration' }
+  { path: 'issuer-service/target/site/jacoco/jacoco.xml', label: 'Service Module (Unit Tests)', category: 'unit' },
+  { path: 'issuer-application/target/site/jacoco/jacoco.xml', label: 'Application Module (Integration Tests)', category: 'integration' }
 ];
 
 function fileExists(p) {
