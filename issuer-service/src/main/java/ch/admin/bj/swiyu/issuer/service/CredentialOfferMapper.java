@@ -118,13 +118,13 @@ public class CredentialOfferMapper {
         if (dto == null) {
             return null;
         }
-        return new CredentialOfferMetadata(dto.deferred(), dto.vctIntegrity());
+        return new CredentialOfferMetadata(dto.deferred(), dto.vctIntegrity(), dto.vctMetadataUri(), dto.vctMetadataUriIntegrity());
     }
 
     public static CredentialOfferMetadataDto toCredentialOfferMetadata(CredentialOfferMetadata metadata) {
         if (metadata == null) {
-            return new CredentialOfferMetadataDto(null, null);
+            return new CredentialOfferMetadataDto(null, null, null, null);
         }
-        return new CredentialOfferMetadataDto(metadata.deferred(), metadata.vctIntegrity());
+        return new CredentialOfferMetadataDto(metadata.deferred(), metadata.vctIntegrity(), metadata.vctMetadataUri(), metadata.vctMetadataUriIntegrity());
     }
 }

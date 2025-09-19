@@ -82,7 +82,7 @@ class DeferredIssuanceV2IT {
     @BeforeEach
     void setUp() throws JOSEException {
         var testStatusList = saveStatusList(createStatusList());
-        var deferredMetadata = new CredentialOfferMetadata(true, null);
+        var deferredMetadata = new CredentialOfferMetadata(true, null, null, null);
 
         offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", deferredMetadata);
         unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt", deferredMetadata);

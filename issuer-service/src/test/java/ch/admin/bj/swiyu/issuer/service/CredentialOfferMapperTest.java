@@ -42,7 +42,7 @@ class CredentialOfferMapperTest {
 
     @Test
     void toCredentialInfoResponseDto_mapsAllFields() {
-        CredentialOffer offer = getCredentialOffer(new CredentialOfferMetadata(false, "vct#integrity"));
+        CredentialOffer offer = getCredentialOffer(new CredentialOfferMetadata(false, "vct#integrity", null, null));
 
         String deeplink = "deeplink";
         CredentialInfoResponseDto dto = CredentialOfferMapper.toCredentialInfoResponseDto(offer, deeplink);
@@ -62,7 +62,7 @@ class CredentialOfferMapperTest {
     @NullSource
     @ValueSource(booleans = {true, false})
     void toCredentialInfoResponseDto_deferred(Boolean deferred) {
-        CredentialOffer offer = getCredentialOffer(new CredentialOfferMetadata(deferred, null));
+        CredentialOffer offer = getCredentialOffer(new CredentialOfferMetadata(deferred, null, null, null));
 
         String deeplink = "deeplink";
         CredentialInfoResponseDto dto = CredentialOfferMapper.toCredentialInfoResponseDto(offer, deeplink);
@@ -136,7 +136,7 @@ class CredentialOfferMapperTest {
 
     @Test
     void toCredentialOfferMetadataDto_mapsFieldsCorrectly() {
-        CredentialOfferMetadataDto dto = new CredentialOfferMetadataDto(true, "integrity");
+        CredentialOfferMetadataDto dto = new CredentialOfferMetadataDto(true, "integrity", null, null);
         CredentialOfferMetadata metadata = CredentialOfferMapper.toCredentialOfferMetadataDto(dto);
         assertNotNull(metadata);
         assertEquals(true, metadata.deferred());
@@ -153,7 +153,7 @@ class CredentialOfferMapperTest {
 
     @Test
     void toCredentialOfferMetadata_mapsFieldsCorrectly() {
-        CredentialOfferMetadata metadata = new CredentialOfferMetadata(false, "vct#test");
+        CredentialOfferMetadata metadata = new CredentialOfferMetadata(false, "vct#test", null, null);
         CredentialOfferMetadataDto dto = CredentialOfferMapper.toCredentialOfferMetadata(metadata);
         assertNotNull(dto);
         assertEquals(false, dto.deferred());

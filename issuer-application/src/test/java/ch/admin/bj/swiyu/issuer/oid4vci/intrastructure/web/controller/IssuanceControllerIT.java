@@ -125,7 +125,7 @@ class IssuanceControllerIT {
     @BeforeEach
     void setUp() throws JOSEException {
         testStatusList = saveStatusList(createStatusList());
-        CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example");
+        CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
         var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
         saveStatusListLinkedOffer(offer, testStatusList);
         offerId = offer.getId();
