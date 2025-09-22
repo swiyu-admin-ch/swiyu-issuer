@@ -253,8 +253,7 @@ public class CredentialOffer {
                                List<String> keyAttestationJWTs,
                                ClientAgentInfo clientAgentInfo,
                                ApplicationProperties applicationProperties) {
-
-        // todo check if seconds correct
+        
         var expiration = Instant.now().plusSeconds(nonNull(deferredOfferValiditySeconds) && deferredOfferValiditySeconds > 0
                 ? deferredOfferValiditySeconds
                 : applicationProperties.getDeferredOfferValiditySeconds());
