@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.oid4vci.service;
+package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
@@ -17,9 +17,6 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
-import ch.admin.bj.swiyu.issuer.service.CredentialManagementService;
-import ch.admin.bj.swiyu.issuer.service.DataIntegrityService;
-import ch.admin.bj.swiyu.issuer.service.StatusListService;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-class CredentialOfferServiceTest {
+class CredentialManagementServiceTest {
     private final Map<String, Object> offerData = Map.of("hello", "world");
     @Mock
     CredentialOfferRepository credentialOfferRepository;

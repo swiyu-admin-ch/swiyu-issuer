@@ -13,6 +13,7 @@ application:
   issuer-id: "did:tdw:example"
   external-url: "http://localhost:8080/test/"
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
+  deferred-offer-validity-seconds: 864000 # 60 * 60 * 24 * 10 => 10 days;
   trusted-attestation-providers: [ "did:test:test-attestation-builder" ]
   template-replacement:
     external-url: "http://localhost:8080"
@@ -23,7 +24,7 @@ application:
       MHcCAQEEIMUIbiziNKtPQFlCeZUgcvM22GPN9rqlsT1mluTDRI0aoAoGCCqGSM49
       AwEHoUQDQgAEm38isThXK8WxACgw4ycYrwY2OLWvOYWm96utBFwhBhnXOpdFb4e8
       +QzpPS7/vMQCX/EZvgDbEXrv/fC5W8M9YQ==
-      -----END EC PRIVATE KEY-----
+      -----END EC P<RIVATE KEY-----
     verification-method: "did:tdw:example#12345"
     key-management-method: "key"
     status-list-size-limit: 204800 # 200KiB

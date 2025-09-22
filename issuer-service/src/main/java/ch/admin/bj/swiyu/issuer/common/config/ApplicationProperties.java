@@ -44,6 +44,9 @@ public class ApplicationProperties {
     private Long offerValidity;
 
     @NotNull
+    private Integer deferredOfferValiditySeconds;
+
+    @NotNull
     @Min(value = 5, message = "Minimal deferred offer interval must be at least 5 seconds")
     private Long minDeferredOfferIntervalSeconds;
 

@@ -193,7 +193,8 @@ class CredentialOfferCreateIT {
                   "credential_subject_data": {
                     "hello": "world"
                   },
-                  "offer_validity_seconds": 36000
+                  "offer_validity_seconds": 36000,
+                  "deferred_offer_validity_seconds": 37000
                 }
                 """;
 
@@ -213,7 +214,8 @@ class CredentialOfferCreateIT {
                 .andExpect(jsonPath("$.credential_metadata").isEmpty())
                 .andExpect(jsonPath("$.holder_jwks").isEmpty())
                 .andExpect(jsonPath("$.client_agent_info").isEmpty())
-                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty());
+                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty())
+                .andExpect(jsonPath("$.deferred_offer_expiration_seconds").value(37000));
     }
 
     @Test

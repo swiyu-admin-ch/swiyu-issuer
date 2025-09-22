@@ -24,6 +24,8 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,12 +39,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mockStatic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -74,6 +80,7 @@ class DeferredIssuanceV2IT {
     private SdjwtProperties sdjwtProperties;
     private CredentialOffer offer;
     private CredentialOffer unboundOffer;
+    private StatusList statusList;
 
     private static String getDeferredCredentialRequestString(String transactionId) {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
@@ -81,13 +88,13 @@ class DeferredIssuanceV2IT {
 
     @BeforeEach
     void setUp() throws JOSEException {
-        var testStatusList = saveStatusList(createStatusList());
+        statusList = saveStatusList(createStatusList());
         var deferredMetadata = new CredentialOfferMetadata(true, null);
 
         offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", deferredMetadata);
         unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt", deferredMetadata);
-        saveStatusListLinkedOffer(offer, testStatusList);
-        saveStatusListLinkedOffer(unboundOffer, testStatusList);
+        saveStatusListLinkedOffer(offer, statusList);
+        saveStatusListLinkedOffer(unboundOffer, statusList);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
@@ -266,9 +273,60 @@ class DeferredIssuanceV2IT {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void testDeferredOffer_withDefaultDeferredExpiration_thenSuccess() throws Exception {
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validUnboundPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestString(tokenResponse, "unbound_example_sd_jwt");
+
+        Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
+
+        try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
+            mockedStatic.when(Instant::now).thenReturn(instant);
+
+            requestCredential(mock, (String) token, credentialRequestString)
+                    .andExpect(status().isAccepted())
+                    .andReturn();
+
+            var result = credentialOfferRepository.findByIdForUpdate(unboundOffer.getId()).orElseThrow();
+
+            assertEquals(instant.plusSeconds(applicationProperties.getDeferredOfferValiditySeconds()).getEpochSecond(), result.getOfferExpirationTimestamp());
+        }
+    }
+
+    @Test
+    void testDeferredOffer_withDynamicDeferredExpiration_thenSuccess() throws Exception {
+
+        var expirationInSeconds = 1728000; // 20 days
+
+        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null), expirationInSeconds);
+        saveStatusListLinkedOffer(offerWithDynamicExpiration, statusList);
+
+        Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
+
+        try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
+            mockedStatic.when(Instant::now).thenReturn(instant);
+
+            var credentialRequestString = getCredentialRequestString(offerWithDynamicExpiration.getNonce().toString(), offerWithDynamicExpiration.getMetadataCredentialSupportedId().getFirst());
+
+            requestCredential(mock, offerWithDynamicExpiration.getAccessToken().toString(), credentialRequestString)
+                    .andExpect(status().isAccepted())
+                    .andReturn();
+
+            var result = credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId()).orElseThrow();
+
+            assertEquals(instant.plusSeconds(expirationInSeconds).getEpochSecond(), result.getOfferExpirationTimestamp());
+        }
+    }
+
 
     private String getCredentialRequestString(Map<String, Object> tokenResponse, String configurationId) throws JOSEException {
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+        return getCredentialRequestString(tokenResponse.get("c_nonce").toString(), configurationId);
+    }
+
+    private String getCredentialRequestString(String cNonce, String configurationId) throws JOSEException {
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), cNonce, ProofType.JWT.getClaimTyp(), false);
         return String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}", configurationId, proof);
     }
 

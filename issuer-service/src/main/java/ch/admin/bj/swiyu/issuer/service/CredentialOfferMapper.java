@@ -43,6 +43,7 @@ public class CredentialOfferMapper {
                 !CollectionUtils.isEmpty(credential.getKeyAttestations()) ? credential.getKeyAttestations() : null,
                 toClientAgentInfoDto(credential.getClientAgentInfo()),
                 credential.getOfferExpirationTimestamp(),
+                credential.getDeferredOfferValiditySeconds(),
                 credential.getCredentialValidFrom(),
                 credential.getCredentialValidUntil(),
                 toCredentialRequest(credential.getCredentialRequest()),

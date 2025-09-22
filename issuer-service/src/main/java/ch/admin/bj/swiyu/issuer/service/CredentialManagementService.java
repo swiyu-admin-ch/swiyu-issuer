@@ -290,6 +290,7 @@ public class CredentialManagementService {
                 .accessToken(UUID.randomUUID())
                 .preAuthorizedCode(UUID.randomUUID())
                 .credentialValidFrom(requestDto.getCredentialValidFrom())
+                .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
                 .credentialValidUntil(requestDto.getCredentialValidUntil())
                 .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
                 .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
