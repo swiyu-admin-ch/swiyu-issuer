@@ -73,6 +73,8 @@ public class SdJwtCredential extends CredentialBuilder {
         var credentialMetadata = getCredentialOffer().getCredentialMetadata();
         if (nonNull(credentialMetadata)) {
             Optional.ofNullable(credentialMetadata.vctIntegrity()).ifPresent(o -> builder.putClaim("vct#integrity", o));
+            Optional.ofNullable(credentialMetadata.vctMetadataUri()).ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
+            Optional.ofNullable(credentialMetadata.vctMetadataUriIntegrity()).ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
         }
         builder.putClaim("iat", getUnixTimeStamp());
 
