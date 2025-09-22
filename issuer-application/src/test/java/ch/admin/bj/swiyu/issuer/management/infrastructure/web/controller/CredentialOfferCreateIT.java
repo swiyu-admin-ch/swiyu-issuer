@@ -253,15 +253,25 @@ class CredentialOfferCreateIT {
                   "offer_validity_seconds": 36000,
                   "credential_metadata": {
                     "vct_metadata_uri": "https://example.com/credentials/vct/metadata.json",
-                   "vct_metadata_uri#integrity": "sha256-TmHzu3DojO4MFaBXcJ6akg8JY/JWOcDU8PfUViEMYKk="
+                    "vct_metadata_uri#integrity": "sha256-TmHzu3DojO4MFaBXcJ6akg8JY/JWOcDU8PfUViEMYKk="
                   }
                 }
                 """;
 
-        mvc.perform(post(BASE_URL)
+        var response = mvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
                 .andExpect(status().isOk())
+                .andReturn();
+
+        var responseJson = JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject();
+
+        mvc.perform(get(BASE_URL + "/" + responseJson.get("management_id").getAsString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credential_metadata.vct_metadata_uri").value("https://example.com/credentials/vct/metadata.json"))
+                .andExpect(jsonPath("$.credential_metadata['vct_metadata_uri#integrity']").value("sha256-TmHzu3DojO4MFaBXcJ6akg8JY/JWOcDU8PfUViEMYKk="))
                 .andReturn();
     }
 
