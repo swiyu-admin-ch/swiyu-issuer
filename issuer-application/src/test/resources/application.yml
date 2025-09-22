@@ -24,7 +24,7 @@ application:
       MHcCAQEEIMUIbiziNKtPQFlCeZUgcvM22GPN9rqlsT1mluTDRI0aoAoGCCqGSM49
       AwEHoUQDQgAEm38isThXK8WxACgw4ycYrwY2OLWvOYWm96utBFwhBhnXOpdFb4e8
       +QzpPS7/vMQCX/EZvgDbEXrv/fC5W8M9YQ==
-      -----END EC P<RIVATE KEY-----
+      -----END EC PRIVATE KEY-----
     verification-method: "did:tdw:example#12345"
     key-management-method: "key"
     status-list-size-limit: 204800 # 200KiB
