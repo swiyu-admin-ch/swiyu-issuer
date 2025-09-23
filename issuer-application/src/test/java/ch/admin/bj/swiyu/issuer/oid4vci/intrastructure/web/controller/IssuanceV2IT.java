@@ -50,7 +50,7 @@ class IssuanceV2IT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
     private final UUID validUnboundPreAuthCode = UUID.randomUUID();
-    CredentialOffer offer;
+    private StatusList testStatusList;
     private ECKey jwk;
     @Autowired
     private MockMvc mock;
@@ -69,8 +69,8 @@ class IssuanceV2IT {
 
     @BeforeEach
     void setUp() throws JOSEException {
-        var testStatusList = saveStatusList(createStatusList());
-        offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        testStatusList = saveStatusList(createStatusList());
+        CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
         saveStatusListLinkedOffer(offer, testStatusList);
         jwk = createPrivateKeyV2("Test-Key");
 
@@ -99,6 +99,38 @@ class IssuanceV2IT {
         var credential = credentials.get(0).getAsJsonObject();
         var credentialString = credential.get("credential").getAsString();
         testHolderBindingV2(credentialString, jwk);
+    }
+
+    @Test
+    void testSdJwtOffer_withMetadata_thenSuccess() throws Exception {
+
+        var validPreAuthCodeWithMetadata = UUID.randomUUID();
+        var vctIntegrity = "vct#integrity";
+        var vctMetadataUri = "vct_metadata_uri";
+        var vctMetadataUriIntegrity = "vct_metadata_uri#integrity";
+
+        var metadata = new CredentialOfferMetadata(false, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
+        var getValidPreAuthCodeWithMetadataOffer = createTestOffer(validPreAuthCodeWithMetadata, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
+        saveStatusListLinkedOffer(getValidPreAuthCodeWithMetadataOffer, testStatusList);
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCodeWithMetadata.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestStringV2(mock, List.of(jwk), applicationProperties);
+
+        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var credentials = extractCredentialsV2(response);
+
+        assertEquals(1, credentials.size());
+        var credential = credentials.get(0).getAsJsonObject();
+        var credentialString = credential.get("credential").getAsString();
+        var claims = getVcClaims(credentialString);
+
+        assertEquals(vctIntegrity, claims.get(vctIntegrity).getAsString());
+        assertEquals(vctMetadataUri, claims.get(vctMetadataUri).getAsString());
+        assertEquals(vctMetadataUriIntegrity, claims.get(vctMetadataUriIntegrity).getAsString());
     }
 
     @Test

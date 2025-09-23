@@ -190,7 +190,7 @@ class CredentialServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null),
+                new CredentialOfferMetadata(true, null, null, null),
                 null);
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
@@ -220,7 +220,7 @@ class CredentialServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null),
+                new CredentialOfferMetadata(true, null, null, null),
                 null);
 
         when(credentialOfferRepository.findByAccessToken(credentialOffer.getAccessToken())).thenReturn(Optional.of(credentialOffer));
@@ -269,7 +269,7 @@ class CredentialServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null),
+                new CredentialOfferMetadata(true, null, null, null),
                 UUID.randomUUID());
 
         DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(credentialOffer.getTransactionId());
@@ -298,7 +298,7 @@ class CredentialServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null),
+                new CredentialOfferMetadata(true, null, null, null),
                 UUID.randomUUID());
 
         DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(credentialOffer.getTransactionId());
@@ -330,7 +330,7 @@ class CredentialServiceTest {
                 accessToken,
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null),
+                new CredentialOfferMetadata(true, null, null, null),
                 transactionId);
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
@@ -358,7 +358,7 @@ class CredentialServiceTest {
                 accessToken,
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null),
+                new CredentialOfferMetadata(true, null, null, null),
                 transactionId));
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
@@ -403,7 +403,7 @@ class CredentialServiceTest {
                 accessToken,
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null),
+                new CredentialOfferMetadata(true, null, null, null),
                 transactionId));
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));

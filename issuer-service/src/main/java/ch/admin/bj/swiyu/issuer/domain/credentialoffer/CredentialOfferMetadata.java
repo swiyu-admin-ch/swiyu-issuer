@@ -9,6 +9,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record CredentialOfferMetadata(
         Boolean deferred,
         @JsonProperty("vct#integrity") // must be set in order to prevent breaking changes
-        String vctIntegrity
+        String vctIntegrity,
+        @JsonProperty("vct_metadata_uri")
+        String vctMetadataUri,
+        @JsonProperty("vct_metadata_uri#integrity")
+        String vctMetadataUriIntegrity
 ) {
 }

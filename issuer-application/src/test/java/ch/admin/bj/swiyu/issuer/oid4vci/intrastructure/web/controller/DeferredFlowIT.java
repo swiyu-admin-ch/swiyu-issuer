@@ -542,7 +542,7 @@ class DeferredFlowIT {
 
         var expirationInSeconds = 1728000; // 20 days
 
-        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null), expirationInSeconds);
+        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null), expirationInSeconds);
         saveStatusListLinkedOffer(offerWithDynamicExpiration, statusList);
 
         Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
@@ -625,10 +625,10 @@ class DeferredFlowIT {
     private CredentialOfferMetadata getCredentialMetadata(Boolean deferred) {
 
 
-        return new CredentialOfferMetadata(deferred, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=");
+        return new CredentialOfferMetadata(deferred, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null, null);
     }
 
     private CredentialOfferMetadataDto getCredentialMetadataDto() {
-        return new CredentialOfferMetadataDto(true, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=");
+        return new CredentialOfferMetadataDto(true, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null, null);
     }
 }

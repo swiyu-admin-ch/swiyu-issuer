@@ -528,7 +528,7 @@ class CredentialManagementServiceTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null),
+                new CredentialOfferMetadata(true, null, null, null),
                 null);
 
         when(credentialOfferRepository.findByIdForUpdate(credentialId)).thenReturn(Optional.of(credentialOffer));
