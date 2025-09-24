@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
@@ -59,7 +59,7 @@ class CredentialOfferServiceTest {
     private CredentialOffer issued;
     private CredentialOffer suspended;
     private StatusList statusList;
-    private CreateCredentialRequestDto createCredentialRequestDto;
+    private CreateCredentialOfferRequestDto createCredentialRequestDto;
 
     @BeforeEach
     void setUp() {
@@ -113,7 +113,7 @@ class CredentialOfferServiceTest {
                 .maxLength(10000)
                 .build();
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -260,7 +260,7 @@ class CredentialOfferServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list", "https://example.com/another-status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -299,7 +299,7 @@ class CredentialOfferServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -328,7 +328,7 @@ class CredentialOfferServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -358,7 +358,7 @@ class CredentialOfferServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)

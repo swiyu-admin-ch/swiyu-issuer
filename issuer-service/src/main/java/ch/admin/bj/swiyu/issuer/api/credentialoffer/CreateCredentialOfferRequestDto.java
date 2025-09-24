@@ -25,8 +25,8 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema(name = "CreateCredentialRequest", description = "Initial credential creation request to start the offering process.")
-public class CreateCredentialRequestDto {
+@Schema(name = "CreateCredentialOfferRequest", description = "Initial credential creation request to start the offering process.")
+public class CreateCredentialOfferRequestDto {
 
     /**
      * ID as in credential metadata

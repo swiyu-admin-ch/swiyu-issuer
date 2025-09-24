@@ -7,7 +7,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
@@ -143,7 +143,7 @@ class DeferredFlowIT {
     @Test
     void testCompleteFlow_thenSuccess() throws Exception {
 
-        var offerRequest = CreateCredentialRequestDto.builder()
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of())
                 .credentialMetadata(getCredentialMetadataDto(true))
@@ -234,7 +234,7 @@ class DeferredFlowIT {
     @Test
     void testCompleteFlow_withKeyAttestation_thenSuccess() throws Exception {
 
-        var offerRequest = CreateCredentialRequestDto.builder()
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of())
                 .credentialMetadata(getCredentialMetadataDto(true))
