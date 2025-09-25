@@ -70,7 +70,12 @@ public class SdJwtCredential extends CredentialBuilder {
         var metadataId = getMetadataCredentialsSupportedIds().getFirst();
         builder.putClaim("vct", getIssuerMetadata().getCredentialConfigurationById(metadataId).getVct());
         // if we have a vct#integrity, add it
-        Optional.ofNullable(getCredentialOffer().getCredentialMetadata().get("vct#integrity")).ifPresent(o -> builder.putClaim("vct#integrity", o));
+        var credentialMetadata = getCredentialOffer().getCredentialMetadata();
+        if (nonNull(credentialMetadata)) {
+            Optional.ofNullable(credentialMetadata.vctIntegrity()).ifPresent(o -> builder.putClaim("vct#integrity", o));
+            Optional.ofNullable(credentialMetadata.vctMetadataUri()).ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
+            Optional.ofNullable(credentialMetadata.vctMetadataUriIntegrity()).ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
+        }
         builder.putClaim("iat", getUnixTimeStamp());
 
         // optional field -> only added when set

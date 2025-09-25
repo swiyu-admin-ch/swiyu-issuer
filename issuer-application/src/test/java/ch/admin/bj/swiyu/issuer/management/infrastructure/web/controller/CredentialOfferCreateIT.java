@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.hamcrest.Matchers;
@@ -193,7 +194,8 @@ class CredentialOfferCreateIT {
                   "credential_subject_data": {
                     "hello": "world"
                   },
-                  "offer_validity_seconds": 36000
+                  "offer_validity_seconds": 36000,
+                  "deferred_offer_validity_seconds": 37000
                 }
                 """;
 
@@ -213,7 +215,8 @@ class CredentialOfferCreateIT {
                 .andExpect(jsonPath("$.credential_metadata").isEmpty())
                 .andExpect(jsonPath("$.holder_jwks").isEmpty())
                 .andExpect(jsonPath("$.client_agent_info").isEmpty())
-                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty());
+                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty())
+                .andExpect(jsonPath("$.deferred_offer_expiration_seconds").value(37000));
     }
 
     @Test
@@ -238,7 +241,67 @@ class CredentialOfferCreateIT {
                 .andExpect(status().isOk())
                 .andReturn();
         String id = JsonPath.read(result.getResponse().getContentAsString(), "$.management_id");
-        assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().get("vct#integrity"));
+        assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().vctIntegrity());
+    }
+
+    @Test
+    void testCreateOfferVcMetadata_metadataIntegration_thenSuccess() throws Exception {
+        String jsonPayload = """
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": {
+                    "hello": "world"
+                  },
+                  "offer_validity_seconds": 36000,
+                  "credential_metadata": {
+                    "vct_metadata_uri": "https://example.com/credentials/vct/metadata.json",
+                    "vct_metadata_uri#integrity": "sha256-TmHzu3DojO4MFaBXcJ6akg8JY/JWOcDU8PfUViEMYKk="
+                  }
+                }
+                """;
+
+        var response = mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var responseJson = JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject();
+
+        mvc.perform(get(BASE_URL + "/" + responseJson.get("management_id").getAsString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credential_metadata.vct_metadata_uri").value("https://example.com/credentials/vct/metadata.json"))
+                .andExpect(jsonPath("$.credential_metadata['vct_metadata_uri#integrity']").value("sha256-TmHzu3DojO4MFaBXcJ6akg8JY/JWOcDU8PfUViEMYKk="))
+                .andReturn();
+    }
+
+    @Test
+    void testCreateOfferVcMetadata_blankUri_thenBadRequest() throws Exception {
+        String jsonPayload = """
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": {
+                    "hello": "world"
+                  },
+                  "offer_validity_seconds": 36000,
+                  "credential_metadata": {
+                    "vct_metadata_uri": ""
+                  }
+                }
+                """;
+
+        var response = mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isUnprocessableEntity())
+                .andReturn();
+
+        var responseJson = JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject();
+
+        assertEquals("Unprocessable Entity", responseJson.get("error_description").getAsString());
+        assertEquals("credentialMetadata.vctMetadataUri: If provided, vct_metadata_uri must not be blank", responseJson.get("detail").getAsString());
     }
 
     @ParameterizedTest

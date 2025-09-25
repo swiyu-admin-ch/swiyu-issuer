@@ -46,8 +46,7 @@ public class IssuanceV2TestUtils {
     }
 
     public void testHolderBindingV2(String vc, ECKey holderPrivateKey) throws ParseException {
-        var jwt = SignedJWT.parse(vc.split("~")[0]);
-        JsonObject claims = JsonParser.parseString(jwt.getPayload().toString()).getAsJsonObject();
+        JsonObject claims = getVcClaims(vc);
         assertNotNull(claims.get("cnf"));
         JsonObject legacyCnf = claims.get("cnf").getAsJsonObject();
         JsonObject cnf = legacyCnf.get("jwk").getAsJsonObject();
@@ -65,7 +64,12 @@ public class IssuanceV2TestUtils {
         assertEquals(holderPrivateKey.getY().toString(), cnf.get("y").getAsString());
     }
 
-    public String getCredentialRequestStringV2(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties) throws Exception {
+    public static JsonObject getVcClaims(String vc) throws ParseException {
+        var jwt = SignedJWT.parse(vc.split("~")[0]);
+        return JsonParser.parseString(jwt.getPayload().toString()).getAsJsonObject();
+    }
+
+    public static String getCredentialRequestStringV2(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties) throws Exception {
         var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
         JsonObject nonceResponseJson = JsonParser.parseString(nonceResponse).getAsJsonObject();

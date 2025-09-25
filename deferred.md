@@ -160,6 +160,7 @@ curl -X 'POST' \
     "deferred": true
   },
   "offer_validity_seconds": 86400,
+  "deferred_offer_validity_seconds": 86400,
   "credential_valid_until": "2030-01-01T19:23:24Z",
   "credential_valid_from": "2025-01-01T18:23:24Z",
   "status_lists": [

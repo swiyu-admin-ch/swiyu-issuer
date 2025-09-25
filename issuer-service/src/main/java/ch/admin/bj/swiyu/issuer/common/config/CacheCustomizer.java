@@ -24,6 +24,6 @@ public class CacheCustomizer implements CacheManagerCustomizer<ConcurrentMapCach
     @CacheEvict(value = PUBLIC_KEY_CACHE, allEntries = true)
     @Scheduled(fixedRateString = "${caching.publicKeyCacheTTL}")
     public void emptyPublicKeyCache() {
-        log.info("emptying public key cache");
+        log.debug("emptying public key cache");
     }
 }

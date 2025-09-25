@@ -7,11 +7,11 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
@@ -56,7 +56,7 @@ public class CredentialService {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
-    public CredentialEnvelopeDto createCredential(CredentialRequestDto credentialRequestDto, String accessToken,
+    public CredentialEnvelopeDto createCredential(CredentialEndpointRequestDto credentialRequestDto, String accessToken,
                                                   ClientAgentInfo clientInfo) {
 
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
@@ -66,7 +66,7 @@ public class CredentialService {
     }
 
     @Transactional
-    public CredentialEnvelopeDto createCredentialV2(CredentialRequestDtoV2 credentialRequestDto, String accessToken,
+    public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDtoV2 credentialRequestDto, String accessToken,
                                                     ClientAgentInfo clientInfo) {
 
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
@@ -77,7 +77,7 @@ public class CredentialService {
 
     @Transactional
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(
-            DeferredCredentialRequestDto deferredCredentialRequest,
+            DeferredCredentialEndpointRequestDto deferredCredentialRequest,
             String accessToken) {
 
         CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest,
@@ -104,7 +104,7 @@ public class CredentialService {
 
     @Transactional
     public CredentialEnvelopeDto createCredentialFromDeferredRequestV2(
-            DeferredCredentialRequestDto deferredCredentialRequest,
+            DeferredCredentialEndpointRequestDto deferredCredentialRequest,
             String accessToken) {
 
         CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest,
@@ -163,7 +163,7 @@ public class CredentialService {
     }
 
     private CredentialOffer getAndValidateCredentialOfferForDeferred(
-            DeferredCredentialRequestDto deferredCredentialRequest,
+            DeferredCredentialEndpointRequestDto deferredCredentialRequest,
             String accessToken) {
 
         // check if offer exists and matches with access token -> transaction id is removed when issued
@@ -197,7 +197,6 @@ public class CredentialService {
 
         return credentialOffer;
     }
-
 
 
     private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
@@ -241,7 +240,7 @@ public class CredentialService {
             var transactionId = UUID.randomUUID();
 
             responseEnvelope = vcBuilder.buildDeferredCredential(transactionId);
-            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo, applicationProperties);
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);
@@ -274,7 +273,6 @@ public class CredentialService {
             holderJwkList = holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer);
         } catch (Oid4vcException e) {
             produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, credentialOffer);
-
             throw e;
         }
 
@@ -299,7 +297,7 @@ public class CredentialService {
             List<String> keyAttestationJwkList = holderJwkList.stream().map(ProofJwt::getAttestationJwt).toList();
 
             responseEnvelope = vcBuilder.buildDeferredCredentialV2(transactionId);
-            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo, applicationProperties);
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);
@@ -393,13 +391,11 @@ public class CredentialService {
     }
 
     private UUID uuidOrException(String preAuthCode) {
-        UUID offerId;
         try {
-            offerId = UUID.fromString(preAuthCode);
+            return UUID.fromString(preAuthCode);
         } catch (IllegalArgumentException ex) {
             throw OAuthException.invalidRequest("Expecting a correct UUID");
         }
-        return offerId;
     }
 
     private void produceErrorEvent(String errorMessage, CallbackErrorEventTypeDto oauthTokenExpired, CredentialOffer credentialOffer) {

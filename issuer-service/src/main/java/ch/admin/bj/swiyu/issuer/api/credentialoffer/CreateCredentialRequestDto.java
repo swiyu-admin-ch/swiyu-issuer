@@ -22,7 +22,6 @@ import lombok.Data;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 @Data
 @Builder
@@ -56,6 +55,7 @@ public class CreateCredentialRequestDto {
     private Object credentialSubjectData;
 
     @JsonProperty(value = "credential_metadata")
+    @Valid
     @Schema(description = """
             Various metadata to be used for credential creation.
             """,
@@ -65,7 +65,7 @@ public class CreateCredentialRequestDto {
                         "deferred": false
                     }
                     """)
-    private Map<String, Object> credentialMetadata;
+    private CredentialOfferMetadataDto credentialMetadata;
 
     /**
      * Validitiy how long the offer should be usable.
@@ -73,6 +73,10 @@ public class CreateCredentialRequestDto {
     @JsonProperty(value = "offer_validity_seconds")
     @Schema(description = "how long the offer should be usable in seconds. Example is 1 Day.", example = "86400")
     private int offerValiditySeconds;
+
+    @JsonProperty(value = "deferred_offer_validity_seconds")
+    @Schema(description = "how long the offer should be valid after it reached the deferred state in seconds. Example is 7 Days.", example = "604800")
+    private int deferredOfferValiditySeconds;
 
     /**
      * <a href="https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp">XMLSchema
@@ -100,6 +104,11 @@ public class CreateCredentialRequestDto {
     @JsonProperty(value = "status_lists")
     @ArraySchema(arraySchema = @Schema(description = "List of URIs of the status lists to be used with the credential. Status Lists must be initialized. Can provide multiple status lists to have multiple status sources.", example = "[\"https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt\"]"))
     private List<String> statusLists;
+    @Schema(description = "Optional Parameter to override configured parameters, such as the DID used or the HSM key used in singing the request object")
+    @Valid
+    @Nullable
+    @JsonProperty("configuration_override")
+    private ConfigurationOverrideDto configurationOverride;
 
     public List<String> getStatusLists() {
         if (statusLists == null) {
@@ -107,11 +116,5 @@ public class CreateCredentialRequestDto {
         }
         return statusLists;
     }
-
-    @Schema(description = "Optional Parameter to override configured parameters, such as the DID used or the HSM key used in singing the request object")
-    @Valid
-    @Nullable
-    @JsonProperty("configuration_override")
-    private ConfigurationOverrideDto configurationOverride;
 
 }

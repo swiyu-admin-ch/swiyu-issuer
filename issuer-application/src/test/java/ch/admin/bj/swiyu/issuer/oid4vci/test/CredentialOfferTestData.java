@@ -16,8 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static java.util.Objects.nonNull;
-
 @UtilityClass
 public class CredentialOfferTestData {
 
@@ -26,15 +24,19 @@ public class CredentialOfferTestData {
     }
 
     public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, ConfigurationOverride override) {
-        return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), null, override);
+        return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), null, override, null);
     }
 
     public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Instant validFrom, Instant validUntil) {
         return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, null);
     }
 
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Map<String, Object> metadata) {
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, CredentialOfferMetadata metadata) {
         return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), metadata);
+    }
+
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, CredentialOfferMetadata metadata, Integer deferredExpirationInSeconds) {
+        return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), metadata, null, deferredExpirationInSeconds);
     }
 
     public static StatusList createStatusList() {
@@ -53,8 +55,8 @@ public class CredentialOfferTestData {
                                                   String metadataId,
                                                   Instant validFrom,
                                                   Instant validUntil,
-                                                  Map<String, Object> credentialMetadata) {
-        return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, credentialMetadata, null);
+                                                  CredentialOfferMetadata credentialMetadata) {
+        return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, credentialMetadata, null, null);
     }
 
     public static CredentialOffer createTestOffer(UUID preAuthCode,
@@ -62,18 +64,19 @@ public class CredentialOfferTestData {
                                                   String metadataId,
                                                   Instant validFrom,
                                                   Instant validUntil,
-                                                  Map<String, Object> credentialMetadata,
-                                                  ConfigurationOverride override) {
-        Map<String, Object> defaultCredentialMetadata = Map.of("vct#integrity", "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=");
+                                                  CredentialOfferMetadata credentialMetadata,
+                                                  ConfigurationOverride override,
+                                                  Integer deferredExpirationInSeconds) {
         HashMap<String, Object> offerData = new HashMap<>();
         offerData.put("data", new GsonBuilder().create().toJson(addIllegalClaims(getUniversityCredentialSubjectData())));
         return CredentialOffer.builder()
                 .credentialStatus(status)
                 .metadataCredentialSupportedId(List.of(metadataId))
                 .offerData(offerData)
-                .credentialMetadata(nonNull(credentialMetadata) ? credentialMetadata : defaultCredentialMetadata)
+                .credentialMetadata(credentialMetadata)
                 .accessToken(UUID.randomUUID())
                 .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .deferredOfferValiditySeconds(deferredExpirationInSeconds)
                 .nonce(UUID.randomUUID())
                 .preAuthorizedCode(preAuthCode)
                 .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())

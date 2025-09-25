@@ -11,7 +11,8 @@ import jakarta.validation.constraints.NotBlank;
  * @param proofs
  * @param credentialResponseEncryption spec: <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-request">...</a>
  */
-public record CredentialRequestDtoV2(
+@Schema(name = "CredentialEndpointRequestV2", description = "Request to the Credential Endpoint as defined in OID4VCI 1.0 specification")
+public record CredentialEndpointRequestDtoV2(
 
         @NotBlank
         @JsonProperty("credential_configuration_id")

@@ -107,7 +107,7 @@ class IssuanceControllerIT {
         return CredentialOffer.builder().credentialStatus(status)
                 .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
                 .offerData(offerData)
-                .credentialMetadata(new HashMap<>())
+                .credentialMetadata(null)
                 .accessToken(UUID.randomUUID())
                 .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
@@ -125,7 +125,8 @@ class IssuanceControllerIT {
     @BeforeEach
     void setUp() throws JOSEException {
         testStatusList = saveStatusList(createStatusList());
-        var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
+        var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
         saveStatusListLinkedOffer(offer, testStatusList);
         offerId = offer.getId();
         var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);

@@ -321,6 +321,17 @@ class CredentialOfferStatusIT {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.SUSPENDED.toString()));
         }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"REVOKED", "EXPIRED", "CANCELLED"})
+        void testUpdateOfferStatusWhenSuspended_thenSuccess2(String value) throws Exception {
+
+            var vcId = testHelper.createStatusListLinkedOfferAndGetUUID();
+            testHelper.changeOfferStatus(vcId, CredentialStatusType.valueOf(value));
+
+            mvc.perform(patch(testHelper.getUpdateUrl(vcId, CredentialStatusTypeDto.ISSUED)))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
     @Nested
