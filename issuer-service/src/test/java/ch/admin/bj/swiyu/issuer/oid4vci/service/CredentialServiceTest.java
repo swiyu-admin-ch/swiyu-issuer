@@ -6,11 +6,11 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
@@ -269,7 +269,7 @@ class CredentialServiceTest {
                 new CredentialOfferMetadata(true, null, null, null),
                 UUID.randomUUID());
 
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(credentialOffer.getTransactionId());
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId());
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
@@ -298,7 +298,7 @@ class CredentialServiceTest {
                 new CredentialOfferMetadata(true, null, null, null),
                 UUID.randomUUID());
 
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(credentialOffer.getTransactionId());
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId());
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(credentialOffer));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
@@ -318,7 +318,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         UUID accessToken = UUID.randomUUID();
 
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
 
         CredentialOffer credentialOffer = getCredentialOffer(
                 CredentialStatusType.DEFERRED,
@@ -346,7 +346,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         UUID accessToken = UUID.randomUUID();
 
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
 
         CredentialOffer credentialOffer = spy(getCredentialOffer(
                 CredentialStatusType.READY,
@@ -391,7 +391,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         UUID accessToken = UUID.randomUUID();
 
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
 
         CredentialOffer credentialOffer = spy(getCredentialOffer(
                 CredentialStatusType.READY,
@@ -481,7 +481,7 @@ class CredentialServiceTest {
     @Test
     void createCredentialV2_deferred_thenSuccess() throws JsonProcessingException {
         // Arrange
-        CredentialRequestDtoV2 requestDto = mock(CredentialRequestDtoV2.class);
+        CredentialEndpointRequestDtoV2 requestDto = mock(CredentialEndpointRequestDtoV2.class);
         UUID accessToken = UUID.randomUUID();
 
         CredentialRequestClass credentialRequest = mock(CredentialRequestClass.class);
@@ -511,7 +511,7 @@ class CredentialServiceTest {
     @Test
     void createCredentialV2_nonDeferred_thenSuccess() {
         // Arrange
-        CredentialRequestDtoV2 requestDto = mock(CredentialRequestDtoV2.class);
+        CredentialEndpointRequestDtoV2 requestDto = mock(CredentialEndpointRequestDtoV2.class);
         UUID accessToken = UUID.randomUUID();
 
         CredentialRequestClass credentialRequest = mock(CredentialRequestClass.class);
@@ -578,8 +578,8 @@ class CredentialServiceTest {
                 .build();
     }
 
-    private @NotNull CredentialRequestDto getCredentialRequestDto() {
-        return new CredentialRequestDto(
+    private @NotNull CredentialEndpointRequestDto getCredentialRequestDto() {
+        return new CredentialEndpointRequestDto(
                 "vc+sd-jwt",
                 new HashMap<>(),
                 null

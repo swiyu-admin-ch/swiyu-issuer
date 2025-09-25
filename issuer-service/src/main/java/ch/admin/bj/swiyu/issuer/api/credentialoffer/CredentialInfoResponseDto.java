@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.api.credentialoffer;
 
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEndpointRequestDto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -29,7 +29,7 @@ public record CredentialInfoResponseDto(
         @JsonProperty("credential_valid_until")
         Instant credentialValidUntil,
         @JsonProperty("credential_request")
-        CredentialRequestDto credentialRequest,
+        CredentialEndpointRequestDto credentialRequest,
         @JsonProperty(value = "offer_deeplink")
         String offerDeeplink
 ) {
