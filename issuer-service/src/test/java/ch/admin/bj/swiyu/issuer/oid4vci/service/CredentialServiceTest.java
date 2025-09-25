@@ -558,7 +558,7 @@ class CredentialServiceTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(1000).getEpochSecond();
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
         var offer = getCredentialOffer(CredentialStatusType.IN_PROGRESS, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, UUID.randomUUID());
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(offer));
@@ -574,7 +574,7 @@ class CredentialServiceTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().minusSeconds(1).getEpochSecond();
-        DeferredCredentialRequestDto deferredRequest = new DeferredCredentialRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
         var offer = getCredentialOffer(CredentialStatusType.READY, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, transactionId);
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(offer));
@@ -591,7 +591,7 @@ class CredentialServiceTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(100).getEpochSecond();
-        CredentialRequestDto credentialRequestDto = getCredentialRequestDto();
+        CredentialEndpointRequestDto credentialRequestDto = getCredentialRequestDto();
         var offer = getCredentialOffer(status, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, transactionId);
 
         when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(offer));
@@ -606,7 +606,7 @@ class CredentialServiceTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(100).getEpochSecond();
-        CredentialRequestDtoV2 credentialRequestDto = getCredentialRequestDtoV2("not-test", null);
+        CredentialEndpointRequestDtoV2 credentialRequestDto = getCredentialRequestDtoV2("not-test", null);
         var offer = getCredentialOffer(CredentialStatusType.IN_PROGRESS, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, transactionId);
         var config = mock(CredentialConfiguration.class);
         when(config.getFormat()).thenReturn("vc+sd-jwt");
@@ -668,8 +668,8 @@ class CredentialServiceTest {
         );
     }
 
-    private @NotNull CredentialRequestDtoV2 getCredentialRequestDtoV2(String credentialConfigurationId, ProofsDto proofs) {
-        return new CredentialRequestDtoV2(
+    private @NotNull CredentialEndpointRequestDtoV2 getCredentialRequestDtoV2(String credentialConfigurationId, ProofsDto proofs) {
+        return new CredentialEndpointRequestDtoV2(
                 credentialConfigurationId,
                 proofs,
                 null
