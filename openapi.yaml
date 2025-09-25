@@ -229,7 +229,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateCredentialOfferRequest"
+              $ref: "#/components/schemas/CreateCredentialRequest"
         required: true
       responses:
         "404":
@@ -957,7 +957,7 @@ components:
           format: uuid
         offer_deeplink:
           type: string
-    CreateCredentialOfferRequest:
+    CreateCredentialRequest:
       type: object
       description: Initial credential creation request to start the offering process.
       properties:
@@ -1139,6 +1139,17 @@ components:
           type: string
         templated:
           type: boolean
+    ApiError:
+      description: Error response object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        detail:
+          type: string
+        trace_id:
+          type: string
     WebhookCallback:
       description: Callback transmitting information about an event which occurred.
       properties:
@@ -1158,17 +1169,6 @@ components:
         timestamp:
           type: string
           format: date-time
-    ApiError:
-      description: Error response object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-        detail:
-          type: string
-        trace_id:
-          type: string
   securitySchemes:
     bearer-jwt:
       type: http

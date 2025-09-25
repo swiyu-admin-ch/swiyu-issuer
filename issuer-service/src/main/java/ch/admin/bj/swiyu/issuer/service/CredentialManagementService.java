@@ -83,7 +83,7 @@ public class CredentialManagementService {
     }
 
     @Transactional
-    public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(@Valid CreateCredentialOfferRequestDto request) {
+    public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(@Valid CreateCredentialRequestDto request) {
         var credential = this.createCredentialOffer(request);
         validateCredentialOffer(credential);
         var offerLinkString = this.getOfferDeeplinkFromCredential(credential);
@@ -263,7 +263,7 @@ public class CredentialManagementService {
                 credentialOfferString);
     }
 
-    private CredentialOffer createCredentialOffer(CreateCredentialOfferRequestDto requestDto) {
+    private CredentialOffer createCredentialOffer(CreateCredentialRequestDto requestDto) {
         var expiration = Instant.now().plusSeconds(requestDto.getOfferValiditySeconds() > 0
                 ? requestDto.getOfferValiditySeconds()
                 : applicationProperties.getOfferValidity());
@@ -318,7 +318,7 @@ public class CredentialManagementService {
     /**
      * The issuer did (iss) of VCs and the linked status lists have to be the same or verifications will fail.
      */
-    private void ensureMatchingIssuerDids(CreateCredentialOfferRequestDto requestDto, List<StatusList> statusLists) {
+    private void ensureMatchingIssuerDids(CreateCredentialRequestDto requestDto, List<StatusList> statusLists) {
         // Ensure that chosen stats lists issuer dids match the vc issuer did
         var override = requestDto.getConfigurationOverride();
         String issuerDid;
