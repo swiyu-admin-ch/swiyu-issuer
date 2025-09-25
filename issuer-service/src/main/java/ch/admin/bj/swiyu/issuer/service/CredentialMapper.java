@@ -58,6 +58,7 @@ public class CredentialMapper {
             case INVALID_ENCRYPTION_PARAMETERS -> CredentialRequestErrorDto.INVALID_ENCRYPTION_PARAMETERS;
             case ISSUANCE_PENDING -> CredentialRequestErrorDto.ISSUANCE_PENDING;
             case INVALID_TRANSACTION_ID -> CredentialRequestErrorDto.INVALID_TRANSACTION_ID;
+            case CREDENTIAL_REQUEST_DENIED -> CredentialRequestErrorDto.CREDENTIAL_REQUEST_DENIED;
         };
     }
 }

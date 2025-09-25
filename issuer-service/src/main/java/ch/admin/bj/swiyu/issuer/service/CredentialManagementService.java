@@ -24,6 +24,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -125,7 +126,7 @@ public class CredentialManagementService {
         var storedCredentialOffer = getCredentialForUpdate(credentialId);
 
         // Check if is deferred credential and in deferred state
-        if (!storedCredentialOffer.isDeferred()
+        if (!storedCredentialOffer.isDeferredOffer()
                 && storedCredentialOffer.getCredentialStatus() == CredentialStatusType.DEFERRED) {
             throw new BadRequestException(
                     "Credential is either not deferred or has an incorrect status, cannot update offer data");
@@ -184,12 +185,8 @@ public class CredentialManagementService {
         if ("vc+sd-jwt".equals(credentialConfiguration.getFormat())) {
             var offerData = dataIntegrityService.getVerifiedOfferData(credentialOffer.getOfferData(),
                     credentialOffer.getId());
-            if (offerData == null || offerData.isEmpty()) {
-                if (credentialOffer.isDeferred()) {
-                    // Data will be provided during issuance process when going from DEFERRED to
-                    // READY state
-                    return;
-                }
+
+            if (CollectionUtils.isEmpty(offerData) && !credentialOffer.isDeferredOffer()) {
                 throw new BadRequestException("Credential claims (credential subject data) is missing!");
             }
 
@@ -293,8 +290,9 @@ public class CredentialManagementService {
                 .accessToken(UUID.randomUUID())
                 .preAuthorizedCode(UUID.randomUUID())
                 .credentialValidFrom(requestDto.getCredentialValidFrom())
+                .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
                 .credentialValidUntil(requestDto.getCredentialValidUntil())
-                .credentialMetadata(Optional.ofNullable(requestDto.getCredentialMetadata()).orElse(new HashMap<>()))
+                .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
                 .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
                 .build();
         entity = this.credentialOfferRepository.save(entity);
@@ -362,7 +360,7 @@ public class CredentialManagementService {
 
         if (newStatus == CredentialStatusType.EXPIRED) {
             credential.expire();
-        } else if (!currentStatus.isIssuedToHolder()) {
+        } else if (currentStatus.isProcessable()) {
             handlePreIssuanceStatusChange(credential, currentStatus, newStatus);
         } else {
             handlePostIssuanceStatusChange(credential, newStatus);

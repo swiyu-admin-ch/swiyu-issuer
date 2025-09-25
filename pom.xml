@@ -42,7 +42,7 @@
         <nimbus-jose-jwt.version>9.40</nimbus-jose-jwt.version>
         <bouncycastle.version>1.80</bouncycastle.version>
         <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
-        <springdoc-openapi-starter-webmvc-ui.version>2.7.0</springdoc-openapi-starter-webmvc-ui.version>
+        <springdoc-openapi-starter-webmvc-ui.version>2.8.13</springdoc-openapi-starter-webmvc-ui.version>
         <openapi-generator-maven-plugin.version>7.7.0</openapi-generator-maven-plugin.version>
         <spring-cloud-dependencies.version>2024.0.0</spring-cloud-dependencies.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
@@ -58,9 +58,28 @@
         <maven.compiler.target>21</maven.compiler.target>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- fix for CVE-2025-41248 check again once spring-boot-starter-parent 3.4.10 -->
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-core</artifactId>
+                <version>6.4.10</version>
+            </dependency>
+            <!-- end fix -->
+
+            <!-- fix for CVE-2025-41249 check again once spring-boot-starter-parent 3.4.10 -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>6.2.11</version>
+            </dependency>
+            <!-- end fix -->
+        </dependencies>
+    </dependencyManagement>
+
     <build>
         <plugins>
-
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -73,7 +92,16 @@
                             <goal>prepare-agent-integration</goal>
                         </goals>
                     </execution>
+                    <!-- Generate module jacoco.xml reports in verify phase -->
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
                 </executions>
+
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -83,7 +111,11 @@
                     <printFailingErrors>true</printFailingErrors>
                     <linkXRef>false</linkXRef>
                     <failOnViolation>true</failOnViolation>
-                    <failurePriority>3</failurePriority>
+                    <failurePriority>2</failurePriority>
+                    <rulesets>
+                        <ruleset>.github/rulesets/java/pmd_omni_ruleset.xml</ruleset>
+                    </rulesets>
+                    <includeTests>false</includeTests>
                 </configuration>
             </plugin>
         </plugins>

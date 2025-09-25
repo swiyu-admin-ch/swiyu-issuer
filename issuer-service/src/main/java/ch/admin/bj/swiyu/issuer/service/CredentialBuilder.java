@@ -8,8 +8,8 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredDataDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
@@ -92,13 +92,13 @@ public abstract class CredentialBuilder {
                     .map(CredentialObjectDtoV2::new)
                     .toList());
         }
-        var credentialResponseDtoV2 = new CredentialResponseDtoV2(credentials, null, null);
+        var credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(credentials, null, null);
 
         return buildEnvelopeDto(credentialResponseDtoV2);
     }
 
     public CredentialEnvelopeDto buildDeferredCredentialV2(UUID transactionId) {
-        var credentialResponseDtoV2 = new CredentialResponseDtoV2(null, transactionId.toString(),
+        var credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(null, transactionId.toString(),
                 applicationProperties.getMinDeferredOfferIntervalSeconds());
 
         return buildEnvelopeDto(credentialResponseDtoV2, HttpStatus.ACCEPTED);
@@ -139,7 +139,10 @@ public abstract class CredentialBuilder {
      * @return the updated CredentialBuilder instance.
      */
     public CredentialBuilder holderBindings(List<String> holderKeys) {
-        this.holderBindings = holderKeys.stream().map(DidJwk::createFromJsonString).toList();
+
+        this.holderBindings = !CollectionUtils.isEmpty(holderKeys)
+                ? holderKeys.stream().map(DidJwk::createFromJsonString).toList()
+                : List.of();
         return this;
     }
 

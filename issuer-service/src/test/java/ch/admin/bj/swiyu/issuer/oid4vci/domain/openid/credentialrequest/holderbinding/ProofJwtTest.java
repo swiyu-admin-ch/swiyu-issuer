@@ -157,7 +157,7 @@ class ProofJwtTest {
                     put("data", "data");
                     put("otherStuff", "data");
                 }},
-                new HashMap<>(),
+                null,
                 UUID.randomUUID(),
                 null,
                 null,
@@ -167,6 +167,7 @@ class ProofJwtTest {
                 nonce,
                 UUID.randomUUID(),
                 120L,
+                120,
                 Instant.now(),
                 Instant.now(),
                 null,

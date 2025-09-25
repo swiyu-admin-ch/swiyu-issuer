@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added new `vct_metadata_uri`, `vct_metadata_uri#integrity` fields to CredentialOfferMetadataDto which are then added
+  to the credential claims
 - Added WebhookCallbackDto to openapi config schemas.
 - Added new environment variable `URL_REWRITE_MAPPING` to allow rewriting of URLs to support the check of
   key-attestation
@@ -20,16 +22,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the deferred credential endpoint which is
   defined [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin).
   These endpoints can be used by setting the custom header `SWIYU-API-Version=2`. These endpoints are not yet pentested.
+- Added new error code `CREDENTIAL_REQUEST_DENIED` to indicate that the credential request was denied by the
+  issuer and the wallet should not retry.
 
 ### Changed
 
 - Changed the `didresolver` version from 2.0.1 to 2.1.3.
 - Updated ApiErrorDto and reused it for every error response. This allows for a more consistent error
   response structure.
+- Rename of
+    - `CreateCredentialRequestDto` to `CredentialEndpointRequestDto` (without dto in openapi schema name)
+    - `CredentialRequestDtoV2` to `CredentialEndpointRequestDtoV2` (without dto in openapi schema name)
+    - `CredentialResponseDto` to `CredentialEndpointResponseDto` (without dto in openapi schema name)
+    - `CredentialResponseDtoV2` to `CredentialEndpointResponseDtoV2` (without dto in openapi schema name)
+      to fix inconsistent openapi definition.
 
 ### Fixed
 
 - Fixed offers in status `DEFERRED` or `READY` expire when the `offer_expiration_timestamp` has passed.
+- `SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW` is now in the application.yaml set to true, as advertised as
+  default behaviour in the readme.
 
 ## 2.0.0
 

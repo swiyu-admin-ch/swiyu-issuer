@@ -12,8 +12,8 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
-@Schema(name = "DeferredCredentialRequest")
-public record DeferredCredentialRequestDto(
+@Schema(name = "DeferredCredentialEndpointRequest", description = "Request to the deferred credential endpoint.")
+public record DeferredCredentialEndpointRequestDto(
         @NotNull
         @JsonProperty("transaction_id")
         @Schema(description = "Id received from the create credential request for the deferred flow.")

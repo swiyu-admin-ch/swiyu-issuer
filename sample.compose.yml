@@ -20,7 +20,7 @@ services:
       - db_data:/var/lib/postgresql/data
 
   swiyu-issuer-service:
-    image: ghcr.io/swiyu-admin-ch/eidch-swiyu-issuer-service:latest
+    image: ghcr.io/swiyu-admin-ch/swiyu-issuer:latest
     environment:
       EXTERNAL_URL: ${EXTERNAL_URL}
       SPRING_APPLICATION_NAME: ${SPRING_APPLICATION_NAME}
@@ -40,7 +40,7 @@ services:
       SWIYU_STATUS_REGISTRY_API_URL: ${SWIYU_STATUS_REGISTRY_API_URL}
 
       # Default settings for the application. Only change these if you know what you are doing
-      LOGGING_LEVEL_CH_ADMIN_BIT_EID: DEBUG
+      LOGGING_LEVEL_CH_ADMIN_BJ_SWIYU: DEBUG
       SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW: "true"
 
       # Default settings for the application. Only change these if you know what you are doing
@@ -71,13 +71,13 @@ configs:
     content: |
       {
         "issuer": "${EXTERNAL_URL}",
-        "token_endpoint": "${EXTERNAL_URL}/api/token"
+        "token_endpoint": "${EXTERNAL_URL}/oid4vci/api/token"
       }
   issuer_metadata:
     content: |
       {
         "credential_issuer": "${EXTERNAL_URL}",
-        "credential_endpoint": "${EXTERNAL_URL}/api/credential",
+        "credential_endpoint": "${EXTERNAL_URL}/oid4vci/api/credential",
         "version": "1.0",
         "display": [
           {

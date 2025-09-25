@@ -32,14 +32,29 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: 'maven'
-      - name: Build with Maven
-        run: mvn --batch-mode clean generate-resources install
+      - name: Build & test with Maven (produce JaCoCo)
+        run: mvn --batch-mode clean verify -DskipTests=false
+      - name: Upload JaCoCo reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-reports
+          path: |
+            verifier-service/target/site/jacoco/jacoco.xml
+            verifier-service/target/site/jacoco/index.html
+            verifier-application/target/site/jacoco/jacoco.xml
+            verifier-application/target/site/jacoco/index.html
+
+      - name: Setup Node.js (for coverage summary script)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Add coverage to summary
+        run: node .github/scripts/coverage-summary.js
         # Note: codeQL MUST be after the compile step
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:java"
-
       - name: Run PMD static analysis
         uses: pmd/pmd-github-action@v2
         id: pmd

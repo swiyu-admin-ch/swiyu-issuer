@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
@@ -94,7 +95,7 @@ public class CredentialOffer {
      * For example vct#integrity for SD-JWT VC.
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> credentialMetadata;
+    private CredentialOfferMetadata credentialMetadata;
 
     /**
      * Value used for the oid bearer token given to the holder
@@ -141,7 +142,12 @@ public class CredentialOffer {
      */
     private UUID preAuthorizedCode;
 
+/**
+ * Timestamp after which the credential offer or the deferred credential offer will be regarded as expired.
+ */
     private long offerExpirationTimestamp;
+
+    private Integer deferredOfferValiditySeconds;
 
     private Instant credentialValidFrom;
 
@@ -248,13 +254,23 @@ public class CredentialOffer {
                                CredentialRequestClass credentialRequest,
                                List<String> holderPublicKey,
                                List<String> keyAttestationJWTs,
-                               ClientAgentInfo clientAgentInfo) {
+                               ClientAgentInfo clientAgentInfo,
+                               ApplicationProperties applicationProperties) {
+        
+        var expiration = Instant.now().plusSeconds(nonNull(deferredOfferValiditySeconds) && deferredOfferValiditySeconds > 0
+                ? deferredOfferValiditySeconds
+                : applicationProperties.getDeferredOfferValiditySeconds());
+
         this.credentialStatus = CredentialStatusType.DEFERRED;
         this.credentialRequest = credentialRequest;
         this.transactionId = transactionId;
         this.holderJWKs = !holderPublicKey.isEmpty() ? holderPublicKey : null;
         this.clientAgentInfo = clientAgentInfo;
         this.keyAttestations = keyAttestationJWTs;
+
+        // update expiration for deferred flow
+        this.offerExpirationTimestamp = expiration.getEpochSecond();
+
         log.info("Deferred credential response for offer {}. Management-ID is {} and status is {}. ",
                 this.metadataCredentialSupportedId, this.id, this.credentialStatus);
     }
@@ -270,11 +286,12 @@ public class CredentialOffer {
         return Instant.now().isAfter(Instant.ofEpochSecond(this.tokenExpirationTimestamp));
     }
 
-    public boolean isDeferred() {
-        if (credentialMetadata == null) {
-            return false;
-        }
-        return nonNull(credentialMetadata.get("deferred")) && (boolean) credentialMetadata.get("deferred");
+    public boolean isDeferredOffer() {
+        return credentialMetadata != null && Boolean.TRUE.equals(credentialMetadata.deferred());
+    }
+
+    public boolean isProcessableOffer() {
+        return this.credentialStatus.isProcessable();
     }
 
     @NotNull

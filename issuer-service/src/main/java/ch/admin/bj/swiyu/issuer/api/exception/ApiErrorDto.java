@@ -23,4 +23,6 @@ public class ApiErrorDto {
     String errorDetails;
     @JsonIgnore
     HttpStatus status;
+    @JsonProperty("trace_id")
+    String traceId;
 }

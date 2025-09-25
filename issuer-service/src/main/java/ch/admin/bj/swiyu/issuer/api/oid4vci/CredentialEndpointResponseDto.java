@@ -7,8 +7,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Schema(name = "CredentialResponse")
-public record CredentialResponseDto(
+@Schema(name = "CredentialEndpointResponse")
+public record CredentialEndpointResponseDto(
         String format,
         String credential,
         @JsonProperty("transaction_id")

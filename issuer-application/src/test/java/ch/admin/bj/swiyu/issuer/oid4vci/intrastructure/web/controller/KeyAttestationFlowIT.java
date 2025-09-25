@@ -4,16 +4,16 @@ import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
-import ch.admin.bj.swiyu.issuer.service.DidKeyResolverApiClient;
 import ch.admin.bj.swiyu.issuer.service.DidTdwKeyResolver;
-import ch.admin.bj.swiyu.issuer.service.webhook.WebhookService;
+import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
+import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
+import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -32,7 +32,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -44,7 +43,9 @@ import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.prepareAttestedVC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -69,22 +70,16 @@ class KeyAttestationFlowIT {
 
     @Autowired
     ApplicationProperties applicationProperties;
+    @MockitoBean
+    AsyncCredentialEventHandler testEventListener;
     @Autowired
     private DidTdwKeyResolver didTdwKeyResolver;
-    @Autowired
-    private DidKeyResolverApiClient didKeyResolverApiClient;
-
-    @MockitoSpyBean
-    private WebhookService webhookService;
-
-    private CredentialOffer credentialOfferHighAttestation;
-    private CredentialOffer credentialOfferAnyAttestation;
 
     @BeforeEach
     void setUp() throws JOSEException {
         credentialOfferRepository.save(createTestOffer(testOfferNoAttestationId, CredentialStatusType.OFFERED, "university_example_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
-        credentialOfferAnyAttestation = credentialOfferRepository.save(createTestOffer(testOfferAnyAttestationId, CredentialStatusType.OFFERED, "university_example_any_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
-        credentialOfferHighAttestation = credentialOfferRepository.save(createTestOffer(testOfferHighAttestationId, CredentialStatusType.OFFERED, "university_example_high_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
+        credentialOfferRepository.save(createTestOffer(testOfferAnyAttestationId, CredentialStatusType.OFFERED, "university_example_any_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
+        credentialOfferRepository.save(createTestOffer(testOfferHighAttestationId, CredentialStatusType.OFFERED, "university_example_high_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
         jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate();
     }
 
@@ -115,7 +110,7 @@ class KeyAttestationFlowIT {
         var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
         assertNotNull(result);
 
-        verify(webhookService, Mockito.times(1)).produceStateChangeEvent(credentialOfferHighAttestation.getId(), CredentialStatusType.IN_PROGRESS);
+        verify(testEventListener, Mockito.times(2)).handleStateChangeEvent(any(StateChangeEvent.class));
     }
 
     /**
@@ -130,7 +125,12 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
 
-        verify(webhookService, Mockito.times(1)).produceErrorEvent(credentialOfferHighAttestation.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, "Key attestation was invalid or not matching the attack resistance for the credential!");
+        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
+        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
+        ErrorEvent capturedEvent = errorEventCaptor.getValue();
+
+        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
+        assertEquals("Key attestation was invalid or not matching the attack resistance for the credential!", capturedEvent.errorMessage());
     }
 
     @Test
@@ -144,7 +144,12 @@ class KeyAttestationFlowIT {
         // We want the error description to be helpful telling about the current issuer and the expected issuers.
         Assertions.assertThat(response.get("error_description").getAsString()).contains(untrustedIssuer).contains(applicationProperties.getTrustedAttestationProviders().getFirst());
 
-        verify(webhookService, Mockito.times(1)).produceErrorEvent(credentialOfferHighAttestation.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, "Attestation has been rejected! The JWT issuer did:example:untrusted is not in the list of trusted issuers did:test:test-attestation-builder.");
+        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
+        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
+        ErrorEvent capturedEvent = errorEventCaptor.getValue();
+
+        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
+        assertEquals("Attestation has been rejected! The JWT issuer did:example:untrusted is not in the list of trusted issuers did:test:test-attestation-builder.", capturedEvent.errorMessage());
     }
 
     @Test
@@ -157,7 +162,12 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Attestation");
 
-        verify(webhookService, Mockito.times(1)).produceErrorEvent(credentialOfferAnyAttestation.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, "Attestation was not provided!");
+        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
+        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
+        ErrorEvent capturedEvent = errorEventCaptor.getValue();
+
+        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
+        assertEquals("Attestation was not provided!", capturedEvent.errorMessage());
     }
 
     @Test
@@ -168,11 +178,16 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
 
-        verify(webhookService, Mockito.times(1)).produceErrorEvent(credentialOfferHighAttestation.getId(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, "Key attestation key is not supported or not matching the signature!");
+        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
+        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
+        ErrorEvent capturedEvent = errorEventCaptor.getValue();
+
+        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
+        assertEquals("Key attestation key is not supported or not matching the signature!", capturedEvent.errorMessage());
     }
 
     private void mockDidResolve(JWK key) {
-        Mockito.when(didTdwKeyResolver.resolveKey(Mockito.any())).thenReturn(key);
+        Mockito.when(didTdwKeyResolver.resolveKey(any())).thenReturn(key);
     }
 
     private TestInfrastructureUtils.CredentialFetchData prepareAttested(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance) throws Exception {
