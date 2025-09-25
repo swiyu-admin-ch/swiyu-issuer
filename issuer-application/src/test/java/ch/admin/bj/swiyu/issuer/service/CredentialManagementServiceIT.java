@@ -5,12 +5,13 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
@@ -20,13 +21,13 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest()
-@Nested
 @DisplayName("Credential Management Service")
 @AutoConfigureMockMvc
 @Testcontainers
+@ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
+@Transactional
 class CredentialManagementServiceIT {
-
     @Autowired
     CredentialManagementService credentialManagementService;
     @Autowired
@@ -48,26 +49,33 @@ class CredentialManagementServiceIT {
                 .map(credentialOfferRepository::save)
                 .toList();
 
-        final List<CredentialOffer> expectedExpired = allOffers.stream()
-                .filter(o ->
-                        (expirableStatus.contains(o.getCredentialStatus()) && o.getOfferExpirationTimestamp() < Instant.now().getEpochSecond())
-                                || o.getCredentialStatus() == CredentialStatusType.EXPIRED
-                )
-                .toList();
+        try {
+            final List<CredentialOffer> expectedExpired = allOffers.stream()
+                    .filter(o ->
+                            (expirableStatus.contains(o.getCredentialStatus()) &&
+                                    o.getOfferExpirationTimestamp() < Instant.now().getEpochSecond())
+                                    || o.getCredentialStatus() == CredentialStatusType.EXPIRED
+                    )
+                    .toList();
 
-        final List<CredentialOffer> expectedUnchanged = new ArrayList<>(allOffers);
-        expectedUnchanged.removeAll(expectedExpired);
+            final List<CredentialOffer> expectedUnchanged = new ArrayList<>(allOffers);
+            expectedUnchanged.removeAll(expectedExpired);
 
-        credentialManagementService.expireOffers();
+            credentialManagementService.expireOffers();
 
-        for (var offer : expectedExpired) {
-            final CredentialOffer offerUpdated = credentialOfferRepository.findById(offer.getId()).orElseThrow();
-            assertThat(offerUpdated.getCredentialStatus()).isEqualTo(CredentialStatusType.EXPIRED);
-        }
+            for (var offer : expectedExpired) {
+                final CredentialOffer offerUpdated = credentialOfferRepository.findById(offer.getId()).orElseThrow();
+                assertThat(offerUpdated.getCredentialStatus()).isEqualTo(CredentialStatusType.EXPIRED);
+            }
 
-        for (var offer : expectedUnchanged) {
-            final CredentialOffer offerUpdated = credentialOfferRepository.findById(offer.getId()).orElseThrow();
-            assertThat(offerUpdated.getCredentialStatus()).isEqualTo(offer.getCredentialStatus());
+            for (var offer : expectedUnchanged) {
+                final CredentialOffer offerUpdated = credentialOfferRepository.findById(offer.getId()).orElseThrow();
+                assertThat(offerUpdated.getCredentialStatus()).isEqualTo(offer.getCredentialStatus());
+            }
+        } finally {
+            credentialOfferRepository.deleteAllById(
+                    allOffers.stream().map(CredentialOffer::getId).toList()
+            );
         }
     }
 
