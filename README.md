@@ -236,6 +236,7 @@ The Generic Issuer service is configured using environment variables.
 | SDJWT_KEY (Optional - See HSM)       | The private key used to sign SD-JWT Credentials. The matching public key must be published on the base registry for verification. - Not recommended.                                                                                                                                     |
 | DID_SDJWT_VERIFICATION_METHOD        | The full DID with fragment as used to find the public key for sd-jwt VCs in the DID Document. eg: `did:tdw:<base-registry-url>:<issuer_uuid>#<sd-jwt-public-key-fragment>`                                                                                                               |
 | MIN_DEFERRED_OFFER_WAITING_SECONDS   | For the deferred flow. Polling interval for the deferred flow. Defines how long a wallet should wait after receiving the transaction_id until it tries to fetch the actual credential. This value will be shown as `interval` in the deferred response.                                  |
+| DEFERRED_OFFER_VALIDITY_SECONDS      | For the deferred flow. Defines how long (in seconds) an offer can be in the deferred / ready state until it is expired.                                                                                                                                                                  |
 | URL_REWRITE_MAPPING                  | Json object for url replacements during rest client call. Key represents the original url and value the one which should be used instead (e.g. {"https://mysample1.ch":"https://somethingdiffeerent1.ch"})                                                                               |
 
 #### Status List
@@ -681,10 +682,12 @@ stateDiagram-v2
     IN_PROGRESS --> fork_state
     fork_state --> DEFERRED : Credential endpoint called by Holder and (deferred = true)
     fork_state --> join_state : Non-deferred flow
-    IN_PROGRESS --> EXPIRED : Can expire on status (OFFERED, IN_PROGRESS, DEFERRED, READY)
+    IN_PROGRESS --> EXPIRED : Can expire on status (OFFERED, IN_PROGRESS)
     EXPIRED --> [*]
     DEFERRED --> READY : Status READY must be set by the business issuer
+    DEFERRED --> EXPIRED : When deferred-offer-validity-seconds passed
     READY --> join_state
+    READY --> EXPIRED : When deferred-offer-validity-seconds passed
     join_state --> ISSUED
     ISSUED --> SUSPENDED
     SUSPENDED --> ISSUED
@@ -742,7 +745,9 @@ yet pen-tested.
 ## Release Process and Versioning
 
 ### Semantic Versioning (SemVer)
-This project follows Semantic Versioning (SemVer) to make it easy to understand the impact of a software release just by looking at the version number. Our version numbers follow the format:
+
+This project follows Semantic Versioning (SemVer) to make it easy to understand the impact of a software release just by
+looking at the version number. Our version numbers follow the format:
 
 ```
 MAJOR.MINOR.PATCH[-rc][+BUILD]
@@ -751,19 +756,24 @@ MAJOR.MINOR.PATCH[-rc][+BUILD]
 ### Version Components
 
 #### MAJOR version (X.y.z)
+
 - Incremented when we Contract the system by removing, changing, or breaking existing features
 - Example: Removing a deprecated endpoint, changing response formats in a non-compatible way
 
 #### MINOR version (x.Y.z)
+
 - Incremented when we Extend the system with new, backward-compatible functionality
 - Example: Adding a new endpoint, introducing an optional field, or extending valid inputs
 
 #### PATCH version (x.y.Z)
+
 - Incremented when we Maintain the system with backward-compatible security fixes on Release Branch
 - Example: Security bug fixes or important performance optimizations needed on the last Release
 
 ### Release Candidates
-Release Candidates (RCs) are tagged as prereleases to indicate a build that is a candidate for the next official release:
+
+Release Candidates (RCs) are tagged as prereleases to indicate a build that is a candidate for the next official
+release:
 
 - Format: x.y.z-rc.N (e.g., 1.4.0-rc.1, 1.4.0-rc.2)
 - Used for testing, validation, and final quality assurance
@@ -771,16 +781,18 @@ Release Candidates (RCs) are tagged as prereleases to indicate a build that is a
 - Example: 1.4.0-rc.1, 1.4.0-rc.2 → 1.4.0 (final release)
 
 ### Release Workflow
+
 Our release process follows these principles:
 
-Version Contract: If you upgrade within the same MAJOR version, your existing integrations will continue to work (following the Expand and Migrate Pattern)
+Version Contract: If you upgrade within the same MAJOR version, your existing integrations will continue to work (
+following the Expand and Migrate Pattern)
 
 GitHub Pre-release Tagging:
+
 - All versions with -rc.N suffix (e.g., 2.1.0-rc.1) are published as GitHub Prereleases
 - Prereleases are meant for testing, staging, and final validation
 - After validation, we remove the -rc suffix and publish the official release (e.g., 2.1.0)
 - Official releases are not marked as pre-releases on GitHub
-
 
 ## Missing Features and Known Issues
 

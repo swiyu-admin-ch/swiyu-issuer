@@ -240,7 +240,7 @@ public class CredentialService {
             var transactionId = UUID.randomUUID();
 
             responseEnvelope = vcBuilder.buildDeferredCredential(transactionId);
-            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo, applicationProperties);
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);
@@ -273,7 +273,6 @@ public class CredentialService {
             holderJwkList = holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer);
         } catch (Oid4vcException e) {
             produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, credentialOffer);
-
             throw e;
         }
 
@@ -298,7 +297,7 @@ public class CredentialService {
             List<String> keyAttestationJwkList = holderJwkList.stream().map(ProofJwt::getAttestationJwt).toList();
 
             responseEnvelope = vcBuilder.buildDeferredCredentialV2(transactionId);
-            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo);
+            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo, applicationProperties);
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);
@@ -392,13 +391,11 @@ public class CredentialService {
     }
 
     private UUID uuidOrException(String preAuthCode) {
-        UUID offerId;
         try {
-            offerId = UUID.fromString(preAuthCode);
+            return UUID.fromString(preAuthCode);
         } catch (IllegalArgumentException ex) {
             throw OAuthException.invalidRequest("Expecting a correct UUID");
         }
-        return offerId;
     }
 
     private void produceErrorEvent(String errorMessage, CallbackErrorEventTypeDto oauthTokenExpired, CredentialOffer credentialOffer) {

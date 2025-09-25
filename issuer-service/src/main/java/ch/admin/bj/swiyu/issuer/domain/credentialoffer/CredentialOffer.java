@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
@@ -23,6 +24,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.util.*;
+
+import static java.util.Objects.nonNull;
 
 /**
  * Representation of a single offer and the vc which was created using that
@@ -139,7 +142,12 @@ public class CredentialOffer {
      */
     private UUID preAuthorizedCode;
 
+/**
+ * Timestamp after which the credential offer or the deferred credential offer will be regarded as expired.
+ */
     private long offerExpirationTimestamp;
+
+    private Integer deferredOfferValiditySeconds;
 
     private Instant credentialValidFrom;
 
@@ -246,13 +254,23 @@ public class CredentialOffer {
                                CredentialRequestClass credentialRequest,
                                List<String> holderPublicKey,
                                List<String> keyAttestationJWTs,
-                               ClientAgentInfo clientAgentInfo) {
+                               ClientAgentInfo clientAgentInfo,
+                               ApplicationProperties applicationProperties) {
+        
+        var expiration = Instant.now().plusSeconds(nonNull(deferredOfferValiditySeconds) && deferredOfferValiditySeconds > 0
+                ? deferredOfferValiditySeconds
+                : applicationProperties.getDeferredOfferValiditySeconds());
+
         this.credentialStatus = CredentialStatusType.DEFERRED;
         this.credentialRequest = credentialRequest;
         this.transactionId = transactionId;
         this.holderJWKs = !holderPublicKey.isEmpty() ? holderPublicKey : null;
         this.clientAgentInfo = clientAgentInfo;
         this.keyAttestations = keyAttestationJWTs;
+
+        // update expiration for deferred flow
+        this.offerExpirationTimestamp = expiration.getEpochSecond();
+
         log.info("Deferred credential response for offer {}. Management-ID is {} and status is {}. ",
                 this.metadataCredentialSupportedId, this.id, this.credentialStatus);
     }
