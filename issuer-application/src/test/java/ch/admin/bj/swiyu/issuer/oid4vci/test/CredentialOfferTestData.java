@@ -24,7 +24,7 @@ public class CredentialOfferTestData {
     }
 
     public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, ConfigurationOverride override) {
-        return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), null, override);
+        return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), null, override, null);
     }
 
     public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Instant validFrom, Instant validUntil) {
@@ -33,6 +33,10 @@ public class CredentialOfferTestData {
 
     public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, CredentialOfferMetadata metadata) {
         return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), metadata);
+    }
+
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, CredentialOfferMetadata metadata, Integer deferredExpirationInSeconds) {
+        return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), metadata, null, deferredExpirationInSeconds);
     }
 
     public static StatusList createStatusList() {
@@ -52,7 +56,7 @@ public class CredentialOfferTestData {
                                                   Instant validFrom,
                                                   Instant validUntil,
                                                   CredentialOfferMetadata credentialMetadata) {
-        return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, credentialMetadata, null);
+        return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, credentialMetadata, null, null);
     }
 
     public static CredentialOffer createTestOffer(UUID preAuthCode,
@@ -61,7 +65,8 @@ public class CredentialOfferTestData {
                                                   Instant validFrom,
                                                   Instant validUntil,
                                                   CredentialOfferMetadata credentialMetadata,
-                                                  ConfigurationOverride override) {
+                                                  ConfigurationOverride override,
+                                                  Integer deferredExpirationInSeconds) {
         HashMap<String, Object> offerData = new HashMap<>();
         offerData.put("data", new GsonBuilder().create().toJson(addIllegalClaims(getUniversityCredentialSubjectData())));
         return CredentialOffer.builder()
@@ -71,6 +76,7 @@ public class CredentialOfferTestData {
                 .credentialMetadata(credentialMetadata)
                 .accessToken(UUID.randomUUID())
                 .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .deferredOfferValiditySeconds(deferredExpirationInSeconds)
                 .nonce(UUID.randomUUID())
                 .preAuthorizedCode(preAuthCode)
                 .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())

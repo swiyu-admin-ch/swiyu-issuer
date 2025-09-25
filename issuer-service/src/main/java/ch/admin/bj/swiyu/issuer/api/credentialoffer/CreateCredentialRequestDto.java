@@ -74,6 +74,10 @@ public class CreateCredentialRequestDto {
     @Schema(description = "how long the offer should be usable in seconds. Example is 1 Day.", example = "86400")
     private int offerValiditySeconds;
 
+    @JsonProperty(value = "deferred_offer_validity_seconds")
+    @Schema(description = "how long the offer should be valid after it reached the deferred state in seconds. Example is 7 Days.", example = "604800")
+    private int deferredOfferValiditySeconds;
+
     /**
      * <a href="https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp">XMLSchema
      * dateTimeStamp</a>

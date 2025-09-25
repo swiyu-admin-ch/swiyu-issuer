@@ -24,6 +24,8 @@ public record CredentialInfoResponseDto(
         ClientAgentInfoDto clientAgentInfo,
         @JsonProperty("offer_expiration_timestamp")
         long offerExpirationTimestamp,
+        @JsonProperty("deferred_offer_expiration_seconds")
+        int deferredOfferExpirationSeconds,
         @JsonProperty("credential_valid_from")
         Instant credentialValidFrom,
         @JsonProperty("credential_valid_until")

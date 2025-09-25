@@ -29,19 +29,19 @@ import java.util.UUID;
 public class TestServiceUtils {
 
     public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk) throws JOSEException {
-        return createHolderProof(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, new Date());
+        return createHolderProof(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, Date.from(Instant.now()));
     }
 
     public static String createAttestedHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, AttackPotentialResistance attestationLevel, String attestationIssuerDid) throws JOSEException {
-        return createHolderproofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, new Date(), attestationLevel, attestationIssuerDid);
+        return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, Date.from(Instant.now()), attestationLevel, attestationIssuerDid);
     }
 
     public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, Date issueTime) throws JOSEException {
-        return createHolderproofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, issueTime, null, null);
+        return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, issueTime, null, null);
     }
 
     @NotNull
-    private static String createHolderproofJWT(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, Date issueTime, @Nullable AttackPotentialResistance attestationLevel, @Nullable String attestationIssuerDid) throws JOSEException {
+    private static String createHolderProofJWT(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, Date issueTime, @Nullable AttackPotentialResistance attestationLevel, @Nullable String attestationIssuerDid) throws JOSEException {
         JWSSigner signer = new ECDSASigner(holderPrivateKey);
 
         var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
@@ -102,6 +102,7 @@ public class TestServiceUtils {
                 nonce,
                 preAuthorizedCode,
                 offerExpirationTimestamp,
+                120,
                 Instant.now(),
                 Instant.now(),
                 new CredentialRequestClass("vc+sd-jwt", null, null),

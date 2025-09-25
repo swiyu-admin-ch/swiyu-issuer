@@ -167,6 +167,7 @@ class ProofJwtTest {
                 nonce,
                 UUID.randomUUID(),
                 120L,
+                120,
                 Instant.now(),
                 Instant.now(),
                 null,
