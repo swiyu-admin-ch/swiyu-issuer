@@ -7,8 +7,8 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialResponseDtoV2;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.DeferredDataDtoV2;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
@@ -28,6 +28,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -146,7 +147,7 @@ public class IssuanceController {
                     content = {
                             @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(oneOf = {CredentialRequestDto.class, CredentialRequestDtoV2.class})
+                                    schema = @Schema(oneOf = {CredentialEndpointRequestDto.class, CredentialEndpointRequestDtoV2.class})
                             )
                     }
             ),
@@ -156,7 +157,7 @@ public class IssuanceController {
                             description = "Credential issued successfully.",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(oneOf = {CredentialResponseDto.class, CredentialResponseDtoV2.class})
+                                    schema = @Schema(oneOf = {CredentialEndpointResponseDto.class, CredentialEndpointResponseDtoV2.class})
                             )
                     ),
                     @ApiResponse(
@@ -181,11 +182,11 @@ public class IssuanceController {
         CredentialEnvelopeDto credentialEnvelope;
 
         if (version != null && version.equals("2")) {
-            var dto = objectMapper.readValue(requestDto, CredentialRequestDtoV2.class);
+            var dto = objectMapper.readValue(requestDto, CredentialEndpointRequestDtoV2.class);
             validateRequestDtoOrThrow(dto, validator);
             credentialEnvelope = credentialService.createCredentialV2(dto, getAccessToken(bearerToken), clientInfo);
         } else {
-            var dto = objectMapper.readValue(requestDto, CredentialRequestDto.class);
+            var dto = objectMapper.readValue(requestDto, CredentialEndpointRequestDto.class);
             validateRequestDtoOrThrow(dto, validator);
 
             credentialEnvelope = credentialService.createCredential(dto, getAccessToken(bearerToken), clientInfo);
@@ -217,21 +218,13 @@ public class IssuanceController {
                             in = ParameterIn.HEADER
                     )
             },
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    content = {
-                            @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(oneOf = {DeferredCredentialRequestDto.class, DeferredDataDtoV2.class})
-                            )
-                    }
-            ),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Credential issued successfully",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(oneOf = {CredentialResponseDto.class, CredentialResponseDtoV2.class})
+                                    schema = @Schema(oneOf = {CredentialEndpointResponseDto.class, CredentialEndpointResponseDtoV2.class})
                             )
                     ),
                     @ApiResponse(
@@ -247,19 +240,14 @@ public class IssuanceController {
     @SecurityRequirement(name = "bearer-jwt")
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
                                                            @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
-                                                           @NotNull @RequestBody String deferredCredentialRequestDto) throws JsonProcessingException {
+                                                           @Valid @RequestBody DeferredCredentialEndpointRequestDto deferredCredentialRequestDto) throws JsonProcessingException {
 
         CredentialEnvelopeDto credentialEnvelope;
 
         if (version != null && version.equals("2")) {
-            var dto = objectMapper.readValue(deferredCredentialRequestDto, DeferredCredentialRequestDto.class);
-            validateRequestDtoOrThrow(dto, validator);
-            credentialEnvelope = credentialService.createCredentialFromDeferredRequestV2(dto, getAccessToken(bearerToken));
+            credentialEnvelope = credentialService.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, getAccessToken(bearerToken));
         } else {
-            var dto = objectMapper.readValue(deferredCredentialRequestDto, DeferredCredentialRequestDto.class);
-            validateRequestDtoOrThrow(dto, validator);
-
-            credentialEnvelope = credentialService.createCredentialFromDeferredRequest(dto, getAccessToken(bearerToken));
+            credentialEnvelope = credentialService.createCredentialFromDeferredRequest(deferredCredentialRequestDto, getAccessToken(bearerToken));
         }
 
         var headers = new HttpHeaders();

@@ -13,8 +13,8 @@ import jakarta.validation.constraints.Pattern;
 
 import java.util.Map;
 
-@Schema(name = "CredentialRequest")
-public record CredentialRequestDto(
+@Schema(name = "CredentialEndpointRequest", description = "Request to the Credential Endpoint as defined in OID4VCI draft 13 specification")
+public record CredentialEndpointRequestDto(
         @NotNull
         @Pattern(regexp = "^vc\\+sd-jwt$", message = "Only vc+sd-jwt format is supported")
         String format,

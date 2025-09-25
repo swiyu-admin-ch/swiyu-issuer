@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
 import ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper;
@@ -24,7 +24,7 @@ class CredentialRequestMapperTest {
     @Test
     void testToCredentialRequest() {
         // Arrange
-        CredentialRequestDto dto = mock(CredentialRequestDto.class);
+        CredentialEndpointRequestDto dto = mock(CredentialEndpointRequestDto.class);
         when(dto.proof()).thenReturn(Map.of("key", "value"));
         when(dto.format()).thenReturn("vc+sd-jwt");
         when(dto.credentialResponseEncryption()).thenReturn(null);
