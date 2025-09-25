@@ -80,7 +80,6 @@ class CredentialManagementServiceIT {
                 .nonce(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
                 .preAuthorizedCode(UUID.randomUUID())
-                .credentialMetadata(Map.of())
                 .build();
     }
 }
