@@ -414,8 +414,6 @@ the [OpenID4VCI specification](https://openid.net/specs/openid-4-verifiable-cred
 
 | Config path                                                                   | Allowed values                                                   | Required | Comment                                                   |
 |-------------------------------------------------------------------------------|------------------------------------------------------------------|----------|-----------------------------------------------------------|
-| credential_response_encryption.alg_values_supported                           | ["RSA-OAEP-256","ECDH-ES+A128KW"]                                | Yes      |                                                           |
-| credential_response_encryption.enc_values_supported                           | ["A128CBC-HS256"]                                                | Yes      |                                                           |
 | version                                                                       | "1.0"                                                            | Yes      |                                                           |
 | credential_configurations_supported.*.format                                  | "vc+sd-jwt"                                                      | Yes      |                                                           |
 | credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256"]                                                        | Yes      |                                                           |

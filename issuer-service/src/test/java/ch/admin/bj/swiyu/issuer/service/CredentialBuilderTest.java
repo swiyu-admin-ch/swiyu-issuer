@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Di
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
@@ -41,7 +41,7 @@ import static org.mockito.Mockito.*;
 class CredentialBuilderTest {
 
     private ApplicationProperties applicationProperties;
-    private IssuerMetadataTechnical issuerMetadata;
+    private IssuerMetadata issuerMetadata;
 
     private CredentialBuilder builder;
     private ObjectMapper objectMapper;
@@ -49,7 +49,7 @@ class CredentialBuilderTest {
     @BeforeEach
     void setUp() {
         applicationProperties = mock(ApplicationProperties.class);
-        issuerMetadata = mock(IssuerMetadataTechnical.class);
+        issuerMetadata = mock(IssuerMetadata.class);
         DataIntegrityService dataIntegrityService = mock(DataIntegrityService.class);
         JWSSigner signer = mock(JWSSigner.class);
         SignatureService signatureService = mock(SignatureService.class);
@@ -220,7 +220,7 @@ class CredentialBuilderTest {
 
     // subclass for testing
     static class TestCredentialBuilder extends CredentialBuilder {
-        TestCredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata, DataIntegrityService dataIntegrityService, SignatureService signatureService,
+        TestCredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadata issuerMetadata, DataIntegrityService dataIntegrityService, SignatureService signatureService,
                               StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
             super(applicationProperties, issuerMetadata, dataIntegrityService, statusListRepository, signatureService, credentialOfferStatusRepository);
         }

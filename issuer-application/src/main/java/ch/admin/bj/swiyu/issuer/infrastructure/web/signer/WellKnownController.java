@@ -7,8 +7,9 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
-import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.infrastructure.config.OpenIdIssuerApiConfiguration;
+import ch.admin.bj.swiyu.issuer.service.EncryptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.Map;
 
 /**
  * Well known Controller
@@ -38,7 +38,7 @@ import java.util.Map;
 public class WellKnownController {
 
     private final OpenIdIssuerApiConfiguration openIDConfigurationDto;
-    private final OpenIdIssuerConfiguration openIDConfiguration;
+    private final EncryptionService  encryptionService;
 
     /**
      * General information about the issuer
@@ -70,7 +70,7 @@ public class WellKnownController {
      */
     @GetMapping(value = {"/openid-credential-issuer"})
     @Operation(summary = "Information about credentials which can be issued.")
-    public Map<String, Object> getIssuerMetadata() throws IOException {
-        return openIDConfiguration.getIssuerMetadata();
+    public IssuerMetadata getIssuerMetadata() throws IOException {
+        return encryptionService.addEncryptionOptions(openIDConfigurationDto.getIssuerMetadata());
     }
 }

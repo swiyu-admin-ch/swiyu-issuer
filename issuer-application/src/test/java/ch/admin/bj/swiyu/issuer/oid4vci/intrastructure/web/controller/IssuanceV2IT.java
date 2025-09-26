@@ -5,7 +5,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.google.gson.JsonArray;
@@ -65,7 +65,7 @@ class IssuanceV2IT {
     @Autowired
     private SdjwtProperties sdjwtProperties;
     @MockitoSpyBean
-    private IssuerMetadataTechnical issuerMetadataTechnical;
+    private IssuerMetadata issuerMetadata;
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -249,7 +249,7 @@ class IssuanceV2IT {
     @Test
     void testSdJwtOffer_noBatchIssuanceAllowed_thenException() throws Exception {
 
-        doReturn(null).when(issuerMetadataTechnical).getBatchCredentialIssuance();
+        doReturn(null).when(issuerMetadata).getBatchCredentialIssuance();
 
         var numberOfProofs = 2;
 

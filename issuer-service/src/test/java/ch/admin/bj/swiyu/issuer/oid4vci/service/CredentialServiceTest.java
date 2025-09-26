@@ -22,7 +22,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
@@ -55,7 +55,7 @@ class CredentialServiceTest {
     CredentialService credentialService;
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     private StatusListService statusListService;
-    private IssuerMetadataTechnical issuerMetadata;
+    private IssuerMetadata issuerMetadata;
     private StatusList statusList;
     private CredentialFormatFactory credentialFormatFactory;
     private ApplicationProperties applicationProperties;
@@ -67,7 +67,7 @@ class CredentialServiceTest {
     void setUp() {
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         statusListService = Mockito.mock(StatusListService.class);
-        issuerMetadata = Mockito.mock(IssuerMetadataTechnical.class);
+        issuerMetadata = Mockito.mock(IssuerMetadata.class);
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);
         applicationProperties = Mockito.mock(ApplicationProperties.class);
         holderBindingService = Mockito.mock(HolderBindingService.class);

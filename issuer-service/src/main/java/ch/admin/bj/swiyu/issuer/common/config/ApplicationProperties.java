@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
 
 import java.text.ParseException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -94,6 +95,8 @@ public class ApplicationProperties {
     private int acceptableProofTimeWindowSeconds;
     @NotNull
     private int nonceLifetimeSeconds;
+    @NotNull
+    private Duration encryptionKeyRotationInterval;
 
     private String dataIntegrityJwks;
     private JWKSet dataIntegrityKeySet;

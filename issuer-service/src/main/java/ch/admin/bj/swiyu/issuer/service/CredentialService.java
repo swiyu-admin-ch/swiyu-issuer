@@ -22,7 +22,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
@@ -49,7 +49,7 @@ public class CredentialService {
 
     private final CredentialOfferRepository credentialOfferRepository;
     private final ObjectMapper objectMapper;
-    private final IssuerMetadataTechnical issuerMetadata;
+    private final IssuerMetadata issuerMetadata;
     private final CredentialFormatFactory vcFormatFactory;
     private final ApplicationProperties applicationProperties;
     private final HolderBindingService holderBindingService;

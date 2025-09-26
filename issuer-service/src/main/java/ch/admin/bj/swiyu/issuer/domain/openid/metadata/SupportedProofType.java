@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Pattern;
@@ -21,6 +22,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SupportedProofType {
     /**
      * array of case sensitive strings that identify the algorithms that the Issuer supports for this proof type.

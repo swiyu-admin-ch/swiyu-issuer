@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   These endpoints can be used by setting the custom header `SWIYU-API-Version=2`. These endpoints are not yet pentested.
 - Added new error code `CREDENTIAL_REQUEST_DENIED` to indicate that the credential request was denied by the
   issuer and the wallet should not retry.
+- Credential Request Payload encryption
 
 ### Changed
 
@@ -42,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed offers in status `DEFERRED` or `READY` expire when the `offer_expiration_timestamp` has passed.
 - `SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW` is now in the application.yaml set to true, as advertised as
   default behaviour in the readme.
+
+### Removed
+- Removed possibility of customization of payload encryption. 
+  It is now always possible for the wallet to choose payload encryption.
 
 ## 2.0.0
 

@@ -7,28 +7,30 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
-import lombok.Data;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
+@SuperBuilder
 @Data
 @Validated
-public class IssuerCredentialResponseEncryption {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@AllArgsConstructor
+@NoArgsConstructor
+public class IssuerCredentialResponseEncryption extends IssuerCredentialEncryption {
     @JsonProperty("alg_values_supported")
-    @NotNull
+    @NotEmpty
     @Valid
-    private List<@Pattern(regexp = "^(RSA-OAEP-256|ECDH-ES\\+A128KW)$") String> algValuesSupported;
-    @JsonProperty("enc_values_supported")
-    @NotNull
-    private List<@Pattern(regexp = "^A128CBC-HS256$") String> encValuesSupported;
-    @JsonProperty("encryption_required")
-    @NotNull
-    private boolean encRequired;
+    @Builder.Default
+    private List<@Pattern(regexp = "^ECDH-ES$") String> algValuesSupported = List.of("ECDH-ES");
 
     public boolean contains(CredentialResponseEncryptionClass requestedEncryption) {
         return algValuesSupported.contains(requestedEncryption.getAlg())

@@ -11,7 +11,7 @@ import ch.admin.bj.swiyu.issuer.api.type_metadata.OcaDto;
 import ch.admin.bj.swiyu.issuer.api.type_metadata.TypeMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialMetadata;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.*;
 import lombok.Data;
@@ -32,6 +32,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.ISSUER_METADATA_CACHE;
 import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.OPEN_ID_CONFIGURATION_CACHE;
 
 @Configuration
@@ -56,13 +57,18 @@ public class OpenIdIssuerApiConfiguration {
         return resourceToMappedData(openIdResource, OpenIdConfigurationDto.class);
     }
 
+    @Cacheable(ISSUER_METADATA_CACHE)
+    public IssuerMetadata getIssuerMetadata() throws IOException {
+        return resourceToMappedData(issuerMetadataResource, IssuerMetadata.class);
+    }
+
     /**
      * @return Issuer Metadata for using in creation of a vc
      * @throws IOException if the required json resource is not found
      */
     @Bean
-    public IssuerMetadataTechnical getIssuerMetadataTechnical() throws IOException {
-        var mapped = resourceToMappedData(issuerMetadataResource, IssuerMetadataTechnical.class);
+    public IssuerMetadata getIssuerMetadataBean() throws IOException {
+        var mapped = resourceToMappedData(issuerMetadataResource, IssuerMetadata.class);
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         var validator = factory.getValidator();
         var validationResult = validator.validate(mapped).stream()
@@ -75,7 +81,7 @@ public class OpenIdIssuerApiConfiguration {
     }
 
     @Bean
-    public CredentialMetadata getCredentialMetadata() throws IOException {
+    public CredentialMetadata getCredentialMetadataBean() throws IOException {
         var builder = CredentialMetadata.builder();
 
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory();) {

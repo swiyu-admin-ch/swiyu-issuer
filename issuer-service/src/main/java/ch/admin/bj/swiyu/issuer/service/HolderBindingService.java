@@ -7,7 +7,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @AllArgsConstructor
 public class HolderBindingService {
 
-    private final IssuerMetadataTechnical issuerMetadata;
+    private final IssuerMetadata issuerMetadata;
     private final OpenIdIssuerConfiguration openIDConfiguration;
     private final NonceService nonceService;
     private final KeyAttestationService keyAttestationService;

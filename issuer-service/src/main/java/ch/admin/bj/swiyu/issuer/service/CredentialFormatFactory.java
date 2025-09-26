@@ -11,7 +11,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 public class CredentialFormatFactory {
 
     private final ApplicationProperties applicationProperties;
-    private final IssuerMetadataTechnical issuerMetadata;
+    private final IssuerMetadata issuerMetadata;
     private final DataIntegrityService dataIntegrityService;
     private final SdjwtProperties sdjwtProperties;
     private final SignatureService signatureService;

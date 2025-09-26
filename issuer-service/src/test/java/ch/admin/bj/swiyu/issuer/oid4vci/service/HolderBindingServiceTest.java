@@ -10,7 +10,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.KeyAttestationService;
@@ -29,13 +29,13 @@ import static org.mockito.Mockito.*;
 class HolderBindingServiceTest {
 
     private final String supportedCredentialId = "this-is-a-supported-credential-id";
-    private IssuerMetadataTechnical issuerMetadata;
+    private IssuerMetadata issuerMetadata;
     private NonceService nonceService;
     private HolderBindingService holderBindingService;
 
     @BeforeEach
     void setUp() {
-        issuerMetadata = mock(IssuerMetadataTechnical.class);
+        issuerMetadata = mock(IssuerMetadata.class);
         OpenIdIssuerConfiguration openIdIssuerConfiguration = mock(OpenIdIssuerConfiguration.class);
         nonceService = mock(NonceService.class);
         KeyAttestationService keyAttestationService = mock(KeyAttestationService.class);

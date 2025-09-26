@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ import java.util.Map;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Validated
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialConfiguration {
     @NotNull
     @Pattern(regexp = "^vc\\+sd-jwt$", message = "Only vc+sd-jwt format is supported")

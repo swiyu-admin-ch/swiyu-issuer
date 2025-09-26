@@ -14,7 +14,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -53,7 +53,7 @@ class SdJwtCredentialIT {
     private ApplicationProperties applicationProperties;
 
     @Autowired
-    private IssuerMetadataTechnical issuerMetadataTechnical;
+    private IssuerMetadata issuerMetadata;
 
     @Test
     void getMinimalSdJwtCredentialTestClaims_thenSuccess() {
@@ -85,7 +85,7 @@ class SdJwtCredentialIT {
         // jwt payload - required fields iss-vct-iat
         assertEquals(applicationProperties.getIssuerId(), JsonPath.read(payload, "$.iss"));
         var offerMetadataCredentialSupportId = credentialOffer.getMetadataCredentialSupportedId().getFirst();
-        assertEquals(issuerMetadataTechnical.getCredentialConfigurationById(offerMetadataCredentialSupportId).getVct(), JsonPath.read(payload, "$.vct"));
+        assertEquals(issuerMetadata.getCredentialConfigurationById(offerMetadataCredentialSupportId).getVct(), JsonPath.read(payload, "$.vct"));
         assertTrue(nonNull(JsonPath.read(payload, "$.iat")));
 
         assertFalse(vc.getContentType().isBlank());
