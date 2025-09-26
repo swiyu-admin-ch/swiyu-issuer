@@ -324,7 +324,7 @@ class CredentialOfferStatusIT {
 
         @ParameterizedTest
         @ValueSource(strings = {"REVOKED", "EXPIRED", "CANCELLED"})
-        void testUpdateOfferStatusWhenSuspended_thenSuccess2(String value) throws Exception {
+        void testUpdateOfferStatusToIssuedWhenFinal_thenReject(String value) throws Exception {
 
             var vcId = testHelper.createStatusListLinkedOfferAndGetUUID();
             testHelper.changeOfferStatus(vcId, CredentialStatusType.valueOf(value));
