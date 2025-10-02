@@ -5,3 +5,5 @@ CVE-2025-5914
 # Does not apply (directory Traversal)
 CVE-2025-6020
 CVE-2025-8941
+# Ignored because expat is not installed in the runtime image (eclipse-temurin:21-jre-ubi9-minimal)
+CVE-2025-59375
