@@ -5,10 +5,13 @@ import ch.admin.bj.swiyu.issuer.common.config.CacheConfig;
 import ch.admin.bj.swiyu.issuer.common.config.CacheCustomizer;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKey;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKeyRepository;
+import ch.admin.bj.swiyu.issuer.domain.openid.IssuerEncryptionKeyCache;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.*;
+import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
@@ -26,7 +29,6 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -36,8 +38,7 @@ public class EncryptionService {
     private final ApplicationProperties applicationProperties;
     private final EncryptionKeyRepository encryptionKeyRepository;
     private final CacheCustomizer cacheCustomizer;
-    private Map<String, Object> publicEncryptionKeyJWKSetJson;
-    private JWKSet secretEncryptionKeyJWKSet;
+    private final IssuerEncryptionKeyCache keyCache = new IssuerEncryptionKeyCache();
 
     @PostConstruct
     @Scheduled(fixedDelayString = "${application.encryption-key-rotation-interval}")
@@ -69,16 +70,59 @@ public class EncryptionService {
     @Cacheable(CacheConfig.ISSUER_METADATA_ENCRYPTION_CACHE)
     public IssuerMetadata addEncryptionOptions(IssuerMetadata issuerMetadata) {
         IssuerCredentialRequestEncryption requestEncryption = IssuerCredentialRequestEncryption.builder()
-                .jwks(publicEncryptionKeyJWKSetJson)
+                .jwks(keyCache.getPublicEncryptionKeyJWKSetJson())
                 .build();
         issuerMetadata.setRequestEncryption(requestEncryption);
         issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder().build());
         return issuerMetadata;
     }
 
+    public String decrypt(String encryptedMessage, IssuerMetadata issuerMetadata) {
+        try {
+            JWEObject encryptedJWT = JWEObject.parse(encryptedMessage);
+            JWEHeader header = encryptedJWT.getHeader();
+            validateJWEHeaders(header, issuerMetadata.getRequestEncryption());
+            JWEDecrypter decrypter = createDecrypter(header);
+            encryptedJWT.decrypt(decrypter);
+            return encryptedJWT.getPayload().toString();
+        } catch (ParseException e) {
+            throw new IllegalArgumentException("Message is not a correct JWE object", e);
+        } catch (JOSEException e) {
+            throw new IllegalArgumentException("JWE Object could not be decrypted", e);
+        }
+    }
+
+    private void validateJWEHeaders(JWEHeader header, IssuerCredentialEncryption encryptionSpec) {
+        if (encryptionSpec == null) {
+            throw new IllegalArgumentException("Encryption not supported by issuer metadata");
+        }
+        if (!encryptionSpec.getEncValuesSupported().contains(header.getEncryptionMethod().toString())) {
+            throw new IllegalArgumentException("Unsupported encryption method. Must be one of %s but was %s".formatted(encryptionSpec.getEncValuesSupported(), header.getEncryptionMethod()));
+        }
+        if (encryptionSpec.getZipValuesSupported() != null && !encryptionSpec.getZipValuesSupported().contains(header.getCompressionAlgorithm().toString())) {
+            throw new IllegalArgumentException("Unsupported compression (zip) method. Must be one of %s but was %s".formatted(encryptionSpec.getZipValuesSupported(), header.getCompressionAlgorithm()));
+        }
+    }
+
+    private JWEDecrypter createDecrypter(JWEHeader header) {
+        JWK key = keyCache.getSecretEncryptionKeyJWKSet().getKeyByKeyId(header.getKeyID());
+        if (key == null) {
+            throw new IllegalArgumentException("Unknown JWK Key Id: " + header.getKeyID());
+        }
+        if (JWEAlgorithm.Family.ECDH_ES.contains(header.getAlgorithm())) {
+            try {
+                return new ECDHDecrypter(key.toECKey());
+            } catch (JOSEException e) {
+                throw new IllegalArgumentException("Unsupported Key and Algorithm combination", e);
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported Encryption Algorithm");
+        }
+    }
+
     private void renewActiveKeySet(List<EncryptionKey> oldEncryptionKeys) {
         JWKSet activeKeySet = createEncryptionKeys();
-        publicEncryptionKeyJWKSetJson = activeKeySet.toJSONObject(true);
+        keyCache.setPublicEncryptionKeyJWKSetJson(activeKeySet.toJSONObject(true));
         List<JWK> activeKeys = new LinkedList<>(activeKeySet.getKeys());
         oldEncryptionKeys.stream()
                 .map(EncryptionKey::getJwks)
@@ -91,7 +135,7 @@ public class EncryptionService {
                 })
                 .map(JWKSet::getKeys)
                 .forEach(activeKeys::addAll);
-        secretEncryptionKeyJWKSet = new JWKSet(activeKeys);
+        keyCache.setSecretEncryptionKeyJWKSet(new JWKSet(activeKeys));
         cacheCustomizer.emptyIssuerMetadataEncryptionCache();
     }
 
@@ -110,5 +154,10 @@ public class EncryptionService {
         } catch (JOSEException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    public boolean isRequestEncryptionRequired(IssuerMetadata issuerMetadata) {
+        IssuerCredentialRequestEncryption encryptionOptions = issuerMetadata.getRequestEncryption();
+        return encryptionOptions != null && encryptionOptions.isEncRequired();
     }
 }

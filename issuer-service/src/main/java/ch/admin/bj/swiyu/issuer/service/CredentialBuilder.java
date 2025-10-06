@@ -18,6 +18,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRespon
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.encryption.CredentialResponseEncryptor;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,9 +67,10 @@ public abstract class CredentialBuilder {
     }
 
     public CredentialBuilder credentialResponseEncryption(
-            CredentialResponseEncryptionClass credentialResponseEncryption) {
-        this.credentialResponseEncryptor = new CredentialResponseEncryptor(issuerMetadata.getResponseEncryption(),
-                credentialResponseEncryption);
+            IssuerCredentialResponseEncryption offeredEncryption,
+            CredentialResponseEncryptionClass requestedEncryption) {
+        this.credentialResponseEncryptor = new CredentialResponseEncryptor(offeredEncryption,
+                requestedEncryption);
         return this;
     }
 

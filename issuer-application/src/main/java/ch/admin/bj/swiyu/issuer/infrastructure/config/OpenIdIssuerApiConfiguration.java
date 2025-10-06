@@ -32,7 +32,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.ISSUER_METADATA_CACHE;
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.ISSUER_METADATA_PARSED_CACHE;
 import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.OPEN_ID_CONFIGURATION_CACHE;
 
 @Configuration
@@ -57,7 +57,7 @@ public class OpenIdIssuerApiConfiguration {
         return resourceToMappedData(openIdResource, OpenIdConfigurationDto.class);
     }
 
-    @Cacheable(ISSUER_METADATA_CACHE)
+    @Cacheable(ISSUER_METADATA_PARSED_CACHE)
     public IssuerMetadata getIssuerMetadata() throws IOException {
         return resourceToMappedData(issuerMetadataResource, IssuerMetadata.class);
     }
@@ -84,7 +84,7 @@ public class OpenIdIssuerApiConfiguration {
     public CredentialMetadata getCredentialMetadataBean() throws IOException {
         var builder = CredentialMetadata.builder();
 
-        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory();) {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();
 
             builder.vctMetadataMap(loadMetadataFiles(applicationProperties.getVctMetadataFiles(), validator, TypeMetadataDto.class));

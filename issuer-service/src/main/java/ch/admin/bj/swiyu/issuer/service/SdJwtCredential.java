@@ -41,7 +41,14 @@ public class SdJwtCredential extends CredentialBuilder {
     private final SdjwtProperties sdjwtProperties;
 
 
-    public SdJwtCredential(ApplicationProperties applicationProperties, IssuerMetadata issuerMetadata, DataIntegrityService dataIntegrityService, SdjwtProperties sdjwtProperties, SignatureService signatureService, StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
+    public SdJwtCredential(
+            ApplicationProperties applicationProperties,
+            IssuerMetadata issuerMetadata,
+            DataIntegrityService dataIntegrityService,
+            SdjwtProperties sdjwtProperties,
+            SignatureService signatureService,
+            StatusListRepository statusListRepository,
+            CredentialOfferStatusRepository credentialOfferStatusRepository) {
         super(applicationProperties, issuerMetadata, dataIntegrityService, statusListRepository, signatureService, credentialOfferStatusRepository);
         this.sdjwtProperties = sdjwtProperties;
     }

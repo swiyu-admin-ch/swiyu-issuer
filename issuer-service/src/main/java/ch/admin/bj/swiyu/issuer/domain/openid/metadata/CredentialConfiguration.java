@@ -9,6 +9,8 @@ package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -42,6 +44,7 @@ public class CredentialConfiguration {
      * Optional
      */
     @JsonProperty("claims")
+    @Deprecated(since = "OID4VCI 1.0") // Replaced by credential_metadata.claims
     private Map<String, CredentialClaim> claims;
 
     /**
@@ -77,6 +80,15 @@ public class CredentialConfiguration {
     @Size(max = 1)
     @Valid
     private Map<@Pattern(regexp = "^jwt$", message = "Only jwt holder binding proofs are supported") String, SupportedProofType> proofTypesSupported;
+
+    @Nullable
+    @JsonProperty("display")
+    @Deprecated(since = "OID4VCI 1.0")
+    private List<MetadataCredentialDisplayInfo> display;
+
+    @Nullable
+    @JsonProperty("credential_metadata")
+    private CredentialConfigurationMetadata credentialMetadata;
 
 
     @PostConstruct

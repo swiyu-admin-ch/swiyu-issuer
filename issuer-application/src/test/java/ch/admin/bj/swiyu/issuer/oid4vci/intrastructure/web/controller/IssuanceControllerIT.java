@@ -95,6 +95,7 @@ class IssuanceControllerIT {
     @Autowired
     private NonceService nonceService;
 
+
     private static Map<String, String> getUnboundCredentialSubjectData() {
         Map<String, String> credentialSubjectData = new HashMap<>();
         credentialSubjectData.put("animal", "Tux");
@@ -404,19 +405,6 @@ class IssuanceControllerIT {
     }
 
     @Test
-    void testCredentialRequestEncryptionRSA() throws Exception {
-        RSAKey rsaJWK = new RSAKeyGenerator(2048)
-                .keyID("transportEncKeyRSA")
-                .generate();
-
-        encryptedCredentialRequestFlow(
-                JWEAlgorithm.RSA_OAEP_256,
-                EncryptionMethod.A128CBC_HS256,
-                new RSADecrypter(rsaJWK.toRSAPrivateKey()),
-                rsaJWK.toPublicJWK().toJSONString());
-    }
-
-    @Test
     void testCredentialRequestEncryptionEC() throws Exception {
 
         ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
@@ -424,8 +412,8 @@ class IssuanceControllerIT {
                 .generate();
 
         encryptedCredentialRequestFlow(
-                JWEAlgorithm.ECDH_ES_A128KW,
-                EncryptionMethod.A128CBC_HS256,
+                JWEAlgorithm.ECDH_ES,
+                EncryptionMethod.A128GCM,
                 new ECDHDecrypter(ecJWK.toECPrivateKey()),
                 ecJWK.toPublicJWK().toJSONString());
     }

@@ -84,6 +84,10 @@ public class IssuerMetadata {
     @Pattern(regexp = "^1\\.0$", message = "Only version 1.0 is supported")
     private String version;
 
+    @Nullable
+    @JsonProperty("display")
+    private List<MetadataIssuerDisplayInfo> display;
+
     public @NotNull CredentialConfiguration getCredentialConfigurationById(String credentialConfigurationSupportedId) {
         CredentialConfiguration credentialConfiguration = credentialConfigurationSupported.get(credentialConfigurationSupportedId);
         if (credentialConfiguration == null) {
@@ -91,4 +95,5 @@ public class IssuerMetadata {
         }
         return credentialConfiguration;
     }
+
 }

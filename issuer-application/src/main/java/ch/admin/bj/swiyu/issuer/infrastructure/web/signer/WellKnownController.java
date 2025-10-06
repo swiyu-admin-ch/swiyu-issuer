@@ -37,7 +37,7 @@ import java.io.IOException;
 @RequestMapping(value = {"/oid4vci/.well-known", ".well-known"})
 public class WellKnownController {
 
-    private final OpenIdIssuerApiConfiguration openIDConfigurationDto;
+    private final OpenIdIssuerApiConfiguration openIDConfiguration;
     private final EncryptionService  encryptionService;
 
     /**
@@ -48,7 +48,7 @@ public class WellKnownController {
     @GetMapping("/openid-configuration")
     @Operation(summary = "OpenID Connect information required for issuing VCs")
     public OpenIdConfigurationDto getOpenIDConfiguration() throws IOException {
-        return openIDConfigurationDto.getOpenIdConfiguration();
+        return openIDConfiguration.getOpenIdConfiguration();
     }
 
     /**
@@ -60,7 +60,7 @@ public class WellKnownController {
     @GetMapping("/oauth-authorization-server")
     @Operation(summary = "OpenID Connect information required for issuing VCs")
     public OpenIdConfigurationDto getOpenIDConfigurationForOauthAuthServer() throws IOException {
-        return openIDConfigurationDto.getOpenIdConfiguration();
+        return openIDConfiguration.getOpenIdConfiguration();
     }
 
     /**
@@ -71,6 +71,6 @@ public class WellKnownController {
     @GetMapping(value = {"/openid-credential-issuer"})
     @Operation(summary = "Information about credentials which can be issued.")
     public IssuerMetadata getIssuerMetadata() throws IOException {
-        return encryptionService.addEncryptionOptions(openIDConfigurationDto.getIssuerMetadata());
+        return encryptionService.addEncryptionOptions(openIDConfiguration.getIssuerMetadata());
     }
 }

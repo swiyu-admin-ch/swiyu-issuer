@@ -29,6 +29,7 @@ application:
     key-management-method: "key"
     status-list-size-limit: 204800 # 200KiB
   offer-expiration-interval: "PT15M"
+  encryption-key-rotation-interval: "PT15M"
   deeplink-schema: swiyu
   token-ttl: 600
   acceptable-proof-time-window-seconds: 120

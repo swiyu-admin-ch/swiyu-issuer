@@ -54,6 +54,7 @@ public class CredentialService {
     private final ApplicationProperties applicationProperties;
     private final HolderBindingService holderBindingService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final EncryptionService encryptionService;
 
     @Transactional
     public CredentialEnvelopeDto createCredential(CredentialEndpointRequestDto credentialRequestDto, String accessToken,
@@ -89,7 +90,7 @@ public class CredentialService {
                 // get first entry because we expect the list to only contain one item
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(credentialOffer.getHolderJWKs())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
@@ -116,7 +117,7 @@ public class CredentialService {
                 // get first entry because we expect the list to only contain one item
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(credentialOffer.getHolderJWKs())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelopeV2();
@@ -229,7 +230,7 @@ public class CredentialService {
                 // get first entry because we expect the list to only contain one item
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(holderPublicKeyJwkList)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId());
 
@@ -285,7 +286,7 @@ public class CredentialService {
                 // moment
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(holderPublicKeyJwkList)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId());
 
