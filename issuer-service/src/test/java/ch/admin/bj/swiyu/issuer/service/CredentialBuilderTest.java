@@ -91,7 +91,7 @@ class CredentialBuilderTest {
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
 
-        builder.credentialResponseEncryption(credentialResponseEncryption);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), credentialResponseEncryption);
 
         assertNotNull(builder.getCredentialResponseEncryptor());
     }
@@ -105,7 +105,7 @@ class CredentialBuilderTest {
         CredentialEndpointResponseDtoV2 credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(credentialObjectDtoV2, null, null);
         var expectedCredentialWrapper = objectMapper.writeValueAsString(credentialResponseDtoV2);
 
-        builder.credentialResponseEncryption(null);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
         builder.holderBindings(List.of());
         doReturn(input).when(builder).getCredential(null);
 
@@ -123,7 +123,7 @@ class CredentialBuilderTest {
 
     @Test
     void credentialOffer_multipleProofs_thenSuccess() throws JOSEException, IOException {
-        builder.credentialResponseEncryption(null);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
 
         doReturn("credential").when(builder).getCredential(null);
 
@@ -158,7 +158,7 @@ class CredentialBuilderTest {
 
     @Test
     void buildDeferredCredentialV2_thenSuccess() throws IOException {
-        builder.credentialResponseEncryption(null);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
 
         var expectedInterval = 10L;
         when(applicationProperties.getMinDeferredOfferIntervalSeconds()).thenReturn(expectedInterval);
@@ -177,7 +177,7 @@ class CredentialBuilderTest {
 
     @Test
     void buildEnvelopeDto_thenSuccess() {
-        builder.credentialResponseEncryption(null);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
         List<CredentialObjectDtoV2> credentialObjectDtoV2 = List.of(new CredentialObjectDtoV2("credential"));
         CredentialEndpointResponseDtoV2 credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(credentialObjectDtoV2, null, null);
         var response = builder.buildEnvelopeDto(credentialResponseDtoV2);
@@ -199,7 +199,7 @@ class CredentialBuilderTest {
         var jwk = createPrivateKey().toPublicJWK().toJSONObject();
         CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, "ECDH-ES+A128KW", "A128CBC-HS256");
 
-        builder.credentialResponseEncryption(encryptor);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), encryptor);
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
 

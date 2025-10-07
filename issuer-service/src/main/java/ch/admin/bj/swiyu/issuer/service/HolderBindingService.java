@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_CREDENTIAL_REQUEST;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 
 @Service
@@ -41,11 +42,14 @@ public class HolderBindingService {
         if (supportedProofTypes == null || supportedProofTypes.isEmpty()) {
             return List.of();
         }
-
-        List<ProofJwt> proofs = credentialRequest.getProofs(
-                applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                applicationProperties.getAcceptableProofTimeWindowSeconds());
-
+        List<ProofJwt> proofs;
+        try {
+            proofs = credentialRequest.getProofs(
+                    applicationProperties.getAcceptableProofTimeWindowSeconds(),
+                    applicationProperties.getAcceptableProofTimeWindowSeconds());
+        } catch (IllegalArgumentException e) {
+            throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof");
+        }
         // check if proofs requested
         if (proofs.isEmpty()) {
             throw new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential");
@@ -109,7 +113,6 @@ public class HolderBindingService {
             throw new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential");
         }
 
-        // TODO do for each proof jwt
         var requestProof = proofsJwt.getFirst();
 
         var bindingProofType = Optional.ofNullable(supportedProofTypes.get(requestProof.getProofType().toString()))

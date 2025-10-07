@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
@@ -60,8 +61,10 @@ class CredentialServiceTest {
     private CredentialFormatFactory credentialFormatFactory;
     private ApplicationProperties applicationProperties;
     private HolderBindingService holderBindingService;
+    private EncryptionService encryptionService;
     private CredentialConfiguration credentialConfiguration;
     private ApplicationEventPublisher applicationEventPublisher;
+
 
     @BeforeEach
     void setUp() {
@@ -73,7 +76,7 @@ class CredentialServiceTest {
         holderBindingService = Mockito.mock(HolderBindingService.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
-
+        encryptionService = Mockito.mock(EncryptionService.class);
         credentialService = new CredentialService(
                 credentialOfferRepository,
                 new ObjectMapper(),
@@ -81,7 +84,8 @@ class CredentialServiceTest {
                 credentialFormatFactory,
                 applicationProperties,
                 holderBindingService,
-                applicationEventPublisher
+                applicationEventPublisher,
+                encryptionService
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
@@ -101,6 +105,8 @@ class CredentialServiceTest {
 
         when(issuerMetadata.getCredentialConfigurationById("test-metadata")).thenReturn(credentialConfiguration);
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", credentialConfiguration));
+
+        when(encryptionService.addEncryptionOptions(any(IssuerMetadata.class))).thenReturn(issuerMetadata);
 
     }
 
@@ -230,7 +236,7 @@ class CredentialServiceTest {
         var sdJwtCredential = mock(SdJwtCredential.class);
         when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialResponseEncryption(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.holderBindings(anyList())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialType(anyList())).thenReturn(sdJwtCredential);
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
@@ -368,7 +374,7 @@ class CredentialServiceTest {
         var sdJwtCredential = mock(SdJwtCredential.class);
         when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialResponseEncryption(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
 
@@ -413,7 +419,7 @@ class CredentialServiceTest {
         var sdJwtCredential = mock(SdJwtCredential.class);
         when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialResponseEncryption(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
 
@@ -642,7 +648,7 @@ class CredentialServiceTest {
         SdJwtCredential vcBuilder = mock(SdJwtCredential.class);
         when(credentialFormatFactory.getFormatBuilder("test-metadata")).thenReturn(vcBuilder);
         when(vcBuilder.credentialOffer(credentialOffer)).thenReturn(vcBuilder);
-        when(vcBuilder.credentialResponseEncryption(any())).thenReturn(vcBuilder);
+        when(vcBuilder.credentialResponseEncryption(any(), any())).thenReturn(vcBuilder);
         when(vcBuilder.holderBindings(anyList())).thenReturn(vcBuilder);
         when(vcBuilder.credentialType(anyList())).thenReturn(vcBuilder);
 

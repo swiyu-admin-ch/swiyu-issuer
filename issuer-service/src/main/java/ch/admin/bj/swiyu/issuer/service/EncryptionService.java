@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.CacheConfig;
 import ch.admin.bj.swiyu.issuer.common.config.CacheCustomizer;
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKey;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKeyRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.IssuerEncryptionKeyCache;
@@ -30,6 +31,8 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 
 @Service
 @RequiredArgsConstructor
@@ -86,37 +89,37 @@ public class EncryptionService {
             encryptedJWT.decrypt(decrypter);
             return encryptedJWT.getPayload().toString();
         } catch (ParseException e) {
-            throw new IllegalArgumentException("Message is not a correct JWE object", e);
+            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Message is not a correct JWE object");
         } catch (JOSEException e) {
-            throw new IllegalArgumentException("JWE Object could not be decrypted", e);
+            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "JWE Object could not be decrypted");
         }
     }
 
     private void validateJWEHeaders(JWEHeader header, IssuerCredentialEncryption encryptionSpec) {
         if (encryptionSpec == null) {
-            throw new IllegalArgumentException("Encryption not supported by issuer metadata");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Encryption not supported by issuer metadata");
         }
         if (!encryptionSpec.getEncValuesSupported().contains(header.getEncryptionMethod().toString())) {
-            throw new IllegalArgumentException("Unsupported encryption method. Must be one of %s but was %s".formatted(encryptionSpec.getEncValuesSupported(), header.getEncryptionMethod()));
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported encryption method. Must be one of %s but was %s".formatted(encryptionSpec.getEncValuesSupported(), header.getEncryptionMethod()));
         }
         if (encryptionSpec.getZipValuesSupported() != null && !encryptionSpec.getZipValuesSupported().contains(header.getCompressionAlgorithm().toString())) {
-            throw new IllegalArgumentException("Unsupported compression (zip) method. Must be one of %s but was %s".formatted(encryptionSpec.getZipValuesSupported(), header.getCompressionAlgorithm()));
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported compression (zip) method. Must be one of %s but was %s".formatted(encryptionSpec.getZipValuesSupported(), header.getCompressionAlgorithm()));
         }
     }
 
     private JWEDecrypter createDecrypter(JWEHeader header) {
         JWK key = keyCache.getSecretEncryptionKeyJWKSet().getKeyByKeyId(header.getKeyID());
         if (key == null) {
-            throw new IllegalArgumentException("Unknown JWK Key Id: " + header.getKeyID());
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unknown JWK Key Id: " + header.getKeyID());
         }
         if (JWEAlgorithm.Family.ECDH_ES.contains(header.getAlgorithm())) {
             try {
                 return new ECDHDecrypter(key.toECKey());
             } catch (JOSEException e) {
-                throw new IllegalArgumentException("Unsupported Key and Algorithm combination", e);
+                throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Unsupported Key and Algorithm combination");
             }
         } else {
-            throw new IllegalArgumentException("Unsupported Encryption Algorithm");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported Encryption Algorithm");
         }
     }
 

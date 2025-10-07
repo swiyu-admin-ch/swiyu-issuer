@@ -6,10 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
@@ -22,6 +22,8 @@ import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 import java.util.Map;
+
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -94,7 +96,7 @@ public class CredentialConfiguration {
     @PostConstruct
     public void postConstruct() {
         if (!proofTypesSupported.isEmpty() && cryptographicBindingMethodsSupported.isEmpty()) {
-            throw new IllegalArgumentException("If proof types are supported, cryptographic binding methods must be specified as well");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "If proof types are supported, cryptographic binding methods must be specified as well");
         }
     }
 }

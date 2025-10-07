@@ -8,16 +8,16 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jose.EncryptionMethod;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWEAlgorithm;
-import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
+import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,8 +36,11 @@ import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.doReturn;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -64,6 +67,8 @@ class IssuanceV2IT {
     private ApplicationProperties applicationProperties;
     @Autowired
     private SdjwtProperties sdjwtProperties;
+    @Autowired
+    private ObjectMapper objectMapper;
     @MockitoSpyBean
     private IssuerMetadata issuerMetadata;
 
@@ -157,14 +162,25 @@ class IssuanceV2IT {
     }
 
     @Test
-    void testSdJwtOffer_withResponseEncryption_thenSuccess() throws Exception {
+    void testSdJwtOffer_withRequestAndResponseEncryption_thenSuccess() throws Exception {
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
 
+        // Fetch issuer metadata for encryption info
+        var metadata = assertDoesNotThrow(() -> objectMapper.readValue(mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), IssuerMetadata.class));
+
+        // Response Encryption
+        assertThat(metadata.getResponseEncryption()).isNotNull();
+        assertTrue(metadata.getResponseEncryption().getAlgValuesSupported().contains(JWEAlgorithm.ECDH_ES.getName()));
+        assertTrue(metadata.getResponseEncryption().getEncValuesSupported().contains(EncryptionMethod.A128GCM.getName()));
         ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
                 .keyID("transportEncKeyEC")
                 .generate();
+        String proof = TestServiceUtils.createHolderProof(jwk,
+                applicationProperties.getTemplateReplacement().get("external-url"),
+                tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
 
         var responseEncryptionJson = String.format("""
                         {
@@ -174,16 +190,32 @@ class IssuanceV2IT {
                         }
                         """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
                 ecJWK.toPublicJWK().toJSONString());
-
-        // credential_response_encryption
-        String proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"),
-                tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
         var credentialRequestString = String.format(
                 "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}",
                 "university_example_sd_jwt", responseEncryptionJson, proof);
 
-        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
+        // Request encryption
+        var requestEncryption = metadata.getRequestEncryption();
+        assertThat(requestEncryption).isNotNull();
+        assertThat(requestEncryption.getJwks()).isNotNull();
+        assertTrue(requestEncryption.getZipValuesSupported().contains(CompressionAlgorithm.DEF.getName()));
+        var jwks = assertDoesNotThrow(() -> JWKSet.parse(requestEncryption.getJwks()));
+        var requestKey = jwks.getKeys().getFirst().toECKey();
+        var requestEncryptor = assertDoesNotThrow(() -> new ECDHEncrypter(requestKey));
+        var requestJweHeader = new JWEHeader.Builder(
+                JWEAlgorithm.ECDH_ES,
+                EncryptionMethod.parse(requestEncryption.getEncValuesSupported().getFirst()))
+                    .keyID(requestKey.getKeyID())
+                    .compressionAlgorithm(CompressionAlgorithm.DEF).build();
+        var jweObject = new JWEObject(requestJweHeader, new Payload(credentialRequestString));
+        assertDoesNotThrow(() -> jweObject.encrypt(requestEncryptor));
+        var encryptedRequestMessage = assertDoesNotThrow(jweObject::serialize);
+        var response = mock.perform(post("/oid4vci/api/credential")
+                        .header("Authorization", String.format("BEARER %s", token))
+                        .header("SWIYU-API-Version", "2")
+                        .content(encryptedRequestMessage)
+                        .contentType("application/jwt") // For encrypted credential request must be application/jwt
+                )
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/jwt"))
                 .andExpect(jsonPath("$").isNotEmpty())

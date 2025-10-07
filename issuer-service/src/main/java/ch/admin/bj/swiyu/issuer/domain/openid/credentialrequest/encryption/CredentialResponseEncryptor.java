@@ -95,7 +95,7 @@ public class CredentialResponseEncryptor {
         JWK holderPublicKey = guardedParseJWK();
 
 
-        JWEHeader header = new JWEHeader(alg, enc);
+        JWEHeader header = new JWEHeader.Builder(alg, enc).compressionAlgorithm(CompressionAlgorithm.DEF).build();
         Payload payload = new Payload(oid4vciCredentialJson);
         JWEObject jwe = new JWEObject(header, payload);
         JWEEncrypter encryptor = guardedCreateEncrypter(holderPublicKey);
