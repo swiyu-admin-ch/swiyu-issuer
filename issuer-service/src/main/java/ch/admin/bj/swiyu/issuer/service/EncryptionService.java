@@ -6,7 +6,6 @@ import ch.admin.bj.swiyu.issuer.common.config.CacheCustomizer;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKey;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKeyRepository;
-import ch.admin.bj.swiyu.issuer.domain.openid.IssuerEncryptionKeyCache;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
@@ -28,9 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
 import java.time.Instant;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 
@@ -41,7 +38,6 @@ public class EncryptionService {
     private final ApplicationProperties applicationProperties;
     private final EncryptionKeyRepository encryptionKeyRepository;
     private final CacheCustomizer cacheCustomizer;
-    private final IssuerEncryptionKeyCache keyCache = new IssuerEncryptionKeyCache();
 
     @PostConstruct
     @Scheduled(fixedDelayString = "${application.encryption-key-rotation-interval}")
@@ -54,9 +50,9 @@ public class EncryptionService {
             renewActiveKeySet(encryptionKeys);
         } else {
             // We work with stale keys which are still valid but no more publicized to prevent race condition on holder binding proofs
-            Instant staleTime = Instant.now().minus(applicationProperties.getEncryptionKeyRotationInterval());
+            Instant staleTime = keyRotationInstant(Instant.now());
             // If a key has been stale for the duration a key rotation, it can be safely deleted, as all the holder binding proofs in transmission should have already arrived.
-            Instant deleteTime = staleTime.minus(applicationProperties.getEncryptionKeyRotationInterval());
+            Instant deleteTime = keyRotationInstant(staleTime);
             List<EncryptionKey> deprecatedKeys = encryptionKeys.stream().filter(encryptionKey -> encryptionKey.getCreationTimestamp().isBefore(deleteTime)).toList();
             encryptionKeyRepository.deleteAll(deprecatedKeys);
             // All keys in the database are older than 1 rotation, so no other instance has done a rotation yet.
@@ -67,19 +63,41 @@ public class EncryptionService {
         }
     }
 
+    private Instant keyRotationInstant(Instant instant) {
+        return instant.minus(applicationProperties.getEncryptionKeyRotationInterval());
+    }
+
     /**
      * Overriding issuer metadata encryption options
      */
+    @Transactional(readOnly = true)
     @Cacheable(CacheConfig.ISSUER_METADATA_ENCRYPTION_CACHE)
     public IssuerMetadata addEncryptionOptions(IssuerMetadata issuerMetadata) {
         IssuerCredentialRequestEncryption requestEncryption = IssuerCredentialRequestEncryption.builder()
-                .jwks(keyCache.getPublicEncryptionKeyJWKSetJson())
+                .jwks(getActivePublicKeys())
                 .build();
         issuerMetadata.setRequestEncryption(requestEncryption);
         issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder().build());
         return issuerMetadata;
     }
 
+    private Map<String, Object> getActivePublicKeys() {
+        List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
+        Instant staleTime = keyRotationInstant(Instant.now());
+        Optional<EncryptionKey> activeKey = allKeys.stream().filter(encryptionKey -> encryptionKey.getCreationTimestamp().isAfter(staleTime)).findFirst();
+        return activeKey.orElseThrow().getJwkSet().toJSONObject(true);
+    }
+
+    private JWKSet getActivePrivateKeys() {
+        List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
+        return new JWKSet(allKeys.stream()
+                .map(EncryptionKey::getJwkSet)
+                .map(JWKSet::getKeys)
+                .flatMap(Collection::stream)
+                .toList());
+    }
+
+    @Transactional(readOnly = true)
     public String decrypt(String encryptedMessage, IssuerMetadata issuerMetadata) {
         try {
             JWEObject encryptedJWT = JWEObject.parse(encryptedMessage);
@@ -108,7 +126,7 @@ public class EncryptionService {
     }
 
     private JWEDecrypter createDecrypter(JWEHeader header) {
-        JWK key = keyCache.getSecretEncryptionKeyJWKSet().getKeyByKeyId(header.getKeyID());
+        JWK key = getActivePrivateKeys().getKeyByKeyId(header.getKeyID());
         if (key == null) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unknown JWK Key Id: " + header.getKeyID());
         }
@@ -125,7 +143,6 @@ public class EncryptionService {
 
     private void renewActiveKeySet(List<EncryptionKey> oldEncryptionKeys) {
         JWKSet activeKeySet = createEncryptionKeys();
-        keyCache.setPublicEncryptionKeyJWKSetJson(activeKeySet.toJSONObject(true));
         List<JWK> activeKeys = new LinkedList<>(activeKeySet.getKeys());
         oldEncryptionKeys.stream()
                 .map(EncryptionKey::getJwks)
@@ -138,7 +155,6 @@ public class EncryptionService {
                 })
                 .map(JWKSet::getKeys)
                 .forEach(activeKeys::addAll);
-        keyCache.setSecretEncryptionKeyJWKSet(new JWKSet(activeKeys));
         cacheCustomizer.emptyIssuerMetadataEncryptionCache();
     }
 
