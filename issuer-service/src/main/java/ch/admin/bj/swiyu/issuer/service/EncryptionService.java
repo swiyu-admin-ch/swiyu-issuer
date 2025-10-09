@@ -98,9 +98,11 @@ public class EncryptionService {
     public IssuerMetadata addEncryptionOptions(IssuerMetadata issuerMetadata) {
         IssuerCredentialRequestEncryption requestEncryption = IssuerCredentialRequestEncryption.builder()
                 .jwks(getActivePublicKeys())
+                .encRequired(applicationProperties.isEncryptionEnforce())
                 .build();
         issuerMetadata.setRequestEncryption(requestEncryption);
         issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder()
+                .encRequired(applicationProperties.isEncryptionEnforce())
                 .build());
         return issuerMetadata;
     }

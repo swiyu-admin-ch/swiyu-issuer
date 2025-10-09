@@ -33,5 +33,5 @@ public class IssuerCredentialEncryption {
     @Schema(description = "Boolean value specifying whether the Credential Issuer requires the additional encryption on top of TLS")
     @NotNull
     @Builder.Default
-    private boolean encRequired = false;
+    private boolean encRequired;
 }

@@ -97,6 +97,7 @@ public class ApplicationProperties {
     private int nonceLifetimeSeconds;
     @NotNull
     private Duration encryptionKeyRotationInterval;
+    private boolean encryptionEnforce;
 
     private String dataIntegrityJwks;
     private JWKSet dataIntegrityKeySet;
