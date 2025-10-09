@@ -10,9 +10,20 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
+import ch.admin.bj.swiyu.issuer.service.SignatureService;
+import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.jayway.jsonpath.JsonPath;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,12 +36,17 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -54,14 +70,18 @@ class StatusListIT {
     private MockMvc mvc;
     @Autowired
     private StatusListProperties statusListProperties;
+    @Autowired
+    private StatusListRepository statusListRepository;
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
+    @MockitoBean
+    private SignatureService signatureService;
     @Mock
     private ApiClient mockApiClient;
 
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws JOSEException, KeyStrategyException {
         var statusListEntryCreationDto = new StatusListEntryCreationDto();
         statusListEntryCreationDto.setId(statusListUUID);
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
@@ -70,6 +90,10 @@ class StatusListIT {
                 .thenReturn(statusListEntryCreationDto);
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
+
+        final JWSSigner es256Signer = new ECDSASigner(new ECKeyGenerator(Curve.P_256).keyID("test-key").generate());
+        when(signatureService.createSigner(any(SignatureConfiguration.class), any(), any()))
+                .thenReturn(es256Signer);
     }
 
     @Test
@@ -93,8 +117,10 @@ class StatusListIT {
                 .andExpect(jsonPath("$.config.bits").value(bits))
                 .andReturn();
 
+        final UUID newStatusListId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
+
         // check if get info endpoint return the same values
-        mvc.perform(get(STATUS_LIST_BASE_URL + "/" + JsonPath.read(result.getResponse().getContentAsString(), "$.id")))
+        mvc.perform(get(STATUS_LIST_BASE_URL + "/" + newStatusListId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
@@ -103,6 +129,58 @@ class StatusListIT {
                 .andExpect(jsonPath("$.remainingListEntries").value(maxLength))
                 .andExpect(jsonPath("$.nextFreeIndex").value(0))
                 .andExpect(jsonPath("$.config.bits").value(bits));
+
+        final Optional<StatusList> newStatusListOpt = statusListRepository.findById(newStatusListId);
+        assertTrue(newStatusListOpt.isPresent());
+        final StatusList newStatusList = newStatusListOpt.get();
+        assertNotNull(newStatusList.getUri());
+        assertEquals(type, newStatusList.getType().toString());
+        assertEquals(maxLength, newStatusList.getMaxLength());
+        assertEquals(0, newStatusList.getNextFreeIndex());
+        assertEquals(bits, newStatusList.getConfig().get("bits"));
+        assertNull(newStatusList.getConfigurationOverride().issuerDid());
+        assertNull(newStatusList.getConfigurationOverride().verificationMethod());
+        assertNull(newStatusList.getConfigurationOverride().keyId());
+        assertNull(newStatusList.getConfigurationOverride().keyPin());
+    }
+
+    @Test
+    void createNewStatusListOverrideConfiguration_thenSuccess() throws Exception {
+        final StatusListType type = StatusListType.TOKEN_STATUS_LIST;
+        final int maxLength = 127;
+        final int bits = 4;
+        final String issuerId = "did:example:offer:override";
+        final String verificationMethod = issuerId + "#key";
+        final String keyId = "1052933";
+        final String keyPin = "209323";
+        final String payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": %s,\"key_pin\": %s}}", type, maxLength, bits, issuerId, verificationMethod, keyId, keyPin);
+
+        MvcResult result = mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        final UUID newStatusListId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
+
+        final Optional<StatusList> newStatusListOpt = statusListRepository.findById(newStatusListId);
+        assertTrue(newStatusListOpt.isPresent());
+        final StatusList newStatusList = newStatusListOpt.get();
+        assertNotNull(newStatusList.getUri());
+        assertEquals(type, newStatusList.getType());
+        assertEquals(maxLength, newStatusList.getMaxLength());
+        assertEquals(0, newStatusList.getNextFreeIndex());
+        assertEquals(bits, newStatusList.getConfig().get("bits"));
+        assertEquals(issuerId, newStatusList.getConfigurationOverride().issuerDid());
+        assertEquals(verificationMethod, newStatusList.getConfigurationOverride().verificationMethod());
+        assertEquals(keyId, newStatusList.getConfigurationOverride().keyId());
+        assertEquals(keyPin, newStatusList.getConfigurationOverride().keyPin());
+
+        verify(signatureService, atLeastOnce()).createSigner(
+                same(statusListProperties),
+                eq(keyId),
+                eq(keyPin)
+        );
     }
 
     @Test
