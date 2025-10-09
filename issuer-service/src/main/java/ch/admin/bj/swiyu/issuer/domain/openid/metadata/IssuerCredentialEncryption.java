@@ -32,6 +32,5 @@ public class IssuerCredentialEncryption {
     @JsonProperty("encryption_required")
     @Schema(description = "Boolean value specifying whether the Credential Issuer requires the additional encryption on top of TLS")
     @NotNull
-    @Builder.Default
     private boolean encRequired;
 }
