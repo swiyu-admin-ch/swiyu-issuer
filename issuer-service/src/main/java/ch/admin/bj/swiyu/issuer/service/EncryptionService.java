@@ -47,20 +47,43 @@ public class EncryptionService {
         var encryptionKeys = encryptionKeyRepository.findAll();
         if (encryptionKeys.isEmpty()) {
             // Init
-            renewActiveKeySet(encryptionKeys);
+            renewActiveKeySet();
         } else {
             // We work with stale keys which are still valid but no more publicized to prevent race condition on holder binding proofs
             Instant staleTime = keyRotationInstant(Instant.now());
             // If a key has been stale for the duration a key rotation, it can be safely deleted, as all the holder binding proofs in transmission should have already arrived.
             Instant deleteTime = keyRotationInstant(staleTime);
-            List<EncryptionKey> deprecatedKeys = encryptionKeys.stream().filter(encryptionKey -> encryptionKey.getCreationTimestamp().isBefore(deleteTime)).toList();
+            List<EncryptionKey> deprecatedKeys = encryptionKeys.stream()
+                    .filter(encryptionKey -> encryptionKey.getCreationTimestamp()
+                            .isBefore(deleteTime))
+                    .toList();
             encryptionKeyRepository.deleteAll(deprecatedKeys);
             // All keys in the database are older than 1 rotation, so no other instance has done a rotation yet.
-            boolean keyRotationRequired = encryptionKeys.stream().allMatch(encryptionKey -> encryptionKey.getCreationTimestamp().isBefore(staleTime));
+            boolean keyRotationRequired = encryptionKeys.stream()
+                    .allMatch(encryptionKey -> encryptionKey.getCreationTimestamp()
+                            .isBefore(staleTime));
             if (keyRotationRequired) {
-                renewActiveKeySet(encryptionKeys);
+                renewActiveKeySet();
             }
         }
+    }
+
+    private void renewActiveKeySet() {
+        try {
+            ECKey ephemeralEncryptionKey = new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID()
+                            .toString())
+                    .generate();
+            JWKSet jwks = new JWKSet(ephemeralEncryptionKey);
+            EncryptionKey key = EncryptionKey.builder()
+                    .id(UUID.randomUUID())
+                    .jwks(jwks.toJSONObject(false))
+                    .creationTimestamp(Instant.now())
+                    .build();
+            encryptionKeyRepository.save(key);
+        } catch (JOSEException e) {
+            throw new IllegalStateException(e);
+        }
+        cacheCustomizer.emptyIssuerMetadataEncryptionCache();
     }
 
     private Instant keyRotationInstant(Instant instant) {
@@ -77,24 +100,21 @@ public class EncryptionService {
                 .jwks(getActivePublicKeys())
                 .build();
         issuerMetadata.setRequestEncryption(requestEncryption);
-        issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder().build());
+        issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder()
+                .build());
         return issuerMetadata;
     }
 
     private Map<String, Object> getActivePublicKeys() {
         List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
         Instant staleTime = keyRotationInstant(Instant.now());
-        Optional<EncryptionKey> activeKey = allKeys.stream().filter(encryptionKey -> encryptionKey.getCreationTimestamp().isAfter(staleTime)).findFirst();
-        return activeKey.orElseThrow().getJwkSet().toJSONObject(true);
-    }
-
-    private JWKSet getActivePrivateKeys() {
-        List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
-        return new JWKSet(allKeys.stream()
-                .map(EncryptionKey::getJwkSet)
-                .map(JWKSet::getKeys)
-                .flatMap(Collection::stream)
-                .toList());
+        Optional<EncryptionKey> activeKey = allKeys.stream()
+                .filter(encryptionKey -> encryptionKey.getCreationTimestamp()
+                        .isAfter(staleTime))
+                .findFirst();
+        return activeKey.orElseThrow()
+                .getJwkSet()
+                .toJSONObject(true);
     }
 
     @Transactional(readOnly = true)
@@ -105,7 +125,8 @@ public class EncryptionService {
             validateJWEHeaders(header, issuerMetadata.getRequestEncryption());
             JWEDecrypter decrypter = createDecrypter(header);
             encryptedJWT.decrypt(decrypter);
-            return encryptedJWT.getPayload().toString();
+            return encryptedJWT.getPayload()
+                    .toString();
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Message is not a correct JWE object");
         } catch (JOSEException e) {
@@ -117,11 +138,19 @@ public class EncryptionService {
         if (encryptionSpec == null) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Encryption not supported by issuer metadata");
         }
-        if (!encryptionSpec.getEncValuesSupported().contains(header.getEncryptionMethod().toString())) {
-            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported encryption method. Must be one of %s but was %s".formatted(encryptionSpec.getEncValuesSupported(), header.getEncryptionMethod()));
+        if (!encryptionSpec.getEncValuesSupported()
+                .contains(header.getEncryptionMethod()
+                        .toString())) {
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
+                    "Unsupported encryption method. Must be one of %s but was %s".formatted(encryptionSpec.getEncValuesSupported(),
+                            header.getEncryptionMethod()));
         }
-        if (encryptionSpec.getZipValuesSupported() != null && !encryptionSpec.getZipValuesSupported().contains(header.getCompressionAlgorithm().toString())) {
-            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported compression (zip) method. Must be one of %s but was %s".formatted(encryptionSpec.getZipValuesSupported(), header.getCompressionAlgorithm()));
+        if (encryptionSpec.getZipValuesSupported() != null && !encryptionSpec.getZipValuesSupported()
+                .contains(header.getCompressionAlgorithm()
+                        .toString())) {
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
+                    "Unsupported compression (zip) method. Must be one of %s but was %s".formatted(encryptionSpec.getZipValuesSupported(),
+                            header.getCompressionAlgorithm()));
         }
     }
 
@@ -134,45 +163,22 @@ public class EncryptionService {
             try {
                 return new ECDHDecrypter(key.toECKey());
             } catch (JOSEException e) {
-                throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Unsupported Key and Algorithm combination");
+                throw new Oid4vcException(e,
+                        INVALID_ENCRYPTION_PARAMETERS,
+                        "Unsupported Key and Algorithm combination");
             }
         } else {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported Encryption Algorithm");
         }
     }
 
-    private void renewActiveKeySet(List<EncryptionKey> oldEncryptionKeys) {
-        JWKSet activeKeySet = createEncryptionKeys();
-        List<JWK> activeKeys = new LinkedList<>(activeKeySet.getKeys());
-        oldEncryptionKeys.stream()
-                .map(EncryptionKey::getJwks)
-                .map(jwksJson -> {
-                    try {
-                        return JWKSet.parse(jwksJson);
-                    } catch (ParseException e) {
-                        throw new IllegalStateException("Saved encryption keys can not be parsed", e);
-                    }
-                })
+    private JWKSet getActivePrivateKeys() {
+        List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
+        return new JWKSet(allKeys.stream()
+                .map(EncryptionKey::getJwkSet)
                 .map(JWKSet::getKeys)
-                .forEach(activeKeys::addAll);
-        cacheCustomizer.emptyIssuerMetadataEncryptionCache();
-    }
-
-    private JWKSet createEncryptionKeys() {
-        try {
-            ECKey ephemeralEncryptionKey = new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID().toString()).generate();
-            JWKSet jwks = new JWKSet(ephemeralEncryptionKey);
-            EncryptionKey key = EncryptionKey
-                    .builder()
-                    .id(UUID.randomUUID())
-                    .jwks(jwks.toJSONObject(false))
-                    .creationTimestamp(Instant.now())
-                    .build();
-            encryptionKeyRepository.save(key);
-            return jwks;
-        } catch (JOSEException e) {
-            throw new IllegalStateException(e);
-        }
+                .flatMap(Collection::stream)
+                .toList());
     }
 
     public boolean isRequestEncryptionRequired(IssuerMetadata issuerMetadata) {
