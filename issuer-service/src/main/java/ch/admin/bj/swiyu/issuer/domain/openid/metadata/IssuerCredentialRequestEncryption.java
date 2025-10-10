@@ -21,7 +21,20 @@ import java.util.Map;
 @NoArgsConstructor
 public class IssuerCredentialRequestEncryption extends IssuerCredentialEncryption {
     @JsonProperty("jwks")
-    @Schema(description = "A JSON Web Key Set that contains one or more public keys, to be used by the Wallet as an input to a key agreement for encryption of the Credential Request.")
+    @Schema(description = "A JSON Web Key Set that contains one or more public keys, to be used by the Wallet as an input to a key agreement for encryption of the Credential Request.", example = """
+            {
+              "keys": [
+                {
+                  "kty": "EC",
+                  "crv": "P-256", // The cryptographic curve
+                  "use": "sig",
+                  "alg": "ES256",
+                  "x": "Tjm2thouQXSUJSrKDyMfVGe6ZQRWqCr0UgeSbNKiNi8", // x-coordinate
+                  "y": "8BuGGu519a5xczbArHq1_iVJjGGBSlV5m_FGBJmiFtE"  // y-coordinate
+                }
+              ]
+            }
+            """)
     private Map<String, Object> jwks;
 
 
