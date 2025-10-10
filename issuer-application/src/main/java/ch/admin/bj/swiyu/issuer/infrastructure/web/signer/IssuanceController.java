@@ -152,7 +152,7 @@ public class IssuanceController {
                                     schema = @Schema(oneOf = {CredentialEndpointRequestDto.class, CredentialEndpointRequestDtoV2.class})
                             ),
                             @Content(
-                                    mediaType =  "application/jwt", // See: OID4VCI 1.0 Chapter 10
+                                    mediaType = "application/jwt", // See: OID4VCI 1.0 Chapter 10
                                     schema = @Schema(implementation = String.class, description = """
                                             An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
                                             """)
@@ -197,7 +197,7 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        if (version != null && version.equals("2")) {
+        if ("2".equals(version)) {
             var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDtoV2.class);
             validateRequestDtoOrThrow(dto, validator);
             credentialEnvelope = credentialService.createCredentialV2(dto, getAccessToken(bearerToken), clientInfo);
@@ -260,7 +260,7 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        if (version != null && version.equals("2")) {
+        if ("2".equals(version)) {
             credentialEnvelope = credentialService.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, getAccessToken(bearerToken));
         } else {
             credentialEnvelope = credentialService.createCredentialFromDeferredRequest(deferredCredentialRequestDto, getAccessToken(bearerToken));
