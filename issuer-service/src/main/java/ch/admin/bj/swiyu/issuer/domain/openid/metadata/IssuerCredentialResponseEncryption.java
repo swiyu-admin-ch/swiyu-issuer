@@ -18,6 +18,9 @@ import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+/**
+ * Issuer encryption options / requirements for the credential response (sending the VC to the holder)
+ */
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 @Data

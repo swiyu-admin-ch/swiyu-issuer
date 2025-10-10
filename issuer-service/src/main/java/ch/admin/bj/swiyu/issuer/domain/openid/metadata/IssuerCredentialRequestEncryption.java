@@ -12,6 +12,9 @@ import org.springframework.validation.annotation.Validated;
 
 import java.util.Map;
 
+/**
+ * Issuer encryption options / requirements for the credential request (holder sending proof to issuer)
+ */
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
 @Data

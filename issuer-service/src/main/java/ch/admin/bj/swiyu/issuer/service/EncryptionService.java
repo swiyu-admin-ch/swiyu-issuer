@@ -31,6 +31,9 @@ import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 
+/**
+ * Decryption Method and creation and rotation of ephemeral encryption keys
+ */
 @Service
 @RequiredArgsConstructor
 public class EncryptionService {
@@ -40,6 +43,10 @@ public class EncryptionService {
     private final CacheCustomizer cacheCustomizer;
     private final IssuerMetadata issuerMetadata;
 
+    /**
+     * Performs a key rotation for the encryption keys, replacing the currently active key set.
+     * Will keep one time unit of deprecated keys to prevent race conditions with credential requests.
+     */
     @PostConstruct
     @Scheduled(fixedDelayString = "${application.encryption-key-rotation-interval}")
     @SchedulerLock(name = "rotateEncryptionKeys")
@@ -47,8 +54,8 @@ public class EncryptionService {
     public void rotateEncryptionKeys() {
         var encryptionKeys = encryptionKeyRepository.findAll();
         if (encryptionKeys.isEmpty()) {
-            // Init
-            renewActiveKeySet();
+            // Init with a new set of encryption keys
+            createNewKeys();
         } else {
             // We work with stale keys which are still valid but no more publicized to prevent race condition on holder binding proofs
             Instant staleTime = keyRotationInstant(Instant.now());
@@ -64,13 +71,13 @@ public class EncryptionService {
                     .allMatch(encryptionKey -> encryptionKey.getCreationTimestamp()
                             .isBefore(staleTime));
             if (keyRotationRequired) {
-                renewActiveKeySet();
+                createNewKeys();
             }
         }
     }
 
     /**
-     * Overriding bean issuer metadata encryption options
+     * Overriding bean issuer metadata encryption options with supported values.
      */
     @Transactional(readOnly = true)
     @Cacheable(CacheConfig.ISSUER_METADATA_ENCRYPTION_CACHE)
@@ -86,6 +93,11 @@ public class EncryptionService {
         return issuerMetadata;
     }
 
+    /**
+     * @param encryptedMessage JWE encrypted object serialized as string
+     * @return the decrypted object
+     * @throws Oid4vcException if the object could not be decrypted
+     */
     @Transactional(readOnly = true)
     public String decrypt(String encryptedMessage) {
         try {
@@ -103,12 +115,18 @@ public class EncryptionService {
         }
     }
 
+    /**
+     * @return true, if credential requests MUST be encrypted
+     */
     public boolean isRequestEncryptionMandatory() {
         IssuerCredentialRequestEncryption encryptionOptions = issuerMetadata.getRequestEncryption();
         return encryptionOptions != null && encryptionOptions.isEncRequired();
     }
 
-    private void renewActiveKeySet() {
+    /**
+     * Creates a new ephemeral key set.
+     */
+    private void createNewKeys() {
         try {
             ECKey ephemeralEncryptionKey = new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID()
                             .toString())
@@ -130,18 +148,29 @@ public class EncryptionService {
         return instant.minus(applicationProperties.getEncryptionKeyRotationInterval());
     }
 
+    /**
+     * Get the set of currently active public keys to be used for example by the holder for credential request encryption
+     *
+     * @return a JWESet compatible Map
+     */
     private Map<String, Object> getActivePublicKeys() {
         List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
         Instant staleTime = keyRotationInstant(Instant.now());
-        Optional<EncryptionKey> activeKey = allKeys.stream()
-                .filter(encryptionKey -> encryptionKey.getCreationTimestamp()
-                        .isAfter(staleTime))
-                .findFirst();
-        return activeKey.orElseThrow()
+        // Pick newest key that is still within active window (explicit ordering to avoid relying on DB/list iteration order)
+        return allKeys.stream()
+                .filter(k -> k.getCreationTimestamp().isAfter(staleTime))
+                .max(Comparator.comparing(EncryptionKey::getCreationTimestamp))
+                .orElseThrow(() -> new IllegalStateException("No active encryption key available (rotation window exceeded)"))
                 .getJwkSet()
-                .toJSONObject(true);
+                .toJSONObject(true); // public only
     }
 
+    /**
+     * ensures the JWEHeader uses the properties required in the issuer metadata
+     *
+     * @param header         header to be validated
+     * @param encryptionSpec Credential encryption spec published in the issuer metadata
+     */
     private void validateJWEHeaders(JWEHeader header, IssuerCredentialEncryption encryptionSpec) {
         if (encryptionSpec == null) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Encryption not supported by issuer metadata");
@@ -162,6 +191,13 @@ public class EncryptionService {
         }
     }
 
+    /**
+     * Creates a nimbus JWEDecrypter using key information encoded in the JWE header
+     *
+     * @param header JWEHeader holding key information
+     * @return a JWEDecrypter compatible to the JWEHeader provided
+     * @throws Oid4vcException if an unknown key or unsupported algorithm was used in the JWEHeader
+     */
     private JWEDecrypter createDecrypter(JWEHeader header) {
         JWK key = getActivePrivateKeys().getKeyByKeyId(header.getKeyID());
         if (key == null) {
@@ -180,6 +216,11 @@ public class EncryptionService {
         }
     }
 
+    /**
+     * Get all currently valid encryption private keys. Contains the previous private key set
+     *
+     * @return JWKSet with the combined encryption private keys
+     */
     private JWKSet getActivePrivateKeys() {
         List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
         return new JWKSet(allKeys.stream()

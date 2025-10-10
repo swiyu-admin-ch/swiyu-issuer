@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 
+/**
+ * Display Object with localized name and logo including alt-text
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MetadataIssuerDisplayInfo extends MetadataDisplayInfo {

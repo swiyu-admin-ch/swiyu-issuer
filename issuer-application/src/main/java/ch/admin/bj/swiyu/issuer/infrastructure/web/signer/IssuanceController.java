@@ -58,9 +58,8 @@ import java.util.regex.Pattern;
         "and supporting deferred credential issuance (IF-111)")
 @RequestMapping(value = {"/oid4vci/api"})
 public class IssuanceController {
-    private static final String OID4VCI_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
     public static final String API_VERSION_OID4VCI_1_0 = "2";
-
+    private static final String OID4VCI_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
     private final CredentialService credentialService;
     private final NonceService nonceService;
     private final EncryptionService encryptionService;
@@ -261,7 +260,7 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        if ("2".equals(version)) {
+        if (API_VERSION_OID4VCI_1_0.equals(version)) {
             credentialEnvelope = credentialService.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, getAccessToken(bearerToken));
         } else {
             credentialEnvelope = credentialService.createCredentialFromDeferredRequest(deferredCredentialRequestDto, getAccessToken(bearerToken));

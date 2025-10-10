@@ -29,7 +29,7 @@ import java.util.Map;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Validated
-@Schema(name="IssuerMetadata", description = """
+@Schema(name = "IssuerMetadata", description = """
         The OID4VCI Credential Issuer Metadata contains information on the Credential Issuer's technical capabilities,
         supported Credentials, and (internationalized) display information.
         """)
@@ -52,6 +52,7 @@ public class IssuerMetadata {
             """)
     private String credentialEndpoint;
 
+    @Nullable
     @JsonProperty("deferred_credential_endpoint")
     private String deferredCredentialEndpoint;
 
@@ -79,8 +80,12 @@ public class IssuerMetadata {
     private IssuerCredentialResponseEncryption responseEncryption;
 
     @JsonProperty("batch_credential_issuance")
+    @Nullable
     private BatchCredentialIssuance batchCredentialIssuance;
 
+    /**
+     * swiyu Ecosystem version tag
+     */
     @JsonProperty("version")
     @NotNull
     @Pattern(regexp = "^1\\.0$", message = "Only version 1.0 is supported")
@@ -88,6 +93,7 @@ public class IssuerMetadata {
 
     @Nullable
     @JsonProperty("display")
+    @Schema(description = "Array of objects, where each object contains display properties of a Credential Issuer for a certain language")
     private List<MetadataIssuerDisplayInfo> display;
 
     public @NotNull CredentialConfiguration getCredentialConfigurationById(String credentialConfigurationSupportedId) {
