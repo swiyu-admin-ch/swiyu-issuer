@@ -55,7 +55,9 @@ public class IssuerMetadata {
     @JsonProperty("deferred_credential_endpoint")
     private String deferredCredentialEndpoint;
 
+
     @JsonProperty("notification_endpoint")
+    @Size(min = 0, max = 0, message = "Notification Endpoint is not yet supported by the issuer")
     private String notificationEndpoint;
 
     @JsonProperty("credential_configurations_supported")
