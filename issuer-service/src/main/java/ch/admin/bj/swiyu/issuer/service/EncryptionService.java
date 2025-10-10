@@ -69,6 +69,45 @@ public class EncryptionService {
         }
     }
 
+    /**
+     * Overriding bean issuer metadata encryption options
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(CacheConfig.ISSUER_METADATA_ENCRYPTION_CACHE)
+    public IssuerMetadata issuerMetadataWithEncryptionOptions() {
+        IssuerCredentialRequestEncryption requestEncryption = IssuerCredentialRequestEncryption.builder()
+                .jwks(getActivePublicKeys())
+                .encRequired(applicationProperties.isEncryptionEnforce())
+                .build();
+        issuerMetadata.setRequestEncryption(requestEncryption);
+        issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder()
+                .encRequired(applicationProperties.isEncryptionEnforce())
+                .build());
+        return issuerMetadata;
+    }
+
+    @Transactional(readOnly = true)
+    public String decrypt(String encryptedMessage) {
+        try {
+            JWEObject encryptedJWT = JWEObject.parse(encryptedMessage);
+            JWEHeader header = encryptedJWT.getHeader();
+            validateJWEHeaders(header, issuerMetadata.getRequestEncryption());
+            JWEDecrypter decrypter = createDecrypter(header);
+            encryptedJWT.decrypt(decrypter);
+            return encryptedJWT.getPayload()
+                    .toString();
+        } catch (ParseException e) {
+            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Message is not a correct JWE object");
+        } catch (JOSEException e) {
+            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "JWE Object could not be decrypted");
+        }
+    }
+
+    public boolean isRequestEncryptionMandatory() {
+        IssuerCredentialRequestEncryption encryptionOptions = issuerMetadata.getRequestEncryption();
+        return encryptionOptions != null && encryptionOptions.isEncRequired();
+    }
+
     private void renewActiveKeySet() {
         try {
             ECKey ephemeralEncryptionKey = new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID()
@@ -91,23 +130,6 @@ public class EncryptionService {
         return instant.minus(applicationProperties.getEncryptionKeyRotationInterval());
     }
 
-    /**
-     * Overriding bean issuer metadata encryption options
-     */
-    @Transactional(readOnly = true)
-    @Cacheable(CacheConfig.ISSUER_METADATA_ENCRYPTION_CACHE)
-    public IssuerMetadata issuerMetadataWithEncryptionOptions() {
-        IssuerCredentialRequestEncryption requestEncryption = IssuerCredentialRequestEncryption.builder()
-                .jwks(getActivePublicKeys())
-                .encRequired(applicationProperties.isEncryptionEnforce())
-                .build();
-        issuerMetadata.setRequestEncryption(requestEncryption);
-        issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder()
-                .encRequired(applicationProperties.isEncryptionEnforce())
-                .build());
-        return issuerMetadata;
-    }
-
     private Map<String, Object> getActivePublicKeys() {
         List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
         Instant staleTime = keyRotationInstant(Instant.now());
@@ -118,23 +140,6 @@ public class EncryptionService {
         return activeKey.orElseThrow()
                 .getJwkSet()
                 .toJSONObject(true);
-    }
-
-    @Transactional(readOnly = true)
-    public String decrypt(String encryptedMessage) {
-        try {
-            JWEObject encryptedJWT = JWEObject.parse(encryptedMessage);
-            JWEHeader header = encryptedJWT.getHeader();
-            validateJWEHeaders(header, issuerMetadata.getRequestEncryption());
-            JWEDecrypter decrypter = createDecrypter(header);
-            encryptedJWT.decrypt(decrypter);
-            return encryptedJWT.getPayload()
-                    .toString();
-        } catch (ParseException e) {
-            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Message is not a correct JWE object");
-        } catch (JOSEException e) {
-            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "JWE Object could not be decrypted");
-        }
     }
 
     private void validateJWEHeaders(JWEHeader header, IssuerCredentialEncryption encryptionSpec) {
@@ -184,8 +189,4 @@ public class EncryptionService {
                 .toList());
     }
 
-    public boolean isRequestEncryptionMandatory() {
-        IssuerCredentialRequestEncryption encryptionOptions = issuerMetadata.getRequestEncryption();
-        return encryptionOptions != null && encryptionOptions.isEncRequired();
-    }
 }

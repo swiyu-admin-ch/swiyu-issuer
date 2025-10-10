@@ -20,8 +20,8 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.assertj.core.api.Assertions.*;
 
 class EncryptionServiceTest {
     static final Duration KEY_ROTATION_INTERVAL = Duration.ofSeconds(10);
@@ -41,23 +41,11 @@ class EncryptionServiceTest {
                 new CacheCustomizer(),
                 issuerMetadata
         );
-        Mockito.when(applicationProperties.getEncryptionKeyRotationInterval()).thenReturn(KEY_ROTATION_INTERVAL);
+        Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())
+                .thenReturn(KEY_ROTATION_INTERVAL);
         // Mock @PostConstruction
         encryptionService.rotateEncryptionKeys();
     }
-
-    private void setupMockRepository() {
-        encryptionKeyTestCache = new LinkedList<>();
-        encryptionKeyRepository = Mockito.mock(EncryptionKeyRepository.class);
-        Mockito.when(encryptionKeyRepository.save(Mockito.any(EncryptionKey.class)))
-                .then(invocationOnMock -> {
-                    EncryptionKey savedObject = invocationOnMock.getArgument(0);
-                    encryptionKeyTestCache.add(savedObject);
-                    return savedObject;
-                });
-        Mockito.when(encryptionKeyRepository.findAll()).thenReturn(encryptionKeyTestCache);
-    }
-
 
     @Test
     void testIssuerMetadataWithEncryptionOptions() {
@@ -76,7 +64,8 @@ class EncryptionServiceTest {
     @Test
     void testKeyRotation() {
         encryptionService.issuerMetadataWithEncryptionOptions();
-        var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
+        var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption()
+                .getJwks()));
         triggerKeyRotation();
         encryptionService.issuerMetadataWithEncryptionOptions();
         var updatedRequestEncryption = issuerMetadata.getRequestEncryption();
@@ -85,12 +74,19 @@ class EncryptionServiceTest {
         assertThat(jwks.containsNonPublicKeys()).isFalse();
         assertThat(updatedJwks.containsNonPublicKeys()).isFalse();
 
-        var keyIds = jwks.getKeys().stream().map(JWK::getKeyID).toList();
-        var updatedKeyIds = updatedJwks.getKeys().stream().map(JWK::getKeyID).toList();
+        var keyIds = jwks.getKeys()
+                .stream()
+                .map(JWK::getKeyID)
+                .toList();
+        var updatedKeyIds = updatedJwks.getKeys()
+                .stream()
+                .map(JWK::getKeyID)
+                .toList();
         // Should not begin to have more keys
         assertEquals(keyIds.size(), updatedKeyIds.size());
         // should not have any of the same keys after rotation publicized
-        assertFalse(updatedKeyIds.stream().anyMatch(keyIds::contains));
+        assertFalse(updatedKeyIds.stream()
+                .anyMatch(keyIds::contains));
 
         var allKeys = new LinkedList<>(jwks.getKeys());
         allKeys.addAll(updatedJwks.getKeys());
@@ -103,52 +99,66 @@ class EncryptionServiceTest {
         }
     }
 
-    private void triggerKeyRotation() {
-        timePasses();
-        assertDoesNotThrow(encryptionService::rotateEncryptionKeys);
-    }
-
-    private void timePasses() {
-        for (var encryptionKey : encryptionKeyTestCache) {
-            encryptionKey.setCreationTimestamp(encryptionKey.getCreationTimestamp().minus(KEY_ROTATION_INTERVAL).minusMillis(100));
-        }
-    }
-
     @Test
     void testDeprecateKeys() {
         //Setup
         encryptionService.issuerMetadataWithEncryptionOptions();
-        var deprecatedJwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
+        var deprecatedJwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption()
+                .getJwks()));
         triggerKeyRotation();
         encryptionService.issuerMetadataWithEncryptionOptions();
-        var oldJwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
+        var oldJwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption()
+                .getJwks()));
 
         // Deprecate old keys by setting date to past
         var deprectatedKey = encryptionKeyTestCache.getFirst();
-        deprectatedKey.setCreationTimestamp(Instant.now().minus(Duration.ofSeconds(20)));
+        deprectatedKey.setCreationTimestamp(Instant.now()
+                .minus(Duration.ofSeconds(20)));
         ArgumentCaptor<Iterable> deleteCallCaptor = ArgumentCaptor.forClass(Iterable.class);
         Mockito.doAnswer(invocation -> {
-            encryptionKeyTestCache.remove(deprectatedKey);
-            return null;
-        }).when(encryptionKeyRepository).deleteAll(deleteCallCaptor.capture());
+                    encryptionKeyTestCache.remove(deprectatedKey);
+                    return null;
+                })
+                .when(encryptionKeyRepository)
+                .deleteAll(deleteCallCaptor.capture());
         // Rotate keys
         triggerKeyRotation();
-        var deletedValues = (List)deleteCallCaptor.getValue();
-        assertThat(deletedValues).hasSize(1).contains(deprectatedKey);
+        var deletedValues = (List) deleteCallCaptor.getValue();
+        assertThat(deletedValues).hasSize(1)
+                .contains(deprectatedKey);
 
 
         encryptionService.issuerMetadataWithEncryptionOptions();
-        var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
+        var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption()
+                .getJwks()));
         for (var deprecatedKey : deprecatedJwks.getKeys()) {
             var encrypted = assertDoesNotThrow(() -> createEncrytpedMessage("hello world", deprecatedKey));
             assertThrows(Oid4vcException.class, () -> encryptionService.decrypt(encrypted));
         }
         var validKeys = new LinkedList<>(oldJwks.getKeys());
         validKeys.addAll(jwks.getKeys());
-        for (var key :  validKeys) {
+        for (var key : validKeys) {
             var encrypted = assertDoesNotThrow(() -> createEncrytpedMessage("hello world", key));
             assertDoesNotThrow(() -> encryptionService.decrypt(encrypted));
         }
+    }
+
+    private void setupMockRepository() {
+        encryptionKeyTestCache = new LinkedList<>();
+        encryptionKeyRepository = Mockito.mock(EncryptionKeyRepository.class);
+        Mockito.when(encryptionKeyRepository.save(Mockito.any(EncryptionKey.class)))
+                .then(invocationOnMock -> {
+                    EncryptionKey savedObject = invocationOnMock.getArgument(0);
+                    encryptionKeyTestCache.add(savedObject);
+                    return savedObject;
+                });
+        Mockito.when(encryptionKeyRepository.findAll())
+                .thenReturn(encryptionKeyTestCache);
+    }
+
+    private void triggerKeyRotation() {
+        timePasses();
+        assertDoesNotThrow(encryptionService::rotateEncryptionKeys);
     }
 
     private String createEncrytpedMessage(String encryptedTestMessage, JWK key) throws JOSEException {
@@ -162,5 +172,13 @@ class EncryptionServiceTest {
         );
         jweObject.encrypt(encrypter);
         return jweObject.serialize();
+    }
+
+    private void timePasses() {
+        for (var encryptionKey : encryptionKeyTestCache) {
+            encryptionKey.setCreationTimestamp(encryptionKey.getCreationTimestamp()
+                    .minus(KEY_ROTATION_INTERVAL)
+                    .minusMillis(100));
+        }
     }
 }
