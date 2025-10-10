@@ -67,7 +67,7 @@ public class OpenIdIssuerApiConfiguration {
      * @throws IOException if the required json resource is not found
      */
     @Bean
-    public IssuerMetadata getIssuerMetadataBean() throws IOException {
+    public IssuerMetadata createIssuerMetadataBean() throws IOException {
         var mapped = resourceToMappedData(issuerMetadataResource, IssuerMetadata.class);
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         var validator = factory.getValidator();
@@ -81,7 +81,7 @@ public class OpenIdIssuerApiConfiguration {
     }
 
     @Bean
-    public CredentialMetadata getCredentialMetadataBean() throws IOException {
+    public CredentialMetadata createCredentialMetadataBean() throws IOException {
         var builder = CredentialMetadata.builder();
 
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
