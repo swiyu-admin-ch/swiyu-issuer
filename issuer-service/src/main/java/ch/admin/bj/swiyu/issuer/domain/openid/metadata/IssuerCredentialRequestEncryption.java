@@ -23,16 +23,13 @@ public class IssuerCredentialRequestEncryption extends IssuerCredentialEncryptio
     @JsonProperty("jwks")
     @Schema(description = "A JSON Web Key Set that contains one or more public keys, to be used by the Wallet as an input to a key agreement for encryption of the Credential Request.", example = """
             {
-              "keys": [
-                {
-                  "kty": "EC",
-                  "crv": "P-256", // The cryptographic curve
-                  "use": "sig",
-                  "alg": "ES256",
-                  "x": "Tjm2thouQXSUJSrKDyMfVGe6ZQRWqCr0UgeSbNKiNi8", // x-coordinate
-                  "y": "8BuGGu519a5xczbArHq1_iVJjGGBSlV5m_FGBJmiFtE"  // y-coordinate
-                }
-              ]
+              "keys" : [ {
+                "kty" : "EC",
+                "crv" : "P-256",
+                "kid" : "ec91e148-974d-47f1-9891-4b89d8bad57c",
+                "x" : "rm2YkWAJ2V84gS00DqeGR6MXHgW3FWISG45Vop0cWv4",
+                "y" : "ktSScp7s2fWSdq_7c6iOUI9AYFwQahXG60Nr9SL68mY"
+              } ]
             }
             """)
     private Map<String, Object> jwks;
