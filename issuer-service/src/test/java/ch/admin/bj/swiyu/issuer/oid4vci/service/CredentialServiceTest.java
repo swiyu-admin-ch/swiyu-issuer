@@ -33,7 +33,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
@@ -106,7 +105,7 @@ class CredentialServiceTest {
         when(issuerMetadata.getCredentialConfigurationById("test-metadata")).thenReturn(credentialConfiguration);
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", credentialConfiguration));
 
-        when(encryptionService.addEncryptionOptions(any(IssuerMetadata.class))).thenReturn(issuerMetadata);
+        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(issuerMetadata);
 
     }
 

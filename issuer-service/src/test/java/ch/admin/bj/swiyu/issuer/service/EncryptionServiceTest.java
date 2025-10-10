@@ -28,15 +28,18 @@ class EncryptionServiceTest {
     private EncryptionService encryptionService;
     private EncryptionKeyRepository encryptionKeyRepository;
     private List<EncryptionKey> encryptionKeyTestCache;
+    private IssuerMetadata issuerMetadata;
 
     @BeforeEach
     void setUp() {
         setupMockRepository();
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
+        issuerMetadata = new IssuerMetadata();
         encryptionService = new EncryptionService(
                 applicationProperties,
                 encryptionKeyRepository,
-                new CacheCustomizer()
+                new CacheCustomizer(),
+                issuerMetadata
         );
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval()).thenReturn(KEY_ROTATION_INTERVAL);
         // Mock @PostConstruction
@@ -57,9 +60,8 @@ class EncryptionServiceTest {
 
 
     @Test
-    void testAddEncryptionOptions() {
-        IssuerMetadata issuerMetadata = new IssuerMetadata();
-        encryptionService.addEncryptionOptions(issuerMetadata);
+    void testIssuerMetadataWithEncryptionOptions() {
+        encryptionService.issuerMetadataWithEncryptionOptions();
         assertThat(issuerMetadata.getRequestEncryption()).isNotNull();
         assertThat(issuerMetadata.getResponseEncryption()).isNotNull();
         var requestEncryption = issuerMetadata.getRequestEncryption();
@@ -73,12 +75,10 @@ class EncryptionServiceTest {
 
     @Test
     void testKeyRotation() {
-        IssuerMetadata issuerMetadata = new IssuerMetadata();
-        encryptionService.addEncryptionOptions(issuerMetadata);
-
+        encryptionService.issuerMetadataWithEncryptionOptions();
         var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
         triggerKeyRotation();
-        encryptionService.addEncryptionOptions(issuerMetadata);
+        encryptionService.issuerMetadataWithEncryptionOptions();
         var updatedRequestEncryption = issuerMetadata.getRequestEncryption();
         var updatedJwks = assertDoesNotThrow(() -> JWKSet.parse(updatedRequestEncryption.getJwks()));
         // Should not have any public keys
@@ -98,7 +98,7 @@ class EncryptionServiceTest {
         var encryptedTestMessage = "Hello World";
         for (var key : allKeys) {
             var encrypted = assertDoesNotThrow(() -> createEncrytpedMessage(encryptedTestMessage, key));
-            var decrypted = assertDoesNotThrow(() -> encryptionService.decrypt(encrypted, issuerMetadata));
+            var decrypted = assertDoesNotThrow(() -> encryptionService.decrypt(encrypted));
             assertEquals(encryptedTestMessage, decrypted);
         }
     }
@@ -117,11 +117,10 @@ class EncryptionServiceTest {
     @Test
     void testDeprecateKeys() {
         //Setup
-        IssuerMetadata issuerMetadata = new IssuerMetadata();
-        encryptionService.addEncryptionOptions(issuerMetadata);
+        encryptionService.issuerMetadataWithEncryptionOptions();
         var deprecatedJwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
         triggerKeyRotation();
-        encryptionService.addEncryptionOptions(issuerMetadata);
+        encryptionService.issuerMetadataWithEncryptionOptions();
         var oldJwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
 
         // Deprecate old keys by setting date to past
@@ -138,17 +137,17 @@ class EncryptionServiceTest {
         assertThat(deletedValues).hasSize(1).contains(deprectatedKey);
 
 
-        encryptionService.addEncryptionOptions(issuerMetadata);
+        encryptionService.issuerMetadataWithEncryptionOptions();
         var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
         for (var deprecatedKey : deprecatedJwks.getKeys()) {
             var encrypted = assertDoesNotThrow(() -> createEncrytpedMessage("hello world", deprecatedKey));
-            assertThrows(Oid4vcException.class, () -> encryptionService.decrypt(encrypted, issuerMetadata));
+            assertThrows(Oid4vcException.class, () -> encryptionService.decrypt(encrypted));
         }
         var validKeys = new LinkedList<>(oldJwks.getKeys());
         validKeys.addAll(jwks.getKeys());
         for (var key :  validKeys) {
             var encrypted = assertDoesNotThrow(() -> createEncrytpedMessage("hello world", key));
-            assertDoesNotThrow(() -> encryptionService.decrypt(encrypted, issuerMetadata));
+            assertDoesNotThrow(() -> encryptionService.decrypt(encrypted));
         }
     }
 

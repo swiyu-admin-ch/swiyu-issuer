@@ -38,7 +38,7 @@ import java.io.IOException;
 public class WellKnownController {
 
     private final OpenIdIssuerApiConfiguration openIDConfiguration;
-    private final EncryptionService  encryptionService;
+    private final EncryptionService encryptionService;
 
     /**
      * General information about the issuer
@@ -70,7 +70,7 @@ public class WellKnownController {
      */
     @GetMapping(value = {"/openid-credential-issuer"})
     @Operation(summary = "Information about credentials which can be issued.")
-    public IssuerMetadata getIssuerMetadata() throws IOException {
-        return encryptionService.addEncryptionOptions(openIDConfiguration.getIssuerMetadata());
+    public IssuerMetadata getIssuerMetadata() {
+        return encryptionService.issuerMetadataWithEncryptionOptions();
     }
 }

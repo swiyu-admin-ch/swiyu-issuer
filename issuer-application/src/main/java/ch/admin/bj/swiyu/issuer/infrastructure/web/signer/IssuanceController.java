@@ -12,11 +12,9 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRespon
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.DeferredDataDtoV2;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
-import ch.admin.bj.swiyu.issuer.infrastructure.config.OpenIdIssuerApiConfiguration;
 import ch.admin.bj.swiyu.issuer.service.CredentialService;
 import ch.admin.bj.swiyu.issuer.service.EncryptionService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -65,7 +63,6 @@ public class IssuanceController {
     private final CredentialService credentialService;
     private final NonceService nonceService;
     private final EncryptionService encryptionService;
-    private final OpenIdIssuerApiConfiguration openIDConfiguration;
     private final Validator validator;
     private final ObjectMapper objectMapper;
 
@@ -190,8 +187,8 @@ public class IssuanceController {
 
         // Decrypt if holder sent an encrypted
         if (StringUtils.equals("application/jwt", StringUtils.toRootLowerCase(request.getContentType()))) {
-            requestString = encryptionService.decrypt(requestDto, openIDConfiguration.getIssuerMetadata());
-        } else if (encryptionService.isRequestEncryptionRequired(openIDConfiguration.getIssuerMetadata())) {
+            requestString = encryptionService.decrypt(requestDto);
+        } else if (encryptionService.isRequestEncryptionMandatory()) {
             throw new IllegalArgumentException("Credential Request must be encrypted");
         }
 

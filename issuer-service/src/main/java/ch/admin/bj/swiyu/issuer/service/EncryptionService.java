@@ -38,6 +38,7 @@ public class EncryptionService {
     private final ApplicationProperties applicationProperties;
     private final EncryptionKeyRepository encryptionKeyRepository;
     private final CacheCustomizer cacheCustomizer;
+    private final IssuerMetadata issuerMetadata;
 
     @PostConstruct
     @Scheduled(fixedDelayString = "${application.encryption-key-rotation-interval}")
@@ -91,11 +92,11 @@ public class EncryptionService {
     }
 
     /**
-     * Overriding issuer metadata encryption options
+     * Overriding bean issuer metadata encryption options
      */
     @Transactional(readOnly = true)
     @Cacheable(CacheConfig.ISSUER_METADATA_ENCRYPTION_CACHE)
-    public IssuerMetadata addEncryptionOptions(IssuerMetadata issuerMetadata) {
+    public IssuerMetadata issuerMetadataWithEncryptionOptions() {
         IssuerCredentialRequestEncryption requestEncryption = IssuerCredentialRequestEncryption.builder()
                 .jwks(getActivePublicKeys())
                 .encRequired(applicationProperties.isEncryptionEnforce())
@@ -120,7 +121,7 @@ public class EncryptionService {
     }
 
     @Transactional(readOnly = true)
-    public String decrypt(String encryptedMessage, IssuerMetadata issuerMetadata) {
+    public String decrypt(String encryptedMessage) {
         try {
             JWEObject encryptedJWT = JWEObject.parse(encryptedMessage);
             JWEHeader header = encryptedJWT.getHeader();
@@ -183,7 +184,7 @@ public class EncryptionService {
                 .toList());
     }
 
-    public boolean isRequestEncryptionRequired(IssuerMetadata issuerMetadata) {
+    public boolean isRequestEncryptionMandatory() {
         IssuerCredentialRequestEncryption encryptionOptions = issuerMetadata.getRequestEncryption();
         return encryptionOptions != null && encryptionOptions.isEncRequired();
     }

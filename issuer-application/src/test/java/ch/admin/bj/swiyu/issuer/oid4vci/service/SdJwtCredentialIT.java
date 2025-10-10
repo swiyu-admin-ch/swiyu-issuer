@@ -69,7 +69,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -108,7 +108,7 @@ class SdJwtCredentialIT {
         CredentialEnvelopeDto vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -141,7 +141,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -170,7 +170,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -195,7 +195,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -221,7 +221,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.addEncryptionOptions(issuerMetadata).getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
