@@ -1,10 +1,12 @@
 package ch.admin.bj.swiyu.issuer;
 
+import ch.admin.bj.swiyu.core.status.registry.client.model.ApiError;
 import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.DefaultExceptionHandler;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,9 +14,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.client.HttpClientErrorException;
+
+import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -166,5 +175,31 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
+    }
+
+    @Test
+    void handleCredentialException_shouldReturnBadRequest() {
+        final String errorMessage = "Credential error message";
+        final CredentialException exception = new CredentialException(errorMessage);
+        final ResponseEntity<ApiErrorDto> response = handler.handleBadRequestException(exception);
+        final ApiErrorDto body = response.getBody();
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(body);
+        assertEquals(errorMessage, body.getErrorDetails());
+    }
+
+    @Test
+    void handleConstraintViolationException_shouldReturnUnprocessableEntity() {
+        final ConstraintViolationException exception = new ConstraintViolationException("invalid field value", Set.of());
+        final ResponseEntity<Object> response = handler.handleConstraintViolationException(exception);
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertThat(response.getBody()).isInstanceOf(ApiErrorDto.class);
+
+        final ApiErrorDto body = (ApiErrorDto) response.getBody();
+        assertEquals("Unprocessable Entity", body.getErrorDescription());
+        assertEquals("invalid field value", body.getErrorDetails());
     }
 }
