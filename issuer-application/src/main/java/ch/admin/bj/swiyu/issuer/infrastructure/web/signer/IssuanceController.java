@@ -59,6 +59,7 @@ import java.util.regex.Pattern;
 @RequestMapping(value = {"/oid4vci/api"})
 public class IssuanceController {
     private static final String OID4VCI_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
+    public static final String API_VERSION_OID4VCI_1_0 = "2";
 
     private final CredentialService credentialService;
     private final NonceService nonceService;
@@ -197,7 +198,7 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        if ("2".equals(version)) {
+        if (API_VERSION_OID4VCI_1_0.equals(version)) {
             var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDtoV2.class);
             validateRequestDtoOrThrow(dto, validator);
             credentialEnvelope = credentialService.createCredentialV2(dto, getAccessToken(bearerToken), clientInfo);
