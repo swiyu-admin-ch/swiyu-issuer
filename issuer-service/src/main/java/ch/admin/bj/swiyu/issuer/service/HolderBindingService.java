@@ -7,7 +7,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,13 +18,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_CREDENTIAL_REQUEST;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 
 @Service
 @AllArgsConstructor
 public class HolderBindingService {
 
-    private final IssuerMetadataTechnical issuerMetadata;
+    private final IssuerMetadata issuerMetadata;
     private final OpenIdIssuerConfiguration openIDConfiguration;
     private final NonceService nonceService;
     private final KeyAttestationService keyAttestationService;
@@ -41,11 +42,14 @@ public class HolderBindingService {
         if (supportedProofTypes == null || supportedProofTypes.isEmpty()) {
             return List.of();
         }
-
-        List<ProofJwt> proofs = credentialRequest.getProofs(
-                applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                applicationProperties.getAcceptableProofTimeWindowSeconds());
-
+        List<ProofJwt> proofs;
+        try {
+            proofs = credentialRequest.getProofs(
+                    applicationProperties.getAcceptableProofTimeWindowSeconds(),
+                    applicationProperties.getAcceptableProofTimeWindowSeconds());
+        } catch (IllegalArgumentException e) {
+            throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof");
+        }
         // check if proofs requested
         if (proofs.isEmpty()) {
             throw new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential");
@@ -111,7 +115,7 @@ public class HolderBindingService {
 
         var requestProof = proofsJwt.getFirst();
 
-        var bindingProofType = Optional.of(supportedProofTypes.get(requestProof.getProofType().toString()))
+        var bindingProofType = Optional.ofNullable(supportedProofTypes.get(requestProof.getProofType().toString()))
                 .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
                         "Provided proof is not supported for the credential requested."));
         try {

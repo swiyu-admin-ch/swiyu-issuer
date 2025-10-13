@@ -10,7 +10,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,7 +46,7 @@ public class CredentialManagementService {
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
     private final ObjectMapper objectMapper;
     private final StatusListService statusListService;
-    private final IssuerMetadataTechnical issuerMetadata;
+    private final IssuerMetadata issuerMetadata;
     private final ApplicationProperties applicationProperties;
     private final DataIntegrityService dataIntegrityService;
     private final ApplicationEventPublisher applicationEventPublisher;

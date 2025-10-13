@@ -111,6 +111,8 @@ application:
       proxy-password: "${HSM_PROXY_PASSWORD:}"
 
   offer-expiration-interval: "${CREDENTIAL_OFFER_EXPIRATION_INTERVAL:PT15M}"
+  encryption-key-rotation-interval: "PT15M"
+  encryption-enforce: false
 
   template-replacement: # Hash Map of Values replaced in the templating
     external-url: "${EXTERNAL_URL:}" # URL under which this service can be reached from the web

@@ -9,22 +9,12 @@ package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.encryption;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
-import com.nimbusds.jose.EncryptionMethod;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWEAlgorithm;
-import com.nimbusds.jose.JWEEncrypter;
-import com.nimbusds.jose.JWEHeader;
-import com.nimbusds.jose.JWEObject;
-import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHEncrypter;
-import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyType;
 import jakarta.annotation.Nullable;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
@@ -82,25 +72,11 @@ public class CredentialResponseEncryptor {
         }
     }
 
-    private SecretKey guardedGenerateSymmetricKey(EncryptionMethod enc) {
-        SecretKey symmetricKey;
-        try {
-            KeyGenerator symmetricKeyGenerator = KeyGenerator.getInstance("AES");
-            symmetricKeyGenerator.init(enc.cekBitLength());
-            symmetricKey = symmetricKeyGenerator.generateKey();
-        } catch (NoSuchAlgorithmException e) {
-            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "No Key generator found algorithm");
-        }
-        return symmetricKey;
-    }
-
-    private JWEEncrypter guardedCreateEncrypter(JWK key, SecretKey cek) {
+    private JWEEncrypter guardedCreateEncrypter(JWK key) {
         try {
             KeyType keyType = key.getKeyType();
-            if (keyType == KeyType.RSA) {
-                return new RSAEncrypter(key.toRSAKey().toRSAPublicKey(), cek);
-            } else if (keyType == KeyType.EC) {
-                return new ECDHEncrypter(key.toECKey().toECPublicKey(), cek);
+            if (keyType == KeyType.EC) {
+                return new ECDHEncrypter(key.toECKey().toECPublicKey());
             } else {
                 throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported kty " + keyType.getValue());
             }
@@ -117,13 +93,12 @@ public class CredentialResponseEncryptor {
         JWEAlgorithm alg = JWEAlgorithm.parse(requestedEncryption.getAlg());
         EncryptionMethod enc = EncryptionMethod.parse(requestedEncryption.getEnc());
         JWK holderPublicKey = guardedParseJWK();
-        SecretKey cek = guardedGenerateSymmetricKey(enc);
 
 
-        JWEHeader header = new JWEHeader(alg, enc);
+        JWEHeader header = new JWEHeader.Builder(alg, enc).compressionAlgorithm(CompressionAlgorithm.DEF).build();
         Payload payload = new Payload(oid4vciCredentialJson);
         JWEObject jwe = new JWEObject(header, payload);
-        JWEEncrypter encryptor = guardedCreateEncrypter(holderPublicKey, cek);
+        JWEEncrypter encryptor = guardedCreateEncrypter(holderPublicKey);
         return encrypt(jwe, encryptor);
 
     }

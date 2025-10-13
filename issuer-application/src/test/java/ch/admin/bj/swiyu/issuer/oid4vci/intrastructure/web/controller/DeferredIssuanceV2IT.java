@@ -162,7 +162,7 @@ class DeferredIssuanceV2IT {
                                     "enc": "%s",
                                     "jwk": %s
                                 }
-                                """, JWEAlgorithm.ECDH_ES_A128KW.getName(), EncryptionMethod.A128CBC_HS256.getName(),
+                                """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
                                 ecJWK.toPublicJWK().toJSONString());
 
                 // credential_response_encryption

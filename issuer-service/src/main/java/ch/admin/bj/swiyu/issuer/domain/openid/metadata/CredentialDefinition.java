@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -18,6 +19,7 @@ import java.util.Map;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Validated
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialDefinition {
     @NotNull
     private List<String> type;

@@ -6,8 +6,11 @@
 
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -20,9 +23,12 @@ import org.springframework.validation.annotation.Validated;
 import java.util.List;
 import java.util.Map;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
+
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Validated
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialConfiguration {
     @NotNull
     @Pattern(regexp = "^vc\\+sd-jwt$", message = "Only vc+sd-jwt format is supported")
@@ -40,6 +46,7 @@ public class CredentialConfiguration {
      * Optional
      */
     @JsonProperty("claims")
+    @Deprecated(since = "OID4VCI 1.0") // Replaced by credential_metadata.claims
     private Map<String, CredentialClaim> claims;
 
     /**
@@ -76,11 +83,20 @@ public class CredentialConfiguration {
     @Valid
     private Map<@Pattern(regexp = "^jwt$", message = "Only jwt holder binding proofs are supported") String, SupportedProofType> proofTypesSupported;
 
+    @Nullable
+    @JsonProperty("display")
+    @Deprecated(since = "OID4VCI 1.0")
+    private List<MetadataCredentialDisplayInfo> display;
+
+    @Nullable
+    @JsonProperty("credential_metadata")
+    private CredentialConfigurationMetadata credentialMetadata;
+
 
     @PostConstruct
     public void postConstruct() {
         if (!proofTypesSupported.isEmpty() && cryptographicBindingMethodsSupported.isEmpty()) {
-            throw new IllegalArgumentException("If proof types are supported, cryptographic binding methods must be specified as well");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "If proof types are supported, cryptographic binding methods must be specified as well");
         }
     }
 }

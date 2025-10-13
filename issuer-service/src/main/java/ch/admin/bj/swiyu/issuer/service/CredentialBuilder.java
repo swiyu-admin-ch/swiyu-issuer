@@ -18,7 +18,8 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRespon
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.encryption.CredentialResponseEncryptor;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JWSSigner;
@@ -34,7 +35,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @Getter
 public abstract class CredentialBuilder {
     private final ApplicationProperties applicationProperties;
-    private final IssuerMetadataTechnical issuerMetadata;
+    private final IssuerMetadata issuerMetadata;
     private final DataIntegrityService dataIntegrityService;
     private final StatusListRepository statusListRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
@@ -46,7 +47,7 @@ public abstract class CredentialBuilder {
     private List<String> metadataCredentialsSupportedIds;
 
     CredentialBuilder(ApplicationProperties applicationProperties,
-                      IssuerMetadataTechnical issuerMetadata,
+                      IssuerMetadata issuerMetadata,
                       DataIntegrityService dataIntegrityService,
                       StatusListRepository statusListRepository,
                       SignatureService signatureService,
@@ -66,9 +67,10 @@ public abstract class CredentialBuilder {
     }
 
     public CredentialBuilder credentialResponseEncryption(
-            CredentialResponseEncryptionClass credentialResponseEncryption) {
-        this.credentialResponseEncryptor = new CredentialResponseEncryptor(issuerMetadata.getResponseEncryption(),
-                credentialResponseEncryption);
+            IssuerCredentialResponseEncryption offeredEncryption,
+            CredentialResponseEncryptionClass requestedEncryption) {
+        this.credentialResponseEncryptor = new CredentialResponseEncryptor(offeredEncryption,
+                requestedEncryption);
         return this;
     }
 

@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Di
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
@@ -41,7 +41,7 @@ import static org.mockito.Mockito.*;
 class CredentialBuilderTest {
 
     private ApplicationProperties applicationProperties;
-    private IssuerMetadataTechnical issuerMetadata;
+    private IssuerMetadata issuerMetadata;
 
     private CredentialBuilder builder;
     private ObjectMapper objectMapper;
@@ -49,7 +49,7 @@ class CredentialBuilderTest {
     @BeforeEach
     void setUp() {
         applicationProperties = mock(ApplicationProperties.class);
-        issuerMetadata = mock(IssuerMetadataTechnical.class);
+        issuerMetadata = mock(IssuerMetadata.class);
         DataIntegrityService dataIntegrityService = mock(DataIntegrityService.class);
         JWSSigner signer = mock(JWSSigner.class);
         SignatureService signatureService = mock(SignatureService.class);
@@ -91,7 +91,7 @@ class CredentialBuilderTest {
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
 
-        builder.credentialResponseEncryption(credentialResponseEncryption);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), credentialResponseEncryption);
 
         assertNotNull(builder.getCredentialResponseEncryptor());
     }
@@ -105,7 +105,7 @@ class CredentialBuilderTest {
         CredentialEndpointResponseDtoV2 credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(credentialObjectDtoV2, null, null);
         var expectedCredentialWrapper = objectMapper.writeValueAsString(credentialResponseDtoV2);
 
-        builder.credentialResponseEncryption(null);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
         builder.holderBindings(List.of());
         doReturn(input).when(builder).getCredential(null);
 
@@ -123,7 +123,7 @@ class CredentialBuilderTest {
 
     @Test
     void credentialOffer_multipleProofs_thenSuccess() throws JOSEException, IOException {
-        builder.credentialResponseEncryption(null);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
 
         doReturn("credential").when(builder).getCredential(null);
 
@@ -158,7 +158,7 @@ class CredentialBuilderTest {
 
     @Test
     void buildDeferredCredentialV2_thenSuccess() throws IOException {
-        builder.credentialResponseEncryption(null);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
 
         var expectedInterval = 10L;
         when(applicationProperties.getMinDeferredOfferIntervalSeconds()).thenReturn(expectedInterval);
@@ -177,7 +177,7 @@ class CredentialBuilderTest {
 
     @Test
     void buildEnvelopeDto_thenSuccess() {
-        builder.credentialResponseEncryption(null);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
         List<CredentialObjectDtoV2> credentialObjectDtoV2 = List.of(new CredentialObjectDtoV2("credential"));
         CredentialEndpointResponseDtoV2 credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(credentialObjectDtoV2, null, null);
         var response = builder.buildEnvelopeDto(credentialResponseDtoV2);
@@ -199,7 +199,7 @@ class CredentialBuilderTest {
         var jwk = createPrivateKey().toPublicJWK().toJSONObject();
         CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, "ECDH-ES+A128KW", "A128CBC-HS256");
 
-        builder.credentialResponseEncryption(encryptor);
+        builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), encryptor);
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
 
@@ -220,7 +220,7 @@ class CredentialBuilderTest {
 
     // subclass for testing
     static class TestCredentialBuilder extends CredentialBuilder {
-        TestCredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadataTechnical issuerMetadata, DataIntegrityService dataIntegrityService, SignatureService signatureService,
+        TestCredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadata issuerMetadata, DataIntegrityService dataIntegrityService, SignatureService signatureService,
                               StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
             super(applicationProperties, issuerMetadata, dataIntegrityService, statusListRepository, signatureService, credentialOfferStatusRepository);
         }

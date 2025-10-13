@@ -7,11 +7,17 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nullable;
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@Deprecated(since = "OID4VCI 1.0")
 public class CredentialClaim {
     /**
      * Optional, if set to true the claim is mandatory in the presentation
@@ -27,5 +33,9 @@ public class CredentialClaim {
      */
     @JsonProperty("value_type")
     private String valueType;
+
+    @Nullable
+    @JsonProperty("display")
+    private List<MetadataDisplayInfo> display;
 
 }

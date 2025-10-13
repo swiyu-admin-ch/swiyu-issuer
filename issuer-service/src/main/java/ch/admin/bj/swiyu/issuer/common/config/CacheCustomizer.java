@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.ISSUER_METADATA_ENCRYPTION_CACHE;
 import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.PUBLIC_KEY_CACHE;
 
 @Slf4j
@@ -25,5 +26,10 @@ public class CacheCustomizer implements CacheManagerCustomizer<ConcurrentMapCach
     @Scheduled(fixedRateString = "${caching.publicKeyCacheTTL}")
     public void emptyPublicKeyCache() {
         log.debug("emptying public key cache");
+    }
+
+    @CacheEvict(value = ISSUER_METADATA_ENCRYPTION_CACHE, allEntries = true)
+    public void emptyIssuerMetadataEncryptionCache() {
+        log.debug("empty issuer metadata encryption cache");
     }
 }

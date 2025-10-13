@@ -13,8 +13,8 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.DeferredDataDtoV2;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.service.CredentialService;
+import ch.admin.bj.swiyu.issuer.service.EncryptionService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +39,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -57,10 +58,11 @@ import java.util.regex.Pattern;
         "and supporting deferred credential issuance (IF-111)")
 @RequestMapping(value = {"/oid4vci/api"})
 public class IssuanceController {
+    public static final String API_VERSION_OID4VCI_1_0 = "2";
     private static final String OID4VCI_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
-
     private final CredentialService credentialService;
     private final NonceService nonceService;
+    private final EncryptionService encryptionService;
     private final Validator validator;
     private final ObjectMapper objectMapper;
 
@@ -148,6 +150,12 @@ public class IssuanceController {
                             @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(oneOf = {CredentialEndpointRequestDto.class, CredentialEndpointRequestDtoV2.class})
+                            ),
+                            @Content(
+                                    mediaType = "application/jwt", // See: OID4VCI 1.0 Chapter 10
+                                    schema = @Schema(implementation = String.class, description = """
+                                            An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
+                                            """)
                             )
                     }
             ),
@@ -174,19 +182,27 @@ public class IssuanceController {
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
                                                    @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
                                                    @NotNull @RequestBody String requestDto,
-                                                   HttpServletRequest request) throws JsonProcessingException {
+                                                   HttpServletRequest request) throws IOException {
+        String requestString = requestDto;
+
+        // Decrypt if holder sent an encrypted
+        if (StringUtils.equals("application/jwt", StringUtils.toRootLowerCase(request.getContentType()))) {
+            requestString = encryptionService.decrypt(requestDto);
+        } else if (encryptionService.isRequestEncryptionMandatory()) {
+            throw new IllegalArgumentException("Credential Request must be encrypted");
+        }
 
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
         var clientInfo = getClientAgentInfo(request);
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        if (version != null && version.equals("2")) {
-            var dto = objectMapper.readValue(requestDto, CredentialEndpointRequestDtoV2.class);
+        if (API_VERSION_OID4VCI_1_0.equals(version)) {
+            var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDtoV2.class);
             validateRequestDtoOrThrow(dto, validator);
             credentialEnvelope = credentialService.createCredentialV2(dto, getAccessToken(bearerToken), clientInfo);
         } else {
-            var dto = objectMapper.readValue(requestDto, CredentialEndpointRequestDto.class);
+            var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDto.class);
             validateRequestDtoOrThrow(dto, validator);
 
             credentialEnvelope = credentialService.createCredential(dto, getAccessToken(bearerToken), clientInfo);
@@ -240,11 +256,11 @@ public class IssuanceController {
     @SecurityRequirement(name = "bearer-jwt")
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
                                                            @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
-                                                           @Valid @RequestBody DeferredCredentialEndpointRequestDto deferredCredentialRequestDto) throws JsonProcessingException {
+                                                           @Valid @RequestBody DeferredCredentialEndpointRequestDto deferredCredentialRequestDto) {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        if (version != null && version.equals("2")) {
+        if (API_VERSION_OID4VCI_1_0.equals(version)) {
             credentialEnvelope = credentialService.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, getAccessToken(bearerToken));
         } else {
             credentialEnvelope = credentialService.createCredentialFromDeferredRequest(deferredCredentialRequestDto, getAccessToken(bearerToken));

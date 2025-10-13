@@ -16,7 +16,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadataTechnical;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -49,7 +49,7 @@ class CredentialManagementServiceTest {
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     private StatusListService statusListService;
     private ApplicationProperties applicationProperties;
-    private IssuerMetadataTechnical issuerMetadata;
+    private IssuerMetadata issuerMetadata;
     private DataIntegrityService dataIntegrityService;
     private CredentialOffer expiredOffer;
     private CredentialOffer valid;
@@ -62,7 +62,7 @@ class CredentialManagementServiceTest {
     void setUp() {
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         statusListService = Mockito.mock(StatusListService.class);
-        issuerMetadata = Mockito.mock(IssuerMetadataTechnical.class);
+        issuerMetadata = Mockito.mock(IssuerMetadata.class);
         applicationProperties = Mockito.mock(ApplicationProperties.class);
         dataIntegrityService = Mockito.mock(DataIntegrityService.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
