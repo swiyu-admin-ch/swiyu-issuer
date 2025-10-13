@@ -24,7 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   These endpoints can be used by setting the custom header `SWIYU-API-Version=2`. These endpoints are not yet pentested.
 - Added new error code `CREDENTIAL_REQUEST_DENIED` to indicate that the credential request was denied by the
   issuer and the wallet should not retry.
-- Added always available Credential Request Payload encryption, can be enforced to be always active by setting APPLICATION_ENCRYPTIONENFORCE=true. Overriding will break compatibility with wallets not supporting encryption.
+- Added always available Credential Request Payload encryption, can be enforced to be always active by setting
+  APPLICATION_ENCRYPTIONENFORCE=true. Overriding will break compatibility with wallets not supporting encryption.
 
 ### Changed
 
@@ -37,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `CredentialResponseDto` to `CredentialEndpointResponseDto` (without dto in openapi schema name)
     - `CredentialResponseDtoV2` to `CredentialEndpointResponseDtoV2` (without dto in openapi schema name)
       to fix inconsistent openapi definition.
+- Allow nonce endpoint to be set freely like other endpoints. Not setting the nonce endpoint will prevent you form
+  issuing credentials bound to a holder.
 
 ### Fixed
 
@@ -45,7 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   default behaviour in the readme.
 
 ### Removed
-- Removed possibility of customization of payload encryption. 
+
+- Removed possibility of customization of payload encryption.
   It is now always possible for the wallet to choose payload encryption.
 
 ## 2.0.0

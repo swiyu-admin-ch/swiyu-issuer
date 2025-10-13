@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -71,6 +72,7 @@ public class WellKnownController {
     @GetMapping(value = {"/openid-credential-issuer"})
     @Operation(summary = "Information about credentials which can be issued.")
     public IssuerMetadata getIssuerMetadata() {
-        return encryptionService.issuerMetadataWithEncryptionOptions();
+        // Unwrap the object from the spring cache object.
+        return (IssuerMetadata) AopProxyUtils.getSingletonTarget(encryptionService.issuerMetadataWithEncryptionOptions());
     }
 }

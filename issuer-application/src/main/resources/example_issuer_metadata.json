@@ -2,6 +2,7 @@
   "credential_issuer": "${external-url}",
   "credential_endpoint": "${external-url}/oid4vci/api/credential",
   "deferred_credential_endpoint": "${external-url}/oid4vci/api/deferred_credential",
+  "nonce_endpoint": "${external-url}/oid4vci/api/nonce",
   "version": "1.0",
   "display": [
     {
