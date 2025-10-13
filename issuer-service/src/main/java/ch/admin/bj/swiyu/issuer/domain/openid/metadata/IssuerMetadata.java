@@ -52,6 +52,14 @@ public class IssuerMetadata {
             """)
     private String credentialEndpoint;
 
+    @JsonProperty("nonce_endpoint")
+    @Nullable
+    @Pattern(regexp = "^.+/nonce$", message = "nonce endpoint for this issuer is /nonce")
+    @Schema(description = """
+            Nonce for proof of possessions. Required for VCs to be bound to a holder.
+            """)
+    private String nonceEndpoint;
+
     @Nullable
     @JsonProperty("deferred_credential_endpoint")
     private String deferredCredentialEndpoint;
