@@ -34,12 +34,4 @@ public class CredentialOfferStatus {
     @EmbeddedId
     private CredentialOfferStatusKey id;
 
-    /**
-     * The index the credential is assigned on the status list.
-     * The corresponding status has to be calculated depending on the type of status
-     * list using this index.
-     */
-    @NotNull
-    private Integer index;
-
 }

@@ -64,29 +64,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CredentialOfferCreateIT {
 
     private static final String BASE_URL = "/management/api/credentials";
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private CredentialOfferRepository credentialOfferRepository;
-
-    @Autowired
-    private StatusListRepository statusListRepository;
-
-    @Autowired
-    private MockMvc mvc;
-
-    @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
-
     @Autowired
     protected SwiyuProperties swiyuProperties;
-
+    protected StatusListTestHelper statusListTestHelper;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private CredentialOfferRepository credentialOfferRepository;
+    @Autowired
+    private StatusListRepository statusListRepository;
+    @Autowired
+    private MockMvc mvc;
+    @MockitoBean
+    private StatusBusinessApiApi statusBusinessApi;
     @Mock
     private ApiClient mockApiClient;
-
-    protected StatusListTestHelper statusListTestHelper;
 
     @BeforeEach
     void setUp() {
@@ -474,7 +466,5 @@ class CredentialOfferCreateIT {
         final StatusList firstStatusListDb = statusListRepository.findById(firstStatusListDto.getId()).get();
         final StatusList secondStatusListDb = statusListRepository.findById(secondStatusListDto.getId()).get();
         assertNotEquals(firstStatusListDb.getId(), secondStatusListDb.getId());
-        assertEquals(1, firstStatusListDb.getNextFreeIndex());
-        assertEquals(1, secondStatusListDb.getNextFreeIndex());
     }
 }

@@ -31,7 +31,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialConfiguration {
     @NotNull
-    @Pattern(regexp = "^vc\\+sd-jwt$", message = "Only vc+sd-jwt format is supported")
+    @Pattern(regexp = "^[dv]c\\+sd-jwt$", message = "Only dc+sd-jwt format is supported")
     private String format;
 
     /**

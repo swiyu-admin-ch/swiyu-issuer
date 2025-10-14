@@ -169,8 +169,6 @@ public abstract class CredentialBuilder {
                 this.credentialOffer.getId());
     }
 
-    abstract JWSSigner createSigner();
-
     /**
      * Create all status list references in the way they are to be added to the VC
      * JSON
@@ -204,18 +202,20 @@ public abstract class CredentialBuilder {
 
         return byOfferStatusId.stream()
                 .map((CredentialOfferStatus credentialOfferStatus) -> statusFactory.createStatusListReference(
-                        credentialOfferStatus.getIndex(), getStatusList(credentialOfferStatus)))
+                        credentialOfferStatus.getId().getIndex(), getStatusList(credentialOfferStatus)))
                 .map(VerifiableCredentialStatusReference::createVCRepresentation)
                 .reduce(statuses, statusFactory::mergeStatus);
     }
+
+    abstract JWSSigner createSigner();
+
+    abstract String getCredential(DidJwk didJwk);
 
     private StatusList getStatusList(CredentialOfferStatus credentialOfferStatus) {
         return statusListRepository.findById(credentialOfferStatus.getId().getStatusListId())
                 .orElseThrow(() -> new CredentialException(
                         "StatusList not found for ID: " + credentialOfferStatus.getId().getStatusListId()));
     }
-
-    abstract String getCredential(DidJwk didJwk);
 
     /**
      * Gets the credential configuration form the issuer metadata matching the

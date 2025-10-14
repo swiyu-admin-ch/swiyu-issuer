@@ -122,7 +122,7 @@ class CredentialOfferStatusMultiThreadedIT {
         var indexSet = credentialOfferRepository.findAllById(results).stream()
                 .map(offer -> {
                             Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
-                            return byOfferStatusId.stream().findFirst().get().getIndex();
+                            return byOfferStatusId.stream().findFirst().get().getId().getIndex();
                         }
                 )
                 .collect(Collectors.toSet());
@@ -153,7 +153,10 @@ class CredentialOfferStatusMultiThreadedIT {
         var statusListId = credentialOfferStatuses.stream().findFirst().get().getId().getStatusListId();
         var statusListIndexes = offers.stream()
                 .map(credentialOffer -> credentialOfferStatusRepository.findByOfferStatusId(credentialOffer.getId()))
-                .flatMap(Set::stream).map(CredentialOfferStatus::getIndex).collect(Collectors.toSet());
+                .flatMap(Set::stream)
+                .map(CredentialOfferStatus::getId)
+                .map(CredentialOfferStatusKey::getIndex)
+                .collect(Collectors.toSet());
         // Check initialization
         assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.ISSUED));
         var initialStatusListToken = testHelper.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());

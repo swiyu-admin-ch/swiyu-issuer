@@ -32,14 +32,17 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialOffer;
 import static java.time.Instant.now;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class CredentialManagementServiceTest {
+    public static final String TEST_STATUS_LIST_URI = "https://localhost:8080/status";
     private final Map<String, Object> offerData = Map.of("hello", "world");
     @Mock
     CredentialOfferRepository credentialOfferRepository;
@@ -57,12 +60,15 @@ class CredentialManagementServiceTest {
     private CredentialOffer suspended;
     private StatusList statusList;
     private CreateCredentialRequestDto createCredentialRequestDto;
+    private AvailableStatusListIndexRepository availableStatusListIndexRepository;
 
     @BeforeEach
     void setUp() {
+        availableStatusListIndexRepository = Mockito.mock(AvailableStatusListIndexRepository.class);
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         statusListService = Mockito.mock(StatusListService.class);
         issuerMetadata = Mockito.mock(IssuerMetadata.class);
+        var mockCredentialMetadata = Mockito.mock(CredentialConfiguration.class);
         applicationProperties = Mockito.mock(ApplicationProperties.class);
         dataIntegrityService = Mockito.mock(DataIntegrityService.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
@@ -89,6 +95,12 @@ class CredentialManagementServiceTest {
         when(credentialOfferRepository.save(issued)).thenReturn(issued);
         when(credentialOfferRepository.save(suspended)).thenReturn(suspended);
 
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test", mockCredentialMetadata));
+        when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(mockCredentialMetadata);
+        when(mockCredentialMetadata.getFormat()).thenReturn("dc+sd-jwt");
+        when(mockCredentialMetadata.getClaims()).thenReturn(Map.of("hello", Mockito.mock(CredentialClaim.class)));
+        when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(offerData);
+
         credentialService = new CredentialManagementService(
                 credentialOfferRepository,
                 credentialOfferStatusRepository,
@@ -97,18 +109,23 @@ class CredentialManagementServiceTest {
                 issuerMetadata,
                 applicationProperties,
                 dataIntegrityService,
-                applicationEventPublisher
+                applicationEventPublisher,
+                availableStatusListIndexRepository
         );
 
         var statusListUris = List.of("https://example.com/status-list");
         var statusListToken = new TokenStatusListToken(2, 10000);
         statusList = StatusList.builder().type(StatusListType.TOKEN_STATUS_LIST)
                 .config(Map.of("bits", 2))
-                .uri("https://localhost:8080/status")
+                .uri(TEST_STATUS_LIST_URI)
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
-                .nextFreeIndex(0)
                 .maxLength(10000)
                 .build();
+        when(availableStatusListIndexRepository.findById(TEST_STATUS_LIST_URI)).thenReturn(
+                Optional.of(AvailableStatusListIndexes.builder()
+                        .statusListUri(TEST_STATUS_LIST_URI)
+                        .freeIndexes(IntStream.range(0, 10).boxed().toList())
+                        .build()));
 
         createCredentialRequestDto = CreateCredentialRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
@@ -268,7 +285,7 @@ class CredentialManagementServiceTest {
 
         var exception = assertThrows(BadRequestException.class, () ->
                 credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
-        assertTrue(exception.getMessage().contains("Could not resolve all provided status lists, only found https://localhost:8080/status"));
+        assertThat(exception.getMessage()).contains("Could not resolve all provided status lists, only found https://localhost:8080/status");
     }
 
     @Test
@@ -545,8 +562,7 @@ class CredentialManagementServiceTest {
 
     private CredentialOfferStatus getCredentialOfferStatus(UUID offerId, UUID statusId) {
         return CredentialOfferStatus.builder()
-                .id(new CredentialOfferStatusKey(offerId, statusId))
-                .index(1)
+                .id(new CredentialOfferStatusKey(offerId, statusId, 1))
                 .build();
     }
 

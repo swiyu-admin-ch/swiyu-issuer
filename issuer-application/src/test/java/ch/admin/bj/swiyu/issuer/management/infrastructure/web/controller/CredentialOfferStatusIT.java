@@ -140,9 +140,7 @@ class CredentialOfferStatusIT {
         assertEquals(CredentialStatusType.REVOKED, offer.getCredentialStatus());
         assertEquals(1, byOfferStatusId.size());
         var offerStatus = byOfferStatusId.stream().findFirst().get();
-        assertEquals(0, offerStatus.getIndex(), "Should be the very first index");
         var statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
-        assertEquals(1, statusList.getNextFreeIndex(), "Should NOT have advanced the counter");
         var tokenStatusList = testHelper.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped());
         assertEquals(1, tokenStatusList.getStatus(0), "Should be revoked");
         assertEquals(0, tokenStatusList.getStatus(1), "Should not be revoked");
@@ -152,9 +150,7 @@ class CredentialOfferStatusIT {
         assertEquals(CredentialStatusType.SUSPENDED, offer.getCredentialStatus());
         byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
         offerStatus = byOfferStatusId.stream().findFirst().get();
-        assertEquals(1, offerStatus.getIndex(), "Should be the the second entry");
         statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
-        assertEquals(2, statusList.getNextFreeIndex(), "Should have advanced the counter");
         tokenStatusList = testHelper.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                 statusList.getStatusZipped());
         assertEquals(1, tokenStatusList.getStatus(0), "Should be still revoked");

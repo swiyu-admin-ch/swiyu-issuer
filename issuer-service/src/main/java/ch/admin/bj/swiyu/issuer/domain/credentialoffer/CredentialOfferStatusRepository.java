@@ -19,4 +19,7 @@ public interface CredentialOfferStatusRepository
 
     @Query("SELECT c FROM CredentialOfferStatus c WHERE :offerStatusId = c.id.offerId")
     Set<CredentialOfferStatus> findByOfferStatusId(UUID offerStatusId);
+
+    @Query("SELECT count(*) FROM CredentialOfferStatus c WHERE :statusListId = c.id.statusListId")
+    int countByStatusListId(UUID statusListId);
 }

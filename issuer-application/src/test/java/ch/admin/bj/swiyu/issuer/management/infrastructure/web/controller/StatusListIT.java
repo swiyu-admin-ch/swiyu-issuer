@@ -136,7 +136,6 @@ class StatusListIT {
         assertNotNull(newStatusList.getUri());
         assertEquals(type, newStatusList.getType().toString());
         assertEquals(maxLength, newStatusList.getMaxLength());
-        assertEquals(0, newStatusList.getNextFreeIndex());
         assertEquals(bits, newStatusList.getConfig().get("bits"));
         assertNull(newStatusList.getConfigurationOverride().issuerDid());
         assertNull(newStatusList.getConfigurationOverride().verificationMethod());
@@ -169,7 +168,6 @@ class StatusListIT {
         assertNotNull(newStatusList.getUri());
         assertEquals(type, newStatusList.getType());
         assertEquals(maxLength, newStatusList.getMaxLength());
-        assertEquals(0, newStatusList.getNextFreeIndex());
         assertEquals(bits, newStatusList.getConfig().get("bits"));
         assertEquals(issuerId, newStatusList.getConfigurationOverride().issuerDid());
         assertEquals(verificationMethod, newStatusList.getConfigurationOverride().verificationMethod());

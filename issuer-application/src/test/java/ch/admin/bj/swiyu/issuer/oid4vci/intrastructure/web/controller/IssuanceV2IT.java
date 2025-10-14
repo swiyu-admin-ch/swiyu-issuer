@@ -76,11 +76,11 @@ class IssuanceV2IT {
     void setUp() throws JOSEException {
         testStatusList = saveStatusList(createStatusList());
         CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
-        saveStatusListLinkedOffer(offer, testStatusList);
+        saveStatusListLinkedOffer(offer, testStatusList, 0);
         jwk = createPrivateKeyV2("Test-Key");
 
         var unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt");
-        saveStatusListLinkedOffer(unboundOffer, testStatusList);
+        saveStatusListLinkedOffer(unboundOffer, testStatusList, 1);
     }
 
     @Test
@@ -116,7 +116,7 @@ class IssuanceV2IT {
 
         var metadata = new CredentialOfferMetadata(false, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
         var getValidPreAuthCodeWithMetadataOffer = createTestOffer(validPreAuthCodeWithMetadata, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
-        saveStatusListLinkedOffer(getValidPreAuthCodeWithMetadataOffer, testStatusList);
+        saveStatusListLinkedOffer(getValidPreAuthCodeWithMetadataOffer, testStatusList, 2);
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCodeWithMetadata.toString());
         var token = tokenResponse.get("access_token");
@@ -205,8 +205,8 @@ class IssuanceV2IT {
         var requestJweHeader = new JWEHeader.Builder(
                 JWEAlgorithm.ECDH_ES,
                 EncryptionMethod.parse(requestEncryption.getEncValuesSupported().getFirst()))
-                    .keyID(requestKey.getKeyID())
-                    .compressionAlgorithm(CompressionAlgorithm.DEF).build();
+                .keyID(requestKey.getKeyID())
+                .compressionAlgorithm(CompressionAlgorithm.DEF).build();
         var jweObject = new JWEObject(requestJweHeader, new Payload(credentialRequestString));
         assertDoesNotThrow(() -> jweObject.encrypt(requestEncryptor));
         var encryptedRequestMessage = assertDoesNotThrow(jweObject::serialize);
@@ -296,10 +296,9 @@ class IssuanceV2IT {
                 .andReturn();
     }
 
-    private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
+    private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
         credentialOfferRepository.save(offer);
-        credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
-        statusList.incrementNextFreeIndex();
+        credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
     }
 
     private StatusList saveStatusList(StatusList statusList) {

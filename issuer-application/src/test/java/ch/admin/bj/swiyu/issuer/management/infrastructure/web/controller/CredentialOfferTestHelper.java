@@ -80,7 +80,7 @@ public class CredentialOfferTestHelper {
         var statusList = statusListRepository.findById(byOfferStatusId.stream().findFirst().orElseThrow().getId().getStatusListId()).orElseThrow();
         byOfferStatusId.forEach(status -> {
             try {
-                var tokenState = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusZipped(), 204800).getStatus(status.getIndex());
+                var tokenState = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusZipped(), 204800).getStatus(status.getId().getIndex());
                 var expectedState = switch (state) {
                     case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED ->
                             TokenStatusListBit.VALID.getValue();
@@ -88,7 +88,7 @@ public class CredentialOfferTestHelper {
                     case REVOKED -> TokenStatusListBit.REVOKE.getValue();
                 };
                 if (expectedState != tokenState) {
-                    throw new AssertionError(String.format("Offer %s, idx %d: expected %d but got %d", offerId, status.getIndex(), expectedState, tokenState));
+                    throw new AssertionError(String.format("Offer %s, idx %d: expected %d but got %d", offerId, status.getId().getIndex(), expectedState, tokenState));
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -96,12 +96,12 @@ public class CredentialOfferTestHelper {
         });
     }
 
-    TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws IOException {
-        return TokenStatusListToken.loadTokenStatusListToken(bits, lst, 204800);
-    }
-
     public String getUpdateUrl(UUID id, CredentialStatusTypeDto credentialStatus) {
         return String.format("%s?credentialStatus=%s", getUrl(id), credentialStatus);
+    }
+
+    TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws IOException {
+        return TokenStatusListToken.loadTokenStatusListToken(bits, lst, 204800);
     }
 
     String getUrl(UUID id) {
