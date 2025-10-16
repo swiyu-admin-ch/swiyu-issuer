@@ -194,7 +194,7 @@ class CredentialManagementServiceTest {
 
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
         doNothing().when(statusListService).revoke(offerStatusSet);
 
@@ -232,7 +232,7 @@ class CredentialManagementServiceTest {
 
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
         doNothing().when(statusListService).revoke(offerStatusSet);
 
@@ -246,7 +246,7 @@ class CredentialManagementServiceTest {
 
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
         doNothing().when(statusListService).revoke(offerStatusSet);
 
@@ -260,7 +260,7 @@ class CredentialManagementServiceTest {
 
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferStatusId(suspended.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferId(suspended.getId())).thenReturn(offerStatusSet);
 
         doNothing().when(statusListService).revoke(offerStatusSet);
 
@@ -404,7 +404,7 @@ class CredentialManagementServiceTest {
         when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
-
+        when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(new HashMap<>());
         var credConfig = mock(CredentialConfiguration.class);
         var claim = new CredentialClaim();
         claim.setMandatory(true);
@@ -428,7 +428,7 @@ class CredentialManagementServiceTest {
         var exception = assertThrows(BadRequestException.class, () ->
                 credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
 
-        assertTrue(exception.getMessage().contains("Credential claims (credential subject data) is missing!"));
+        assertThat(exception.getMessage()).contains("Credential claims (credential subject data) is missing!");
     }
 
     @Test
@@ -438,7 +438,6 @@ class CredentialManagementServiceTest {
         when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
-
         var credConfig = mock(CredentialConfiguration.class);
         var claim = new CredentialClaim();
         claim.setMandatory(true);

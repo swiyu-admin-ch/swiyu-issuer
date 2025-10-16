@@ -75,7 +75,7 @@ public class CredentialOfferTestHelper {
 
     public void assertOfferStateConsistent(UUID offerId) {
         var offer = credentialOfferRepository.findById(offerId).orElseThrow();
-        Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
+        Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
         var state = offer.getCredentialStatus();
         var statusList = statusListRepository.findById(byOfferStatusId.stream().findFirst().orElseThrow().getId().getStatusListId()).orElseThrow();
         byOfferStatusId.forEach(status -> {

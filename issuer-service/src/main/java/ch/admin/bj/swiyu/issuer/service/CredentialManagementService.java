@@ -311,10 +311,10 @@ public class CredentialManagementService {
         for (StatusList statusList : statusLists) {
             // Find all free indexes for this status list
             var freeIndexes = availableStatusListIndexRepository.findById(statusList.getUri())
-                    .orElseThrow()
+                    .orElseThrow(() -> new BadRequestException("No status indexes remain in status list %s to create credential offer".formatted(statusList.getUri())))
                     .getFreeIndexes();
             if (freeIndexes.size() < issuanceBatchSize) {
-                throw new IllegalStateException("Too few status indexes remain in status list %s to create credential offer".formatted(statusList.getUri()));
+                throw new BadRequestException("Too few status indexes remain in status list %s to create credential offer".formatted(statusList.getUri()));
             }
             // Random sample free indexes without repetitions
             Set<Integer> sampledNumbers = new LinkedHashSet<>();
@@ -439,7 +439,7 @@ public class CredentialManagementService {
     private void handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
 
         final Set<CredentialOfferStatus> offerStatusSet = credentialOfferStatusRepository
-                .findByOfferStatusId(credential.getId());
+                .findByOfferId(credential.getId());
 
         if (offerStatusSet.isEmpty()) {
             throw new BadRequestException(

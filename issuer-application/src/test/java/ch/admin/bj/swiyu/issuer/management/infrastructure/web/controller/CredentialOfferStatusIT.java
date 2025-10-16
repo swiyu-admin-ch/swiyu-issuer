@@ -14,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,12 +31,17 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -47,21 +53,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-@Transactional
+//@Transactional selecting indexes view does not work with transactional
 class CredentialOfferStatusIT {
 
-    private static final int STATUS_LIST_MAX_LENGTH = 2;
-
-    private final UUID statusListUUID = UUID.randomUUID();
-    private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
-            .formatted(statusListUUID);
-
+    private static final int STATUS_LIST_MAX_LENGTH = 9;
     @Autowired
     protected SwiyuProperties swiyuProperties;
-
     @Autowired
     protected MockMvc mvc;
     protected CredentialOfferTestHelper testHelper;
+    private String statusRegistryUrl;
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired
@@ -73,13 +74,18 @@ class CredentialOfferStatusIT {
     @Mock
     private ApiClient mockApiClient;
     private UUID id;
+    @Autowired
+    private IssuerMetadata issuerMetadata;
 
     @BeforeEach
     void setupTest() throws Exception {
+        var statusRegistryUUID = UUID.randomUUID();
+        statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
+                .formatted(statusRegistryUUID);
         testHelper = new CredentialOfferTestHelper(mvc, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository,
                 statusRegistryUrl);
         var statusListEntryCreationDto = new StatusListEntryCreationDto();
-        statusListEntryCreationDto.setId(statusListUUID);
+        statusListEntryCreationDto.setId(statusRegistryUUID);
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
@@ -133,50 +139,102 @@ class CredentialOfferStatusIT {
 
     @Test
     void testUpdateOfferStatusWithRevokedWhenIssued_thenSuccess() throws Exception {
-        UUID vcRevokedId = testHelper.createIssueAndSetStateOfVc(CredentialStatusTypeDto.REVOKED);
 
+        assertThat(STATUS_LIST_MAX_LENGTH).as("This test requires more than 9 indexes").isGreaterThanOrEqualTo(9);
+        Set<Integer> unusedIndexes = new HashSet<>(IntStream.range(0, STATUS_LIST_MAX_LENGTH).boxed().collect(Collectors.toSet()));
+        // Add Revoked VCS
+        UUID vcRevokedId = testHelper.createIssueAndSetStateOfVc(CredentialStatusTypeDto.REVOKED);
         var offer = credentialOfferRepository.findById(vcRevokedId).get();
-        Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
+        Set<CredentialOfferStatus> revokedOfferStatus = credentialOfferStatusRepository.findByOfferId(offer.getId());
+        assertThat(revokedOfferStatus)
+                .as("Expecting test configuration to provide batch size of 3")
+                .hasSize(3);
+        var offerIds = revokedOfferStatus.stream()
+                .map(CredentialOfferStatus::getId)
+                .map(CredentialOfferStatusKey::getOfferId)
+                .distinct()
+                .toList();
+        assertThat(offerIds)
+                .as("All status entries should be of the same offer")
+                .hasSize(1);
+        unusedIndexes.removeAll(revokedOfferStatus.stream().map(CredentialOfferStatus::getId).map(CredentialOfferStatusKey::getIndex).collect(Collectors.toSet()));
         assertEquals(CredentialStatusType.REVOKED, offer.getCredentialStatus());
-        assertEquals(1, byOfferStatusId.size());
-        var offerStatus = byOfferStatusId.stream().findFirst().get();
-        var statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
+        var statusListId = assertDoesNotThrow(() -> revokedOfferStatus.stream().findFirst().orElseThrow().getId().getStatusListId());
+        var statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
         var tokenStatusList = testHelper.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped());
-        assertEquals(1, tokenStatusList.getStatus(0), "Should be revoked");
-        assertEquals(0, tokenStatusList.getStatus(1), "Should not be revoked");
+        for (var offerStatus : revokedOfferStatus) {
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been revoked").isEqualTo(1);
+        }
+        for (Integer index : unusedIndexes) {
+            assertThat(tokenStatusList.getStatus(index)).as("Index has not been used and not revoked").isEqualTo(0);
+        }
 
         UUID vcSuspendedId = testHelper.createIssueAndSetStateOfVc(CredentialStatusTypeDto.SUSPENDED);
-        offer = credentialOfferRepository.findById(vcSuspendedId).get();
+        offer = assertDoesNotThrow(() -> credentialOfferRepository.findById(vcSuspendedId).orElseThrow());
         assertEquals(CredentialStatusType.SUSPENDED, offer.getCredentialStatus());
-        byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
-        offerStatus = byOfferStatusId.stream().findFirst().get();
-        statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
+        var suspendedOfferStatus = credentialOfferStatusRepository.findByOfferId(offer.getId());
+        var suspendedIndexes = suspendedOfferStatus.stream()
+                .map(CredentialOfferStatus::getId)
+                .map(CredentialOfferStatusKey::getIndex)
+                .collect(Collectors.toSet());
+        unusedIndexes.removeAll(suspendedIndexes);
+
+        statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
         tokenStatusList = testHelper.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                 statusList.getStatusZipped());
-        assertEquals(1, tokenStatusList.getStatus(0), "Should be still revoked");
-        assertEquals(2, tokenStatusList.getStatus(1), "Should be suspended");
-        assertEquals(0, tokenStatusList.getStatus(2), "Should not be revoked");
+
+        for (var offerStatus : suspendedOfferStatus) {
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been suspended").isEqualTo(2);
+        }
+        for (var offerStatus : revokedOfferStatus) {
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been still revoked").isEqualTo(1);
+        }
+        for (Integer index : unusedIndexes) {
+            assertThat(tokenStatusList.getStatus(index)).as("Index is still unused / valid").isZero();
+        }
 
         CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.ISSUED;
         mvc.perform(patch(testHelper.getUpdateUrl(vcSuspendedId, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(newStatus.toString()));
-        offer = credentialOfferRepository.findById(vcSuspendedId).get();
+        offer = assertDoesNotThrow(() -> credentialOfferRepository.findById(vcSuspendedId).orElseThrow());
         assertEquals(CredentialStatusType.ISSUED, offer.getCredentialStatus());
-        byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
-        offerStatus = byOfferStatusId.stream().findFirst().get();
-        statusList = statusListRepository.findById(offerStatus.getId().getStatusListId()).get();
+        var issuedOfferStatus = credentialOfferStatusRepository.findByOfferId(offer.getId());
+        var unsuspendedIndexes = issuedOfferStatus.stream()
+                .map(CredentialOfferStatus::getId)
+                .map(CredentialOfferStatusKey::getIndex)
+                .collect(Collectors.toSet());
+        assertThat(suspendedIndexes)
+                .as("Suspendend and unsuspended should be the same indexes")
+                .containsExactlyInAnyOrderElementsOf(unsuspendedIndexes);
+
+
+        statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
         tokenStatusList = testHelper.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                 statusList.getStatusZipped());
-        assertEquals(1, tokenStatusList.getStatus(0), "Should be still revoked");
-        assertEquals(0, tokenStatusList.getStatus(1), "Should not be suspended any more");
+        for (var offerStatus : issuedOfferStatus) {
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been unsuspended").isZero();
+        }
+        for (var offerStatus : revokedOfferStatus) {
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been still revoked").isEqualTo(1);
+        }
+        for (Integer index : unusedIndexes) {
+            assertThat(tokenStatusList.getStatus(index)).as("Index is still unused / valid").isZero();
+        }
     }
 
     @Test
     void testCreateOfferWhenExceedStatusListMaximum_thenBadRequest() throws Exception {
-        for (var i = 0; i < STATUS_LIST_MAX_LENGTH; i++) {
-            testHelper.createStatusListLinkedOfferAndGetUUID();
+        var managementObjects = new HashSet<UUID>();
+        var offerSpace = STATUS_LIST_MAX_LENGTH / issuerMetadata.getIssuanceBatchSize();
+        for (var i = 0; i < offerSpace; i++) {
+            managementObjects.add(testHelper.createStatusListLinkedOfferAndGetUUID());
         }
+        assertThat(managementObjects).hasSize(offerSpace);
+        var offers = managementObjects.stream().map(credentialOfferStatusRepository::findByOfferId).flatMap(Collection::stream).toList();
+        var usedStatusLists = offers.stream().map(CredentialOfferStatus::getId).map(CredentialOfferStatusKey::getStatusListId).distinct().toList();
+        assertThat(usedStatusLists).as("Only one status list should have been used").hasSize(1);
+        assertThat(credentialOfferStatusRepository.countByStatusListId(usedStatusLists.getFirst())).as("All entries should be filled").isEqualTo(STATUS_LIST_MAX_LENGTH);
         String payload = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
                 .formatted(statusRegistryUrl);
         mvc
@@ -186,7 +244,7 @@ class CredentialOfferStatusIT {
                         .value(
                                 Matchers.allOf(
                                         Matchers.containsString(statusRegistryUrl),
-                                        Matchers.containsString("exceed"),
+                                        Matchers.containsString("No status indexes remain in status list"),
                                         Matchers.containsString(String.valueOf(STATUS_LIST_MAX_LENGTH)))));
 
     }

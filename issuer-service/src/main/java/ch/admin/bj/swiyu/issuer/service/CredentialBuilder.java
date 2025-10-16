@@ -198,7 +198,7 @@ public abstract class CredentialBuilder {
         VerifiableCredentialStatusFactory statusFactory = new VerifiableCredentialStatusFactory();
         HashMap<String, Object> statuses = new HashMap<>();
         Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository
-                .findByOfferStatusId(this.credentialOffer.getId());
+                .findByOfferId(this.credentialOffer.getId());
 
         return byOfferStatusId.stream()
                 .map((CredentialOfferStatus credentialOfferStatus) -> statusFactory.createStatusListReference(

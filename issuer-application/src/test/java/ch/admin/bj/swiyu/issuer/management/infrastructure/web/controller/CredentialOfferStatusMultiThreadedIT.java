@@ -121,7 +121,7 @@ class CredentialOfferStatusMultiThreadedIT {
         // Get unique indexed on status list
         var indexSet = credentialOfferRepository.findAllById(results).stream()
                 .map(offer -> {
-                            Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
+                            Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
                             return byOfferStatusId.stream().findFirst().get().getId().getIndex();
                         }
                 )
@@ -149,10 +149,10 @@ class CredentialOfferStatusMultiThreadedIT {
         // Get all offers and the status list we are using
         var offers = offerIds.stream().map(credentialOfferRepository::findById).map(Optional::get).toList();
         CredentialOffer offer = offers.getFirst();
-        Set<CredentialOfferStatus> credentialOfferStatuses = credentialOfferStatusRepository.findByOfferStatusId(offer.getId());
+        Set<CredentialOfferStatus> credentialOfferStatuses = credentialOfferStatusRepository.findByOfferId(offer.getId());
         var statusListId = credentialOfferStatuses.stream().findFirst().get().getId().getStatusListId();
         var statusListIndexes = offers.stream()
-                .map(credentialOffer -> credentialOfferStatusRepository.findByOfferStatusId(credentialOffer.getId()))
+                .map(credentialOffer -> credentialOfferStatusRepository.findByOfferId(credentialOffer.getId()))
                 .flatMap(Set::stream)
                 .map(CredentialOfferStatus::getId)
                 .map(CredentialOfferStatusKey::getIndex)

@@ -110,6 +110,7 @@ public class StatusListService {
      * @param bit         the statusBit to be set
      */
     protected void updateTokenStatusList(CredentialOfferStatus offerStatus, TokenStatusListBit bit) {
+        // TODO Make updating status more efficient
         StatusList statusList = statusListRepository.findByIdForUpdate(offerStatus.getId().getStatusListId()).orElseThrow();
         if ((Integer) statusList.getConfig().get("bits") < bit.getValue()) {
             throw new BadRequestException(String.format("Attempted to update a status list %s to a status not supported %s", statusList.getUri(), bit.name()));
