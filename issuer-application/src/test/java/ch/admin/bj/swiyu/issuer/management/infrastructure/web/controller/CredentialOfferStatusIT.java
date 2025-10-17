@@ -244,8 +244,7 @@ class CredentialOfferStatusIT {
                         .value(
                                 Matchers.allOf(
                                         Matchers.containsString(statusRegistryUrl),
-                                        Matchers.containsString("No status indexes remain in status list"),
-                                        Matchers.containsString(String.valueOf(STATUS_LIST_MAX_LENGTH)))));
+                                        Matchers.containsString("No status indexes remain in status list"))));
 
     }
 

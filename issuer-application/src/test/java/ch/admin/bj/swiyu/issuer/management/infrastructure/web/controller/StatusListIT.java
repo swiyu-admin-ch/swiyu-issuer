@@ -16,6 +16,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.SignatureService;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.jayway.jsonpath.JsonPath;
@@ -78,6 +79,8 @@ class StatusListIT {
     private SignatureService signatureService;
     @Mock
     private ApiClient mockApiClient;
+    @Autowired
+    private IssuerMetadata issuerMetadata;
 
 
     @BeforeEach
@@ -113,7 +116,6 @@ class StatusListIT {
                 .andExpect(jsonPath("$.type").value(type))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
                 .andExpect(jsonPath("$.remainingListEntries").value(maxLength))
-                .andExpect(jsonPath("$.nextFreeIndex").value(0))
                 .andExpect(jsonPath("$.config.bits").value(bits))
                 .andReturn();
 
@@ -127,7 +129,6 @@ class StatusListIT {
                 .andExpect(jsonPath("$.type").value(type))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
                 .andExpect(jsonPath("$.remainingListEntries").value(maxLength))
-                .andExpect(jsonPath("$.nextFreeIndex").value(0))
                 .andExpect(jsonPath("$.config.bits").value(bits));
 
         final Optional<StatusList> newStatusListOpt = statusListRepository.findById(newStatusListId);
@@ -211,8 +212,6 @@ class StatusListIT {
         var bits = 2;
         var payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength,
                 bits);
-        var freeIndex = 0;
-        var remainigEntries = maxLength - freeIndex;
 
         var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -229,7 +228,6 @@ class StatusListIT {
 
         // check if next free index increased
         var statusListId = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
-        var expectedNextFreeIndex = 1;
 
         mvc.perform(get(STATUS_LIST_BASE_URL + "/" + statusListId))
                 .andExpect(status().isOk())
@@ -237,9 +235,8 @@ class StatusListIT {
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
                 .andExpect(jsonPath("$.type").value(type))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
-                .andExpect(jsonPath("$.remainingListEntries").value(remainigEntries - expectedNextFreeIndex))
+                .andExpect(jsonPath("$.remainingListEntries").value(maxLength - issuerMetadata.getIssuanceBatchSize()))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
-                .andExpect(jsonPath("$.nextFreeIndex").value(expectedNextFreeIndex))
                 .andExpect(jsonPath("$.config.bits").value(bits)).andExpect(jsonPath("$.config.purpose").isEmpty());
     }
 
