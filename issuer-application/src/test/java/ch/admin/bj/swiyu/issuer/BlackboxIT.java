@@ -25,7 +25,10 @@ import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.jwk.*;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -46,7 +49,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.org.checkerframework.common.value.qual.IntRange;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -325,6 +327,12 @@ class BlackboxIT {
                 .toList();
         assertThat(statusIndexes).hasSize(issuerMetadata.getIssuanceBatchSize());
 
+        var holderBindings = verifiableCredentialClaims.stream()
+                .map(claimSet -> claimSet.getClaim("cnf"))
+                .map(cnf -> assertDoesNotThrow(() -> objectMapper.writeValueAsString(cnf)))
+                .distinct()
+                .toList();
+        assertThat(holderBindings).hasSize(issuerMetadata.getIssuanceBatchSize());
 
     }
 

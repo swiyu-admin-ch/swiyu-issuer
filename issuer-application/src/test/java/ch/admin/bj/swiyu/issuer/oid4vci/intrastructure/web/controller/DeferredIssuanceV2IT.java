@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,9 +43,8 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Date;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -63,7 +63,7 @@ class DeferredIssuanceV2IT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
     private final UUID validUnboundPreAuthCode = UUID.randomUUID();
-    private ECKey jwk;
+    private List<ECKey> holderKeys;
     @Autowired
     private MockMvc mock;
     @Autowired
@@ -81,6 +81,8 @@ class DeferredIssuanceV2IT {
     private CredentialOffer offer;
     private CredentialOffer unboundOffer;
     private StatusList statusList;
+    @Autowired
+    private IssuerMetadata issuerMetadata;
 
     private static String getDeferredCredentialRequestString(String transactionId) {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
@@ -97,11 +99,12 @@ class DeferredIssuanceV2IT {
                 "unbound_example_sd_jwt", deferredMetadata);
         saveStatusListLinkedOffer(offer, statusList, 0);
         saveStatusListLinkedOffer(unboundOffer, statusList, 1);
-        jwk = new ECKeyGenerator(Curve.P_256)
+        holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize()).boxed().map(i -> assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
-                .keyID("Test-Key")
+                .keyID("Test-Key-" + i)
                 .issueTime(new Date())
-                .generate();
+                .generate())
+        ).toList();
     }
 
     @Test
@@ -169,16 +172,8 @@ class DeferredIssuanceV2IT {
                         .toJSONString());
 
         // credential_response_encryption
-        String proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement()
-                        .get("external-url"),
-                tokenResponse.get("c_nonce")
-                        .toString(), ProofType.JWT.getClaimTyp(), false);
-        var credentialRequestString = String.format(
-                "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}",
-                "university_example_sd_jwt",
-                responseEncryptionJson,
-                proof);
+        var credentialRequestString = getCredentialRequestString(tokenResponse.get("c_nonce").toString(),
+                "university_example_sd_jwt", responseEncryptionJson);
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -372,20 +367,31 @@ class DeferredIssuanceV2IT {
         }
     }
 
-    private String getCredentialRequestString(Map<String, Object> tokenResponse, String configurationId)
-            throws JOSEException {
+    private String getCredentialRequestString(Map<String, Object> tokenResponse, String configurationId) {
         return getCredentialRequestString(tokenResponse.get("c_nonce")
                 .toString(), configurationId);
     }
 
-    private String getCredentialRequestString(String cNonce, String configurationId) throws JOSEException {
-        String proof = TestServiceUtils.createHolderProof(jwk,
+    private String getCredentialRequestString(String cNonce, String configurationId) {
+        return getCredentialRequestString(cNonce, configurationId, null);
+    }
+
+    private String getCredentialRequestString(String cNonce, String configurationId, String encryption) {
+        List<String> proofs = holderKeys.stream().map(holderKey -> assertDoesNotThrow(() -> TestServiceUtils.createHolderProof(holderKey,
                 applicationProperties.getTemplateReplacement()
                         .get("external-url"), cNonce,
-                ProofType.JWT.getClaimTyp(), false);
-        return String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}",
-                configurationId, proof);
+                ProofType.JWT.getClaimTyp(), false))).toList();
+
+
+        var proofString = proofs.stream().reduce((a, b) -> a + "\", \"" + b).orElse("");
+        if (encryption == null) {
+            return String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}",
+                    configurationId, proofString);
+        } else {
+            return String.format("{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}", configurationId, encryption, proofString);
+        }
     }
+
 
     private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int statusListIndex) {
         credentialOfferRepository.save(offer);

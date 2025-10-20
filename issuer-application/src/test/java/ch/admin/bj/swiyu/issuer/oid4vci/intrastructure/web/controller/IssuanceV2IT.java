@@ -18,6 +18,7 @@ import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
@@ -54,7 +56,7 @@ class IssuanceV2IT {
     private final UUID validPreAuthCode = UUID.randomUUID();
     private final UUID validUnboundPreAuthCode = UUID.randomUUID();
     private StatusList testStatusList;
-    private ECKey jwk;
+    private List<ECKey> holderKeys;
     @Autowired
     private MockMvc mock;
     @Autowired
@@ -73,11 +75,14 @@ class IssuanceV2IT {
     private IssuerMetadata issuerMetadata;
 
     @BeforeEach
-    void setUp() throws JOSEException {
+    void setUp() {
         testStatusList = saveStatusList(createStatusList());
         CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
         saveStatusListLinkedOffer(offer, testStatusList, 0);
-        jwk = createPrivateKeyV2("Test-Key");
+        holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
+                .boxed()
+                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .toList();
 
         var unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt");
         saveStatusListLinkedOffer(unboundOffer, testStatusList, 1);
@@ -88,7 +93,7 @@ class IssuanceV2IT {
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, List.of(jwk), applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties);
 
         var response = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -100,10 +105,10 @@ class IssuanceV2IT {
 
         var credentials = extractCredentialsV2(response);
 
-        assertEquals(1, credentials.size());
+        assertEquals(issuerMetadata.getIssuanceBatchSize(), credentials.size());
         var credential = credentials.get(0).getAsJsonObject();
         var credentialString = credential.get("credential").getAsString();
-        testHolderBindingV2(credentialString, jwk);
+        testHolderBindingV2(credentialString, holderKeys.get(0));
     }
 
     @Test
@@ -120,7 +125,7 @@ class IssuanceV2IT {
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCodeWithMetadata.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, List.of(jwk), applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties);
 
         var response = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -128,7 +133,7 @@ class IssuanceV2IT {
 
         var credentials = extractCredentialsV2(response);
 
-        assertEquals(1, credentials.size());
+        assertEquals(issuerMetadata.getIssuanceBatchSize(), credentials.size());
         var credential = credentials.get(0).getAsJsonObject();
         var credentialString = credential.get("credential").getAsString();
         var claims = getVcClaims(credentialString);
@@ -175,12 +180,10 @@ class IssuanceV2IT {
         assertThat(metadata.getResponseEncryption()).isNotNull();
         assertTrue(metadata.getResponseEncryption().getAlgValuesSupported().contains(JWEAlgorithm.ECDH_ES.getName()));
         assertTrue(metadata.getResponseEncryption().getEncValuesSupported().contains(EncryptionMethod.A128GCM.getName()));
-        ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
+        ECKey encryptionKey = new ECKeyGenerator(Curve.P_256)
                 .keyID("transportEncKeyEC")
+                .keyUse(KeyUse.ENCRYPTION)
                 .generate();
-        String proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"),
-                tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
 
         var responseEncryptionJson = String.format("""
                         {
@@ -189,10 +192,8 @@ class IssuanceV2IT {
                             "jwk": %s
                         }
                         """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
-                ecJWK.toPublicJWK().toJSONString());
-        var credentialRequestString = String.format(
-                "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}",
-                "university_example_sd_jwt", responseEncryptionJson, proof);
+                encryptionKey.toPublicJWK().toJSONString());
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties, responseEncryptionJson);
 
         // Request encryption
         var requestEncryption = metadata.getRequestEncryption();
@@ -222,7 +223,7 @@ class IssuanceV2IT {
                 .andReturn();
 
         var jwe = JWEObject.parse(response.getResponse().getContentAsString());
-        jwe.decrypt(new ECDHDecrypter(ecJWK.toECPrivateKey()));
+        jwe.decrypt(new ECDHDecrypter(encryptionKey.toECPrivateKey()));
         var jweContent = jwe.getPayload().toString();
         JsonObject credentialResponse = JsonParser.parseString(jweContent).getAsJsonObject();
         JsonArray credentials = credentialResponse.get("credentials").getAsJsonArray();

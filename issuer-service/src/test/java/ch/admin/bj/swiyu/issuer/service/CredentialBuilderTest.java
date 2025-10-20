@@ -30,10 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -107,12 +104,14 @@ class CredentialBuilderTest {
 
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
         builder.holderBindings(List.of());
-        doReturn(input).when(builder).getCredential(null);
+        var inputList = new LinkedList<String>();
+        inputList.add(input);
+        doReturn(inputList).when(builder).getCredential(Mockito.anyList());
 
         var result = builder.buildCredentialEnvelopeV2();
 
         // check if getCredential has been called without a param
-        verify(builder).getCredential(null);
+        verify(builder).getCredential(Mockito.anyList());
 
         assertEquals("application/json", result.getContentType());
 
@@ -125,7 +124,7 @@ class CredentialBuilderTest {
     void credentialOffer_multipleProofs_thenSuccess() throws JOSEException, IOException {
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
 
-        doReturn("credential").when(builder).getCredential(null);
+        doReturn(List.of("credential")).when(builder).getCredential(null);
 
         var privateKeys = List.of(createPrivateKey(), createPrivateKey());
 
@@ -142,12 +141,12 @@ class CredentialBuilderTest {
                 .map(DidJwk::createFromJsonString)
                 .toList();
 
-        doReturn("credential1").when(builder).getCredential(didJwks.getFirst());
-        doReturn("credential2").when(builder).getCredential(didJwks.get(1));
+        doReturn(List.of("credential1")).when(builder).getCredential(List.of(didJwks.getFirst()));
+        doReturn(List.of("credential2")).when(builder).getCredential(List.of(didJwks.get(1)));
 
         var result = builder.buildCredentialEnvelopeV2();
 
-        verify(builder, Mockito.times(2)).getCredential(any());
+        verify(builder, Mockito.times(1)).getCredential(any());
 
         assertEquals("application/json", result.getContentType());
         assertEquals(HttpStatus.OK, result.getHttpStatus());
@@ -226,12 +225,19 @@ class CredentialBuilderTest {
         }
 
         @Override
+        public List<String> getCredential(List<DidJwk> didJwk) {
+            if (didJwk == null) {
+                return List.of(getCredentialSingle(null));
+            }
+            return didJwk.stream().map(this::getCredentialSingle).toList();
+        }
+
+        @Override
         JWSSigner createSigner() {
             return null;
         }
 
-        @Override
-        protected String getCredential(DidJwk didJwk) {
+        protected String getCredentialSingle(DidJwk didJwk) {
             return didJwk == null ? "credential" : "credential-" + didJwk.getDidJwk();
         }
     }

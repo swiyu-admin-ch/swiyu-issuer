@@ -69,9 +69,10 @@ public class IssuanceV2TestUtils {
         return JsonParser.parseString(jwt.getPayload().toString()).getAsJsonObject();
     }
 
-    public static String getCredentialRequestStringV2(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties) throws Exception {
-        var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
+    public static String getCredentialRequestStringV2(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties, String encryption) throws Exception {
+
+        var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         JsonObject nonceResponseJson = JsonParser.parseString(nonceResponse).getAsJsonObject();
         String nonce = nonceResponseJson.get("c_nonce").getAsString();
 
@@ -83,9 +84,17 @@ public class IssuanceV2TestUtils {
                     false);
             proofs.add(proof);
         }
-        return String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}",
-                "university_example_sd_jwt",
-                proofs.stream().reduce((a, b) -> a + "\", \"" + b).orElse(""));
+        var proofString = proofs.stream().reduce((a, b) -> a + "\", \"" + b).orElse("");
+        if (encryption == null) {
+            return String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}",
+                    "university_example_sd_jwt", proofString);
+        } else {
+            return String.format("{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}", "university_example_sd_jwt", encryption, proofString);
+        }
+    }
+
+    public static String getCredentialRequestStringV2(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties) throws Exception {
+        return getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties, null);
     }
 
     public static List<ECKey> createHolderPrivateKeysV2(int numberOfKeys) throws JOSEException {
