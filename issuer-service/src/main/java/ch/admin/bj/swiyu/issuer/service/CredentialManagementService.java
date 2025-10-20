@@ -309,22 +309,10 @@ public class CredentialManagementService {
 
 
         for (StatusList statusList : statusLists) {
-            // Find all free indexes for this status list
-            var freeIndexes = availableStatusListIndexRepository.findById(statusList.getUri())
-                    .orElseThrow(() -> new BadRequestException("No status indexes remain in status list %s to create credential offer".formatted(statusList.getUri())))
-                    .getFreeIndexes();
-            if (freeIndexes.size() < issuanceBatchSize) {
-                throw new BadRequestException("Too few status indexes remain in status list %s to create credential offer".formatted(statusList.getUri()));
-            }
-            // Random sample free indexes without repetitions
-            Set<Integer> sampledNumbers = new LinkedHashSet<>();
-            while (sampledNumbers.size() < issuanceBatchSize) {
-                sampledNumbers.add(freeIndexes.get(random.nextInt(freeIndexes.size())));
-            }
-
+            Set<Integer> randomIndexes = getRandomIndexes(issuanceBatchSize, statusList);
             // Create Status List entries
             final var offerId = entity.getId();
-            var offerStatuses = sampledNumbers.stream().map(freeIndex -> {
+            var offerStatuses = randomIndexes.stream().map(freeIndex -> {
                 var offerStatusKey = CredentialOfferStatusKey.builder()
                         .offerId(offerId)
                         .statusListId(statusList.getId())
@@ -339,6 +327,22 @@ public class CredentialManagementService {
             credentialOfferStatusRepository.saveAll(offerStatuses);
         }
         return entity;
+    }
+
+    private Set<Integer> getRandomIndexes(int issuanceBatchSize, StatusList statusList) {
+        // Find all free indexes for this status list
+        var freeIndexes = availableStatusListIndexRepository.findById(statusList.getUri())
+                .orElseThrow(() -> new BadRequestException("No status indexes remain in status list %s to create credential offer".formatted(statusList.getUri())))
+                .getFreeIndexes();
+        if (freeIndexes.size() < issuanceBatchSize) {
+            throw new BadRequestException("Too few status indexes remain in status list %s to create credential offer".formatted(statusList.getUri()));
+        }
+        // Random sample free indexes without repetitions
+        Set<Integer> sampledNumbers = new LinkedHashSet<>();
+        while (sampledNumbers.size() < issuanceBatchSize) {
+            sampledNumbers.add(freeIndexes.get(random.nextInt(freeIndexes.size())));
+        }
+        return sampledNumbers;
     }
 
 

@@ -62,22 +62,23 @@ public class VerifiableCredentialStatusFactory {
      * Merges the JSON representations of status references together. If there are merge conflicts (aka; same status type is used multiple times), will take only the first one.
      */
     public Map<String, Object> mergeStatus(Map<String, Object> accumulator, Map<String, Object> statusMap) {
+        var acc = accumulator;
         if (accumulator == null) {
-            accumulator = new HashMap<>();
+            acc = new HashMap<>();
         }
-        Set<String> mergeConflicts = setIntersection(accumulator.keySet(), statusMap.keySet());
+        Set<String> mergeConflicts = setIntersection(acc.keySet(), statusMap.keySet());
 
 
         for (Map.Entry<String, Object> entry : statusMap.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
             if (mergeConflicts.contains(key)) {
-                if (accumulator.get(key) instanceof Map && value instanceof Map) {
-                    mergeStatus((Map<String, Object>) accumulator.get(key), (Map<String, Object>) value);
+                if (acc.get(key) instanceof Map && value instanceof Map) {
+                    mergeStatus((Map<String, Object>) acc.get(key), (Map<String, Object>) value);
                 }
                 // If we can't merge it we ignore it
             } else {
-                accumulator.put(key, value);
+                acc.put(key, value);
             }
         }
         return accumulator;

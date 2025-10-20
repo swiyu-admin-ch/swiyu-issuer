@@ -51,6 +51,12 @@ public class SdJwtCredential extends CredentialBuilder {
             "_sd_alg",
             "sd_hash",
             "...");
+    /**
+     * Single element in the Sd-Jwt batch issuance context means it can not be different
+     * in slices and will be reused for each element in the batch.
+     * Be aware that this can potentially lead to linkability
+     */
+    public static final int SINGLE_ELEMENT = 1;
 
     private final SdjwtProperties sdjwtProperties;
 
@@ -75,7 +81,7 @@ public class SdJwtCredential extends CredentialBuilder {
     private static void addHolderBinding(List<DidJwk> holderPublicKeys, int i, SDObjectBuilder builder) {
         if (holderPublicKeys != null && !holderPublicKeys.isEmpty()) {
             var idx = i;
-            if (holderPublicKeys.size() == 1) {
+            if (holderPublicKeys.size() == SINGLE_ELEMENT) {
                 // Using the same index for all elements in the batch; should only be used in tests
                 idx = 0;
             }
@@ -214,7 +220,7 @@ public class SdJwtCredential extends CredentialBuilder {
 
     private void createSignedSDJWT(ConfigurationOverride override,
                                    SDObjectBuilder builder,
-                                   ArrayList<String> sdjwts,
+                                   List<String> sdjwts,
                                    List<Disclosure> disclosures) {
         try {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
@@ -242,8 +248,8 @@ public class SdJwtCredential extends CredentialBuilder {
                 .stream()
                 // Get batch element
                 .map(references -> {
-                    if (references.size() == 1) {
-                        return references.get(0);
+                    if (references.size() == SINGLE_ELEMENT) {
+                        return references.getFirst();
                     }
                     return references.get(index);
                 })

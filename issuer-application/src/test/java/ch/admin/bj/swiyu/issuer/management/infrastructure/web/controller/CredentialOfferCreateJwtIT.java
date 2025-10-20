@@ -67,7 +67,7 @@ class CredentialOfferCreateJwtIT {
                   "offer_validity_seconds": 36000
                 }
                 """, offerData);
-        var offerResponse = testJWTCreateOffer(jsonPayload);
+        testJWTCreateOffer(jsonPayload);
         
     }
 

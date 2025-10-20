@@ -195,7 +195,7 @@ public abstract class CredentialBuilder {
      * </pre>
      */
     protected Map<String, List<VerifiableCredentialStatusReference>> getStatusReferences() {
-        HashMap<String, List<VerifiableCredentialStatusReference>> statuses = new HashMap<>();
+        Map<String, List<VerifiableCredentialStatusReference>> statuses = new HashMap<>();
         Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository
                 .findByOfferId(this.credentialOffer.getId());
 
@@ -203,7 +203,7 @@ public abstract class CredentialBuilder {
                 .map((CredentialOfferStatus credentialOfferStatus) -> statusFactory.createStatusListReference(
                         credentialOfferStatus.getId()
                                 .getIndex(), getStatusList(credentialOfferStatus)))
-                .forEach((status) -> statusFactory.mergeByIdentifier(statuses, status));
+                .forEach(status -> statusFactory.mergeByIdentifier(statuses, status));
         return statuses;
     }
 
