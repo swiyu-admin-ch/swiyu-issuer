@@ -156,7 +156,7 @@ public class EncryptionService {
     private Map<String, Object> getActivePublicKeys() {
         List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
         Instant staleTime = keyRotationInstant(Instant.now());
-        // Pick newest key that is still within active window (explicit ordering to avoid relying on DB/list iteration order)
+        // Pick the newest key that is still within active window (explicit ordering to avoid relying on DB/list iteration order)
         return allKeys.stream()
                 .filter(k -> k.getCreationTimestamp().isAfter(staleTime))
                 .max(Comparator.comparing(EncryptionKey::getCreationTimestamp))
@@ -175,16 +175,17 @@ public class EncryptionService {
         if (encryptionSpec == null) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Encryption not supported by issuer metadata");
         }
-        if (!encryptionSpec.getEncValuesSupported()
+        if (header.getEncryptionMethod() == null || !encryptionSpec.getEncValuesSupported()
                 .contains(header.getEncryptionMethod()
                         .toString())) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
                     "Unsupported encryption method. Must be one of %s but was %s".formatted(encryptionSpec.getEncValuesSupported(),
                             header.getEncryptionMethod()));
         }
-        if (encryptionSpec.getZipValuesSupported() != null && !encryptionSpec.getZipValuesSupported()
+        // Zip value is optional
+        if (encryptionSpec.getZipValuesSupported() != null && (header.getCompressionAlgorithm() == null || !encryptionSpec.getZipValuesSupported()
                 .contains(header.getCompressionAlgorithm()
-                        .toString())) {
+                        .toString()))) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
                     "Unsupported compression (zip) method. Must be one of %s but was %s".formatted(encryptionSpec.getZipValuesSupported(),
                             header.getCompressionAlgorithm()));
