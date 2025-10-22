@@ -67,7 +67,7 @@ public class WellKnownController {
      *
      * @return Issuer Metadata as defined by OID4VCI
      */
-    @GetMapping(value = {"/openid-credential-issuer"})
+    @GetMapping(value = {"/oid4vci/.well-known/openid-credential-issuer", ".well-known/openid-credential-issuer"})
     @Operation(summary = "Information about credentials which can be issued.")
     public IssuerMetadata getIssuerMetadata() {
         // Unwrap the object from the spring cache object.
