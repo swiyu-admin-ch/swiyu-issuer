@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.common.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Configuration;
@@ -15,12 +16,15 @@ import java.util.Map;
 import java.util.Properties;
 
 import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.ISSUER_METADATA_CACHE;
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.OPEN_ID_CONFIGURATION_CACHE;
 
 @Configuration
 @Data
+@Slf4j
 public class OpenIdIssuerConfiguration {
 
     private final ApplicationProperties applicationProperties;
+    private final SdjwtProperties sdjwtProperties;
 
     @Value("${application.openid-file}")
     private Resource openIdResource;
@@ -37,6 +41,11 @@ public class OpenIdIssuerConfiguration {
         return resourceToMappedData(issuerMetadataResource, HashMap.class);
     }
 
+    @Cacheable(OPEN_ID_CONFIGURATION_CACHE)
+    public Map<String, Object> getOpenIdConfiguration() throws IOException {
+        return resourceToMappedData(openIdResource, HashMap.class);
+    }
+
     private String replaceExternalUri(String template) {
         Properties prop = new Properties();
         for (Map.Entry<String, String> replacementEntrySet : applicationProperties.getTemplateReplacement().entrySet()) {
@@ -51,5 +60,4 @@ public class OpenIdIssuerConfiguration {
         json = replaceExternalUri(json);
         return new ObjectMapper().readValue(json, clazz);
     }
-
 }

@@ -6,7 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.api.type_metadata.OcaDto;
 import ch.admin.bj.swiyu.issuer.api.type_metadata.TypeMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -17,7 +16,6 @@ import jakarta.validation.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -31,9 +29,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.ISSUER_METADATA_PARSED_CACHE;
-import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.OPEN_ID_CONFIGURATION_CACHE;
 
 @Configuration
 @Data
@@ -51,16 +46,6 @@ public class OpenIdIssuerApiConfiguration {
 
     @Value("${application.metadata-file}")
     private Resource issuerMetadataResource;
-
-    @Cacheable(OPEN_ID_CONFIGURATION_CACHE)
-    public OpenIdConfigurationDto getOpenIdConfiguration() throws IOException {
-        return resourceToMappedData(openIdResource, OpenIdConfigurationDto.class);
-    }
-
-    @Cacheable(ISSUER_METADATA_PARSED_CACHE)
-    public IssuerMetadata getIssuerMetadata() throws IOException {
-        return resourceToMappedData(issuerMetadataResource, IssuerMetadata.class);
-    }
 
     /**
      * @return Issuer Metadata for using in creation of a vc

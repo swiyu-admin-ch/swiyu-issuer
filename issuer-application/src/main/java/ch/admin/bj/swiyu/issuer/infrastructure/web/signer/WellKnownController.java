@@ -6,20 +6,18 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.infrastructure.config.OpenIdIssuerApiConfiguration;
 import ch.admin.bj.swiyu.issuer.service.EncryptionService;
+import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopProxyUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Well known Controller
@@ -35,21 +33,21 @@ import java.io.IOException;
         "and credential metadata as required by the OID4VCI specification. Provides endpoints for OpenID Connect " +
         "issuer configuration, OAuth authorization server information, and issuer metadata describing supported " +
         "verifiable credentials (IF-112)")
-@RequestMapping(value = {"/oid4vci/.well-known", ".well-known"})
+@RequestMapping
 public class WellKnownController {
 
-    private final OpenIdIssuerApiConfiguration openIDConfiguration;
     private final EncryptionService encryptionService;
+    private final MetadataService metadataService;
 
     /**
      * General information about the issuer
      *
      * @return OpenIdConfigurationDto as defined by OIDConnect and extended by OID4VCI
      */
-    @GetMapping("/openid-configuration")
+    @GetMapping(value = {"/oid4vci/.well-known/openid-configuration", ".well-known/openid-configuration"})
     @Operation(summary = "OpenID Connect information required for issuing VCs")
-    public OpenIdConfigurationDto getOpenIDConfiguration() throws IOException {
-        return openIDConfiguration.getOpenIdConfiguration();
+    public Map<String, Object> getOpenIDConfiguration() {
+        return metadataService.getUnsignedOpenIdConfiguration();
     }
 
     /**
@@ -58,10 +56,10 @@ public class WellKnownController {
      *
      * @return OpenIdConfigurationDto as defined by OIDConnect and extended by OID4VCI
      */
-    @GetMapping("/oauth-authorization-server")
+    @GetMapping(value = {"/oid4vci/.well-known/oauth-authorization-server", ".well-known/oauth-authorization-server"})
     @Operation(summary = "OpenID Connect information required for issuing VCs")
-    public OpenIdConfigurationDto getOpenIDConfigurationForOauthAuthServer() throws IOException {
-        return openIDConfiguration.getOpenIdConfiguration();
+    public Map<String, Object> getOpenIDConfigurationForOauthAuthServer() {
+        return metadataService.getUnsignedOpenIdConfiguration();
     }
 
     /**
@@ -74,5 +72,31 @@ public class WellKnownController {
     public IssuerMetadata getIssuerMetadata() {
         // Unwrap the object from the spring cache object.
         return (IssuerMetadata) AopProxyUtils.getSingletonTarget(encryptionService.issuerMetadataWithEncryptionOptions());
+    }
+
+    @GetMapping(value = {"/{tenantId}/.well-known/openid-credential-issuer"})
+    @Operation(summary = "Information about credentials which can be issued.")
+    public Object getIssuerMetadataByTenantId(
+            @PathVariable UUID tenantId,
+            @RequestHeader("Content-Type") String contentType) {
+
+        if (contentType.equals("application/jwt")) {
+            return metadataService.getSignedIssuerMetadata(tenantId);
+        }
+
+        return metadataService.getUnsignedIssuerMetadata();
+    }
+
+    @GetMapping(value = {"/{tenantId}/.well-known/openid-configuration"})
+    @Operation(summary = "Information about credentials which can be issued.")
+    public Object getOpenIdConfigurationByTenantId(
+            @PathVariable UUID tenantId,
+            @RequestHeader("Content-Type") String contentType) {
+
+        if (contentType.equals("application/jwt")) {
+            return metadataService.getSignedOpenIdConfiguration(tenantId);
+        }
+
+        return metadataService.getUnsignedOpenIdConfiguration();
     }
 }

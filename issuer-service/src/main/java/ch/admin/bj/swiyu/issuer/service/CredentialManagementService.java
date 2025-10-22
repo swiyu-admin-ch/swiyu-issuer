@@ -36,6 +36,7 @@ import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.re
 import static ch.admin.bj.swiyu.issuer.service.CredentialOfferMapper.*;
 import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SDJWT_PROTECTED_CLAIMS;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
+import static java.util.Objects.isNull;
 
 @Service
 @Slf4j
@@ -143,6 +144,14 @@ public class CredentialManagementService {
         return toUpdateStatusResponseDto(storedCredentialOffer);
     }
 
+    @Transactional
+    public ConfigurationOverride getConfigurationOverrideByTenantId(UUID tenantId) {
+        var offer = credentialOfferRepository.findByMetadataTenantId(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("No credential offer found for tenant %s".formatted(tenantId)));
+
+        return offer.getConfigurationOverride();
+    }
+
     /**
      * Returns the credential offer for the given id.
      * <p>
@@ -242,9 +251,10 @@ public class CredentialManagementService {
     private String getOfferDeeplinkFromCredential(CredentialOffer credential) {
 
         var grants = new GrantsDto(new PreAuthorizedCodeGrantDto(credential.getPreAuthorizedCode()));
+        var credentialIssuer = getCredentialIssuer(credential);
 
         var credentialOffer = CredentialOfferDto.builder()
-                .credentialIssuer(applicationProperties.getExternalUrl())
+                .credentialIssuer(credentialIssuer)
                 .credentials(credential.getMetadataCredentialSupportedId())
                 .grants(grants)
                 .version(applicationProperties.getRequestOfferVersion())
@@ -294,6 +304,7 @@ public class CredentialManagementService {
                 .credentialValidUntil(requestDto.getCredentialValidUntil())
                 .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
                 .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
+                .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
                 .build();
         entity = this.credentialOfferRepository.save(entity);
         log.debug("Created Credential offer {} valid until {}", entity.getId(), expiration.toEpochMilli());
@@ -434,5 +445,14 @@ public class CredentialManagementService {
                 state
         );
         applicationEventPublisher.publishEvent(stateChangeEvent);
+    }
+
+    private String getCredentialIssuer(CredentialOffer credential) {
+
+        if (!applicationProperties.isSignedMetadataEnabled() || isNull(credential.getMetadataTenantId())) {
+            return applicationProperties.getExternalUrl();
+        }
+
+        return "%s/%s".formatted(applicationProperties.getExternalUrl(), credential.getMetadataTenantId());
     }
 }

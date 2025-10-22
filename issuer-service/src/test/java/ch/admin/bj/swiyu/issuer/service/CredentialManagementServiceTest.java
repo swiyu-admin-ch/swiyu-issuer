@@ -13,23 +13,27 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatus
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonParser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.net.URLDecoder;
 import java.time.Instant;
 import java.util.*;
 
@@ -537,6 +541,112 @@ class CredentialManagementServiceTest {
         credentialService.updateOfferDataForDeferred(credentialId, offerDataMap);
 
         verify(credentialOfferRepository, times(1)).save(credentialOffer);
+    }
+
+    @Test
+    void getConfigurationOverrideByTenantId_throwsWhenNotFound() {
+        var tenantId = UUID.randomUUID();
+
+        var service = new CredentialManagementService(
+                credentialOfferRepository,
+                (ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository) credentialOfferStatusRepository,
+                new ObjectMapper(),
+                statusListService,
+                issuerMetadata,
+                applicationProperties,
+                dataIntegrityService,
+                applicationEventPublisher
+        );
+
+        when(credentialOfferRepository.findByMetadataTenantId(tenantId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.getConfigurationOverrideByTenantId(tenantId));
+    }
+
+    @Test
+    void testCheckIfCorrectDeeplinkWithTenant_thenSuccess() {
+
+        when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
+
+        var credConfig = mock(CredentialConfiguration.class);
+        var claim = new CredentialClaim();
+        claim.setMandatory(true);
+        claim.setValueType("string");
+
+        when(credConfig.getCredentialDefinition()).thenReturn(null);
+        when(credConfig.getClaims()).thenReturn(Map.of("hello", claim));
+        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(credConfig.getVct()).thenReturn("test-vct");
+
+        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("did:jwk", "jwk"));
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", credConfig));
+        when(issuerMetadata.getCredentialConfigurationById("test-metadata")).thenReturn(credConfig);
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(offerData);
+        when(credentialOfferRepository.save(any())).thenAnswer(new Answer<CredentialOffer>() {
+            @Override
+            public CredentialOffer answer(InvocationOnMock invocation) {
+                return invocation.getArgument(0);
+            }
+        });
+        when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
+
+        UUID expected = UUID.fromString("4d139b3e-9500-48d3-b603-f7fb1d3a2a58");
+
+        try (MockedStatic<UUID> uuid = Mockito.mockStatic(UUID.class)) {
+            uuid.when(UUID::randomUUID).thenReturn(expected);
+            var response = credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto);
+            assertTrue(response.getOfferDeeplink().contains(expected.toString()));
+        }
+    }
+
+    @Test
+    void testCheckIfCorrectDeeplinkWithDisabledSignedMetadata_thenSuccess() {
+
+        var expectedMetadata = "https://metaddata-test";
+        var credentialConfigurationSupportedId = "test-metadata";
+
+        when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(credentialConfigurationSupportedId, mock(CredentialConfiguration.class)));
+
+        var credConfig = mock(CredentialConfiguration.class);
+        var claim = new CredentialClaim();
+        claim.setMandatory(true);
+        claim.setValueType("string");
+
+        when(credConfig.getCredentialDefinition()).thenReturn(null);
+        when(credConfig.getClaims()).thenReturn(Map.of("hello", claim));
+        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(credConfig.getVct()).thenReturn("test-vct");
+
+        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("did:jwk", "jwk"));
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(credentialConfigurationSupportedId, credConfig));
+        when(issuerMetadata.getCredentialConfigurationById(credentialConfigurationSupportedId)).thenReturn(credConfig);
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(offerData);
+        when(credentialOfferRepository.save(any())).thenAnswer(new Answer<CredentialOffer>() {
+            @Override
+            public CredentialOffer answer(InvocationOnMock invocation) {
+                return invocation.getArgument(0);
+            }
+        });
+        when(applicationProperties.isSignedMetadataEnabled()).thenReturn(false);
+        when(applicationProperties.getDeeplinkSchema()).thenReturn("test");
+        when(applicationProperties.getExternalUrl()).thenReturn(expectedMetadata);
+
+
+        var response = credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto);
+
+        var deeplink = response.getOfferDeeplink();
+
+        var decoded = URLDecoder.decode(deeplink, java.nio.charset.StandardCharsets.UTF_8);
+        var decodedJsonPart = decoded.split("credential_offer=")[1];
+        var mimi = JsonParser.parseString(decodedJsonPart).getAsJsonObject();
+        assertEquals(expectedMetadata, mimi.get("credential_issuer").getAsString());
+        assertEquals(credentialConfigurationSupportedId, mimi.get("credential_configuration_ids").getAsJsonArray().get(0).getAsString());
     }
 
     private @NotNull Set<CredentialOfferStatus> getCredentialOfferStatusSet() {

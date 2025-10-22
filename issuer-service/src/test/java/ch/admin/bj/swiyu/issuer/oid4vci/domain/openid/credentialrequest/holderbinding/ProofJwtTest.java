@@ -158,6 +158,7 @@ class ProofJwtTest {
                     put("otherStuff", "data");
                 }},
                 null,
+                null,
                 UUID.randomUUID(),
                 null,
                 null,
