@@ -114,6 +114,8 @@ application:
   encryption-key-rotation-interval: "PT15M"
   encryption-enforce: false
 
+  dpop-enforce: false
+
   template-replacement: # Hash Map of Values replaced in the templating
     external-url: "${EXTERNAL_URL:}" # URL under which this service can be reached from the web
   token-ttl: 600

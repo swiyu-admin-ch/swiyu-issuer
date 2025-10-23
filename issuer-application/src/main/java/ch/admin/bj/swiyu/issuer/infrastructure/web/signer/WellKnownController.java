@@ -9,6 +9,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.infrastructure.config.OpenIdIssuerApiConfiguration;
+import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.EncryptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +41,7 @@ public class WellKnownController {
 
     private final OpenIdIssuerApiConfiguration openIDConfiguration;
     private final EncryptionService encryptionService;
+    private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
 
     /**
      * General information about the issuer
@@ -49,7 +51,7 @@ public class WellKnownController {
     @GetMapping("/openid-configuration")
     @Operation(summary = "OpenID Connect information required for issuing VCs")
     public OpenIdConfigurationDto getOpenIDConfiguration() throws IOException {
-        return openIDConfiguration.getOpenIdConfiguration();
+        return demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(openIDConfiguration.getOpenIdConfiguration());
     }
 
     /**
@@ -61,7 +63,7 @@ public class WellKnownController {
     @GetMapping("/oauth-authorization-server")
     @Operation(summary = "OpenID Connect information required for issuing VCs")
     public OpenIdConfigurationDto getOpenIDConfigurationForOauthAuthServer() throws IOException {
-        return openIDConfiguration.getOpenIdConfiguration();
+        return demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(openIDConfiguration.getOpenIdConfiguration());
     }
 
     /**
