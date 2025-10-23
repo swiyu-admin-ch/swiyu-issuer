@@ -6,8 +6,8 @@ or replace view available_status_list_indexes as (
         select status_list_id, index from credential_offer_status
     ),
     free_indexes as (
-       select i.index as free_index, i.uri as status_list_uri from status_list_indexes i where i.index NOT IN
-            (select index from used_indexes u where u.status_list_id = i.id)
+       select i.index as free_index, i.uri as status_list_uri from status_list_indexes i where NOT EXISTS
+            (select 1 from used_indexes u where u.status_list_id = i.id AND u.index = i.index)
     )
    select status_list_uri as id, array_agg(free_index) as free_indexes, status_list_uri from free_indexes group by status_list_uri
 );
