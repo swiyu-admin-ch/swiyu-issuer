@@ -22,6 +22,8 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -263,10 +265,9 @@ class IssuanceV2IT {
         }
     }
 
-    @Test
-    void testSdJwtOffer_exceedsBatchSize_thenException() throws Exception {
-
-        var numberOfProofs = 4;
+    @ParameterizedTest
+    @ValueSource(ints = {0, 4})
+    void testSdJwtOffer_invalidBatchSizes_thenBadRequest(int numberOfProofs) throws Exception {
 
         List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
 
