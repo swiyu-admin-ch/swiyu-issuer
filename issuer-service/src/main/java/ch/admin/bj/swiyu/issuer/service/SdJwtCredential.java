@@ -105,6 +105,14 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
+    /**
+     * Issues one or a batch of SD-JWT credentials.
+     * Batch size comes from issuer metadata unless holderPublicKeys is null/empty (then 1).
+     * Validates alignment of holder keys and status references before issuing.
+     *
+     * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
+     * @return a list of serialized SD-JWTs
+     */
     @Override
     public List<String> getCredential(@Nullable List<DidJwk> holderPublicKeys) {
         var statusReferences = getStatusReferences();
@@ -112,7 +120,7 @@ public class SdJwtCredential extends CredentialBuilder {
         if (holderPublicKeys == null || holderPublicKeys.isEmpty()) {
             batchSize = 1;
         }
-        if (!getStatusFactory().isSane(statusReferences, batchSize)) {
+        if (!getStatusFactory().isCompatibleStatusReferencesToBatchSize(statusReferences, batchSize)) {
             throw new IllegalStateException(
                     "Batch size and status references do not match anymore. Cannot issue credential");
         }
@@ -129,7 +137,7 @@ public class SdJwtCredential extends CredentialBuilder {
             addStatusReferences(statusReferences, i, builder);
             createSignedSDJWT(override, builder, sdjwts, disclosures);
         }
-        return sdjwts;
+        return Collections.unmodifiableList(sdjwts);
     }
 
     @Override
