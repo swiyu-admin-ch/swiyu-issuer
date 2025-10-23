@@ -1,14 +1,10 @@
-/*
- * SPDX-FileCopyrightText: 2025 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
+package ch.admin.bj.swiyu.issuer.service;
 
-package ch.admin.bj.swiyu.issuer.infrastructure.config;
-
+import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.api.type_metadata.OcaDto;
 import ch.admin.bj.swiyu.issuer.api.type_metadata.TypeMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +12,7 @@ import jakarta.validation.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -30,15 +27,15 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.*;
+
 @Configuration
 @Data
 @Slf4j
-public class OpenIdIssuerApiConfiguration {
+public class OpenIdIssuerConfiguration {
 
     private final ApplicationProperties applicationProperties;
-
     private final ResourceLoader resourceLoader;
-
     private final ObjectMapper objectMapper;
 
     @Value("${application.openid-file}")
@@ -76,6 +73,46 @@ public class OpenIdIssuerApiConfiguration {
             builder.jsonSchemaMap(loadMetadataFiles(applicationProperties.getJsonSchemaMetadataFiles(), validator, null));
             builder.overlayCaptureArchitectureMap(loadMetadataFiles(applicationProperties.getOverlaysCaptureArchitectureMetadataFiles(), validator, OcaDto.class));
             return builder.build();
+        }
+    }
+
+    /**
+     * @return the full Issuer Metadata in a recursive Map
+     * @throws IOException if the Issuer Metadata json file is not found
+     */
+    @Cacheable(ISSUER_METADATA_CACHE)
+    public IssuerMetadata getIssuerMetadata() {
+        try {
+            return resourceToMappedData(issuerMetadataResource, IssuerMetadata.class);
+        } catch (IOException e) {
+            throw new ConfigurationException("Cannot read issuer metadata", e);
+        }
+    }
+
+    @Cacheable(OPEN_ID_CONFIGURATION_CACHE)
+    public OpenIdConfigurationDto getOpenIdConfiguration() {
+        try {
+            return resourceToMappedData(openIdResource, OpenIdConfigurationDto.class);
+        } catch (IOException e) {
+            throw new ConfigurationException("Cannot read openid config", e);
+        }
+    }
+
+    @Cacheable(ISSUER_METADATA_MAP_CACHE)
+    public Map<String, Object> getIssuerMetadataMap() {
+        try {
+            return resourceToMappedData(issuerMetadataResource, HashMap.class);
+        } catch (IOException e) {
+            throw new ConfigurationException("Cannot read issuer metadata config", e);
+        }
+    }
+
+    @Cacheable(OPEN_ID_CONFIGURATION_MAP_CACHE)
+    public Map<String, Object> getOpenIdConfigurationMap() {
+        try {
+            return resourceToMappedData(openIdResource, HashMap.class);
+        } catch (IOException e) {
+            throw new ConfigurationException("Cannot read issuer metadata config", e);
         }
     }
 
@@ -128,15 +165,8 @@ public class OpenIdIssuerApiConfiguration {
         return new ObjectMapper().readValue(json, clazz);
     }
 
-    /**
-     * Loads metadata, replacing placeholders
-     *
-     * @param res resource from which the data is loaded
-     * @return the loaded metadata
-     */
     private String loadMetadata(Resource res) throws IOException {
         var json = res.getContentAsString(Charset.defaultCharset());
         return replaceExternalUri(json);
     }
-
 }

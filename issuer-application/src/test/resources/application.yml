@@ -11,7 +11,7 @@ spring:
 
 application:
   issuer-id: "did:tdw:example"
-  external-url: "http://localhost:8080/test/"
+  external-url: "http://localhost:8080/oid4vci"
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
   deferred-offer-validity-seconds: 864000 # 60 * 60 * 24 * 10 => 10 days;
   trusted-attestation-providers: [ "did:test:test-attestation-builder" ]

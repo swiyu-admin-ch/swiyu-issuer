@@ -1,9 +1,11 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.nimbusds.jose.*;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -13,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -27,35 +28,27 @@ public class MetadataService {
     private final CredentialManagementService credentialManagementService;
     private final SignatureService signatureService;
     private final SdjwtProperties sdjwtProperties;
+    private final ApplicationProperties applicationProperties;
 
-    public Map<String, Object> getUnsignedIssuerMetadata() {
-        try {
-            return openIdIssuerConfiguration.getIssuerMetadata();
-        } catch (IOException e) {
-            log.error("Failed to read the provided metadata", e);
-            throw new ConfigurationException("Failed to read the provided metadata");
-        }
+    public IssuerMetadata getUnsignedIssuerMetadata() {
+        return openIdIssuerConfiguration.getIssuerMetadata();
     }
 
     public String getSignedIssuerMetadata(UUID tenantId) {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
 
-        return signMetadataJwt(getUnsignedIssuerMetadata(), override, tenantId);
+        return signMetadataJwt(openIdIssuerConfiguration.getIssuerMetadataMap(), override, tenantId);
     }
 
-    public Map<String, Object> getUnsignedOpenIdConfiguration() {
-        try {
-            return openIdIssuerConfiguration.getOpenIdConfiguration();
-        } catch (IOException e) {
-            log.error("Failed to read the provided metadata", e);
-            throw new ConfigurationException("Failed to read the provided metadata");
-        }
+    public OpenIdConfigurationDto getUnsignedOpenIdConfiguration() {
+        return openIdIssuerConfiguration.getOpenIdConfiguration();
     }
 
     public String getSignedOpenIdConfiguration(UUID tenantId) {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
 
-        return signMetadataJwt(getUnsignedOpenIdConfiguration(), override, tenantId);
+        return signMetadataJwt(openIdIssuerConfiguration.getOpenIdConfigurationMap(), override, tenantId);
+
     }
 
     private String signMetadataJwt(Map<String, Object> metaData, ConfigurationOverride override, UUID tenantId) {
@@ -74,7 +67,7 @@ public class MetadataService {
          * kid: Must be the time when the JWT was issued
          */
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(override.keyId())
+                .keyID(override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()))
                 .type(new JOSEObjectType("openidvci-issuer-metadata+jwt"))
                 .build();
 
@@ -84,7 +77,7 @@ public class MetadataService {
          * exp: Optional the time when the Metadata are expiring -> default 24h
          */
         JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder()
-                .subject(override.issuerDid())
+                .subject(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
                 .issueTime(new Date())
                 .expirationTime(DateUtils.addHours(new Date(), 24));
 

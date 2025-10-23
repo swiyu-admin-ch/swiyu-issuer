@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
@@ -15,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.KeyAttestationService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.OpenIdIssuerConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +36,9 @@ class HolderBindingServiceTest {
     @BeforeEach
     void setUp() {
         issuerMetadata = mock(IssuerMetadata.class);
+        when(issuerMetadata.getCredentialIssuer()).thenReturn("did:example:issuer");
         OpenIdIssuerConfiguration openIdIssuerConfiguration = mock(OpenIdIssuerConfiguration.class);
+        when(openIdIssuerConfiguration.getIssuerMetadata()).thenReturn(issuerMetadata);
         nonceService = mock(NonceService.class);
         KeyAttestationService keyAttestationService = mock(KeyAttestationService.class);
         ApplicationProperties applicationProperties = mock(ApplicationProperties.class);

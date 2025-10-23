@@ -1,11 +1,11 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -16,8 +16,6 @@ import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -34,7 +32,7 @@ class MetadataServiceTest {
     private SdjwtProperties sdjwtProperties;
     private MetadataService metadataService;
     private ConfigurationOverride override;
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ApplicationProperties applicationProperties;
 
     @BeforeEach
     void setUp() {
@@ -42,33 +40,25 @@ class MetadataServiceTest {
         credentialManagementService = mock(CredentialManagementService.class);
         signatureService = mock(SignatureService.class);
         sdjwtProperties = mock(SdjwtProperties.class);
+        applicationProperties = mock(ApplicationProperties.class);
 
         // ObjectMapper not needed for tested methods here
-        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, sdjwtProperties);
+        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, sdjwtProperties, applicationProperties);
 
-        override = mock(ConfigurationOverride.class);
-        when(override.keyId()).thenReturn("kid");
-        when(override.keyPin()).thenReturn("pin");
-        when(override.issuerDid()).thenReturn("did:example:issuer");
+        override = new ConfigurationOverride(null, null, null, null);
+        when(applicationProperties.getIssuerId()).thenReturn("did:example:issuer");
     }
 
     @Test
-    void getUnsignedIssuerMetadata_returnsMap() throws IOException {
-        Map<String, Object> meta = new HashMap<>();
-        meta.put("foo", "bar");
-        when(openIdIssuerConfiguration.getIssuerMetadata()).thenReturn(meta);
+    void getUnsignedIssuerMetadata_returnsMap() {
+        IssuerMetadata metadata = new IssuerMetadata();
+        metadata.setVersion("1.0.0");
+        when(openIdIssuerConfiguration.getIssuerMetadata()).thenReturn(metadata);
 
-        Map<String, Object> result = metadataService.getUnsignedIssuerMetadata();
+        IssuerMetadata result = metadataService.getUnsignedIssuerMetadata();
 
         assertNotNull(result);
-        assertEquals("bar", result.get("foo"));
-    }
-
-    @Test
-    void getUnsignedIssuerMetadata_throwsConfigurationException_onIo() throws IOException {
-        when(openIdIssuerConfiguration.getIssuerMetadata()).thenThrow(new IOException("bad"));
-
-        assertThrows(ConfigurationException.class, () -> metadataService.getUnsignedIssuerMetadata());
+        assertEquals(metadata, result);
     }
 
     @Test
@@ -76,12 +66,12 @@ class MetadataServiceTest {
         UUID tenantId = UUID.randomUUID();
         Map<String, Object> meta = Map.of("a", "b");
 
-        when(openIdIssuerConfiguration.getIssuerMetadata()).thenReturn(meta);
+        when(openIdIssuerConfiguration.getIssuerMetadataMap()).thenReturn(meta);
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = createDummySigner();
 
-        when(signatureService.createSigner(sdjwtProperties, "kid", "pin")).thenReturn(signer);
+        when(signatureService.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
 
         String jwtStr = metadataService.getSignedIssuerMetadata(tenantId);
         assertNotNull(jwtStr);
@@ -95,7 +85,7 @@ class MetadataServiceTest {
     void getSignedIssuerMetadata_throwsConfigurationException_onKeyStrategyError() throws KeyStrategyException {
         UUID tenantId = UUID.randomUUID();
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
-        when(signatureService.createSigner(sdjwtProperties, "kid", "pin")).thenThrow(new KeyStrategyException("bad", null));
+        when(signatureService.createSigner(sdjwtProperties, null, null)).thenThrow(new KeyStrategyException("bad", null));
 
         assertThrows(ConfigurationException.class, () -> metadataService.getSignedIssuerMetadata(tenantId));
     }
@@ -105,12 +95,12 @@ class MetadataServiceTest {
         UUID tenantId = UUID.randomUUID();
         Map<String, Object> meta = Map.of("x", "y");
 
-        when(openIdIssuerConfiguration.getIssuerMetadata()).thenReturn(meta);
+        when(openIdIssuerConfiguration.getIssuerMetadataMap()).thenReturn(meta);
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = mock(JWSSigner.class);
         when(signer.sign(any(), any())).thenThrow(new JOSEException("bad"));
-        when(signatureService.createSigner(sdjwtProperties, "kid", "pin")).thenReturn(signer);
+        when(signatureService.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
 
         assertThrows(ConfigurationException.class, () -> metadataService.getSignedIssuerMetadata(tenantId));
     }
@@ -121,12 +111,12 @@ class MetadataServiceTest {
         Map<String, Object> map = Map.of("issuer", "issuer", "token_endpoint", "token_endpoint");
 
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
-        when(openIdIssuerConfiguration.getOpenIdConfiguration()).thenReturn(map);
+        when(openIdIssuerConfiguration.getOpenIdConfigurationMap()).thenReturn(map);
 
-        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, sdjwtProperties);
+        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, sdjwtProperties, applicationProperties);
 
         JWSSigner signer = createDummySigner();
-        when(signatureService.createSigner(sdjwtProperties, "kid", "pin")).thenReturn(signer);
+        when(signatureService.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
 
         String jwt = svc.getSignedOpenIdConfiguration(tenantId);
         assertNotNull(jwt);

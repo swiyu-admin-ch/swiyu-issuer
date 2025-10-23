@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
+import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.EncryptionService;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
@@ -16,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -46,7 +46,7 @@ public class WellKnownController {
      */
     @GetMapping(value = {"/oid4vci/.well-known/openid-configuration", ".well-known/openid-configuration"})
     @Operation(summary = "OpenID Connect information required for issuing VCs")
-    public Map<String, Object> getOpenIDConfiguration() {
+    public OpenIdConfigurationDto getOpenIDConfiguration() {
         return metadataService.getUnsignedOpenIdConfiguration();
     }
 
@@ -58,7 +58,7 @@ public class WellKnownController {
      */
     @GetMapping(value = {"/oid4vci/.well-known/oauth-authorization-server", ".well-known/oauth-authorization-server"})
     @Operation(summary = "OpenID Connect information required for issuing VCs")
-    public Map<String, Object> getOpenIDConfigurationForOauthAuthServer() {
+    public OpenIdConfigurationDto getOpenIDConfigurationForOauthAuthServer() {
         return metadataService.getUnsignedOpenIdConfiguration();
     }
 
@@ -74,7 +74,7 @@ public class WellKnownController {
         return (IssuerMetadata) AopProxyUtils.getSingletonTarget(encryptionService.issuerMetadataWithEncryptionOptions());
     }
 
-    @GetMapping(value = {"/{tenantId}/.well-known/openid-credential-issuer"})
+    @GetMapping(value = {"/{tenantId}/.well-known/openid-credential-issuer", "/oid4vci/{tenantId}/.well-known/openid-credential-issuer"})
     @Operation(summary = "Information about credentials which can be issued.")
     public Object getIssuerMetadataByTenantId(
             @PathVariable UUID tenantId,
@@ -87,13 +87,13 @@ public class WellKnownController {
         return metadataService.getUnsignedIssuerMetadata();
     }
 
-    @GetMapping(value = {"/{tenantId}/.well-known/openid-configuration"})
+    @GetMapping(value = {"/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/openid-configuration"})
     @Operation(summary = "Information about credentials which can be issued.")
     public Object getOpenIdConfigurationByTenantId(
             @PathVariable UUID tenantId,
             @RequestHeader("Content-Type") String contentType) {
 
-        if (contentType.equals("application/jwt")) {
+        if (contentType.startsWith("application/jwt")) {
             return metadataService.getSignedOpenIdConfiguration(tenantId);
         }
 
