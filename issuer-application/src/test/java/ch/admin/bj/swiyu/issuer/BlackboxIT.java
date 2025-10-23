@@ -33,6 +33,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -52,9 +53,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.security.MessageDigest;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,6 +76,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class BlackboxIT {
     private static final String CREDENTIAL_MANAGEMENT_BASE_URL = "/management/api/credentials";
+    private static final MessageDigest sha256 = assertDoesNotThrow(() -> MessageDigest.getInstance("SHA-256"));
     protected StatusListTestHelper statusListTestHelper;
     @Autowired
     protected SwiyuProperties swiyuProperties;
@@ -213,10 +214,22 @@ class BlackboxIT {
         // TODO EIDOMNI-200 validate metadata signature
 
         // Fetch the bearer token
-        // TODO EIDOMNI-274 add DPoP process
+
+        var dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
+                .keyID("HolderDPoPKey")
+                .keyUse(KeyUse.SIGNATURE)
+                .generate());
+
 
         var tokenResponse = assertDoesNotThrow(() -> mvc.perform(post(oauthConfig.token_endpoint()
                                 .replace(baseIssuerUri, ""))
+                                .header("DPoP", createDpop(
+                                        issuerMetadata.getNonceEndpoint(),
+                                        "POST",
+                                        oauthConfig.token_endpoint(),
+                                        null,
+                                        dpopKey
+                                ))
                                 .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                                 .param("pre-authorized_code", preAuthCode))
                         .andExpect(status().isOk())
@@ -291,6 +304,13 @@ class BlackboxIT {
                         .replace(baseIssuerUri, ""))
                         .header("Authorization", "bearer " + oauthTokenResponse.getAccessToken())
                         .header("SWIYU-API-Version", "2")
+                        .header("DPoP", createDpop(
+                                issuerMetadata.getNonceEndpoint(),
+                                "POST",
+                                oauthConfig.token_endpoint(),
+                                oauthTokenResponse.getAccessToken(),
+                                dpopKey
+                        ))
                         .contentType("application/jwt") // Content Type for encrypted request
                         .content(encryptedCredentialRequest.serialize())
                 )
@@ -334,6 +354,31 @@ class BlackboxIT {
                 .toList();
         assertThat(holderBindings).hasSize(issuerMetadata.getIssuanceBatchSize());
 
+    }
+
+    private String createDpop(String nonceEndpoint, String httpMethod, String httpUri, String accessToken, ECKey dpopKey) {
+        // Fetch a fresh nonce
+        var nonceResponse = assertDoesNotThrow(() -> mvc.perform(post(nonceEndpoint))
+                .andExpect(status().isOk())
+                .andReturn());
+        String dpopNonce = nonceResponse.getResponse().getHeader("DPoP-Nonce");
+        // Create a DPoP JWT
+        var claimSetBuilder = new JWTClaimsSet.Builder()
+                .jwtID(UUID.randomUUID().toString())
+                .issueTime(new Date())
+                .claim("htm", httpMethod)
+                .claim("htu", httpUri)
+                .claim("nonce", dpopNonce);
+        if (StringUtils.isNotEmpty(accessToken)) {
+            claimSetBuilder.claim("ath", Base64.getEncoder().encodeToString(sha256.digest(accessToken.getBytes(StandardCharsets.UTF_8))));
+        }
+        var signedJwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .jwk(dpopKey.toPublicJWK())
+                .type(new JOSEObjectType("dpop+jwt"))
+                .build(),
+                claimSetBuilder.build());
+        assertDoesNotThrow(() -> signedJwt.sign(new ECDSASigner(dpopKey)));
+        return signedJwt.serialize();
     }
 
     @NotNull

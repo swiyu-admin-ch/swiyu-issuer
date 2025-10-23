@@ -80,7 +80,7 @@ public class DemonstratingProofOfPossessionService {
             byte[] hashBytes = digest.digest(inputBytes);
 
             // Encode the hash bytes to a Base64 string
-            return String.format("sha256-%s", Base64.getEncoder().encodeToString(hashBytes));
+            return Base64.getEncoder().encodeToString(hashBytes);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 algorithm not found", e);
         }
@@ -105,6 +105,7 @@ public class DemonstratingProofOfPossessionService {
         }
     }
 
+    @Transactional
     public void validateDpop(@NotBlank String accessToken, @Nullable String dpop, @NotNull HttpRequest request) {
         if (isDopUnused(dpop)) {
             return;

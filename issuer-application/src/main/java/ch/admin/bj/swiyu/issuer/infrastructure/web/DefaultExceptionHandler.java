@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web;
 
 import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.api.exception.DpopErrorDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import jakarta.validation.ConstraintViolationException;
 import lombok.NonNull;
@@ -107,12 +108,6 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return handleUnprocessableEntity(errors);
     }
 
-    @ExceptionHandler(io.fabric8.kubernetes.client.ResourceNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    void handleResourceNotFoundException(io.fabric8.kubernetes.client.ResourceNotFoundException e) {
-        log.debug("Resource not found", e);
-    }
-
     @ExceptionHandler
     public ResponseEntity<ApiErrorDto> handle(final Exception exception) {
         final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
@@ -122,6 +117,19 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
         log.error("Unknown Exception occurred", exception);
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<DpopErrorDto> handleDpopException(final DemonstratingProofOfPossessionException ex) {
+
+        HttpStatus responseStatus = UNAUTHORIZED;
+        if (DemonstratingProofOfPossessionError.USE_DPOP_NONCE.equals(ex.getDpopError())) {
+            responseStatus = BAD_REQUEST;
+        }
+        return new ResponseEntity<>(DpopErrorDto.builder()
+                .errorCode(ex.getDpopError().getName())
+                .errorDescription(ex.getMessage())
+                .build(), responseStatus);
     }
 
     @NotNull
@@ -139,6 +147,12 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
                 .collect(Collectors.joining(", "));
 
         return handleUnprocessableEntity(errors);
+    }
+
+    @ExceptionHandler(io.fabric8.kubernetes.client.ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    void handleResourceNotFoundException(io.fabric8.kubernetes.client.ResourceNotFoundException e) {
+        log.debug("Resource not found", e);
     }
 
     private ResponseEntity<Object> handleUnprocessableEntity(String errors) {
