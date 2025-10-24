@@ -178,15 +178,9 @@ public class DemonstratingProofOfPossessionService {
             throw new DemonstratingProofOfPossessionException("HTTP method mismatch between DPoP and request", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
         }
         // 9 - The htu claim matches the HTTP URI value for the HTTP request in which the JWT was received, ignoring any query and fragment parts.
-        // Create new URI without Query & Fragment
-        var requestUrl = request.getURI();
-        var baseUrl = new URI(requestUrl.getScheme(),
-                requestUrl.getUserInfo(),
-                requestUrl.getHost(),
-                requestUrl.getPort(),
-                requestUrl.getPath(),
-                null, null);
-        if (isInvalidUrl(baseUrl, jwtClaims.getStringClaim("htu"))) {
+
+
+        if (isInvalidUrl(request.getURI(), jwtClaims.getStringClaim("htu"))) {
             throw new DemonstratingProofOfPossessionException("URL mismatch between DPoP and request", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
         }
 
@@ -194,15 +188,23 @@ public class DemonstratingProofOfPossessionService {
         // 11 - The creation time of the JWT, as determined by either the iat claim or a server managed timestamp via the nonce claim, is within an acceptable window (see Section 11.1).
         var nonce = new SelfContainedNonce(jwtClaims.getStringClaim("nonce"));
         if (!nonce.isSelfContainedNonce() || !nonce.isValid(applicationProperties.getNonceLifetimeSeconds())) {
-            throw new DemonstratingProofOfPossessionException("Must use server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
+            throw new DemonstratingProofOfPossessionException("Must use valid server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
         }
 
         return dpopJwt;
     }
 
-    private boolean isInvalidUrl(URI uri, String htu) {
-        return StringUtils.equalsIgnoreCase(uri.toString(), htu)
-                || StringUtils.equalsIgnoreCase(rewriteProperties.getRewrittenUrl(uri.toString()), htu);
+    private boolean isInvalidUrl(URI requestUri, String htu) throws URISyntaxException {
+        // Create new URI without Query & Fragment, taking in account the external URI
+        var externalUri = new URI(applicationProperties.getExternalUrl());
+        var baseUri = new URI(requestUri.getScheme(),
+                requestUri.getUserInfo(),
+                externalUri.getHost(),
+                externalUri.getPort(),
+                requestUri.getPath(),
+                null, null).normalize();
+        var htuUri = new URI(htu).normalize();
+        return !baseUri.equals(htuUri);
     }
 
     /**

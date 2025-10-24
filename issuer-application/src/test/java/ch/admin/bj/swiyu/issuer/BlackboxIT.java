@@ -307,7 +307,7 @@ class BlackboxIT {
                         .header("DPoP", createDpop(
                                 issuerMetadata.getNonceEndpoint(),
                                 "POST",
-                                oauthConfig.token_endpoint(),
+                                issuerMetadata.getCredentialEndpoint(),
                                 oauthTokenResponse.getAccessToken(),
                                 dpopKey
                         ))
