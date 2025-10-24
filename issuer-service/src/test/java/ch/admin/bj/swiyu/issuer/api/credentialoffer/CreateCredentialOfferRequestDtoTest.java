@@ -8,11 +8,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class CreateCredentialRequestDtoTest {
+class CreateCredentialOfferRequestDtoTest {
 
     @Test
     void testBuilderAndGetters() {
-        CreateCredentialRequestDto dto = CreateCredentialRequestDto.builder()
+        CreateCredentialOfferRequestDto dto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("id1"))
                 .credentialSubjectData("subjectData")
                 .offerValiditySeconds(86400)
@@ -35,7 +35,7 @@ class CreateCredentialRequestDtoTest {
 
     @Test
     void testGetStatusListsReturnsEmptyListIfNull() {
-        CreateCredentialRequestDto dto = CreateCredentialRequestDto.builder()
+        CreateCredentialOfferRequestDto dto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("id1"))
                 .credentialSubjectData("subjectData")
                 .build();

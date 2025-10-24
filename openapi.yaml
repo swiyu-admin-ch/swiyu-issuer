@@ -1,43 +1,44 @@
 openapi: 3.1.0
 info:
+  version: 1.0.0
   title: Issuer Service API
   description: Generic swiyu Issuer Service service
 servers:
-- url: http://localhost:8080
-  description: Generated server url
+  - url: http://localhost:8080
+    description: Generated server url
 tags:
-- name: Credential Metadata API
-  description: "Provide metadata related to verifiable credentials, including credential\
+  - name: Credential Metadata API
+    description: "Provide metadata related to verifiable credentials, including credential\
     \ type metadata, JSON schemas, and Overlays Capture Architecture (OCA) data. (IF-110)"
-- name: Issuer OID4VCI API
-  description: "Public OpenID for Verifiable Credential Issuance (OID4VCI) API endpoints,\
+  - name: Issuer OID4VCI API
+    description: "Public OpenID for Verifiable Credential Issuance (OID4VCI) API endpoints,\
     \ including issuing OAuth tokens for credential requests, issuing verifiable credentials,\
     \ and supporting deferred credential issuance (IF-111)"
-- name: Status List API
-  description: Exposes API endpoints for managing status lists used in verifiable
-    credential status tracking. Supports creating and initializing new status lists
-    and retrieving status list information by ID. Ensures status list configuration
-    is immutable after initialization. (IF-113)
-- name: Credential API
-  description: "Exposes API endpoints for managing credential offers and their statuses.\
+  - name: Status List API
+    description: Exposes API endpoints for managing status lists used in verifiable
+      credential status tracking. Supports creating and initializing new status lists
+      and retrieving status list information by ID. Ensures status list configuration
+      is immutable after initialization. (IF-113)
+  - name: Credential API
+    description: "Exposes API endpoints for managing credential offers and their statuses.\
     \ Supports creating new credential offers, retrieving offer data and deeplinks,\
     \ and updating or querying the status of offers and issued verifiable credentials.\
     \ (IF-114)"
-- name: Well-known endpoints API
-  description: "Exposes OpenID .well-known endpoints for issuer configuration and\
+  - name: Well-known endpoints API
+    description: "Exposes OpenID .well-known endpoints for issuer configuration and\
     \ credential metadata as required by the OID4VCI specification. Provides endpoints\
     \ for OpenID Connect issuer configuration, OAuth authorization server information,\
     \ and issuer metadata describing supported verifiable credentials (IF-112)"
-- name: Actuator
-  description: Monitor and interact
-  externalDocs:
-    description: Spring Boot Actuator Web API Documentation
-    url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
+  - name: Actuator
+    description: Monitor and interact
+    externalDocs:
+      description: Spring Boot Actuator Web API Documentation
+      url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
 paths:
   /oid4vci/api/token:
     post:
       tags:
-      - Issuer OID4VCI API
+        - Issuer OID4VCI API
       summary: Submit form data
       operationId: oauthAccessToken
       requestBody:
@@ -59,7 +60,7 @@ paths:
   /oid4vci/api/nonce:
     post:
       tags:
-      - Issuer OID4VCI API
+        - Issuer OID4VCI API
       summary: Provide a self-contained nonce in a publicly accessible endpoint.
       description: |
         Provide nonces for proof of possessions in a manner not requiring the service to save it.
@@ -79,25 +80,25 @@ paths:
   /oid4vci/api/deferred_credential:
     post:
       tags:
-      - Issuer OID4VCI API
+        - Issuer OID4VCI API
       summary: Collect credential associated with the bearer token and the transaction
         id. This endpoint is used for deferred issuance.
       description: Issues a credential for a deferred transaction. Requires a valid
         bearer token and transaction details in the request body.
       operationId: createDeferredCredential
       parameters:
-      - name: Authorization
-        in: header
-        description: Bearer token for authentication
-        required: true
-        schema:
-          type: string
-      - name: SWIYU-API-Version
-        in: header
-        description: "Optional API version, set to '2' for v2 requests"
-        required: false
-        schema:
-          type: string
+        - name: Authorization
+          in: header
+          description: Bearer token for authentication
+          required: true
+          schema:
+            type: string
+        - name: SWIYU-API-Version
+          in: header
+          description: "Optional API version, set to '2' for v2 requests"
+          required: false
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -113,8 +114,8 @@ paths:
             application/json:
               schema:
                 oneOf:
-                - $ref: "#/components/schemas/CredentialEndpointResponse"
-                - $ref: "#/components/schemas/CredentialEndpointResponseV2"
+                  - $ref: "#/components/schemas/CredentialEndpointResponse"
+                  - $ref: "#/components/schemas/CredentialEndpointResponseV2"
         "400":
           description: Invalid request or validation error
           content:
@@ -134,11 +135,11 @@ paths:
               schema:
                 type: string
       security:
-      - bearer-jwt: []
+        - bearer-jwt: [ ]
   /oid4vci/api/credential:
     post:
       tags:
-      - Issuer OID4VCI API
+        - Issuer OID4VCI API
       summary: Collect credential associated with the bearer token with the requested
         credential properties.
       description: Issues a credential for a given bearer token and credential request.
@@ -146,25 +147,25 @@ paths:
         in JSON or JWT format.
       operationId: createCredential
       parameters:
-      - name: Authorization
-        in: header
-        description: "Bearer token for authentication. Format: 'Bearer ..."
-        required: true
-        schema:
-          type: string
-      - name: SWIYU-API-Version
-        in: header
-        description: "Optional API version, set to '2' for v2 requests"
-        required: false
-        schema:
-          type: string
+        - name: Authorization
+          in: header
+          description: "Bearer token for authentication. Format: 'Bearer ..."
+          required: true
+          schema:
+            type: string
+        - name: SWIYU-API-Version
+          in: header
+          description: "Optional API version, set to '2' for v2 requests"
+          required: false
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
               oneOf:
-              - $ref: "#/components/schemas/CredentialEndpointRequest"
-              - $ref: "#/components/schemas/CredentialEndpointRequestV2"
+                - $ref: "#/components/schemas/CredentialEndpointRequest"
+                - $ref: "#/components/schemas/CredentialEndpointRequestV2"
           application/jwt:
             schema:
               type: string
@@ -180,8 +181,8 @@ paths:
             application/json:
               schema:
                 oneOf:
-                - $ref: "#/components/schemas/CredentialEndpointResponse"
-                - $ref: "#/components/schemas/CredentialEndpointResponseV2"
+                  - $ref: "#/components/schemas/CredentialEndpointResponse"
+                  - $ref: "#/components/schemas/CredentialEndpointResponseV2"
         "202":
           description: Successful deferred credential. The credential will be issued
             later
@@ -189,14 +190,14 @@ paths:
             application/json:
               schema:
                 oneOf:
-                - $ref: "#/components/schemas/DeferredData"
-                - $ref: "#/components/schemas/DeferredDataV2"
+                  - $ref: "#/components/schemas/DeferredData"
+                  - $ref: "#/components/schemas/DeferredDataV2"
       security:
-      - bearer-jwt: []
+        - bearer-jwt: [ ]
   /management/api/status-list:
     post:
       tags:
-      - Status List API
+        - Status List API
       summary: Create and initialize a new status list.
       description: "Initialize and link a status list slot to to this service. This\
         \ process can be only done once per status list! Status List type, configuration\
@@ -220,7 +221,7 @@ paths:
   /management/api/credentials:
     post:
       tags:
-      - Credential API
+        - Credential API
       summary: Create a generic credential offer with the given content
       description: |
         Create a new credential offer, which can the be collected by the holder.
@@ -232,7 +233,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateCredentialRequest"
+              $ref: "#/components/schemas/CreateCredentialOfferRequest"
         required: true
       responses:
         "404":
@@ -253,16 +254,16 @@ paths:
   /management/api/credentials/{credentialId}:
     get:
       tags:
-      - Credential API
+        - Credential API
       summary: "Get the offer data, if any is still cached"
       operationId: getCredentialInformation
       parameters:
-      - name: credentialId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: credentialId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "404":
           description: Not Found
@@ -274,24 +275,24 @@ paths:
                 $ref: "#/components/schemas/CredentialInfoResponse"
     patch:
       tags:
-      - Credential API
+        - Credential API
       summary: Update the status of an offer or the verifiable credential associated
         with the id. This is only for deferred flows. The status is set to ready for
         issuance
       operationId: updateCredentialForDeferredFlow
       parameters:
-      - name: credentialId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: credentialId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         content:
           application/json:
             schema:
               type: object
-              additionalProperties: {}
+              additionalProperties: { }
         required: true
       responses:
         "404":
@@ -312,17 +313,17 @@ paths:
   /management/api/credentials/{credentialId}/status:
     get:
       tags:
-      - Credential API
+        - Credential API
       summary: "Get the current status of an offer or the verifiable credential, if\
         \ already issued."
       operationId: getCredentialStatus
       parameters:
-      - name: credentialId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: credentialId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "404":
           description: Not Found
@@ -334,22 +335,22 @@ paths:
                 $ref: "#/components/schemas/StatusResponse"
     patch:
       tags:
-      - Credential API
+        - Credential API
       summary: Set the status of an offer or the verifiable credential associated
         with the id.
       operationId: updateCredentialStatus
       parameters:
-      - name: credentialId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: credentialStatus
-        in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/UpdateCredentialStatusRequestType"
+        - name: credentialId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: credentialStatus
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/UpdateCredentialStatusRequestType"
       responses:
         "404":
           description: Not Found
@@ -362,14 +363,14 @@ paths:
   /oid4vci/vct/{metadataKey}:
     get:
       tags:
-      - Credential Metadata API
+        - Credential Metadata API
       operationId: getCredentialTypeMetadata
       parameters:
-      - name: metadataKey
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: metadataKey
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "404":
           description: Not Found
@@ -382,14 +383,14 @@ paths:
   /oid4vci/oca/{ocaKey}:
     get:
       tags:
-      - Credential Metadata API
+        - Credential Metadata API
       operationId: getOverlaysCaptureArchitecture
       parameters:
-      - name: ocaKey
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: ocaKey
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "404":
           description: Not Found
@@ -402,14 +403,14 @@ paths:
   /oid4vci/json-schema/{schemaKey}:
     get:
       tags:
-      - Credential Metadata API
+        - Credential Metadata API
       operationId: getJsonSchema
       parameters:
-      - name: schemaKey
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: schemaKey
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "404":
           description: Not Found
@@ -422,7 +423,7 @@ paths:
   /oid4vci/.well-known/openid-credential-issuer:
     get:
       tags:
-      - Well-known endpoints API
+        - Well-known endpoints API
       summary: Information about credentials which can be issued.
       operationId: getIssuerMetadata
       responses:
@@ -437,7 +438,7 @@ paths:
   /.well-known/openid-credential-issuer:
     get:
       tags:
-      - Well-known endpoints API
+        - Well-known endpoints API
       summary: Information about credentials which can be issued.
       operationId: getIssuerMetadata_1
       responses:
@@ -452,7 +453,7 @@ paths:
   /.well-known/openid-configuration:
     get:
       tags:
-      - Well-known endpoints API
+        - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
       operationId: getOpenIDConfiguration
       responses:
@@ -467,7 +468,7 @@ paths:
   /oid4vci/.well-known/openid-configuration:
     get:
       tags:
-      - Well-known endpoints API
+        - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
       operationId: getOpenIDConfiguration_1
       responses:
@@ -482,7 +483,7 @@ paths:
   /.well-known/oauth-authorization-server:
     get:
       tags:
-      - Well-known endpoints API
+        - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
       operationId: getOpenIDConfigurationForOauthAuthServer
       responses:
@@ -497,7 +498,7 @@ paths:
   /oid4vci/.well-known/oauth-authorization-server:
     get:
       tags:
-      - Well-known endpoints API
+        - Well-known endpoints API
       summary: OpenID Connect information required for issuing VCs
       operationId: getOpenIDConfigurationForOauthAuthServer_1
       responses:
@@ -512,16 +513,16 @@ paths:
   /management/api/status-list/{statusListId}:
     get:
       tags:
-      - Status List API
+        - Status List API
       summary: Get the status information of a status list.
       operationId: getStatusListInformation
       parameters:
-      - name: statusListId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: statusListId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "404":
           description: Not Found
@@ -534,15 +535,15 @@ paths:
   /management/api/credentials/{credentialId}/offer_deeplink:
     get:
       tags:
-      - Credential API
+        - Credential API
       operationId: getCredentialOfferDeeplink
       parameters:
-      - name: credentialId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: credentialId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         "404":
           description: Not Found
@@ -556,7 +557,7 @@ paths:
   /actuator:
     get:
       tags:
-      - Actuator
+        - Actuator
       summary: Actuator root web endpoint
       operationId: links
       responses:
@@ -589,22 +590,22 @@ paths:
   /actuator/prometheus:
     get:
       tags:
-      - Actuator
+        - Actuator
       summary: Actuator web endpoint 'prometheus'
       operationId: scrape
       parameters:
-      - name: format
-        in: query
-        schema:
-          type: string
-          enum:
-          - CONTENT_TYPE_004
-          - CONTENT_TYPE_OPENMETRICS_100
-          - CONTENT_TYPE_PROTOBUF
-      - name: includedNames
-        in: query
-        schema:
-          type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum:
+              - CONTENT_TYPE_004
+              - CONTENT_TYPE_OPENMETRICS_100
+              - CONTENT_TYPE_PROTOBUF
+        - name: includedNames
+          in: query
+          schema:
+            type: string
       responses:
         "404":
           description: Not Found
@@ -623,7 +624,7 @@ paths:
   /actuator/info:
     get:
       tags:
-      - Actuator
+        - Actuator
       summary: Actuator web endpoint 'info'
       operationId: info
       responses:
@@ -644,7 +645,7 @@ paths:
   /actuator/health:
     get:
       tags:
-      - Actuator
+        - Actuator
       summary: Actuator web endpoint 'health'
       operationId: health
       responses:
@@ -676,8 +677,8 @@ components:
           type: string
           minLength: 1
       required:
-      - grant_type
-      - pre-authorized_code
+        - grant_type
+        - pre-authorized_code
     OAuthToken:
       type: object
       properties:
@@ -695,7 +696,7 @@ components:
         c_nonce:
           type: string
       required:
-      - access_token
+        - access_token
     NonceResponse:
       type: object
       properties:
@@ -704,7 +705,7 @@ components:
           description: String containing an unpredictable challenge to be used when
             creating a proof of possession of the key.
       required:
-      - c_nonce
+        - c_nonce
     CredentialEndpointResponse:
       type: object
       properties:
@@ -745,7 +746,7 @@ components:
           description: Id received from the create credential request for the deferred
             flow.
       required:
-      - transaction_id
+        - transaction_id
     CredentialEndpointRequest:
       type: object
       description: Request to the Credential Endpoint as defined in OID4VCI draft
@@ -756,26 +757,26 @@ components:
           pattern: ^vc\+sd-jwt$
         proof:
           type: object
-          additionalProperties: {}
+          additionalProperties: { }
           description: Proof for holder binding. Can be in key:did or cnf format.
         credential_response_encryption:
           $ref: "#/components/schemas/CredentialResponseEncryption"
       required:
-      - format
+        - format
     CredentialResponseEncryption:
       type: object
       properties:
         jwk:
           type: object
-          additionalProperties: {}
+          additionalProperties: { }
         alg:
           type: string
         enc:
           type: string
       required:
-      - alg
-      - enc
-      - jwk
+        - alg
+        - enc
+        - jwk
     CredentialEndpointRequestV2:
       type: object
       description: Request to the Credential Endpoint as defined in OID4VCI 1.0 specification
@@ -794,7 +795,7 @@ components:
             which the issued Credential instances will be bound to
           example:
             jwt:
-            - eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJUZXN0LUtleSIsIngiOiJrdHFJRFpoUjFmY2NlM3VGanpxdDdLRVlEdVdweFJoX3pqdkszanZsS2k4IiwieSI6Ik1UV2ZObTJ6dy1CbklqM2szbW0xZVB3Q3hqTm9DSEowdXN6V25MeHVDemsiLCJpYXQiOjE3NTMyNjkyNzZ9fQ.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvb2lkNHZjaSIsIm5vbmNlIjoiY2U5YzEzNzgtODc2Yi00OGUyLTg0ZmUtOGE0ZjUwZGFkZmJmIiwiaWF0IjoxNzUzMjY5Mjc2fQ.ck-6Oq6IAav1VdFOkq9Qh7tzrl52jJvFBU3aPcZ_20oE73Cf4izN0ECmmiJm_qUMvYJlykQFsX2sW43gFC6vCw
+              - eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJUZXN0LUtleSIsIngiOiJrdHFJRFpoUjFmY2NlM3VGanpxdDdLRVlEdVdweFJoX3pqdkszanZsS2k4IiwieSI6Ik1UV2ZObTJ6dy1CbklqM2szbW0xZVB3Q3hqTm9DSEowdXN6V25MeHVDemsiLCJpYXQiOjE3NTMyNjkyNzZ9fQ.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvb2lkNHZjaSIsIm5vbmNlIjoiY2U5YzEzNzgtODc2Yi00OGUyLTg0ZmUtOGE0ZjUwZGFkZmJmIiwiaWF0IjoxNzUzMjY5Mjc2fQ.ck-6Oq6IAav1VdFOkq9Qh7tzrl52jJvFBU3aPcZ_20oE73Cf4izN0ECmmiJm_qUMvYJlykQFsX2sW43gFC6vCw
         credential_response_encryption:
           $ref: "#/components/schemas/CredentialResponseEncryption"
           description: |
@@ -806,7 +807,7 @@ components:
                "jwk": {"kty":"EC","crv":"P-256","kid":"transportEncKeyEC","x":"DTaouFJpyVkLvfhoOvuTDR6_nmTt7YTvEHsHzK0Ingk","y":"vOipfo61Sy64XpneRyR5g6NCGXLv_Q7f3-kEDMT-G9U"
             }
       required:
-      - credential_configuration_id
+        - credential_configuration_id
     ProofsDto:
       type: object
       properties:
@@ -819,7 +820,7 @@ components:
             type: string
           minItems: 1
       required:
-      - jwt
+        - jwt
     DeferredData:
       type: object
       properties:
@@ -827,7 +828,7 @@ components:
           type: string
           format: uuid
       required:
-      - transaction_id
+        - transaction_id
     DeferredDataV2:
       type: object
       properties:
@@ -838,8 +839,8 @@ components:
           type: integer
           format: int32
       required:
-      - interval
-      - transaction_id
+        - interval
+        - transaction_id
     ConfigurationOverride:
       type: object
       description: Override for configuration to be use for the created entity
@@ -867,7 +868,7 @@ components:
           description: Technical type of the status list to be used. This influences
             the options available in config.
           enum:
-          - TOKEN_STATUS_LIST
+            - TOKEN_STATUS_LIST
         maxLength:
           type: integer
           format: int32
@@ -891,9 +892,9 @@ components:
           description: "Optional Parameter to override configured parameters, such\
             \ as the DID used or the HSM key used in singing the request object"
       required:
-      - config
-      - maxLength
-      - type
+        - config
+        - maxLength
+        - type
     StatusListCreateConfig:
       type: object
       properties:
@@ -907,7 +908,7 @@ components:
             \ suspension of a credential. Possible values are 1, 2, 4, 8."
           example: 2
       required:
-      - bits
+        - bits
     StatusList:
       type: object
       properties:
@@ -923,7 +924,7 @@ components:
           description: Technical type of the status list to be used. This influences
             the options available in config.
           enum:
-          - TOKEN_STATUS_LIST
+            - TOKEN_STATUS_LIST
         maxListEntries:
           type: integer
           format: int32
@@ -945,7 +946,7 @@ components:
           description: Version of the status list schema
         config:
           type: object
-          additionalProperties: {}
+          additionalProperties: { }
           description: |2
                  Additional config parameters, depending on the status list type. For Example
                  {"bits": 2}
@@ -962,7 +963,7 @@ components:
           format: uuid
         offer_deeplink:
           type: string
-    CreateCredentialRequest:
+    CreateCredentialOfferRequest:
       type: object
       description: Initial credential creation request to start the offering process.
       properties:
@@ -1020,8 +1021,8 @@ components:
           description: "Optional Parameter to override configured parameters, such\
             \ as the DID used or the HSM key used in singing the request object"
       required:
-      - credential_subject_data
-      - metadata_credential_supported_id
+        - credential_subject_data
+        - metadata_credential_supported_id
     CredentialOfferMetadataDto:
       type: object
       properties:
@@ -1053,15 +1054,15 @@ components:
             REVOKED - the VC has been revoked. This state is final and can not be changed.
             EXPIRED - the lifetime of the VC expired (not used yet)
       enum:
-      - OFFERED
-      - CANCELLED
-      - IN_PROGRESS
-      - DEFERRED
-      - READY
-      - ISSUED
-      - SUSPENDED
-      - REVOKED
-      - EXPIRED
+        - OFFERED
+        - CANCELLED
+        - IN_PROGRESS
+        - DEFERRED
+        - READY
+        - ISSUED
+        - SUSPENDED
+        - REVOKED
+        - EXPIRED
       example: SUSPENDED
     UpdateStatusResponse:
       type: object
@@ -1080,11 +1081,11 @@ components:
             SUSPENDED - the VC has been temporarily suspended. To unsuspend change state to issued.
             REVOKED - the VC has been revoked. This state is final and can not be changed.
       enum:
-      - CANCELLED
-      - READY
-      - ISSUED
-      - SUSPENDED
-      - REVOKED
+        - CANCELLED
+        - READY
+        - ISSUED
+        - SUSPENDED
+        - REVOKED
       example: SUSPENDED
     BatchCredentialIssuance:
       type: object
@@ -1094,7 +1095,7 @@ components:
           format: int32
           minimum: 2
       required:
-      - batch_size
+        - batch_size
     CredentialClaim:
       type: object
       properties:
@@ -1143,8 +1144,8 @@ components:
         credential_metadata:
           $ref: "#/components/schemas/CredentialConfigurationMetadata"
       required:
-      - format
-      - vct
+        - format
+        - vct
     CredentialConfigurationMetadata:
       type: object
       description: |
@@ -1181,7 +1182,7 @@ components:
           items:
             type: string
       required:
-      - type
+        - type
     IssuerCredentialRequestEncryption:
       type: object
       properties:
@@ -1203,20 +1204,20 @@ components:
             the additional encryption on top of TLS
         jwks:
           type: object
-          additionalProperties: {}
+          additionalProperties: { }
           description: "A JSON Web Key Set that contains one or more public keys,\
             \ to be used by the Wallet as an input to a key agreement for encryption\
             \ of the Credential Request."
           example:
             keys:
-            - kty: EC
-              crv: P-256
-              kid: ec91e148-974d-47f1-9891-4b89d8bad57c
-              x: rm2YkWAJ2V84gS00DqeGR6MXHgW3FWISG45Vop0cWv4
-              "y": ktSScp7s2fWSdq_7c6iOUI9AYFwQahXG60Nr9SL68mY
+              - kty: EC
+                crv: P-256
+                kid: ec91e148-974d-47f1-9891-4b89d8bad57c
+                x: rm2YkWAJ2V84gS00DqeGR6MXHgW3FWISG45Vop0cWv4
+                "y": ktSScp7s2fWSdq_7c6iOUI9AYFwQahXG60Nr9SL68mY
       required:
-      - enc_values_supported
-      - encryption_required
+        - enc_values_supported
+        - encryption_required
     IssuerCredentialResponseEncryption:
       type: object
       properties:
@@ -1243,9 +1244,9 @@ components:
             pattern: ^ECDH-ES$
           minItems: 1
       required:
-      - alg_values_supported
-      - enc_values_supported
-      - encryption_required
+        - alg_values_supported
+        - enc_values_supported
+        - encryption_required
     IssuerMetadata:
       type: object
       description: |
@@ -1299,10 +1300,10 @@ components:
           items:
             $ref: "#/components/schemas/MetadataIssuerDisplayInfo"
       required:
-      - credential_configurations_supported
-      - credential_endpoint
-      - credential_issuer
-      - version
+        - credential_configurations_supported
+        - credential_endpoint
+        - credential_issuer
+        - version
     KeyAttestationRequirement:
       type: object
       properties:
@@ -1311,10 +1312,10 @@ components:
           items:
             type: string
             enum:
-            - iso_18045_high
-            - iso_18045_enhanced-basic
+              - iso_18045_high
+              - iso_18045_enhanced-basic
       required:
-      - key_storage
+        - key_storage
     MetadataClaimDescriptor:
       type: object
       description: |
@@ -1330,7 +1331,7 @@ components:
           items:
             $ref: "#/components/schemas/MetadataDisplayInfo"
       required:
-      - path
+        - path
     MetadataCredentialDisplayInfo:
       type: object
       properties:
@@ -1378,7 +1379,7 @@ components:
             tring value that contains a URI where the Wallet can obtain the logo of the Credential Issuer.
             The Wallet needs to determine the scheme, since the URI value could use the https: scheme, the data: scheme, etc.
       required:
-      - uri
+        - uri
     MetadataIssuerDisplayInfo:
       type: object
       properties:
@@ -1405,7 +1406,7 @@ components:
           type: string
           description: String value of the alternative text for the logo image
       required:
-      - uri
+        - uri
     SupportedProofType:
       type: object
       properties:
@@ -1483,25 +1484,6 @@ components:
           type: string
         templated:
           type: boolean
-    WebhookCallback:
-      description: Callback transmitting information about an event which occurred.
-      properties:
-        subject_id:
-          type: string
-          format: uuid
-        event_type:
-          type: string
-          enum:
-          - VC_STATUS_CHANGED
-          - VC_DEFERRED
-          - ISSUANCE_ERROR
-        event:
-          type: string
-        event_description:
-          type: string
-        timestamp:
-          type: string
-          format: date-time
     ApiError:
       description: Error response object
       properties:
@@ -1513,6 +1495,25 @@ components:
           type: string
         trace_id:
           type: string
+    WebhookCallback:
+      description: Callback transmitting information about an event which occurred.
+      properties:
+        subject_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+          enum:
+            - VC_STATUS_CHANGED
+            - VC_DEFERRED
+            - ISSUANCE_ERROR
+        event:
+          type: string
+        event_description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
   securitySchemes:
     bearer-jwt:
       type: http
