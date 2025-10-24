@@ -82,7 +82,7 @@ public class SdJwtCredential extends CredentialBuilder {
         if (holderPublicKeys != null && !holderPublicKeys.isEmpty()) {
             var idx = i;
             if (holderPublicKeys.size() == SINGLE_ELEMENT) {
-                // Using the same index for all elements in the batch; should only be used in tests
+                // Using the same index for all elements in the batch; should only be used in tests as this would allow linkability
                 idx = 0;
             }
             var holderPublicKey = holderPublicKeys.get(idx);
@@ -135,7 +135,7 @@ public class SdJwtCredential extends CredentialBuilder {
         for (int i = 0; i < batchSize; i++) {
             addHolderBinding(holderPublicKeys, i, builder);
             addStatusReferences(statusReferences, i, builder);
-            createSignedSDJWT(override, builder, sdjwts, disclosures);
+            sdjwts.add(createSignedSDJWT(override, builder, disclosures));
         }
         return Collections.unmodifiableList(sdjwts);
     }
@@ -226,10 +226,9 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
-    private void createSignedSDJWT(ConfigurationOverride override,
-                                   SDObjectBuilder builder,
-                                   List<String> sdjwts,
-                                   List<Disclosure> disclosures) {
+    private String createSignedSDJWT(ConfigurationOverride override,
+                                     SDObjectBuilder builder,
+                                     List<Disclosure> disclosures) {
         try {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                     .type(new JOSEObjectType(SD_JWT_FORMAT))
@@ -241,7 +240,7 @@ public class SdJwtCredential extends CredentialBuilder {
 
             jwt.sign(this.createSigner());
 
-            sdjwts.add(new SDJWT(jwt.serialize(), disclosures).toString());
+            return new SDJWT(jwt.serialize(), disclosures).toString();
         } catch (ParseException | JOSEException e) {
             throw new CredentialException(e);
         }
