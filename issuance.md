@@ -80,7 +80,6 @@ With the response:
     "type": "TOKEN_STATUS_LIST",
     "maxListEntries": 100000,
     "remainingListEntries": 100000,
-    "nextFreeIndex": 0,
     "version": "1.0",
     "config": {
         "bits": 2
@@ -92,7 +91,8 @@ With the response:
 
 > [!NOTE]
 > If `vct#integrity`, `vct_metadata_uri` or `vct_metadata_uri#integrity` are added to the
-> credential-offer-request: `"credential_metadata": { "vct#integrity": "sha256-0000000000000000000000000000000000000000000=", "vct_metadata_uri": "vct_metadata_uri",  "vct_metadata_uri#integrity": "sha256-0000000000000000000000000000000000000000000="}, `
+> credential-offer-request:
+`"credential_metadata": { "vct#integrity": "sha256-0000000000000000000000000000000000000000000=", "vct_metadata_uri": "vct_metadata_uri",  "vct_metadata_uri#integrity": "sha256-0000000000000000000000000000000000000000000="}, `
 > is set then the claims are added to the final credential.
 
 The integrity hash is provided with each created credential offer in the offer metadata while issuing the credential.

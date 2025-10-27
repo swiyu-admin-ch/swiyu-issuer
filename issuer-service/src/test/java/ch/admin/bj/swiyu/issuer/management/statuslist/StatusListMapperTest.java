@@ -38,18 +38,16 @@ class StatusListMapperTest {
                 .uri(statusRegistryUrl)
                 .type(statusListType)
                 .maxLength(maxLength)
-                .nextFreeIndex(nextFreeIndex)
                 .config(configMap)
                 .build();
 
-        StatusListDto statusListDto = StatusListMapper.toStatusListDto(statusList, version);
+        StatusListDto statusListDto = StatusListMapper.toStatusListDto(statusList, remainingEntries, version);
 
         assertEquals(id, statusListDto.getId());
         assertEquals(statusRegistryUrl, statusListDto.getStatusRegistryUrl());
         assertEquals(StatusListTypeDto.TOKEN_STATUS_LIST, statusListDto.getType());
         assertEquals(maxLength, statusListDto.getMaxListEntries());
         assertEquals(remainingEntries, statusListDto.getRemainingListEntries());
-        assertEquals(nextFreeIndex, statusListDto.getNextFreeIndex());
         assertEquals(configMap, statusListDto.getConfig());
         assertEquals(version, statusListDto.getVersion());
     }

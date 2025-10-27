@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   issuer and the wallet should not retry.
 - Added always available Credential Request Payload encryption, can be enforced to be always active by setting
   APPLICATION_ENCRYPTIONENFORCE=true. Overriding will break compatibility with wallets not supporting encryption.
+- Batch issuance now supports multiple indexes, preventing linkability through status list index.
+  The used status list indexes are selected at random from remaining free indexes in status list.
 
 ### Changed
 

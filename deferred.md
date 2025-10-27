@@ -127,7 +127,6 @@ With the response:
     "type": "TOKEN_STATUS_LIST",
     "maxListEntries": 100000,
     "remainingListEntries": 100000,
-    "nextFreeIndex": 0,
     "version": "1.0",
     "config": {
         "bits": 2

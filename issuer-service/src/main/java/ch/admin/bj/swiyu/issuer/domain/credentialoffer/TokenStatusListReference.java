@@ -20,4 +20,9 @@ public record TokenStatusListReference(int idx, String uri,
     public Map<String, Object> createVCRepresentation() {
         return Map.of("status", Map.of("status_list", Map.of("idx", idx, "uri", uri, "type", type)));
     }
+
+    @Override
+    public String getIdentifier() {
+        return uri;
+    }
 }

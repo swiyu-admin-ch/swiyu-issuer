@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
@@ -36,14 +36,17 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.net.URLDecoder;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialOffer;
 import static java.time.Instant.now;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class CredentialManagementServiceTest {
+    public static final String TEST_STATUS_LIST_URI = "https://localhost:8080/status";
     private final Map<String, Object> offerData = Map.of("hello", "world");
     @Mock
     CredentialOfferRepository credentialOfferRepository;
@@ -60,13 +63,16 @@ class CredentialManagementServiceTest {
     private CredentialOffer issued;
     private CredentialOffer suspended;
     private StatusList statusList;
-    private CreateCredentialRequestDto createCredentialRequestDto;
+    private CreateCredentialOfferRequestDto createCredentialOfferRequestDto;
+    private AvailableStatusListIndexRepository availableStatusListIndexRepository;
 
     @BeforeEach
     void setUp() {
+        availableStatusListIndexRepository = Mockito.mock(AvailableStatusListIndexRepository.class);
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         statusListService = Mockito.mock(StatusListService.class);
         issuerMetadata = Mockito.mock(IssuerMetadata.class);
+        var mockCredentialMetadata = Mockito.mock(CredentialConfiguration.class);
         applicationProperties = Mockito.mock(ApplicationProperties.class);
         dataIntegrityService = Mockito.mock(DataIntegrityService.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
@@ -93,6 +99,12 @@ class CredentialManagementServiceTest {
         when(credentialOfferRepository.save(issued)).thenReturn(issued);
         when(credentialOfferRepository.save(suspended)).thenReturn(suspended);
 
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test", mockCredentialMetadata));
+        when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(mockCredentialMetadata);
+        when(mockCredentialMetadata.getFormat()).thenReturn("dc+sd-jwt");
+        when(mockCredentialMetadata.getClaims()).thenReturn(Map.of("hello", Mockito.mock(CredentialClaim.class)));
+        when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(offerData);
+
         credentialService = new CredentialManagementService(
                 credentialOfferRepository,
                 credentialOfferStatusRepository,
@@ -101,20 +113,25 @@ class CredentialManagementServiceTest {
                 issuerMetadata,
                 applicationProperties,
                 dataIntegrityService,
-                applicationEventPublisher
+                applicationEventPublisher,
+                availableStatusListIndexRepository
         );
 
         var statusListUris = List.of("https://example.com/status-list");
         var statusListToken = new TokenStatusListToken(2, 10000);
         statusList = StatusList.builder().type(StatusListType.TOKEN_STATUS_LIST)
                 .config(Map.of("bits", 2))
-                .uri("https://localhost:8080/status")
+                .uri(TEST_STATUS_LIST_URI)
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
-                .nextFreeIndex(0)
                 .maxLength(10000)
                 .build();
+        when(availableStatusListIndexRepository.findById(TEST_STATUS_LIST_URI)).thenReturn(
+                Optional.of(AvailableStatusListIndexes.builder()
+                        .statusListUri(TEST_STATUS_LIST_URI)
+                        .freeIndexes(IntStream.range(0, 10).boxed().toList())
+                        .build()));
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -181,7 +198,7 @@ class CredentialManagementServiceTest {
 
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
         doNothing().when(statusListService).revoke(offerStatusSet);
 
@@ -219,7 +236,7 @@ class CredentialManagementServiceTest {
 
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
         doNothing().when(statusListService).revoke(offerStatusSet);
 
@@ -233,7 +250,7 @@ class CredentialManagementServiceTest {
 
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferStatusId(issued.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
         doNothing().when(statusListService).revoke(offerStatusSet);
 
@@ -247,7 +264,7 @@ class CredentialManagementServiceTest {
 
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferStatusId(suspended.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferId(suspended.getId())).thenReturn(offerStatusSet);
 
         doNothing().when(statusListService).revoke(offerStatusSet);
 
@@ -261,7 +278,7 @@ class CredentialManagementServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list", "https://example.com/another-status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -271,7 +288,7 @@ class CredentialManagementServiceTest {
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
         assertTrue(exception.getMessage().contains("Could not resolve all provided status lists, only found https://localhost:8080/status"));
     }
 
@@ -290,7 +307,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
 
         assertTrue(exception.getMessage().contains("Credential offer metadata test-metadata is not supported - should be one of different-test-metadata"));
     }
@@ -300,7 +317,7 @@ class CredentialManagementServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -320,7 +337,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
         assertTrue(exception.getMessage().contains("Credential is already expired (would only be valid until"));
     }
 
@@ -329,7 +346,7 @@ class CredentialManagementServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -350,7 +367,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
         assertTrue(exception.getMessage().contains("Credential would never be valid"));
     }
 
@@ -359,7 +376,7 @@ class CredentialManagementServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -380,7 +397,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
         assertTrue(exception.getMessage().contains("Credential is already expired"));
     }
 
@@ -391,7 +408,7 @@ class CredentialManagementServiceTest {
         when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
-
+        when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(new HashMap<>());
         var credConfig = mock(CredentialConfiguration.class);
         var claim = new CredentialClaim();
         claim.setMandatory(true);
@@ -413,9 +430,9 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
 
-        assertTrue(exception.getMessage().contains("Credential claims (credential subject data) is missing!"));
+        assertThat(exception.getMessage()).contains("Credential claims (credential subject data) is missing!");
     }
 
     @Test
@@ -425,7 +442,6 @@ class CredentialManagementServiceTest {
         when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
-
         var credConfig = mock(CredentialConfiguration.class);
         var claim = new CredentialClaim();
         claim.setMandatory(true);
@@ -448,7 +464,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
 
         assertTrue(exception.getMessage().contains("Unexpected credential claims found!"));
     }
@@ -482,7 +498,7 @@ class CredentialManagementServiceTest {
             }
         });
 
-        assertDoesNotThrow(() -> credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+        assertDoesNotThrow(() -> credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
     }
 
     @Test
@@ -555,7 +571,8 @@ class CredentialManagementServiceTest {
                 issuerMetadata,
                 applicationProperties,
                 dataIntegrityService,
-                applicationEventPublisher
+                applicationEventPublisher,
+                availableStatusListIndexRepository
         );
 
         when(credentialOfferRepository.findByMetadataTenantId(tenantId)).thenReturn(Optional.empty());
@@ -597,7 +614,7 @@ class CredentialManagementServiceTest {
 
         try (MockedStatic<UUID> uuid = Mockito.mockStatic(UUID.class)) {
             uuid.when(UUID::randomUUID).thenReturn(expected);
-            var response = credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto);
+            var response = credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto);
             assertTrue(response.getOfferDeeplink().contains(expected.toString()));
         }
     }
@@ -637,8 +654,7 @@ class CredentialManagementServiceTest {
         when(applicationProperties.getDeeplinkSchema()).thenReturn("test");
         when(applicationProperties.getExternalUrl()).thenReturn(expectedMetadata);
 
-
-        var response = credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto);
+        var response = credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto);
 
         var deeplink = response.getOfferDeeplink();
 
@@ -655,8 +671,7 @@ class CredentialManagementServiceTest {
 
     private CredentialOfferStatus getCredentialOfferStatus(UUID offerId, UUID statusId) {
         return CredentialOfferStatus.builder()
-                .id(new CredentialOfferStatusKey(offerId, statusId))
-                .index(1)
+                .id(new CredentialOfferStatusKey(offerId, statusId, 1))
                 .build();
     }
 

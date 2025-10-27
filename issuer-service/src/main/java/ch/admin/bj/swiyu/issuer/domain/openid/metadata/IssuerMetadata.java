@@ -112,4 +112,12 @@ public class IssuerMetadata {
         return credentialConfiguration;
     }
 
+    /**
+     * Shortcut for batchCredentialIssuance.batchSize
+     *
+     * @return the configured batchSize or 1, if no batch size has been configured
+     */
+    public int getIssuanceBatchSize() {
+        return batchCredentialIssuance == null ? 1 : batchCredentialIssuance.batchSize();
+    }
 }

@@ -11,7 +11,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
@@ -26,12 +25,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-@Transactional
+//@Transactional will break filtering to currently used indexes
 class CredentialManagementServiceIT {
     @Autowired
     CredentialManagementService credentialManagementService;
     @Autowired
     CredentialOfferRepository credentialOfferRepository;
+
+    private static CredentialOffer newOffer(final CredentialStatusType status, final long expirationEpoch) {
+        return CredentialOffer.builder()
+                .credentialStatus(status)
+                .metadataCredentialSupportedId(List.of("metadata"))
+                .offerData(Map.of())
+                .offerExpirationTimestamp(expirationEpoch)
+                .nonce(UUID.randomUUID())
+                .accessToken(UUID.randomUUID())
+                .preAuthorizedCode(UUID.randomUUID())
+                .build();
+    }
 
     @Test
     void testExpireOffersAllCredentialStatusType() {
@@ -77,17 +88,5 @@ class CredentialManagementServiceIT {
                     allOffers.stream().map(CredentialOffer::getId).toList()
             );
         }
-    }
-
-    private static CredentialOffer newOffer(final CredentialStatusType status, final long expirationEpoch) {
-        return CredentialOffer.builder()
-                .credentialStatus(status)
-                .metadataCredentialSupportedId(List.of("metadata"))
-                .offerData(Map.of())
-                .offerExpirationTimestamp(expirationEpoch)
-                .nonce(UUID.randomUUID())
-                .accessToken(UUID.randomUUID())
-                .preAuthorizedCode(UUID.randomUUID())
-                .build();
     }
 }

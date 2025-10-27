@@ -11,13 +11,14 @@ import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
@@ -64,29 +65,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CredentialOfferCreateIT {
 
     private static final String BASE_URL = "/management/api/credentials";
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private CredentialOfferRepository credentialOfferRepository;
-
-    @Autowired
-    private StatusListRepository statusListRepository;
-
-    @Autowired
-    private MockMvc mvc;
-
-    @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
-
     @Autowired
     protected SwiyuProperties swiyuProperties;
-
+    protected StatusListTestHelper statusListTestHelper;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private CredentialOfferRepository credentialOfferRepository;
+    @Autowired
+    private StatusListRepository statusListRepository;
+    @Autowired
+    private MockMvc mvc;
+    @MockitoBean
+    private StatusBusinessApiApi statusBusinessApi;
     @Mock
     private ApiClient mockApiClient;
-
-    protected StatusListTestHelper statusListTestHelper;
+    @Autowired
+    private IssuerMetadata issuerMetadata;
 
     @BeforeEach
     void setUp() {
@@ -392,11 +387,12 @@ class CredentialOfferCreateIT {
     @ParameterizedTest
     @ValueSource(strings = {"sub", "iss", "nbf", "exp", "iat", "cnf", "vct", "status", "_sd", "_sd_alg", "sd_hash", "..."})
     void testProtectedClaimsInOfferData_thenBadRequest(String claim) throws Exception {
-
         String jsonPayload = """
                 {
                   "metadata_credential_supported_id": ["university_example_sd_jwt"],
                   "credential_subject_data": {
+                    "type": "Bachelor Diploma",
+                    "name": "Bachelor of Science",
                     "%s": "protected claim"
                   },
                   "offer_validity_seconds": 36000
@@ -407,7 +403,7 @@ class CredentialOfferCreateIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("The following claims are not allowed in the credentialSubjectData: [%s]".formatted(claim)))
+                .andExpect(jsonPath("$.detail").value("Unexpected credential claims found! %s".formatted(claim)))
                 .andReturn();
     }
 
@@ -426,7 +422,7 @@ class CredentialOfferCreateIT {
 
         final StatusListDto firstStatusListDto = statusListTestHelper.createStatusList(StatusListTypeDto.TOKEN_STATUS_LIST, 127, "Test purpose", 4, firstIssuer, null, null, null);
 
-        final CreateCredentialRequestDto firstCredential = CreateCredentialRequestDto.builder()
+        final CreateCredentialOfferRequestDto firstCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of("hello", "world"))
                 .statusLists(List.of(firstStatusListDto.getStatusRegistryUrl()))
@@ -447,7 +443,7 @@ class CredentialOfferCreateIT {
 
         final StatusListDto secondStatusListDto = statusListTestHelper.createStatusList(StatusListTypeDto.TOKEN_STATUS_LIST, 255, "Test purpose 2", 2, secondIssuer, null, null, null);
 
-        final CreateCredentialRequestDto secondCredential = CreateCredentialRequestDto.builder()
+        final CreateCredentialOfferRequestDto secondCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of("hello", "sky"))
                 .statusLists(List.of(secondStatusListDto.getStatusRegistryUrl()))
@@ -474,7 +470,5 @@ class CredentialOfferCreateIT {
         final StatusList firstStatusListDb = statusListRepository.findById(firstStatusListDto.getId()).get();
         final StatusList secondStatusListDb = statusListRepository.findById(secondStatusListDto.getId()).get();
         assertNotEquals(firstStatusListDb.getId(), secondStatusListDb.getId());
-        assertEquals(1, firstStatusListDb.getNextFreeIndex());
-        assertEquals(1, secondStatusListDb.getNextFreeIndex());
     }
 }

@@ -72,11 +72,7 @@ public class StatusList {
      */
     @NotNull
     private String statusZipped;
-    /**
-     * indicator what index is to be next used for creation of a new VC.
-     */
-    @NotNull
-    private Integer nextFreeIndex;
+
     /**
      * The maximum number of entries this status list is made for
      */
@@ -87,7 +83,7 @@ public class StatusList {
      * Overrides for a single status list's configuration normally injected via application properties
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name="configuration_override", columnDefinition = "jsonb")
+    @Column(name = "configuration_override", columnDefinition = "jsonb")
     private ConfigurationOverride configurationOverride;
 
     public UUID getRegistryId() {
@@ -110,13 +106,6 @@ public class StatusList {
                     uuidPattern));
             throw new IllegalArgumentException("No UUID found in the provided URL.");
         }
-    }
-
-    public void incrementNextFreeIndex() {
-        if (maxLength <= nextFreeIndex) {
-            throw new CredentialException(String.format("Max length %s exceeded for status list %s", maxLength, uri));
-        }
-        this.nextFreeIndex++;
     }
 
     @NotNull

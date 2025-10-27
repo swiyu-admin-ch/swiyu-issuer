@@ -45,7 +45,6 @@ public class CredentialOfferTestData {
                 .config(Map.of("bits", 2))
                 .uri("https://localhost:8080/status")
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
-                .nextFreeIndex(0)
                 .maxLength(10000)
                 .build();
     }
@@ -108,10 +107,9 @@ public class CredentialOfferTestData {
         return credentialSubjectData;
     }
 
-    public static CredentialOfferStatus linkStatusList(CredentialOffer offer, StatusList statusList) {
+    public static CredentialOfferStatus linkStatusList(CredentialOffer offer, StatusList statusList, int index) {
         return new CredentialOfferStatus(
-                new CredentialOfferStatusKey(offer.getId(), statusList.getId()),
-                statusList.getNextFreeIndex()
+                new CredentialOfferStatusKey(offer.getId(), statusList.getId(), index)
         );
     }
 }

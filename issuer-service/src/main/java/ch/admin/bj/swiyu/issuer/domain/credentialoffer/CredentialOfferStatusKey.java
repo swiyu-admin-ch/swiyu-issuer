@@ -27,4 +27,12 @@ public class CredentialOfferStatusKey implements Serializable {
 
     @Column(name = "status_list_id")
     private UUID statusListId;
+
+    /**
+     * The index the credential is assigned on the status list.
+     * The corresponding status has to be calculated depending on the type of status
+     * list using this index.
+     */
+    @Column(name = "index")
+    private Integer index;
 }

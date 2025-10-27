@@ -15,14 +15,13 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class StatusListMapper {
 
-    public static StatusListDto toStatusListDto(StatusList statusList, String version) {
+    public static StatusListDto toStatusListDto(StatusList statusList, int availableEntries, String version) {
         return StatusListDto.builder()
                 .id(statusList.getId())
                 .statusRegistryUrl(statusList.getUri())
                 .type(toStatusListTypeDto(statusList.getType()))
                 .maxListEntries(statusList.getMaxLength())
-                .remainingListEntries(statusList.getMaxLength() - statusList.getNextFreeIndex())
-                .nextFreeIndex(statusList.getNextFreeIndex())
+                .remainingListEntries(availableEntries)
                 .config(statusList.getConfig())
                 .version(version)
                 .build();

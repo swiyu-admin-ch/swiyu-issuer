@@ -17,6 +17,9 @@ import java.util.UUID;
 public interface CredentialOfferStatusRepository
         extends JpaRepository<CredentialOfferStatus, CredentialOfferStatusKey> {
 
-    @Query("SELECT c FROM CredentialOfferStatus c WHERE :offerStatusId = c.id.offerId")
-    Set<CredentialOfferStatus> findByOfferStatusId(UUID offerStatusId);
+    @Query("SELECT c FROM CredentialOfferStatus c WHERE :offerId = c.id.offerId")
+    Set<CredentialOfferStatus> findByOfferId(UUID offerId);
+
+    @Query("SELECT count(*) FROM CredentialOfferStatus c WHERE :statusListId = c.id.statusListId")
+    int countByStatusListId(UUID statusListId);
 }

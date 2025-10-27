@@ -47,6 +47,7 @@ public class StatusListService {
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
     private final SignatureService signatureService;
+    private final CredentialOfferStatusRepository credentialOfferStatusRepository;
 
     @Transactional(readOnly = true)
     public StatusListDto getStatusListInformation(UUID statusListId) {
@@ -54,7 +55,7 @@ public class StatusListService {
                 .orElseThrow(
                         () -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
 
-        return toStatusListDto(statusList, statusListProperties.getVersion());
+        return toStatusListDto(statusList, statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusListId), statusListProperties.getVersion());
     }
 
     @Transactional
@@ -70,7 +71,7 @@ public class StatusListService {
                 return statusListRepository.save(statusList);
             });
 
-            return toStatusListDto(newStatusList, statusListProperties.getVersion());
+            return toStatusListDto(newStatusList, newStatusList.getMaxLength(), statusListProperties.getVersion());
         } catch (DataIntegrityViolationException e) {
             var msg = e.getMessage();
             if (msg.toLowerCase().contains("status_list_uri_key")) {
@@ -102,14 +103,6 @@ public class StatusListService {
         return this.statusListRepository.findByUriIn(statusListUris);
     }
 
-    @Transactional
-    public void incrementNextFreeIndex(UUID statusListId) {
-        var statusList = statusListRepository.findByIdForUpdate(statusListId)
-                .orElseThrow(() -> new BadRequestException(String.format("Status List %s not found", statusListId)));
-        statusList.incrementNextFreeIndex();
-        statusListRepository.save(statusList);
-    }
-
     /**
      * Updates the token status list by setting the given bit
      *
@@ -117,6 +110,7 @@ public class StatusListService {
      * @param bit         the statusBit to be set
      */
     protected void updateTokenStatusList(CredentialOfferStatus offerStatus, TokenStatusListBit bit) {
+        // TODO Make updating status more efficient
         StatusList statusList = statusListRepository.findByIdForUpdate(offerStatus.getId().getStatusListId()).orElseThrow();
         if ((Integer) statusList.getConfig().get("bits") < bit.getValue()) {
             throw new BadRequestException(String.format("Attempted to update a status list %s to a status not supported %s", statusList.getUri(), bit.name()));
@@ -124,7 +118,7 @@ public class StatusListService {
         try {
             var token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
                     statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
-            token.setStatus(offerStatus.getIndex(), bit.getValue());
+            token.setStatus(offerStatus.getId().getIndex(), bit.getValue());
             statusList.setStatusZipped(token.getStatusListData());
             updateRegistry(statusList, token);
             statusListRepository.save(statusList);
@@ -153,7 +147,6 @@ public class StatusListService {
                 ))
                 .uri(newStatusList.getStatusRegistryUrl())
                 .statusZipped(token.getStatusListData())
-                .nextFreeIndex(0)
                 .maxLength(statusListCreateDto.getMaxLength())
                 .configurationOverride(toConfigurationOverride(statusListCreateDto.getConfigurationOverride()))
                 .build();

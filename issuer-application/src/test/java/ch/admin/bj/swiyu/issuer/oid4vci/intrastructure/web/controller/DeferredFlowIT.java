@@ -7,7 +7,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
@@ -113,11 +113,11 @@ class DeferredFlowIT {
     void setUp() throws JOSEException {
         statusList = saveStatusList(createStatusList());
         deferredOffer = createTestOffer(deferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
-        saveStatusListLinkedOffer(deferredOffer, statusList);
+        saveStatusListLinkedOffer(deferredOffer, statusList, 0);
         validUnboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null, null);
-        validUnboundOffer = saveStatusListLinkedOffer(validUnboundOffer, statusList);
+        validUnboundOffer = saveStatusListLinkedOffer(validUnboundOffer, statusList, 1);
         var notDeferredOffer = createTestOffer(notDeferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false));
-        saveStatusListLinkedOffer(notDeferredOffer, statusList);
+        saveStatusListLinkedOffer(notDeferredOffer, statusList, 2);
 
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
@@ -131,7 +131,7 @@ class DeferredFlowIT {
     @Test
     void testCompleteFlow_thenSuccess() throws Exception {
 
-        var offerRequest = CreateCredentialRequestDto.builder()
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of())
                 .credentialMetadata(getCredentialMetadataDto())
@@ -222,7 +222,7 @@ class DeferredFlowIT {
     @Test
     void testCompleteFlow_withKeyAttestation_thenSuccess() throws Exception {
 
-        var offerRequest = CreateCredentialRequestDto.builder()
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of())
                 .credentialMetadata(getCredentialMetadataDto())
@@ -518,7 +518,7 @@ class DeferredFlowIT {
     void testDeferredOffer_withDefaultDeferredExpiration_thenSuccess() throws Exception {
 
         var unboundOffer = createTestOffer(UUID.randomUUID(), CredentialStatusType.IN_PROGRESS, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null, null);
-        saveStatusListLinkedOffer(unboundOffer, statusList);
+        saveStatusListLinkedOffer(unboundOffer, statusList, 4);
 
         Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
 
@@ -543,7 +543,7 @@ class DeferredFlowIT {
         var expirationInSeconds = 1728000; // 20 days
 
         var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null), expirationInSeconds);
-        saveStatusListLinkedOffer(offerWithDynamicExpiration, statusList);
+        saveStatusListLinkedOffer(offerWithDynamicExpiration, statusList, 6);
 
         Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
 
@@ -566,11 +566,9 @@ class DeferredFlowIT {
         return statusListRepository.save(statusList);
     }
 
-    private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
+    private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
         var storedOffer = credentialOfferRepository.save(offer);
-        credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
-        statusList.incrementNextFreeIndex();
-
+        credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
         return storedOffer;
     }
 
