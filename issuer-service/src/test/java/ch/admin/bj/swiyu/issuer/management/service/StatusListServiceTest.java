@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.service.SignatureService;
@@ -46,6 +47,7 @@ class StatusListServiceTest {
     private SignatureService signatureService;
     private ECKey ecKey;
     private JWSSigner signer;
+    private CredentialOfferStatusRepository credentialOfferStatusRepository;
 
     private UUID statusRegistryEntryId = UUID.randomUUID();
 
@@ -57,8 +59,8 @@ class StatusListServiceTest {
         Mockito.when(statusListProperties.getVerificationMethod()).thenReturn("did:example:mock#key1");
         statusRegistryClient = Mockito.mock(StatusRegistryClient.class);
         Mockito.when(statusRegistryClient.createStatusListEntry()).thenReturn(new StatusListEntryCreationDto()
-            .id(statusRegistryEntryId)
-            .statusRegistryUrl("https://www.example.com/"+statusRegistryEntryId));
+                .id(statusRegistryEntryId)
+                .statusRegistryUrl("https://www.example.com/" + statusRegistryEntryId));
 
         statusListRepository = Mockito.mock(StatusListRepository.class);
         Mockito.when(statusListRepository.save(Mockito.any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -72,7 +74,9 @@ class StatusListServiceTest {
         signer = new ECDSASigner(ecKey);
         Mockito.when(signatureService.createSigner(Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(signer);
-        statusListService = new StatusListService(applicationProperties, statusListProperties, statusRegistryClient, statusListRepository, transaction, signatureService);
+        credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
+        Mockito.when(credentialOfferStatusRepository.countByStatusListId(Mockito.any())).thenReturn(0);
+        statusListService = new StatusListService(applicationProperties, statusListProperties, statusRegistryClient, statusListRepository, transaction, signatureService, credentialOfferStatusRepository);
     }
 
     @ParameterizedTest

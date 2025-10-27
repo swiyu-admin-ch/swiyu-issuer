@@ -164,7 +164,7 @@ class HolderBindingServiceTest {
 
         var e = assertThrows(Oid4vcException.class, () ->
                 holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer));
-        assertEquals("The number of proofs exceeds the batch size limit", e.getMessage());
+        assertEquals("The number of proofs must match the batch size", e.getMessage());
     }
 
     @Test

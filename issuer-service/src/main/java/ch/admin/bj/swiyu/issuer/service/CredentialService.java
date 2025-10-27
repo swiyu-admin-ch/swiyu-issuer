@@ -67,7 +67,8 @@ public class CredentialService {
     }
 
     @Transactional
-    public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDtoV2 credentialRequestDto, String accessToken,
+    public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDtoV2 credentialRequestDto,
+                                                    String accessToken,
                                                     ClientAgentInfo clientInfo) {
 
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
@@ -88,9 +89,11 @@ public class CredentialService {
 
         CredentialEnvelopeDto vc = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
-                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId()
+                        .getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions()
+                        .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(credentialOffer.getHolderJWKs())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
@@ -115,9 +118,11 @@ public class CredentialService {
 
         CredentialEnvelopeDto vc = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
-                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId()
+                        .getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions()
+                        .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(credentialOffer.getHolderJWKs())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelopeV2();
@@ -157,9 +162,11 @@ public class CredentialService {
         produceStateChangeEvent(offer.getId(), offer.getCredentialStatus());
 
         return OAuthTokenDto.builder()
-                .accessToken(offer.getAccessToken().toString())
+                .accessToken(offer.getAccessToken()
+                        .toString())
                 .expiresIn(applicationProperties.getTokenTTL())
-                .cNonce(offer.getNonce().toString())
+                .cNonce(offer.getNonce()
+                        .toString())
                 .build();
     }
 
@@ -187,7 +194,9 @@ public class CredentialService {
         if (credentialOffer.hasTokenExpirationPassed()) {
             log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
 
-            produceErrorEvent("AccessToken expired, offer is stuck in READY", CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, credentialOffer);
+            produceErrorEvent("AccessToken expired, offer is stuck in READY",
+                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
+                    credentialOffer);
 
             throw OAuthException.invalidRequest("AccessToken expired.");
         }
@@ -200,8 +209,10 @@ public class CredentialService {
     }
 
 
+    @Deprecated(since = "OID4VCI 1.0")
     private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
-                                                              CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
+                                                              CredentialRequestClass credentialRequest,
+                                                              ClientAgentInfo clientInfo) {
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
         validateCredentialRequest(credentialOffer, credentialRequest);
@@ -228,9 +239,11 @@ public class CredentialService {
 
         var vcBuilder = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
-                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId()
+                        .getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions()
+                        .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(holderPublicKeyJwkList)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId());
 
@@ -241,7 +254,12 @@ public class CredentialService {
             var transactionId = UUID.randomUUID();
 
             responseEnvelope = vcBuilder.buildDeferredCredential(transactionId);
-            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo, applicationProperties);
+            credentialOffer.markAsDeferred(transactionId,
+                    credentialRequest,
+                    holderPublicKeyJwkList,
+                    keyAttestationJwkList,
+                    clientInfo,
+                    applicationProperties);
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);
@@ -266,7 +284,8 @@ public class CredentialService {
     }
 
     private CredentialEnvelopeDto createCredentialEnvelopeDtoV2(CredentialOffer credentialOffer,
-                                                                CredentialRequestClass credentialRequest, ClientAgentInfo clientInfo) {
+                                                                CredentialRequestClass credentialRequest,
+                                                                ClientAgentInfo clientInfo) {
         validateCredentialRequest(credentialOffer, credentialRequest);
 
         List<ProofJwt> holderJwkList;
@@ -284,9 +303,11 @@ public class CredentialService {
         var vcBuilder = vcFormatFactory
                 // get first entry because we expect the list to only contain one item at the
                 // moment
-                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId()
+                        .getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions()
+                        .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(holderPublicKeyJwkList)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId());
 
@@ -295,10 +316,17 @@ public class CredentialService {
         if (credentialOffer.isDeferredOffer()) {
             var transactionId = UUID.randomUUID();
 
-            List<String> keyAttestationJwkList = holderJwkList.stream().map(ProofJwt::getAttestationJwt).toList();
+            List<String> keyAttestationJwkList = holderJwkList.stream()
+                    .map(ProofJwt::getAttestationJwt)
+                    .toList();
 
             responseEnvelope = vcBuilder.buildDeferredCredentialV2(transactionId);
-            credentialOffer.markAsDeferred(transactionId, credentialRequest, holderPublicKeyJwkList, keyAttestationJwkList, clientInfo, applicationProperties);
+            credentialOffer.markAsDeferred(transactionId,
+                    credentialRequest,
+                    holderPublicKeyJwkList,
+                    keyAttestationJwkList,
+                    clientInfo,
+                    applicationProperties);
             credentialOfferRepository.save(credentialOffer);
             try {
                 var clientInfoString = objectMapper.writeValueAsString(clientInfo);
@@ -323,7 +351,8 @@ public class CredentialService {
     private void validateCredentialRequest(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest) {
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
-        if (!credentialOffer.getCredentialStatus().equals(CredentialStatusType.IN_PROGRESS)) {
+        if (!credentialOffer.getCredentialStatus()
+                .equals(CredentialStatusType.IN_PROGRESS)) {
             log.info("Credential offer {} failed to create VC, as state was not IN_PROGRESS instead was {}",
                     credentialOffer.getId(), credentialOffer.getCredentialStatus());
             throw OAuthException.invalidGrant(String.format(
@@ -335,21 +364,26 @@ public class CredentialService {
         // check if the offer is still valid
         if (credentialOffer.hasTokenExpirationPassed()) {
             log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
-            produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS", CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, credentialOffer);
+            produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS",
+                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
+                    credentialOffer);
 
             throw OAuthException.invalidRequest("AccessToken expired.");
         }
 
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
-                credentialOffer.getMetadataCredentialSupportedId().getFirst());
+                credentialOffer.getMetadataCredentialSupportedId()
+                        .getFirst());
 
-        if (!credentialConfiguration.getFormat().equals(credentialRequest.getFormat())) {
+        if (!credentialConfiguration.getFormat()
+                .equals(credentialRequest.getFormat())) {
             // This should only occur when the wallet has a bug
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT, "Mismatch between requested and offered format.");
         }
 
         if (credentialRequest.getCredentialConfigurationId() != null
-                && !credentialOffer.getMetadataCredentialSupportedId().getFirst()
+                && !credentialOffer.getMetadataCredentialSupportedId()
+                .getFirst()
                 .equals(credentialRequest.getCredentialConfigurationId())) {
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_TYPE,
                     "Mismatch between requested and offered credential configuration id.");
@@ -399,7 +433,9 @@ public class CredentialService {
         }
     }
 
-    private void produceErrorEvent(String errorMessage, CallbackErrorEventTypeDto oauthTokenExpired, CredentialOffer credentialOffer) {
+    private void produceErrorEvent(String errorMessage,
+                                   CallbackErrorEventTypeDto oauthTokenExpired,
+                                   CredentialOffer credentialOffer) {
         var errorEvent = new ErrorEvent(
                 errorMessage,
                 oauthTokenExpired,

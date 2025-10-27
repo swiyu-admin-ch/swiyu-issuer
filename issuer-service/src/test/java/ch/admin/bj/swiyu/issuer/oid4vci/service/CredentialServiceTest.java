@@ -92,7 +92,6 @@ class CredentialServiceTest {
                 .config(Map.of("bits", 2))
                 .uri("https://localhost:8080/status")
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
-                .nextFreeIndex(0)
                 .maxLength(10000)
                 .build();
 
@@ -660,8 +659,7 @@ class CredentialServiceTest {
 
     private CredentialOfferStatus getCredentialOfferStatus(UUID offerId, UUID statusId) {
         return CredentialOfferStatus.builder()
-                .id(new CredentialOfferStatusKey(offerId, statusId))
-                .index(1)
+                .id(new CredentialOfferStatusKey(offerId, statusId, 1))
                 .build();
     }
 

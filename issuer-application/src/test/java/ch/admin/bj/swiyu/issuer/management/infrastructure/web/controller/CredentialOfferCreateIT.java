@@ -18,6 +18,7 @@ import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
@@ -79,6 +80,8 @@ class CredentialOfferCreateIT {
     private StatusBusinessApiApi statusBusinessApi;
     @Mock
     private ApiClient mockApiClient;
+    @Autowired
+    private IssuerMetadata issuerMetadata;
 
     @BeforeEach
     void setUp() {
@@ -384,11 +387,12 @@ class CredentialOfferCreateIT {
     @ParameterizedTest
     @ValueSource(strings = {"sub", "iss", "nbf", "exp", "iat", "cnf", "vct", "status", "_sd", "_sd_alg", "sd_hash", "..."})
     void testProtectedClaimsInOfferData_thenBadRequest(String claim) throws Exception {
-
         String jsonPayload = """
                 {
                   "metadata_credential_supported_id": ["university_example_sd_jwt"],
                   "credential_subject_data": {
+                    "type": "Bachelor Diploma",
+                    "name": "Bachelor of Science",
                     "%s": "protected claim"
                   },
                   "offer_validity_seconds": 36000
@@ -399,7 +403,7 @@ class CredentialOfferCreateIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("The following claims are not allowed in the credentialSubjectData: [%s]".formatted(claim)))
+                .andExpect(jsonPath("$.detail").value("Unexpected credential claims found! %s".formatted(claim)))
                 .andReturn();
     }
 
@@ -466,7 +470,5 @@ class CredentialOfferCreateIT {
         final StatusList firstStatusListDb = statusListRepository.findById(firstStatusListDto.getId()).get();
         final StatusList secondStatusListDb = statusListRepository.findById(secondStatusListDto.getId()).get();
         assertNotEquals(firstStatusListDb.getId(), secondStatusListDb.getId());
-        assertEquals(1, firstStatusListDb.getNextFreeIndex());
-        assertEquals(1, secondStatusListDb.getNextFreeIndex());
     }
 }

@@ -40,7 +40,7 @@ class NonceServiceIT {
         service.registerNonce(nonce);
         assertTrue(service.isUsedNonce(nonce));
 
-        var expiredNonce = new SelfContainedNonce(UUID.randomUUID() + "::" + Instant.now().minus(lifetime + 2, ChronoUnit.SECONDS));
+        var expiredNonce = new SelfContainedNonce(UUID.randomUUID() + "::" + Instant.now().minus(lifetime + 5, ChronoUnit.SECONDS));
         assertFalse(expiredNonce.isValid(lifetime));
         assertFalse(service.isUsedNonce(expiredNonce));
         service.registerNonce(expiredNonce);

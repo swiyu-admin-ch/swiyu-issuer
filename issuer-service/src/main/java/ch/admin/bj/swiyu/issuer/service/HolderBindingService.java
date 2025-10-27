@@ -35,7 +35,8 @@ public class HolderBindingService {
                                                       CredentialOffer credentialOffer) throws Oid4vcException {
 
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
-                credentialOffer.getMetadataCredentialSupportedId().getFirst());
+                credentialOffer.getMetadataCredentialSupportedId()
+                        .getFirst());
         Map<String, SupportedProofType> supportedProofTypes = credentialConfiguration.getProofTypesSupported();
 
         // If no proof types are supported, no holder binding is returned
@@ -62,8 +63,8 @@ public class HolderBindingService {
             throw new Oid4vcException(INVALID_PROOF, "Multiple proofs are not allowed for this credential request");
         }
 
-        if (batchCredentialIssuanceMetadata != null && batchCredentialIssuanceMetadata.batchSize() < proofs.size()) {
-            throw new Oid4vcException(INVALID_PROOF, "The number of proofs exceeds the batch size limit");
+        if (batchCredentialIssuanceMetadata != null && batchCredentialIssuanceMetadata.batchSize() != proofs.size()) {
+            throw new Oid4vcException(INVALID_PROOF, "The number of proofs must match the batch size");
         }
 
         var proofJwts = proofs.stream()
@@ -72,10 +73,15 @@ public class HolderBindingService {
 
         // check if proof is unique
         // todo move up once proof jwt is refactored
-        if (proofs.stream().map(ProofJwt::getBinding).distinct().count() != proofs.size()) {
+        if (proofs.stream()
+                .map(ProofJwt::getBinding)
+                .distinct()
+                .count() != proofs.size()) {
             throw new Oid4vcException(INVALID_PROOF, "Proofs should not be duplicated for the same credential request");
         }
 
+        // OID4VCI 1.0 does not specify if the nonce can be the same or have to be different ones, so we allow both!
+        // There is no benefit to using a different nonce for each proof
         List<String> nonces = proofs.stream()
                 .map(ProofJwt::getNonce)
                 .toList();
@@ -97,7 +103,8 @@ public class HolderBindingService {
     public Optional<ProofJwt> getHolderPublicKey(CredentialRequestClass credentialRequest,
                                                  CredentialOffer credentialOffer) {
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
-                credentialOffer.getMetadataCredentialSupportedId().getFirst());
+                credentialOffer.getMetadataCredentialSupportedId()
+                        .getFirst());
 
         // Process Holder Binding if a Proof Type is required
         var supportedProofTypes = credentialConfiguration.getProofTypesSupported();
@@ -115,12 +122,14 @@ public class HolderBindingService {
 
         var requestProof = proofsJwt.getFirst();
 
-        var bindingProofType = Optional.ofNullable(supportedProofTypes.get(requestProof.getProofType().toString()))
+        var bindingProofType = Optional.ofNullable(supportedProofTypes.get(requestProof.getProofType()
+                        .toString()))
                 .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
                         "Provided proof is not supported for the credential requested."));
         try {
             if (!requestProof.isValidHolderBinding(
-                    (String) openIDConfiguration.getIssuerMetadata().get("credential_issuer"),
+                    (String) openIDConfiguration.getIssuerMetadata()
+                            .get("credential_issuer"),
                     bindingProofType.getSupportedSigningAlgorithms(),
                     credentialOffer.getNonce(),
                     credentialOffer.getTokenExpirationTimestamp())) {
@@ -144,12 +153,14 @@ public class HolderBindingService {
 
     public ProofJwt validateHolderPublicKeyV2(Optional<ProofJwt> proofJwt,
                                               CredentialOffer credentialOffer,
-                                              Map<String, SupportedProofType> supportedProofTypes) throws Oid4vcException {
+                                              Map<String, SupportedProofType> supportedProofTypes) throws
+            Oid4vcException {
 
         var requestProof = proofJwt.orElseThrow(() ->
                 new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
 
-        var bindingProofType = supportedProofTypes.get(requestProof.getProofType().toString());
+        var bindingProofType = supportedProofTypes.get(requestProof.getProofType()
+                .toString());
 
         if (bindingProofType == null) {
             throw new Oid4vcException(INVALID_PROOF, "Provided proof is not supported for the credential requested.");
@@ -157,7 +168,8 @@ public class HolderBindingService {
 
         try {
             if (!requestProof.isValidHolderBinding(
-                    (String) openIDConfiguration.getIssuerMetadata().get("credential_issuer"),
+                    (String) openIDConfiguration.getIssuerMetadata()
+                            .get("credential_issuer"),
                     bindingProofType.getSupportedSigningAlgorithms(),
                     credentialOffer.getNonce(),
                     credentialOffer.getTokenExpirationTimestamp())) {

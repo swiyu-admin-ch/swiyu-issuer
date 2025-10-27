@@ -117,23 +117,17 @@ class IssuanceControllerIT {
                 .build();
     }
 
-    private void addOverride(UUID preAuthCode, ConfigurationOverride override) {
-        var offer = credentialOfferRepository.findByPreAuthorizedCode(preAuthCode);
-        assert offer.isPresent();
-        offer.get().setConfigurationOverride(override);
-    }
-
     @BeforeEach
     void setUp() throws JOSEException {
         testStatusList = saveStatusList(createStatusList());
         CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
         var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
-        saveStatusListLinkedOffer(offer, testStatusList);
+        saveStatusListLinkedOffer(offer, testStatusList, 0);
         offerId = offer.getId();
         var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
-        saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, testStatusList);
+        saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, testStatusList, 1);
         var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialStatusType.OFFERED);
-        saveStatusListLinkedOffer(unboundOffer, testStatusList);
+        saveStatusListLinkedOffer(unboundOffer, testStatusList, 2);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
@@ -196,7 +190,7 @@ class IssuanceControllerIT {
         // Open new Request
         var newOfferPreAuthCode = UUID.randomUUID();
         var newOffer = createTestOffer(newOfferPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
-        saveStatusListLinkedOffer(newOffer, testStatusList);
+        saveStatusListLinkedOffer(newOffer, testStatusList, 5);
         tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, newOfferPreAuthCode.toString());
         token = tokenResponse.get("access_token");
         proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), true);
@@ -509,6 +503,12 @@ class IssuanceControllerIT {
 
     }
 
+    private void addOverride(UUID preAuthCode, ConfigurationOverride override) {
+        var offer = credentialOfferRepository.findByPreAuthorizedCode(preAuthCode);
+        assert offer.isPresent();
+        offer.get().setConfigurationOverride(override);
+    }
+
     private String getBoundVc(boolean useNonceEndpoint) throws Exception {
         return getBoundVc(useNonceEndpoint, null);
     }
@@ -558,10 +558,9 @@ class IssuanceControllerIT {
         return JWEObject.parse(response.getResponse().getContentAsString());
     }
 
-    private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList) {
+    private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
         credentialOfferRepository.save(offer);
-        credentialOfferStatusRepository.save(linkStatusList(offer, statusList));
-        statusList.incrementNextFreeIndex();
+        credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
     }
 
     private StatusList saveStatusList(StatusList statusList) {

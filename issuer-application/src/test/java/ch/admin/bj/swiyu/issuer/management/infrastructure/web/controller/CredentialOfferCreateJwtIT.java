@@ -68,6 +68,7 @@ class CredentialOfferCreateJwtIT {
                 }
                 """, offerData);
         testJWTCreateOffer(jsonPayload);
+        
     }
 
     /**
