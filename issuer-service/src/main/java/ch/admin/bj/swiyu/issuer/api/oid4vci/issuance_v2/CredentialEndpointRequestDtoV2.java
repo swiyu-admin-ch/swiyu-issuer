@@ -39,8 +39,8 @@ public record CredentialEndpointRequestDtoV2(
                 Optional object providing information how to encrypt the Credential Response, if present.
                 """, example = """
                 {
-                   "alg": "ECDH-ES+A128KW",
-                   "enc": "A128CBC-HS256",
+                   "alg": "ECDH-ES",
+                   "enc": "A128GCM",
                    "jwk": {"kty":"EC","crv":"P-256","kid":"transportEncKeyEC","x":"DTaouFJpyVkLvfhoOvuTDR6_nmTt7YTvEHsHzK0Ingk","y":"vOipfo61Sy64XpneRyR5g6NCGXLv_Q7f3-kEDMT-G9U"
                 }
                 """)
