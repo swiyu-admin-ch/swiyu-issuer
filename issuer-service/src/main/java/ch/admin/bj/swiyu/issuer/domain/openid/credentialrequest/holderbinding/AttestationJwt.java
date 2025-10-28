@@ -8,7 +8,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.text.ParseException;
 import java.util.Date;
@@ -20,9 +20,10 @@ import java.util.stream.Collectors;
 @Getter
 public final class AttestationJwt {
 
+    @Deprecated(since = "OID4VCI 1.0")
+    private static final String KEY_ATTESTATION_TYPE_ID1 = "keyattestation+jwt";
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
-    // OID4VCI 0.15 specifies keyattestion+jwt, in IANA they registered key-attestation+jwt
-    private static final Set<String> ALLOWED_TYPES = Set.of("keyattestation+jwt", "key-attestation+jwt");
+    private static final Set<String> ALLOWED_TYPES = Set.of(KEY_ATTESTATION_TYPE_ID1, "key-attestation+jwt");
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
     private final SignedJWT signedJWT;
@@ -48,6 +49,10 @@ public final class AttestationJwt {
         // Check required Headers & Payload
         validateHeader(parsedJwt.getHeader());
         validateBody(claims);
+        // Validation between Header and body
+        if (!parsedJwt.getHeader().getKeyID().startsWith(claims.getIssuer())) {
+            throw new IllegalArgumentException("The key id must conform to the did syntax (did:webvh ...)");
+        }
         return new AttestationJwt(parsedJwt, extractSupportedAttackPotentialResistance(claims));
     }
 
@@ -56,7 +61,7 @@ public final class AttestationJwt {
      * @throws IllegalArgumentException if one of the checks fails
      */
     private static void validateBody(JWTClaimsSet jwtClaimsSet) throws IllegalArgumentException {
-        if (!StringUtils.hasLength(jwtClaimsSet.getIssuer())) {
+        if (StringUtils.isEmpty(jwtClaimsSet.getIssuer())) {
             throw new IllegalArgumentException("Issuer is required");
         }
         if (jwtClaimsSet.getIssueTime() == null) {
@@ -110,8 +115,8 @@ public final class AttestationJwt {
             throw new IllegalArgumentException("Algorithm must be one of "
                     + ALLOWED_ALGORITHMS.stream().map(JWSAlgorithm::getName).collect(Collectors.joining(", ")));
         }
-        if (!StringUtils.hasLength(header.getKeyID())) {
-            throw new IllegalArgumentException("KeyID MUST NOT be set");
+        if (StringUtils.isEmpty((header.getKeyID()))) {
+            throw new IllegalArgumentException("KeyID MUST be set");
         }
     }
 
