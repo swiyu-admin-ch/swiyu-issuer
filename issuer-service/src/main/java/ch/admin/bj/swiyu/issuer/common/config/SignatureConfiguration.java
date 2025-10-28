@@ -34,7 +34,7 @@ public class SignatureConfiguration {
 
     /**
      * The id of the verification method in the did document with which a verifier can check the issued VC
-     * In did tdw/webvc this is the full did#fragment
+     * In did tdw/webvh this is the full did#fragment
      */
     @NotEmpty
     private String verificationMethod;
