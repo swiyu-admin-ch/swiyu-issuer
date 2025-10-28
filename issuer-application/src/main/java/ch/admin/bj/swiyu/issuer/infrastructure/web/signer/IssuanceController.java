@@ -62,6 +62,8 @@ import java.util.regex.Pattern;
 @RequestMapping(value = {"/oid4vci/api"})
 public class IssuanceController {
     public static final String API_VERSION_OID4VCI_1_0 = "2";
+    public static final String DPOP_HTTP_HEADER = "DPoP";
+    public static final String SWIYU_API_VERSION_HTTP_HEADER = "SWIYU-API-Version";
     private static final String OID4VCI_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
     private final CredentialService credentialService;
     private final NonceService nonceService;
@@ -75,7 +77,7 @@ public class IssuanceController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Create a Bearer token with pre-authorized code", hidden = true)
     public OAuthTokenDto oauthAccessToken(
-            @RequestHeader(name = "DPoP", required = false) String dpop,
+            @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
             @RequestParam(name = "grant_type", defaultValue = OID4VCI_GRANT_TYPE) String grantType,
             @RequestParam(name = "pre-authorized_code") String preAuthCode,
             HttpServletRequest request) {
@@ -104,7 +106,7 @@ public class IssuanceController {
             )
     )
     public OAuthTokenDto oauthAccessToken(
-            @RequestHeader(name = "DPoP", required = false) String dpop,
+            @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
             @ModelAttribute OauthAccessTokenRequestDto oauthAccessTokenRequestDto,
             HttpServletRequest request) {
 
@@ -157,7 +159,7 @@ public class IssuanceController {
                             in = ParameterIn.HEADER
                     ),
                     @Parameter(
-                            name = "SWIYU-API-Version",
+                            name = SWIYU_API_VERSION_HTTP_HEADER,
                             description = "Optional API version, set to '2' for v2 requests",
                             in = ParameterIn.HEADER
                     )
@@ -198,8 +200,8 @@ public class IssuanceController {
     )
     @SecurityRequirement(name = "bearer-jwt")
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
-                                                   @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
-                                                   @RequestHeader(name = "DPoP", required = false) String dpop,
+                                                   @RequestHeader(name = SWIYU_API_VERSION_HTTP_HEADER, required = false) String version,
+                                                   @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
                                                    @NotNull @RequestBody String requestDto,
                                                    HttpServletRequest request) throws IOException {
         String requestString = requestDto;
@@ -249,7 +251,7 @@ public class IssuanceController {
                             in = ParameterIn.HEADER
                     ),
                     @Parameter(
-                            name = "SWIYU-API-Version",
+                            name = SWIYU_API_VERSION_HTTP_HEADER,
                             description = "Optional API version, set to '2' for v2 requests",
                             in = ParameterIn.HEADER
                     )
@@ -275,8 +277,8 @@ public class IssuanceController {
     )
     @SecurityRequirement(name = "bearer-jwt")
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
-                                                           @RequestHeader(name = "SWIYU-API-Version", required = false) String version,
-                                                           @RequestHeader(name = "DPoP", required = false) String dpop,
+                                                           @RequestHeader(name = SWIYU_API_VERSION_HTTP_HEADER, required = false) String version,
+                                                           @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
                                                            @Valid @RequestBody DeferredCredentialEndpointRequestDto deferredCredentialRequestDto,
                                                            HttpServletRequest request) {
 

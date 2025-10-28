@@ -43,7 +43,6 @@ class DemonstratingProofOfPossessionServiceTest {
     public static final String DPOP_NONCE_HEADER = "DPoP-Nonce";
     private DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private ApplicationProperties applicationProperties;
-    private UrlRewriteProperties urlRewriteProperties;
     private NonceService nonceService;
     private CredentialOfferRepository credentialOfferRepository;
     private CachedNonceRepository cachedNonceRepository;
@@ -52,13 +51,11 @@ class DemonstratingProofOfPossessionServiceTest {
     @BeforeEach
     void setUp() {
         applicationProperties = Mockito.mock(ApplicationProperties.class);
-        urlRewriteProperties = Mockito.mock(UrlRewriteProperties.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         cachedNonceRepository = Mockito.mock(CachedNonceRepository.class);
         nonceService = new NonceService(applicationProperties, cachedNonceRepository);
         demonstratingProofOfPossessionService = new DemonstratingProofOfPossessionService(
                 applicationProperties,
-                urlRewriteProperties,
                 nonceService,
                 credentialOfferRepository
         );
