@@ -64,6 +64,6 @@ public class DidKeyResolverTest {
     @Test
     public void testResolveDidTdw_invalidKey_throwsException() {
         var key = didWebvhId;
-        assertThrows(IllegalArgumentException.class, () -> didKeyResolver.resolveKey(key));
+        assertThrows(IllegalArgumentException.class, () -> didKeyResolver.resolveKey(didWebvhId));
     }
 }
