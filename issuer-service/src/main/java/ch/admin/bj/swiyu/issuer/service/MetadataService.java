@@ -88,16 +88,6 @@ public class MetadataService {
             }
         });
 
-        for (Map.Entry<String, Object> entry : metaData.entrySet()) {
-            String key = entry.getKey();
-
-            // ignore reserved claims
-            if ("sub".equals(key) || "iat".equals(key) || "exp".equals(key) || "iss".equals(key)) {
-                continue;
-            }
-            claimsSetBuilder.claim(key, entry.getValue());
-        }
-
         SignedJWT jwt = new SignedJWT(header, claimsSetBuilder.build());
 
         try {

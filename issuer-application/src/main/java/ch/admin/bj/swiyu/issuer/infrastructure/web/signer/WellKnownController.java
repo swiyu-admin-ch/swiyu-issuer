@@ -36,6 +36,7 @@ import java.util.UUID;
 @RequestMapping
 public class WellKnownController {
 
+    private static String CONTENT_TYPE_APPLICATION_JWT = "application/jwt";
     private final EncryptionService encryptionService;
     private final MetadataService metadataService;
 
@@ -80,7 +81,7 @@ public class WellKnownController {
             @PathVariable UUID tenantId,
             @RequestHeader("Content-Type") String contentType) {
 
-        if ("application/jwt".equals(contentType)) {
+        if (CONTENT_TYPE_APPLICATION_JWT.equals(contentType)) {
             return metadataService.getSignedIssuerMetadata(tenantId);
         }
 
@@ -93,7 +94,7 @@ public class WellKnownController {
             @PathVariable UUID tenantId,
             @RequestHeader("Content-Type") String contentType) {
 
-        if (contentType.startsWith("application/jwt")) {
+        if (contentType.startsWith(CONTENT_TYPE_APPLICATION_JWT)) {
             return metadataService.getSignedOpenIdConfiguration(tenantId);
         }
 
