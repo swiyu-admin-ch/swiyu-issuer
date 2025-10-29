@@ -740,6 +740,34 @@ yet pen-tested.
 9. Use Customer Key & Secret to configure application-local.yml
 10. Onboard via API Gateway (TODO)
 
+## Docker Image Tagging Strategy
+
+Docker images for this project follow a formalized environment-based tagging approach:
+
+| Tag     | Meaning                  | Description                                                                                       |
+|---------|--------------------------|---------------------------------------------------------------------------------------------------|
+| dev     | Development Build        | Latest commit from the development branch. Automatically generated on every push to `main`.       |
+| staging | Integration Test Build   | Set at the end of a sprint or after completion of a feature for integration testing.              |
+| rc      | Release Candidate        | Frozen state prior to release and penetration testing.                                            |
+| stable  | Verified Production      | Released after successful QA and penetration testing.                                             |
+
+These tags are assigned automatically or manually as part of the CI/CD workflow. This ensures that environments can reliably reference images by their lifecycle stage (e.g., `swiyu-issuer-service:staging`) without requiring manual version management.
+
+### Promotion Workflow
+
+The image promotion process follows these steps:
+
+```text
+[Commit → dev]
+    ↓    build & push :dev
+[Feature completed / Sprint end]
+    ↓    promote → :staging
+[Release candidate created]
+    ↓    promote → :rc
+[QA & penetration test passed]
+    ↓    promote → :stable
+```
+
 ## Release Process and Versioning
 
 ### Semantic Versioning (SemVer)
