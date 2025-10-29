@@ -118,7 +118,6 @@ public class IssuerMetadata {
      * @return the configured batchSize or 1, if no batch size has been configured
      */
     public int getIssuanceBatchSize() {
-        if (batchCredentialIssuance == null) return 0;
-        return batchCredentialIssuance.batchSize();
+        return batchCredentialIssuance == null ? 1 : batchCredentialIssuance.batchSize();
     }
 }

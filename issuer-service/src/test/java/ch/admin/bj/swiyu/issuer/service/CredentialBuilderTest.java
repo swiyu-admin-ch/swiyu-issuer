@@ -191,12 +191,12 @@ class CredentialBuilderTest {
     void buildEnvelopeDto_withEncryption_thenSuccess() throws JOSEException {
 
         var issuerCredentialResponseEncryption = new IssuerCredentialResponseEncryption();
-        issuerCredentialResponseEncryption.setAlgValuesSupported(List.of("ECDH-ES+A128KW"));
-        issuerCredentialResponseEncryption.setEncValuesSupported(List.of("A128CBC-HS256"));
+        issuerCredentialResponseEncryption.setAlgValuesSupported(List.of("ECDH-ES"));
+        issuerCredentialResponseEncryption.setEncValuesSupported(List.of("A128GCM"));
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
         var jwk = createPrivateKey().toPublicJWK().toJSONObject();
-        CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, "ECDH-ES+A128KW", "A128CBC-HS256");
+        CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, "ECDH-ES", "A128GCM");
 
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), encryptor);
 

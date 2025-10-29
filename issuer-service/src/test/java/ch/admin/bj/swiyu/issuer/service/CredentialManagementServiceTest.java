@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
@@ -59,7 +59,7 @@ class CredentialManagementServiceTest {
     private CredentialOffer issued;
     private CredentialOffer suspended;
     private StatusList statusList;
-    private CreateCredentialRequestDto createCredentialRequestDto;
+    private CreateCredentialOfferRequestDto createCredentialOfferRequestDto;
     private AvailableStatusListIndexRepository availableStatusListIndexRepository;
 
     @BeforeEach
@@ -127,7 +127,7 @@ class CredentialManagementServiceTest {
                         .freeIndexes(IntStream.range(0, 10).boxed().toList())
                         .build()));
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -274,7 +274,7 @@ class CredentialManagementServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list", "https://example.com/another-status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -284,8 +284,8 @@ class CredentialManagementServiceTest {
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
-        assertThat(exception.getMessage()).contains("Could not resolve all provided status lists, only found https://localhost:8080/status");
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
+        assertTrue(exception.getMessage().contains("Could not resolve all provided status lists, only found https://localhost:8080/status"));
     }
 
     @Test
@@ -303,7 +303,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
 
         assertTrue(exception.getMessage().contains("Credential offer metadata test-metadata is not supported - should be one of different-test-metadata"));
     }
@@ -313,7 +313,7 @@ class CredentialManagementServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -333,7 +333,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
         assertTrue(exception.getMessage().contains("Credential is already expired (would only be valid until"));
     }
 
@@ -342,7 +342,7 @@ class CredentialManagementServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -363,7 +363,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
         assertTrue(exception.getMessage().contains("Credential would never be valid"));
     }
 
@@ -372,7 +372,7 @@ class CredentialManagementServiceTest {
 
         var statusListUris = List.of("https://example.com/status-list");
 
-        createCredentialRequestDto = CreateCredentialRequestDto.builder()
+        createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test-metadata"))
                 .credentialSubjectData(offerData)
                 .offerValiditySeconds(3600)
@@ -393,7 +393,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
         assertTrue(exception.getMessage().contains("Credential is already expired"));
     }
 
@@ -426,7 +426,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
 
         assertThat(exception.getMessage()).contains("Credential claims (credential subject data) is missing!");
     }
@@ -460,7 +460,7 @@ class CredentialManagementServiceTest {
         });
 
         var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
 
         assertTrue(exception.getMessage().contains("Unexpected credential claims found!"));
     }
@@ -494,7 +494,7 @@ class CredentialManagementServiceTest {
             }
         });
 
-        assertDoesNotThrow(() -> credentialService.createCredentialOfferAndGetDeeplink(createCredentialRequestDto));
+        assertDoesNotThrow(() -> credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
     }
 
     @Test

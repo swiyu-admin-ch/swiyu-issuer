@@ -85,7 +85,7 @@ public class CredentialManagementService {
     }
 
     @Transactional
-    public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(@Valid CreateCredentialRequestDto request) {
+    public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(@Valid CreateCredentialOfferRequestDto request) {
         validateCredentialOfferCreateRequest(request);
         var credential = this.createCredentialOffer(request, issuerMetadata.getIssuanceBatchSize());
         var offerLinkString = this.getOfferDeeplinkFromCredential(credential);
@@ -174,7 +174,7 @@ public class CredentialManagementService {
      * @param createCredentialRequest the create credential request to be validated
      * @return the credential configuration used by the credential offer
      */
-    private void validateCredentialOfferCreateRequest(@Valid CreateCredentialRequestDto createCredentialRequest) {
+    private void validateCredentialOfferCreateRequest(@Valid CreateCredentialOfferRequestDto createCredentialRequest) {
         var credentialOfferMetadata = createCredentialRequest.getMetadataCredentialSupportedId().getFirst();
         if (!issuerMetadata.getCredentialConfigurationSupported().containsKey(credentialOfferMetadata)) {
             throw new BadRequestException("Credential offer metadata %s is not supported - should be one of %s"
@@ -232,7 +232,7 @@ public class CredentialManagementService {
         }
     }
 
-    private void validateOfferedCredentialValiditySpan(@Valid CreateCredentialRequestDto credentialOffer) {
+    private void validateOfferedCredentialValiditySpan(@Valid CreateCredentialOfferRequestDto credentialOffer) {
         var validUntil = credentialOffer.getCredentialValidUntil();
         if (validUntil != null) {
             if (validUntil.isBefore(Instant.now())) {
@@ -272,7 +272,7 @@ public class CredentialManagementService {
                 credentialOfferString);
     }
 
-    private CredentialOffer createCredentialOffer(CreateCredentialRequestDto requestDto, int issuanceBatchSize) {
+    private CredentialOffer createCredentialOffer(CreateCredentialOfferRequestDto requestDto, int issuanceBatchSize) {
         var expiration = Instant.now().plusSeconds(requestDto.getOfferValiditySeconds() > 0
                 ? requestDto.getOfferValiditySeconds()
                 : applicationProperties.getOfferValidity());
@@ -326,6 +326,7 @@ public class CredentialManagementService {
             }).toList();
             credentialOfferStatusRepository.saveAll(offerStatuses);
         }
+
         return entity;
     }
 
@@ -353,7 +354,7 @@ public class CredentialManagementService {
      * The wallet and verifier must be first migrated before this check can be removed
      */
     @Deprecated(since = "Token Status List Draft 04")
-    private void ensureMatchingIssuerDids(CreateCredentialRequestDto requestDto, List<StatusList> statusLists) {
+    private void ensureMatchingIssuerDids(CreateCredentialOfferRequestDto requestDto, List<StatusList> statusLists) {
         // Ensure that chosen stats lists issuer dids match the vc issuer did
         var override = requestDto.getConfigurationOverride();
         String issuerDid;

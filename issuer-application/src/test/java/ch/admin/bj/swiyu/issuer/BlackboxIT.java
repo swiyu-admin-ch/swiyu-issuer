@@ -4,7 +4,7 @@ package ch.admin.bj.swiyu.issuer;
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialResponseEncryptionDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.NonceResponseDto;
@@ -122,7 +122,7 @@ class BlackboxIT {
         var statusListUri = statusListDto.getStatusRegistryUrl();
 
         // Now that we have a status list we can create credential offers to issue VCs
-        var createRequestBody = assertDoesNotThrow(() -> objectMapper.writeValueAsString(CreateCredentialRequestDto.builder()
+        var createRequestBody = assertDoesNotThrow(() -> objectMapper.writeValueAsString(CreateCredentialOfferRequestDto.builder()
                 // Select the entry from issuer metadata (in this test case the example_issuer_metadata.json)
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
                 // The credential subject data must be matching the claims we publicize that we will issue

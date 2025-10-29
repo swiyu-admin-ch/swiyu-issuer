@@ -11,7 +11,7 @@ import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
@@ -422,7 +422,7 @@ class CredentialOfferCreateIT {
 
         final StatusListDto firstStatusListDto = statusListTestHelper.createStatusList(StatusListTypeDto.TOKEN_STATUS_LIST, 127, "Test purpose", 4, firstIssuer, null, null, null);
 
-        final CreateCredentialRequestDto firstCredential = CreateCredentialRequestDto.builder()
+        final CreateCredentialOfferRequestDto firstCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of("hello", "world"))
                 .statusLists(List.of(firstStatusListDto.getStatusRegistryUrl()))
@@ -443,7 +443,7 @@ class CredentialOfferCreateIT {
 
         final StatusListDto secondStatusListDto = statusListTestHelper.createStatusList(StatusListTypeDto.TOKEN_STATUS_LIST, 255, "Test purpose 2", 2, secondIssuer, null, null, null);
 
-        final CreateCredentialRequestDto secondCredential = CreateCredentialRequestDto.builder()
+        final CreateCredentialOfferRequestDto secondCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialSubjectData(Map.of("hello", "sky"))
                 .statusLists(List.of(secondStatusListDto.getStatusRegistryUrl()))

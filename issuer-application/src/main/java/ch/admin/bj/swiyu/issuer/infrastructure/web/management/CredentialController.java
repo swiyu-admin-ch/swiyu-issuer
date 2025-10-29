@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web.management;
 
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
@@ -63,7 +63,7 @@ public class CredentialController {
                     )
             }
     )
-    public CredentialWithDeeplinkResponseDto createCredential(@Valid @RequestBody CreateCredentialRequestDto request) {
+    public CredentialWithDeeplinkResponseDto createCredential(@Valid @RequestBody CreateCredentialOfferRequestDto request) {
         return this.credentialManagementService.createCredentialOfferAndGetDeeplink(request);
     }
 
