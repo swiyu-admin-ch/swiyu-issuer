@@ -57,8 +57,8 @@ public class MetadataService {
         try {
             signer = signatureService.createSigner(sdjwtProperties, override.keyId(), override.keyPin());
         } catch (KeyStrategyException e) {
-            log.error("Failed to signed metadata JWT with the provided key", e);
-            throw new ConfigurationException("Failed to signed metadata JWT with the provided key");
+            log.error("Failed to signed metadata JWT with the provided key %s".formatted(override.keyId()));
+            throw new ConfigurationException("Failed to signed metadata JWT with the provided key", e);
         }
 
         /*
@@ -82,6 +82,12 @@ public class MetadataService {
                 .expirationTime(DateUtils.addHours(new Date(), 24));
 
         // add all metadata claims to JWT Claim Set
+        metaData.forEach((key, value) -> {
+            if (!isReservedClaim(key)) {
+                claimsSetBuilder.claim(key, value);
+            }
+        });
+
         for (Map.Entry<String, Object> entry : metaData.entrySet()) {
             String key = entry.getKey();
 
@@ -98,9 +104,13 @@ public class MetadataService {
             jwt.sign(signer);
         } catch (JOSEException e) {
             log.error("Unable to sign metadata for tenant %s".formatted(tenantId), e);
-            throw new ConfigurationException("Unable to sign metadata for tenant %s");
+            throw new ConfigurationException("Unable to sign metadata for tenant %s", e);
         }
 
         return jwt.serialize();
+    }
+
+    private boolean isReservedClaim(String claim) {
+        return "sub".equals(claim) || "iat".equals(claim) || "exp".equals(claim) || "iss".equals(claim);
     }
 }

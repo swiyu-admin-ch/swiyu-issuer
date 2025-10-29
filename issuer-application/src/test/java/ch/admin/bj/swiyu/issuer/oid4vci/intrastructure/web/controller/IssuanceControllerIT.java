@@ -45,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -168,8 +169,6 @@ class IssuanceControllerIT {
 
         when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
 
-        CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
-
         String minPayloadWithEmptySubject = String.format(
                 "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}}",
                 "test");
@@ -184,7 +183,7 @@ class IssuanceControllerIT {
 
         var deeplink = offerObject.get("offer_deeplink").getAsString();
 
-        var decodedDeeplink = URLDecoder.decode(deeplink, "UTF-8");
+        var decodedDeeplink = URLDecoder.decode(deeplink, StandardCharsets.UTF_8);
 
         var credentialOffer = JsonParser.parseString(decodedDeeplink.substring(decodedDeeplink.indexOf("credential_offer=") + "credential_offer=".length()))
                 .getAsJsonObject();

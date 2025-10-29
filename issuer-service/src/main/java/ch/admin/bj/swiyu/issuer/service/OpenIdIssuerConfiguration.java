@@ -78,7 +78,6 @@ public class OpenIdIssuerConfiguration {
 
     /**
      * @return the full Issuer Metadata in a recursive Map
-     * @throws IOException if the Issuer Metadata json file is not found
      */
     @Cacheable(ISSUER_METADATA_CACHE)
     public IssuerMetadata getIssuerMetadata() {

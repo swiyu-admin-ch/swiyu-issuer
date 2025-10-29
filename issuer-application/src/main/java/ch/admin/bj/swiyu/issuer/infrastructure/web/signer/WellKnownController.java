@@ -80,7 +80,7 @@ public class WellKnownController {
             @PathVariable UUID tenantId,
             @RequestHeader("Content-Type") String contentType) {
 
-        if (contentType.equals("application/jwt")) {
+        if ("application/jwt".equals(contentType)) {
             return metadataService.getSignedIssuerMetadata(tenantId);
         }
 
