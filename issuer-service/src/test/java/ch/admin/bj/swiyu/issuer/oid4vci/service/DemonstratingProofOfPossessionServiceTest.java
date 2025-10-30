@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionService;
+import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionValidationService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -57,7 +58,8 @@ class DemonstratingProofOfPossessionServiceTest {
         demonstratingProofOfPossessionService = new DemonstratingProofOfPossessionService(
                 applicationProperties,
                 nonceService,
-                credentialOfferRepository
+                credentialOfferRepository,
+                new DemonstratingProofOfPossessionValidationService(applicationProperties)
         );
         dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
                 .keyID("HolderDPoPKey")

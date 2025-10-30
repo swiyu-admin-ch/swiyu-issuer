@@ -5,13 +5,6 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,213 +15,81 @@ import org.springframework.http.HttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.text.ParseException;
-import java.util.Base64;
-import java.util.List;
 import java.util.UUID;
 
 /**
- * A service collecting functions related to Demonstrating Proof of Possession (DPoP)
+ * Provide functionality to embed Demonstrating Proof of Possession (DPoP) functionality in the greater application
  * See <a href="https://datatracker.ietf.org/doc/html/rfc9449#name-authorization-server-provid">RFC9449</a>
- * More summarized for users in
+ * More summarized for users of DPoP in
  * <a href="https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/dpop-tokens.html">spring-security documentation</a>
  */
 @Service
 @RequiredArgsConstructor
 public class DemonstratingProofOfPossessionService {
 
-    public static final String DPOP_JWT_HEADER_TYP = "dpop+jwt";
+
     private final ApplicationProperties applicationProperties;
     private final NonceService nonceService;
     private final CredentialOfferRepository credentialOfferRepository;
+    private final DemonstratingProofOfPossessionValidationService demonstratingProofOfPossessionValidationService;
 
-    private static List<String> getSupportedAlgorithms() {
-        return List.of("ES256");
-    }
 
     /**
-     * @param input String to be hashed
-     * @return base64url-encoded SHA-256 hash of the ASCII encoding of the input
+     * Add a self-contained nonce to be used in Demonstrating Proof of Possession JWTs
+     *
+     * @param headers the header to be extended with a DPoP-Nonce header
      */
-    private static String sha256(@NotBlank String input) {
-        try {
-            // Get an instance of MessageDigest for SHA-256
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            // Convert the input string to bytes
-            byte[] inputBytes = input.getBytes(StandardCharsets.US_ASCII);
-
-            // Update the digest with the input bytes
-            byte[] hashBytes = digest.digest(inputBytes);
-
-            // Encode the hash bytes to a Base64 string
-            return Base64.getEncoder().encodeToString(hashBytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 algorithm not found", e);
-        }
-    }
-
     public void addDpopNonce(HttpHeaders headers) {
         headers.set("DPoP-Nonce", nonceService.createNonce().nonce());
     }
 
+    /**
+     * Validate the Demonstrating Proof of Possession for the initial call of the token endpoint and register the public key provided therein
+     *
+     * @param preAuthCode One time Pre-Auth code used for the token_endpoint request
+     * @param dpop        Serialized Json Web Token to be validated, must contain nonce and jwk with the public key of the holder
+     * @param request     HTTP request associated with the DPoP for validating Request Method and URI
+     */
     @Transactional
     public void registerDpop(@NotBlank String preAuthCode, @Nullable String dpop, HttpRequest request) {
-        if (isDopUnused(dpop)) {
+        if (isDpopUnused(dpop)) {
             return;
         }
-        try {
-            var dpopJwt = parseDpopJwt(dpop, request);
-            var credentialOffer = credentialOfferRepository.findByPreAuthorizedCode(UUID.fromString(preAuthCode)).orElseThrow();
-            credentialOffer.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
-            credentialOfferRepository.save(credentialOffer);
-        } catch (ParseException | JOSEException | URISyntaxException | NullPointerException e) {
-            throw new DemonstratingProofOfPossessionException("Malformed DPoP", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF, e);
-        }
+        var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
+        var credentialOffer = credentialOfferRepository.findByPreAuthorizedCode(UUID.fromString(preAuthCode)).orElseThrow();
+        credentialOffer.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
+        credentialOfferRepository.save(credentialOffer);
     }
 
+    /**
+     * Validates the DPoP with the registered public key which is associated with the provided access token
+     *
+     * @param accessToken OAuth2.0 Access Token, given as BEARER token
+     * @param dpop        Serialized Json Web Token to be validated, must contain nonce and ath
+     * @param request     HTTP request associated with the DPoP for validating Request Method and URI
+     */
     @Transactional
     public void validateDpop(@NotBlank String accessToken, @Nullable String dpop, @NotNull HttpRequest request) {
-        if (isDopUnused(dpop)) {
+        if (isDpopUnused(dpop)) {
             return;
         }
-        try {
-            var dpopJwt = parseDpopJwt(dpop, request);
-            var credentialOffer = credentialOfferRepository.findByAccessToken(UUID.fromString(accessToken)).orElseThrow();
-            // https://datatracker.ietf.org/doc/html/rfc9449#section-4.3
-            // 12 - If presented to a protected resource in conjunction with an access token,
-            // * ensure that the value of the ath claim equals the hash of that access token, and
-            if (!dpopJwt.getJWTClaimsSet().getStringClaim("ath").equals(sha256(accessToken))) {
-                throw new DemonstratingProofOfPossessionException("Access token mismatch. ath must be base64url-encoded SHA-256 hash of the ASCII encoding of the associated access token's value", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-            }
-            // * confirm that the public key to which the access token is bound matches the public key from the DPoP proof.
-            if (!dpopJwt.getHeader().getJWK().equals(JWK.parse(credentialOffer.getDpopKey()))) {
-                throw new DemonstratingProofOfPossessionException("Key mismatch", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-            }
-
-        } catch (ParseException | JOSEException | URISyntaxException | NullPointerException e) {
-            throw new DemonstratingProofOfPossessionException("Malformed DPoP", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF, e);
-        }
+        var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
+        var credentialOffer = credentialOfferRepository.findByAccessToken(UUID.fromString(accessToken)).orElseThrow();
+        demonstratingProofOfPossessionValidationService.validateAccessTokenBinding(accessToken, dpopJwt, credentialOffer.getDpopKey());
     }
 
+    /**
+     * Extend OpenIdConfiguration with the signing algorithms supported for DPoP.
+     *
+     * @param openIdConfiguration The configuration to be extended
+     * @return the openidConfiguration with added dpop_signing_alg_values_supported
+     */
     public OpenIdConfigurationDto addSigningAlgorithmsSupported(OpenIdConfigurationDto openIdConfiguration) {
         var builder = openIdConfiguration.toBuilder();
-        builder.dpop_signing_alg_values_supported(getSupportedAlgorithms());
+        builder.dpop_signing_alg_values_supported(DemonstratingProofOfPossessionValidationService.getSupportedAlgorithms());
         return builder.build();
     }
 
-    /**
-     * Parses jwt and validates that it is a dpop according to RFC9449
-     *
-     * @return the parsed jwt
-     * @throws ParseException if dpop jwt is malformed
-     * @throws JOSEException  if the key is malformed or mismatching the algorithm
-     */
-    private SignedJWT parseDpopJwt(String dpop, HttpRequest request) throws ParseException, JOSEException, URISyntaxException {
-        // See https://datatracker.ietf.org/doc/html/rfc9449#section-4.3
-        // 2 - The DPoP HTTP request header field value is a single and well-formed JWT.
-        var dpopJwt = SignedJWT.parse(dpop);
-        // 3 - All required claims per Section 4.2 are contained in the JWT.
-        var header = dpopJwt.getHeader();
-        var jwtClaims = dpopJwt.getJWTClaimsSet();
-        containsAllMandatoryDpopClaims(header, jwtClaims);
-        // 4 - The typ JOSE Header Parameter has the value dpop+jwt.
-        hasDpopType(header);
-        // 5 - The alg JOSE Header Parameter indicates a registered asymmetric digital signature algorithm [IANA.JOSE.ALGS],
-        // is not none, is supported by the application, and is acceptable per local policy.
-        matchesSupportedAlgorithms(header);
-        // 6 - The JWT signature verifies with the public key contained in the jwk JOSE Header Parameter.
-        var key = header.getJWK();
-        hasValidSignature(dpopJwt, key);
-        // 7 - The jwk JOSE Header Parameter does not contain a private key.
-        if (key.isPrivate()) {
-            throw new DemonstratingProofOfPossessionException("Key provided in DPoP MUST NOT be private!", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-
-        // 8 - The htm claim matches the HTTP method of the current request
-        hasMatchingHttpMethod(request, jwtClaims);
-        // 9 - The htu claim matches the HTTP URI value for the HTTP request in which the JWT was received, ignoring any query and fragment parts.
-        hasMatchingHttpUri(request, jwtClaims);
-
-        // 10 - If the server provided a nonce value to the client, the nonce claim matches the server-provided nonce value.
-        // 11 - The creation time of the JWT, as determined by either the iat claim or a server managed timestamp via the nonce claim, is within an acceptable window (see Section 11.1).
-        hasValidSelfContainedNonce(jwtClaims);
-
-        return dpopJwt;
-    }
-
-    private void containsAllMandatoryDpopClaims(JWSHeader header, JWTClaimsSet jwtClaims) {
-        var mandatoryDpopHeaderClaims = List.of("typ", "alg", "jwk");
-        // Note: ath will be not always be relevant
-        var mandatoryDpopPayloadClaims = List.of("jti", "htm", "htu", "iat", "nonce");
-        if (!header.toJSONObject().keySet().containsAll(mandatoryDpopHeaderClaims)) {
-            throw new DemonstratingProofOfPossessionException("Missing mandatory JWS header claims", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-        if (!jwtClaims.getClaims().keySet().containsAll(mandatoryDpopPayloadClaims)) {
-            throw new DemonstratingProofOfPossessionException("Missing mandatory JWT payload claims", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void hasMatchingHttpMethod(HttpRequest request, JWTClaimsSet jwtClaims) throws ParseException {
-        if (!StringUtils.equalsIgnoreCase(request.getMethod().name(), jwtClaims.getStringClaim("htm"))) {
-            throw new DemonstratingProofOfPossessionException("HTTP method mismatch between DPoP and request", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void hasValidSignature(SignedJWT dpopJwt, JWK key) throws JOSEException {
-        if (!dpopJwt.verify(new ECDSAVerifier(key.toECKey()))) {
-            throw new DemonstratingProofOfPossessionException("DPoP signature is invalid", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void hasDpopType(JWSHeader header) {
-        if (!DPOP_JWT_HEADER_TYP.equals(header.getType().toString())) {
-            throw new DemonstratingProofOfPossessionException("DPoP typ MUST be %s".formatted(DPOP_JWT_HEADER_TYP), DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void matchesSupportedAlgorithms(JWSHeader header) {
-        var supportedAlgorithms = getSupportedAlgorithms();
-        if (!supportedAlgorithms.contains(header.getAlgorithm().getName())) {
-            throw new DemonstratingProofOfPossessionException("DPoP alg MUST be one of %s".formatted(
-                    String.join(",", supportedAlgorithms)),
-                    DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    /**
-     * Check if the nonce is valid - not yet used and still within the acceptable time window
-     */
-    private void hasValidSelfContainedNonce(JWTClaimsSet jwtClaims) throws ParseException {
-        var nonce = new SelfContainedNonce(jwtClaims.getStringClaim("nonce"));
-        if (!nonce.isSelfContainedNonce() || !nonce.isValid(applicationProperties.getNonceLifetimeSeconds())) {
-            throw new DemonstratingProofOfPossessionException("Must use valid server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void hasMatchingHttpUri(HttpRequest request, JWTClaimsSet jwtClaims) throws URISyntaxException, ParseException {
-        if (isInvalidUrl(request.getURI(), jwtClaims.getStringClaim("htu"))) {
-            throw new DemonstratingProofOfPossessionException("URL mismatch between DPoP and request", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private boolean isInvalidUrl(URI requestUri, String htu) throws URISyntaxException {
-        // Create new URI without Query & Fragment, taking in account the external URI
-        var externalUri = new URI(applicationProperties.getExternalUrl());
-        var baseUri = new URI(requestUri.getScheme(),
-                requestUri.getUserInfo(),
-                externalUri.getHost(),
-                externalUri.getPort(),
-                requestUri.getPath(),
-                null, null).normalize();
-        var htuUri = new URI(htu).normalize();
-        return !baseUri.equals(htuUri);
-    }
 
     /**
      * Checks if the dpop has not been sent and is set to be optional.
@@ -236,7 +97,7 @@ public class DemonstratingProofOfPossessionService {
      * @param dpop
      * @return
      */
-    private boolean isDopUnused(String dpop) {
+    private boolean isDpopUnused(String dpop) {
         if (StringUtils.isBlank(dpop)) {
             if (applicationProperties.isDpopEnforce()) {
                 throw new DemonstratingProofOfPossessionException("Authorization server requires nonce in DPoP proof",
@@ -248,4 +109,5 @@ public class DemonstratingProofOfPossessionService {
         }
         return false;
     }
+
 }
