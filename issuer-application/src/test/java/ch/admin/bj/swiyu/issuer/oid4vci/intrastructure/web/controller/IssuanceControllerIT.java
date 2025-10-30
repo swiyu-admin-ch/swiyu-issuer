@@ -22,10 +22,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
-import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
-import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
@@ -41,10 +39,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -57,6 +58,7 @@ import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requ
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -88,7 +90,7 @@ class IssuanceControllerIT {
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
     private SdjwtProperties sdjwtProperties;
-    @Autowired
+    @MockitoSpyBean
     private ApplicationProperties applicationProperties;
     @Autowired
     private ObjectMapper objectMapper;
@@ -160,6 +162,60 @@ class IssuanceControllerIT {
                 .andExpect(content().string(not(containsString("${stage}"))))
                 .andExpect(content().string(containsString("local-Example Credential")))
                 .andExpect(content().string(containsString("local-university_example_sd_jwt")));
+    }
+
+    @Test
+    void testGetIssuerMetadataWithSignedMetadata_thenSuccess() throws Exception {
+
+        when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
+
+        String minPayloadWithEmptySubject = String.format(
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}}",
+                "test");
+
+        var offerResponse = mock.perform(post("/management/api/credentials").contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.management_id").isNotEmpty())
+                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        var offerObject = JsonParser.parseString(offerResponse).getAsJsonObject();
+
+        var deeplink = offerObject.get("offer_deeplink").getAsString();
+
+        var decodedDeeplink = URLDecoder.decode(deeplink, StandardCharsets.UTF_8);
+
+        var credentialOffer = JsonParser.parseString(decodedDeeplink.substring(decodedDeeplink.indexOf("credential_offer=") + "credential_offer=".length()))
+                .getAsJsonObject();
+
+        var issuerUrl = credentialOffer.get("credential_issuer").getAsString();
+
+        var response = mock.perform(get(issuerUrl.split("http://localhost:8080")[1] + "/.well-known/openid-configuration").header(HttpHeaders.CONTENT_TYPE, "application/jwt"))
+                .andReturn().getResponse().getContentAsString();
+
+        var test = SignedJWT.parse(response);
+
+        var claims = test.getJWTClaimsSet().getClaims();
+        var headers = test.getHeader();
+
+        /*
+         * alg: Must be ES256
+         * typ: Must be openidvci-issuer-metadata+jwt
+         * kid: Must be the time when the JWT was issued
+         */
+        assertEquals("ES256", headers.getAlgorithm().getName());
+        assertEquals("openidvci-issuer-metadata+jwt", headers.getType().getType());
+        assertEquals(sdjwtProperties.getVerificationMethod(), headers.getKeyID());
+
+        /*
+         * sub: Must match the issuer did
+         * iat: Must be the time when the JWT was issued
+         * exp: Optional the time when the Metadata are expiring -> default 24h
+         */
+
+        assertEquals(applicationProperties.getIssuerId(), claims.get("sub"));
+        assertNotNull(claims.get("iat"));
+        assertNotNull(claims.get("exp"));
     }
 
     @Test

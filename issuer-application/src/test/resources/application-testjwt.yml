@@ -67,3 +67,4 @@ application:
       }
     ]
     }
+  enable-signed-metadata: ${ENABLE_SIGNED_METADATA:false}

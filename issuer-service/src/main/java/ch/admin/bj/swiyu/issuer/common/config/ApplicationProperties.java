@@ -104,6 +104,7 @@ public class ApplicationProperties {
     private String dataIntegrityJwks;
     private JWKSet dataIntegrityKeySet;
     private boolean dataIntegrityEnforced;
+    private boolean signedMetadataEnabled;
 
     @PostConstruct
     public void init() {

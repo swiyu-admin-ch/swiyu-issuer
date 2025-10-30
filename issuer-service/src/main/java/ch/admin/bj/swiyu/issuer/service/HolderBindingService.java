@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
@@ -13,7 +12,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -126,24 +124,19 @@ public class HolderBindingService {
                         .toString()))
                 .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
                         "Provided proof is not supported for the credential requested."));
-        try {
-            if (!requestProof.isValidHolderBinding(
-                    (String) openIDConfiguration.getIssuerMetadata()
-                            .get("credential_issuer"),
-                    bindingProofType.getSupportedSigningAlgorithms(),
-                    credentialOffer.getNonce(),
-                    credentialOffer.getTokenExpirationTimestamp())) {
-                throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
-            }
-            var nonce = new SelfContainedNonce(requestProof.getNonce());
-            if (nonce.isSelfContainedNonce()) {
-                if (nonceService.isUsedNonce(nonce)) {
-                    throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
-                }
-                nonceService.registerNonce(nonce);
-            }
-        } catch (IOException e) {
+        if (!requestProof.isValidHolderBinding(
+                (String) openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
+                bindingProofType.getSupportedSigningAlgorithms(),
+                credentialOffer.getNonce(),
+                credentialOffer.getTokenExpirationTimestamp())) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
+        }
+        var nonce = new SelfContainedNonce(requestProof.getNonce());
+        if (nonce.isSelfContainedNonce()) {
+            if (nonceService.isUsedNonce(nonce)) {
+                throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
+            }
+            nonceService.registerNonce(nonce);
         }
 
         keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
@@ -166,24 +159,20 @@ public class HolderBindingService {
             throw new Oid4vcException(INVALID_PROOF, "Provided proof is not supported for the credential requested.");
         }
 
-        try {
-            if (!requestProof.isValidHolderBinding(
-                    (String) openIDConfiguration.getIssuerMetadata()
-                            .get("credential_issuer"),
-                    bindingProofType.getSupportedSigningAlgorithms(),
-                    credentialOffer.getNonce(),
-                    credentialOffer.getTokenExpirationTimestamp())) {
-                throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
-            }
-            var nonce = new SelfContainedNonce(requestProof.getNonce());
-
-            if (nonce.isSelfContainedNonce() && nonceService.isUsedNonce(nonce)) {
-                throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
-            }
-
-        } catch (IOException e) {
+        if (!requestProof.isValidHolderBinding(
+                (String) openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
+                bindingProofType.getSupportedSigningAlgorithms(),
+                credentialOffer.getNonce(),
+                credentialOffer.getTokenExpirationTimestamp())) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
         }
+        
+        var nonce = new SelfContainedNonce(requestProof.getNonce());
+
+        if (nonce.isSelfContainedNonce() && nonceService.isUsedNonce(nonce)) {
+            throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
+        }
+
 
         keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
 

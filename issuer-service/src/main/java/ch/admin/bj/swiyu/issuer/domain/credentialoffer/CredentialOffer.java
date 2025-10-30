@@ -117,6 +117,12 @@ public class CredentialOffer {
     private UUID transactionId;
 
     /**
+     * TenantId from the metadata where the credential offer was created
+     * Used to sign the metadata with the correct key
+     */
+    private UUID metadataTenantId;
+
+    /**
      * Value used for the store the public key from the holder received in the deferred flow
      */
     @Column(name = "holder_jwks")
