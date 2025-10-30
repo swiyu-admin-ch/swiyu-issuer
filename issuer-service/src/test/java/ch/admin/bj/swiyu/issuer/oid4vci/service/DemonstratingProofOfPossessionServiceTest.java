@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
@@ -38,7 +37,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 class DemonstratingProofOfPossessionServiceTest {
     public static final String DPOP_NONCE_HEADER = "DPoP-Nonce";
@@ -46,14 +44,13 @@ class DemonstratingProofOfPossessionServiceTest {
     private ApplicationProperties applicationProperties;
     private NonceService nonceService;
     private CredentialOfferRepository credentialOfferRepository;
-    private CachedNonceRepository cachedNonceRepository;
     private ECKey dpopKey;
 
     @BeforeEach
     void setUp() {
         applicationProperties = Mockito.mock(ApplicationProperties.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
-        cachedNonceRepository = Mockito.mock(CachedNonceRepository.class);
+        CachedNonceRepository cachedNonceRepository = Mockito.mock(CachedNonceRepository.class);
         nonceService = new NonceService(applicationProperties, cachedNonceRepository);
         demonstratingProofOfPossessionService = new DemonstratingProofOfPossessionService(
                 applicationProperties,

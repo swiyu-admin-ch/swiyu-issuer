@@ -92,12 +92,10 @@ public class DemonstratingProofOfPossessionService {
 
 
     /**
-     * Checks if the dpop has not been sent and is set to be optional.
+     * Checks if the dpop has not been included and is set to be optional.
      *
-     * @param dpop
-     * @return
      */
-    private boolean isDpopUnused(String dpop) {
+    private boolean isDpopUnused(@Nullable String dpop) {
         if (StringUtils.isBlank(dpop)) {
             if (applicationProperties.isDpopEnforce()) {
                 throw new DemonstratingProofOfPossessionException("Authorization server requires nonce in DPoP proof",
