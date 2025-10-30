@@ -98,6 +98,7 @@ public class TestServiceUtils {
                 null,
                 null,
                 null,
+                null,
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 nonce,
                 preAuthorizedCode,

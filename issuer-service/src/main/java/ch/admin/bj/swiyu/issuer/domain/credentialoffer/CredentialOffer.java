@@ -109,6 +109,12 @@ public class CredentialOffer {
     private UUID transactionId;
 
     /**
+     * TenantId from the metadata where the credential offer was created
+     * Used to sign the metadata with the correct key
+     */
+    private UUID metadataTenantId;
+
+    /**
      * Value used for the store the public key from the holder received in the deferred flow
      */
     @Column(name = "holder_jwks")
@@ -142,9 +148,9 @@ public class CredentialOffer {
      */
     private UUID preAuthorizedCode;
 
-/**
- * Timestamp after which the credential offer or the deferred credential offer will be regarded as expired.
- */
+    /**
+     * Timestamp after which the credential offer or the deferred credential offer will be regarded as expired.
+     */
     private long offerExpirationTimestamp;
 
     private Integer deferredOfferValiditySeconds;
@@ -256,7 +262,7 @@ public class CredentialOffer {
                                List<String> keyAttestationJWTs,
                                ClientAgentInfo clientAgentInfo,
                                ApplicationProperties applicationProperties) {
-        
+
         var expiration = Instant.now().plusSeconds(nonNull(deferredOfferValiditySeconds) && deferredOfferValiditySeconds > 0
                 ? deferredOfferValiditySeconds
                 : applicationProperties.getDeferredOfferValiditySeconds());

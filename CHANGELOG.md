@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added new endpoints for signed metadata. The functionality is disabled by default at the moment and can be
+  enabled by setting the environment variable `ENABLE_SIGNED_METADATA=true`. This will generate a deeplink with an
+  additional tenant id.
+    - Added new endpoint `/.well-known/openid-credential-issuer-signed-metadata` which provides signed metadata
+      according to the OID4VCI spec.
+    - Added new endpoint `/management/api/credentials/{credentialId}/signed-metadata` to provide signed
+      credential-offer-metadata for a specific credential offer.
 - Added new `vct_metadata_uri`, `vct_metadata_uri#integrity` fields to CredentialOfferMetadataDto which are then added
   to the credential claims
 - Added WebhookCallbackDto to openapi config schemas.
