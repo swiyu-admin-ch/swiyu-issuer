@@ -30,30 +30,67 @@ public class MetadataService {
     private final SdjwtProperties sdjwtProperties;
     private final ApplicationProperties applicationProperties;
 
+    /**
+     * Returns the issuer metadata without signing.
+     *
+     * <p>Retrieves the current {@link IssuerMetadata} from the configured
+     * {@code OpenIdIssuerConfiguration} and returns it in its original,
+     * unsigned form.
+     *
+     * @return the unsigned {@link IssuerMetadata} for this issuer
+     */
     public IssuerMetadata getUnsignedIssuerMetadata() {
         return openIdIssuerConfiguration.getIssuerMetadata();
     }
 
+    /**
+     * Returns a signed issuer metadata JWT for the specified tenant.
+     *
+     * <p>Retrieves the tenant-specific {@code ConfigurationOverride} from
+     * {@code CredentialManagementService} and signs the issuer metadata map using the
+     * configured signature service.
+     *
+     * @param tenantId the tenant identifier for which to produce the signed issuer metadata
+     * @return a serialized JWT containing the signed issuer metadata
+     * @throws ConfigurationException if signing the metadata fails or the key strategy cannot be created
+     */
     public String getSignedIssuerMetadata(UUID tenantId) {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
 
         return signMetadataJwt(openIdIssuerConfiguration.getIssuerMetadataMap(), override, tenantId);
     }
 
+    /**
+     * Returns the OpenID Provider Configuration as a DTO without signing.
+     *
+     * <p>The configuration is retrieved from {@code openIdIssuerConfiguration} and is returned
+     * in its original, unsigned form.
+     *
+     * @return the unsigned {@link OpenIdConfigurationDto} for this issuer
+     */
     public OpenIdConfigurationDto getUnsignedOpenIdConfiguration() {
         return openIdIssuerConfiguration.getOpenIdConfiguration();
     }
 
+    /**
+     * Returns a signed OpenID configuration JWT for the given tenant.
+     *
+     * <p>Retrieves the tenant-specific {@code ConfigurationOverride} from
+     * {@code CredentialManagementService} and signs the OpenID configuration map
+     * using the configured signature service.
+     *
+     * @param tenantId the tenant identifier for which to sign the OpenID configuration
+     * @return a serialized JWT containing the signed OpenID configuration
+     */
     public String getSignedOpenIdConfiguration(UUID tenantId) {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
 
         return signMetadataJwt(openIdIssuerConfiguration.getOpenIdConfigurationMap(), override, tenantId);
-
     }
 
     private String signMetadataJwt(Map<String, Object> metaData, ConfigurationOverride override, UUID tenantId) {
 
-        JWSSigner signer = null;
+        JWSSigner signer;
         try {
             signer = signatureService.createSigner(sdjwtProperties, override.keyId(), override.keyPin());
         } catch (KeyStrategyException e) {
@@ -70,6 +107,23 @@ public class MetadataService {
                 .keyID(override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()))
                 .type(new JOSEObjectType("openidvci-issuer-metadata+jwt"))
                 .build();
+
+        JWTClaimsSet claimsSet = prepareJWTClaimsSet(override, metaData);
+
+        SignedJWT jwt = new SignedJWT(header, claimsSet);
+
+        try {
+            jwt.sign(signer);
+        } catch (JOSEException e) {
+            log.error("Unable to sign metadata for tenant %s".formatted(tenantId), e);
+            throw new ConfigurationException("Unable to sign metadata for tenant %s", e);
+        }
+
+        return jwt.serialize();
+    }
+
+    private JWTClaimsSet prepareJWTClaimsSet(ConfigurationOverride override,
+                                             Map<String, Object> metaData) {
 
         /*
          * sub: Must match the issuer did
@@ -88,16 +142,7 @@ public class MetadataService {
             }
         });
 
-        SignedJWT jwt = new SignedJWT(header, claimsSetBuilder.build());
-
-        try {
-            jwt.sign(signer);
-        } catch (JOSEException e) {
-            log.error("Unable to sign metadata for tenant %s".formatted(tenantId), e);
-            throw new ConfigurationException("Unable to sign metadata for tenant %s", e);
-        }
-
-        return jwt.serialize();
+        return claimsSetBuilder.build();
     }
 
     private boolean isReservedClaim(String claim) {

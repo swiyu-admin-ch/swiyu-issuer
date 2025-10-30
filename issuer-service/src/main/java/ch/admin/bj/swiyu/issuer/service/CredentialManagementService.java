@@ -146,6 +146,13 @@ public class CredentialManagementService {
         return toUpdateStatusResponseDto(storedCredentialOffer);
     }
 
+    /**
+     * Retrieve the {@link ConfigurationOverride} for a credential offer identified by the given tenant id.
+     *
+     * @param tenantId the tenant id associated with the credential offer
+     * @return the {@link ConfigurationOverride} of the found credential offer, or {@code null} if no override is set
+     * @throws ResourceNotFoundException if no credential offer exists for the provided tenant id
+     */
     @Transactional
     public ConfigurationOverride getConfigurationOverrideByTenantId(UUID tenantId) {
         var offer = credentialOfferRepository.findByMetadataTenantId(tenantId)
