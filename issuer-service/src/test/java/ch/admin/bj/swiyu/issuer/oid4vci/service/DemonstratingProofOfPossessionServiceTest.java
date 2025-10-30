@@ -64,6 +64,7 @@ class DemonstratingProofOfPossessionServiceTest {
                 .generate());
 
         Mockito.when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(10);
+        Mockito.when(applicationProperties.getAcceptableProofTimeWindowSeconds()).thenReturn(10);
         Mockito.when(applicationProperties.getExternalUrl()).thenReturn("https://www.example.com");
     }
 
