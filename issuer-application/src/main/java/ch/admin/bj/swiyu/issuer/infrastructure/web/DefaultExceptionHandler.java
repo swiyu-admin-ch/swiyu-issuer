@@ -137,7 +137,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(DpopErrorDto.builder()
                 .errorCode(ex.getDpopError().getName())
                 .errorDescription(ex.getMessage())
-                .build(), responseStatus);
+                .build(), responseHeaders, responseStatus);
     }
 
     @NotNull
