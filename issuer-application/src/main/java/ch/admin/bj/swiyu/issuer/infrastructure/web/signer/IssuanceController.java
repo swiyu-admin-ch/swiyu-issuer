@@ -10,12 +10,10 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.DeferredDataDtoV2;
+import ch.admin.bj.swiyu.issuer.common.exception.NotImplementedError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
-import ch.admin.bj.swiyu.issuer.service.CredentialService;
-import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionService;
-import ch.admin.bj.swiyu.issuer.service.EncryptionService;
-import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,11 +24,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -64,70 +64,85 @@ public class IssuanceController {
     public static final String API_VERSION_OID4VCI_1_0 = "2";
     public static final String DPOP_HTTP_HEADER = "DPoP";
     public static final String SWIYU_API_VERSION_HTTP_HEADER = "SWIYU-API-Version";
-    private static final String OID4VCI_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
+
     private final CredentialService credentialService;
     private final NonceService nonceService;
     private final EncryptionService encryptionService;
-    private final Validator validator;
-    private final ObjectMapper objectMapper;
+    private final OAuthService oauthService;
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
 
+    private final Validator validator;
+    private final ObjectMapper objectMapper;
+
+
+    // TODO Remove after checking with Wallet team that no more used
+    @Deprecated(forRemoval = true)
     @Timed
     @PostMapping(value = {"/token"},
             produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Create a Bearer token with pre-authorized code", hidden = true)
-    public OAuthTokenDto oauthAccessToken(
+    public OAuthTokenDto oauthTokenEndpoint(
             @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
-            @RequestParam(name = "grant_type", defaultValue = OID4VCI_GRANT_TYPE) String grantType,
-            @RequestParam(name = "pre-authorized_code") String preAuthCode,
+            @RequestParam(name = "grant_type") @NotEmpty String grantType,
+            @RequestParam(name = "pre-authorized_code") @Nullable String preAuthCode,
+            @RequestParam(name = "refresh_token") @Nullable String refreshToken,
             HttpServletRequest request) {
 
         if (StringUtils.isBlank(preAuthCode)) {
             throw OAuthException.invalidRequest("Pre-authorized code is required");
         }
 
-        if (!OID4VCI_GRANT_TYPE.equals(grantType)) {
+        if (!OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(grantType)) {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
         demonstratingProofOfPossessionService.registerDpop(preAuthCode, dpop, new ServletServerHttpRequest(request));
-        return credentialService.issueOAuthToken(preAuthCode);
+        return oauthService.issueOAuthToken(preAuthCode);
     }
 
     @Timed
-    @PostMapping(value = {"/token"}, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @PostMapping(value = {"/token"}, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Submit form data",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Form data to be submitted",
+                    description = "OAuth 2.0 access token request to be submitted",
                     required = true,
                     content = @Content(
                             mediaType = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-                            schema = @Schema(implementation = OauthAccessTokenRequestDto.class)
+                            schema = @Schema(implementation = OAuthAccessTokenRequestDto.class)
                     )
             )
     )
-    public OAuthTokenDto oauthAccessToken(
+    public OAuthTokenDto oauthTokenEndpoint(
             @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
-            @ModelAttribute OauthAccessTokenRequestDto oauthAccessTokenRequestDto,
+            @ModelAttribute OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
             HttpServletRequest request) {
 
         if (oauthAccessTokenRequestDto == null) {
             throw OAuthException.invalidRequest("The request is missing a required parameter");
         }
 
-        if (StringUtils.isBlank(oauthAccessTokenRequestDto.preauthorized_code())) {
-            throw OAuthException.invalidRequest("Pre-authorized code is required");
-        }
 
-        // TODO EIDOMNI-275 - allow use of Refresh token
-        demonstratingProofOfPossessionService.registerDpop(
-                oauthAccessTokenRequestDto.preauthorized_code(),
-                dpop,
-                new ServletServerHttpRequest(request));
+        if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
+            if (StringUtils.isBlank(oauthAccessTokenRequestDto.preauthorized_code())) {
+                throw OAuthException.invalidRequest("Pre-authorized code is required");
+            }
 
-        if (!OID4VCI_GRANT_TYPE.equals(oauthAccessTokenRequestDto.grant_type())) {
+            demonstratingProofOfPossessionService.registerDpop(
+                    oauthAccessTokenRequestDto.preauthorized_code(),
+                    dpop,
+                    new ServletServerHttpRequest(request));
+            return oauthService.issueOAuthToken(oauthAccessTokenRequestDto.preauthorized_code());
+        } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
+            if (StringUtils.isBlank(oauthAccessTokenRequestDto.refresh_token())) {
+                throw OAuthException.invalidRequest("Pre-authorized code is required");
+            }
+
+            // TODO EIDOMNI-275 - allow use of Refresh token
+            throw new NotImplementedError("EIDOMNI-275");
+
+        } else {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
-        return credentialService.issueOAuthToken(oauthAccessTokenRequestDto.preauthorized_code());
+
     }
 
     @Timed

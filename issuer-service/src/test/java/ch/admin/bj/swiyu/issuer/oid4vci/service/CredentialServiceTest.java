@@ -25,6 +25,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
+import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,6 +64,8 @@ class CredentialServiceTest {
     private EncryptionService encryptionService;
     private CredentialConfiguration credentialConfiguration;
     private ApplicationEventPublisher applicationEventPublisher;
+    private OAuthService oAuthService;
+    private EventProducerService eventProducerService;
 
 
     @BeforeEach
@@ -75,7 +78,12 @@ class CredentialServiceTest {
         holderBindingService = Mockito.mock(HolderBindingService.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+
         encryptionService = Mockito.mock(EncryptionService.class);
+        eventProducerService = new EventProducerService(applicationEventPublisher, objectMapper);
+
+        oAuthService = new OAuthService(applicationProperties, eventProducerService, credentialOfferRepository);
+
         credentialService = new CredentialService(
                 credentialOfferRepository,
                 new ObjectMapper(),
@@ -83,7 +91,8 @@ class CredentialServiceTest {
                 credentialFormatFactory,
                 applicationProperties,
                 holderBindingService,
-                applicationEventPublisher,
+                oAuthService,
+                eventProducerService,
                 encryptionService
         );
 
@@ -164,7 +173,7 @@ class CredentialServiceTest {
         // WHEN credential is created for offer with expired timestamp
         var uuidString = uuid.toString();
         var ex = assertThrows(OAuthException.class,
-                () -> credentialService.issueOAuthToken(uuidString));
+                () -> oAuthService.issueOAuthToken(uuidString));
 
         // THEN Status is changed and offer data is cleared
         assertEquals(CredentialStatusType.EXPIRED, offer.getCredentialStatus());
@@ -453,7 +462,7 @@ class CredentialServiceTest {
         when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(credentialOffer));
         when(applicationProperties.getTokenTTL()).thenReturn(600L);
 
-        OAuthTokenDto token = credentialService.issueOAuthToken(preAuthCode.toString());
+        OAuthTokenDto token = oAuthService.issueOAuthToken(preAuthCode.toString());
 
         assertEquals(credentialOffer.getAccessToken().toString(), token.getAccessToken());
         assertEquals(600, token.getExpiresIn());
@@ -480,7 +489,7 @@ class CredentialServiceTest {
         when(applicationProperties.getTokenTTL()).thenReturn(600L);
 
         var preAuthCodeString = preAuthCode.toString();
-        var exception = assertThrows(OAuthException.class, () -> credentialService.issueOAuthToken(preAuthCodeString));
+        var exception = assertThrows(OAuthException.class, () -> oAuthService.issueOAuthToken(preAuthCodeString));
 
         assertEquals("Credential has already been used", exception.getMessage());
     }
@@ -551,7 +560,7 @@ class CredentialServiceTest {
         var invalidPreAuthCode = "definitely-not-a-uuid";
 
         var exception = assertThrows(OAuthException.class, () ->
-                credentialService.issueOAuthToken(invalidPreAuthCode));
+                oAuthService.issueOAuthToken(invalidPreAuthCode));
 
         assertEquals("INVALID_REQUEST", exception.getError().toString());
         assertEquals("Expecting a correct UUID", exception.getMessage());
