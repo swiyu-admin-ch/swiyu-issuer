@@ -132,7 +132,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
             responseStatus = BAD_REQUEST;
             responseHeaders.put("DPoP-Nonce", List.of(new SelfContainedNonce().getNonce()));
         } else {
-            log.debug("DPoP received faulty input intercepted", ex);
+            log.debug("DPoP faulty user input intercepted", ex);
         }
         return new ResponseEntity<>(DpopErrorDto.builder()
                 .errorCode(ex.getDpopError().getName())
@@ -160,7 +160,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(io.fabric8.kubernetes.client.ResourceNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     void handleResourceNotFoundException(io.fabric8.kubernetes.client.ResourceNotFoundException e) {
-        log.debug("Resource not found", e);
+        log.warn("Resource not found", e);
     }
 
     private ResponseEntity<Object> handleUnprocessableEntity(String errors) {
