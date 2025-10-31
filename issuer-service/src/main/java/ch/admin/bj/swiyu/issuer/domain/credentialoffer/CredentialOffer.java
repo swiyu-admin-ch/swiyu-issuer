@@ -103,6 +103,14 @@ public class CredentialOffer {
     @NotNull
     private UUID accessToken;
 
+
+    /**
+     * OAuth refresh token for the offer
+     */
+    @Nullable
+    @Column(name = "refresh_token", nullable = true)
+    private UUID refreshToken;
+
     /**
      * Value used for the deferred flow to get the credential
      */
@@ -172,6 +180,14 @@ public class CredentialOffer {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "configuration_override", columnDefinition = "jsonb")
     private ConfigurationOverride configurationOverride;
+
+    /**
+     * Wallet Public Key used for DPoP header JWT
+     */
+    @Nullable
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "dpop_key", columnDefinition = "jsonb", nullable = true)
+    private Map<String, Object> dpopKey;
 
     /**
      * Read the offer data depending on input type and add it to offer
@@ -304,6 +320,11 @@ public class CredentialOffer {
     public ConfigurationOverride getConfigurationOverride() {
         return Objects.requireNonNullElseGet(this.configurationOverride, () -> new ConfigurationOverride(null, null, null, null));
     }
+
+    public void setDPoPKey(Map<String, Object> dPoPKey) {
+        this.dpopKey = dPoPKey;
+    }
+
 
     private void invalidateOfferData() {
         this.offerData = null;

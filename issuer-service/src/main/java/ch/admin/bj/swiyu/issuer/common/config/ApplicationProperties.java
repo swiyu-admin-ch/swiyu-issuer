@@ -99,6 +99,8 @@ public class ApplicationProperties {
     private Duration encryptionKeyRotationInterval;
     private boolean encryptionEnforce;
 
+    private boolean dpopEnforce;
+
     private String dataIntegrityJwks;
     private JWKSet dataIntegrityKeySet;
     private boolean dataIntegrityEnforced;

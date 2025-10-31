@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.EncryptionService;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,20 +37,10 @@ import java.util.UUID;
 @RequestMapping
 public class WellKnownController {
 
-    private static String CONTENT_TYPE_APPLICATION_JWT = "application/jwt";
+    private static final String CONTENT_TYPE_APPLICATION_JWT = "application/jwt";
     private final EncryptionService encryptionService;
+    private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final MetadataService metadataService;
-
-    /**
-     * General information about the issuer
-     *
-     * @return OpenIdConfigurationDto as defined by OIDConnect and extended by OID4VCI
-     */
-    @GetMapping(value = {"/oid4vci/.well-known/openid-configuration", ".well-known/openid-configuration"})
-    @Operation(summary = "OpenID Connect information required for issuing VCs")
-    public OpenIdConfigurationDto getOpenIDConfiguration() {
-        return metadataService.getUnsignedOpenIdConfiguration();
-    }
 
     /**
      * OpenID Connect information for the OAuth Authorization Server
@@ -57,10 +48,10 @@ public class WellKnownController {
      *
      * @return OpenIdConfigurationDto as defined by OIDConnect and extended by OID4VCI
      */
-    @GetMapping(value = {"/oid4vci/.well-known/oauth-authorization-server", ".well-known/oauth-authorization-server"})
+    @GetMapping(value = {"/oid4vci/.well-known/openid-configuration", ".well-known/openid-configuration", "/oid4vci/.well-known/oauth-authorization-server", ".well-known/oauth-authorization-server"})
     @Operation(summary = "OpenID Connect information required for issuing VCs")
-    public OpenIdConfigurationDto getOpenIDConfigurationForOauthAuthServer() {
-        return metadataService.getUnsignedOpenIdConfiguration();
+    public OpenIdConfigurationDto getOpenIDConfiguration() {
+        return demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(metadataService.getUnsignedOpenIdConfiguration());
     }
 
     /**
@@ -88,7 +79,7 @@ public class WellKnownController {
         return metadataService.getUnsignedIssuerMetadata();
     }
 
-    @GetMapping(value = {"/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/openid-configuration"})
+    @GetMapping(value = {"/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/oauth-authorization-server", "/{tenantId}/.well-known/oauth-authorization-server"})
     @Operation(summary = "Information about credentials which can be issued.")
     public Object getOpenIdConfigurationByTenantId(
             @PathVariable UUID tenantId,

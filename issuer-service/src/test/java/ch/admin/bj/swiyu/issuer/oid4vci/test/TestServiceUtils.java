@@ -86,29 +86,23 @@ public class TestServiceUtils {
     }
 
     public static CredentialOffer getCredentialOffer(CredentialStatusType status, long offerExpirationTimestamp, Map<String, Object> offerData, UUID accessToken, UUID preAuthorizedCode, UUID nonce, CredentialOfferMetadata offerMetadata, UUID transactionId) {
-
-        return new CredentialOffer(
-                UUID.randomUUID(),
-                status,
-                List.of("test"),
-                offerData,
-                offerMetadata,
-                accessToken,
-                transactionId,
-                null,
-                null,
-                null,
-                null,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                nonce,
-                preAuthorizedCode,
-                offerExpirationTimestamp,
-                120,
-                Instant.now(),
-                Instant.now(),
-                new CredentialRequestClass("vc+sd-jwt", null, null),
-                null
-        );
+        return CredentialOffer.builder()
+                .id(UUID.randomUUID())
+                .credentialStatus(status)
+                .metadataCredentialSupportedId(List.of("test"))
+                .offerData(offerData)
+                .credentialMetadata(offerMetadata)
+                .accessToken(accessToken)
+                .transactionId(transactionId)
+                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .nonce(nonce)
+                .preAuthorizedCode(preAuthorizedCode)
+                .offerExpirationTimestamp(offerExpirationTimestamp)
+                .deferredOfferValiditySeconds(120)
+                .credentialValidFrom(Instant.now())
+                .credentialValidUntil(Instant.now().plusSeconds(200))
+                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
+                .build();
     }
 
 }

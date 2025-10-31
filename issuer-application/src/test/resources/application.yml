@@ -31,6 +31,7 @@ application:
   offer-expiration-interval: "PT15M"
   encryption-key-rotation-interval: "PT15M"
   encryption-enforce: false
+  dpop-enforce: false
   deeplink-schema: swiyu
   token-ttl: 600
   acceptable-proof-time-window-seconds: 120

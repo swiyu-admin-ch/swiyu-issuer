@@ -149,30 +149,22 @@ class ProofJwtTest {
     }
 
     private CredentialOffer createTestOffer(UUID nonce) {
-        return new CredentialOffer(
-                UUID.randomUUID(),
-                CredentialStatusType.OFFERED,
-                Collections.emptyList(),
-                new HashMap<>() {{
+
+        return CredentialOffer.builder()
+                .id(UUID.randomUUID())
+                .credentialStatus(CredentialStatusType.OFFERED)
+                .metadataCredentialSupportedId(Collections.emptyList())
+                .offerData(new HashMap<>() {{
                     put("data", "data");
                     put("otherStuff", "data");
-                }},
-                null,
-                null,
-                UUID.randomUUID(),
-                null,
-                null,
-                null,
-                null,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                nonce,
-                UUID.randomUUID(),
-                120L,
-                120,
-                Instant.now(),
-                Instant.now(),
-                null,
-                null
-        );
+                }})
+                .accessToken(UUID.randomUUID())
+                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .nonce(nonce)
+                .preAuthorizedCode(UUID.randomUUID())
+                .offerExpirationTimestamp(120L)
+                .deferredOfferValiditySeconds(120)
+                .credentialValidFrom(Instant.now())
+                .build();
     }
 }
