@@ -6,8 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
-import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
-import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -106,9 +105,13 @@ public class IssuerMetadata {
 
     public @NotNull CredentialConfiguration getCredentialConfigurationById(String credentialConfigurationSupportedId) {
         CredentialConfiguration credentialConfiguration = credentialConfigurationSupported.get(credentialConfigurationSupportedId);
-        if (credentialConfiguration == null) {
-            throw new Oid4vcException(CredentialRequestError.INVALID_CREDENTIAL_REQUEST, "Requested Credential is not offered (anymore).");
+
+        if (!credentialConfigurationSupported.containsKey(credentialConfigurationSupportedId)) {
+            throw new BadRequestException("Credential offer metadata %s is not supported - should be one of %s"
+                    .formatted(credentialConfigurationSupportedId,
+                            String.join(", ", credentialConfigurationSupported.keySet())));
         }
+
         return credentialConfiguration;
     }
 

@@ -133,7 +133,7 @@ class DeferredFlowIT {
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of())
+                .credentialSubjectData(Map.of("lastName", "lastName"))
                 .credentialMetadata(getCredentialMetadataDto())
                 .build();
 
@@ -224,7 +224,7 @@ class DeferredFlowIT {
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of())
+                .credentialSubjectData(Map.of("lastName", "lastName"))
                 .credentialMetadata(getCredentialMetadataDto())
                 .build();
 
@@ -312,6 +312,72 @@ class DeferredFlowIT {
 
         var vc = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject().get("credential").getAsString();
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, offerData);
+    }
+
+    @Test
+    void testOfferCreation_withNoSubjectData() throws Exception {
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialMetadata(getCredentialMetadataDto())
+                .build();
+
+        var offerRequestString = objectMapper.writeValueAsString(offerRequest);
+
+        // create initial credential offer
+        mock.perform(post("/management/api/credentials")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(offerRequestString))
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.error_description").value("Unprocessable Entity"))
+                .andExpect(jsonPath("$.detail").value("credentialSubjectData: 'credential_subject_data' must be set"))
+                .andReturn();
+    }
+
+    @Test
+    void testOfferCreation_withUnexpectedClaim() throws Exception {
+
+        var extendedOfferData = new HashMap<String, Object>(offerData);
+        extendedOfferData.put("unexpectedClaim", "unexpectedValue");
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialMetadata(getCredentialMetadataDto())
+                .credentialSubjectData(extendedOfferData)
+                .build();
+
+        var offerRequestString = objectMapper.writeValueAsString(offerRequest);
+
+        // create initial credential offer
+        mock.perform(post("/management/api/credentials")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(offerRequestString))
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.detail").value("Unexpected credential claims found! unexpectedClaim"))
+                .andReturn();
+    }
+
+    @Test
+    void testOfferCreation_withMissingMandatoryClaim() throws Exception {
+
+        var extendedOfferData = new HashMap<String, Object>(offerData);
+        extendedOfferData.remove("lastName"); // removing required claim
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialMetadata(getCredentialMetadataDto())
+                .credentialSubjectData(extendedOfferData)
+                .build();
+
+        var offerRequestString = objectMapper.writeValueAsString(offerRequest);
+
+        // create initial credential offer
+        mock.perform(post("/management/api/credentials")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(offerRequestString))
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.detail").value("Mandatory credential claims are missing! lastName"))
+                .andReturn();
     }
 
     @Test

@@ -44,9 +44,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -219,7 +217,7 @@ class StatusListIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        String offerCred = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+        String offerCred = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"lastName\" : \"lastName\"}, \"status_lists\": [\"%s\"]}"
                 .formatted(statusRegistryUrl);
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(offerCred))

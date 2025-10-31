@@ -40,7 +40,7 @@ public class CredentialOfferTestHelper {
     }
 
     public UUID createBasicOfferJsonAndGetUUID() throws Exception {
-        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}}";
+        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\", \"lastName\": \"lastName\"}}";
 
         MvcResult result = mvc
                 .perform(post(BASE_URL).contentType("application/json").content(minPayloadWithEmptySubject))
@@ -50,7 +50,7 @@ public class CredentialOfferTestHelper {
     }
 
     public UUID createStatusListLinkedOfferAndGetUUID() throws Exception {
-        String payload = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+        String payload = "{\"metadata_credential_supported_id\": [\"test\"],\"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\", \"lastName\": \"lastName\"}, \"status_lists\": [\"%s\"]}"
                 .formatted(statusRegistryUrl);
 
         MvcResult result = mvc

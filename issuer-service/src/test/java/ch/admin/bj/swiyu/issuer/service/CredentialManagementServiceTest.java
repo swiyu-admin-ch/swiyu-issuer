@@ -293,26 +293,6 @@ class CredentialManagementServiceTest {
     }
 
     @Test
-    void testCreateCredentialOfferInvalidCredential_thenBadRequest() {
-
-        when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
-        when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("different-test-metadata", mock(CredentialConfiguration.class)));
-        when(credentialOfferRepository.save(any())).thenAnswer(new Answer<CredentialOffer>() {
-            @Override
-            public CredentialOffer answer(InvocationOnMock invocation) {
-                return invocation.getArgument(0);
-            }
-        });
-
-        var exception = assertThrows(BadRequestException.class, () ->
-                credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
-
-        assertTrue(exception.getMessage().contains("Credential offer metadata test-metadata is not supported - should be one of different-test-metadata"));
-    }
-
-    @Test
     void testCreateCredentialOfferWithInvalidSpan_ValidUntilBeforeNow_thenBadRequest() {
 
         var statusListUris = List.of("https://example.com/status-list");
@@ -432,7 +412,108 @@ class CredentialManagementServiceTest {
         var exception = assertThrows(BadRequestException.class, () ->
                 credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto));
 
-        assertThat(exception.getMessage()).contains("Credential claims (credential subject data) is missing!");
+        assertThat(exception.getMessage()).contains("Mandatory credential claims are missing! claim");
+    }
+
+    @Test
+    void testCreateCredentialOfferNoData_thenBadRequest() {
+
+        when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
+        when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(new HashMap<>());
+        var credConfig = mock(CredentialConfiguration.class);
+        var claim = new CredentialClaim();
+        claim.setMandatory(true);
+        claim.setValueType("string");
+
+        when(credConfig.getCredentialDefinition()).thenReturn(null);
+        when(credConfig.getClaims()).thenReturn(Map.of("claim", claim));
+        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(credConfig.getVct()).thenReturn("test-vct");
+        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("did:jwk", "jwk"));
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", credConfig));
+        when(issuerMetadata.getCredentialConfigurationById("test-metadata")).thenReturn(credConfig);
+
+        var offer = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test-metadata"))
+                .offerValiditySeconds(3600)
+                .statusLists(List.of("https://example.com/status-list"))
+                .build();
+
+        var exception = assertThrows(BadRequestException.class, () ->
+                credentialService.createCredentialOfferAndGetDeeplink(offer));
+
+        assertThat(exception.getMessage()).contains("Unsupported OfferData null");
+    }
+
+    @Test
+    void testCreateCredentialOfferNullOfferData_thenBadRequest() {
+
+        when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
+        when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(new HashMap<>());
+        var credConfig = mock(CredentialConfiguration.class);
+        var claim = new CredentialClaim();
+        claim.setMandatory(true);
+        claim.setValueType("string");
+
+        when(credConfig.getCredentialDefinition()).thenReturn(null);
+        when(credConfig.getClaims()).thenReturn(Map.of("claim", claim));
+        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(credConfig.getVct()).thenReturn("test-vct");
+        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("did:jwk", "jwk"));
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", credConfig));
+        when(issuerMetadata.getCredentialConfigurationById("test-metadata")).thenReturn(credConfig);
+
+        var offer = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test-metadata"))
+                .credentialSubjectData(null)
+                .offerValiditySeconds(3600)
+                .statusLists(List.of("https://example.com/status-list"))
+                .build();
+
+        var exception = assertThrows(BadRequestException.class, () ->
+                credentialService.createCredentialOfferAndGetDeeplink(offer));
+
+        assertThat(exception.getMessage()).contains("Unsupported OfferData null");
+    }
+
+    @Test
+    void testCreateCredentialOfferEmptyData_thenBadRequest() {
+
+        when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
+        when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(new HashMap<>());
+        var credConfig = mock(CredentialConfiguration.class);
+        var claim = new CredentialClaim();
+        claim.setMandatory(true);
+        claim.setValueType("string");
+
+        when(credConfig.getCredentialDefinition()).thenReturn(null);
+        when(credConfig.getClaims()).thenReturn(Map.of("claim", claim));
+        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(credConfig.getVct()).thenReturn("test-vct");
+        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("did:jwk", "jwk"));
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", credConfig));
+        when(issuerMetadata.getCredentialConfigurationById("test-metadata")).thenReturn(credConfig);
+
+        var offer = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test-metadata"))
+                .credentialSubjectData(Map.of())
+                .offerValiditySeconds(3600)
+                .statusLists(List.of("https://example.com/status-list"))
+                .build();
+
+        var exception = assertThrows(BadRequestException.class, () ->
+                credentialService.createCredentialOfferAndGetDeeplink(offer));
+
+        assertThat(exception.getMessage()).contains("Mandatory credential claims are missing! claim");
     }
 
     @Test
@@ -508,6 +589,7 @@ class CredentialManagementServiceTest {
         CredentialOffer credentialOffer = mock(CredentialOffer.class);
 
         when(credentialOffer.isDeferredOffer()).thenReturn(true);
+        when(credentialOffer.getMetadataCredentialSupportedId()).thenReturn(List.of("test"));
         when(credentialOffer.getCredentialStatus()).thenReturn(CredentialStatusType.DEFERRED);
         when(credentialOfferRepository.findByIdForUpdate(credentialId)).thenReturn(Optional.of(credentialOffer));
         doNothing().when(credentialOffer).markAsReadyForIssuance(any());
@@ -540,7 +622,7 @@ class CredentialManagementServiceTest {
     void updateOfferDataForDeferred_shouldUpdateCredentialOfferData() {
         // Arrange
         UUID credentialId = UUID.randomUUID();
-        Map<String, Object> offerDataMap = Map.of("claim", "value");
+        Map<String, Object> offerDataMap = Map.of("hello", "world");
         CredentialOffer credentialOffer = getCredentialOffer(
                 CredentialStatusType.DEFERRED,
                 Instant.now().plusSeconds(600).getEpochSecond(),

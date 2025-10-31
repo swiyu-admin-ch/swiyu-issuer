@@ -170,7 +170,7 @@ class IssuanceControllerIT {
         when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
 
         String minPayloadWithEmptySubject = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}}",
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\": \"Example\"}}",
                 "test");
 
         var offerResponse = mock.perform(post("/management/api/credentials").contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))

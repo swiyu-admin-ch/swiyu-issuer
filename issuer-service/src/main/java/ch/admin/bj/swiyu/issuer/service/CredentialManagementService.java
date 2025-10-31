@@ -87,8 +87,10 @@ public class CredentialManagementService {
 
     @Transactional
     public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(@Valid CreateCredentialOfferRequestDto request) {
+
         validateCredentialOfferCreateRequest(request);
-        var credential = this.createCredentialOffer(request, issuerMetadata.getIssuanceBatchSize());
+        var batchSize = issuerMetadata.getIssuanceBatchSize();
+        var credential = this.createCredentialOffer(request, batchSize);
         var offerLinkString = this.getOfferDeeplinkFromCredential(credential);
         return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(credential, offerLinkString);
     }
@@ -110,20 +112,6 @@ public class CredentialManagementService {
         expiredOffers.forEach(offer -> updateCredentialStatus(offer, CredentialStatusType.EXPIRED));
     }
 
-    public void validateOfferData(Map<String, Object> offerData) {
-        var validatedOfferData = dataIntegrityService.getVerifiedOfferData(offerData, null);
-
-        // check if credentialSubjectData contains protected claims
-        List<String> duplicates = new ArrayList<>(validatedOfferData.keySet().stream()
-                .filter(SDJWT_PROTECTED_CLAIMS::contains)
-                .toList());
-
-        if (!duplicates.isEmpty()) {
-            throw new BadRequestException(
-                    "The following claims are not allowed in the credentialSubjectData: " + duplicates);
-        }
-    }
-
     @Transactional
     public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialId, Map<String, Object> offerDataMap) {
         var storedCredentialOffer = getCredentialForUpdate(credentialId);
@@ -137,7 +125,12 @@ public class CredentialManagementService {
 
         // check if offerData matches the expected metadata claims
         var offerData = readOfferData(offerDataMap);
-        validateOfferData(offerData);
+
+        var credentialOfferMetadata = storedCredentialOffer.getMetadataCredentialSupportedId().getFirst();
+
+        var credentialConfig = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
+
+        validateCredentialRequestOfferData(offerData, true, credentialConfig);
 
         // update the offer data
         storedCredentialOffer.markAsReadyForIssuance(offerData);
@@ -192,32 +185,22 @@ public class CredentialManagementService {
      */
     private void validateCredentialOfferCreateRequest(@Valid CreateCredentialOfferRequestDto createCredentialRequest) {
         var credentialOfferMetadata = createCredentialRequest.getMetadataCredentialSupportedId().getFirst();
-        if (!issuerMetadata.getCredentialConfigurationSupported().containsKey(credentialOfferMetadata)) {
-            throw new BadRequestException("Credential offer metadata %s is not supported - should be one of %s"
-                    .formatted(credentialOfferMetadata,
-                            String.join(", ", issuerMetadata.getCredentialConfigurationSupported().keySet())));
-        }
+
         // Date checks, if exists
         validateOfferedCredentialValiditySpan(createCredentialRequest);
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
 
-        var metadataClaims = Optional.ofNullable(credentialConfiguration.getClaims()).orElseGet(HashMap::new).keySet();
-        if (List.of("vc+sd-jwt", "dc+sd-jwt").contains(credentialConfiguration.getFormat())) {
-            var offerData = dataIntegrityService.getVerifiedOfferData(readOfferData(createCredentialRequest.getCredentialSubjectData()),
-                    null);
-
-            if (CollectionUtils.isEmpty(offerData)
-                    && (createCredentialRequest.getCredentialMetadata() == null
-                    || Boolean.FALSE.equals(createCredentialRequest.getCredentialMetadata().deferred()))) {
-                throw new BadRequestException("Credential claims (credential subject data) is missing!");
-            }
-
-            validateClaimsMissing(metadataClaims, offerData, credentialConfiguration);
-            validateClaimsSurplus(metadataClaims, offerData);
-        } else {
+        // Check if credential format is supported otherwise throw error
+        if (!List.of("vc+sd-jwt", "dc+sd-jwt").contains(credentialConfiguration.getFormat())) {
             throw new IllegalStateException("Unsupported credential configuration format %s, only supporting dc+sd-jwt"
                     .formatted(credentialConfiguration.getFormat()));
         }
+
+        var metadata = createCredentialRequest.getCredentialMetadata();
+        var isDeferredRequest = (metadata != null && Boolean.TRUE.equals(metadata.deferred()));
+        var offerData = readOfferData(createCredentialRequest.getCredentialSubjectData());
+
+        validateCredentialRequestOfferData(offerData, isDeferredRequest, credentialConfiguration);
     }
 
     /**
@@ -226,6 +209,7 @@ public class CredentialManagementService {
     private void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
         var surplusOfferedClaims = new HashSet<>(offerData.keySet());
         surplusOfferedClaims.removeAll(metadataClaims);
+
         if (!surplusOfferedClaims.isEmpty()) {
             throw new BadRequestException(
                     "Unexpected credential claims found! %s".formatted(String.join(",", surplusOfferedClaims)));
@@ -295,7 +279,6 @@ public class CredentialManagementService {
                 : applicationProperties.getOfferValidity());
         // Check if credentialSubjectData contains protected claims
         var offerData = readOfferData(requestDto.getCredentialSubjectData());
-        validateOfferData(offerData);
 
         // Get used status lists and ensure they are managed by the issuer
         var statusListUris = requestDto.getStatusLists();
@@ -305,7 +288,6 @@ public class CredentialManagementService {
                     statusLists.stream().map(StatusList::getUri).collect(Collectors.joining(", "))));
         }
         ensureMatchingIssuerDids(requestDto, statusLists);
-
 
         var entity = CredentialOffer.builder()
                 .credentialStatus(CredentialStatusType.OFFERED)
@@ -496,5 +478,37 @@ public class CredentialManagementService {
         }
 
         return "%s/%s".formatted(applicationProperties.getExternalUrl(), credential.getMetadataTenantId());
+    }
+
+    private void validateCredentialRequestOfferData(Map<String, Object> offerData,
+                                                    boolean isDeferredRequest,
+                                                    CredentialConfiguration credentialConfiguration) {
+
+        // with deferred requests the offer data can be empty initially if the data is set it must be validated
+        if (isDeferredRequest && CollectionUtils.isEmpty(offerData)) {
+            return;
+        }
+
+        // data cannot be empty
+        if (CollectionUtils.isEmpty(offerData)) {
+            throw new BadRequestException("Credential claims (credential subject data) is missing!");
+        }
+
+        var validatedOfferData = dataIntegrityService.getVerifiedOfferData(offerData, null);
+
+        // check if credentialSubjectData contains protected claims
+        List<String> reservedClaims = new ArrayList<>(validatedOfferData.keySet().stream()
+                .filter(SDJWT_PROTECTED_CLAIMS::contains)
+                .toList());
+
+        if (!reservedClaims.isEmpty()) {
+            throw new BadRequestException(
+                    "The following claims are not allowed in the credentialSubjectData: " + reservedClaims);
+        }
+
+        var metadataClaims = Optional.ofNullable(credentialConfiguration.getClaims()).orElseGet(HashMap::new).keySet();
+
+        validateClaimsMissing(metadataClaims, validatedOfferData, credentialConfiguration);
+        validateClaimsSurplus(metadataClaims, validatedOfferData);
     }
 }

@@ -287,7 +287,7 @@
           "value_type": "string"
         },
         "lastName": {
-          "mandatory": false,
+          "mandatory": true,
           "value_type": "string"
         },
         "firstName": {
