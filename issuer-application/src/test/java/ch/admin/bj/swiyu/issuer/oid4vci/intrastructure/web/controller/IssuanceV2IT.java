@@ -164,8 +164,8 @@ class IssuanceV2IT {
 
         var credentials = extractCredentialsV2(response);
 
-        // without proof only 1 credential is issued
-        assertEquals(1, credentials.size());
+        // without proof also configured batch size credential is issued
+        assertEquals(issuerMetadata.getIssuanceBatchSize(), credentials.size());
     }
 
     @Test
