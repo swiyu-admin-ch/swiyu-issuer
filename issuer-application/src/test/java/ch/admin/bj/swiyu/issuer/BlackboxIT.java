@@ -229,7 +229,7 @@ class BlackboxIT {
                                         oauthConfig.token_endpoint(),
                                         null,
                                         dpopKey
-                                ))
+                                )).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                                 .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                                 .param("pre-authorized_code", preAuthCode))
                         .andExpect(status().isOk())
