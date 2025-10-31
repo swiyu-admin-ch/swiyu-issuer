@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -48,7 +49,7 @@ class MetadataServiceTest {
         demonstratingProofOfPossessionService = mock(DemonstratingProofOfPossessionService.class);
 
         // ObjectMapper not needed for tested methods here
-        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties);
+        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
 
         override = new ConfigurationOverride(null, null, null, null);
         when(applicationProperties.getIssuerId()).thenReturn("did:example:issuer");
@@ -117,7 +118,7 @@ class MetadataServiceTest {
 
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
-        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties);
+        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
 
         JWSSigner signer = createDummySigner();
         when(signatureService.createSigner(sdjwtProperties, null, null)).thenReturn(signer);

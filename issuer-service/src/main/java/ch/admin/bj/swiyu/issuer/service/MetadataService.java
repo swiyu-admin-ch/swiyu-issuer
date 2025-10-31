@@ -36,7 +36,7 @@ public class MetadataService {
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final SdjwtProperties sdjwtProperties;
     private final ApplicationProperties applicationProperties;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     /**
      * Returns the issuer metadata without signing.
