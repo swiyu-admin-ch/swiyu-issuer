@@ -10,7 +10,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.At
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
-import ch.admin.bj.swiyu.issuer.service.DidTdwKeyResolver;
+import ch.admin.bj.swiyu.issuer.service.DidKeyResolver;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
@@ -60,7 +60,7 @@ class KeyAttestationFlowIT {
     private final UUID testOfferAnyAttestationId = UUID.randomUUID();
     private final UUID testOfferHighAttestationId = UUID.randomUUID();
     @MockitoBean
-    DidTdwKeyResolver resolver;
+    DidKeyResolver resolver;
 
     @Autowired
     MockMvc mock;
@@ -73,7 +73,7 @@ class KeyAttestationFlowIT {
     @MockitoBean
     AsyncCredentialEventHandler testEventListener;
     @Autowired
-    private DidTdwKeyResolver didTdwKeyResolver;
+    private DidKeyResolver didKeyResolver;
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -187,7 +187,7 @@ class KeyAttestationFlowIT {
     }
 
     private void mockDidResolve(JWK key) {
-        Mockito.when(didTdwKeyResolver.resolveKey(any())).thenReturn(key);
+        Mockito.when(didKeyResolver.resolveKey(any())).thenReturn(key);
     }
 
     private TestInfrastructureUtils.CredentialFetchData prepareAttested(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance) throws Exception {

@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   APPLICATION_ENCRYPTIONENFORCE=true. Overriding will break compatibility with wallets not supporting encryption.
 - Batch issuance now supports multiple indexes, preventing linkability through status list index.
   The used status list indexes are selected at random from remaining free indexes in status list.
+- Updated didresolver dependency from 2.1.3 to 2.3.0
 
 ### Changed
 
