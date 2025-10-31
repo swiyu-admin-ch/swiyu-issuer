@@ -218,12 +218,15 @@ public class DemonstratingProofOfPossessionValidationService {
     }
 
     private void hasMatchingHttpUri(HttpRequest request, JWTClaimsSet jwtClaims) throws URISyntaxException, ParseException {
-        if (isInvalidUrl(request.getURI(), jwtClaims.getStringClaim("htu"))) {
+        if (checkHtuClaim(request.getURI(), jwtClaims.getStringClaim("htu"))) {
             throw new DemonstratingProofOfPossessionException("URL mismatch between DPoP and request", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
         }
     }
 
-    private boolean isInvalidUrl(URI requestUri, String htu) throws URISyntaxException {
+    /**
+     * Check if the wallet created the DPoP of the URI we received the request on
+     */
+    private boolean checkHtuClaim(URI requestUri, String htu) throws URISyntaxException {
         // Create new URI without Query & Fragment, taking in account the external URI
         var externalUri = new URI(applicationProperties.getExternalUrl());
         var baseUri = new URI(requestUri.getScheme(),
