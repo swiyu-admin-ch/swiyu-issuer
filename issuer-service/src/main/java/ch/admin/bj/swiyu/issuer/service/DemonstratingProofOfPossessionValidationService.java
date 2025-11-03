@@ -80,10 +80,22 @@ public class DemonstratingProofOfPossessionValidationService {
         }
     }
 
-    private static void validateBoundPublicKey(SignedJWT dpopJwt, Map<String, Object> boundPublicKey) throws ParseException {
-        var boundPublicKeyJWK = JWK.parse(boundPublicKey);
-        if (!dpopJwt.getHeader().getJWK().equals(boundPublicKeyJWK)) {
-            throw new DemonstratingProofOfPossessionException("Key mismatch", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
+    /**
+     * Validate if the dpopJwt (provided key) and boundPublicKey (expected key) are the same
+     *
+     * @param dpopJwt        parsed dpop jwt
+     * @param boundPublicKey public key from initial registration or latest update of the bound dpop public key
+     */
+    public void validateBoundPublicKey(SignedJWT dpopJwt, Map<String, Object> boundPublicKey) {
+        try {
+            var boundPublicKeyJWK = JWK.parse(boundPublicKey);
+            if (!dpopJwt.getHeader().getJWK().equals(boundPublicKeyJWK)) {
+                throw new DemonstratingProofOfPossessionException("Key mismatch", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
+            }
+        } catch (ParseException e) {
+            // The previously registered key can not be parsed anymore.
+            // Something must have gone wrong in registration or the registered key got somehow corrupted.
+            throw new IllegalStateException("Bound public key can not be parsed anymore", e);
         }
     }
 

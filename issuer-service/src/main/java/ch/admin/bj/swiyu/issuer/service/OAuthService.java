@@ -3,7 +3,6 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
-import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
@@ -15,9 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
-
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_TRANSACTION_ID;
-import static java.util.Objects.isNull;
 
 /**
  * Service for performing OAuth 2.0 Authorization Server related tasks
@@ -37,6 +33,7 @@ public class OAuthService {
      * @param preAuthCode Pre-authorization code of holder
      * @return OAuth authorization token which can be used in credential service
      * endpoint
+     * @throws OAuthException if no offer was found with associated pre-auth_code
      */
     @Transactional
     public OAuthTokenDto issueOAuthToken(String preAuthCode) {
@@ -50,18 +47,9 @@ public class OAuthService {
         log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {} and new status is {}",
                 offer.getAccessToken(), offer.getId(), offer.getCredentialStatus());
         offer.markAsInProgress();
-        offer.setTokenIssuanceTimestamp(applicationProperties.getTokenTTL());
-
-        credentialOfferRepository.save(offer);
+        OAuthTokenDto oauthTokenResponse = updateOAuthTokens(offer);
         eventProducerService.produceStateChangeEvent(offer.getId(), offer.getCredentialStatus());
-
-        return OAuthTokenDto.builder()
-                .accessToken(offer.getAccessToken()
-                        .toString())
-                .expiresIn(applicationProperties.getTokenTTL())
-                .cNonce(offer.getNonce()
-                        .toString())
-                .build();
+        return oauthTokenResponse;
     }
 
     @Transactional
@@ -71,10 +59,57 @@ public class OAuthService {
                 .orElseThrow(() -> OAuthException.invalidToken("Invalid accessToken"));
     }
 
+    /**
+     * Use OAuth 2.0 refresh_token to get a fresh access_token and refresh_token
+     *
+     * @param refreshToken old refresh token
+     * @return OAuth2.0 response with access_token and refresh_token
+     * @throws OAuthException if no offer was found with associated refresh_token
+     */
+    @Transactional
+    public OAuthTokenDto refreshOAuthToken(String refreshToken) {
+        var offer = getUnrevokedCredentialOfferByRefreshToken(refreshToken);
+        log.info("Refreshing OAuth 2.0 token with refresh_token {}. Management ID is {} and associated status is {}",
+                refreshToken, offer.getId(), offer.getCredentialStatus());
+        offer.setTokenIssuanceTimestamp(applicationProperties.getTokenTTL());
+        return updateOAuthTokens(offer);
+    }
+
+    /**
+     * Update the OAuth 2.0 access_token and refresh_token
+     *
+     * @param offer credential offer which is being updated
+     * @return OAuthTokenDto with the new access and refresh token
+     */
+    private OAuthTokenDto updateOAuthTokens(CredentialOffer offer) {
+        offer.setTokenIssuanceTimestamp(applicationProperties.getTokenTTL());
+        offer.setAccessToken(UUID.randomUUID());
+        OAuthTokenDto.OAuthTokenDtoBuilder oauthTokenResponseBuilder = OAuthTokenDto.builder()
+                .accessToken(offer.getAccessToken().toString())
+                .expiresIn(applicationProperties.getTokenTTL())
+                .cNonce(offer.getNonce().toString());
+        if (applicationProperties.isAllowTokenRefresh()) {
+            var newRefreshToken = UUID.randomUUID();
+            offer.setRefreshToken(newRefreshToken);
+            oauthTokenResponseBuilder.refreshToken(newRefreshToken.toString());
+        }
+        credentialOfferRepository.save(offer);
+        return oauthTokenResponseBuilder.build();
+    }
+
+    private CredentialOffer getUnrevokedCredentialOfferByRefreshToken(String refreshToken) {
+        var uuid = uuidOrException(refreshToken);
+        return getNonRevokedCredentialOffer(credentialOfferRepository.findByRefreshToken(uuid)).orElseThrow(() -> OAuthException.invalidToken("Invalid refresh token"));
+    }
+
     private CredentialOffer getCredentialOfferByPreAuthCode(String preAuthCode) {
         var uuid = uuidOrException(preAuthCode);
         return getNonExpiredCredentialOffer(credentialOfferRepository.findByPreAuthorizedCode(uuid))
                 .orElseThrow(() -> OAuthException.invalidGrant("Invalid preAuthCode"));
+    }
+
+    private Optional<CredentialOffer> getNonRevokedCredentialOffer(Optional<CredentialOffer> credentialOffer) {
+        return credentialOffer.filter(offer -> offer.getCredentialStatus() != CredentialStatusType.REVOKED);
     }
 
     private Optional<CredentialOffer> getNonExpiredCredentialOffer(Optional<CredentialOffer> credentialOffer) {

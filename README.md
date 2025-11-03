@@ -253,6 +253,12 @@ The Generic Issuer service is configured using environment variables.
 | SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
 | SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal.  |
 
+#### Refresh functionality
+
+| Variable            | Description                                     |
+|:--------------------|:------------------------------------------------|
+| ALLOW_TOKEN_REFRESH | Enable OAuth 2.0 refresh token. (Default: true) |
+
 #### Caching
 
 | Variable                       | Description                                                                           |
@@ -744,14 +750,16 @@ yet pen-tested.
 
 Docker images for this project follow a formalized environment-based tagging approach:
 
-| Tag     | Meaning                  | Description                                                                                       |
-|---------|--------------------------|---------------------------------------------------------------------------------------------------|
-| dev     | Development Build        | Latest commit from the development branch. Automatically generated on every push to `main`.       |
-| staging | Integration Test Build   | Set at the end of a sprint or after completion of a feature for integration testing.              |
-| rc      | Release Candidate        | Frozen state prior to release and penetration testing.                                            |
-| stable  | Verified Production      | Released after successful QA and penetration testing.                                             |
+| Tag     | Meaning                | Description                                                                                 |
+|---------|------------------------|---------------------------------------------------------------------------------------------|
+| dev     | Development Build      | Latest commit from the development branch. Automatically generated on every push to `main`. |
+| staging | Integration Test Build | Set at the end of a sprint or after completion of a feature for integration testing.        |
+| rc      | Release Candidate      | Frozen state prior to release and penetration testing.                                      |
+| stable  | Verified Production    | Released after successful QA and penetration testing.                                       |
 
-These tags are assigned automatically or manually as part of the CI/CD workflow. This ensures that environments can reliably reference images by their lifecycle stage (e.g., `swiyu-issuer-service:staging`) without requiring manual version management.
+These tags are assigned automatically or manually as part of the CI/CD workflow. This ensures that environments can
+reliably reference images by their lifecycle stage (e.g., `swiyu-issuer-service:staging`) without requiring manual
+version management.
 
 ### Promotion Workflow
 
@@ -829,7 +837,8 @@ security vulnerabilities in the test system. These are marked as [‘KnownIssues
 
 ## Contributions and feedback
 
-We welcome any feedback on the code regarding both the implementation and security aspects. Please follow the guidelines for
+We welcome any feedback on the code regarding both the implementation and security aspects. Please follow the guidelines
+for
 contributing found in [CONTRIBUTING.md](/CONTRIBUTING.md).
 
 ## License

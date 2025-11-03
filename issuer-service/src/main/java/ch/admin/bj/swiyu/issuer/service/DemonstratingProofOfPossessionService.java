@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,6 +89,30 @@ public class DemonstratingProofOfPossessionService {
         var builder = openIdConfiguration.toBuilder();
         builder.dpop_signing_alg_values_supported(DemonstratingProofOfPossessionValidationService.getSupportedAlgorithms());
         return builder.build();
+    }
+
+    /**
+     * Used to refresh the DPoP binding for more details see <a href="https://datatracker.ietf.org/doc/html/rfc9449#section-5">DPoP Access Token Request</a>
+     * <br>
+     * When an authorization server supporting DPoP issues a refresh token to a public client that presents a valid DPoP proof at the token endpoint,
+     * <em>the refresh token MUST be bound to the respective public key</em>. The binding MUST be validated when the refresh token is later presented to get new access tokens.
+     * As a result, such a client MUST present a DPoP proof for the same key that was used to obtain the refresh token each time that refresh token is used to obtain
+     * a new access token.
+     *
+     * @param refreshToken OAuth2.0 refresh_token
+     * @param dpop         dpop for validating key binding
+     * @param request      http request with which the dpop was received for validating uri & method
+     */
+    @Transactional
+    public void refreshDpop(String refreshToken, String dpop, ServletServerHttpRequest request) {
+        if (isDpopUnused(dpop)) {
+            return;
+        }
+        var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
+        var credentialOffer = credentialOfferRepository.findByRefreshToken(UUID.fromString(refreshToken)).orElseThrow();
+        demonstratingProofOfPossessionValidationService.validateBoundPublicKey(dpopJwt, credentialOffer.getDpopKey());
+        credentialOffer.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
+        credentialOfferRepository.save(credentialOffer);
     }
 
 

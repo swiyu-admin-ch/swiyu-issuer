@@ -75,7 +75,6 @@ public class IssuanceController {
     private final ObjectMapper objectMapper;
 
 
-    // TODO Remove after checking with Wallet team that no more used
     @Deprecated(forRemoval = true)
     @Timed
     @PostMapping(value = {"/token"},
@@ -88,15 +87,22 @@ public class IssuanceController {
             @RequestParam(name = "refresh_token") @Nullable String refreshToken,
             HttpServletRequest request) {
 
-        if (StringUtils.isBlank(preAuthCode)) {
-            throw OAuthException.invalidRequest("Pre-authorized code is required");
-        }
-
-        if (!OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(grantType)) {
+        if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(grantType)) {
+            if (StringUtils.isBlank(preAuthCode)) {
+                throw OAuthException.invalidRequest("Pre-authorized code is required");
+            }
+            demonstratingProofOfPossessionService.registerDpop(preAuthCode, dpop, new ServletServerHttpRequest(request));
+            return oauthService.issueOAuthToken(preAuthCode);
+        } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(grantType)) {
+            demonstratingProofOfPossessionService.refreshDpop(
+                    refreshToken,
+                    dpop,
+                    new ServletServerHttpRequest(request)
+            );
+            return oauthService.refreshOAuthToken(refreshToken);
+        } else {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
-        demonstratingProofOfPossessionService.registerDpop(preAuthCode, dpop, new ServletServerHttpRequest(request));
-        return oauthService.issueOAuthToken(preAuthCode);
     }
 
     @Timed
@@ -120,29 +126,29 @@ public class IssuanceController {
             throw OAuthException.invalidRequest("The request is missing a required parameter");
         }
 
-
         if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
             if (StringUtils.isBlank(oauthAccessTokenRequestDto.preauthorized_code())) {
                 throw OAuthException.invalidRequest("Pre-authorized code is required");
             }
-
             demonstratingProofOfPossessionService.registerDpop(
                     oauthAccessTokenRequestDto.preauthorized_code(),
                     dpop,
                     new ServletServerHttpRequest(request));
             return oauthService.issueOAuthToken(oauthAccessTokenRequestDto.preauthorized_code());
         } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
-            if (StringUtils.isBlank(oauthAccessTokenRequestDto.refresh_token())) {
-                throw OAuthException.invalidRequest("Pre-authorized code is required");
+            String refreshToken = oauthAccessTokenRequestDto.refresh_token();
+            if (StringUtils.isBlank(refreshToken)) {
+                throw OAuthException.invalidRequest("Refresh Token is required");
             }
-
-            // TODO EIDOMNI-275 - allow use of Refresh token
-            throw new NotImplementedError("EIDOMNI-275");
-
+            demonstratingProofOfPossessionService.refreshDpop(
+                    refreshToken,
+                    dpop,
+                    new ServletServerHttpRequest(request)
+            );
+            return oauthService.refreshOAuthToken(refreshToken);
         } else {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
-
     }
 
     @Timed
