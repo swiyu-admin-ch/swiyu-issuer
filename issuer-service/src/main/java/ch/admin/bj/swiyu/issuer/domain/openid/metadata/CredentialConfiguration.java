@@ -10,6 +10,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
@@ -59,13 +60,14 @@ public class CredentialConfiguration {
     private CredentialDefinition credentialDefinition;
 
     /**
-     * Target representation of the holder public key material in the issued credential.
-     * The following is our current understanding of the purpose of the attribute:
-     * E.g. when specifying ["did:jwk","jwk"] this means that the binding public key provided by the
-     * holder is taken and put in the credentials one time as did:jwk and additionally as jwk.
-     * Mapping/converting of the original public key is applied where needed. Currently only did:jwk is supported.
+     * A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound to.
+     * If missing, credential will be issued as unbound VC.
      */
     @JsonProperty("cryptographic_binding_methods_supported")
+    @Schema(description = """
+                 A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound.
+                 If missing, credential will be issued as unbound VC.
+            """)
     @Valid
     private List<@Pattern(regexp = "^(did:)?jwk$", message = "Only jwk and did:jwk are supported") String> cryptographicBindingMethodsSupported;
 
