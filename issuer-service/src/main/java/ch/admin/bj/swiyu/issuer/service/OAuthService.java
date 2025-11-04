@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,8 +70,8 @@ public class OAuthService {
     @Transactional
     public OAuthTokenDto refreshOAuthToken(String refreshToken) {
         var offer = getUnrevokedCredentialOfferByRefreshToken(refreshToken);
-        log.info("Refreshing OAuth 2.0 token with refresh_token {}. Management ID is {} and associated status is {}",
-                refreshToken, offer.getId(), offer.getCredentialStatus());
+        log.info("Refreshing OAuth 2.0 token for Management ID is {} and associated status is {}",
+                offer.getId(), offer.getCredentialStatus());
         offer.setTokenIssuanceTimestamp(applicationProperties.getTokenTTL());
         return updateOAuthTokens(offer);
     }
@@ -83,11 +84,12 @@ public class OAuthService {
      */
     private OAuthTokenDto updateOAuthTokens(CredentialOffer offer) {
         offer.setTokenIssuanceTimestamp(applicationProperties.getTokenTTL());
-        offer.setAccessToken(UUID.randomUUID());
+        UUID newAccessToken = UUID.randomUUID();
+        offer.setAccessToken(newAccessToken);
         OAuthTokenDto.OAuthTokenDtoBuilder oauthTokenResponseBuilder = OAuthTokenDto.builder()
-                .accessToken(offer.getAccessToken().toString())
+                .accessToken(newAccessToken.toString())
                 .expiresIn(applicationProperties.getTokenTTL())
-                .cNonce(offer.getNonce().toString());
+                .cNonce(new SelfContainedNonce().toString());
         if (applicationProperties.isAllowTokenRefresh()) {
             var newRefreshToken = UUID.randomUUID();
             offer.setRefreshToken(newRefreshToken);

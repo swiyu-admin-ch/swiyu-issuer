@@ -88,18 +88,9 @@ public class IssuanceController {
             HttpServletRequest request) {
 
         if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(grantType)) {
-            if (StringUtils.isBlank(preAuthCode)) {
-                throw OAuthException.invalidRequest("Pre-authorized code is required");
-            }
-            demonstratingProofOfPossessionService.registerDpop(preAuthCode, dpop, new ServletServerHttpRequest(request));
-            return oauthService.issueOAuthToken(preAuthCode);
+            return oauthTokenPreAuthorized(dpop, request, preAuthCode);
         } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(grantType)) {
-            demonstratingProofOfPossessionService.refreshDpop(
-                    refreshToken,
-                    dpop,
-                    new ServletServerHttpRequest(request)
-            );
-            return oauthService.refreshOAuthToken(refreshToken);
+            return oauthRefreshToken(dpop, request, refreshToken);
         } else {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
@@ -127,25 +118,11 @@ public class IssuanceController {
         }
 
         if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
-            if (StringUtils.isBlank(oauthAccessTokenRequestDto.preauthorized_code())) {
-                throw OAuthException.invalidRequest("Pre-authorized code is required");
-            }
-            demonstratingProofOfPossessionService.registerDpop(
-                    oauthAccessTokenRequestDto.preauthorized_code(),
-                    dpop,
-                    new ServletServerHttpRequest(request));
-            return oauthService.issueOAuthToken(oauthAccessTokenRequestDto.preauthorized_code());
+            String preauthorizedCode = oauthAccessTokenRequestDto.preauthorized_code();
+            return oauthTokenPreAuthorized(dpop, request, preauthorizedCode);
         } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
             String refreshToken = oauthAccessTokenRequestDto.refresh_token();
-            if (StringUtils.isBlank(refreshToken)) {
-                throw OAuthException.invalidRequest("Refresh Token is required");
-            }
-            demonstratingProofOfPossessionService.refreshDpop(
-                    refreshToken,
-                    dpop,
-                    new ServletServerHttpRequest(request)
-            );
-            return oauthService.refreshOAuthToken(refreshToken);
+            return oauthRefreshToken(dpop, request, refreshToken);
         } else {
             throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
@@ -318,6 +295,29 @@ public class IssuanceController {
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())
                 .headers(headers)
                 .body(credentialEnvelope.getOid4vciCredentialJson());
+    }
+
+    private OAuthTokenDto oauthRefreshToken(String dpop, HttpServletRequest request, String refreshToken) {
+        if (StringUtils.isBlank(refreshToken)) {
+            throw OAuthException.invalidRequest("Refresh Token is required");
+        }
+        demonstratingProofOfPossessionService.refreshDpop(
+                refreshToken,
+                dpop,
+                new ServletServerHttpRequest(request)
+        );
+        return oauthService.refreshOAuthToken(refreshToken);
+    }
+
+    private OAuthTokenDto oauthTokenPreAuthorized(String dpop, HttpServletRequest request, String preauthorizedCode) {
+        if (StringUtils.isBlank(preauthorizedCode)) {
+            throw OAuthException.invalidRequest("Pre-authorized code is required");
+        }
+        demonstratingProofOfPossessionService.registerDpop(
+                preauthorizedCode,
+                dpop,
+                new ServletServerHttpRequest(request));
+        return oauthService.issueOAuthToken(preauthorizedCode);
     }
 
     private String getAccessToken(String bearerToken) {
