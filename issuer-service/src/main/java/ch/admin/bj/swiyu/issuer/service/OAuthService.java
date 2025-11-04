@@ -89,7 +89,7 @@ public class OAuthService {
         OAuthTokenDto.OAuthTokenDtoBuilder oauthTokenResponseBuilder = OAuthTokenDto.builder()
                 .accessToken(newAccessToken.toString())
                 .expiresIn(applicationProperties.getTokenTTL())
-                .cNonce(new SelfContainedNonce().toString());
+                .cNonce(offer.getNonce().toString());
         if (applicationProperties.isAllowTokenRefresh()) {
             var newRefreshToken = UUID.randomUUID();
             offer.setRefreshToken(newRefreshToken);

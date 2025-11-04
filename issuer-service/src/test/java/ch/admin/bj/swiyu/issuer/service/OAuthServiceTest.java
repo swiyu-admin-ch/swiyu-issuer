@@ -48,6 +48,7 @@ class OAuthServiceTest {
         var mockOffer = Mockito.mock(CredentialOffer.class);
         Mockito.when(credentialOfferRepository.findByRefreshToken(refreshToken)).thenReturn(Optional.ofNullable(mockOffer));
         Mockito.when(mockOffer.getCredentialStatus()).thenReturn(CredentialStatusType.DEFERRED);
+        Mockito.when(mockOffer.getNonce()).thenReturn(UUID.randomUUID());
         Assertions.assertDoesNotThrow(() -> oauthService.refreshOAuthToken(refreshToken.toString()));
     }
 }
