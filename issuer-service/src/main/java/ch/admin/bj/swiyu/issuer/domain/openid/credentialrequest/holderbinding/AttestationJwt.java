@@ -50,7 +50,7 @@ public final class AttestationJwt {
         validateHeader(parsedJwt.getHeader());
         validateBody(claims);
         // Validation between Header and body
-        if (!parsedJwt.getHeader().getKeyID().startsWith(claims.getIssuer())) {
+        if (!parsedJwt.getHeader().getKeyID().split("#")[0].equals(claims.getIssuer())) {
             throw new IllegalArgumentException("The key id must conform to the did syntax (did:webvh ...)");
         }
         return new AttestationJwt(parsedJwt, extractSupportedAttackPotentialResistance(claims));
