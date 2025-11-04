@@ -24,13 +24,10 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -46,7 +43,7 @@ class KeycloakJWTTest {
     static final String MANAGEMENT_BASE_URL = "/management/api/credentials";
     static final String STATUS_BASE_URL = "/management/api/status-list";
     static final String MINIMAL_PAYLOAD = """
-            {"metadata_credential_supported_id":["test"],"credential_subject_data":{"hello":"world"}}
+            {"metadata_credential_supported_id":["test"],"credential_subject_data":{"hello":"world", "lastName":"lastName"}}
             """;
 
     static final DockerImageName KC_IMAGE = DockerImageName.parse("quay.io/keycloak/keycloak:25.0");
@@ -54,10 +51,30 @@ class KeycloakJWTTest {
     static final int KC_PORT = 8080;
     static final String KC_CLIENT_ID = "issuer-client";
     static final String KC_CLIENT_SECRET = "Pa$$w0rd";
-
+    private static final String REALM_JSON = """
+            {
+                "realm": "trust",
+                "enabled": true,
+                "sslRequired": "NONE",
+                "clients": [
+                    {
+                        "clientId": "%s",
+                        "enabled": true,
+                        "protocol": "openid-connect",
+                        "publicClient": false,
+                        "secret": "%s",
+                        "serviceAccountsEnabled": true,
+                        "standardFlowEnabled": false,
+                        "directAccessGrantsEnabled": false,
+                        "redirectUris": [
+                            "*"
+                        ]
+                    }
+                ]
+            }
+            """.formatted(KC_CLIENT_ID, KC_CLIENT_SECRET);
     static GenericContainer<?> keycloak;
     static String issuerUri;
-
     @Autowired
     MockMvc mvc;
 
@@ -93,6 +110,33 @@ class KeycloakJWTTest {
         registry.add("spring.security.oauth2.resourceserver.jwt.jws-algorithms", () -> "RS256");
     }
 
+    private static String getClientCredentialsToken(final String issuer, final String clientId,
+                                                    final String clientSecret) throws Exception {
+        final String tokenEndpoint = String.format("%s/protocol/openid-connect/token", issuer);
+
+        final OkHttpClient client = new OkHttpClient();
+        final RequestBody form = new FormBody.Builder()
+                .add("grant_type", "client_credentials")
+                .add("client_id", clientId)
+                .add("client_secret", clientSecret)
+                .build();
+
+        final Request req = new Request.Builder()
+                .url(tokenEndpoint)
+                .post(form)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .build();
+
+        try (final var resp = client.newCall(req).execute()) {
+            if (!resp.isSuccessful()) {
+                throw new IllegalStateException("Keycloak token endpoint failed: " + resp.code() + " "
+                        + resp.message());
+            }
+            Assertions.assertNotNull(resp.body());
+            final String body = resp.body().string();
+            return JsonPath.read(body, "$.access_token");
+        }
+    }
 
     @Test
     void testPublicAccessWellKnown() throws Exception {
@@ -176,55 +220,4 @@ class KeycloakJWTTest {
                         .header(HttpHeaders.AUTHORIZATION, authorization))
                 .andExpect(status().isNotFound());
     }
-
-    private static String getClientCredentialsToken(final String issuer, final String clientId,
-                                                    final String clientSecret) throws Exception {
-        final String tokenEndpoint = String.format("%s/protocol/openid-connect/token", issuer);
-
-        final OkHttpClient client = new OkHttpClient();
-        final RequestBody form = new FormBody.Builder()
-                .add("grant_type", "client_credentials")
-                .add("client_id", clientId)
-                .add("client_secret", clientSecret)
-                .build();
-
-        final Request req = new Request.Builder()
-                .url(tokenEndpoint)
-                .post(form)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .build();
-
-        try (final var resp = client.newCall(req).execute()) {
-            if (!resp.isSuccessful()) {
-                throw new IllegalStateException("Keycloak token endpoint failed: " + resp.code() + " "
-                        + resp.message());
-            }
-            Assertions.assertNotNull(resp.body());
-            final String body = resp.body().string();
-            return JsonPath.read(body, "$.access_token");
-        }
-    }
-
-    private static final String REALM_JSON = """
-            {
-                "realm": "trust",
-                "enabled": true,
-                "sslRequired": "NONE",
-                "clients": [
-                    {
-                        "clientId": "%s",
-                        "enabled": true,
-                        "protocol": "openid-connect",
-                        "publicClient": false,
-                        "secret": "%s",
-                        "serviceAccountsEnabled": true,
-                        "standardFlowEnabled": false,
-                        "directAccessGrantsEnabled": false,
-                        "redirectUris": [
-                            "*"
-                        ]
-                    }
-                ]
-            }
-            """.formatted(KC_CLIENT_ID, KC_CLIENT_SECRET);
 }

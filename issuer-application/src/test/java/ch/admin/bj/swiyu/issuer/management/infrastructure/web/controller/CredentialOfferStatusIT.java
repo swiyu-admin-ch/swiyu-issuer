@@ -235,7 +235,7 @@ class CredentialOfferStatusIT {
         var usedStatusLists = offers.stream().map(CredentialOfferStatus::getId).map(CredentialOfferStatusKey::getStatusListId).distinct().toList();
         assertThat(usedStatusLists).as("Only one status list should have been used").hasSize(1);
         assertThat(credentialOfferStatusRepository.countByStatusListId(usedStatusLists.getFirst())).as("All entries should be filled").isEqualTo(STATUS_LIST_MAX_LENGTH);
-        String payload = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
+        String payload = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\",\"lastName\" : \"lastName\"}, \"status_lists\": [\"%s\"]}"
                 .formatted(statusRegistryUrl);
         mvc
                 .perform(post(CredentialOfferTestHelper.BASE_URL).contentType("application/json").content(payload))

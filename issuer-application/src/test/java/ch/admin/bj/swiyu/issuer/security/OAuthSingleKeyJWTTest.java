@@ -51,6 +51,9 @@ class OAuthSingleKeyJWTTest {
     static final String STATUS_BASE_URL = "/management/api/status-list";
     static RSAKey rsaKey;
     static Path publicKeyPath = Path.of("target/test/public-key.pem");
+    private final String minPayloadWithEmptySubject = String.format(
+            "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\": \"lastName\"}}",
+            "test");
     @Autowired
     private MockMvc mvc;
 
@@ -102,9 +105,6 @@ class OAuthSingleKeyJWTTest {
     @Test
     void testManagementEndpoint_whenUnauthorized() throws Exception {
 
-        String minPayloadWithEmptySubject = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}}",
-                "test");
         // Expect the endpoints to block requests if not authorized
         mvc.perform(post(MANAGEMENT_BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
                 .andExpect(status().isUnauthorized());
@@ -123,9 +123,7 @@ class OAuthSingleKeyJWTTest {
         mvc.perform(get(MANAGEMENT_BASE_URL + "/" + randomUUID)
                         .header("Authorization", "Bearer " + bearerToken))
                 .andExpect(status().isNotFound());
-        String minPayloadWithEmptySubject = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}}",
-                "test");
+
         var result = mvc.perform(post(MANAGEMENT_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(minPayloadWithEmptySubject)

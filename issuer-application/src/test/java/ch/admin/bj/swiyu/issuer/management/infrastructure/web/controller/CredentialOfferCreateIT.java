@@ -17,7 +17,10 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
@@ -93,7 +96,7 @@ class CredentialOfferCreateIT {
     void testCreateOffer_thenSuccess() throws Exception {
         String metadataCredentialSupportedId = "test";
         String minPayloadWithEmptySubject = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}}",
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\":\"lastName\"}}",
                 metadataCredentialSupportedId);
 
         var test = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
@@ -128,7 +131,7 @@ class CredentialOfferCreateIT {
 
         String now = new SimpleDateFormat(ISO8601_FORMAT).format(new Date(new Date().getTime() + 1000));
         String minPayloadWithValidUntil = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}",
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\": \"lastName\"}, \"credential_valid_until\" : \"%s\"}",
                 metadataCredentialSupportedId, now);
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isOk());
@@ -138,15 +141,14 @@ class CredentialOfferCreateIT {
     @Transactional
     void testCreateOfferOverrideConfiguration_thenSuccess() throws Exception {
         final String metadataCredentialSupportedId = "test";
-        final Map.Entry<String, String> credentialSubjectData = Map.entry("hello", "world");
-        final String expectedCredentialSubjectData = String.format("{\"%s\":\"%s\"}", credentialSubjectData.getKey(), credentialSubjectData.getValue());
+        final String expectedCredentialSubjectData = "{\"hello\":\"world\",\"lastName\":\"lastName\"}";
         final String issuerDid = "did:example:offer";
         final String verificationMethod = "did:example:offer#key1";
         final String keyId = "keyidrandom";
         final String keyPin = "4032";
         final String payload = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"%s\": \"%s\"}, \"configuration_override\":{\"issuer_did\":\"%s\",\"verification_method\":\"%s\",\"key_id\":\"%s\",\"key_pin\":\"%s\"}}",
-                metadataCredentialSupportedId, credentialSubjectData.getKey(), credentialSubjectData.getValue(), issuerDid, verificationMethod, keyId, keyPin);
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": %s, \"configuration_override\":{\"issuer_did\":\"%s\",\"verification_method\":\"%s\",\"key_id\":\"%s\",\"key_pin\":\"%s\"}}",
+                metadataCredentialSupportedId, expectedCredentialSubjectData, issuerDid, verificationMethod, keyId, keyPin);
 
         final MvcResult result = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(payload))
                 .andExpect(status().isOk())
@@ -189,7 +191,7 @@ class CredentialOfferCreateIT {
     @Test
     void testCreateOffer_unexpectedClaim_thenBadRequest() throws Exception {
         String minPayloadWithValidUntil = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"%s\": \"arbitrary claim\"}}",
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"%s\": \"arbitrary claim\",  \"lastName\": \"lastName\"}}",
                 "test", UUID.randomUUID());
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isBadRequest())
@@ -210,7 +212,7 @@ class CredentialOfferCreateIT {
     void testCreateOffer_noMilliseconds_thenSuccess() throws Exception {
         String validUntilNoMilliseconds = "3025-02-25T15:55:11Z";
         String minPayloadWithValidUntil = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\"}, \"credential_valid_until\" : \"%s\"}",
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\": \"lastName\"}, \"credential_valid_until\" : \"%s\"}",
                 "test", validUntilNoMilliseconds);
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isOk());
@@ -272,7 +274,8 @@ class CredentialOfferCreateIT {
                 {
                   "metadata_credential_supported_id": ["test"],
                   "credential_subject_data": {
-                    "hello": "world"
+                    "hello": "world",
+                    "lastName":"lastName"
                   },
                   "offer_validity_seconds": 36000,
                   "deferred_offer_validity_seconds": 37000
@@ -306,7 +309,8 @@ class CredentialOfferCreateIT {
                 {
                   "metadata_credential_supported_id": ["test"],
                   "credential_subject_data": {
-                    "hello": "world"
+                    "hello": "world",
+                     "lastName": "lastName"
                   },
                   "offer_validity_seconds": 36000,
                   "credential_metadata": {
@@ -330,7 +334,8 @@ class CredentialOfferCreateIT {
                 {
                   "metadata_credential_supported_id": ["test"],
                   "credential_subject_data": {
-                    "hello": "world"
+                    "hello": "world",
+                     "lastName": "lastName"
                   },
                   "offer_validity_seconds": 36000,
                   "credential_metadata": {
@@ -403,7 +408,7 @@ class CredentialOfferCreateIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Unexpected credential claims found! %s".formatted(claim)))
+                .andExpect(jsonPath("$.detail").value("The following claims are not allowed in the credentialSubjectData: [%s]".formatted(claim)))
                 .andReturn();
     }
 
@@ -424,7 +429,7 @@ class CredentialOfferCreateIT {
 
         final CreateCredentialOfferRequestDto firstCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of("hello", "world"))
+                .credentialSubjectData(Map.of("hello", "world", "lastName", "lastName"))
                 .statusLists(List.of(firstStatusListDto.getStatusRegistryUrl()))
                 .configurationOverride(new ConfigurationOverrideDto(firstIssuer, null, null, null))
                 .build();
@@ -445,7 +450,7 @@ class CredentialOfferCreateIT {
 
         final CreateCredentialOfferRequestDto secondCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of("hello", "sky"))
+                .credentialSubjectData(Map.of("hello", "sky", "lastName", "lastName"))
                 .statusLists(List.of(secondStatusListDto.getStatusRegistryUrl()))
                 .configurationOverride(new ConfigurationOverrideDto(secondIssuer, null, null, null))
                 .build();
