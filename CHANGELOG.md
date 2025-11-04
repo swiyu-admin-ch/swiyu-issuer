@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added possibility to update status list manually and disable the automatic synicnhronization.
+  New environment variable `DISABLE_STATUS_LIST_SYNCHRONIZATION` (default: false) to disable automatic updates.
+  New endpoint `/management/api/status-list/{statusListId}` to trigger manual update of a status list.
 - Added new endpoints for signed metadata. The functionality is disabled by default at the moment and can be
   enabled by setting the environment variable `ENABLE_SIGNED_METADATA=true`. This will generate a deeplink with an
   additional tenant id.

@@ -10,6 +10,8 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
@@ -19,6 +21,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.SignatureService;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
@@ -26,6 +30,7 @@ import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -36,18 +41,20 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -79,6 +86,8 @@ class StatusListIT {
     private ApiClient mockApiClient;
     @Autowired
     private IssuerMetadata issuerMetadata;
+    @MockitoSpyBean
+    private ApplicationProperties applicationProperties;
 
 
     @BeforeEach
@@ -99,6 +108,19 @@ class StatusListIT {
 
     @Test
     void createNewStatusList_thenSuccess() throws Exception {
+        JsonObject statusList = createStatusList();
+
+        final Optional<StatusList> newStatusListOpt = statusListRepository.findById(UUID.fromString(statusList.get("id").getAsString()));
+        assertTrue(newStatusListOpt.isPresent());
+        final StatusList newStatusList = newStatusListOpt.get();
+        assertNotNull(newStatusList.getUri());
+        assertNull(newStatusList.getConfigurationOverride().issuerDid());
+        assertNull(newStatusList.getConfigurationOverride().verificationMethod());
+        assertNull(newStatusList.getConfigurationOverride().keyId());
+        assertNull(newStatusList.getConfigurationOverride().keyPin());
+    }
+
+    private @NotNull JsonObject createStatusList() throws Exception {
         var type = "TOKEN_STATUS_LIST";
         var maxLength = 255;
         var bits = 2;
@@ -115,31 +137,10 @@ class StatusListIT {
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
                 .andExpect(jsonPath("$.remainingListEntries").value(maxLength))
                 .andExpect(jsonPath("$.config.bits").value(bits))
-                .andReturn();
+                .andReturn().getResponse()
+                .getContentAsString();
 
-        final UUID newStatusListId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
-
-        // check if get info endpoint return the same values
-        mvc.perform(get(STATUS_LIST_BASE_URL + "/" + newStatusListId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNotEmpty())
-                .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
-                .andExpect(jsonPath("$.type").value(type))
-                .andExpect(jsonPath("$.maxListEntries").value(maxLength))
-                .andExpect(jsonPath("$.remainingListEntries").value(maxLength))
-                .andExpect(jsonPath("$.config.bits").value(bits));
-
-        final Optional<StatusList> newStatusListOpt = statusListRepository.findById(newStatusListId);
-        assertTrue(newStatusListOpt.isPresent());
-        final StatusList newStatusList = newStatusListOpt.get();
-        assertNotNull(newStatusList.getUri());
-        assertEquals(type, newStatusList.getType().toString());
-        assertEquals(maxLength, newStatusList.getMaxLength());
-        assertEquals(bits, newStatusList.getConfig().get("bits"));
-        assertNull(newStatusList.getConfigurationOverride().issuerDid());
-        assertNull(newStatusList.getConfigurationOverride().verificationMethod());
-        assertNull(newStatusList.getConfigurationOverride().keyId());
-        assertNull(newStatusList.getConfigurationOverride().keyPin());
+        return JsonParser.parseString(result).getAsJsonObject();
     }
 
     @Test
@@ -191,7 +192,7 @@ class StatusListIT {
     }
 
     @Test
-    void getNotExistingStatusList_thenSuccess() throws Exception {
+    void getNotExistingStatusList_thenIsNotFound() throws Exception {
         var notExistingstatusListUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
         var requestUrl = String.format("%s/%s", STATUS_LIST_BASE_URL, notExistingstatusListUUID);
         String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\"}, \"status_lists\": [\"%s\"]}"
@@ -287,7 +288,7 @@ class StatusListIT {
     }
 
     @Test
-    void createStatusList_maxLengthExceededWithBits_thenSuccess() throws Exception {
+    void createStatusList_maxLengthExceededWithBits_thenUnprocessableEntity() throws Exception {
         var bits = 2;
         var invalidMaxLength = (statusListProperties.getStatusListSizeLimit() / bits) + 1;
         var payload = getCreateTokenStatusListPayload(invalidMaxLength, bits);
@@ -304,7 +305,7 @@ class StatusListIT {
     }
 
     @Test
-    void createStatusList_invalidConfig_thenSuccess() throws Exception {
+    void createStatusList_invalidConfig_thenUnprocessableEntity() throws Exception {
         var bits = 3;
         var validMaxLength = 100;
         var payload = getCreateTokenStatusListPayload(validMaxLength, bits);
@@ -336,6 +337,85 @@ class StatusListIT {
         assertTrue(result.contains("config: must not be null"));
     }
 
+    @Test
+    void updateStatusList_whenDisabled_throwsException() throws Exception {
+
+        mvc.perform(post(STATUS_LIST_BASE_URL + "/" + statusListUUID)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().is5xxServerError())
+                .andExpect(jsonPath("$.detail").value("Automatic status list synchronization is enabled. Manual update via API is disabled."))
+                .andExpect(jsonPath("$.error_description").value("Internal Server Error"));
+    }
+
+    @Test
+    void updateStatusList_withInvalidStatusList_throwsException() throws Exception {
+
+        when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true);
+
+        mvc.perform(post(STATUS_LIST_BASE_URL + "/" + statusListUUID)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error_description").value("Not Found"));
+    }
+
+    @Test
+    void updateStatusList_checkIfRegistryCalled_throwsException() throws Exception {
+
+        var statusList = createStatusList();
+
+        when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true);
+
+        var offer = createOffer(statusList);
+
+        var accessToken = getAccessTokenFromDeeplink(mvc, offer.get("offer_deeplink").getAsString());
+
+        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
+                .boxed()
+                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .toList();
+
+        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+
+        requestCredentialV2(mvc, accessToken, credentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        //  revoke credential
+        mvc.perform(patch(getUpdateUrl(UUID.fromString(offer.get("management_id").getAsString()), CredentialStatusTypeDto.REVOKED)))
+                .andExpect(status().isOk());
+
+        // should be only called once on status list create
+        verify(statusBusinessApi, times(1)).updateStatusListEntry(any(), any(), any());
+    }
+
+    @Test
+    void updateStatusList_checkIfRegistryCalledWithAutomaticUpdate_thenSuccess() throws Exception {
+
+        var statusList = createStatusList();
+
+        var offer = createOffer(statusList);
+
+        var accessToken = getAccessTokenFromDeeplink(mvc, offer.get("offer_deeplink").getAsString());
+
+        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
+                .boxed()
+                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .toList();
+
+        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+
+        requestCredentialV2(mvc, accessToken, credentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        //  revoke credential
+        mvc.perform(patch(getUpdateUrl(UUID.fromString(offer.get("management_id").getAsString()), CredentialStatusTypeDto.REVOKED)))
+                .andExpect(status().isOk());
+
+        // should be only called once on status list create
+        verify(statusBusinessApi, times(issuerMetadata.getIssuanceBatchSize() + 1)).updateStatusListEntry(any(), any(), any());
+    }
+
     private String getCreateTokenStatusListPayload(int maxLength, int bits) {
         return String.format("{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", maxLength, bits);
     }
@@ -343,4 +423,41 @@ class StatusListIT {
     private String getCreateStatusListPayload(String type, int maxLength, int bits) {
         return String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength, bits);
     }
+
+    private JsonObject createOffer(JsonObject statusList) throws Exception {
+
+        String offerData = """
+                {
+                    "type": "UniversityDegreeCredential",
+                    "name": "Bachelor of Science"
+                  }""";
+        // We add the data to the other parts needed for offering a credential
+        String jsonPayload = String.format("""
+                {
+                  "metadata_credential_supported_id": ["university_example_sd_jwt"],
+                  "credential_subject_data": %s,
+                  "offer_validity_seconds": 36000,
+                  "status_lists": ["%s"]
+                }
+                """, offerData, statusList.get("statusRegistryUrl").getAsString());
+
+        var response = mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return JsonParser.parseString(response).getAsJsonObject();
+    }
+
+    public String getUpdateUrl(UUID id, CredentialStatusTypeDto credentialStatus) {
+        return String.format("%s?credentialStatus=%s", getUrl(id), credentialStatus);
+    }
+
+    String getUrl(UUID id) {
+        return String.format("%s/%s/status", BASE_URL, id);
+    }
+
 }

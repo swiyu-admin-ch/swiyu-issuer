@@ -101,6 +101,8 @@ public class ApplicationProperties {
 
     private boolean dpopEnforce;
 
+    private boolean automaticStatusListSynchronizationDisabled;
+
     private String dataIntegrityJwks;
     private JWKSet dataIntegrityKeySet;
     private boolean dataIntegrityEnforced;
@@ -121,5 +123,4 @@ public class ApplicationProperties {
                     "Provided Allow JWKSet can not be parsed! %s".formatted(authenticationJwks));
         }
     }
-
 }
