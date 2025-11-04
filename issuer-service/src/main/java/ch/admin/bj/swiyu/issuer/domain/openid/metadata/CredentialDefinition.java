@@ -29,11 +29,4 @@ public class CredentialDefinition {
      */
     @JsonProperty("@context")
     private List<String> context;
-
-    public List<String> getMandatoryClaims() {
-        return credentialSubject.entrySet().stream()
-                .filter(entry -> entry.getValue().isMandatory())
-                .map(Map.Entry::getKey)
-                .toList();
-    }
 }
