@@ -82,6 +82,19 @@ public class StatusListService {
         }
     }
 
+    /**
+     * Updates the status list identified by {@code statusListId} and synchronizing
+     * the entry with the external status registry.
+     *
+     * <p>The method enforces that automatic status list synchronization is enabled by default in the
+     * application configuration.</p>
+     *
+     * @param statusListId the UUID of the status list to update
+     * @return a {@link StatusListDto} representing the updated status list
+     * @throws BadRequestException       if automatic status list synchronization is not disabled
+     * @throws ResourceNotFoundException if no status list with the given id exists
+     * @throws ConfigurationException    if the status payload cannot be loaded/decoded
+     */
     @Transactional
     public StatusListDto updateStatusList(UUID statusListId) {
         if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
