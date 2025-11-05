@@ -54,7 +54,18 @@ public class CredentialManagementService {
     private final AvailableStatusListIndexRepository availableStatusListIndexRepository;
     private final Random random = new Random();
 
-    @Transactional // not readonly since expired credentails gets updated here automatically
+    /**
+     * Retrieve public information about a credential offer.
+     *
+     * <p>This method will check the credential's expiration and update its state if necessary
+     * (hence the method is not read-only). It also constructs the deeplink representation
+     * of the offer and maps the result to a DTO suitable for clients.</p>
+     *
+     * @param credentialId the id of the credential offer
+     * @return a {@link CredentialInfoResponseDto} containing credential offer information and a deeplink
+     * @throws ResourceNotFoundException if no credential with the given id exists
+     */
+    @Transactional
     public CredentialInfoResponseDto getCredentialOfferInformation(UUID credentialId) {
         var credential = this.getCredential(credentialId);
         var deeplink = getOfferDeeplinkFromCredential(credential);
@@ -62,13 +73,39 @@ public class CredentialManagementService {
         return toCredentialInfoResponseDto(credential, deeplink);
     }
 
-    @Transactional // not readonly since expired credentails gets updated here automatically
+    /**
+     * Retrieve the deeplink URL for a credential offer.
+     *
+     * <p>This method loads the credential offer identified by {@code credentialId} and will
+     * update its state if it has expired (therefore the method is marked {@code @Transactional}
+     * and is not read-only). The returned value is the URL-encoded deeplink representation
+     * of the credential offer.</p>
+     *
+     * @param credentialId the id of the credential offer
+     * @return the deeplink string for the credential offer
+     * @throws ResourceNotFoundException if no credential with the given id exists
+     * @throws JsonException             if the credential offer cannot be serialized to JSON
+     */
+    @Transactional
     public String getCredentialOfferDeeplink(UUID credentialId) {
         var credential = this.getCredential(credentialId);
         return this.getOfferDeeplinkFromCredential(credential);
 
     }
 
+    /**
+     * Update the status of a credential offer.
+     *
+     * <p>Loads the credential with a pessimistic write lock, converts the incoming
+     * {@code requestedNewStatus} DTO to the internal {@link CredentialStatusType},
+     * performs the status transition and returns a DTO with the updated state.</p>
+     *
+     * @param credentialId       the id of the credential offer to update
+     * @param requestedNewStatus the requested new status DTO
+     * @return an {@link UpdateStatusResponseDto} describing the updated credential status
+     * @throws ResourceNotFoundException if no credential offer with the given id exists
+     * @throws BadRequestException       if the requested transition is invalid or cannot be performed
+     */
     @Transactional
     public UpdateStatusResponseDto updateCredentialStatus(@NotNull UUID credentialId,
                                                           @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
@@ -79,13 +116,37 @@ public class CredentialManagementService {
         return toUpdateStatusResponseDto(credential);
     }
 
-    @Transactional // not readonly since expired credentials gets updated here automatically
+    /**
+     * Retrieve the current status of a credential offer.
+     *
+     * <p>Loads the credential and returns a mapped {@link StatusResponseDto}. This method is
+     * transactional and not read-only because loading the credential may update its state when
+     * the offer has expired.</p>
+     *
+     * @param credentialId the id of the credential offer
+     * @return the {@link StatusResponseDto} representing the credential's current status
+     * @throws ResourceNotFoundException if no credential with the given id exists
+     */
+    @Transactional
     public StatusResponseDto getCredentialStatus(UUID credentialId) {
         CredentialOffer credential = this.getCredential(credentialId);
         return toStatusResponseDto(credential);
     }
 
     @Transactional
+    /**
+     * Create a credential offer and return its deeplink.
+     *
+     * <p>Validates the provided request, determines the issuance batch size from
+     * the issuer metadata, creates and persists a new credential offer and then
+     * builds the deeplink representation for the created offer.</p>
+     *
+     * @param request the create credential offer request
+     * @return a {@link CredentialWithDeeplinkResponseDto} containing the created credential offer and its deeplink
+     * @throws BadRequestException if the request is invalid or referenced resources cannot be resolved
+     * @throws IllegalStateException if the credential configuration format is unsupported
+     * @throws JsonException if the created credential offer cannot be serialized to build the deeplink
+     */
     public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(@Valid CreateCredentialOfferRequestDto request) {
 
         validateCredentialOfferCreateRequest(request);
@@ -95,9 +156,16 @@ public class CredentialManagementService {
         return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(credential, offerLinkString);
     }
 
+
     /**
-     * Set the state of all expired credential offers to expired and delete the
-     * person data associated with it.
+     * Scheduled job that expires credential offers whose expiration timestamp has passed.
+     *
+     * <p>Finds offers in expirable states with an offer expiration timestamp less than the
+     * current time, updates their status to {@link CredentialStatusType#EXPIRED} and triggers
+     * the usual status-change processing (including deletion of associated person data).
+     * Runs according to the configured {@code application.offer-expiration-interval} and uses
+     * a distributed lock ("expireOffers") to avoid concurrent execution across instances.
+     * Executes within a transaction.</p>
      */
     @Scheduled(initialDelay = 0, fixedDelayString = "${application.offer-expiration-interval}")
     @SchedulerLock(name = "expireOffers")
@@ -112,6 +180,20 @@ public class CredentialManagementService {
         expiredOffers.forEach(offer -> updateCredentialStatus(offer, CredentialStatusType.EXPIRED));
     }
 
+    /**
+     * Update the offer data for a deferred credential.
+     *
+     * <p>Loads the credential offer with a pessimistic write lock and verifies that the
+     * offer is a deferred offer currently in the {@code DEFERRED} state. If the check
+     * fails a {@link BadRequestException} is thrown. Further processing (validation and
+     * persisting the updated offer data) continues after this method's initial checks.</p>
+     *
+     * @param credentialId the id of the credential offer to update
+     * @param offerDataMap the credential subject data to apply to the deferred offer
+     * @return an {@link UpdateStatusResponseDto} describing the updated credential status
+     * @throws ResourceNotFoundException if no credential offer with the given id exists
+     * @throws BadRequestException       if the credential is not deferred or has an incorrect status
+     */
     @Transactional
     public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialId, Map<String, Object> offerDataMap) {
         var storedCredentialOffer = getCredentialForUpdate(credentialId);
