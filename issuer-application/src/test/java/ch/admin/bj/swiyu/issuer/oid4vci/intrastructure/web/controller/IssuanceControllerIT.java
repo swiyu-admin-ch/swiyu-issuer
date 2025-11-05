@@ -190,7 +190,7 @@ class IssuanceControllerIT {
 
         var issuerUrl = credentialOffer.get("credential_issuer").getAsString();
 
-        var response = mock.perform(get(issuerUrl.split("http://localhost:8080")[1] + "/.well-known/openid-configuration").header(HttpHeaders.CONTENT_TYPE, "application/jwt"))
+        var response = mock.perform(get(issuerUrl.split("http://localhost:8080")[1] + "/.well-known/openid-configuration").header(HttpHeaders.ACCEPT, "application/jwt"))
                 .andReturn().getResponse().getContentAsString();
 
         var test = SignedJWT.parse(response);

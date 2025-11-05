@@ -70,7 +70,7 @@ public class WellKnownController {
     @Operation(summary = "Information about credentials which can be issued.")
     public Object getIssuerMetadataByTenantId(
             @PathVariable UUID tenantId,
-            @RequestHeader("Content-Type") String contentType) {
+            @RequestHeader("Accept") String contentType) {
 
         if (CONTENT_TYPE_APPLICATION_JWT.equals(contentType)) {
             return metadataService.getSignedIssuerMetadata(tenantId);
@@ -83,7 +83,7 @@ public class WellKnownController {
     @Operation(summary = "Information about credentials which can be issued.")
     public Object getOpenIdConfigurationByTenantId(
             @PathVariable UUID tenantId,
-            @RequestHeader("Content-Type") String contentType) {
+            @RequestHeader("Accept") String contentType) {
 
         if (contentType.startsWith(CONTENT_TYPE_APPLICATION_JWT)) {
             return metadataService.getSignedOpenIdConfiguration(tenantId);
