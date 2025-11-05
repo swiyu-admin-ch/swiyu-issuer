@@ -198,7 +198,6 @@ public class CredentialManagementService {
     public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialId, Map<String, Object> offerDataMap) {
         var storedCredentialOffer = getCredentialForUpdate(credentialId);
 
-        // Check if is deferred credential and in deferred state
         if (!storedCredentialOffer.isDeferredOffer()
                 && storedCredentialOffer.getCredentialStatus() == CredentialStatusType.DEFERRED) {
             throw new BadRequestException(
