@@ -41,6 +41,7 @@ import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusListMapper.t
 @Service
 public class StatusListService {
 
+    private static final String BITS_FIELD_NAME = "bits";
     private final ApplicationProperties applicationProperties;
     private final StatusListProperties statusListProperties;
     private final StatusRegistryClient statusRegistryClient;
@@ -104,9 +105,9 @@ public class StatusListService {
         StatusList statusList = statusListRepository.findByIdForUpdate(statusListId).orElseThrow(
                 () -> new ResourceNotFoundException(String.format("Status list %s not found", statusListId)));
 
-        TokenStatusListToken token = null;
+        TokenStatusListToken token;
         try {
-            token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
+            token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get(BITS_FIELD_NAME),
                     statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
         } catch (IOException e) {
             throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()));
@@ -147,11 +148,12 @@ public class StatusListService {
     protected StatusList updateTokenStatusList(CredentialOfferStatus offerStatus, TokenStatusListBit bit) {
         // TODO Make updating status more efficient
         StatusList statusList = statusListRepository.findByIdForUpdate(offerStatus.getId().getStatusListId()).orElseThrow();
-        if ((Integer) statusList.getConfig().get("bits") < bit.getValue()) {
+        var statusListBits = (Integer) statusList.getConfig().get(BITS_FIELD_NAME);
+        if (statusListBits < bit.getValue()) {
             throw new BadRequestException(String.format("Attempted to update a status list %s to a status not supported %s", statusList.getUri(), bit.name()));
         }
         try {
-            var token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
+            var token = TokenStatusListToken.loadTokenStatusListToken(statusListBits,
                     statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
             token.setStatus(offerStatus.getId().getIndex(), bit.getValue());
             statusList.setStatusZipped(token.getStatusListData());
@@ -180,7 +182,7 @@ public class StatusListService {
         StatusList statusList = StatusList.builder()
                 .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
                 .config(Map.of(
-                        "bits", config.getBits(),
+                        BITS_FIELD_NAME, config.getBits(),
                         "purpose", config.getPurpose() != null ? config.getPurpose() : ""
                 ))
                 .uri(newStatusList.getStatusRegistryUrl())
