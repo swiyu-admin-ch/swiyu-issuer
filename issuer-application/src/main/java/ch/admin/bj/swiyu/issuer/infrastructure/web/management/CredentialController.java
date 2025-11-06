@@ -13,7 +13,6 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.service.CredentialManagementService;
-import ch.admin.bj.swiyu.issuer.service.StatusService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,7 +37,6 @@ import java.util.UUID;
 public class CredentialController {
 
     private final CredentialManagementService credentialManagementService;
-    private final StatusService statusService;
 
     @Timed
     @PostMapping("")
