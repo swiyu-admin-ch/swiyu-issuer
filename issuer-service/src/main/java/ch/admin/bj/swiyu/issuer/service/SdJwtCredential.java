@@ -101,7 +101,6 @@ public class SdJwtCredential extends CredentialBuilder {
                 var cnf = didJwk.getJWK().toJSONObject();
                 var cnfClaim = new HashMap<>();
                 cnfClaim.put("jwk", cnf);
-                cnfClaim.putAll(cnf);
 
                 builder.putClaim("cnf", cnfClaim);
             } catch (ParseException e) {

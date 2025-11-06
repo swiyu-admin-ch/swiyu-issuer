@@ -22,10 +22,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
-import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
-import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
@@ -463,17 +461,11 @@ class IssuanceControllerIT {
         assertTrue(claims.containsKey("cnf"));
         Map<String, Object> cnf = (Map<String, Object>) claims.get("cnf");
 
-        // Todo: Refactor this once wallet migration is finished
-        // cnf jwk must contain old and expanded jwk
-        var holderbindingJwk = JWK.parse((cnf));
-        assertEquals(jwk.toECKey().getX(), holderbindingJwk.toECKey().getX());
-        assertEquals(KeyType.EC, holderbindingJwk.getKeyType());
-
         // test expanded jwk
         assertTrue(cnf.containsKey("jwk"));
         var expandedJWK = JWK.parse((Map<String, Object>) cnf.get("jwk"));
         assertEquals(KeyType.EC, expandedJWK.getKeyType());
-        assertEquals(jwk.toECKey().getX(), holderbindingJwk.toECKey().getX());
+        assertEquals(jwk.toECKey().getX(), expandedJWK.toECKey().getX());
 
         var statusListType = (String) ((Map<String, Object>) ((Map<String, Object>) claims.get("status")).get("status_list")).get("type");
         assertEquals("SwissTokenStatusList-1.0", statusListType);

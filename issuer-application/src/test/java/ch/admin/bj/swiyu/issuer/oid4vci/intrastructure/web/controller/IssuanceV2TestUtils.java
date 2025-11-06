@@ -47,21 +47,15 @@ public class IssuanceV2TestUtils {
 
     public void testHolderBindingV2(String vc, ECKey holderPrivateKey) throws ParseException {
         JsonObject claims = getVcClaims(vc);
-        assertNotNull(claims.get("cnf"));
-        JsonObject legacyCnf = claims.get("cnf").getAsJsonObject();
-        JsonObject cnf = legacyCnf.get("jwk").getAsJsonObject();
-
-        // for legacy reasons the cnf is not a JWK but a map with the same properties
-        assertEquals(holderPrivateKey.getKeyID(), legacyCnf.get("kid").getAsString());
-        assertEquals(holderPrivateKey.getCurve().toString(), legacyCnf.get("crv").getAsString());
-        assertEquals(holderPrivateKey.getX().toString(), legacyCnf.get("x").getAsString());
-        assertEquals(holderPrivateKey.getY().toString(), legacyCnf.get("y").getAsString());
-
+        JsonObject cnf = claims.get("cnf").getAsJsonObject();
         assertNotNull(cnf);
-        assertEquals(holderPrivateKey.getKeyID(), cnf.get("kid").getAsString());
-        assertEquals(holderPrivateKey.getCurve().toString(), cnf.get("crv").getAsString());
-        assertEquals(holderPrivateKey.getX().toString(), cnf.get("x").getAsString());
-        assertEquals(holderPrivateKey.getY().toString(), cnf.get("y").getAsString());
+        JsonObject jwk = cnf.get("jwk").getAsJsonObject();
+
+        assertNotNull(jwk);
+        assertEquals(holderPrivateKey.getKeyID(), jwk.get("kid").getAsString());
+        assertEquals(holderPrivateKey.getCurve().toString(), jwk.get("crv").getAsString());
+        assertEquals(holderPrivateKey.getX().toString(), jwk.get("x").getAsString());
+        assertEquals(holderPrivateKey.getY().toString(), jwk.get("y").getAsString());
     }
 
     public static JsonObject getVcClaims(String vc) throws ParseException {
