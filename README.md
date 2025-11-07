@@ -837,9 +837,8 @@ security vulnerabilities in the test system. These are marked as [‘KnownIssues
 
 ## Contributions and feedback
 
-We welcome any feedback on the code regarding both the implementation and security aspects. Please follow the guidelines
-for
-contributing found in [CONTRIBUTING.md](/CONTRIBUTING.md).
+We welcome any feedback on the code regarding both the implementation and security aspects.
+Please follow the guidelines for contributing found in [CONTRIBUTING.md](/CONTRIBUTING.md).
 
 ## License
 

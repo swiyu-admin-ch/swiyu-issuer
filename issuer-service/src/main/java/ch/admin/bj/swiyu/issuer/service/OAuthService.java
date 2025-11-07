@@ -6,7 +6,6 @@ import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +55,7 @@ public class OAuthService {
     @Transactional
     public CredentialOffer getCredentialOfferByAccessToken(String accessToken) {
         var uuid = uuidOrException(accessToken);
-        return getNonExpiredCredentialOffer(credentialOfferRepository.findByAccessToken(uuid))
+        return getExpirationCheckedCredentialOffer(credentialOfferRepository.findByAccessToken(uuid))
                 .orElseThrow(() -> OAuthException.invalidToken("Invalid accessToken"));
     }
 
@@ -106,7 +105,7 @@ public class OAuthService {
 
     private CredentialOffer getCredentialOfferByPreAuthCode(String preAuthCode) {
         var uuid = uuidOrException(preAuthCode);
-        return getNonExpiredCredentialOffer(credentialOfferRepository.findByPreAuthorizedCode(uuid))
+        return getExpirationCheckedCredentialOffer(credentialOfferRepository.findByPreAuthorizedCode(uuid))
                 .orElseThrow(() -> OAuthException.invalidGrant("Invalid preAuthCode"));
     }
 
@@ -114,7 +113,7 @@ public class OAuthService {
         return credentialOffer.filter(offer -> offer.getCredentialStatus() != CredentialStatusType.REVOKED);
     }
 
-    private Optional<CredentialOffer> getNonExpiredCredentialOffer(Optional<CredentialOffer> credentialOffer) {
+    private Optional<CredentialOffer> getExpirationCheckedCredentialOffer(Optional<CredentialOffer> credentialOffer) {
         return credentialOffer
                 .map(offer -> {
                     if (offer.getCredentialStatus() != CredentialStatusType.EXPIRED
