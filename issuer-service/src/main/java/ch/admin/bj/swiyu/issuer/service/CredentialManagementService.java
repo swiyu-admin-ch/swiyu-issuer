@@ -53,10 +53,11 @@ public class CredentialManagementService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final AvailableStatusListIndexRepository availableStatusListIndexRepository;
     private final Random random = new Random();
+    private CredentialManagementRepository credentialManagementRepository;
 
     @Transactional // not readonly since expired credentails gets updated here automatically
-    public CredentialInfoResponseDto getCredentialOfferInformation(UUID credentialId) {
-        var credential = this.getCredential(credentialId);
+    public CredentialInfoResponseDto getCredentialOfferInformation(UUID credentialManagementId) {
+        var credential = this.getCredentials(credentialManagementId);
         var deeplink = getOfferDeeplinkFromCredential(credential);
 
         return toCredentialInfoResponseDto(credential, deeplink);
@@ -64,7 +65,7 @@ public class CredentialManagementService {
 
     @Transactional // not readonly since expired credentails gets updated here automatically
     public String getCredentialOfferDeeplink(UUID credentialId) {
-        var credential = this.getCredential(credentialId);
+        var credential = this.getCredentials(credentialId);
         return this.getOfferDeeplinkFromCredential(credential);
 
     }
@@ -81,7 +82,7 @@ public class CredentialManagementService {
 
     @Transactional // not readonly since expired credentials gets updated here automatically
     public StatusResponseDto getCredentialStatus(UUID credentialId) {
-        CredentialOffer credential = this.getCredential(credentialId);
+        CredentialOffer credential = this.getCredentials(credentialId);
         return toStatusResponseDto(credential);
     }
 
@@ -159,21 +160,22 @@ public class CredentialManagementService {
      * <p>
      * Attention: If it is expired it will update its state before returning it.
      */
-    private CredentialOffer getCredential(UUID credentialId) {
+    private List<CredentialOffer> getCredentials(UUID credentialManagementId) {
 
-        // Check if optional can be default
-        return this.credentialOfferRepository.findById(credentialId)
+        var offers = this.credentialOfferRepository.findByCredentialManagementId(credentialManagementId).stream()
                 .map(offer -> {
                     // Make sure only offer is returned if it is not expired
                     if (CredentialStatusType.getExpirableStates().contains(offer.getCredentialStatus())
-                            && offer.hasExpirationTimeStampPassed()) {
+                            && offer.hasCredentialOfferExpirationTimestampPassed()) {
                         return updateCredentialStatus(getCredentialForUpdate(offer.getId()),
                                 CredentialStatusType.EXPIRED);
                     }
                     return offer;
-                })
-                .orElseThrow(
-                        () -> new ResourceNotFoundException(String.format("Credential %s not found", credentialId)));
+                }).toList();
+        if (offers.isEmpty()) {
+            throw new ResourceNotFoundException(String.format("Credential %s not found", credentialManagementId));
+        }
+        return offers;
     }
 
     /**
@@ -273,6 +275,9 @@ public class CredentialManagementService {
                 credentialOfferString);
     }
 
+    /**
+     * Creating a new credential management object and a credential offer from the data
+     */
     private CredentialOffer createCredentialOffer(CreateCredentialOfferRequestDto requestDto, int issuanceBatchSize) {
         var expiration = Instant.now().plusSeconds(requestDto.getOfferValiditySeconds() > 0
                 ? requestDto.getOfferValiditySeconds()
@@ -289,7 +294,11 @@ public class CredentialManagementService {
         }
         ensureMatchingIssuerDids(requestDto, statusLists);
 
+        var managementEntity = CredentialManagement.builder().build();
+        this.credentialManagementRepository.save(managementEntity);
+
         var entity = CredentialOffer.builder()
+                .credentialManagementId(managementEntity.getId())
                 .credentialStatus(CredentialStatusType.OFFERED)
                 .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
                 .offerData(offerData)

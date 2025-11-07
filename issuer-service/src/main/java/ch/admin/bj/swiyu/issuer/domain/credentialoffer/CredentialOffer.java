@@ -100,6 +100,7 @@ public class CredentialOffer {
     /**
      * Value used for the oid bearer token given to the holder
      */
+    @Deprecated(since = "DB 1_4_0")
     @NotNull
     private UUID accessToken;
 
@@ -107,6 +108,7 @@ public class CredentialOffer {
     /**
      * OAuth refresh token for the offer
      */
+    @Deprecated(since = "DB 1_4_0")
     @Nullable
     @Column(name = "refresh_token", nullable = true)
     private UUID refreshToken;
@@ -141,8 +143,9 @@ public class CredentialOffer {
     private ClientAgentInfo clientAgentInfo;
 
     /**
-     * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
+     * Access token expiration in unix epoch (since 1.1.1970) timestamp in seconds
      */
+    @Deprecated(since = "DB 1_4_0")
     @Nullable
     private Long tokenExpirationTimestamp;
 
@@ -185,10 +188,14 @@ public class CredentialOffer {
     /**
      * Wallet Public Key used for DPoP header JWT
      */
+    @Deprecated(since = "DB 1_4_0")
     @Nullable
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "dpop_key", columnDefinition = "jsonb", nullable = true)
     private Map<String, Object> dpopKey;
+
+    @Column(name = "credential_management_id")
+    private UUID credentialManagementId;
 
     /**
      * Read the offer data depending on input type and add it to offer
@@ -235,7 +242,7 @@ public class CredentialOffer {
         this.credentialStatus = credentialStatus;
     }
 
-    public boolean hasExpirationTimeStampPassed() {
+    public boolean hasCredentialOfferExpirationTimestampPassed() {
         return Instant.now().isAfter(Instant.ofEpochSecond(this.offerExpirationTimestamp));
     }
 
@@ -252,8 +259,8 @@ public class CredentialOffer {
     public void markAsIssued() {
         this.invalidateOfferData();
         this.credentialStatus = CredentialStatusType.ISSUED;
-        log.info("Credential issued for offer {}. Management-ID is {}. ",
-                this.metadataCredentialSupportedId, this.id);
+        log.info("Credential issued for offer {}. Management-ID is {} and transaction-ID is {}. ",
+                this.metadataCredentialSupportedId, this.credentialManagementId, this.transactionId);
     }
 
     public void markAsInProgress() {
@@ -305,7 +312,8 @@ public class CredentialOffer {
                 this.metadataCredentialSupportedId, this.id, this.credentialStatus);
     }
 
-    public boolean hasTokenExpirationPassed() {
+    @Deprecated(since = "DB 1_4_0")
+    public boolean hasAccessTokenExpirationPassed() {
         return Instant.now().isAfter(Instant.ofEpochSecond(this.tokenExpirationTimestamp));
     }
 
@@ -322,6 +330,7 @@ public class CredentialOffer {
         return Objects.requireNonNullElseGet(this.configurationOverride, () -> new ConfigurationOverride(null, null, null, null));
     }
 
+    @Deprecated(since = "DB 1_4_0")
     public void setDPoPKey(Map<String, Object> dPoPKey) {
         this.dpopKey = dPoPKey;
     }

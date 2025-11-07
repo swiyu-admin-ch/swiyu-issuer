@@ -117,7 +117,7 @@ public class OAuthService {
         return credentialOffer
                 .map(offer -> {
                     if (offer.getCredentialStatus() != CredentialStatusType.EXPIRED
-                            && offer.hasExpirationTimeStampPassed()) {
+                            && offer.hasCredentialOfferExpirationTimestampPassed()) {
                         offer.markAsExpired();
                         return credentialOfferRepository.save(offer);
                     }

@@ -7,7 +7,7 @@
 package ch.admin.bj.swiyu.issuer.management;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.infrastructure.web.management.CredentialController;
+import ch.admin.bj.swiyu.issuer.infrastructure.web.management.CredentialManagementController;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
@@ -45,11 +45,11 @@ public class ApplicationIT {
             "y":"71y_zEPAglUXBghaBxypTAzlNx57KNY9lv8LTbPkmZA"
             }""";
     @Autowired
-    private CredentialController credentialController;
+    private CredentialManagementController credentialManagementController;
 
     @Test
     void contextLoads() {
-        assertThat(credentialController).isNotNull();
+        assertThat(credentialManagementController).isNotNull();
     }
 
     @Test

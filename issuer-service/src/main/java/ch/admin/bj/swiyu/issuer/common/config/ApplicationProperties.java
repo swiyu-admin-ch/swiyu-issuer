@@ -95,6 +95,9 @@ public class ApplicationProperties {
     private boolean allowTokenRefresh;
 
     @NotNull
+    private boolean allowCredentialRefresh;
+
+    @NotNull
     private int acceptableProofTimeWindowSeconds;
     @NotNull
     private int nonceLifetimeSeconds;

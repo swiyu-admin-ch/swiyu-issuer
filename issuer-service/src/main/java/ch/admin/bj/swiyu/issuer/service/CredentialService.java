@@ -153,7 +153,7 @@ public class CredentialService {
             throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued");
         }
 
-        if (credentialOffer.hasTokenExpirationPassed()) {
+        if (credentialOffer.hasAccessTokenExpirationPassed()) {
             log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
 
             eventProducerService.produceErrorEvent("AccessToken expired, offer is stuck in READY",
@@ -305,7 +305,7 @@ public class CredentialService {
         }
 
         // check if the offer is still valid
-        if (credentialOffer.hasTokenExpirationPassed()) {
+        if (credentialOffer.hasAccessTokenExpirationPassed()) {
             log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
             eventProducerService.produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS",
                     CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,

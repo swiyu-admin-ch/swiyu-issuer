@@ -34,7 +34,7 @@ import java.util.UUID;
 @Tag(name = "Credential API", description = "Exposes API endpoints for managing credential offers and their statuses. " +
         "Supports creating new credential offers, retrieving offer data and deeplinks, and updating or querying the " +
         "status of offers and issued verifiable credentials. (IF-114)")
-public class CredentialController {
+public class CredentialManagementController {
 
     private final CredentialManagementService credentialManagementService;
 
@@ -68,7 +68,7 @@ public class CredentialController {
     }
 
     @Timed
-    @GetMapping("/{credentialId}")
+    @GetMapping("/{credentialManagementId}")
     @Operation(
             summary = "Get the offer data, if any is still cached",
             responses = {
@@ -78,8 +78,8 @@ public class CredentialController {
                     )
             }
     )
-    public CredentialInfoResponseDto getCredentialInformation(@PathVariable UUID credentialId) {
-        return this.credentialManagementService.getCredentialOfferInformation(credentialId);
+    public CredentialInfoResponseDto getCredentialInformation(@PathVariable UUID credentialManagementId) {
+        return this.credentialManagementService.getCredentialOfferInformation(credentialManagementId);
     }
 
     @Deprecated(forRemoval = true)

@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -22,11 +23,19 @@ public interface CredentialOfferRepository extends JpaRepository<CredentialOffer
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CredentialOffer> findByPreAuthorizedCode(UUID uuid);
 
+    @Deprecated(since = "DB 1_4_0")
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CredentialOffer> findByAccessToken(UUID accessToken);
 
+    @Deprecated(since = "DB 1_4_0")
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CredentialOffer> findByRefreshToken(UUID refreshToken);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<CredentialOffer> findByCredentialManagementId(UUID credentialManagementId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<CredentialOffer> findByTransactionId(UUID transactionId);
 
     Optional<CredentialOffer> findByMetadataTenantId(UUID tenantId);
 

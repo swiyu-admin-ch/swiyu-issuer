@@ -152,7 +152,7 @@ class CredentialManagementServiceTest {
     }
 
     @Test
-    void getCredentialInvalidateOfferWhenExpired() {
+    void getCredentialsInvalidateOfferWhenExpired() {
 
         // note: getting an expired offer will immediately update it to expired
         var expiredOfferId = expiredOffer.getId();
@@ -182,7 +182,7 @@ class CredentialManagementServiceTest {
     }
 
     @Test
-    void getCredentialOfferWhenNotExpired_thenSuccess() {
+    void getCredentialsOfferWhenNotExpired_thenSuccess() {
 
         when(applicationProperties.getDeeplinkSchema()).thenReturn("test-swiyu");
         CredentialInfoResponseDto response = credentialService.getCredentialOfferInformation(valid.getId());
@@ -196,7 +196,7 @@ class CredentialManagementServiceTest {
     @Test
     void updateCredentialStatus_shouldUpdateStatusToRevoked() {
 
-        Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
+        Set<CredentialOfferStatus> offerStatusSet = getCredentialsOfferStatusSet();
 
         when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
@@ -234,7 +234,7 @@ class CredentialManagementServiceTest {
     @Test
     void testHandlePostIssuanceStatusChangeRevoked_thenCallCorrectFunction() {
 
-        Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
+        Set<CredentialOfferStatus> offerStatusSet = getCredentialsOfferStatusSet();
 
         when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
@@ -248,7 +248,7 @@ class CredentialManagementServiceTest {
     @Test
     void testHandlePostIssuanceStatusChangeSuspended_thenCallCorrectFunction() {
 
-        Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
+        Set<CredentialOfferStatus> offerStatusSet = getCredentialsOfferStatusSet();
 
         when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
@@ -262,7 +262,7 @@ class CredentialManagementServiceTest {
     @Test
     void testHandlePostIssuanceStatusChangeIssued_thenCallCorrectFunction() {
 
-        Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
+        Set<CredentialOfferStatus> offerStatusSet = getCredentialsOfferStatusSet();
 
         when(credentialOfferStatusRepository.findByOfferId(suspended.getId())).thenReturn(offerStatusSet);
 
@@ -306,7 +306,7 @@ class CredentialManagementServiceTest {
                 .build();
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
         when(credentialOfferRepository.save(any())).thenAnswer(new Answer<CredentialOffer>() {
@@ -336,7 +336,7 @@ class CredentialManagementServiceTest {
                 .build();
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
         when(credentialOfferRepository.save(any())).thenAnswer(new Answer<CredentialOffer>() {
@@ -366,7 +366,7 @@ class CredentialManagementServiceTest {
                 .build();
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
         when(credentialOfferRepository.save(any())).thenAnswer(new Answer<CredentialOffer>() {
@@ -385,7 +385,7 @@ class CredentialManagementServiceTest {
     void testCreateCredentialOfferMissingClaim_thenBadRequest() {
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
         when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(new HashMap<>());
@@ -419,7 +419,7 @@ class CredentialManagementServiceTest {
     void testCreateCredentialOfferNoData_thenBadRequest() {
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
         when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(new HashMap<>());
@@ -452,7 +452,7 @@ class CredentialManagementServiceTest {
     void testCreateCredentialOfferNullOfferData_thenBadRequest() {
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
         when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(new HashMap<>());
@@ -486,7 +486,7 @@ class CredentialManagementServiceTest {
     void testCreateCredentialOfferEmptyData_thenBadRequest() {
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
         when(dataIntegrityService.getVerifiedOfferData(Mockito.any(), Mockito.any())).thenReturn(new HashMap<>());
@@ -520,7 +520,7 @@ class CredentialManagementServiceTest {
     void testCreateCredentialOfferAdditionalClaimsData_thenBadRequest() {
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
         var credConfig = mock(CredentialConfiguration.class);
@@ -554,7 +554,7 @@ class CredentialManagementServiceTest {
     void testCreateCredentialOffer_thenSuccess() {
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
 
@@ -666,7 +666,7 @@ class CredentialManagementServiceTest {
     void testCheckIfCorrectDeeplinkWithTenant_thenSuccess() {
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test-metadata", mock(CredentialConfiguration.class)));
 
@@ -708,7 +708,7 @@ class CredentialManagementServiceTest {
         var credentialConfigurationSupportedId = "test-metadata";
 
         when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
+        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialsOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(credentialConfigurationSupportedId, mock(CredentialConfiguration.class)));
 
@@ -747,11 +747,11 @@ class CredentialManagementServiceTest {
         assertEquals(credentialConfigurationSupportedId, mimi.get("credential_configuration_ids").getAsJsonArray().get(0).getAsString());
     }
 
-    private @NotNull Set<CredentialOfferStatus> getCredentialOfferStatusSet() {
-        return Set.of(getCredentialOfferStatus(issued.getId(), UUID.randomUUID()));
+    private @NotNull Set<CredentialOfferStatus> getCredentialsOfferStatusSet() {
+        return Set.of(getCredentialsOfferStatus(issued.getId(), UUID.randomUUID()));
     }
 
-    private CredentialOfferStatus getCredentialOfferStatus(UUID offerId, UUID statusId) {
+    private CredentialOfferStatus getCredentialsOfferStatus(UUID offerId, UUID statusId) {
         return CredentialOfferStatus.builder()
                 .id(new CredentialOfferStatusKey(offerId, statusId, 1))
                 .build();

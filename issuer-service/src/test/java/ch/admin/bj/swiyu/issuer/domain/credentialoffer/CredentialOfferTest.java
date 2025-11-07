@@ -36,7 +36,7 @@ class CredentialOfferTest {
         CredentialOffer offer = CredentialOffer.builder()
                 .offerExpirationTimestamp(Instant.now().minusSeconds(10).getEpochSecond())
                 .build();
-        assertTrue(offer.hasExpirationTimeStampPassed());
+        assertTrue(offer.hasCredentialOfferExpirationTimestampPassed());
     }
 
     @Test

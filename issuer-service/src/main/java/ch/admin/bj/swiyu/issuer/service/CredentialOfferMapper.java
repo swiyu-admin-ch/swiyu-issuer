@@ -29,7 +29,7 @@ public class CredentialOfferMapper {
     public static CredentialWithDeeplinkResponseDto toCredentialWithDeeplinkResponseDto(CredentialOffer credential,
                                                                                         String offerDeeplinkString) {
         return CredentialWithDeeplinkResponseDto.builder()
-                .managementId(credential.getId())
+                .managementId(credential.getCredentialManagementId())
                 .offerDeeplink(offerDeeplinkString)
                 .build();
     }

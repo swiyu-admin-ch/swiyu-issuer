@@ -671,6 +671,7 @@ To get more information about the different calls please check the detail docume
 stateDiagram-v2
     OFFERED
     IN_PROGRESS
+    REQUESTED
     state fork_state <<fork>>
     DEFERRED
     READY
@@ -680,7 +681,10 @@ stateDiagram-v2
     SUSPENDED
     REVOKED
     [*] --> OFFERED
+    [*] --> REQUESTED : Wallet requests to refresh VC
     OFFERED --> CANCELLED : Process can be cancelled as long as the vc is not ISSUED
+    REQUESTED --> CANCELLED : Business Issuer rejects refresh request
+    REQUESTED --> READY : Business Issuer provides data
     CANCELLED --> [*]
     OFFERED --> IN_PROGRESS
     IN_PROGRESS --> fork_state

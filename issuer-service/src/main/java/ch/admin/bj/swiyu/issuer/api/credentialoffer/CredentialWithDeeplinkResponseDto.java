@@ -23,8 +23,14 @@ import java.util.UUID;
 public class CredentialWithDeeplinkResponseDto {
 
     @JsonProperty(value = "management_id")
+    @Schema(description = """
+            ID used to interact with the offer and issued VCs, for example to revoke all instances of the VC
+            """)
     private UUID managementId;
 
     @JsonProperty(value = "offer_deeplink")
+    @Schema(description = """
+            Deeplink with pre-authorized code for initial connection / registration.
+            """)
     private String offerDeeplink;
 }
