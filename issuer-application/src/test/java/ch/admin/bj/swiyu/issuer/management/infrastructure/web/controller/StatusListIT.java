@@ -416,6 +416,42 @@ class StatusListIT {
         verify(statusBusinessApi, times(issuerMetadata.getIssuanceBatchSize() + 1)).updateStatusListEntry(any(), any(), any());
     }
 
+    @Test
+    void updateStatusList_checkIfRegistryCalledWithAutomaticUpdateDisabled_thenSuccess() throws Exception {
+
+        when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true);
+
+        var statusList = createStatusList();
+
+        var offer = createOffer(statusList);
+
+        var accessToken = getAccessTokenFromDeeplink(mvc, offer.get("offer_deeplink").getAsString());
+
+        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
+                .boxed()
+                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .toList();
+
+        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+
+        requestCredentialV2(mvc, accessToken, credentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        //  revoke credential
+        mvc.perform(patch(getUpdateUrl(UUID.fromString(offer.get("management_id").getAsString()), CredentialStatusTypeDto.REVOKED)))
+                .andExpect(status().isOk());
+
+        // should be only called once on status list create
+        verify(statusBusinessApi, times(1)).updateStatusListEntry(any(), any(), any());
+
+        mvc.perform(post("/management/api/status-list" + "/" + statusList.get("id").getAsString()))
+                .andExpect(status().isOk());
+
+        // should be only called twice on status list create
+        verify(statusBusinessApi, times(2)).updateStatusListEntry(any(), any(), any());
+    }
+
     private String getCreateTokenStatusListPayload(int maxLength, int bits) {
         return String.format("{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", maxLength, bits);
     }

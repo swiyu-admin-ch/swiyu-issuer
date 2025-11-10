@@ -414,6 +414,14 @@ public class CredentialManagementService {
         return updatedCredential;
     }
 
+    /**
+     * Load a credential by id while acquiring a database lock to prevent modifications.
+     * The repository method `findByIdForUpdate`uses a pessimistic lock.
+     *
+     * @param credentialId the credential identifier
+     * @return the locked {@link CredentialOffer}
+     * @throws ResourceNotFoundException if no credential with the given id exists
+     */
     private CredentialOffer getCredentialById(UUID credentialId) {
         return this.credentialOfferRepository.findByIdForUpdate(credentialId)
                 .orElseThrow(
