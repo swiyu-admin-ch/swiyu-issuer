@@ -149,6 +149,7 @@ public class CredentialOffer {
     /**
      * Value used in the holder binding process to prevent replay attacks
      */
+    @Deprecated(since = "OID4VCI 1.0")
     private UUID nonce;
 
     /**
