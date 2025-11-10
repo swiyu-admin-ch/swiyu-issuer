@@ -10,10 +10,8 @@ import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialEndpointRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
@@ -23,14 +21,10 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
-import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
-import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,15 +47,17 @@ public class CredentialService {
     private final CredentialFormatFactory vcFormatFactory;
     private final ApplicationProperties applicationProperties;
     private final HolderBindingService holderBindingService;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final OAuthService oAuthService;
+    private final EventProducerService eventProducerService;
     private final EncryptionService encryptionService;
 
+    @Deprecated(since = "OID4VCI 1.0")
     @Transactional
     public CredentialEnvelopeDto createCredential(CredentialEndpointRequestDto credentialRequestDto, String accessToken,
                                                   ClientAgentInfo clientInfo) {
 
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
-        CredentialOffer credentialOffer = getCredentialOfferByAccessToken(accessToken);
+        CredentialOffer credentialOffer = oAuthService.getCredentialOfferByAccessToken(accessToken);
 
         return createCredentialEnvelopeDto(credentialOffer, credentialRequest, clientInfo);
     }
@@ -72,11 +68,11 @@ public class CredentialService {
                                                     ClientAgentInfo clientInfo) {
 
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
-        CredentialOffer credentialOffer = getCredentialOfferByAccessToken(accessToken);
-
+        CredentialOffer credentialOffer = oAuthService.getCredentialOfferByAccessToken(accessToken);
         return createCredentialEnvelopeDtoV2(credentialOffer, credentialRequest, clientInfo);
     }
 
+    @Deprecated(since = "OID4VCI 1.0")
     @Transactional
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(
             DeferredCredentialEndpointRequestDto deferredCredentialRequest,
@@ -101,7 +97,7 @@ public class CredentialService {
         credentialOffer.markAsIssued();
 
         credentialOfferRepository.save(credentialOffer);
-        produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        eventProducerService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
 
         return vc;
     }
@@ -131,43 +127,9 @@ public class CredentialService {
 
         credentialOfferRepository.save(credentialOffer);
 
-        produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        eventProducerService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
 
         return vc;
-    }
-
-    /**
-     * Issues an OAuth token for a given pre-authorization code created by issuer
-     * mgmt
-     *
-     * @param preAuthCode Pre-authorization code of holder
-     * @return OAuth authorization token which can be used in credential service
-     * endpoint
-     */
-    @Transactional
-    public OAuthTokenDto issueOAuthToken(String preAuthCode) {
-        var offer = getCredentialOfferByPreAuthCode(preAuthCode);
-
-        if (offer.getCredentialStatus() != CredentialStatusType.OFFERED) {
-            log.debug("Refused to issue OAuth token. Credential offer {} has already state {}.", offer.getId(),
-                    offer.getCredentialStatus());
-            throw OAuthException.invalidGrant("Credential has already been used");
-        }
-        log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {} and new status is {}",
-                offer.getAccessToken(), offer.getId(), offer.getCredentialStatus());
-        offer.markAsInProgress();
-        offer.setTokenIssuanceTimestamp(applicationProperties.getTokenTTL());
-
-        credentialOfferRepository.save(offer);
-        produceStateChangeEvent(offer.getId(), offer.getCredentialStatus());
-
-        return OAuthTokenDto.builder()
-                .accessToken(offer.getAccessToken()
-                        .toString())
-                .expiresIn(applicationProperties.getTokenTTL())
-                .cNonce(offer.getNonce()
-                        .toString())
-                .build();
     }
 
     private CredentialOffer getAndValidateCredentialOfferForDeferred(
@@ -194,7 +156,7 @@ public class CredentialService {
         if (credentialOffer.hasTokenExpirationPassed()) {
             log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
 
-            produceErrorEvent("AccessToken expired, offer is stuck in READY",
+            eventProducerService.produceErrorEvent("AccessToken expired, offer is stuck in READY",
                     CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
                     credentialOffer);
 
@@ -207,7 +169,6 @@ public class CredentialService {
 
         return credentialOffer;
     }
-
 
     @Deprecated(since = "OID4VCI 1.0")
     private CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
@@ -222,7 +183,7 @@ public class CredentialService {
             holderPublicKey = holderBindingService.getHolderPublicKey(credentialRequest, credentialOffer);
         } catch (Oid4vcException e) {
 
-            produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, credentialOffer);
+            eventProducerService.produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, credentialOffer);
 
             throw e;
         }
@@ -261,27 +222,18 @@ public class CredentialService {
                     clientInfo,
                     applicationProperties);
             credentialOfferRepository.save(credentialOffer);
-            try {
-                var clientInfoString = objectMapper.writeValueAsString(clientInfo);
-                var deferredEvent = new DeferredEvent(
-                        credentialOffer.getId(),
-                        clientInfoString
-                );
-                applicationEventPublisher.publishEvent(deferredEvent);
-
-            } catch (JsonProcessingException e) {
-                throw new JsonException("Error processing client info for deferred credential offer", e);
-            }
+            eventProducerService.produceDeferredEvent(credentialOffer, clientInfo);
         } else {
             responseEnvelope = vcBuilder.buildCredentialEnvelope();
             credentialOffer.markAsIssued();
             credentialOfferRepository.save(credentialOffer);
 
-            produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+            eventProducerService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
         }
 
         return responseEnvelope;
     }
+
 
     private CredentialEnvelopeDto createCredentialEnvelopeDtoV2(CredentialOffer credentialOffer,
                                                                 CredentialRequestClass credentialRequest,
@@ -292,7 +244,7 @@ public class CredentialService {
         try {
             holderJwkList = holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer);
         } catch (Oid4vcException e) {
-            produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, credentialOffer);
+            eventProducerService.produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, credentialOffer);
             throw e;
         }
 
@@ -328,21 +280,12 @@ public class CredentialService {
                     clientInfo,
                     applicationProperties);
             credentialOfferRepository.save(credentialOffer);
-            try {
-                var clientInfoString = objectMapper.writeValueAsString(clientInfo);
-                var deferredEvent = new DeferredEvent(
-                        credentialOffer.getId(),
-                        clientInfoString
-                );
-                applicationEventPublisher.publishEvent(deferredEvent);
-            } catch (JsonProcessingException e) {
-                throw new JsonException("Error processing client info for deferred credential offer", e);
-            }
+            eventProducerService.produceDeferredEvent(credentialOffer, clientInfo);
         } else {
             responseEnvelope = vcBuilder.buildCredentialEnvelopeV2();
             credentialOffer.markAsIssued();
             credentialOfferRepository.save(credentialOffer);
-            produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+            eventProducerService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
         }
 
         return responseEnvelope;
@@ -364,7 +307,7 @@ public class CredentialService {
         // check if the offer is still valid
         if (credentialOffer.hasTokenExpirationPassed()) {
             log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
-            produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS",
+            eventProducerService.produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS",
                     CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
                     credentialOffer);
 
@@ -390,26 +333,8 @@ public class CredentialService {
         }
     }
 
-    private Optional<CredentialOffer> getNonExpiredCredentialOffer(Optional<CredentialOffer> credentialOffer) {
-        return credentialOffer
-                .map(offer -> {
-                    if (offer.getCredentialStatus() != CredentialStatusType.EXPIRED
-                            && offer.hasExpirationTimeStampPassed()) {
-                        offer.markAsExpired();
-                        return credentialOfferRepository.save(offer);
-                    }
-                    return offer;
-                });
-    }
-
-    private CredentialOffer getCredentialOfferByAccessToken(String accessToken) {
-        var uuid = uuidOrException(accessToken);
-        return getNonExpiredCredentialOffer(credentialOfferRepository.findByAccessToken(uuid))
-                .orElseThrow(() -> OAuthException.invalidToken("Invalid accessToken"));
-    }
-
     private CredentialOffer getCredentialOfferByTransactionIdAndAccessToken(UUID transactionId, String accessToken) {
-        var credentialOffer = this.getCredentialOfferByAccessToken(accessToken);
+        var credentialOffer = oAuthService.getCredentialOfferByAccessToken(accessToken);
         var storedTransactionId = credentialOffer.getTransactionId();
 
         if (isNull(storedTransactionId) || !storedTransactionId.equals(transactionId)) {
@@ -417,38 +342,5 @@ public class CredentialService {
         }
 
         return credentialOffer;
-    }
-
-    private CredentialOffer getCredentialOfferByPreAuthCode(String preAuthCode) {
-        var uuid = uuidOrException(preAuthCode);
-        return getNonExpiredCredentialOffer(credentialOfferRepository.findByPreAuthorizedCode(uuid))
-                .orElseThrow(() -> OAuthException.invalidGrant("Invalid preAuthCode"));
-    }
-
-    private UUID uuidOrException(String preAuthCode) {
-        try {
-            return UUID.fromString(preAuthCode);
-        } catch (IllegalArgumentException ex) {
-            throw OAuthException.invalidRequest("Expecting a correct UUID");
-        }
-    }
-
-    private void produceErrorEvent(String errorMessage,
-                                   CallbackErrorEventTypeDto oauthTokenExpired,
-                                   CredentialOffer credentialOffer) {
-        var errorEvent = new ErrorEvent(
-                errorMessage,
-                oauthTokenExpired,
-                credentialOffer.getId()
-        );
-        applicationEventPublisher.publishEvent(errorEvent);
-    }
-
-    private void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusType state) {
-        var stateChangeEvent = new StateChangeEvent(
-                credentialOfferId,
-                state
-        );
-        applicationEventPublisher.publishEvent(stateChangeEvent);
     }
 }

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added support for OAuth 2.0 refresh_token. These are active by default and can be deactivated using the environment
+  variable `ALLOW_TOKEN_REFRESH=false`. Only access_tokens belonging to a REVOKED offer can not be refreshed.
 - Added new endpoints for signed metadata. The functionality is disabled by default at the moment and can be
   enabled by setting the environment variable `ENABLE_SIGNED_METADATA=true`. This will generate a deeplink with an
   additional tenant id.
