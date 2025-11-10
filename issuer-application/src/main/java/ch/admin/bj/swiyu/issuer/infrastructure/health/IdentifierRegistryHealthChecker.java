@@ -1,9 +1,9 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.stereotype.Component;
 
@@ -21,13 +21,8 @@ public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
     /** Resolver used to attempt key / DID resolution. Must be provided as a Spring Bean. */
     private final KeyResolver keyResolver; // injected via Lombok-generated constructor
 
-    /** DID (or DID key) identifying the issuer. Provided by property 'application.issuer-id'. */
-    @Value("${application.issuer-id}")
-    private String issuerDid;
+    private final ApplicationProperties applicationProperties;
 
-    /** List of trusted attestation provider DIDs (or DID keys). Provided by 'application.trusted-attestation-providers'. */
-    @Value("${application.trusted-attestation-providers}")
-    private List<String> trustedAttestationDids;
 
     /**
      * Performs the health logic
@@ -36,6 +31,13 @@ public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
      */
     @Override
     protected void performCheck(Health.Builder builder) {
+
+        /* DID (or DID key) identifying the issuer. Provided by property 'application.issuer-id'. */
+        String issuerDid = applicationProperties.getIssuerId();
+
+        /* List of trusted attestation provider DIDs (or DID keys). Provided by 'application.trusted-attestation-providers'. */
+        List<String> trustedAttestationDids = applicationProperties.getTrustedAttestationProviders();
+
         List<String> failed = new ArrayList<>();
 
         // Check issuer DID

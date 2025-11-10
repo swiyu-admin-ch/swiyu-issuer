@@ -1,8 +1,9 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -17,19 +18,13 @@ import org.springframework.web.client.RestTemplate;
  * </p>
  */
 @Component
+@RequiredArgsConstructor
 public class StatusRegistryIssuerHealthChecker extends CachedHealthChecker {
 
     private static final Logger log = LoggerFactory.getLogger(StatusRegistryIssuerHealthChecker.class);
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${swiyu.status-registry.token-url}")
-    private String tokenUrl;
-
-    @Value("${swiyu.status-registry.api-url}")
-    private String apiUrl;
-
-    @Value("${swiyu.business-partner-id}")
-    private String partnerId;
+    private final SwiyuProperties swiyuProperties;
 
     /**
      * Executes the reachability checks and enriches the {@link Health.Builder} with details.
@@ -38,6 +33,10 @@ public class StatusRegistryIssuerHealthChecker extends CachedHealthChecker {
     @Override
     protected void performCheck(Health.Builder builder) {
         log.info("Checking Status Registry Issuer endpoints");
+
+        String tokenUrl = swiyuProperties.statusRegistry().tokenUrl().toExternalForm();
+        String apiUrl = swiyuProperties.statusRegistry().apiUrl().toExternalForm();
+        String partnerId = swiyuProperties.businessPartnerId().toString();
 
         try {
             restTemplate.getForEntity(tokenUrl, String.class);
