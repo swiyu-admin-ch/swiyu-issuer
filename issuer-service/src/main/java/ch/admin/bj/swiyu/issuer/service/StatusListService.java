@@ -110,7 +110,7 @@ public class StatusListService {
             token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get(BITS_FIELD_NAME),
                     statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
         } catch (IOException e) {
-            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()));
+            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
         }
         statusList.setStatusZipped(token.getStatusListData());
 
@@ -164,7 +164,7 @@ public class StatusListService {
             return statusList;
         } catch (IOException e) {
             log.error(String.format("Failed to load status list %s", statusList.getId()), e);
-            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()));
+            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
         }
     }
 
