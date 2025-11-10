@@ -5,3 +5,7 @@ spring:
   datasource:
     hikari:
       maximum-pool-size: 5
+
+# Added to fix PlaceholderResolutionException for application.trusted-attestation-providers when using 'test' profile
+application:
+  trusted-attestation-providers: []
