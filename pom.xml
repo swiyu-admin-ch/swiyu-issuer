@@ -42,7 +42,7 @@
         <nimbus-jose-jwt.version>10.6</nimbus-jose-jwt.version>
         <bouncycastle.version>1.82</bouncycastle.version>
         <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
-        <springdoc-openapi-starter-webmvc-ui.version>2.8.13</springdoc-openapi-starter-webmvc-ui.version>
+        <springdoc-openapi-starter-webmvc-ui.version>2.8.14</springdoc-openapi-starter-webmvc-ui.version>
         <openapi-generator-maven-plugin.version>7.7.0</openapi-generator-maven-plugin.version>
         <spring-cloud-dependencies.version>2024.0.0</spring-cloud-dependencies.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
