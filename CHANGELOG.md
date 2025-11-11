@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added possibility to update status list manually and disable the automatic synicnhronization.
+  New environment variable `DISABLE_STATUS_LIST_SYNCHRONIZATION` (default: false) to disable automatic updates.
+  New endpoint `/management/api/status-list/{statusListId}` to trigger manual update of a status list.
 - Added support for OAuth 2.0 refresh_token. These are active by default and can be deactivated using the environment
   variable `ALLOW_TOKEN_REFRESH=false`. Only access_tokens belonging to a REVOKED offer can not be refreshed.
 - Added new endpoints for signed metadata. The functionality is disabled by default at the moment and can be

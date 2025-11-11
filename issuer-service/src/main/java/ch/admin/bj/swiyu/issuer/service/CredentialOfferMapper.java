@@ -18,7 +18,9 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.CollectionUtils;
 
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toCredentialStatusTypeDto;
@@ -75,6 +77,14 @@ public class CredentialOfferMapper {
         return UpdateStatusResponseDto.builder()
                 .id(credential.getId())
                 .credentialStatus(toCredentialStatusTypeDto(credential.getCredentialStatus()))
+                .build();
+    }
+
+    public static UpdateStatusResponseDto toUpdateStatusResponseDto(CredentialOffer credential, List<UUID> statusLists) {
+        return UpdateStatusResponseDto.builder()
+                .id(credential.getId())
+                .credentialStatus(toCredentialStatusTypeDto(credential.getCredentialStatus()))
+                .statusLists(statusLists)
                 .build();
     }
 

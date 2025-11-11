@@ -13,11 +13,14 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.experimental.UtilityClass;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -111,5 +114,27 @@ public class IssuanceV2TestUtils {
                 .keyID(keyName)
                 .issueTime(new Date())
                 .generate();
+    }
+
+    public static String getAccessTokenFromDeeplink(MockMvc mock, String deeplink) throws Exception {
+        var decodedDeeplink = URLDecoder.decode(deeplink, StandardCharsets.UTF_8);
+        var credentialOfferString = decodedDeeplink.replace("swiyu://?credential_offer=", "");
+
+        var credentialOffer = JsonParser.parseString(credentialOfferString).getAsJsonObject();
+        var grants = credentialOffer.get("grants").getAsJsonObject();
+        var preAuthorizedCode = grants.get("urn:ietf:params:oauth:grant-type:pre-authorized_code").getAsJsonObject()
+                .get("pre-authorized_code").getAsString();
+
+        var tokenResponse = mock.perform(post("/oid4vci/api/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                        .param("pre-authorized_code", preAuthorizedCode))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        return JsonParser.parseString(tokenResponse)
+                .getAsJsonObject()
+                .get("access_token")
+                .getAsString();
     }
 }
