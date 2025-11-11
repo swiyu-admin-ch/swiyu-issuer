@@ -36,7 +36,7 @@
         <sonar.jacoco.itReportPath>${project.basedir}/issuer-application/target/jacoco-it.exec
         </sonar.jacoco.itReportPath>
         <sonar.jacoco.reportPath>${project.basedir}/issuer-application/target/jacoco.exec</sonar.jacoco.reportPath>
-        <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
         <javacrumbs.shedlock.version>6.0.2</javacrumbs.shedlock.version>
         <archunit-junit5.verion>1.4.1</archunit-junit5.verion>
         <nimbus-jose-jwt.version>10.6</nimbus-jose-jwt.version>
