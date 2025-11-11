@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
+import ch.admin.bj.swiyu.issuer.api.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -13,40 +14,107 @@ import com.authlete.sd.Disclosure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.*;
+import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import jakarta.annotation.Nullable;
+import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.text.ParseException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class TestInfrastructureUtils {
     public static Map<String, Object> fetchOAuthToken(MockMvc mock, String preAuthCode) throws Exception {
-        var response = mock.perform(post("/oid4vci/api/token")
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
-                        .param("pre-authorized_code", preAuthCode))
+        return fetchOAuthTokenDpop(mock, preAuthCode, null, null);
+    }
+
+    /**
+     * Fetches OAuth 2.0 token with optional DPoP
+     *
+     * @param mock            MockMvc to perform call with
+     * @param preAuthCode     existing pre-AuthCode to fetch OAuth token with
+     * @param holderPublicKey (optional) used to build DPoP-Proof
+     * @param externalUrl     (required if providing holderPublicKey) used to set DPoP checked http URI
+     * @return OAuthToken response
+     * @throws Exception
+     */
+    public static Map<String, Object> fetchOAuthTokenDpop(MockMvc mock, String preAuthCode, @Nullable JWK holderPublicKey, @Nullable String externalUrl) throws Exception {
+        var requestBuilder = post("/oid4vci/api/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                .param("pre-authorized_code", preAuthCode);
+        if (holderPublicKey != null) {
+            requestBuilder.header("DPoP", createDPoP(mock, "POST", externalUrl + "/api/token", null, holderPublicKey));
+        }
+        var response = mock.perform(requestBuilder)
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("expires_in")))
                 .andExpect(content().string(containsString("access_token")))
                 .andExpect(content().string(containsString("BEARER")))
                 .andReturn();
         return new ObjectMapper().readValue(response.getResponse().getContentAsString(), HashMap.class);
+    }
+
+    /**
+     *
+     * @param mock        MockMvc to perform call with
+     * @param httpMethod  Method the call the dpop will be used for will be using
+     * @param httpUri     absolute URI to the location the call the dpop will be used for will be going to
+     * @param accessToken access token which has been associated with the dpopKey used as Bearer token in the call
+     * @param dpopKey     Key which is bound with the OAuth2.0 session
+     * @return Serialized DPoP JWT
+     * @throws Exception
+     */
+    public static String createDPoP(MockMvc mock, String httpMethod, String httpUri, String accessToken, JWK dpopKey) throws Exception {
+        // Fetch fresh nonce
+        var nonce = mock.perform(post("/oid4vci/api/nonce"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse()
+                .getHeader("DPoP-Nonce");
+        assertNotNull(nonce);
+        var claimSetBuilder = new JWTClaimsSet.Builder()
+                .jwtID(UUID.randomUUID().toString())
+                .issueTime(new Date())
+                .claim("htm", httpMethod)
+                .claim("htu", httpUri)
+                .claim("nonce", nonce);
+        if (StringUtils.isNotEmpty(accessToken)) {
+            claimSetBuilder.claim("ath", Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(accessToken.getBytes(StandardCharsets.UTF_8))));
+        }
+        var signedJwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .jwk(dpopKey.toPublicJWK())
+                .type(new JOSEObjectType("dpop+jwt"))
+                .build(),
+                claimSetBuilder.build());
+        signedJwt.sign(new ECDSASigner(dpopKey.toECKey()));
+        return signedJwt.serialize();
+    }
+
+    public static JWK getDPoPKey() throws JOSEException {
+        return new ECKeyGenerator(Curve.P_256)
+                .keyID("HolderDPoPKey")
+                .keyUse(KeyUse.SIGNATURE)
+                .generate().toECKey();
     }
 
     public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {

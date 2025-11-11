@@ -92,6 +92,9 @@ public class ApplicationProperties {
     private long tokenTTL;
 
     @NotNull
+    private boolean allowTokenRefresh;
+
+    @NotNull
     private int acceptableProofTimeWindowSeconds;
     @NotNull
     private int nonceLifetimeSeconds;

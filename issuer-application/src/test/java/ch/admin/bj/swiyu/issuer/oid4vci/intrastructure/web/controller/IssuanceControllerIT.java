@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.NonceResponseDto;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
@@ -190,7 +191,7 @@ class IssuanceControllerIT {
 
         var issuerUrl = credentialOffer.get("credential_issuer").getAsString();
 
-        var response = mock.perform(get(issuerUrl.split("http://localhost:8080")[1] + "/.well-known/openid-configuration").header(HttpHeaders.CONTENT_TYPE, "application/jwt"))
+        var response = mock.perform(get(issuerUrl.split("http://localhost:8080")[1] + "/.well-known/openid-configuration").header(HttpHeaders.ACCEPT, "application/jwt"))
                 .andReturn().getResponse().getContentAsString();
 
         var test = SignedJWT.parse(response);
@@ -557,6 +558,26 @@ class IssuanceControllerIT {
         var unboundVc = SignedJWT.parse(getUnboundVc());
         assertNull(unboundVc.getJWTClaimsSet().getClaims().get("vc#integrity"));
 
+    }
+
+    @Test
+    void testRefreshToken_thenSuccess() throws Exception {
+        // When a token has been successfully fetched with DPoP
+        var dpopKey = TestInfrastructureUtils.getDPoPKey();
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthTokenDpop(mock, validPreAuthCode.toString(), dpopKey, applicationProperties.getExternalUrl());
+        var refreshToken = tokenResponse.get("refresh_token");
+        assertNotNull(refreshToken);
+        // Refresh the token
+        var refreshResponse = mock.perform(post("/oid4vci/api/token")
+                        .header("DPoP", TestInfrastructureUtils.createDPoP(mock, "POST", applicationProperties.getExternalUrl() + "/api/token", null, dpopKey))
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                        .param("grant_type", "refresh_token")
+                        .param("refresh_token", refreshToken.toString()))
+                .andExpect(status().isOk())
+                .andReturn();
+        var newToken = assertDoesNotThrow(() -> objectMapper.readValue(refreshResponse.getResponse().getContentAsString(), OAuthTokenDto.class));
+        assertNotEquals(tokenResponse.get("access_token").toString(), newToken.getAccessToken());
+        assertNotEquals(refreshToken.toString(), newToken.getRefreshToken());
     }
 
     private void addOverride(UUID preAuthCode, ConfigurationOverride override) {

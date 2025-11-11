@@ -119,6 +119,7 @@ application:
   template-replacement: # Hash Map of Values replaced in the templating
     external-url: "${EXTERNAL_URL:}" # URL under which this service can be reached from the web
   token-ttl: 600
+  allow_token_refresh: "${ALLOW_TOKEN_REFRESH:true}"
   # JSON file holding OpenID Connect configuration
   #eg:  openid_file: "file:///data/example_openid.json"
   openid-file: "${OPENID_CONFIG_FILE:}"
@@ -176,7 +177,7 @@ application:
       verification-method: "${DID_SDJWT_VERIFICATION_METHOD:}"
   url-rewrite:
     mapping: "${URL_REWRITE_MAPPING:{}}"
-  enable-signed-metadata: ${ENABLE_SIGNED_METADATA:false}
+  signed-metadata-enabled: ${ENABLE_SIGNED_METADATA:false}
   automatic-status-list-synchronization-disabled: ${DISABLE_STATUS_LIST_SYNCHRONIZATION:false}
 
 
