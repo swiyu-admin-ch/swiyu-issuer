@@ -109,11 +109,39 @@ public class CredentialManagementService {
     @Transactional
     public UpdateStatusResponseDto updateCredentialStatus(@NotNull UUID credentialId,
                                                           @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
-        var credentialOfferForUpdate = getCredentialForUpdate(credentialId);
+        var credentialOfferForUpdate = getCredentialById(credentialId);
         var newStatus = toCredentialStatusType(requestedNewStatus);
-        var credential = updateCredentialStatus(credentialOfferForUpdate, newStatus);
 
-        return toUpdateStatusResponseDto(credential);
+        var currentStatus = credentialOfferForUpdate.getCredentialStatus();
+
+        // Ignore no status changes and return. This needs to be checked first to
+        // prevent unnecessary errors
+        if (currentStatus == newStatus) {
+            return toUpdateStatusResponseDto(credentialOfferForUpdate);
+        }
+
+        // status is already in a terminal state and cannot be changed
+        if (currentStatus.isTerminalState()) {
+            throw new BadRequestException(String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
+        }
+
+        var statusList = Collections.<UUID>emptyList();
+
+        if (newStatus == CredentialStatusType.EXPIRED) {
+            credentialOfferForUpdate.expire();
+        } else if (currentStatus.isProcessable()) {
+            handlePreIssuanceStatusChange(credentialOfferForUpdate, currentStatus, newStatus);
+        } else {
+            statusList = handlePostIssuanceStatusChange(credentialOfferForUpdate, newStatus);
+        }
+
+        log.debug("Updating credential {} from {} to {}", credentialOfferForUpdate.getId(), currentStatus, newStatus);
+
+        var updatedCredentialOffer = this.credentialOfferRepository.save(credentialOfferForUpdate);
+
+        produceStateChangeEvent(updatedCredentialOffer.getId(), updatedCredentialOffer.getCredentialStatus());
+
+        return statusList.isEmpty() ? toUpdateStatusResponseDto(credentialOfferForUpdate) : toUpdateStatusResponseDto(credentialOfferForUpdate, statusList);
     }
 
     /**
@@ -177,7 +205,7 @@ public class CredentialManagementService {
                 .countByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp));
         var expiredOffers = credentialOfferRepository
                 .findByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp);
-        expiredOffers.forEach(offer -> updateCredentialStatus(offer, CredentialStatusType.EXPIRED));
+        expiredOffers.forEach(this::expireCredentialOffer);
     }
 
     /**
@@ -196,7 +224,7 @@ public class CredentialManagementService {
      */
     @Transactional
     public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialId, Map<String, Object> offerDataMap) {
-        var storedCredentialOffer = getCredentialForUpdate(credentialId);
+        var storedCredentialOffer = getCredentialById(credentialId);
 
         if (!storedCredentialOffer.isDeferredOffer()
                 && storedCredentialOffer.getCredentialStatus() == CredentialStatusType.DEFERRED) {
@@ -248,8 +276,7 @@ public class CredentialManagementService {
                     // Make sure only offer is returned if it is not expired
                     if (CredentialStatusType.getExpirableStates().contains(offer.getCredentialStatus())
                             && offer.hasExpirationTimeStampPassed()) {
-                        return updateCredentialStatus(getCredentialForUpdate(offer.getId()),
-                                CredentialStatusType.EXPIRED);
+                        return expireCredentialOffer(getCredentialById(offer.getId()));
                     }
                     return offer;
                 })
@@ -452,44 +479,31 @@ public class CredentialManagementService {
         }
     }
 
-    /**
-     * @param credential the pessimistic write locked credential offer
-     * @param newStatus  the new status assigned
-     * @return the updated CredentialOffer
-     */
-    private CredentialOffer updateCredentialStatus(@NotNull CredentialOffer credential,
-                                                   @NotNull CredentialStatusType newStatus) {
-
+    private CredentialOffer expireCredentialOffer(CredentialOffer credential) {
         var currentStatus = credential.getCredentialStatus();
 
-        // Ignore no status changes and return. This needs to be checked first to
-        // prevent unnecessary errors
-        if (currentStatus == newStatus) {
-            return credential;
+        if (credential.getCredentialStatus().isTerminalState()) {
+            throw new BadRequestException(String.format("Tried to set %s but status is already %s", CredentialStatusType.EXPIRED, currentStatus));
         }
 
-        // status is already in a terminal state and cannot be changed
-        if (currentStatus.isTerminalState()) {
-            throw new BadRequestException(
-                    String.format("Tried to set %s but status is already %s", newStatus, currentStatus));
-        }
+        credential.expire();
 
-        if (newStatus == CredentialStatusType.EXPIRED) {
-            credential.expire();
-        } else if (currentStatus.isProcessable()) {
-            handlePreIssuanceStatusChange(credential, currentStatus, newStatus);
-        } else {
-            handlePostIssuanceStatusChange(credential, newStatus);
-        }
+        var updatedCredential = this.credentialOfferRepository.save(credential);
 
-        log.debug("Updating credential {} from {} to {}", credential.getId(), currentStatus, newStatus);
-        var updatedCredentialOffer = this.credentialOfferRepository.save(credential);
-        produceStateChangeEvent(updatedCredentialOffer.getId(), updatedCredentialOffer.getCredentialStatus());
+        produceStateChangeEvent(credential.getId(), credential.getCredentialStatus());
 
-        return updatedCredentialOffer;
+        return updatedCredential;
     }
 
-    private CredentialOffer getCredentialForUpdate(UUID credentialId) {
+    /**
+     * Load a credential by id while acquiring a database lock to prevent modifications.
+     * The repository method `findByIdForUpdate`uses a pessimistic lock.
+     *
+     * @param credentialId the credential identifier
+     * @return the locked {@link CredentialOffer}
+     * @throws ResourceNotFoundException if no credential with the given id exists
+     */
+    private CredentialOffer getCredentialById(UUID credentialId) {
         return this.credentialOfferRepository.findByIdForUpdate(credentialId)
                 .orElseThrow(
                         () -> new ResourceNotFoundException(String.format("Credential %s not found", credentialId)));
@@ -521,8 +535,10 @@ public class CredentialManagementService {
 
     /**
      * Handles status changes after issuance (status suspended, revoked and issued)
+     *
+     * @return
      */
-    private void handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
+    private List<UUID> handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
 
         final Set<CredentialOfferStatus> offerStatusSet = credentialOfferStatusRepository
                 .findByOfferId(credential.getId());
@@ -532,16 +548,18 @@ public class CredentialManagementService {
                     "No associated status lists found. Can not set a status to an already issued credential");
         }
 
-        switch (newStatus) {
+        var changedStatusLists = switch (newStatus) {
             case REVOKED -> statusListService.revoke(offerStatusSet);
             case SUSPENDED -> statusListService.suspend(offerStatusSet);
             case ISSUED -> statusListService.revalidate(offerStatusSet);
             default -> throw new BadRequestException(String.format(
                     "Illegal state transition - Status cannot be updated from %s to %s",
                     credential.getCredentialStatus(), newStatus));
-        }
+        };
 
         credential.changeStatus(newStatus);
+
+        return changedStatusLists;
     }
 
     private void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusType state) {

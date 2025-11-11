@@ -7,9 +7,8 @@ import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.SignatureService;
 import ch.admin.bj.swiyu.issuer.service.StatusListService;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
@@ -24,6 +23,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
@@ -32,10 +32,12 @@ import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.text.ParseException;
-import java.util.UUID;
+import java.util.*;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
 class StatusListServiceTest {
     private StatusListService statusListService;
@@ -54,29 +56,30 @@ class StatusListServiceTest {
     @BeforeEach
     void setUp() throws JOSEException, KeyStrategyException {
         applicationProperties = Mockito.mock(ApplicationProperties.class);
-        Mockito.when(applicationProperties.getIssuerId()).thenReturn("did:example:mock");
+        when(applicationProperties.getIssuerId()).thenReturn("did:example:mock");
         statusListProperties = Mockito.mock(StatusListProperties.class);
-        Mockito.when(statusListProperties.getVerificationMethod()).thenReturn("did:example:mock#key1");
+        when(statusListProperties.getVerificationMethod()).thenReturn("did:example:mock#key1");
         statusRegistryClient = Mockito.mock(StatusRegistryClient.class);
-        Mockito.when(statusRegistryClient.createStatusListEntry()).thenReturn(new StatusListEntryCreationDto()
+        when(statusRegistryClient.createStatusListEntry()).thenReturn(new StatusListEntryCreationDto()
                 .id(statusRegistryEntryId)
                 .statusRegistryUrl("https://www.example.com/" + statusRegistryEntryId));
 
         statusListRepository = Mockito.mock(StatusListRepository.class);
-        Mockito.when(statusListRepository.save(Mockito.any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(statusListRepository.save(Mockito.any())).thenAnswer(invocation -> invocation.getArgument(0));
         transaction = Mockito.mock(TransactionTemplate.class);
-        Mockito.when(transaction.execute(Mockito.any())).then(invocation -> {
+        when(transaction.execute(Mockito.any())).then(invocation -> {
             TransactionCallback<StatusList> callback = invocation.getArgument(0);
             return callback.doInTransaction(null);
         });
         signatureService = Mockito.mock(SignatureService.class);
         ecKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:mock#key1").generate();
         signer = new ECDSASigner(ecKey);
-        Mockito.when(signatureService.createSigner(Mockito.any(), Mockito.any(), Mockito.any()))
+        when(signatureService.createSigner(Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(signer);
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
-        Mockito.when(credentialOfferStatusRepository.countByStatusListId(Mockito.any())).thenReturn(0);
+        when(credentialOfferStatusRepository.countByStatusListId(Mockito.any())).thenReturn(0);
         statusListService = new StatusListService(applicationProperties, statusListProperties, statusRegistryClient, statusListRepository, transaction, signatureService, credentialOfferStatusRepository);
+        when(statusListProperties.getStatusListSizeLimit()).thenReturn(1000);
     }
 
     @ParameterizedTest
@@ -93,11 +96,133 @@ class StatusListServiceTest {
         var statusListCaptor = ArgumentCaptor.forClass(StatusList.class);
         var jwtCaptor = ArgumentCaptor.forClass(String.class);
         statusListService.createStatusList(request);
-        Mockito.verify(statusRegistryClient).updateStatusListEntry(statusListCaptor.capture(), jwtCaptor.capture());
+        verify(statusRegistryClient).updateStatusListEntry(statusListCaptor.capture(), jwtCaptor.capture());
         var jwt = jwtCaptor.getValue();
         var parsedJwt = SignedJWT.parse(jwt);
         assertTrue(parsedJwt.verify(new ECDSAVerifier(ecKey.toECPublicKey())));
         assertEquals(expectedIssuer, parsedJwt.getJWTClaimsSet().getIssuer());
         assertEquals(expectedVerificationMethod, parsedJwt.getHeader().getKeyID());
+    }
+
+    @Test
+    void revoke_shouldReturnStatusListId() {
+        UUID statusListId = UUID.randomUUID();
+
+        // create a valid token status zipped payload
+        var token = new TokenStatusListToken(8, 10);
+
+        StatusList statusList = StatusList.builder()
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .statusZipped(token.getStatusListData())
+                .maxLength(10)
+                .configurationOverride(null)
+                .build();
+
+        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
+
+        CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
+        CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
+        when(offerStatus.getId()).thenReturn(id);
+        when(id.getStatusListId()).thenReturn(statusListId);
+        when(id.getIndex()).thenReturn(1);
+
+        List<UUID> result = statusListService.revoke(Set.of(offerStatus));
+
+        assertEquals(1, result.size());
+        assertEquals(statusListId, result.get(0));
+    }
+
+    @Test
+    void suspend_shouldReturnStatusListId() {
+        UUID statusListId = UUID.randomUUID();
+
+        TokenStatusListToken token = new TokenStatusListToken(8, 10);
+
+        StatusList statusList = StatusList.builder()
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .statusZipped(token.getStatusListData())
+                .maxLength(10)
+                .configurationOverride(null)
+                .build();
+
+        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
+
+        CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
+        CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
+        when(offerStatus.getId()).thenReturn(id);
+        when(id.getStatusListId()).thenReturn(statusListId);
+        when(id.getIndex()).thenReturn(2);
+
+        List<UUID> result = statusListService.suspend(Set.of(offerStatus));
+
+        assertEquals(1, result.size());
+        assertEquals(statusListId, result.getFirst());
+    }
+
+    @Test
+    void revalidate_shouldReturnStatusListId() {
+        UUID statusListId = UUID.randomUUID();
+
+        TokenStatusListToken token = new TokenStatusListToken(8, 10);
+
+        StatusList statusList = StatusList.builder()
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .statusZipped(token.getStatusListData())
+                .maxLength(10)
+                .configurationOverride(null)
+                .build();
+
+        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
+
+        CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
+        CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
+        when(offerStatus.getId()).thenReturn(id);
+        when(id.getStatusListId()).thenReturn(statusListId);
+        when(id.getIndex()).thenReturn(3);
+
+        List<UUID> result = statusListService.revalidate(Set.of(offerStatus));
+
+        assertEquals(1, result.size());
+        assertEquals(statusListId, result.getFirst());
+    }
+
+    @Test
+    void getStatusListInformation_whenExists_shouldReturnDtoAndCallCount() {
+        UUID statusListId = UUID.randomUUID();
+        StatusList statusList = StatusList.builder()
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .maxLength(10)
+                .type(StatusListType.TOKEN_STATUS_LIST)
+                .build();
+
+        when(statusListRepository.findById(statusListId)).thenReturn(Optional.of(statusList));
+        when(credentialOfferStatusRepository.countByStatusListId(statusListId)).thenReturn(3);
+        when(statusListProperties.getVersion()).thenReturn("v1");
+
+        var dto = statusListService.getStatusListInformation(statusListId);
+
+        assertEquals(statusList.getUri(), dto.getStatusRegistryUrl());
+        // verify repository interactions
+        verify(statusListRepository, times(1)).findById(statusListId);
+        verify(credentialOfferStatusRepository, times(1)).countByStatusListId(statusListId);
+    }
+
+    @Test
+    void getStatusListInformation_whenNotFound_shouldThrow() {
+        UUID statusListId = UUID.randomUUID();
+        when(statusListRepository.findById(statusListId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> statusListService.getStatusListInformation(statusListId));
+
+        verify(statusListRepository, times(1)).findById(statusListId);
+        verifyNoInteractions(credentialOfferStatusRepository);
     }
 }
