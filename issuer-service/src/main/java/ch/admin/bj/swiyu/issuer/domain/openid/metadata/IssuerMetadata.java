@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -120,6 +121,7 @@ public class IssuerMetadata {
      *
      * @return the configured batchSize or 1, if no batch size has been configured
      */
+    @JsonIgnore
     public int getIssuanceBatchSize() {
         return batchCredentialIssuance == null ? 1 : batchCredentialIssuance.batchSize();
     }

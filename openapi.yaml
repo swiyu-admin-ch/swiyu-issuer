@@ -39,7 +39,7 @@ paths:
       tags:
       - Issuer OID4VCI API
       summary: Submit form data
-      operationId: oauthAccessToken
+      operationId: oauthTokenEndpoint
       parameters:
       - name: DPoP
         in: header
@@ -47,7 +47,7 @@ paths:
         schema:
           type: string
       requestBody:
-        description: Form data to be submitted
+        description: OAuth 2.0 access token request to be submitted
         content:
           application/x-www-form-urlencoded:
             schema:
@@ -59,7 +59,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/OAuthToken"
   /oid4vci/api/nonce:
@@ -234,6 +234,52 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/StatusList"
+  /management/api/status-list/{statusListId}:
+    get:
+      tags:
+      - Status List API
+      summary: Get the status information of a status list.
+      operationId: getStatusListInformation
+      parameters:
+      - name: statusListId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StatusList"
+    post:
+      tags:
+      - Status List API
+      summary: Update the status list registry entry manually.
+      description: Update the status list registry entry manually. This endpoint is
+        only available when automatic status list synchronization is disabled in the
+        application configuration.
+      operationId: updateStatusListRegistryEntry
+      parameters:
+      - name: statusListId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StatusList"
   /management/api/credentials:
     post:
       tags:
@@ -389,7 +435,7 @@ paths:
         schema:
           type: string
           format: uuid
-      - name: Content-Type
+      - name: Accept
         in: header
         required: true
         schema:
@@ -416,7 +462,7 @@ paths:
         schema:
           type: string
           format: uuid
-      - name: Content-Type
+      - name: Accept
         in: header
         required: true
         schema:
@@ -443,7 +489,7 @@ paths:
         schema:
           type: string
           format: uuid
-      - name: Content-Type
+      - name: Accept
         in: header
         required: true
         schema:
@@ -470,7 +516,7 @@ paths:
         schema:
           type: string
           format: uuid
-      - name: Content-Type
+      - name: Accept
         in: header
         required: true
         schema:
@@ -497,7 +543,7 @@ paths:
         schema:
           type: string
           format: uuid
-      - name: Content-Type
+      - name: Accept
         in: header
         required: true
         schema:
@@ -524,7 +570,7 @@ paths:
         schema:
           type: string
           format: uuid
-      - name: Content-Type
+      - name: Accept
         in: header
         required: true
         schema:
@@ -688,28 +734,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OpenIdConfiguration"
-  /management/api/status-list/{statusListId}:
-    get:
-      tags:
-      - Status List API
-      summary: Get the status information of a status list.
-      operationId: getStatusListInformation
-      parameters:
-      - name: statusListId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/StatusList"
   /management/api/credentials/{credentialId}/offer_deeplink:
     get:
       tags:
@@ -849,27 +873,28 @@ components:
         grant_type:
           type: string
           default: urn:ietf:params:oauth:grant-type:pre-authorized_code
-          description: The type of grant being requested. Must be 'urn:ietf:params:oauth:grant-type:pre-authorized_code'.
+          description: The type of grant being requested. Must be 'urn:ietf:params:oauth:grant-type:pre-authorized_code'
+            or 'refresh_token.
           minLength: 1
         pre-authorized_code:
           type: string
-          minLength: 1
+        refresh_token:
+          type: string
       required:
       - grant_type
-      - pre-authorized_code
     OAuthToken:
       type: object
       properties:
-        refresh_token:
+        token_type:
           type: string
         cnonce:
           type: string
           deprecated: true
-        token_type:
-          type: string
         scope:
           type: string
         access_token:
+          type: string
+        refresh_token:
           type: string
         expires_in:
           type: integer
@@ -1147,6 +1172,7 @@ components:
       properties:
         metadata_credential_supported_id:
           type: array
+          description: ID linking the offer to the issuer metadata.
           items:
             type: string
           minItems: 1
@@ -1192,6 +1218,9 @@ components:
           example: 2010-01-01T18:23:24Z
         status_lists:
           type: array
+          description: List of URIs of the status lists to be used with the credential.
+            Status Lists must be initialized. Can provide multiple status lists to
+            have multiple status sources.
           items:
             type: string
         configuration_override:
@@ -1250,6 +1279,11 @@ components:
           format: uuid
         status:
           $ref: "#/components/schemas/CredentialStatusType"
+        status_lists:
+          type: array
+          items:
+            type: string
+            format: uuid
     UpdateCredentialStatusRequestType:
       type: string
       description: |2
@@ -1354,10 +1388,6 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/CredentialClaim"
-        mandatoryClaims:
-          type: array
-          items:
-            type: string
         '@context':
           type: array
           items:
@@ -1434,9 +1464,6 @@ components:
         The OID4VCI Credential Issuer Metadata contains information on the Credential Issuer's technical capabilities,
         supported Credentials, and (internationalized) display information.
       properties:
-        issuanceBatchSize:
-          type: integer
-          format: int32
         credential_issuer:
           type: string
           description: The Credential Issuer's identifier
