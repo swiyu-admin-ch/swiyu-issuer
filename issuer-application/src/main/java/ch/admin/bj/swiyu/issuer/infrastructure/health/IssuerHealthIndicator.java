@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
@@ -12,18 +13,18 @@ import java.util.Map;
  * <p>Propagates DOWN if any underlying checker is not UP and exposes each checkers details.</p>
  */
 @Component
+@RequiredArgsConstructor
 public class IssuerHealthIndicator implements HealthIndicator {
 
     /** Cached status registry endpoint checks. */
     private final StatusRegistryIssuerHealthChecker statusRegistryIssuer;
     /** Cached DID / identifier resolution checks. */
     private final IdentifierRegistryHealthChecker identifierRegistry;
+    /** Cached status list signing key verification checks. */
+    private final StatusListSigningKeyVerificationHealthChecker statusListSigningKeyVerificationHealthChecker;
+    /** Cached SD-JWT signing key verification checks. */
+    private final SdJwtSigningKeyVerificationHealthChecker sdJwtSigningKeyVerificationHealthChecker;
 
-    public IssuerHealthIndicator(StatusRegistryIssuerHealthChecker statusRegistryIssuer,
-                                 IdentifierRegistryHealthChecker identifierRegistry) {
-        this.statusRegistryIssuer = statusRegistryIssuer;
-        this.identifierRegistry = identifierRegistry;
-    }
 
     /**
      * Builds an aggregate {@link Health} from the latest cached results of the injected checkers.
@@ -35,7 +36,9 @@ public class IssuerHealthIndicator implements HealthIndicator {
 
         Map<String, Health> checks = Map.of(
                 "statusRegistryIssuer", statusRegistryIssuer.getHealthResult(),
-                "identifierRegistry", identifierRegistry.getHealthResult()
+                "identifierRegistry", identifierRegistry.getHealthResult(),
+                "statusListSigningKey", statusListSigningKeyVerificationHealthChecker.getHealthResult(),
+                "sdJwtSigningKey", sdJwtSigningKeyVerificationHealthChecker.getHealthResult()
         );
 
         checks.forEach((name, health) -> {
