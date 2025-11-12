@@ -128,6 +128,6 @@ public class CredentialController {
                                                           @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = UpdateCredentialStatusRequestTypeDto.class))
                                                           @RequestParam("credentialStatus") UpdateCredentialStatusRequestTypeDto credentialStatus) {
 
-        return this.credentialManagementService.updateCredentialStatus(credentialId, credentialStatus);
+        return credentialManagementService.updateCredentialStatus(credentialId, credentialStatus);
     }
 }

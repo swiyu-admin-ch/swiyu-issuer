@@ -41,6 +41,7 @@ import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusListMapper.t
 @Service
 public class StatusListService {
 
+    private static final String BITS_FIELD_NAME = "bits";
     private final ApplicationProperties applicationProperties;
     private final StatusListProperties statusListProperties;
     private final StatusRegistryClient statusRegistryClient;
@@ -52,8 +53,7 @@ public class StatusListService {
     @Transactional(readOnly = true)
     public StatusListDto getStatusListInformation(UUID statusListId) {
         var statusList = this.statusListRepository.findById(statusListId)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
+                .orElseThrow(() -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
 
         return toStatusListDto(statusList, statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusListId), statusListProperties.getVersion());
     }
@@ -83,19 +83,55 @@ public class StatusListService {
         }
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void revoke(Set<CredentialOfferStatus> offerStatusSet) {
-        offerStatusSet.forEach(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.REVOKE));
+    /**
+     * Updates the status list identified by {@code statusListId} and synchronizing
+     * the entry with the external status registry.
+     *
+     * <p>The method enforces that automatic status list synchronization is enabled by default in the
+     * application configuration.</p>
+     *
+     * @param statusListId the UUID of the status list to update
+     * @return a {@link StatusListDto} representing the updated status list
+     * @throws BadRequestException       if automatic status list synchronization is not disabled
+     * @throws ResourceNotFoundException if no status list with the given id exists
+     * @throws ConfigurationException    if the status payload cannot be loaded/decoded
+     */
+    @Transactional
+    public StatusListDto updateStatusList(UUID statusListId) {
+        if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
+            throw new BadRequestException("Automatic status list synchronization is not disabled");
+        }
+
+        StatusList statusList = statusListRepository.findByIdForUpdate(statusListId).orElseThrow(
+                () -> new ResourceNotFoundException(String.format("Status list %s not found", statusListId)));
+
+        TokenStatusListToken token;
+        try {
+            token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get(BITS_FIELD_NAME),
+                    statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
+        } catch (IOException e) {
+            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
+        }
+        statusList.setStatusZipped(token.getStatusListData());
+
+        updateRegistry(statusList, token);
+
+        return toStatusListDto(statusList, statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusList.getId()), statusListProperties.getVersion());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void suspend(Set<CredentialOfferStatus> offerStatusSet) {
-        offerStatusSet.forEach(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.SUSPEND));
+    public List<UUID> revoke(Set<CredentialOfferStatus> offerStatusSet) {
+        return offerStatusSet.stream().map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.REVOKE).getId()).toList();
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void revalidate(Set<CredentialOfferStatus> offerStatusSet) {
-        offerStatusSet.forEach(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.VALID));
+    public List<UUID> suspend(Set<CredentialOfferStatus> offerStatusSet) {
+        return offerStatusSet.stream().map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.SUSPEND).getId()).toList();
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<UUID> revalidate(Set<CredentialOfferStatus> offerStatusSet) {
+        return offerStatusSet.stream().map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.VALID).getId()).toList();
     }
 
     @Transactional
@@ -109,22 +145,26 @@ public class StatusListService {
      * @param offerStatus
      * @param bit         the statusBit to be set
      */
-    protected void updateTokenStatusList(CredentialOfferStatus offerStatus, TokenStatusListBit bit) {
+    protected StatusList updateTokenStatusList(CredentialOfferStatus offerStatus, TokenStatusListBit bit) {
         // TODO Make updating status more efficient
         StatusList statusList = statusListRepository.findByIdForUpdate(offerStatus.getId().getStatusListId()).orElseThrow();
-        if ((Integer) statusList.getConfig().get("bits") < bit.getValue()) {
+        var statusListBits = (Integer) statusList.getConfig().get(BITS_FIELD_NAME);
+        if (statusListBits < bit.getValue()) {
             throw new BadRequestException(String.format("Attempted to update a status list %s to a status not supported %s", statusList.getUri(), bit.name()));
         }
         try {
-            var token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
+            var token = TokenStatusListToken.loadTokenStatusListToken(statusListBits,
                     statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
             token.setStatus(offerStatus.getId().getIndex(), bit.getValue());
             statusList.setStatusZipped(token.getStatusListData());
-            updateRegistry(statusList, token);
+            if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
+                updateRegistry(statusList, token);
+            }
             statusListRepository.save(statusList);
+            return statusList;
         } catch (IOException e) {
             log.error(String.format("Failed to load status list %s", statusList.getId()), e);
-            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()));
+            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
         }
     }
 
@@ -142,7 +182,7 @@ public class StatusListService {
         StatusList statusList = StatusList.builder()
                 .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
                 .config(Map.of(
-                        "bits", config.getBits(),
+                        BITS_FIELD_NAME, config.getBits(),
                         "purpose", config.getPurpose() != null ? config.getPurpose() : ""
                 ))
                 .uri(newStatusList.getStatusRegistryUrl())

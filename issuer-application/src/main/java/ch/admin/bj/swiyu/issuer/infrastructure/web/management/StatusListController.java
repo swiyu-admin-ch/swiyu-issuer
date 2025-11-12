@@ -8,6 +8,8 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.management;
 
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.service.StatusListService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +31,7 @@ import java.util.UUID;
 public class StatusListController {
 
     private final StatusListService statusListService;
+    private final ApplicationProperties applicationProperties;
 
     @Timed
     @PostMapping("")
@@ -45,5 +48,17 @@ public class StatusListController {
     @Operation(summary = "Get the status information of a status list.")
     public StatusListDto getStatusListInformation(@PathVariable UUID statusListId) {
         return this.statusListService.getStatusListInformation(statusListId);
+    }
+
+    @Timed
+    @PostMapping("/{statusListId}")
+    @Operation(summary = "Update the status list registry entry manually.",
+            description = "Update the status list registry entry manually. This endpoint is only available when " +
+                    "automatic status list synchronization is disabled in the application configuration.")
+    public StatusListDto updateStatusListRegistryEntry(@PathVariable UUID statusListId) {
+        if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
+            throw new ConfigurationException("Automatic status list synchronization is enabled. Manual update via API is disabled.");
+        }
+        return this.statusListService.updateStatusList(statusListId);
     }
 }

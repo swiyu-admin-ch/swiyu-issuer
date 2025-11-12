@@ -200,7 +200,7 @@ class CredentialManagementServiceTest {
 
         when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
-        doNothing().when(statusListService).revoke(offerStatusSet);
+        when(statusListService.revoke(offerStatusSet)).thenReturn(List.of(UUID.randomUUID()));
 
         var updated = credentialService.updateCredentialStatus(issued.getId(), UpdateCredentialStatusRequestTypeDto.REVOKED);
 
@@ -238,7 +238,7 @@ class CredentialManagementServiceTest {
 
         when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
-        doNothing().when(statusListService).revoke(offerStatusSet);
+        when(statusListService.revoke(offerStatusSet)).thenReturn(List.of(UUID.randomUUID()));
 
         credentialService.updateCredentialStatus(issued.getId(), UpdateCredentialStatusRequestTypeDto.REVOKED);
 
@@ -252,7 +252,7 @@ class CredentialManagementServiceTest {
 
         when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
 
-        doNothing().when(statusListService).revoke(offerStatusSet);
+        when(statusListService.revoke(offerStatusSet)).thenReturn(List.of(UUID.randomUUID()));
 
         credentialService.updateCredentialStatus(issued.getId(), UpdateCredentialStatusRequestTypeDto.SUSPENDED);
 
@@ -266,7 +266,7 @@ class CredentialManagementServiceTest {
 
         when(credentialOfferStatusRepository.findByOfferId(suspended.getId())).thenReturn(offerStatusSet);
 
-        doNothing().when(statusListService).revoke(offerStatusSet);
+        when(statusListService.revoke(offerStatusSet)).thenReturn(List.of(UUID.randomUUID()));
 
         credentialService.updateCredentialStatus(suspended.getId(), UpdateCredentialStatusRequestTypeDto.ISSUED);
 
