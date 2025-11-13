@@ -38,6 +38,7 @@ public class DemonstratingProofOfPossessionValidationService {
 
     public static final String DPOP_JWT_HEADER_TYP = "dpop+jwt";
     private final ApplicationProperties applicationProperties;
+    private final NonceService nonceService;
 
     /**
      * @return List of supported JWS (Json Web Signature) / JWT (Json Web Token) signing algorithms
@@ -224,9 +225,10 @@ public class DemonstratingProofOfPossessionValidationService {
      */
     private void hasValidSelfContainedNonce(JWTClaimsSet jwtClaims) throws ParseException {
         var nonce = new SelfContainedNonce(jwtClaims.getStringClaim("nonce"));
-        if (!nonce.isSelfContainedNonce() || !nonce.isValid(applicationProperties.getNonceLifetimeSeconds())) {
+        if (!nonce.isSelfContainedNonce() || !nonce.isValid(applicationProperties.getNonceLifetimeSeconds()) || nonceService.isUsedNonce(nonce)) {
             throw new DemonstratingProofOfPossessionException("Must use valid server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
         }
+        nonceService.registerNonce(nonce);
     }
 
     private void hasMatchingHttpUri(HttpRequest request, JWTClaimsSet jwtClaims) throws URISyntaxException, ParseException {
