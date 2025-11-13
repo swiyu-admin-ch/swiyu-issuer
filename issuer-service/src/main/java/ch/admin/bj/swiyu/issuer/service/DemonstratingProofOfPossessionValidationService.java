@@ -224,11 +224,15 @@ public class DemonstratingProofOfPossessionValidationService {
      * Check if the nonce is valid - not yet used and still within the acceptable time window
      */
     private void hasValidSelfContainedNonce(JWTClaimsSet jwtClaims) throws ParseException {
-        var nonce = new SelfContainedNonce(jwtClaims.getStringClaim("nonce"));
-        if (!nonce.isSelfContainedNonce() || !nonce.isValid(applicationProperties.getNonceLifetimeSeconds()) || nonceService.isUsedNonce(nonce)) {
-            throw new DemonstratingProofOfPossessionException("Must use valid server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
+        try {
+            var nonce = new SelfContainedNonce(jwtClaims.getStringClaim("nonce"));
+            if (!nonce.isSelfContainedNonce() || !nonce.isValid(applicationProperties.getNonceLifetimeSeconds()) || nonceService.isUsedNonce(nonce)) {
+                throw new DemonstratingProofOfPossessionException("Must use valid server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
+            }
+            nonceService.registerNonce(nonce);
+        } catch (IllegalArgumentException e) {
+            throw new DemonstratingProofOfPossessionException("Must use valid server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF, e);
         }
-        nonceService.registerNonce(nonce);
     }
 
     private void hasMatchingHttpUri(HttpRequest request, JWTClaimsSet jwtClaims) throws URISyntaxException, ParseException {
