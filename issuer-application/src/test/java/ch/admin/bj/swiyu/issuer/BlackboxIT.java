@@ -19,6 +19,7 @@ import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
+import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 import com.nimbusds.jose.*;
@@ -33,7 +34,6 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +53,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -76,7 +75,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class BlackboxIT {
     private static final String CREDENTIAL_MANAGEMENT_BASE_URL = "/management/api/credentials";
-    private static final MessageDigest sha256 = assertDoesNotThrow(() -> MessageDigest.getInstance("SHA-256"));
     protected StatusListTestHelper statusListTestHelper;
     @Autowired
     protected SwiyuProperties swiyuProperties;
@@ -362,23 +360,7 @@ class BlackboxIT {
                 .andExpect(status().isOk())
                 .andReturn());
         String dpopNonce = nonceResponse.getResponse().getHeader("DPoP-Nonce");
-        // Create a DPoP JWT
-        var claimSetBuilder = new JWTClaimsSet.Builder()
-                .jwtID(UUID.randomUUID().toString())
-                .issueTime(new Date())
-                .claim("htm", httpMethod)
-                .claim("htu", httpUri)
-                .claim("nonce", dpopNonce);
-        if (StringUtils.isNotEmpty(accessToken)) {
-            claimSetBuilder.claim("ath", Base64.getEncoder().encodeToString(sha256.digest(accessToken.getBytes(StandardCharsets.UTF_8))));
-        }
-        var signedJwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .jwk(dpopKey.toPublicJWK())
-                .type(new JOSEObjectType("dpop+jwt"))
-                .build(),
-                claimSetBuilder.build());
-        assertDoesNotThrow(() -> signedJwt.sign(new ECDSASigner(dpopKey)));
-        return signedJwt.serialize();
+        return DemonstratingProofOfPossessionTestUtil.createDPoPJWT(httpMethod, httpUri, accessToken, dpopKey, dpopNonce);
     }
 
     @NotNull

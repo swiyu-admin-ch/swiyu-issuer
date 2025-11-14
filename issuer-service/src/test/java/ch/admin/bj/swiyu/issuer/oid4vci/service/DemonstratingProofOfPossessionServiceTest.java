@@ -56,7 +56,7 @@ class DemonstratingProofOfPossessionServiceTest {
                 applicationProperties,
                 nonceService,
                 credentialOfferRepository,
-                new DemonstratingProofOfPossessionValidationService(applicationProperties)
+                new DemonstratingProofOfPossessionValidationService(applicationProperties, nonceService)
         );
         dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
                 .keyID("HolderDPoPKey")
