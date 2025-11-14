@@ -26,6 +26,7 @@ import java.util.Optional;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Deprecated(since = "OID4VCI 1.0")
 public class CredentialRequestClass {
 
     private String format;
