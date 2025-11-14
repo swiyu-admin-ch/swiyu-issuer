@@ -27,12 +27,14 @@ import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.NonNull;
+import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.AdditionalMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -162,7 +164,8 @@ class IssuanceControllerIT {
                 .andExpect(content().string(containsString("credential_endpoint")))
                 .andExpect(content().string(not(containsString("${stage}"))))
                 .andExpect(content().string(containsString("local-Example Credential")))
-                .andExpect(content().string(containsString("local-university_example_sd_jwt")));
+                .andExpect(content().string(containsString("local-university_example_sd_jwt")))
+                .andExpect(content().string(Matchers.not(containsString("issuanceBatchSize")))); // Util Field should not be displayed metadata
     }
 
     @Test

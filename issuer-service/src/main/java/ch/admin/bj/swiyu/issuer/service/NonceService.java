@@ -24,14 +24,31 @@ public class NonceService {
         return new NonceResponseDto(new SelfContainedNonce().getNonce());
     }
 
+    /**
+     * Validate a given self-contained nonce in string form by parsing it and running all appropriate validations.
+     * Will cache the nonce once used, so it can not be used again
+     *
+     * @param nonce to be validated
+     * @return True if the nonce is valid and has not been used.
+     */
+    @Transactional
+    public boolean isValidSelfContainedNonce(String nonce) {
+        var selfContainedNonce = new SelfContainedNonce(nonce);
+        if (!selfContainedNonce.isSelfContainedNonce() || !selfContainedNonce.isValid(applicationProperties.getNonceLifetimeSeconds()) || isNonceRegisteredInCache(selfContainedNonce)) {
+            return false;
+        }
+        saveNonceInCache(selfContainedNonce);
+        return true;
+    }
+
     @Transactional(readOnly = true)
     public boolean isUsedNonce(SelfContainedNonce nonce) {
-        return cachedNonceRepository.findById(nonce.getNonceId()).isPresent();
+        return isNonceRegisteredInCache(nonce);
     }
 
     @Transactional
     public void registerNonce(SelfContainedNonce nonce) {
-        cachedNonceRepository.save(new CachedNonce(nonce.getNonceId(), nonce.getNonceInstant()));
+        saveNonceInCache(nonce);
     }
 
     @Transactional
@@ -50,11 +67,18 @@ public class NonceService {
         }
     }
 
-
     @Transactional
     @Scheduled(fixedRateString = "${application.nonce-lifetime-seconds}")
     public void cleanNonceCache() {
         cachedNonceRepository.deleteAllOlderThan(
                 Instant.now().minus(applicationProperties.getNonceLifetimeSeconds(), ChronoUnit.SECONDS));
+    }
+
+    private void saveNonceInCache(SelfContainedNonce nonce) {
+        cachedNonceRepository.save(new CachedNonce(nonce.getNonceId(), nonce.getNonceInstant()));
+    }
+
+    private boolean isNonceRegisteredInCache(SelfContainedNonce nonce) {
+        return cachedNonceRepository.findById(nonce.getNonceId()).isPresent();
     }
 }
