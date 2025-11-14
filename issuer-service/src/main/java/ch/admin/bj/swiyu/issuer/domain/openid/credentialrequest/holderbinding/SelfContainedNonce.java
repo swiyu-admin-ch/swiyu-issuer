@@ -14,11 +14,16 @@ public class SelfContainedNonce {
     private String nonce;
 
     public SelfContainedNonce() {
-        nonce =  UUID.randomUUID()+"::"+ Instant.now().toString();
+        nonce = UUID.randomUUID() + "::" + Instant.now().toString();
     }
 
+    /**
+     * Checks if the self-contained nonce has the correct format
+     *
+     * @return True if the nonce consists out of 2 parts being split by double colon '::'
+     */
     public boolean isSelfContainedNonce() {
-        return nonce.contains("::");
+        return nonce.contains("::") && nonce.split("::").length == 2;
     }
 
     /**
