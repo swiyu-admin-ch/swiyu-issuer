@@ -5,7 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -39,19 +42,38 @@ public class StatusRegistryIssuerHealthChecker extends CachedHealthChecker {
         String partnerId = swiyuProperties.businessPartnerId().toString();
 
         try {
-            restTemplate.getForEntity(tokenUrl, String.class);
+            assertServiceReachable(tokenUrl);
             builder.withDetail("tokenUrl", "reachable");
         } catch (Exception e) {
             builder.down().withDetail("tokenUrl", "unreachable: " + e.getMessage());
         }
 
         try {
-            restTemplate.getForEntity(apiUrl, String.class);
+            assertServiceReachable(apiUrl);
             builder.withDetail("apiUrl", "reachable");
         } catch (Exception e) {
             builder.down().withDetail("apiUrl", "unreachable: " + e.getMessage());
         }
 
         builder.withDetail("partnerId", partnerId);
+    }
+
+    private void assertServiceReachable(String url) {
+        try {
+            final ResponseEntity<Void> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.HEAD,
+                    null,
+                    Void.class
+            );
+            if (response.getStatusCode().is5xxServerError()) {
+                throw new IllegalStateException("Server returned 5xx: " + response.getStatusCode());
+            }
+        } catch (HttpStatusCodeException e) {
+            if (e.getStatusCode().is4xxClientError()) {
+                return;
+            }
+            throw e;
+        }
     }
 }
