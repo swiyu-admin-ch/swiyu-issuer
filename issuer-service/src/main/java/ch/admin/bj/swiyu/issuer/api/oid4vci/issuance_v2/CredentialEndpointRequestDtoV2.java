@@ -4,8 +4,8 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialResponseEncryptionDto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * @param credentialConfigurationId
@@ -15,9 +15,9 @@ import jakarta.validation.Valid;
 @Schema(name = "CredentialEndpointRequestV2", description = "Request to the Credential Endpoint as defined in OID4VCI 1.0 specification")
 public record CredentialEndpointRequestDtoV2(
 
-        // credential_identifier has been omitted on purpose, Authorization Details of type openid_credential are not used by this impelementation
+        // credential_identifier has been omitted on purpose, Authorization Details of type openid_credential are not used by this implementation
 
-        @Nullable
+        @NotBlank // This is only true, as we are not using credential_identifier
         @JsonProperty("credential_configuration_id")
         @Schema(description = """
                 String that uniquely identifies one of the keys in the name/value pairs stored in

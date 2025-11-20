@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CredentialRequestDtoV2Test {
@@ -32,8 +33,8 @@ class CredentialRequestDtoV2Test {
             var credentialRequestDtoV2 = new CredentialEndpointRequestDtoV2(" ", null, null);
             var violations = validator.validate(credentialRequestDtoV2);
 
-            assertFalse(violations.isEmpty());
-            assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("credentialConfigurationId")));
+            assertThat(violations).isEmpty();
+            assertThat(violations.stream().map(v -> v.getPropertyPath().toString()).toList()).contains("credentialConfigurationId");
         }
     }
 }
