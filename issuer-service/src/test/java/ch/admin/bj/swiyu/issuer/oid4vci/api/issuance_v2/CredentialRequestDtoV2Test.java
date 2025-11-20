@@ -33,7 +33,7 @@ class CredentialRequestDtoV2Test {
             var credentialRequestDtoV2 = new CredentialEndpointRequestDtoV2(" ", null, null);
             var violations = validator.validate(credentialRequestDtoV2);
 
-            assertThat(violations).isEmpty();
+            assertThat(violations).isNotEmpty();
             assertThat(violations.stream().map(v -> v.getPropertyPath().toString()).toList()).contains("credentialConfigurationId");
         }
     }
