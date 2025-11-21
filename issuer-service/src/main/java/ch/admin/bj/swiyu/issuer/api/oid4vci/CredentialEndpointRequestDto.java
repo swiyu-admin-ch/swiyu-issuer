@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Pattern;
 import java.util.Map;
 
 @Schema(name = "CredentialEndpointRequest", description = "Request to the Credential Endpoint as defined in OID4VCI draft 13 specification")
+@Deprecated(since = "OID4VCI 1.0")
 public record CredentialEndpointRequestDto(
         @NotNull
         @Pattern(regexp = "^vc\\+sd-jwt$", message = "Only vc+sd-jwt format is supported")

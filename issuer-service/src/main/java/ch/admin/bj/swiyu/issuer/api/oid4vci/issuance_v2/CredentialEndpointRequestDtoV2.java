@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialResponseEncryptionDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -14,11 +15,15 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(name = "CredentialEndpointRequestV2", description = "Request to the Credential Endpoint as defined in OID4VCI 1.0 specification")
 public record CredentialEndpointRequestDtoV2(
 
-        @NotBlank
+        // credential_identifier has been omitted on purpose, Authorization Details of type openid_credential are not used by this implementation
+
+        @NotBlank // This is only true, as we are not using credential_identifier
         @JsonProperty("credential_configuration_id")
         @Schema(description = """
                 String that uniquely identifies one of the keys in the name/value pairs stored in
-                the credential_configurations_supported Credential Issuer metadata
+                the credential_configurations_supported Credential Issuer metadata.
+                Only used if a credential_identifiers parameter was not returned from the Token Response as part of the authorization_details parameter.
+                It MUST NOT be used otherwise.
                 """, example = "university_example_sd_jwt")
         String credentialConfigurationId,
 
@@ -48,6 +53,7 @@ public record CredentialEndpointRequestDtoV2(
         CredentialResponseEncryptionDto credentialResponseEncryption
 ) {
 
+    @JsonIgnore
     public boolean hasProofs() {
         return proofs != null && proofs.jwt() != null && !proofs.jwt().isEmpty();
     }

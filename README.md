@@ -722,7 +722,7 @@ Updates to the status registry will fail as long as the auth flow is not restart
 The current default implementation of the issuer service is based on
 the [OID4VCI specs DRAFT 13](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html).
 But there are already some features from
-the [OID4VCI specs DRAFT 16](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) implemented for
+the [OID4VCI 1.0](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) implemented for
 example the:
 
 * new credential-endpoint (with corresponding response)

@@ -1,0 +1,304 @@
+package ch.admin.bj.swiyu.issuer.service;
+
+import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Instant;
+import java.util.*;
+
+import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
+
+@SpringBootTest()
+@AutoConfigureMockMvc
+@Testcontainers
+@ActiveProfiles("test")
+@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
+@Transactional
+class HolderBindingServiceIT {
+    @Autowired
+    private ApplicationProperties applicationProperties;
+    @Autowired
+    private IssuerMetadata issuerMetadata;
+    @Autowired
+    private HolderBindingService holderBindingService;
+    @MockitoBean
+    private DidKeyResolver didKeyResolver;
+
+    private ECKey attestationKey;
+
+    private static CredentialOffer createHolderBindingTestOffer() {
+        return CredentialOffer.builder()
+                .metadataCredentialSupportedId(List.of("university_example_any_key_attestation_required_sd_jwt"))
+                .nonce(UUID.randomUUID())
+                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .build();
+    }
+
+    @BeforeEach
+    void setUp() throws JOSEException {
+        attestationKey = new ECKeyGenerator(Curve.P_256).keyID("did:test:test-attestation-builder#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        Mockito.when(didKeyResolver.resolveKey(Mockito.any())).thenReturn(attestationKey);
+    }
+
+    @Test
+    void correctHolderBindings_uniqueNonces_whenReplayed_thenOid4vciException() throws JOSEException {
+        var credentialOffer = createHolderBindingTestOffer();
+        List<String> proofs = new LinkedList<>();
+        assertThat(issuerMetadata.getIssuanceBatchSize()).as("Test Configuration must have batch issuance for this test").isGreaterThan(1);
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String nonce = new SelfContainedNonce().getNonce();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    nonce,
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequest = toCredentialRequest(request);
+
+        Assertions.assertDoesNotThrow(() -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Initial validation must succeed");
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Second Validation must fail, as nonces were reused");
+    }
+
+    @Test
+    void correctHolderBindings_sameNonce_whenReplayed_thenOid4vciException() throws JOSEException {
+        var credentialOffer = createHolderBindingTestOffer();
+        List<String> proofs = new LinkedList<>();
+        String nonce = new SelfContainedNonce().getNonce();
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    nonce,
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequest = toCredentialRequest(request);
+
+        Assertions.assertDoesNotThrow(() -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Initial validation must succeed");
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Second Validation must fail, as nonces were reused");
+    }
+
+    @Deprecated(since = "OID4VCI 1.0")
+    @Test
+    void mixedNonces_whenReplayed_thenOid4vciException() throws JOSEException {
+        var credentialOffer = createHolderBindingTestOffer();
+        List<String> proofs = new LinkedList<>();
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            String nonce;
+            if (i % 2 == 0) {
+                nonce = new SelfContainedNonce().getNonce();
+            } else {
+                nonce = credentialOffer.getNonce().toString();
+            }
+
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    nonce,
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequest = toCredentialRequest(request);
+
+        Assertions.assertDoesNotThrow(() -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Initial validation must succeed");
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Second Validation must fail, as nonces were reused");
+    }
+
+    /**
+     * EIDSEC-633
+     * An invalid nonce passes all checks but then is not registered to the server for future replay attack checks.
+     * This can lead to a complete bypass of replay prevention, which is the entire point of nonces.
+     * </br>
+     * <em>Problem</em>: During validation of the nonce for holder binding,
+     * as well as DPoP there is an issue where a invalid nonce (one that does not contain "::")
+     * is accepted (without any errors) but not added to the database.
+     * This effectively removes the whole replay protection of both DPoP and holder binding.
+     */
+    @Deprecated(since = "OID4VCI 1.0")
+    @Test
+    void mixedNonces_whenInvalidNoncePresent_thenOid4vciException() throws JOSEException {
+        var credentialOffer = createHolderBindingTestOffer();
+        List<String> proofs = new LinkedList<>();
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            String nonce;
+            if (i % 2 == 0) {
+                nonce = new SelfContainedNonce().getNonce();
+            } else {
+                nonce = UUID.randomUUID().toString();
+            }
+
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    nonce,
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequest = toCredentialRequest(request);
+
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Should not be accepted");
+    }
+
+    @Test
+    void whenMissingHolderBinding_thenOid4vcException() throws JOSEException {
+        var credentialOffer = createHolderBindingTestOffer();
+        List<String> proofs = new LinkedList<>();
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            String nonce = null;
+            if (i == 0) {
+                nonce = new SelfContainedNonce().getNonce();
+            } else {
+                nonce = "";
+            }
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    nonce,
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequest = toCredentialRequest(request);
+
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Missing nonce in proofs shall not be accepted");
+    }
+
+    @Test
+    void whenUnregisteredNonce_thenOid4vcException() throws JOSEException {
+        var credentialOffer = createHolderBindingTestOffer();
+        List<String> proofs = new LinkedList<>();
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    UUID.randomUUID().toString(),
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequest = toCredentialRequest(request);
+
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Unknown non-self-contained nonces should be refused");
+    }
+
+    /**
+     * EIDSEC-632
+     */
+    @Deprecated(since = "OID4VCI 1.0")
+    @Test
+    void whenRegisteredNonce_thenSuccess_whenReplayed_thenOid4vciException() throws JOSEException {
+        var credentialOffer = createHolderBindingTestOffer();
+        List<String> proofs = new LinkedList<>();
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    credentialOffer.getNonce().toString(),
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequest = toCredentialRequest(request);
+
+        Assertions.assertDoesNotThrow(() -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Initial validation must succeed");
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Second Validation must fail, as nonces were reused");
+    }
+
+}
