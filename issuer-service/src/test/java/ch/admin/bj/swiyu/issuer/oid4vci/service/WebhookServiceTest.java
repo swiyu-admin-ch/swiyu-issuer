@@ -6,7 +6,8 @@ import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
-import ch.admin.bj.swiyu.issuer.service.webhook.WebhookService;
+import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProducer;
+import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -22,8 +23,8 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 
-/*
- * Test class for the WebhookService.
+/**
+ * Test class for the WebhookEventProducer and WebhookEventListener.
  */
 class WebhookServiceTest {
 
@@ -41,11 +42,16 @@ class WebhookServiceTest {
     private RestClient.ResponseSpec responseSpec;
 
     @InjectMocks
-    private WebhookService webhookService;
+    private WebhookEventProducer webhookEventProducer;
+
+    @InjectMocks
+    private WebhookEventProcessor webhookEventProcessor;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        webhookEventProducer = new WebhookEventProducer(webhookProperties, callbackEventRepository);
+        webhookEventProcessor = new WebhookEventProcessor(webhookProperties, callbackEventRepository, restClient);
         when(webhookProperties.getCallbackUri()).thenReturn("http://test/callback");
         when(webhookProperties.getApiKeyHeader()).thenReturn("x-api-key");
         when(webhookProperties.getApiKeyValue()).thenReturn("secret");
@@ -57,7 +63,7 @@ class WebhookServiceTest {
     @Test
     void produceStateChangeEvent_savesEvent() {
         UUID id = UUID.randomUUID();
-        webhookService.produceStateChangeEvent(id, CredentialStatusType.ISSUED);
+        webhookEventProducer.produceStateChangeEvent(id, CredentialStatusType.ISSUED);
         verify(callbackEventRepository).save(any(CallbackEvent.class));
     }
 
@@ -67,7 +73,7 @@ class WebhookServiceTest {
     @Test
     void produceErrorEvent_savesEvent() {
         UUID id = UUID.randomUUID();
-        webhookService.produceErrorEvent(id, CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, "error");
+        webhookEventProducer.produceErrorEvent(id, CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, "error");
         verify(callbackEventRepository).save(any(CallbackEvent.class));
     }
 
@@ -92,7 +98,7 @@ class WebhookServiceTest {
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.toBodilessEntity()).thenReturn(null);
 
-        webhookService.triggerProcessCallback();
+        webhookEventProcessor.triggerProcessCallback();
 
         verify(restClient).post();
         verify(callbackEventRepository).delete(event);
@@ -119,7 +125,7 @@ class WebhookServiceTest {
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.toBodilessEntity()).thenThrow(mock(RestClientResponseException.class));
 
-        webhookService.triggerProcessCallback();
+        webhookEventProcessor.triggerProcessCallback();
 
         verify(callbackEventRepository, never()).delete(event);
     }
