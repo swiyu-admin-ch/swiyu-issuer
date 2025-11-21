@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -44,20 +45,30 @@ public class StatusRegistryIssuerHealthChecker extends CachedHealthChecker {
         try {
             assertServiceReachable(tokenUrl);
             builder.withDetail("tokenUrl", "reachable");
-        } catch (Exception e) {
+        } catch (IllegalStateException | RestClientException e) {
             builder.down().withDetail("tokenUrl", "unreachable: " + e.getMessage());
         }
 
         try {
             assertServiceReachable(apiUrl);
             builder.withDetail("apiUrl", "reachable");
-        } catch (Exception e) {
+        } catch (IllegalStateException | RestClientException e) {
             builder.down().withDetail("apiUrl", "unreachable: " + e.getMessage());
         }
 
         builder.withDetail("partnerId", partnerId);
     }
 
+    /**
+     * Checks if the given service endpoint is reachable via HTTP HEAD request.
+     * <p>
+     * Treats 2xx and 4xx responses as reachable (service responds).
+     * Throws an exception for 5xx errors or network failures.
+     * </p>
+     *
+     * @param url the endpoint URL to check
+     * @throws IllegalStateException if the service returns a 5xx error
+     */
     private void assertServiceReachable(String url) {
         try {
             final ResponseEntity<Void> response = restTemplate.exchange(
