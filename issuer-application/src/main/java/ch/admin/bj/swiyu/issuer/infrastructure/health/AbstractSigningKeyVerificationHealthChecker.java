@@ -90,16 +90,10 @@ public abstract class AbstractSigningKeyVerificationHealthChecker<T extends Sign
             return null;
         }
         try {
-            String did = extractDidFromVerificationMethod(verificationMethod);
-            return keyResolver.resolveKey(did);
+            return keyResolver.resolveKey(verificationMethod);
         } catch (Exception e) {
             return null;
         }
-    }
-
-    private String extractDidFromVerificationMethod(String verificationMethod) {
-        int fragmentIndex = verificationMethod.indexOf('#');
-        return fragmentIndex > 0 ? verificationMethod.substring(0, fragmentIndex) : verificationMethod;
     }
 }
 

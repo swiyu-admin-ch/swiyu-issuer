@@ -3,6 +3,9 @@ package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
+import ch.admin.bj.swiyu.issuer.service.DidKeyResolverApiClient;
+import ch.admin.eid.did_sidekicks.DidDoc;
+import ch.admin.eid.didresolver.Did;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.stereotype.Component;
@@ -18,8 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
 
-    /** Resolver used to attempt key / DID resolution. Must be provided as a Spring Bean. */
-    private final KeyResolver keyResolver; // injected via Lombok-generated constructor
+    private final DidKeyResolverApiClient didKeyResolverApiClient;
 
     private final ApplicationProperties applicationProperties;
 
@@ -70,9 +72,12 @@ public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
         if (did == null || did.isBlank()) {
             return false;
         }
-        try {
-            keyResolver.resolveKey(did);
-            return true;
+        try (Did resolved = new Did(did)) {
+            final String url = resolved.getUrl();
+            final String didLog = didKeyResolverApiClient.fetchDidLog(url);
+            final DidDoc doc = resolved.resolve(didLog);
+
+            return doc != null;
         } catch (Exception e) {
             return false;
         }

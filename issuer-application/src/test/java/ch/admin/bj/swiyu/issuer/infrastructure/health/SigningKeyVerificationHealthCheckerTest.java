@@ -48,7 +48,7 @@ class SigningKeyVerificationHealthCheckerTest {
 
         // Provide a mock JWK for DID resolution (public EC key)
         var ecKey = new ECKeyGenerator(Curve.P_256).keyID("test-key").generate();
-        when(keyResolver.resolveKey("did:example:123")).thenReturn(JWK.parse(ecKey.toPublicJWK().toJSONString()));
+        when(keyResolver.resolveKey("did:example:123#key-1")).thenReturn(JWK.parse(ecKey.toPublicJWK().toJSONString()));
 
         // Provide a signer that can sign ES256
         JWSSigner signer = new ECDSASigner(ecKey.toECPrivateKey());
@@ -69,7 +69,7 @@ class SigningKeyVerificationHealthCheckerTest {
     @Test
     void performCheck_failedDidResolution_setsDownStatus() {
         properties.setVerificationMethod("did:example:unknown#k1");
-        when(keyResolver.resolveKey("did:example:unknown")).thenReturn(null); // simulate failure
+        when(keyResolver.resolveKey("did:example:unknown#k1")).thenReturn(null); // simulate failure
         var checker = new TestChecker(keyResolver, signatureService, properties);
         Health.Builder builder = Health.up();
         checker.performCheck(builder);
