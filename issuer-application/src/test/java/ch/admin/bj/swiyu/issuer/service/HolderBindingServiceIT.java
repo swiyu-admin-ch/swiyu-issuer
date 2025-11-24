@@ -132,13 +132,14 @@ class HolderBindingServiceIT {
     @Test
     void mixedNonces_whenReplayed_thenOid4vciException() throws JOSEException {
         var credentialOffer = createHolderBindingTestOffer();
+        var deprecatedNonce = credentialOffer.getNonce().toString();
         List<String> proofs = new LinkedList<>();
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             String nonce;
             if (i % 2 == 0) {
                 nonce = new SelfContainedNonce().getNonce();
             } else {
-                nonce = credentialOffer.getNonce().toString();
+                nonce = deprecatedNonce;
             }
 
             ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
@@ -162,6 +163,37 @@ class HolderBindingServiceIT {
 
         Assertions.assertDoesNotThrow(() -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Initial validation must succeed");
         Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Second Validation must fail, as nonces were reused");
+
+        // Should also throw if the self contained nonces are done anew
+        proofs = new LinkedList<>();
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            String nonce;
+            if (i % 2 == 0) {
+                nonce = new SelfContainedNonce().getNonce();
+            } else {
+                nonce = deprecatedNonce;
+            }
+
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    nonce,
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        request = new CredentialEndpointRequestDtoV2(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequestReusedDeprecatedNonce = toCredentialRequest(request);
+
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequestReusedDeprecatedNonce, credentialOffer), "Should also throw if the self contained nonces are done anew");
     }
 
     /**
