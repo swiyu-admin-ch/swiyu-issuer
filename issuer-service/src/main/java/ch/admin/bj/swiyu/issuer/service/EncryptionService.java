@@ -19,6 +19,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -36,6 +37,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EncryptionService {
 
     private final ApplicationProperties applicationProperties;
@@ -47,30 +49,35 @@ public class EncryptionService {
      * Performs a key rotation for the encryption keys, replacing the currently active key set.
      * Will keep one time unit of deprecated keys to prevent race conditions with credential requests.
      */
-    @PostConstruct
-    @Scheduled(fixedDelayString = "${application.encryption-key-rotation-interval}")
+    @Scheduled(initialDelay = 0, fixedDelayString = "${application.encryption-key-rotation-interval}")
     @SchedulerLock(name = "rotateEncryptionKeys")
     @Transactional
     public void rotateEncryptionKeys() {
+        log.debug("Encryption Key rotation triggered");
         var encryptionKeys = encryptionKeyRepository.findAll();
         if (encryptionKeys.isEmpty()) {
             // Init with a new set of encryption keys
             createNewKeys();
+            log.info("Initial encryption keys created");
         } else {
             // We work with stale keys which are still valid but no more publicized to prevent race condition on holder binding proofs
-            Instant staleTime = keyRotationInstant(Instant.now());
-            // If a key has been stale for the duration a key rotation, it can be safely deleted, as all the holder binding proofs in transmission should have already arrived.
-            Instant deleteTime = keyRotationInstant(staleTime);
+            Instant staleTime = getStaleTime();
+            // If a key has been stale for the duration of two key rotation
+            // , it can be safely deleted, as all the holder binding proofs in transmission should have already arrived.
+            Instant deleteTime = getDeleteTime();
             List<EncryptionKey> deprecatedKeys = encryptionKeys.stream()
                     .filter(encryptionKey -> encryptionKey.getCreationTimestamp()
                             .isBefore(deleteTime))
                     .toList();
             encryptionKeyRepository.deleteAll(deprecatedKeys);
+            log.debug("{} deprecated ephemeral encryption Keys deleted", deprecatedKeys.size());
+
             // All keys in the database are older than 1 rotation, so no other instance has done a rotation yet.
             boolean keyRotationRequired = encryptionKeys.stream()
                     .allMatch(encryptionKey -> encryptionKey.getCreationTimestamp()
                             .isBefore(staleTime));
             if (keyRotationRequired) {
+                log.info("New Encryption keys created");
                 createNewKeys();
             }
         }
@@ -124,10 +131,26 @@ public class EncryptionService {
     }
 
     /**
+     * Timestamp when ephemeral encryption keys older than that are supposed to be retired / deleted
+     * This time is two key rotations to provide some leniency to wallets with exceedingly slow connections
+     */
+    private Instant getDeleteTime() {
+        return keyRotationInstant(keyRotationInstant(Instant.now()));
+    }
+
+    /**
+     * Timestamp when ephemeral encryption keys older than that are not to be regarded as active anymore
+     */
+    private Instant getStaleTime() {
+        return keyRotationInstant(Instant.now());
+    }
+
+    /**
      * Creates a new ephemeral key set.
      */
     private void createNewKeys() {
         try {
+            log.debug("Create new ephemeral encryption key");
             ECKey ephemeralEncryptionKey = new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID()
                             .toString())
                     .generate();
@@ -155,10 +178,12 @@ public class EncryptionService {
      */
     private Map<String, Object> getActivePublicKeys() {
         List<EncryptionKey> allKeys = encryptionKeyRepository.findAll();
-        Instant staleTime = keyRotationInstant(Instant.now());
-        // Pick the newest key that is still within active window (explicit ordering to avoid relying on DB/list iteration order)
+        Instant deprecateTime = getDeleteTime();
+        // Pick the newest key that is still within active window
         return allKeys.stream()
-                .filter(k -> k.getCreationTimestamp().isAfter(staleTime))
+                // Remove deprecated keys to prevent the holder receiving encryption errors
+                // if something went wrong with key rotation
+                .filter(k -> k.getCreationTimestamp().isAfter(deprecateTime))
                 .max(Comparator.comparing(EncryptionKey::getCreationTimestamp))
                 .orElseThrow(() -> new IllegalStateException("No active encryption key available (rotation window exceeded)"))
                 .getJwkSet()

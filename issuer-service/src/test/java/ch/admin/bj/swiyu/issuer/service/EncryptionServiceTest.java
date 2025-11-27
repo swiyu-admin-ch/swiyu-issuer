@@ -99,6 +99,31 @@ class EncryptionServiceTest {
         }
     }
 
+    /**
+     * The active key is already stale, but due to a race condition the new key is not yet available
+     */
+    @Test
+    void testRaceConditionMissingActiveKey() {
+        triggerKeyRotation();
+        timePasses();
+        assertDoesNotThrow(() -> encryptionService.issuerMetadataWithEncryptionOptions(),
+                "despite not having any active key anymore at the current time, we should not crash");
+    }
+
+    /**
+     * The service was down long enough, that no keys are valid anymore
+     */
+    @Test
+    void testFailedUpdateMissingStaleKey() {
+        triggerKeyRotation();
+        timePasses();
+        timePasses();
+        // We keep the keys stale for 2 ttl periods
+        assertThrows(IllegalStateException.class, () -> encryptionService.issuerMetadataWithEncryptionOptions(),
+                "If for some reason the keys could not be refreshed, the now invalid should not be provided to the wallet");
+    }
+
+
     @Test
     void testDeprecateKeys() {
         //Setup
