@@ -15,6 +15,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_CREDENTIAL_REQUEST;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
@@ -85,6 +86,8 @@ public class HolderBindingService {
                 .toList();
 
         nonceService.invalidateSelfContainedNonce(nonces);
+        // TODO EIDOMNI-166: Remove once token provided c_nonce is phased out
+        credentialOffer.setNonce(UUID.randomUUID()); // Change c_nonce value
 
         return proofJwts;
     }
@@ -166,7 +169,7 @@ public class HolderBindingService {
                 credentialOffer.getTokenExpirationTimestamp())) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
         }
-        
+
         var nonce = new SelfContainedNonce(requestProof.getNonce());
 
         if (nonce.isSelfContainedNonce() && nonceService.isUsedNonce(nonce)) {

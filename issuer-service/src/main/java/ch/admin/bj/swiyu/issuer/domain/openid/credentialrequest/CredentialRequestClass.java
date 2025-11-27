@@ -26,6 +26,7 @@ import java.util.Optional;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Deprecated(since = "OID4VCI 1.0")
 public class CredentialRequestClass {
 
     private String format;
@@ -80,6 +81,7 @@ public class CredentialRequestClass {
                 .orElseGet(List::of);
     }
 
+    @Deprecated(since = "OID4VCI 1.0")
     public Optional<ProofJwt> getProof(int acceptableProofTimeWindow, int nonceLifetimeSeconds) {
         final var PROOF_TYPE_KEY = "proof_type";
         // No Proof provided by Holder

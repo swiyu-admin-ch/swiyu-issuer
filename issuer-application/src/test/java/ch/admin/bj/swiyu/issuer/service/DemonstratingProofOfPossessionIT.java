@@ -58,7 +58,7 @@ class DemonstratingProofOfPossessionIT {
     public static Stream<String> faultyNonceSource() {
         return Stream.of(
                 // Only UUID; No timestamp
-                UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(), // EIDSEC-633
                 // Attempt ot inject some other data
                 new SelfContainedNonce().getNonce() + "::" + "SomeOtherData",
                 // Deprecated Nonce
