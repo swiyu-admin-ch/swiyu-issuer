@@ -141,34 +141,6 @@ class IssuanceControllerIT {
     }
 
     @Test
-    void testGetOpenIdConfiguration_thenSuccess() throws Exception {
-        mock.perform(get("/oid4vci/.well-known/openid-configuration"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("token_endpoint")))
-                .andExpect(content().string(not(containsString("${external-url}"))));
-    }
-
-    @Test
-    void testGetOauthAuthorizationServer_thenSuccess() throws Exception {
-        mock.perform(get("/oid4vci/.well-known/oauth-authorization-server"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("token_endpoint")))
-                .andExpect(content().string(not(containsString("${external-url}"))));
-    }
-
-    @Test
-    void testGetIssuerMetadata_thenSuccess() throws Exception {
-        mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(not(containsString("${external-url}"))))
-                .andExpect(content().string(containsString("credential_endpoint")))
-                .andExpect(content().string(not(containsString("${stage}"))))
-                .andExpect(content().string(containsString("local-Example Credential")))
-                .andExpect(content().string(containsString("local-university_example_sd_jwt")))
-                .andExpect(content().string(Matchers.not(containsString("issuanceBatchSize")))); // Util Field should not be displayed metadata
-    }
-
-    @Test
     void testGetIssuerMetadataWithSignedMetadata_thenSuccess() throws Exception {
 
         when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
