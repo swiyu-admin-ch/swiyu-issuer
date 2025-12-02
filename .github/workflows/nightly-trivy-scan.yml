@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image-tag: [ staging, rc ]
+        image-tag: [ stable ]
     steps:
       - name: Checkout code with .trivyignore
         uses: actions/checkout@v4
