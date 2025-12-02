@@ -1,5 +1,4 @@
-# Scan latest,
-name: nightly-trivy-scan.yml
+name: Nightly Trivy Scan
 on:
   schedule:
     - cron: 20 4 * * *  # Runs daily at 04:20 UTC
@@ -20,7 +19,7 @@ jobs:
         with:
           image-ref: ghcr.io/swiyu-admin-ch/swiyu-issuer:${{ matrix.image-tag }}
           severity: 'CRITICAL,HIGH'
-          exit-code: 1
+          exit-code: 0 # Do not abort with error, so upload will be done if scan fails
           ignore-unfixed: true
           format: sarif
           output: trivy-results.sarif
