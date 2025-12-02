@@ -4,6 +4,9 @@ on:
     - cron: 20 4 * * *  # Runs daily at 04:20 UTC
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
+permissions:
+  contents: read # Allow reading of SARIF file to upload it
+  security-events: write # Allow write to code ql
 
 jobs:
   trivy-scan:
