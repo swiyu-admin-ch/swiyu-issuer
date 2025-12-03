@@ -540,7 +540,7 @@ Callback Object Structure
 erDiagram
     CREDENTIAL_OFFER {
         uuid id PK
-        enbedded audit_metadata
+        embedded audit_metadata
         text credential_status
         array[text] metadata_credential_supported_id
         jsonb offer_data
@@ -564,7 +564,7 @@ erDiagram
         uuid credential_offer_id PK, FK
         uuid status_list_id PK, FK
         integer index
-        enbedded audit_metadata
+        embedded audit_metadata
     }
 
     STATUS_LIST {
@@ -575,7 +575,7 @@ erDiagram
         text status_zipped
         int next_free_index
         int max_length
-        enbedded audit_metadata
+        embedded audit_metadata
     }
 
     CREDENTIAL_OFFER one to many CREDENTIAL_OFFER_STATUS: "has status"
