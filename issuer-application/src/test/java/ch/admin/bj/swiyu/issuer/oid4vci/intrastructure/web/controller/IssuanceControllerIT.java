@@ -369,16 +369,28 @@ class IssuanceControllerIT {
         mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
+                // specified at https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.access_token").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").value("BEARER"));
     }
 
     @Test
     void testNewTokenEndpoint_thenSuccess() throws Exception {
-        mock.perform(post("/oid4vci/api/token")
+        var response = mock.perform(post("/oid4vci/api/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
+                // specified at https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.access_token").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").value("BEARER"));
     }
 
     @Test
@@ -549,6 +561,12 @@ class IssuanceControllerIT {
                         .param("grant_type", "refresh_token")
                         .param("refresh_token", refreshToken.toString()))
                 .andExpect(status().isOk())
+                // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
+                // specified at https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.access_token").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").value("BEARER"))
                 .andReturn();
         var newToken = assertDoesNotThrow(() -> objectMapper.readValue(refreshResponse.getResponse().getContentAsString(), OAuthTokenDto.class));
         assertNotEquals(tokenResponse.get("access_token").toString(), newToken.getAccessToken());
