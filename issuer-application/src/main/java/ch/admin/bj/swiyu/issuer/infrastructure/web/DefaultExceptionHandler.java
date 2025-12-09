@@ -39,13 +39,13 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(OAuthException.class)
     public ResponseEntity<ApiErrorDto> handleOAuthException(final OAuthException exception) {
         ApiErrorDto apiError = oauthErrorToApiErrorDto(exception);
-        log.debug("OAuthException: {}", exception.getMessage());
+        log.error("OAuthException: {}", exception.getMessage());
         return new ResponseEntity<>(apiError, apiError.getStatus());
     }
 
     @ExceptionHandler(Oid4vcException.class)
     public ResponseEntity<ApiErrorDto> handleOID4VCException(final Oid4vcException exception) {
-        log.debug("Oid4vcException: {}", exception.getMessage());
+        log.error("Oid4vcException: {}", exception.getMessage());
         var apiError = toCredentialRequestErrorResponseDto(exception);
 
         return new ResponseEntity<>(apiError, apiError.getStatus());
@@ -58,7 +58,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
                 .errorDetails(exception.getMessage())
                 .status(NOT_FOUND)
                 .build();
-        log.debug("Resource not found", exception);
+        log.info("Resource not found");
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
@@ -69,7 +69,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
                 .errorDetails(exception.getMessage())
                 .status(BAD_REQUEST)
                 .build();
-        log.debug("Bad Request intercepted", exception);
+        log.info("Bad Request intercepted", exception);
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
@@ -103,6 +103,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleConstraintViolationException(final Exception exception) {
         var errors = exception.getMessage();
+        log.info("ConstraintViolationException: {}", errors);
 
         return handleUnprocessableEntity(errors);
     }
