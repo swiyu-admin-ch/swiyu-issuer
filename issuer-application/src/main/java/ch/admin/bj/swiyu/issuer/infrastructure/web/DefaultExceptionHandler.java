@@ -58,7 +58,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
                 .errorDetails(exception.getMessage())
                 .status(NOT_FOUND)
                 .build();
-        log.info("Resource not found", exception);
+        log.info("Resource not found");
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
