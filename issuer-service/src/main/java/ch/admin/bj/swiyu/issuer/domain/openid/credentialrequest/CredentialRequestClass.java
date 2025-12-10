@@ -81,6 +81,25 @@ public class CredentialRequestClass {
                 .orElseGet(List::of);
     }
 
+    /**
+     * Returns an (optional) {@link ProofJwt} object w.r.t
+     * <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html#section-8.2">OpenID for Verifiable Credential Issuance - draft 15</a> i.e.
+     * <pre>
+     *     proof_type: REQUIRED. String specifying the key proof type.
+     *     The value set for this parameter determines the additional parameters in the key proof object and their corresponding processing rules.
+     * </pre>
+     * whereas <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html#section-8.2.1">Proof Type</a> is:
+     * <pre>
+     *     jwt: A JWT [RFC7519] is used for proof of possession.
+     *     When a proof_type parameter in a proof object is set to jwt,
+     *     it MUST also contain a jwt parameter that includes a JWT.
+     *     When a proofs object is using a jwt proof type, it MUST include a jwt parameter with its value being an array of JWTs,
+     * </pre>
+     *
+     * @param acceptableProofTimeWindow time window (now +/-) in which the proof jwt must have been issued at
+     * @param nonceLifetimeSeconds      self-explanatory
+     * @return a "proof" JWT
+     */
     @Deprecated(since = "OID4VCI 1.0")
     public Optional<ProofJwt> getProof(int acceptableProofTimeWindow, int nonceLifetimeSeconds) {
         final var PROOF_TYPE_KEY = "proof_type";
