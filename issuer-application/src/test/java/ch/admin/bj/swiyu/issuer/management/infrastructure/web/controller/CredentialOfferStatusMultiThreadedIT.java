@@ -11,8 +11,13 @@ import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,19 +33,23 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
@@ -57,16 +66,20 @@ class CredentialOfferStatusMultiThreadedIT {
 
     @Autowired
     protected SwiyuProperties swiyuProperties;
-
     @Autowired
     protected MockMvc mvc;
-
+    @Autowired
+    private IssuerMetadata issuerMetadata;
+    @Autowired
+    private ApplicationProperties applicationProperties;
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired
     private StatusListRepository statusListRepository;
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
+    @Autowired
+    private CredentialManagementRepository credentialManagementRepository;
 
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
@@ -77,7 +90,7 @@ class CredentialOfferStatusMultiThreadedIT {
 
     @BeforeEach
     void setupTest() throws Exception {
-        testHelper = new CredentialOfferTestHelper(mvc, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository,
+        testHelper = new CredentialOfferTestHelper(mvc, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository, credentialManagementRepository,
                 statusRegistryUrl);
 
         var statusListEntryCreationDto = new StatusListEntryCreationDto();
@@ -119,12 +132,11 @@ class CredentialOfferStatusMultiThreadedIT {
             }
         }).toList();
         // Get unique indexed on status list
-        var indexSet = credentialOfferRepository.findAllById(results).stream()
-                .map(offer -> {
-                            Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
-                            return byOfferStatusId.stream().findFirst().get().getId().getIndex();
-                        }
-                )
+        var indexSet = credentialManagementRepository.findAllById(results).stream()
+                .map(mgmt -> mgmt.getCredentialOffers().stream().map(offer -> {
+                    Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
+                    return byOfferStatusId.stream().findFirst().get().getId().getIndex();
+                }))
                 .collect(Collectors.toSet());
         Assertions.assertThat(indexSet).as("Should be the same size if no status was used multiple times")
                 .hasSameSizeAs(results);
@@ -135,17 +147,43 @@ class CredentialOfferStatusMultiThreadedIT {
         // create some offers in a multithreaded manner
         // When increasing this too much spring boot will throw 'Failed to read request'
         // in a non-deterministic way...
-        var offerIds = IntStream.range(0, 20).parallel().mapToObj(i -> {
+        var offerIds = IntStream.range(0, 2).parallel().mapToObj(i -> {
             try {
-                return testHelper.createStatusListLinkedOfferAndGetUUID();
+
+                var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
+                        .boxed()
+                        .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        .toList();
+                String payload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"status_lists\": [\"%s\"]}"
+                        .formatted(statusRegistryUrl);
+
+                MvcResult result = mvc
+                        .perform(post("/management/api/credentials").contentType("application/json").content(payload))
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+                var managementJsonObject = JsonParser.parseString(result.getResponse().getContentAsString()).getAsJsonObject();
+
+                var offer = extractCredentialOfferFromResponse(managementJsonObject);
+
+                var preAuthCode = offer.get("grants").getAsJsonObject().get("urn:ietf:params:oauth:grant-type:pre-authorized_code").getAsJsonObject().get("pre-authorized_code").getAsString();
+
+                var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mvc, preAuthCode);
+                var token = tokenResponse.get("access_token");
+                var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+
+                // set to issued
+                requestCredentialV2(mvc, (String) token, credentialRequestString)
+                        .andExpect(status().isOk())
+                        .andExpect(content().contentType("application/json"))
+                        .andReturn();
+
+                return UUID.fromString(managementJsonObject.get("offer_id").getAsString());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }).toList();
-        // Set offers to issued
-        offerIds.forEach(offerId -> {
-            testHelper.updateStatusForEntity(offerId, CredentialStatusType.ISSUED);
-        });
+
         // Get all offers and the status list we are using
         var offers = offerIds.stream().map(credentialOfferRepository::findById).map(Optional::get).toList();
         CredentialOffer offer = offers.getFirst();
@@ -162,7 +200,8 @@ class CredentialOfferStatusMultiThreadedIT {
         var initialStatusListToken = testHelper.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
         assertTrue(statusListIndexes.stream().allMatch(idx -> initialStatusListToken.getStatus(idx) == TokenStatusListBit.VALID.getValue()));
         // Update Status to Suspended
-        offerIds.stream().parallel().forEach(offerId -> {
+        var mgmtIds = offers.stream().map(credentialOffer -> credentialOffer.getCredentialManagement().getId()).toList();
+        mgmtIds.stream().parallel().forEach(offerId -> {
             try {
                 mvc.perform(patch(testHelper.getUpdateUrl(offerId, CredentialStatusTypeDto.SUSPENDED)))
                         .andExpect(status().is(200));
@@ -170,10 +209,10 @@ class CredentialOfferStatusMultiThreadedIT {
                 throw new RuntimeException(e);
             }
         });
-        assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.SUSPENDED));
-        offerIds.forEach(testHelper::assertOfferStateConsistent);
+        assertTrue(mgmtIds.stream().map(credentialManagementRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialManagementStatus() == CredentialStatusManagementType.SUSPENDED));
+        offerIds.forEach(o -> testHelper.assertOfferStateConsistent(o, CredentialStatusType.SUSPENDED));
         // Reset Status
-        offerIds.stream().parallel().forEach(offerId -> {
+        mgmtIds.stream().parallel().forEach(offerId -> {
             try {
                 mvc.perform(patch(testHelper.getUpdateUrl(offerId, CredentialStatusTypeDto.ISSUED)))
                         .andExpect(status().is(200));
@@ -181,9 +220,18 @@ class CredentialOfferStatusMultiThreadedIT {
                 throw new RuntimeException(e);
             }
         });
-        assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.ISSUED));
-        offerIds.forEach(testHelper::assertOfferStateConsistent);
+        assertTrue(mgmtIds.stream().map(credentialManagementRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialManagementStatus() == CredentialStatusManagementType.ISSUED));
+        offerIds.forEach(o -> testHelper.assertOfferStateConsistent(o, CredentialStatusType.ISSUED));
         var restoredStatusListToken = testHelper.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
         assertEquals(initialStatusListToken.getStatusListData(), restoredStatusListToken.getStatusListData(), "Bitstring should be same again");
+    }
+
+    private JsonObject extractCredentialOfferFromResponse(JsonObject dto) throws Exception {
+
+        var decodedDeeplink = URLDecoder.decode(dto.get("offer_deeplink").getAsString(), StandardCharsets.UTF_8);
+
+        var credentialOfferString = decodedDeeplink.replace("swiyu://?credential_offer=", "");
+
+        return JsonParser.parseString(credentialOfferString).getAsJsonObject();
     }
 }

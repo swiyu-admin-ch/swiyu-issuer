@@ -17,10 +17,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
@@ -85,6 +82,8 @@ class CredentialOfferCreateIT {
     private ApiClient mockApiClient;
     @Autowired
     private IssuerMetadata issuerMetadata;
+    @Autowired
+    private CredentialManagementRepository credentialManagementRepository;
 
     @BeforeEach
     void setUp() {
@@ -108,16 +107,17 @@ class CredentialOfferCreateIT {
         // CredentialWithDeeplinkResponseDto
         String urlEncodedDeeplink = JsonPath.read(test.getResponse().getContentAsString(), "$.offer_deeplink");
         String managementId = JsonPath.read(test.getResponse().getContentAsString(), "$.management_id");
+        String offerId = JsonPath.read(test.getResponse().getContentAsString(), "$.offer_id");
 
-        final UUID newCredentialId = UUID.fromString(managementId);
-
-        final Optional<CredentialOffer> newCredentialOpt = credentialOfferRepository.findByIdForUpdate(newCredentialId);
+        final Optional<CredentialOffer> newCredentialOpt = credentialOfferRepository.findByIdForUpdate(UUID.fromString(offerId));
+        final Optional<CredentialManagement> newMgmtOpt = credentialManagementRepository.findById(UUID.fromString(managementId));
 
         assertTrue(newCredentialOpt.isPresent());
+        assertTrue(newMgmtOpt.isPresent());
 
         final CredentialOffer newCredential = newCredentialOpt.get();
 
-        assertNotNull(newCredential.getAccessToken());
+        assertNotNull(newCredential.getCredentialManagement().getAccessToken());
         assertEquals(1, newCredential.getMetadataCredentialSupportedId().size());
         assertEquals(metadataCredentialSupportedId, newCredential.getMetadataCredentialSupportedId().getFirst());
 
@@ -156,15 +156,18 @@ class CredentialOfferCreateIT {
                 .andExpect(jsonPath("$.offer_deeplink").isNotEmpty())
                 .andReturn();
 
-        final UUID newCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+        final UUID mgmtId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+        final UUID offerId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.offer_id"));
 
-        final Optional<CredentialOffer> newCredentialOpt = credentialOfferRepository.findByIdForUpdate(newCredentialId);
+        final Optional<CredentialManagement> newMgmtOpt = credentialManagementRepository.findById(mgmtId);
+        final Optional<CredentialOffer> newCredentialOpt = credentialOfferRepository.findById(offerId);
 
         assertTrue(newCredentialOpt.isPresent());
+        assertTrue(newMgmtOpt.isPresent());
 
         final CredentialOffer newCredential = newCredentialOpt.get();
 
-        assertNotNull(newCredential.getAccessToken());
+        assertNotNull(newCredential.getCredentialManagement().getAccessToken());
         assertEquals(1, newCredential.getMetadataCredentialSupportedId().size());
         assertEquals(metadataCredentialSupportedId, newCredential.getMetadataCredentialSupportedId().getFirst());
         assertNotNull(newCredential.getOfferData(), "offerData must be persisted");
@@ -292,14 +295,19 @@ class CredentialOfferCreateIT {
 
         mvc.perform(get(String.format("%s/%s", BASE_URL, id)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.OFFERED.name()))
-                .andExpect(jsonPath("$.metadata_credential_supported_id").isArray())
-                .andExpect(jsonPath("$.credential_metadata").isMap())
-                .andExpect(jsonPath("$.credential_metadata").isEmpty())
-                .andExpect(jsonPath("$.holder_jwks").isEmpty())
-                .andExpect(jsonPath("$.client_agent_info").isEmpty())
-                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty())
-                .andExpect(jsonPath("$.deferred_offer_expiration_seconds").value(37000));
+                .andExpect(jsonPath("$.renewal_request_count").value(0))
+                .andExpect(jsonPath("$.renewal_response_count").value(0))
+                .andExpect(jsonPath("$.credential_offers").isArray())
+
+                .andExpect(jsonPath("$.credential_offers[0].metadata_credential_supported_id").isArray())
+                .andExpect(jsonPath("$.credential_offers[0].credential_metadata").isMap())
+                .andExpect(jsonPath("$.credential_offers[0].credential_metadata").isEmpty())
+                .andExpect(jsonPath("$.credential_offers[0].holder_jwks").isEmpty())
+                .andExpect(jsonPath("$.credential_offers[0].client_agent_info").isEmpty())
+                .andExpect(jsonPath("$.credential_offers[0].offer_deeplink").isNotEmpty())
+                .andExpect(jsonPath("$.credential_offers[0].deferred_offer_expiration_seconds").value(37000));
     }
 
     @Test
@@ -324,7 +332,7 @@ class CredentialOfferCreateIT {
                         .content(jsonPayload))
                 .andExpect(status().isOk())
                 .andReturn();
-        String id = JsonPath.read(result.getResponse().getContentAsString(), "$.management_id");
+        String id = JsonPath.read(result.getResponse().getContentAsString(), "$.offer_id");
         assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().vctIntegrity());
     }
 
@@ -357,8 +365,8 @@ class CredentialOfferCreateIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.credential_metadata.vct_metadata_uri").value("https://example.com/credentials/vct/metadata.json"))
-                .andExpect(jsonPath("$.credential_metadata['vct_metadata_uri#integrity']").value("sha256-TmHzu3DojO4MFaBXcJ6akg8JY/JWOcDU8PfUViEMYKk="))
+                .andExpect(jsonPath("$.credential_offers[0].credential_metadata.vct_metadata_uri").value("https://example.com/credentials/vct/metadata.json"))
+                .andExpect(jsonPath("$.credential_offers[0].credential_metadata['vct_metadata_uri#integrity']").value("sha256-TmHzu3DojO4MFaBXcJ6akg8JY/JWOcDU8PfUViEMYKk="))
                 .andReturn();
     }
 
@@ -440,7 +448,7 @@ class CredentialOfferCreateIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        final UUID firstCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+        final UUID firstCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.offer_id"));
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(secondStatusListEntry);
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
@@ -461,7 +469,7 @@ class CredentialOfferCreateIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        final UUID secondCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+        final UUID secondCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.offer_id"));
 
         final CredentialOffer firstCredentialDb = credentialOfferRepository.findByIdForUpdate(firstCredentialId).get();
         final CredentialOffer secondCredentialDb = credentialOfferRepository.findByIdForUpdate(secondCredentialId).get();

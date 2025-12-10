@@ -7,36 +7,49 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.ClientAgentInfoDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferMetadataDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.CollectionUtils;
 
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toCredentialStatusTypeDto;
+import static java.util.Objects.isNull;
 
 @UtilityClass
 public class CredentialOfferMapper {
 
-    public static CredentialWithDeeplinkResponseDto toCredentialWithDeeplinkResponseDto(CredentialOffer credential,
-                                                                                        String offerDeeplinkString) {
+    public static CredentialWithDeeplinkResponseDto toCredentialWithDeeplinkResponseDto(ApplicationProperties props,
+                                                                                        CredentialManagement management,
+                                                                                        CredentialOffer credentialOffer) {
         return CredentialWithDeeplinkResponseDto.builder()
-                .managementId(credential.getId())
-                .offerDeeplink(offerDeeplinkString)
+                .managementId(management.getId())
+                .offerId(credentialOffer.getId())
+                .offerDeeplink(getOfferDeeplinkFromCredential(props, credentialOffer, management))
                 .build();
     }
 
-    public static CredentialInfoResponseDto toCredentialInfoResponseDto(CredentialOffer credential, String offerDeeplinkString) {
+    public static List<CredentialInfoResponseDto> toCredentialInfoResponseDtoList(ApplicationProperties props, Set<CredentialOffer> credentialOffers) {
+        return credentialOffers.stream()
+                .map(credential -> toCredentialInfoResponseDto(credential, props))
+                .toList();
+    }
+
+    public static CredentialInfoResponseDto toCredentialInfoResponseDto(CredentialOffer credential, ApplicationProperties props) {
         return new CredentialInfoResponseDto(
                 toCredentialStatusTypeDto(credential.getCredentialStatus()),
                 credential.getMetadataCredentialSupportedId(),
@@ -49,7 +62,7 @@ public class CredentialOfferMapper {
                 credential.getCredentialValidFrom(),
                 credential.getCredentialValidUntil(),
                 toCredentialRequest(credential.getCredentialRequest()),
-                offerDeeplinkString
+                getOfferDeeplinkFromCredential(props, credential, credential.getCredentialManagement())
         );
     }
 
@@ -138,4 +151,42 @@ public class CredentialOfferMapper {
         }
         return new CredentialOfferMetadataDto(metadata.deferred(), metadata.vctIntegrity(), metadata.vctMetadataUri(), metadata.vctMetadataUriIntegrity());
     }
+
+    private static String getCredentialIssuer(ApplicationProperties props, CredentialOffer credential) {
+
+        if (!props.isSignedMetadataEnabled() || isNull(credential.getMetadataTenantId())) {
+            return props.getExternalUrl();
+        }
+
+        return "%s/%s".formatted(props.getExternalUrl(), credential.getMetadataTenantId());
+    }
+
+    private static String getOfferDeeplinkFromCredential(ApplicationProperties props,
+                                                         CredentialOffer credentialOffer,
+                                                         CredentialManagement mgmt) {
+
+        var grants = new GrantsDto(new PreAuthorizedCodeGrantDto(credentialOffer.getPreAuthorizedCode()));
+        var credentialIssuer = getCredentialIssuer(props, credentialOffer);
+        var objectMapper = new ObjectMapper();
+
+        var credentialOfferDto = CredentialOfferDto.builder()
+                .credentialIssuer(credentialIssuer)
+                .credentials(credentialOffer.getMetadataCredentialSupportedId())
+                .grants(grants)
+                .version(props.getRequestOfferVersion())
+                .build();
+
+        String credentialOfferString;
+        try {
+            credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOfferDto),
+                    Charset.defaultCharset());
+        } catch (JsonProcessingException e) {
+            throw new JsonException(
+                    "Error processing credential offer for credential with id %s".formatted(credentialOffer.getId()), e);
+        }
+
+        return String.format("%s://?credential_offer=%s", props.getDeeplinkSchema(),
+                credentialOfferString);
+    }
+
 }

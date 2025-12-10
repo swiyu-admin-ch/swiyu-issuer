@@ -24,6 +24,7 @@ public class CredentialOfferTestHelper {
     private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
     private final StatusListRepository statusListRepository;
+    private final CredentialManagementRepository credentialManagementRepository;
 
     private final String statusRegistryUrl;
 
@@ -31,11 +32,14 @@ public class CredentialOfferTestHelper {
     public CredentialOfferTestHelper(MockMvc mvc,
                                      CredentialOfferRepository credentialOfferRepository,
                                      CredentialOfferStatusRepository credentialOfferStatusRepository,
-                                     StatusListRepository statusListRepository, String unsetStatusRegistryUrl) {
+                                     StatusListRepository statusListRepository,
+                                     CredentialManagementRepository credentialManagementRepository,
+                                     String unsetStatusRegistryUrl) {
         this.mvc = mvc;
         this.credentialOfferRepository = credentialOfferRepository;
         this.credentialOfferStatusRepository = credentialOfferStatusRepository;
         this.statusListRepository = statusListRepository;
+        this.credentialManagementRepository = credentialManagementRepository;
         statusRegistryUrl = unsetStatusRegistryUrl;
     }
 
@@ -66,6 +70,17 @@ public class CredentialOfferTestHelper {
         }
     }
 
+    public UUID createWithOfferStatus(CredentialStatusType status) throws Exception {
+        var managementId = createStatusListLinkedOfferAndGetUUID();
+
+        var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
+        mgmt.getCredentialOffers().stream().findFirst().ifPresent(offer -> {
+            offer.changeStatus(status);
+            credentialOfferRepository.save(offer);
+        });
+
+        return managementId;
+    }
 
     public CredentialOffer updateStatusForEntity(UUID id, CredentialStatusType status) {
         CredentialOffer credentialOffer = credentialOfferRepository.findById(id).orElseThrow();
@@ -73,15 +88,23 @@ public class CredentialOfferTestHelper {
         return credentialOfferRepository.save(credentialOffer);
     }
 
-    public void assertOfferStateConsistent(UUID offerId) {
+    public CredentialOffer updateStatusForOfferOfManagementEntity(UUID mgmtId, CredentialStatusType status) {
+        CredentialManagement mgmt = credentialManagementRepository.findById(mgmtId).orElseThrow();
+
+        var credentialOffer = mgmt.getCredentialOffers().stream().findFirst().orElseThrow();
+
+        credentialOffer.changeStatus(status);
+        return credentialOfferRepository.save(credentialOffer);
+    }
+
+    public void assertOfferStateConsistent(UUID offerId, CredentialStatusType statusType) {
         var offer = credentialOfferRepository.findById(offerId).orElseThrow();
         Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
-        var state = offer.getCredentialStatus();
         var statusList = statusListRepository.findById(byOfferStatusId.stream().findFirst().orElseThrow().getId().getStatusListId()).orElseThrow();
         byOfferStatusId.forEach(status -> {
             try {
                 var tokenState = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusZipped(), 204800).getStatus(status.getId().getIndex());
-                var expectedState = switch (state) {
+                var expectedState = switch (statusType) {
                     case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED ->
                             TokenStatusListBit.VALID.getValue();
                     case SUSPENDED -> TokenStatusListBit.SUSPEND.getValue();
@@ -120,15 +143,32 @@ public class CredentialOfferTestHelper {
      * Creates an offer with a linked status list, set the state to issued and then
      * revokes it
      */
-    UUID createIssueAndSetStateOfVc(CredentialStatusTypeDto newStatus) throws Exception {
-        UUID vcId = createStatusListLinkedOfferAndGetUUID();
+    CredentialOffer createIssueAndSetStateOfVc(CredentialStatusTypeDto newStatus) throws Exception {
+        UUID managementId = createStatusListLinkedOfferAndGetUUID();
 
-        this.updateStatusForEntity(vcId, CredentialStatusType.ISSUED);
+        var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
+        mgmt.setCredentialManagementStatus(CredentialStatusManagementType.ISSUED);
+        mgmt.getCredentialOffers();
 
-        mvc.perform(patch(getUpdateUrl(vcId, newStatus)))
+        var updatedOffer = mgmt.getCredentialOffers().stream().map(
+                offer -> {
+                    offer.changeStatus(CredentialStatusType.ISSUED);
+                    return credentialOfferRepository.save(offer);
+                }
+        ).findFirst().orElseThrow();
+
+        credentialManagementRepository.save(mgmt);
+
+        mvc.perform(patch(getUpdateUrl(managementId, newStatus)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(newStatus.toString()));
 
-        return vcId;
+        return updatedOffer;
+    }
+
+    void updateStatus(UUID managementId, CredentialStatusTypeDto newStatus) throws Exception {
+        mvc.perform(patch(getUpdateUrl(managementId, newStatus)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(newStatus.toString()));
     }
 }

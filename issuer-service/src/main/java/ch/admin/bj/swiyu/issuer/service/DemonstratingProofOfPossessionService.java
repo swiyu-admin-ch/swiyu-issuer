@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
@@ -32,6 +33,7 @@ public class DemonstratingProofOfPossessionService {
     private final ApplicationProperties applicationProperties;
     private final NonceService nonceService;
     private final CredentialOfferRepository credentialOfferRepository;
+    private final CredentialManagementRepository credentialManagementRepository;
     private final DemonstratingProofOfPossessionValidationService demonstratingProofOfPossessionValidationService;
 
 
@@ -58,8 +60,9 @@ public class DemonstratingProofOfPossessionService {
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
         var credentialOffer = credentialOfferRepository.findByPreAuthorizedCode(UUID.fromString(preAuthCode)).orElseThrow();
-        credentialOffer.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
-        credentialOfferRepository.save(credentialOffer);
+        var mgmt = credentialOffer.getCredentialManagement();
+        mgmt.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
+        credentialManagementRepository.save(mgmt);
     }
 
     /**
@@ -75,8 +78,8 @@ public class DemonstratingProofOfPossessionService {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
-        var credentialOffer = credentialOfferRepository.findByAccessToken(UUID.fromString(accessToken)).orElseThrow();
-        demonstratingProofOfPossessionValidationService.validateAccessTokenBinding(accessToken, dpopJwt, credentialOffer.getDpopKey());
+        var credentialManagement = credentialManagementRepository.findByAccessToken(UUID.fromString(accessToken));
+        demonstratingProofOfPossessionValidationService.validateAccessTokenBinding(accessToken, dpopJwt, credentialManagement.getDpopKey());
     }
 
     /**
@@ -109,16 +112,15 @@ public class DemonstratingProofOfPossessionService {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
-        var credentialOffer = credentialOfferRepository.findByRefreshToken(UUID.fromString(refreshToken)).orElseThrow();
-        demonstratingProofOfPossessionValidationService.validateBoundPublicKey(dpopJwt, credentialOffer.getDpopKey());
-        credentialOffer.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
-        credentialOfferRepository.save(credentialOffer);
+        var credentialManagement = credentialManagementRepository.findByRefreshToken(UUID.fromString(refreshToken)).orElseThrow();
+        demonstratingProofOfPossessionValidationService.validateBoundPublicKey(dpopJwt, credentialManagement.getDpopKey());
+        credentialManagement.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
+        credentialManagementRepository.save(credentialManagement);
     }
 
 
     /**
      * Checks if the dpop has not been included and is set to be optional.
-     *
      */
     private boolean isDpopUnused(@Nullable String dpop) {
         if (StringUtils.isBlank(dpop)) {

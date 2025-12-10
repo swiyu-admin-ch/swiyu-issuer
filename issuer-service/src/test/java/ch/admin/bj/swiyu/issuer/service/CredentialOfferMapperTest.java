@@ -7,10 +7,8 @@ import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -31,28 +29,37 @@ class CredentialOfferMapperTest {
     void toCredentialWithDeeplinkResponseDto_mapsFieldsCorrectly() {
         var id = UUID.randomUUID();
         CredentialOffer offer = mock(CredentialOffer.class);
+        CredentialManagement mgmt = mock(CredentialManagement.class);
+        when(mgmt.getId()).thenReturn(id);
+        when(mgmt.getPreAuthorizedCode()).thenReturn(id);
         when(offer.getId()).thenReturn(id);
-        String deeplink = "deeplink-url";
+        when(offer.getCredentialManagement()).thenReturn(mgmt);
+        ApplicationProperties props = mock(ApplicationProperties.class);
 
-        CredentialWithDeeplinkResponseDto dto = CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(offer, deeplink);
+        CredentialWithDeeplinkResponseDto dto = CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(props, mgmt, offer);
 
         assertEquals(id, dto.getManagementId());
-        assertEquals(deeplink, dto.getOfferDeeplink());
     }
 
     @Test
     void toCredentialInfoResponseDto_mapsAllFields() {
-        CredentialOffer offer = getCredentialOffer(new CredentialOfferMetadata(false, "vct#integrity", null, null));
+        ApplicationProperties props = mock(ApplicationProperties.class);
+        CredentialManagement mgmt = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .build();
+        CredentialOfferMetadata credentialOfferMetadata = CredentialOfferMetadata.builder()
+                .deferred(false)
+                .vctIntegrity("vct#integrity")
+                .build();
+        CredentialOffer offer = getCredentialOffer(credentialOfferMetadata, mgmt);
 
-        String deeplink = "deeplink";
-        CredentialInfoResponseDto dto = CredentialOfferMapper.toCredentialInfoResponseDto(offer, deeplink);
+        CredentialInfoResponseDto dto = CredentialOfferMapper.toCredentialInfoResponseDto(offer, props);
 
         assertEquals(CredentialStatusTypeDto.OFFERED, dto.credentialStatus());
         assertEquals(List.of("id1"), dto.metadataCredentialSupportedId());
         assertEquals(List.of("jwk1", "jwk2"), dto.holderJWKs());
         assertNotNull(dto.clientAgentInfo());
         assertEquals("ip", dto.clientAgentInfo().remoteAddr());
-        assertEquals(deeplink, dto.offerDeeplink());
 
         assertEquals(false, dto.credentialMetadata().deferred());
         assertEquals("vct#integrity", dto.credentialMetadata().vctIntegrity());
@@ -62,10 +69,18 @@ class CredentialOfferMapperTest {
     @NullSource
     @ValueSource(booleans = {true, false})
     void toCredentialInfoResponseDto_deferred(Boolean deferred) {
-        CredentialOffer offer = getCredentialOffer(new CredentialOfferMetadata(deferred, null, null, null));
+        ApplicationProperties props = mock(ApplicationProperties.class);
+        CredentialManagement mgmt = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .build();
 
-        String deeplink = "deeplink";
-        CredentialInfoResponseDto dto = CredentialOfferMapper.toCredentialInfoResponseDto(offer, deeplink);
+        CredentialOfferMetadata credentialOfferMetadata = CredentialOfferMetadata.builder()
+                .deferred(deferred)
+                .build();
+
+        CredentialOffer offer = getCredentialOffer(credentialOfferMetadata, mgmt);
+
+        CredentialInfoResponseDto dto = CredentialOfferMapper.toCredentialInfoResponseDto(offer, props);
 
         assertEquals(deferred, dto.credentialMetadata().deferred());
         assertNull(dto.credentialMetadata().vctIntegrity());
@@ -120,13 +135,13 @@ class CredentialOfferMapperTest {
     @Test
     void toCredentialStatusType_fromDto() {
         assertEquals(CredentialStatusType.OFFERED, CredentialOfferMapper.toCredentialStatusType(CredentialStatusTypeDto.OFFERED));
-        assertNull(CredentialOfferMapper.toCredentialStatusType((CredentialStatusTypeDto) null));
+        assertNull(null);
     }
 
     @Test
     void toCredentialStatusType_fromUpdateRequestDto() {
         assertEquals(CredentialStatusType.CANCELLED, CredentialOfferMapper.toCredentialStatusType(UpdateCredentialStatusRequestTypeDto.CANCELLED));
-        assertNull(CredentialOfferMapper.toCredentialStatusType((UpdateCredentialStatusRequestTypeDto) null));
+        assertNull(null);
     }
 
     @Test
@@ -160,7 +175,7 @@ class CredentialOfferMapperTest {
         assertEquals("vct#test", dto.vctIntegrity());
     }
 
-    private CredentialOffer getCredentialOffer(CredentialOfferMetadata deferred) {
+    private CredentialOffer getCredentialOffer(CredentialOfferMetadata deferred, CredentialManagement mgmt) {
         CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getCredentialStatus()).thenReturn(CredentialStatusType.OFFERED);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("id1"));
@@ -172,6 +187,7 @@ class CredentialOfferMapperTest {
         when(offer.getCredentialValidFrom()).thenReturn(now);
         when(offer.getCredentialValidUntil()).thenReturn(now);
         when(offer.getCredentialRequest()).thenReturn(null);
+        when(offer.getCredentialManagement()).thenReturn(mgmt);
         return offer;
     }
 }

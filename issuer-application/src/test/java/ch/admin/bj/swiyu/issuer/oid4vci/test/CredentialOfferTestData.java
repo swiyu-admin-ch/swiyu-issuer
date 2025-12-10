@@ -73,8 +73,6 @@ public class CredentialOfferTestData {
                 .metadataCredentialSupportedId(List.of(metadataId))
                 .offerData(offerData)
                 .credentialMetadata(credentialMetadata)
-                .accessToken(UUID.randomUUID())
-                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .deferredOfferValiditySeconds(deferredExpirationInSeconds)
                 .nonce(UUID.randomUUID())
                 .preAuthorizedCode(preAuthCode)

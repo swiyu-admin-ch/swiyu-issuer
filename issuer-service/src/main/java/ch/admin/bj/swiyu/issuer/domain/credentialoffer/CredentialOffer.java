@@ -12,7 +12,6 @@ import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -98,20 +97,6 @@ public class CredentialOffer {
     private CredentialOfferMetadata credentialMetadata;
 
     /**
-     * Value used for the oid bearer token given to the holder
-     */
-    @NotNull
-    private UUID accessToken;
-
-
-    /**
-     * OAuth refresh token for the offer
-     */
-    @Nullable
-    @Column(name = "refresh_token", nullable = true)
-    private UUID refreshToken;
-
-    /**
      * Value used for the deferred flow to get the credential
      */
     private UUID transactionId;
@@ -139,12 +124,6 @@ public class CredentialOffer {
      */
     @JdbcTypeCode(SqlTypes.JSON)
     private ClientAgentInfo clientAgentInfo;
-
-    /**
-     * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
-     */
-    @Nullable
-    private Long tokenExpirationTimestamp;
 
     /**
      * Value used in the holder binding process to prevent replay attacks
@@ -183,12 +162,11 @@ public class CredentialOffer {
     private ConfigurationOverride configurationOverride;
 
     /**
-     * Wallet Public Key used for DPoP header JWT
+     * Reference to Credential Management entry
      */
-    @Nullable
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "dpop_key", columnDefinition = "jsonb", nullable = true)
-    private Map<String, Object> dpopKey;
+    @ManyToOne
+    @JoinColumn(name = "credential_management_id", nullable = false)
+    private CredentialManagement credentialManagement;
 
     /**
      * Read the offer data depending on input type and add it to offer
@@ -258,13 +236,6 @@ public class CredentialOffer {
 
     public void markAsInProgress() {
         this.credentialStatus = CredentialStatusType.IN_PROGRESS;
-        if (this.accessToken == null) {
-            this.accessToken = UUID.randomUUID();
-        }
-    }
-
-    public void setTokenIssuanceTimestamp(long tokenTTL) {
-        this.tokenExpirationTimestamp = Instant.now().plusSeconds(tokenTTL).getEpochSecond();
     }
 
     public void markAsExpired() {
@@ -305,10 +276,6 @@ public class CredentialOffer {
                 this.metadataCredentialSupportedId, this.id, this.credentialStatus);
     }
 
-    public boolean hasTokenExpirationPassed() {
-        return Instant.now().isAfter(Instant.ofEpochSecond(this.tokenExpirationTimestamp));
-    }
-
     public boolean isDeferredOffer() {
         return credentialMetadata != null && Boolean.TRUE.equals(credentialMetadata.deferred());
     }
@@ -322,18 +289,12 @@ public class CredentialOffer {
         return Objects.requireNonNullElseGet(this.configurationOverride, () -> new ConfigurationOverride(null, null, null, null));
     }
 
-    public void setDPoPKey(Map<String, Object> dPoPKey) {
-        this.dpopKey = dPoPKey;
-    }
-
-
     private void invalidateOfferData() {
         this.offerData = null;
         this.transactionId = null;
         this.credentialRequest = null;
         this.holderJWKs = null;
         this.clientAgentInfo = null;
-        this.preAuthorizedCode = null;
         this.keyAttestations = null;
         this.offerExpirationTimestamp = 0L;
     }

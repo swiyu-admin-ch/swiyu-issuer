@@ -27,14 +27,12 @@ import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.NonNull;
-import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.AdditionalMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -59,7 +57,6 @@ import static ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto.INVALID_REQUEST
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -92,6 +89,8 @@ class IssuanceControllerIT {
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
+    private CredentialManagementRepository credentialManagementRepository;
+    @Autowired
     private SdjwtProperties sdjwtProperties;
     @MockitoSpyBean
     private ApplicationProperties applicationProperties;
@@ -114,8 +113,6 @@ class IssuanceControllerIT {
                 .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
                 .offerData(offerData)
                 .credentialMetadata(null)
-                .accessToken(UUID.randomUUID())
-                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
                 .nonce(UUID.randomUUID())
                 .preAuthorizedCode(preAuthCode)
@@ -610,9 +607,22 @@ class IssuanceControllerIT {
         return JWEObject.parse(response.getResponse().getContentAsString());
     }
 
-    private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
-        credentialOfferRepository.save(offer);
+    private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
+        var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .accessToken(UUID.randomUUID())
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .renewalRequestCnt(0)
+                .renewalResponseCnt(0)
+                .build());
+
+        offer.setCredentialManagement(credentialManagement);
+        var storedOffer = credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
+
+        credentialManagement.addCredentialOffer(storedOffer);
+        credentialManagementRepository.save(credentialManagement);
+        return storedOffer;
     }
 
     private StatusList saveStatusList(StatusList statusList) {

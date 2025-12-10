@@ -25,6 +25,9 @@ public class CredentialWithDeeplinkResponseDto {
     @JsonProperty(value = "management_id")
     private UUID managementId;
 
+    @JsonProperty(value = "offer_id")
+    private UUID offerId;
+
     @JsonProperty(value = "offer_deeplink")
     private String offerDeeplink;
 }

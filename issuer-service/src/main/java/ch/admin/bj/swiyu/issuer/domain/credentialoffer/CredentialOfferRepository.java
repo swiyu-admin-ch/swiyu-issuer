@@ -22,12 +22,6 @@ public interface CredentialOfferRepository extends JpaRepository<CredentialOffer
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CredentialOffer> findByPreAuthorizedCode(UUID uuid);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<CredentialOffer> findByAccessToken(UUID accessToken);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<CredentialOffer> findByRefreshToken(UUID refreshToken);
-
     Optional<CredentialOffer> findByMetadataTenantId(UUID tenantId);
 
     @Query("SELECT c FROM CredentialOffer c WHERE :uuid = c.id")
