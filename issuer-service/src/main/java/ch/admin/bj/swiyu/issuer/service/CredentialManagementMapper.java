@@ -5,8 +5,10 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import lombok.experimental.UtilityClass;
 
@@ -51,8 +53,16 @@ public class CredentialManagementMapper {
         return CredentialStatusTypeDto.valueOf(credentialStatus.name());
     }
 
-    public static CredentialStatusManagementType toCredentialStatusManagementType(UpdateCredentialStatusRequestTypeDto statusRequestTypeDto) {
-        return CredentialStatusManagementType.valueOf(statusRequestTypeDto.name());
+    public static CredentialStatusManagementType toCredentialStatusManagementType(UpdateCredentialStatusRequestTypeDto source) {
+        if (source == null) {
+            return null;
+        }
+        return switch (source) {
+            case ISSUED -> CredentialStatusManagementType.ISSUED;
+            case SUSPENDED -> CredentialStatusManagementType.SUSPENDED;
+            case REVOKED -> CredentialStatusManagementType.REVOKED;
+            default -> throw new BadRequestException("Unsupported status type for management update: " + source.name());
+        };
     }
 
     public static UpdateStatusResponseDto toUpdateStatusResponseDto(CredentialManagement mgmt) {

@@ -48,7 +48,7 @@ public class OAuthService {
                 mgmt.getAccessToken(), offer.getId(), offer.getCredentialStatus());
         offer.markAsInProgress();
         OAuthTokenDto oauthTokenResponse = updateOAuthTokens(mgmt);
-        eventProducerService.produceStateChangeEvent(offer.getId(), offer.getCredentialStatus());
+        eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), offer.getId(), offer.getCredentialStatus());
         return oauthTokenResponse;
     }
 

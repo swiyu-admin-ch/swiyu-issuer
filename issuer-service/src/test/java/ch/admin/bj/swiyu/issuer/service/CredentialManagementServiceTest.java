@@ -81,8 +81,8 @@ class CredentialManagementServiceTest {
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         expiredOffer = createCredentialOffer(CredentialOfferStatusType.OFFERED, now().minusSeconds(1).getEpochSecond(), offerData);
         valid = createCredentialOffer(CredentialOfferStatusType.OFFERED, now().plusSeconds(1000).getEpochSecond(), offerData);
-        suspended = createCredentialOffer(CredentialOfferStatusType.SUSPENDED, now().plusSeconds(1000).getEpochSecond(), offerData);
-        issued = createCredentialOffer(CredentialOfferStatusType.ISSUED, now().minusSeconds(1).getEpochSecond(), null);
+        suspended = createCredentialOfferWithManagementStatus(CredentialStatusManagementType.SUSPENDED, now().plusSeconds(1000).getEpochSecond(), offerData);
+        issued = createCredentialOfferWithManagementStatus(CredentialStatusManagementType.ISSUED, now().minusSeconds(1).getEpochSecond(), null);
 
         when(applicationProperties.getIssuerId()).thenReturn("did:example:123456789");
 
@@ -182,14 +182,14 @@ class CredentialManagementServiceTest {
 
         when(credentialManagementRepository.findById(issued.getCredentialManagement().getId())).thenReturn(Optional.of(issued.getCredentialManagement()));
         when(credentialManagementRepository.save(issued.getCredentialManagement())).thenReturn(issued.getCredentialManagement());
-        when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferIdIn(anyList())).thenReturn(offerStatusSet);
 
         when(statusListService.revoke(offerStatusSet)).thenReturn(List.of(UUID.randomUUID()));
 
         var updated = credentialService.updateCredentialStatus(issued.getCredentialManagement().getId(), UpdateCredentialStatusRequestTypeDto.REVOKED);
 
         assertEquals(CredentialStatusTypeDto.REVOKED, updated.getCredentialStatus());
-        Mockito.verify(credentialOfferRepository, Mockito.times(1)).save(issued);
+        Mockito.verify(credentialManagementRepository, Mockito.times(2)).save(any());
         Mockito.verify(applicationEventPublisher).publishEvent(Mockito.any(StateChangeEvent.class));
     }
 
@@ -227,23 +227,16 @@ class CredentialManagementServiceTest {
     @Test
     void testHandlePostIssuanceStatusChangeRevoked_thenCallCorrectFunction() {
 
-        mgmt = CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .credentialOffers(Set.of(issued))
-                .build();
-
-        issued.setCredentialManagement(mgmt);
-
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferIdIn(List.of(issued.getId()))).thenReturn(offerStatusSet);
 
         when(statusListService.revoke(offerStatusSet)).thenReturn(List.of(UUID.randomUUID()));
 
-        when(credentialManagementRepository.findById(any())).thenReturn(Optional.of(mgmt));
-        when(credentialManagementRepository.save(any())).thenReturn(mgmt);
+        when(credentialManagementRepository.findById(any())).thenReturn(Optional.of(issued.getCredentialManagement()));
+        when(credentialManagementRepository.save(any())).thenReturn(issued.getCredentialManagement());
 
-        credentialService.updateCredentialStatus(mgmt.getId(), UpdateCredentialStatusRequestTypeDto.REVOKED);
+        credentialService.updateCredentialStatus(issued.getCredentialManagement().getId(), UpdateCredentialStatusRequestTypeDto.REVOKED);
 
         Mockito.verify(statusListService, Mockito.times(1)).revoke(offerStatusSet);
     }
@@ -256,7 +249,7 @@ class CredentialManagementServiceTest {
 
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
-        when(credentialOfferStatusRepository.findByOfferId(issued.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferIdIn(List.of(issued.getId()))).thenReturn(offerStatusSet);
 
         when(statusListService.revoke(offerStatusSet)).thenReturn(List.of(UUID.randomUUID()));
 
@@ -271,6 +264,7 @@ class CredentialManagementServiceTest {
         Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
 
         when(credentialOfferStatusRepository.findByOfferId(suspended.getId())).thenReturn(offerStatusSet);
+        when(credentialOfferStatusRepository.findByOfferIdIn(anyList())).thenReturn(offerStatusSet);
         when(credentialManagementRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(credentialManagementRepository.findById(suspended.getCredentialManagement().getId())).thenReturn(Optional.of(suspended.getCredentialManagement()));
 
@@ -795,6 +789,20 @@ class CredentialManagementServiceTest {
                 .build();
 
         var offer = getCredentialOffer(statusType, offerExpirationTimestamp, offerData, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null, null);
+        offer.setCredentialManagement(mgmt);
+
+        mgmt.setCredentialOffers(Set.of(offer));
+        return offer;
+    }
+
+    private CredentialOffer createCredentialOfferWithManagementStatus(CredentialStatusManagementType statusType, long offerExpirationTimestamp, Map<String, Object> offerData) {
+        var mgmtId = UUID.randomUUID();
+        var mgmt = CredentialManagement.builder()
+                .id(mgmtId)
+                .credentialManagementStatus(statusType)
+                .build();
+
+        var offer = getCredentialOffer(CredentialOfferStatusType.ISSUED, offerExpirationTimestamp, offerData, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null, null);
         offer.setCredentialManagement(mgmt);
 
         mgmt.setCredentialOffers(Set.of(offer));

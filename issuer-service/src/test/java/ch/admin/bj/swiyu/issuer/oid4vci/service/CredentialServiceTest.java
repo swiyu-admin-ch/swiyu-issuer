@@ -26,6 +26,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
+import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -304,7 +305,7 @@ class CredentialServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = CredentialOfferStatusType.class, names = {"CANCELLED", "EXPIRED", "ISSUED", "REVOKED", "SUSPENDED"})
+    @EnumSource(value = CredentialOfferStatusType.class, names = {"CANCELLED", "EXPIRED", "ISSUED"})
     void testCreateCredentialFromDeferredRequest_withInvalidStatus_thenException(CredentialOfferStatusType status) {
 
         UUID accessToken = UUID.randomUUID();
@@ -417,7 +418,7 @@ class CredentialServiceTest {
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);
-        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
+        var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
         verify(credentialOffer).markAsIssued();
     }
@@ -469,7 +470,7 @@ class CredentialServiceTest {
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);
-        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
+        var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
         verify(credentialOffer).markAsIssued();
     }
@@ -504,7 +505,7 @@ class CredentialServiceTest {
         assertEquals(600, token.getExpiresIn());
         assertEquals(credentialOffer.getNonce().toString(), token.getCNonce());
         verify(credentialManagementRepository).save(mgmt);
-        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
     }
 
@@ -606,7 +607,7 @@ class CredentialServiceTest {
 
         verify(offer).markAsIssued();
         verify(credentialOfferRepository, atLeastOnce()).save(offer);
-        var stateChangeEvent = new StateChangeEvent(offer.getId(), CredentialOfferStatusType.IN_PROGRESS);
+        var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), offer.getId(), CredentialOfferStatusType.IN_PROGRESS);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
     }
 
@@ -665,7 +666,7 @@ class CredentialServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = CredentialOfferStatusType.class, names = {"CANCELLED", "EXPIRED", "READY", "REVOKED", "SUSPENDED", "DEFERRED"})
+    @EnumSource(value = CredentialOfferStatusType.class, names = {"CANCELLED", "EXPIRED", "READY", "DEFERRED"})
     void createCredentialEnvelopeDto_withInvalidSatus_throwsOAuthException(CredentialOfferStatusType status) {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();

@@ -120,7 +120,7 @@ public class CredentialService {
         credentialOfferRepository.save(credentialOffer);
         credentialManagementRepository.save(mgmt);
 
-        eventProducerService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
 
         return vc;
     }
@@ -154,7 +154,7 @@ public class CredentialService {
         credentialOfferRepository.save(credentialOffer);
         credentialManagementRepository.save(credentialMgmt);
 
-        eventProducerService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+        eventProducerService.produceOfferStateChangeEvent(credentialMgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
 
         return vc;
     }
@@ -261,7 +261,7 @@ public class CredentialService {
 
             mgmt.markAsIssued();
             credentialManagementRepository.save(mgmt);
-            eventProducerService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+            eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
         }
 
         return responseEnvelope;
@@ -320,7 +320,7 @@ public class CredentialService {
             mgmt.markAsIssued();
             credentialOfferRepository.save(credentialOffer);
             credentialManagementRepository.save(mgmt);
-            eventProducerService.produceStateChangeEvent(credentialOffer.getId(), credentialOffer.getCredentialStatus());
+            eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
         }
 
         return responseEnvelope;

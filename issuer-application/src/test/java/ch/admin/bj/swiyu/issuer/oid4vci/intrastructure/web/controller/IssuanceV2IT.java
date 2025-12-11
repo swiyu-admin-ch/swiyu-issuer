@@ -309,7 +309,6 @@ class IssuanceV2IT {
                 .renewalResponseCnt(0)
                 .build());
 
-
         offer.setCredentialManagement(credentialManagement);
         var storedOffer = credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));

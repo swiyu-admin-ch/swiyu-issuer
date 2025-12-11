@@ -110,7 +110,6 @@ public class CredentialManagementService {
         if (mgmt.isCredentialAlreadyPublished()) {
 
             var newStatus = toCredentialStatusManagementType(requestedNewStatus);
-            CredentialStatusManagementType newStatus2 = toCredentialStatusManagementType(requestedNewStatus);
 
             var currentStatus = mgmt.getCredentialManagementStatus();
 
@@ -126,7 +125,7 @@ public class CredentialManagementService {
             }
 
             // get all
-            var statusList = handlePostIssuanceStatusChange(mgmt, newStatus2);
+            var statusList = handlePostIssuanceStatusChange(mgmt, newStatus);
 
             log.debug("Updating credential management {} from {} to {}", mgmt.getId(), currentStatus, newStatus);
 
@@ -134,7 +133,7 @@ public class CredentialManagementService {
 
             var updatedMgmt = this.credentialManagementRepository.save(mgmt);
 
-            produceStateChangeEvent(updatedMgmt.getId(), newStatus2);
+            produceStateChangeEvent(updatedMgmt.getId(), newStatus);
 
             return statusList.isEmpty() ? CredentialManagementMapper.toUpdateStatusResponseDto(updatedMgmt) : CredentialManagementMapper.toUpdateStatusResponseDto(updatedMgmt, statusList);
 

@@ -125,7 +125,7 @@ class CredentialOfferStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @ValueSource(strings = {"READY", "CANCELLED", "SUSPENDED", "REVOKED"})
+    @ValueSource(strings = {"READY", "CANCELLED"})
     void testUpdateWithSameStatus_thenOk(String value) throws Exception {
         var managementId = testHelper.createStatusListLinkedOfferAndGetUUID();
 
@@ -152,118 +152,6 @@ class CredentialOfferStatusIT {
 
         mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void testUpdateOfferStatusWithRevokedWhenIssued_thenSuccess() throws Exception {
-
-        assertThat(STATUS_LIST_MAX_LENGTH).as("This test requires more than 9 indexes").isGreaterThanOrEqualTo(9);
-        Set<Integer> unusedIndexes = new HashSet<>(IntStream.range(0, STATUS_LIST_MAX_LENGTH).boxed().collect(Collectors.toSet()));
-        // Add Revoked VCS
-        var mgmt = createCredential();
-        testHelper.updateStatus(UUID.fromString(mgmt.get("management_id").getAsString()), CredentialStatusTypeDto.REVOKED);
-        var offer = credentialOfferRepository.findById(UUID.fromString(mgmt.get("offer_id").getAsString())).orElseThrow();
-        Set<CredentialOfferStatus> revokedOfferStatus = credentialOfferStatusRepository.findByOfferId(UUID.fromString(mgmt.get("offer_id").getAsString()));
-        assertThat(revokedOfferStatus)
-                .as("Expecting test configuration to provide batch size of 3")
-                .hasSize(3);
-        var offerIds = revokedOfferStatus.stream()
-                .map(CredentialOfferStatus::getId)
-                .map(CredentialOfferStatusKey::getOfferId)
-                .distinct()
-                .toList();
-        assertThat(offerIds)
-                .as("All status entries should be of the same offer")
-                .hasSize(1);
-        unusedIndexes.removeAll(revokedOfferStatus.stream().map(CredentialOfferStatus::getId).map(CredentialOfferStatusKey::getIndex).collect(Collectors.toSet()));
-        assertEquals(CredentialStatusManagementType.REVOKED, offer.getCredentialManagement().getCredentialManagementStatus());
-        var statusListId = assertDoesNotThrow(() -> revokedOfferStatus.stream().findFirst().orElseThrow().getId().getStatusListId());
-        var statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
-        var tokenStatusList = testHelper.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped());
-        for (var offerStatus : revokedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been revoked").isEqualTo(1);
-        }
-        for (Integer index : unusedIndexes) {
-            assertThat(tokenStatusList.getStatus(index)).as("Index has not been used and not revoked").isZero();
-        }
-
-        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
-                .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
-                .toList();
-        String payload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"status_lists\": [\"%s\"]}"
-                .formatted(statusRegistryUrl);
-
-        MvcResult result = mvc
-                .perform(post("/management/api/credentials").contentType("application/json").content(payload))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        var managementJsonObject = JsonParser.parseString(result.getResponse().getContentAsString()).getAsJsonObject();
-
-        var token = IssuanceV2TestUtils.getAccessTokenFromDeeplink(mvc, managementJsonObject.get("offer_deeplink").getAsString());
-
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
-
-        // set to issued
-        requestCredentialV2(mvc, (String) token, credentialRequestString)
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("application/json"))
-                .andReturn();
-
-        mgmt = createCredential();
-        testHelper.updateStatus(UUID.fromString(mgmt.get("management_id").getAsString()), CredentialStatusTypeDto.SUSPENDED);
-        offer = credentialOfferRepository.findById(UUID.fromString(mgmt.get("offer_id").getAsString())).orElseThrow();
-        assertEquals(CredentialStatusManagementType.SUSPENDED, offer.getCredentialManagement().getCredentialManagementStatus());
-        var suspendedOfferStatus = credentialOfferStatusRepository.findByOfferId(offer.getId());
-        var suspendedIndexes = suspendedOfferStatus.stream()
-                .map(CredentialOfferStatus::getId)
-                .map(CredentialOfferStatusKey::getIndex)
-                .collect(Collectors.toSet());
-        unusedIndexes.removeAll(suspendedIndexes);
-
-        statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
-        tokenStatusList = testHelper.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
-                statusList.getStatusZipped());
-
-        for (var offerStatus : suspendedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been suspended").isEqualTo(2);
-        }
-        for (var offerStatus : revokedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been still revoked").isEqualTo(1);
-        }
-        for (Integer index : unusedIndexes) {
-            assertThat(tokenStatusList.getStatus(index)).as("Index is still unused / valid").isZero();
-        }
-
-        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.ISSUED;
-        mvc.perform(patch(testHelper.getUpdateUrl(offer.getCredentialManagement().getId(), newStatus)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(newStatus.toString()));
-        var issuedOffer = credentialOfferRepository.findById(offer.getId()).orElseThrow();
-        assertEquals(CredentialOfferStatusType.ISSUED, issuedOffer.getCredentialStatus());
-        var issuedOfferStatus = credentialOfferStatusRepository.findByOfferId(issuedOffer.getId());
-        var unsuspendedIndexes = issuedOfferStatus.stream()
-                .map(CredentialOfferStatus::getId)
-                .map(CredentialOfferStatusKey::getIndex)
-                .collect(Collectors.toSet());
-        assertThat(suspendedIndexes)
-                .as("Suspendend and unsuspended should be the same indexes")
-                .containsExactlyInAnyOrderElementsOf(unsuspendedIndexes);
-
-
-        statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
-        tokenStatusList = testHelper.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"),
-                statusList.getStatusZipped());
-        for (var offerStatus : issuedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been unsuspended").isZero();
-        }
-        for (var offerStatus : revokedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been still revoked").isEqualTo(1);
-        }
-        for (Integer index : unusedIndexes) {
-            assertThat(tokenStatusList.getStatus(index)).as("Index is still unused / valid").isZero();
-        }
     }
 
     @Test
@@ -432,33 +320,7 @@ class CredentialOfferStatusIT {
 
         @Transactional
         @ParameterizedTest
-        @ValueSource(strings = {"REVOKED"})
-        void testUpdateOfferStatusWhenTerminalWhitSuspended_thenBadRequest(String value) throws Exception {
-            managementId = testHelper.createWithOfferStatus(CredentialOfferStatusType.valueOf(value));
-
-            mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
-                    .andExpect(status().isBadRequest());
-
-            mvc.perform(get(testHelper.getUrl(managementId)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(value));
-        }
-
-        @Transactional
-        @ParameterizedTest
-        @ValueSource(strings = {"ISSUED", "SUSPENDED"})
-        void testUpdateOfferStatusWhenSuspended_thenSuccess(String value) throws Exception {
-
-            managementId = testHelper.createWithOfferStatus(CredentialOfferStatusType.valueOf(value));
-
-            mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.SUSPENDED.toString()));
-        }
-
-        @Transactional
-        @ParameterizedTest
-        @ValueSource(strings = {"REVOKED", "EXPIRED", "CANCELLED"})
+        @ValueSource(strings = {"EXPIRED", "CANCELLED"})
         void testUpdateOfferStatusToIssuedWhenFinal_thenReject(String value) throws Exception {
 
             managementId = testHelper.createStatusListLinkedOfferAndGetUUID();
@@ -481,21 +343,6 @@ class CredentialOfferStatusIT {
 
         @Transactional
         @ParameterizedTest
-        @ValueSource(strings = {"OFFERED", "IN_PROGRESS", "DEFERRED", "READY"})
-        void testUpdateOfferStatusWhenPreIssuedWithRevoked_thenIsOk(String value) throws Exception {
-            managementId = testHelper.createWithOfferStatus(CredentialOfferStatusType.valueOf(value));
-
-            mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.CANCELLED.toString()));
-
-            mvc.perform(get(testHelper.getUrl(managementId)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.CANCELLED.toString()));
-        }
-
-        @Transactional
-        @ParameterizedTest
         @ValueSource(strings = {"EXPIRED", "CANCELLED"})
         void testUpdateOfferStatusWhenTerminalState_thenBadRequest(String value) throws Exception {
             managementId = testHelper.createWithOfferStatus(CredentialOfferStatusType.valueOf(value));
@@ -506,23 +353,6 @@ class CredentialOfferStatusIT {
             mvc.perform(get(testHelper.getUrl(managementId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(value));
-        }
-
-        @Transactional
-        @ParameterizedTest
-        @ValueSource(strings = {"SUSPENDED", "ISSUED", "REVOKED"})
-        void testUpdateOfferStatusWhenPossibleState_thenIsOk(String value) throws Exception {
-            managementId = testHelper.createWithOfferStatus(CredentialOfferStatusType.valueOf(value));
-
-            mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
-                    .andExpect(status().isOk());
-        }
-
-        @Test
-        void testUpdateOfferStatusWithRevokedWhenRevoked_thenOk() throws Exception {
-
-            mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
-                    .andExpect(status().isOk());
         }
     }
 
@@ -546,21 +376,6 @@ class CredentialOfferStatusIT {
             mvc.perform(get(testHelper.getUrl(managementId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.CANCELLED.toString()));
-        }
-
-        @Transactional
-        @ParameterizedTest
-        @ValueSource(strings = {"REVOKED", "SUSPENDED", "ISSUED"})
-        void testCancelWhenPostIssued_thenBadRequest(String value) throws Exception {
-            var originalState = CredentialStatusTypeDto.valueOf(value);
-            managementId = testHelper.createWithOfferStatus(CredentialOfferStatusType.valueOf(value));
-
-            mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
-                    .andExpect(status().isBadRequest());
-
-            mvc.perform(get(testHelper.getUrl(managementId)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(originalState.toString()));
         }
 
         @Transactional

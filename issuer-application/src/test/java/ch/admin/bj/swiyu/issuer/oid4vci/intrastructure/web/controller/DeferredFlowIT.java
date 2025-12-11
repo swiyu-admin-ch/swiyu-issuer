@@ -22,6 +22,7 @@ import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.DidKeyResolver;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
+import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
@@ -170,7 +171,7 @@ class DeferredFlowIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        verify(testEventListener, Mockito.times(1)).handleStateChangeEvent(any(StateChangeEvent.class));
+        verify(testEventListener, Mockito.times(1)).handleStateChangeEvent(any(OfferStateChangeEvent.class));
 
         var tokenDto = objectMapper.readValue(tokenResponse.getResponse().getContentAsString(), Map.class);
 
@@ -222,7 +223,7 @@ class DeferredFlowIT {
                 .andExpect(jsonPath("$.credential").isNotEmpty())
                 .andExpect(jsonPath("$.format").value("vc+sd-jwt"))
                 .andReturn();
-        verify(testEventListener, Mockito.times(2)).handleStateChangeEvent(any(StateChangeEvent.class));
+        verify(testEventListener, Mockito.times(2)).handleStateChangeEvent(any(OfferStateChangeEvent.class));
 
         var vc = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject().get("credential").getAsString();
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, offerData);

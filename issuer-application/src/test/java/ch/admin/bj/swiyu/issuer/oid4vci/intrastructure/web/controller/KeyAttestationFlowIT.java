@@ -12,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.DidKeyResolver;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
+import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
@@ -112,7 +113,7 @@ class KeyAttestationFlowIT {
         var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
         assertNotNull(result);
 
-        verify(testEventListener, Mockito.times(2)).handleStateChangeEvent(any(StateChangeEvent.class));
+        verify(testEventListener, Mockito.times(2)).handleStateChangeEvent(any(OfferStateChangeEvent.class));
     }
 
     /**

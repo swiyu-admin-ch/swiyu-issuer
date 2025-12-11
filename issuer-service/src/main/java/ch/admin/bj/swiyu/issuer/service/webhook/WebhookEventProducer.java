@@ -36,6 +36,11 @@ public class WebhookEventProducer {
         createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null);
     }
 
+    @Transactional
+    public void produceOfferStateChangeEvent(UUID credentialManagementId, UUID credentialOfferId, CredentialOfferStatusType state) {
+        createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null);
+    }
+
     /**
      * Produces an error event when an error occurs during credential processing.
      */

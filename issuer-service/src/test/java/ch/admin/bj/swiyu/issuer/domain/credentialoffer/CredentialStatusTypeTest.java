@@ -16,8 +16,6 @@ class CredentialStatusTypeTest {
         assertEquals("Deferred", CredentialOfferStatusType.DEFERRED.toString());
         assertEquals("Ready", CredentialOfferStatusType.READY.toString());
         assertEquals("Issued", CredentialOfferStatusType.ISSUED.toString());
-        assertEquals("Suspended", CredentialOfferStatusType.SUSPENDED.toString());
-        assertEquals("Revoked", CredentialOfferStatusType.REVOKED.toString());
         assertEquals("Expired", CredentialOfferStatusType.EXPIRED.toString());
         assertEquals("Cancelled", CredentialOfferStatusType.CANCELLED.toString());
     }
@@ -39,15 +37,12 @@ class CredentialStatusTypeTest {
         assertTrue(CredentialOfferStatusType.DEFERRED.isProcessable());
         assertTrue(CredentialOfferStatusType.READY.isProcessable());
         assertFalse(CredentialOfferStatusType.ISSUED.isProcessable());
-        assertFalse(CredentialOfferStatusType.SUSPENDED.isProcessable());
-        assertFalse(CredentialOfferStatusType.REVOKED.isProcessable());
         assertFalse(CredentialOfferStatusType.EXPIRED.isProcessable());
         assertFalse(CredentialOfferStatusType.CANCELLED.isProcessable());
     }
 
     @Test
     void testIsTerminalState() {
-        assertTrue(CredentialOfferStatusType.REVOKED.isTerminalState());
         assertTrue(CredentialOfferStatusType.EXPIRED.isTerminalState());
         assertTrue(CredentialOfferStatusType.CANCELLED.isTerminalState());
         assertFalse(CredentialOfferStatusType.OFFERED.isTerminalState());
@@ -55,6 +50,5 @@ class CredentialStatusTypeTest {
         assertFalse(CredentialOfferStatusType.DEFERRED.isTerminalState());
         assertFalse(CredentialOfferStatusType.READY.isTerminalState());
         assertFalse(CredentialOfferStatusType.ISSUED.isTerminalState());
-        assertFalse(CredentialOfferStatusType.SUSPENDED.isTerminalState());
     }
 }
