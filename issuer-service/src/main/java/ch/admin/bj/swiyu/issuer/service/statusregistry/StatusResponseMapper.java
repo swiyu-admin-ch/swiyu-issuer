@@ -11,7 +11,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import lombok.experimental.UtilityClass;
 
 
@@ -33,7 +33,7 @@ public class StatusResponseMapper {
     }
 
 
-    public static CredentialStatusTypeDto toCredentialStatusTypeDto(CredentialStatusType source) {
+    public static CredentialStatusTypeDto toCredentialStatusTypeDto(CredentialOfferStatusType source) {
         if (source == null) {
             return null;
         }
@@ -44,8 +44,6 @@ public class StatusResponseMapper {
             case DEFERRED -> CredentialStatusTypeDto.DEFERRED;
             case READY -> CredentialStatusTypeDto.READY;
             case ISSUED -> CredentialStatusTypeDto.ISSUED;
-            case SUSPENDED -> CredentialStatusTypeDto.SUSPENDED;
-            case REVOKED -> CredentialStatusTypeDto.REVOKED;
             case EXPIRED -> CredentialStatusTypeDto.EXPIRED;
         };
     }

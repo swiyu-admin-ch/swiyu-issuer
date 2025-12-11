@@ -46,13 +46,6 @@ public class CredentialManagement {
     private Long accessTokenExpirationTimestamp;
 
     /**
-     * Value used to get the token for grant-type:pre-authorized_code
-     */
-    // TODO check if this is correct here or must be in CredentialOffer
-    @Nullable
-    private UUID preAuthorizedCode;
-
-    /**
      * Value used for the oid bearer token given to the holder
      */
     @NotNull
@@ -99,14 +92,7 @@ public class CredentialManagement {
         offer.setCredentialManagement(this);
     }
 
-    public void removeCredentialOffer(CredentialOffer offer) {
-        if (offer == null) return;
-        this.credentialOffers.remove(offer);
-        offer.setCredentialManagement(null);
-    }
-
-    // todo find better name
-    public boolean isPostIssuance() {
+    public boolean isCredentialAlreadyPublished() {
         return this.credentialManagementStatus != null;
     }
 

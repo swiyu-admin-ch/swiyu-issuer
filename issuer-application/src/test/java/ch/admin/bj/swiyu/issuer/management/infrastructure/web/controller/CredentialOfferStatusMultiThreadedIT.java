@@ -196,7 +196,7 @@ class CredentialOfferStatusMultiThreadedIT {
                 .map(CredentialOfferStatusKey::getIndex)
                 .collect(Collectors.toSet());
         // Check initialization
-        assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialStatusType.ISSUED));
+        assertTrue(offerIds.stream().map(credentialOfferRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialStatus() == CredentialOfferStatusType.ISSUED));
         var initialStatusListToken = testHelper.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
         assertTrue(statusListIndexes.stream().allMatch(idx -> initialStatusListToken.getStatus(idx) == TokenStatusListBit.VALID.getValue()));
         // Update Status to Suspended
@@ -210,7 +210,7 @@ class CredentialOfferStatusMultiThreadedIT {
             }
         });
         assertTrue(mgmtIds.stream().map(credentialManagementRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialManagementStatus() == CredentialStatusManagementType.SUSPENDED));
-        offerIds.forEach(o -> testHelper.assertOfferStateConsistent(o, CredentialStatusType.SUSPENDED));
+        offerIds.forEach(o -> testHelper.assertOfferStateConsistent(o, CredentialOfferStatusType.SUSPENDED));
         // Reset Status
         mgmtIds.stream().parallel().forEach(offerId -> {
             try {
@@ -221,7 +221,7 @@ class CredentialOfferStatusMultiThreadedIT {
             }
         });
         assertTrue(mgmtIds.stream().map(credentialManagementRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialManagementStatus() == CredentialStatusManagementType.ISSUED));
-        offerIds.forEach(o -> testHelper.assertOfferStateConsistent(o, CredentialStatusType.ISSUED));
+        offerIds.forEach(o -> testHelper.assertOfferStateConsistent(o, CredentialOfferStatusType.ISSUED));
         var restoredStatusListToken = testHelper.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
         assertEquals(initialStatusListToken.getStatusListData(), restoredStatusListToken.getStatusListData(), "Bitstring should be same again");
     }

@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
@@ -61,7 +61,7 @@ class SdJwtCredentialIT {
     @Test
     void getMinimalSdJwtCredentialTestClaims_thenSuccess() {
 
-        CredentialOffer credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        CredentialOffer credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt");
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -100,7 +100,7 @@ class SdJwtCredentialIT {
         Instant now = Instant.now();
         Instant expiration = now.plus(30, ChronoUnit.DAYS);
 
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", now, expiration);
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", now, expiration);
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -133,7 +133,7 @@ class SdJwtCredentialIT {
     @Test
     void getSdJwtCredentialTestSD_thenSuccess() {
 
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt");
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -162,7 +162,7 @@ class SdJwtCredentialIT {
         var vctMetadataUriIntegrity = "vct_metadata_uri#integrity_example";
 
         var credentialOfferMetadata = new CredentialOfferMetadata(null, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -187,7 +187,7 @@ class SdJwtCredentialIT {
     void getSdJwtCredential_withoutAnyMetadata_thenSuccess() {
 
         var credentialOfferMetadata = new CredentialOfferMetadata(null, null, null, null);
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -213,7 +213,7 @@ class SdJwtCredentialIT {
         var overrideDid = "did:example:override";
         var overrideVerificationMethod = overrideDid + "#key1";
 
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", new ConfigurationOverride(overrideDid, overrideVerificationMethod, null, null));
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", new ConfigurationOverride(overrideDid, overrideVerificationMethod, null, null));
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);

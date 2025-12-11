@@ -39,7 +39,7 @@ public class OAuthService {
         var offer = getCredentialOfferByPreAuthCode(preAuthCode);
         var mgmt = offer.getCredentialManagement();
 
-        if (offer.getCredentialStatus() != CredentialStatusType.OFFERED) {
+        if (offer.getCredentialStatus() != CredentialOfferStatusType.OFFERED) {
             log.debug("Refused to issue OAuth token. Credential offer {} has already state {}.", offer.getId(),
                     offer.getCredentialStatus());
             throw OAuthException.invalidGrant("Credential has already been used");
@@ -99,7 +99,7 @@ public class OAuthService {
         UUID newAccessToken = UUID.randomUUID();
         mgmt.setAccessToken(newAccessToken);
         // TODO check
-        var nonce = mgmt.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialStatusType.IN_PROGRESS)
+        var nonce = mgmt.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
                 .map(o -> o.getNonce())
                 .findFirst()
                 .orElseThrow();
@@ -135,7 +135,7 @@ public class OAuthService {
     private Optional<CredentialOffer> getExpirationCheckedCredentialOffer(Optional<CredentialOffer> credentialOffer) {
         return credentialOffer
                 .map(offer -> {
-                    if (offer.getCredentialStatus() != CredentialStatusType.EXPIRED
+                    if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED
                             && offer.hasExpirationTimeStampPassed()) {
                         offer.markAsExpired();
                         return credentialOfferRepository.save(offer);

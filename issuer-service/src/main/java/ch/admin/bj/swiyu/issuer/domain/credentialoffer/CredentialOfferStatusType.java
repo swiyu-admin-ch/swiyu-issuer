@@ -11,31 +11,27 @@ import lombok.Getter;
 import java.util.List;
 
 @Getter
-public enum CredentialStatusType {
+public enum CredentialOfferStatusType {
     OFFERED("Offered"),
     CANCELLED("Cancelled"),
     IN_PROGRESS("Claiming in Progress"),
-
     // Status necessary for deferred flow
     DEFERRED("Deferred"),
     READY("Ready"),
-
     ISSUED("Issued"),
-    SUSPENDED("Suspended"),
-    REVOKED("Revoked"),
     EXPIRED("Expired");
 
     private final String displayName;
 
-    CredentialStatusType(String displayName) {
+    CredentialOfferStatusType(String displayName) {
         this.displayName = displayName;
     }
 
     /**
      * @return List of CredentialStatusType which can lead to "expire"
      */
-    public static List<CredentialStatusType> getExpirableStates() {
-        return List.of(CredentialStatusType.OFFERED, CredentialStatusType.IN_PROGRESS, CredentialStatusType.DEFERRED, CredentialStatusType.READY);
+    public static List<CredentialOfferStatusType> getExpirableStates() {
+        return List.of(CredentialOfferStatusType.OFFERED, CredentialOfferStatusType.IN_PROGRESS, CredentialOfferStatusType.DEFERRED, CredentialOfferStatusType.READY);
     }
 
     @Override
@@ -48,6 +44,6 @@ public enum CredentialStatusType {
     }
 
     public boolean isTerminalState() {
-        return this == REVOKED || this == EXPIRED || this == CANCELLED;
+        return this == EXPIRED || this == CANCELLED;
     }
 }

@@ -59,14 +59,14 @@ public class CredentialService {
         // todo check & maybe refactor
         var credentialOffer = mgmt.getCredentialOffers().stream()
                 .map(offer -> {
-                    if (offer.getCredentialStatus() != CredentialStatusType.EXPIRED
+                    if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED
                             && offer.hasExpirationTimeStampPassed()) {
                         offer.markAsExpired();
                         return credentialOfferRepository.save(offer);
                     }
                     return offer;
                 })
-                .filter(offer -> offer.getCredentialStatus() == CredentialStatusType.IN_PROGRESS)
+                .filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
                 .findFirst()
                 .orElseThrow(() -> OAuthException.invalidGrant(
                         "Invalid accessToken"));
@@ -82,7 +82,7 @@ public class CredentialService {
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
         CredentialManagement mgmt = oAuthService.getCredentialManagementByAccessToken(accessToken);
 
-        var credentialOffer = mgmt.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialStatusType.IN_PROGRESS)
+        var credentialOffer = mgmt.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
                 .findFirst()
                 .orElseThrow(() -> OAuthException.invalidGrant(
                         "No credential offer found in progress for the provided access token."));
@@ -178,7 +178,7 @@ public class CredentialService {
 
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
-        if (credentialOffer.getCredentialStatus() != CredentialStatusType.READY) {
+        if (credentialOffer.getCredentialStatus() != CredentialOfferStatusType.READY) {
             throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued");
         }
 
@@ -332,7 +332,7 @@ public class CredentialService {
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
         if (!credentialOffer.getCredentialStatus()
-                .equals(CredentialStatusType.IN_PROGRESS)) {
+                .equals(CredentialOfferStatusType.IN_PROGRESS)) {
             log.info("Credential offer {} failed to create VC, as state was not IN_PROGRESS instead was {}",
                     credentialOffer.getId(), credentialOffer.getCredentialStatus());
             throw OAuthException.invalidGrant(String.format(

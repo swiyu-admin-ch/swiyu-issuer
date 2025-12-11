@@ -28,8 +28,8 @@ public interface CredentialOfferRepository extends JpaRepository<CredentialOffer
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CredentialOffer> findByIdForUpdate(UUID uuid);
 
-    long countByCredentialStatusInAndOfferExpirationTimestampLessThan(Collection<CredentialStatusType> credentialStatuses, long offerExpirationTimestampIsLessThan);
+    long countByCredentialStatusInAndOfferExpirationTimestampLessThan(Collection<CredentialOfferStatusType> credentialStatuses, long offerExpirationTimestampIsLessThan);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Stream<CredentialOffer> findByCredentialStatusInAndOfferExpirationTimestampLessThan(Collection<CredentialStatusType> credentialStatuses, long offerExpirationTimestampIsLessThan);
+    Stream<CredentialOffer> findByCredentialStatusInAndOfferExpirationTimestampLessThan(Collection<CredentialOfferStatusType> credentialStatuses, long offerExpirationTimestampIsLessThan);
 }

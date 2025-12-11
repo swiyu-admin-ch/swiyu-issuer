@@ -121,11 +121,11 @@ class DeferredFlowIT {
         deferredOfferId = UUID.randomUUID();
         validUnboundOfferId = UUID.randomUUID();
         notDeferredOfferId = UUID.randomUUID();
-        deferredOffer = createTestOffer(deferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
+        deferredOffer = createTestOffer(deferredPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
         saveStatusListLinkedOffer(deferredOffer, statusList, 0, deferredOfferId);
-        validUnboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null, null);
+        validUnboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialOfferStatusType.OFFERED, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null, null);
         saveStatusListLinkedOffer(validUnboundOffer, statusList, 1, validUnboundOfferId);
-        var notDeferredOffer = createTestOffer(notDeferredPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false));
+        var notDeferredOffer = createTestOffer(notDeferredPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false));
         saveStatusListLinkedOffer(notDeferredOffer, statusList, 2, notDeferredOfferId);
 
         jwk = new ECKeyGenerator(Curve.P_256)
@@ -546,7 +546,7 @@ class DeferredFlowIT {
         String deferredCredentialRequestString = String.format("{ \"transaction_id\": \"%s\"}}", transactionId);
 
         // change status to CANCELLED
-        mock.perform(patch("/management/api/credentials/" + deferredOfferId + "/status?credentialStatus=%s".formatted(CredentialStatusType.CANCELLED.name()))
+        mock.perform(patch("/management/api/credentials/" + deferredOfferId + "/status?credentialStatus=%s".formatted(CredentialOfferStatusType.CANCELLED.name()))
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"))
@@ -574,7 +574,7 @@ class DeferredFlowIT {
         DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
 
         // check status from business issuer perspective
-        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(validUnboundOfferId, CredentialStatusType.READY.name())))
+        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(validUnboundOfferId, CredentialOfferStatusType.READY.name())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("READY"))
                 .andReturn();
@@ -592,7 +592,7 @@ class DeferredFlowIT {
     @Test
     void testDeferredOffer_withDefaultDeferredExpiration_thenSuccess() throws Exception {
 
-        var unboundOffer = createTestOffer(UUID.randomUUID(), CredentialStatusType.IN_PROGRESS, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null, null);
+        var unboundOffer = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null, null);
         unboundOffer = saveStatusListLinkedOffer(unboundOffer, statusList, 4, UUID.randomUUID());
 
         credentialManagement = CredentialManagement.builder()
@@ -630,7 +630,7 @@ class DeferredFlowIT {
 
         var expirationInSeconds = 1728000; // 20 days
 
-        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null), expirationInSeconds);
+        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null), expirationInSeconds);
 
         saveStatusListLinkedOffer(offerWithDynamicExpiration, statusList, 6, UUID.randomUUID());
 
@@ -686,8 +686,8 @@ class DeferredFlowIT {
             @Override
             protected void doInTransactionWithoutResult(@NotNull TransactionStatus status) {
                 credentialManagement = credentialManagementRepository.findByAccessToken(UUID.fromString(token));
-                var offers = credentialManagement.getCredentialOffers().stream().filter(co -> co.getCredentialStatus() == CredentialStatusType.DEFERRED).map(o -> {
-                    o.setCredentialStatus(CredentialStatusType.READY);
+                var offers = credentialManagement.getCredentialOffers().stream().filter(co -> co.getCredentialStatus() == CredentialOfferStatusType.DEFERRED).map(o -> {
+                    o.setCredentialStatus(CredentialOfferStatusType.READY);
                     return o;
                 }).toList();
 

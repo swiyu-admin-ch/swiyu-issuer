@@ -106,7 +106,7 @@ class IssuanceControllerIT {
         return credentialSubjectData;
     }
 
-    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode, CredentialStatusType status) {
+    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode, CredentialOfferStatusType status) {
         var offerData = new HashMap<String, Object>();
         offerData.put("data", new GsonBuilder().create().toJson(getUnboundCredentialSubjectData()));
         return CredentialOffer.builder().credentialStatus(status)
@@ -123,12 +123,12 @@ class IssuanceControllerIT {
     void setUp() throws JOSEException {
         testStatusList = saveStatusList(createStatusList());
         CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
-        var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
+        var offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", metadata);
         saveStatusListLinkedOffer(offer, testStatusList, 0);
         offerId = offer.getId();
-        var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
+        var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
         saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, testStatusList, 1);
-        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialStatusType.OFFERED);
+        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialOfferStatusType.OFFERED);
         saveStatusListLinkedOffer(unboundOffer, testStatusList, 2);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
@@ -218,7 +218,7 @@ class IssuanceControllerIT {
 
         // Open new Request
         var newOfferPreAuthCode = UUID.randomUUID();
-        var newOffer = createTestOffer(newOfferPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        var newOffer = createTestOffer(newOfferPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt");
         saveStatusListLinkedOffer(newOffer, testStatusList, 5);
         tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, newOfferPreAuthCode.toString());
         token = tokenResponse.get("access_token");

@@ -70,7 +70,7 @@ public class CredentialOfferTestHelper {
         }
     }
 
-    public UUID createWithOfferStatus(CredentialStatusType status) throws Exception {
+    public UUID createWithOfferStatus(CredentialOfferStatusType status) throws Exception {
         var managementId = createStatusListLinkedOfferAndGetUUID();
 
         var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
@@ -82,13 +82,13 @@ public class CredentialOfferTestHelper {
         return managementId;
     }
 
-    public CredentialOffer updateStatusForEntity(UUID id, CredentialStatusType status) {
+    public CredentialOffer updateStatusForEntity(UUID id, CredentialOfferStatusType status) {
         CredentialOffer credentialOffer = credentialOfferRepository.findById(id).orElseThrow();
         credentialOffer.changeStatus(status);
         return credentialOfferRepository.save(credentialOffer);
     }
 
-    public CredentialOffer updateStatusForOfferOfManagementEntity(UUID mgmtId, CredentialStatusType status) {
+    public CredentialOffer updateStatusForOfferOfManagementEntity(UUID mgmtId, CredentialOfferStatusType status) {
         CredentialManagement mgmt = credentialManagementRepository.findById(mgmtId).orElseThrow();
 
         var credentialOffer = mgmt.getCredentialOffers().stream().findFirst().orElseThrow();
@@ -97,7 +97,7 @@ public class CredentialOfferTestHelper {
         return credentialOfferRepository.save(credentialOffer);
     }
 
-    public void assertOfferStateConsistent(UUID offerId, CredentialStatusType statusType) {
+    public void assertOfferStateConsistent(UUID offerId, CredentialOfferStatusType statusType) {
         var offer = credentialOfferRepository.findById(offerId).orElseThrow();
         Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
         var statusList = statusListRepository.findById(byOfferStatusId.stream().findFirst().orElseThrow().getId().getStatusListId()).orElseThrow();
@@ -133,7 +133,7 @@ public class CredentialOfferTestHelper {
 
 
     // Helper function to mock the oid4vci and management processes
-    void changeOfferStatus(UUID offerId, CredentialStatusType status) {
+    void changeOfferStatus(UUID offerId, CredentialOfferStatusType status) {
         var offer = credentialOfferRepository.findById(offerId).get();
         offer.changeStatus(status);
         credentialOfferRepository.save(offer);
@@ -152,7 +152,7 @@ public class CredentialOfferTestHelper {
 
         var updatedOffer = mgmt.getCredentialOffers().stream().map(
                 offer -> {
-                    offer.changeStatus(CredentialStatusType.ISSUED);
+                    offer.changeStatus(CredentialOfferStatusType.ISSUED);
                     return credentialOfferRepository.save(offer);
                 }
         ).findFirst().orElseThrow();

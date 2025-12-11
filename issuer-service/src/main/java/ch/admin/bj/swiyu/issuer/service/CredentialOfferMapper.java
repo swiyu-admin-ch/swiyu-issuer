@@ -101,33 +101,33 @@ public class CredentialOfferMapper {
                 .build();
     }
 
-    public static CredentialStatusType toCredentialStatusType(CredentialStatusTypeDto source) {
+    public static CredentialOfferStatusType toCredentialStatusType(CredentialStatusTypeDto source) {
         if (source == null) {
             return null;
         }
         return switch (source) {
-            case OFFERED -> CredentialStatusType.OFFERED;
-            case CANCELLED -> CredentialStatusType.CANCELLED;
-            case IN_PROGRESS -> CredentialStatusType.IN_PROGRESS;
-            case DEFERRED -> CredentialStatusType.DEFERRED;
-            case READY -> CredentialStatusType.READY;
-            case ISSUED -> CredentialStatusType.ISSUED;
-            case SUSPENDED -> CredentialStatusType.SUSPENDED;
-            case REVOKED -> CredentialStatusType.REVOKED;
-            case EXPIRED -> CredentialStatusType.EXPIRED;
+            case OFFERED -> CredentialOfferStatusType.OFFERED;
+            case CANCELLED -> CredentialOfferStatusType.CANCELLED;
+            case IN_PROGRESS -> CredentialOfferStatusType.IN_PROGRESS;
+            case DEFERRED -> CredentialOfferStatusType.DEFERRED;
+            case READY -> CredentialOfferStatusType.READY;
+            case ISSUED -> CredentialOfferStatusType.ISSUED;
+            case SUSPENDED -> null;
+            case REVOKED -> null;
+            case EXPIRED -> CredentialOfferStatusType.EXPIRED;
         };
     }
 
-    public static CredentialStatusType toCredentialStatusType(UpdateCredentialStatusRequestTypeDto source) {
+    public static CredentialOfferStatusType toCredentialStatusType(UpdateCredentialStatusRequestTypeDto source) {
         if (source == null) {
             return null;
         }
         return switch (source) {
-            case CANCELLED -> CredentialStatusType.CANCELLED;
-            case READY -> CredentialStatusType.READY;
-            case ISSUED -> CredentialStatusType.ISSUED;
-            case SUSPENDED -> CredentialStatusType.SUSPENDED;
-            case REVOKED -> CredentialStatusType.REVOKED;
+            case CANCELLED -> CredentialOfferStatusType.CANCELLED;
+            case READY -> CredentialOfferStatusType.READY;
+            case ISSUED -> CredentialOfferStatusType.ISSUED;
+            case SUSPENDED -> null;
+            case REVOKED -> null;
         };
     }
 

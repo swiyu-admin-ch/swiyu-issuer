@@ -19,23 +19,23 @@ import java.util.UUID;
 @UtilityClass
 public class CredentialOfferTestData {
 
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId) {
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialOfferStatusType status, String metadataId) {
         return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), null);
     }
 
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, ConfigurationOverride override) {
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialOfferStatusType status, String metadataId, ConfigurationOverride override) {
         return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), null, override, null);
     }
 
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, Instant validFrom, Instant validUntil) {
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialOfferStatusType status, String metadataId, Instant validFrom, Instant validUntil) {
         return createTestOffer(preAuthCode, status, metadataId, validFrom, validUntil, null);
     }
 
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, CredentialOfferMetadata metadata) {
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialOfferStatusType status, String metadataId, CredentialOfferMetadata metadata) {
         return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), metadata);
     }
 
-    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialStatusType status, String metadataId, CredentialOfferMetadata metadata, Integer deferredExpirationInSeconds) {
+    public static CredentialOffer createTestOffer(UUID preAuthCode, CredentialOfferStatusType status, String metadataId, CredentialOfferMetadata metadata, Integer deferredExpirationInSeconds) {
         return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), metadata, null, deferredExpirationInSeconds);
     }
 
@@ -50,7 +50,7 @@ public class CredentialOfferTestData {
     }
 
     public static CredentialOffer createTestOffer(UUID preAuthCode,
-                                                  CredentialStatusType status,
+                                                  CredentialOfferStatusType status,
                                                   String metadataId,
                                                   Instant validFrom,
                                                   Instant validUntil,
@@ -59,7 +59,7 @@ public class CredentialOfferTestData {
     }
 
     public static CredentialOffer createTestOffer(UUID preAuthCode,
-                                                  CredentialStatusType status,
+                                                  CredentialOfferStatusType status,
                                                   String metadataId,
                                                   Instant validFrom,
                                                   Instant validUntil,

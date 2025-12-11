@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.holderb
 
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
@@ -152,7 +152,7 @@ class ProofJwtTest {
 
         return CredentialOffer.builder()
                 .id(UUID.randomUUID())
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .metadataCredentialSupportedId(Collections.emptyList())
                 .offerData(new HashMap<>() {{
                     put("data", "data");

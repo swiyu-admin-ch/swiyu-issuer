@@ -31,7 +31,6 @@ class CredentialOfferMapperTest {
         CredentialOffer offer = mock(CredentialOffer.class);
         CredentialManagement mgmt = mock(CredentialManagement.class);
         when(mgmt.getId()).thenReturn(id);
-        when(mgmt.getPreAuthorizedCode()).thenReturn(id);
         when(offer.getId()).thenReturn(id);
         when(offer.getCredentialManagement()).thenReturn(mgmt);
         ApplicationProperties props = mock(ApplicationProperties.class);
@@ -124,7 +123,7 @@ class CredentialOfferMapperTest {
         var id = UUID.randomUUID();
         CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getId()).thenReturn(id);
-        when(offer.getCredentialStatus()).thenReturn(CredentialStatusType.ISSUED);
+        when(offer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.ISSUED);
 
         UpdateStatusResponseDto dto = CredentialOfferMapper.toUpdateStatusResponseDto(offer);
 
@@ -134,13 +133,13 @@ class CredentialOfferMapperTest {
 
     @Test
     void toCredentialStatusType_fromDto() {
-        assertEquals(CredentialStatusType.OFFERED, CredentialOfferMapper.toCredentialStatusType(CredentialStatusTypeDto.OFFERED));
+        assertEquals(CredentialOfferStatusType.OFFERED, CredentialOfferMapper.toCredentialStatusType(CredentialStatusTypeDto.OFFERED));
         assertNull(null);
     }
 
     @Test
     void toCredentialStatusType_fromUpdateRequestDto() {
-        assertEquals(CredentialStatusType.CANCELLED, CredentialOfferMapper.toCredentialStatusType(UpdateCredentialStatusRequestTypeDto.CANCELLED));
+        assertEquals(CredentialOfferStatusType.CANCELLED, CredentialOfferMapper.toCredentialStatusType(UpdateCredentialStatusRequestTypeDto.CANCELLED));
         assertNull(null);
     }
 
@@ -177,7 +176,7 @@ class CredentialOfferMapperTest {
 
     private CredentialOffer getCredentialOffer(CredentialOfferMetadata deferred, CredentialManagement mgmt) {
         CredentialOffer offer = mock(CredentialOffer.class);
-        when(offer.getCredentialStatus()).thenReturn(CredentialStatusType.OFFERED);
+        when(offer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.OFFERED);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("id1"));
         when(offer.getCredentialMetadata()).thenReturn(deferred);
         when(offer.getHolderJWKs()).thenReturn(List.of("jwk1", "jwk2"));

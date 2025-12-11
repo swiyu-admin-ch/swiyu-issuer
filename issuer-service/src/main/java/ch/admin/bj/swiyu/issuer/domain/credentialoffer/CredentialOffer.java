@@ -56,7 +56,7 @@ public class CredentialOffer {
      * which can not be covered by the status list
      */
     @Enumerated(EnumType.STRING)
-    private CredentialStatusType credentialStatus;
+    private CredentialOfferStatusType credentialStatus;
 
     /**
      * ID String referencing the entry in the issuer metadata of the signer
@@ -209,7 +209,7 @@ public class CredentialOffer {
         this.offerData = null;
     }
 
-    public void changeStatus(CredentialStatusType credentialStatus) {
+    public void changeStatus(CredentialOfferStatusType credentialStatus) {
         this.credentialStatus = credentialStatus;
     }
 
@@ -218,28 +218,28 @@ public class CredentialOffer {
     }
 
     public void expire() {
-        this.changeStatus(CredentialStatusType.EXPIRED);
+        this.changeStatus(CredentialOfferStatusType.EXPIRED);
         this.removeOfferData();
     }
 
     public void cancel() {
-        this.changeStatus(CredentialStatusType.CANCELLED);
+        this.changeStatus(CredentialOfferStatusType.CANCELLED);
         this.removeOfferData();
     }
 
     public void markAsIssued() {
         this.invalidateOfferData();
-        this.credentialStatus = CredentialStatusType.ISSUED;
+        this.credentialStatus = CredentialOfferStatusType.ISSUED;
         log.info("Credential issued for offer {}. Management-ID is {}. ",
                 this.metadataCredentialSupportedId, this.id);
     }
 
     public void markAsInProgress() {
-        this.credentialStatus = CredentialStatusType.IN_PROGRESS;
+        this.credentialStatus = CredentialOfferStatusType.IN_PROGRESS;
     }
 
     public void markAsExpired() {
-        this.credentialStatus = CredentialStatusType.EXPIRED;
+        this.credentialStatus = CredentialOfferStatusType.EXPIRED;
         this.invalidateOfferData();
         log.info("Credential expired for offer {}. Management-ID is {}.", this.metadataCredentialSupportedId, this.id);
     }
@@ -255,7 +255,7 @@ public class CredentialOffer {
                 ? deferredOfferValiditySeconds
                 : applicationProperties.getDeferredOfferValiditySeconds());
 
-        this.credentialStatus = CredentialStatusType.DEFERRED;
+        this.credentialStatus = CredentialOfferStatusType.DEFERRED;
         this.credentialRequest = credentialRequest;
         this.transactionId = transactionId;
         this.holderJWKs = !holderPublicKey.isEmpty() ? holderPublicKey : null;
@@ -270,7 +270,7 @@ public class CredentialOffer {
     }
 
     public void markAsReadyForIssuance(Map<String, Object> offerData) {
-        this.credentialStatus = CredentialStatusType.READY;
+        this.credentialStatus = CredentialOfferStatusType.READY;
         this.setOfferData(offerData);
         log.info("Deferred Credential ready for issuance for offer {}. Management-ID is {} and status is {}. ",
                 this.metadataCredentialSupportedId, this.id, this.credentialStatus);

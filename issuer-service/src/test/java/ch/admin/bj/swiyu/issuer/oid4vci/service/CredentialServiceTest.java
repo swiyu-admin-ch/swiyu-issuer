@@ -124,7 +124,7 @@ class CredentialServiceTest {
         var preAuthorizedCode = UUID.randomUUID();
 
         var expirationTimeStamp = Instant.now().minusSeconds(10).getEpochSecond();
-        var offer = getCredentialOffer(CredentialStatusType.OFFERED, expirationTimeStamp, offerData, uuid, preAuthorizedCode, UUID.randomUUID(), null, null);
+        var offer = getCredentialOffer(CredentialOfferStatusType.OFFERED, expirationTimeStamp, offerData, uuid, preAuthorizedCode, UUID.randomUUID(), null, null);
         var mgmt = CredentialManagement.builder()
                 .accessToken(uuid)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
@@ -141,7 +141,7 @@ class CredentialServiceTest {
                 credentialService.createCredential(credentialRequestDto, uuidString, null));
 
         // THEN Status is changed and offer data is cleared
-        assertEquals(CredentialStatusType.EXPIRED, offer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
         assertNull(offer.getOfferData());
         // todo check invalid_grant  vs. invalid access token
         assertEquals("INVALID_GRANT", ex.getError().toString());
@@ -152,7 +152,7 @@ class CredentialServiceTest {
     void givenExpiredOffer_whenTokenIsCreated_throwsOAuthException() {
         var uuid = UUID.randomUUID();
         var expirationTimeStamp = Instant.now().minusSeconds(10).getEpochSecond();
-        var offer = getCredentialOffer(CredentialStatusType.OFFERED, expirationTimeStamp, offerData, uuid, uuid, UUID.randomUUID(), null, null);
+        var offer = getCredentialOffer(CredentialOfferStatusType.OFFERED, expirationTimeStamp, offerData, uuid, uuid, UUID.randomUUID(), null, null);
 
         when(credentialOfferRepository.findByPreAuthorizedCode(uuid)).thenReturn(Optional.of(offer));
 
@@ -162,7 +162,7 @@ class CredentialServiceTest {
                 () -> oAuthService.issueOAuthToken(uuidString));
 
         // THEN Status is changed and offer data is cleared
-        assertEquals(CredentialStatusType.EXPIRED, offer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
         assertNull(offer.getOfferData());
         assertEquals("INVALID_GRANT", ex.getError().toString());
         assertEquals("Invalid preAuthCode", ex.getMessage());
@@ -183,7 +183,7 @@ class CredentialServiceTest {
         when(credConfig.getVct()).thenReturn("test-vct");
 
         var offer = getCredentialOffer(
-                CredentialStatusType.IN_PROGRESS,
+                CredentialOfferStatusType.IN_PROGRESS,
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 offerData,
                 UUID.randomUUID(),
@@ -220,7 +220,7 @@ class CredentialServiceTest {
         var clientInfo = getClientInfo();
 
         CredentialOffer credentialOffer = getCredentialOffer(
-                CredentialStatusType.IN_PROGRESS,
+                CredentialOfferStatusType.IN_PROGRESS,
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 offerData,
                 UUID.randomUUID(),
@@ -264,7 +264,7 @@ class CredentialServiceTest {
         credentialService.createCredential(credentialRequestDto, mgmt.getAccessToken().toString(), clientInfo);
 
         // check if is issued && data removed
-        assertEquals(CredentialStatusType.DEFERRED, credentialOffer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.DEFERRED, credentialOffer.getCredentialStatus());
         String clientInfoString = objectMapper.writeValueAsString(clientInfo);
         var stateChangeEvent = new DeferredEvent(credentialOffer.getId(), clientInfoString);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
@@ -276,7 +276,7 @@ class CredentialServiceTest {
         UUID accessToken = UUID.randomUUID();
 
         CredentialOffer credentialOffer = getCredentialOffer(
-                CredentialStatusType.DEFERRED,
+                CredentialOfferStatusType.DEFERRED,
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 Map.of(),
                 UUID.randomUUID(),
@@ -304,8 +304,8 @@ class CredentialServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusType.class, names = {"CANCELLED", "EXPIRED", "ISSUED", "REVOKED", "SUSPENDED"})
-    void testCreateCredentialFromDeferredRequest_withInvalidStatus_thenException(CredentialStatusType status) {
+    @EnumSource(value = CredentialOfferStatusType.class, names = {"CANCELLED", "EXPIRED", "ISSUED", "REVOKED", "SUSPENDED"})
+    void testCreateCredentialFromDeferredRequest_withInvalidStatus_thenException(CredentialOfferStatusType status) {
 
         UUID accessToken = UUID.randomUUID();
 
@@ -347,7 +347,7 @@ class CredentialServiceTest {
         DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
 
         CredentialOffer credentialOffer = getCredentialOffer(
-                CredentialStatusType.DEFERRED,
+                CredentialOfferStatusType.DEFERRED,
                 Instant.now().minusSeconds(600).getEpochSecond(),
                 Map.of(),
                 accessToken,
@@ -380,7 +380,7 @@ class CredentialServiceTest {
         DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
 
         CredentialOffer credentialOffer = spy(getCredentialOffer(
-                CredentialStatusType.READY,
+                CredentialOfferStatusType.READY,
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 offerData,
                 accessToken,
@@ -410,14 +410,14 @@ class CredentialServiceTest {
         credentialService.createCredentialFromDeferredRequest(deferredRequest, accessToken.toString());
 
         // check if is issued && data removed
-        assertEquals(CredentialStatusType.ISSUED, credentialOffer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.ISSUED, credentialOffer.getCredentialStatus());
         assertNull(credentialOffer.getOfferData());
         assertNull(credentialOffer.getTransactionId());
         assertNull(credentialOffer.getHolderJWKs());
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);
-        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), CredentialStatusType.ISSUED);
+        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
         verify(credentialOffer).markAsIssued();
     }
@@ -431,7 +431,7 @@ class CredentialServiceTest {
         DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
 
         CredentialOffer credentialOffer = spy(getCredentialOffer(
-                CredentialStatusType.READY,
+                CredentialOfferStatusType.READY,
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 offerData,
                 accessToken,
@@ -462,14 +462,14 @@ class CredentialServiceTest {
         credentialService.createCredentialFromDeferredRequestV2(deferredRequest, accessToken.toString());
 
         // check if is issued && data removed
-        assertEquals(CredentialStatusType.ISSUED, credentialOffer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.ISSUED, credentialOffer.getCredentialStatus());
         assertNull(credentialOffer.getOfferData());
         assertNull(credentialOffer.getTransactionId());
         assertNull(credentialOffer.getHolderJWKs());
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);
-        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), CredentialStatusType.ISSUED);
+        var stateChangeEvent = new StateChangeEvent(credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
         verify(credentialOffer).markAsIssued();
     }
@@ -480,7 +480,7 @@ class CredentialServiceTest {
         UUID accessToken = UUID.randomUUID();
 
         CredentialOffer credentialOffer = getCredentialOffer(
-                CredentialStatusType.OFFERED,
+                CredentialOfferStatusType.OFFERED,
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 offerData,
                 accessToken,
@@ -514,7 +514,7 @@ class CredentialServiceTest {
         UUID accessToken = UUID.randomUUID();
 
         CredentialOffer credentialOffer = getCredentialOffer(
-                CredentialStatusType.READY,
+                CredentialOfferStatusType.READY,
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 offerData,
                 accessToken,
@@ -606,7 +606,7 @@ class CredentialServiceTest {
 
         verify(offer).markAsIssued();
         verify(credentialOfferRepository, atLeastOnce()).save(offer);
-        var stateChangeEvent = new StateChangeEvent(offer.getId(), CredentialStatusType.IN_PROGRESS);
+        var stateChangeEvent = new StateChangeEvent(offer.getId(), CredentialOfferStatusType.IN_PROGRESS);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
     }
 
@@ -627,7 +627,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(1000).getEpochSecond();
         DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
-        var offer = getCredentialOffer(CredentialStatusType.IN_PROGRESS, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, UUID.randomUUID());
+        var offer = getCredentialOffer(CredentialOfferStatusType.IN_PROGRESS, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, UUID.randomUUID());
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
@@ -652,7 +652,7 @@ class CredentialServiceTest {
                 .accessToken(accessToken)
                 .accessTokenExpirationTimestamp(expirationTimeStamp)
                 .build();
-        var offer = getCredentialOffer(CredentialStatusType.READY, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, transactionId);
+        var offer = getCredentialOffer(CredentialOfferStatusType.READY, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, transactionId);
         offer.setCredentialManagement(mgmt);
         mgmt.setCredentialOffers(Set.of(offer));
 
@@ -665,8 +665,8 @@ class CredentialServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusType.class, names = {"CANCELLED", "EXPIRED", "READY", "REVOKED", "SUSPENDED", "DEFERRED"})
-    void createCredentialEnvelopeDto_withInvalidSatus_throwsOAuthException(CredentialStatusType status) {
+    @EnumSource(value = CredentialOfferStatusType.class, names = {"CANCELLED", "EXPIRED", "READY", "REVOKED", "SUSPENDED", "DEFERRED"})
+    void createCredentialEnvelopeDto_withInvalidSatus_throwsOAuthException(CredentialOfferStatusType status) {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(100).getEpochSecond();
@@ -692,7 +692,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(100).getEpochSecond();
         CredentialEndpointRequestDtoV2 credentialRequestDto = getCredentialRequestDtoV2("not-test", null);
-        var offer = getCredentialOffer(CredentialStatusType.IN_PROGRESS, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, transactionId);
+        var offer = getCredentialOffer(CredentialOfferStatusType.IN_PROGRESS, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, transactionId);
         var config = mock(CredentialConfiguration.class);
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
@@ -714,7 +714,7 @@ class CredentialServiceTest {
     private CredentialOffer mockCredentialOffer(boolean isDeferred, CredentialManagement mgmt) {
         CredentialOffer credentialOffer = mock(CredentialOffer.class);
 
-        when(credentialOffer.getCredentialStatus()).thenReturn(CredentialStatusType.IN_PROGRESS);
+        when(credentialOffer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.IN_PROGRESS);
         when(credentialOffer.getMetadataCredentialSupportedId()).thenReturn(List.of("test"));
 
         if (isDeferred) {

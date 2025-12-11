@@ -99,10 +99,10 @@ class DeferredIssuanceV2IT {
         statusList = saveStatusList(createStatusList());
         var deferredMetadata = new CredentialOfferMetadata(true, null, null, null);
 
-        CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt",
+        CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt",
                 deferredMetadata);
 
-        unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED,
+        unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialOfferStatusType.OFFERED,
                 "unbound_example_sd_jwt", deferredMetadata);
         offerManagementId = saveStatusListLinkedOffer(offer, statusList, 0).getId();
         unboundOfferManagementId = saveStatusListLinkedOffer(unboundOffer, statusList, 1).getId();
@@ -341,7 +341,7 @@ class DeferredIssuanceV2IT {
 
         var expirationInSeconds = 1728000; // 20 days
 
-        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialStatusType.IN_PROGRESS,
+        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS,
                 "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null),
                 expirationInSeconds);
         saveStatusListLinkedOffer(offerWithDynamicExpiration, statusList, 3);

@@ -34,16 +34,16 @@ class CredentialManagementServiceIT {
 
     @Test
     void testExpireOffersAllCredentialStatusType() {
-        final List<CredentialStatusType> expirableStatus = List.of(
-                CredentialStatusType.OFFERED,
-                CredentialStatusType.IN_PROGRESS,
-                CredentialStatusType.DEFERRED,
-                CredentialStatusType.READY
+        final List<CredentialOfferStatusType> expirableStatus = List.of(
+                CredentialOfferStatusType.OFFERED,
+                CredentialOfferStatusType.IN_PROGRESS,
+                CredentialOfferStatusType.DEFERRED,
+                CredentialOfferStatusType.READY
         );
         final long past = Instant.now().minusSeconds(300).getEpochSecond();
         final long future = Instant.now().plusSeconds(300).getEpochSecond();
 
-        final List<CredentialOffer> allOffers = Arrays.stream(CredentialStatusType.values())
+        final List<CredentialOffer> allOffers = Arrays.stream(CredentialOfferStatusType.values())
                 .flatMap(status -> Stream.of(newOffer(status, past), newOffer(status, future)))
                 .map(credentialOfferRepository::save)
                 .toList();
@@ -53,7 +53,7 @@ class CredentialManagementServiceIT {
                     .filter(o ->
                             (expirableStatus.contains(o.getCredentialStatus()) &&
                                     o.getOfferExpirationTimestamp() < Instant.now().getEpochSecond())
-                                    || o.getCredentialStatus() == CredentialStatusType.EXPIRED
+                                    || o.getCredentialStatus() == CredentialOfferStatusType.EXPIRED
                     )
                     .toList();
 
@@ -64,7 +64,7 @@ class CredentialManagementServiceIT {
 
             for (var offer : expectedExpired) {
                 final CredentialOffer offerUpdated = credentialOfferRepository.findById(offer.getId()).orElseThrow();
-                assertThat(offerUpdated.getCredentialStatus()).isEqualTo(CredentialStatusType.EXPIRED);
+                assertThat(offerUpdated.getCredentialStatus()).isEqualTo(CredentialOfferStatusType.EXPIRED);
             }
 
             for (var offer : expectedUnchanged) {
@@ -78,7 +78,7 @@ class CredentialManagementServiceIT {
         }
     }
 
-    private CredentialOffer newOffer(final CredentialStatusType status, final long expirationEpoch) {
+    private CredentialOffer newOffer(final CredentialOfferStatusType status, final long expirationEpoch) {
         var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())

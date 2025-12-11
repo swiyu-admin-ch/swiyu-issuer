@@ -14,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -80,7 +81,7 @@ public class CredentialManagementService {
     }
 
     private CredentialOffer checkOffer(CredentialOffer offer) {
-        if (CredentialStatusType.getExpirableStates().contains(offer.getCredentialStatus())
+        if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
                 && offer.hasExpirationTimeStampPassed()) {
             return expireCredentialOffer(getCredentialById(offer.getId()));
         }
@@ -91,10 +92,10 @@ public class CredentialManagementService {
      * Update the status of a credential offer.
      *
      * <p>Loads the credential with a pessimistic write lock, converts the incoming
-     * {@code requestedNewStatus} DTO to the internal {@link CredentialStatusType},
+     * {@code requestedNewStatus} DTO to the internal {@link CredentialOfferStatusType},
      * performs the status transition and returns a DTO with the updated state.</p>
      *
-     * @param credentialId       the id of the credential offer to update
+     * @param credentialManagementId       the id of the credential offer to update
      * @param requestedNewStatus the requested new status DTO
      * @return an {@link UpdateStatusResponseDto} describing the updated credential status
      * @throws ResourceNotFoundException if no credential offer with the given id exists
@@ -106,10 +107,10 @@ public class CredentialManagementService {
 
         var mgmt = getCredentialManagement(credentialManagementId);
 
-        if (mgmt.isPostIssuance()) {
+        if (mgmt.isCredentialAlreadyPublished()) {
 
             var newStatus = toCredentialStatusManagementType(requestedNewStatus);
-            var newStatus2 = toCredentialStatusType(requestedNewStatus);
+            CredentialStatusManagementType newStatus2 = toCredentialStatusManagementType(requestedNewStatus);
 
             var currentStatus = mgmt.getCredentialManagementStatus();
 
@@ -162,19 +163,17 @@ public class CredentialManagementService {
 
             var statusList = Collections.<UUID>emptyList();
 
-            if (newStatus == CredentialStatusType.EXPIRED) {
+            if (newStatus == CredentialOfferStatusType.EXPIRED) {
                 credentialOfferForUpdate.expire();
             } else if (currentStatus.isProcessable()) {
                 handlePreIssuanceStatusChange(credentialOfferForUpdate, currentStatus, newStatus);
-            } else {
-                statusList = handlePostIssuanceStatusChange(credentialOfferForUpdate, newStatus);
             }
 
             log.debug("Updating credential {} from {} to {}", credentialOfferForUpdate.getId(), currentStatus, newStatus);
 
             var updatedCredentialOffer = this.credentialOfferRepository.save(credentialOfferForUpdate);
 
-            produceStateChangeEvent(updatedCredentialOffer.getId(), updatedCredentialOffer.getCredentialStatus());
+            produceOfferStateChangeEvent(credentialOfferForUpdate.getCredentialManagement().getId(), updatedCredentialOffer.getId(), newStatus);
 
             return statusList.isEmpty() ? toUpdateStatusResponseDto(credentialOfferForUpdate) : toUpdateStatusResponseDto(credentialOfferForUpdate, statusList);
         }
@@ -241,7 +240,7 @@ public class CredentialManagementService {
      * Scheduled job that expires credential offers whose expiration timestamp has passed.
      *
      * <p>Finds offers in expirable states with an offer expiration timestamp less than the
-     * current time, updates their status to {@link CredentialStatusType#EXPIRED} and triggers
+     * current time, updates their status to {@link CredentialOfferStatusType#EXPIRED} and triggers
      * the usual status-change processing (including deletion of associated person data).
      * Runs according to the configured {@code application.offer-expiration-interval} and uses
      * a distributed lock ("expireOffers") to avoid concurrent execution across instances.
@@ -251,7 +250,7 @@ public class CredentialManagementService {
     @SchedulerLock(name = "expireOffers")
     @Transactional
     public void expireOffers() {
-        var expireStates = CredentialStatusType.getExpirableStates();
+        var expireStates = CredentialOfferStatusType.getExpirableStates();
         var expireTimeStamp = Instant.now().getEpochSecond();
         log.info("Expiring {} offers", credentialOfferRepository
                 .countByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp));
@@ -280,7 +279,7 @@ public class CredentialManagementService {
         var storedCredentialOffer = mgmt.getCredentialOffers().stream().filter(o -> o.isDeferredOffer()).findFirst().orElseThrow(() -> new BadRequestException("Credential is either not deferred or has an incorrect status, cannot update offer data"));
 
         if (!storedCredentialOffer.isDeferredOffer()
-                && storedCredentialOffer.getCredentialStatus() == CredentialStatusType.DEFERRED) {
+                && storedCredentialOffer.getCredentialStatus() == CredentialOfferStatusType.DEFERRED) {
             throw new BadRequestException(
                     "Credential is either not deferred or has an incorrect status, cannot update offer data");
         }
@@ -327,7 +326,7 @@ public class CredentialManagementService {
         return this.credentialOfferRepository.findById(credentialId)
                 .map(offer -> {
                     // Make sure only offer is returned if it is not expired
-                    if (CredentialStatusType.getExpirableStates().contains(offer.getCredentialStatus())
+                    if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
                             && offer.hasExpirationTimeStampPassed()) {
                         return expireCredentialOffer(getCredentialById(offer.getId()));
                     }
@@ -345,7 +344,7 @@ public class CredentialManagementService {
         // TODO check if correct
         mgmt.getCredentialOffers().forEach(offer -> {
             // Make sure only offer is returned if it is not expired
-            if (CredentialStatusType.getExpirableStates().contains(offer.getCredentialStatus())
+            if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
                     && offer.hasExpirationTimeStampPassed()) {
                 expireCredentialOffer(getCredentialById(offer.getId()));
             }
@@ -450,7 +449,7 @@ public class CredentialManagementService {
                 .build());
 
         CredentialOffer entity = credentialOfferRepository.save(CredentialOffer.builder()
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
                 .preAuthorizedCode(UUID.randomUUID())
                 .offerData(offerData)
@@ -540,14 +539,14 @@ public class CredentialManagementService {
         var currentStatus = credential.getCredentialStatus();
 
         if (credential.getCredentialStatus().isTerminalState()) {
-            throw new BadRequestException(String.format("Tried to set %s but status is already %s", CredentialStatusType.EXPIRED, currentStatus));
+            throw new BadRequestException(String.format("Tried to set %s but status is already %s", CredentialOfferStatusType.EXPIRED, currentStatus));
         }
 
         credential.expire();
 
         var updatedCredential = this.credentialOfferRepository.save(credential);
 
-        produceStateChangeEvent(credential.getId(), credential.getCredentialStatus());
+        produceOfferStateChangeEvent(credential.getCredentialManagement().getId(), credential.getId(), credential.getCredentialStatus());
 
         return updatedCredential;
     }
@@ -571,17 +570,17 @@ public class CredentialManagementService {
      * Handles status changes before issuance (status cancelled, ready and expired)
      */
     private void handlePreIssuanceStatusChange(CredentialOffer credential,
-                                               CredentialStatusType currentStatus,
-                                               CredentialStatusType newStatus) {
+                                               CredentialOfferStatusType currentStatus,
+                                               CredentialOfferStatusType newStatus) {
 
         // if the new status is READY, then we can only set it if the old status was
         // deferred
-        if (currentStatus == CredentialStatusType.DEFERRED && newStatus == CredentialStatusType.READY) {
-            credential.changeStatus(CredentialStatusType.READY);
+        if (currentStatus == CredentialOfferStatusType.DEFERRED && newStatus == CredentialOfferStatusType.READY) {
+            credential.changeStatus(CredentialOfferStatusType.READY);
             return;
         }
 
-        if (newStatus == CredentialStatusType.CANCELLED || newStatus == CredentialStatusType.REVOKED) {
+        if (newStatus == CredentialOfferStatusType.CANCELLED) {
             credential.cancel();
             return;
         }
@@ -595,31 +594,7 @@ public class CredentialManagementService {
      *
      * @return
      */
-    private List<UUID> handlePostIssuanceStatusChange(CredentialOffer credential, CredentialStatusType newStatus) {
-
-        final Set<CredentialOfferStatus> offerStatusSet = credentialOfferStatusRepository
-                .findByOfferId(credential.getId());
-
-        if (offerStatusSet.isEmpty()) {
-            throw new BadRequestException(
-                    "No associated status lists found. Can not set a status to an already issued credential");
-        }
-
-        var changedStatusLists = switch (newStatus) {
-            case REVOKED -> statusListService.revoke(offerStatusSet);
-            case SUSPENDED -> statusListService.suspend(offerStatusSet);
-            case ISSUED -> statusListService.revalidate(offerStatusSet);
-            default -> throw new BadRequestException(String.format(
-                    "Illegal state transition - Status cannot be updated from %s to %s",
-                    credential.getCredentialStatus(), newStatus));
-        };
-
-        credential.changeStatus(newStatus);
-
-        return changedStatusLists;
-    }
-
-    private List<UUID> handlePostIssuanceStatusChange(CredentialManagement mgmt, CredentialStatusType newStatus) {
+    private List<UUID> handlePostIssuanceStatusChange(CredentialManagement mgmt, CredentialStatusManagementType newStatus) {
 
         var affectedOffers = mgmt.getCredentialOffers().stream().map(CredentialOffer::getId).toList();
 
@@ -641,8 +616,17 @@ public class CredentialManagementService {
         };
     }
 
-    private void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusType state) {
+    private void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusManagementType state) {
         var stateChangeEvent = new StateChangeEvent(
+                credentialOfferId,
+                state
+        );
+        applicationEventPublisher.publishEvent(stateChangeEvent);
+    }
+
+    private void produceOfferStateChangeEvent(UUID credentialManagementId, UUID credentialOfferId, CredentialOfferStatusType state) {
+        var stateChangeEvent = new OfferStateChangeEvent(
+                credentialManagementId,
                 credentialOfferId,
                 state
         );

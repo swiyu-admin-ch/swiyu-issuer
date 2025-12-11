@@ -81,14 +81,14 @@ class IssuanceV2IT {
     @BeforeEach
     void setUp() {
         testStatusList = saveStatusList(createStatusList());
-        CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt");
         saveStatusListLinkedOffer(offer, testStatusList, 0);
         holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt");
+        var unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialOfferStatusType.OFFERED, "unbound_example_sd_jwt");
         saveStatusListLinkedOffer(unboundOffer, testStatusList, 1);
     }
 
@@ -124,7 +124,7 @@ class IssuanceV2IT {
         var vctMetadataUriIntegrity = "vct_metadata_uri#integrity";
 
         var metadata = new CredentialOfferMetadata(false, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
-        var getValidPreAuthCodeWithMetadataOffer = createTestOffer(validPreAuthCodeWithMetadata, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
+        var getValidPreAuthCodeWithMetadataOffer = createTestOffer(validPreAuthCodeWithMetadata, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", metadata);
         saveStatusListLinkedOffer(getValidPreAuthCodeWithMetadataOffer, testStatusList, 2);
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCodeWithMetadata.toString());

@@ -5,7 +5,7 @@ import ch.admin.bj.swiyu.issuer.common.config.WebhookProperties;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventType;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.util.StringUtils;
@@ -32,7 +32,7 @@ public class WebhookEventProducer {
      * Produces a state change event when a credential status changes.
      */
     @Transactional
-    public void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusType state) {
+    public void produceStateChangeEvent(UUID credentialOfferId, CredentialOfferStatusType state) {
         createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null);
     }
 
@@ -49,7 +49,7 @@ public class WebhookEventProducer {
      */
     @Transactional
     public void produceDeferredEvent(UUID credentialOfferId, String clientAgentInfo) {
-        var message = CredentialStatusType.DEFERRED.getDisplayName();
+        var message = CredentialOfferStatusType.DEFERRED.getDisplayName();
         createEvent(credentialOfferId, CallbackEventType.VC_DEFERRED, message, clientAgentInfo);
     }
 
@@ -70,4 +70,3 @@ public class WebhookEventProducer {
         log.debug("Created callback event for subject {} with type {}", subjectId, callbackEventType);
     }
 }
-
