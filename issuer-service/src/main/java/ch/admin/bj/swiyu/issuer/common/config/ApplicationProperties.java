@@ -95,6 +95,11 @@ public class ApplicationProperties {
     private boolean allowTokenRefresh;
 
     @NotNull
+    private boolean renewalFlowAllowed;
+
+    private String renewalApiEndpoint;
+
+    @NotNull
     private int acceptableProofTimeWindowSeconds;
     @NotNull
     private int nonceLifetimeSeconds;
@@ -125,5 +130,9 @@ public class ApplicationProperties {
             throw new ConfigurationException(
                     "Provided Allow JWKSet can not be parsed! %s".formatted(authenticationJwks));
         }
+    }
+
+    public boolean isRenewalFlowEnabled() {
+        return this.isDpopEnforce() && this.isRenewalFlowAllowed() && this.getRenewalApiEndpoint() != null;
     }
 }

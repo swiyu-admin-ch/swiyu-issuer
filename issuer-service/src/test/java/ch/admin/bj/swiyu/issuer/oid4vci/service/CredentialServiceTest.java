@@ -24,10 +24,10 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
+import ch.admin.bj.swiyu.issuer.service.renewal.RenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
-import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -66,6 +66,8 @@ class CredentialServiceTest {
     private CredentialConfiguration credentialConfiguration;
     private ApplicationEventPublisher applicationEventPublisher;
     private OAuthService oAuthService;
+    private CredentialManagementService credentialManagementService;
+    private RenewalApiClient renewalApiClient;
 
 
     @BeforeEach
@@ -79,6 +81,8 @@ class CredentialServiceTest {
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        credentialManagementService = Mockito.mock(CredentialManagementService.class);
+        renewalApiClient = Mockito.mock(RenewalApiClient.class);
 
         EncryptionService encryptionService = Mockito.mock(EncryptionService.class);
         EventProducerService eventProducerService = new EventProducerService(applicationEventPublisher, objectMapper);
@@ -94,7 +98,9 @@ class CredentialServiceTest {
                 oAuthService,
                 eventProducerService,
                 encryptionService,
-                credentialManagementRepository
+                credentialManagementRepository,
+                renewalApiClient,
+                credentialManagementService
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
@@ -562,7 +568,7 @@ class CredentialServiceTest {
         mockVCBuilder(offer);
         when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
 
-        credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo);
+        credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo, null);
 
         verify(offer).markAsDeferred(any(), any(), anyList(), anyList(), any(), any());
         verify(credentialOfferRepository).save(offer);
@@ -603,7 +609,7 @@ class CredentialServiceTest {
         mockVCBuilder(offer);
         when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
 
-        credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo);
+        credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo, null);
 
         verify(offer).markAsIssued();
         verify(credentialOfferRepository, atLeastOnce()).save(offer);
@@ -706,7 +712,7 @@ class CredentialServiceTest {
         when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         var accessTokenString = accessToken.toString();
-        var exception = assertThrows(Oid4vcException.class, () -> credentialService.createCredentialV2(credentialRequestDto, accessTokenString, null));
+        var exception = assertThrows(Oid4vcException.class, () -> credentialService.createCredentialV2(credentialRequestDto, accessTokenString, null, null));
 
         assertEquals(CredentialRequestError.UNSUPPORTED_CREDENTIAL_TYPE, exception.getError());
         assertEquals("Mismatch between requested and offered credential configuration id.", exception.getMessage());

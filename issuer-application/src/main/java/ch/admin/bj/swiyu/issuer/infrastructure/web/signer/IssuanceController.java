@@ -216,10 +216,11 @@ public class IssuanceController {
 
         String accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
+
         if (API_VERSION_OID4VCI_1_0.equals(version)) {
             var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDtoV2.class);
             validateRequestDtoOrThrow(dto, validator);
-            credentialEnvelope = credentialService.createCredentialV2(dto, accessToken, clientInfo);
+            credentialEnvelope = credentialService.createCredentialV2(dto, accessToken, clientInfo, dpop);
         } else {
             var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDto.class);
             validateRequestDtoOrThrow(dto, validator);

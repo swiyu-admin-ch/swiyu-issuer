@@ -27,7 +27,8 @@ class CredentialStatusTypeTest {
         assertTrue(status.contains(CredentialOfferStatusType.IN_PROGRESS));
         assertTrue(status.contains(CredentialOfferStatusType.DEFERRED));
         assertTrue(status.contains(CredentialOfferStatusType.READY));
-        assertEquals(4, status.size());
+        assertTrue(status.contains(CredentialOfferStatusType.REQUESTED));
+        assertEquals(5, status.size());
     }
 
     @Test

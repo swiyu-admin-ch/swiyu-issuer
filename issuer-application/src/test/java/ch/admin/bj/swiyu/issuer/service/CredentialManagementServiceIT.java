@@ -38,6 +38,7 @@ class CredentialManagementServiceIT {
                 CredentialOfferStatusType.OFFERED,
                 CredentialOfferStatusType.IN_PROGRESS,
                 CredentialOfferStatusType.DEFERRED,
+                CredentialOfferStatusType.REQUESTED,
                 CredentialOfferStatusType.READY
         );
         final long past = Instant.now().minusSeconds(300).getEpochSecond();

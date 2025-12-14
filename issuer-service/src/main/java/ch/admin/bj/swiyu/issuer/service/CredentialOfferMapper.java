@@ -39,7 +39,7 @@ public class CredentialOfferMapper {
         return CredentialWithDeeplinkResponseDto.builder()
                 .managementId(management.getId())
                 .offerId(credentialOffer.getId())
-                .offerDeeplink(getOfferDeeplinkFromCredential(props, credentialOffer, management))
+                .offerDeeplink(getOfferDeeplinkFromCredential(props, credentialOffer))
                 .build();
     }
 
@@ -62,7 +62,7 @@ public class CredentialOfferMapper {
                 credential.getCredentialValidFrom(),
                 credential.getCredentialValidUntil(),
                 toCredentialRequest(credential.getCredentialRequest()),
-                getOfferDeeplinkFromCredential(props, credential, credential.getCredentialManagement())
+                getOfferDeeplinkFromCredential(props, credential)
         );
     }
 
@@ -114,6 +114,7 @@ public class CredentialOfferMapper {
             case ISSUED -> CredentialOfferStatusType.ISSUED;
             case SUSPENDED -> null;
             case REVOKED -> null;
+            case REQUESTED -> CredentialOfferStatusType.REQUESTED;
             case EXPIRED -> CredentialOfferStatusType.EXPIRED;
         };
     }
@@ -162,8 +163,7 @@ public class CredentialOfferMapper {
     }
 
     private static String getOfferDeeplinkFromCredential(ApplicationProperties props,
-                                                         CredentialOffer credentialOffer,
-                                                         CredentialManagement mgmt) {
+                                                         CredentialOffer credentialOffer) {
 
         var grants = new GrantsDto(new PreAuthorizedCodeGrantDto(credentialOffer.getPreAuthorizedCode()));
         var credentialIssuer = getCredentialIssuer(props, credentialOffer);

@@ -14,13 +14,17 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointReques
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.service.renewal.RenewalApiClient;
+import ch.admin.bj.swiyu.issuer.service.renewal.RenewalRequestDto;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +50,8 @@ public class CredentialService {
     private final EventProducerService eventProducerService;
     private final EncryptionService encryptionService;
     private final CredentialManagementRepository credentialManagementRepository;
+    private final RenewalApiClient renewalApiClient;
+    private final CredentialManagementService credentialManagementService;
 
     @Deprecated(since = "OID4VCI 1.0")
     @Transactional
@@ -56,18 +62,7 @@ public class CredentialService {
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
         CredentialManagement mgmt = oAuthService.getCredentialManagementByAccessToken(accessToken);
 
-        // todo check & maybe refactor
-        var credentialOffer = mgmt.getCredentialOffers().stream()
-                .map(offer -> {
-                    if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED
-                            && offer.hasExpirationTimeStampPassed()) {
-                        offer.markAsExpired();
-                        return credentialOfferRepository.save(offer);
-                    }
-                    return offer;
-                })
-                .filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
-                .findFirst()
+        var credentialOffer = getFirstOffersInProgressAndCheckIfAnyOfferExpiredAndUpdate(mgmt)
                 .orElseThrow(() -> OAuthException.invalidGrant(
                         "Invalid accessToken"));
 
@@ -77,17 +72,46 @@ public class CredentialService {
     @Transactional
     public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDtoV2 credentialRequestDto,
                                                     String accessToken,
-                                                    ClientAgentInfo clientInfo) {
+                                                    ClientAgentInfo clientInfo, String dpopKey) {
 
-        CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
-        CredentialManagement mgmt = oAuthService.getCredentialManagementByAccessToken(accessToken);
+        var credentialRequest = toCredentialRequest(credentialRequestDto);
+        var mgmt = oAuthService.getCredentialManagementByAccessToken(accessToken);
 
-        var credentialOffer = mgmt.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
-                .findFirst()
-                .orElseThrow(() -> OAuthException.invalidGrant(
-                        "No credential offer found in progress for the provided access token."));
+        var credentialOffer = getFirstOffersInProgressAndCheckIfAnyOfferExpiredAndUpdate(mgmt);
 
-        return createCredentialEnvelopeDtoV2(credentialOffer, credentialRequest, clientInfo, mgmt);
+        // normal issuance flow
+        if (credentialOffer.isPresent()) {
+            return createCredentialEnvelopeDtoV2(credentialOffer.get(), credentialRequest, clientInfo, mgmt);
+        }
+
+        // renewal flow
+        if (!applicationProperties.isRenewalFlowEnabled()) {
+            log.info("Tried to renew credential for management id %s".formatted(mgmt.getId()));
+            throw new RenewalException(HttpStatus.BAD_REQUEST, "No active offer found for %s and no renewal possible");
+        }
+
+        // check if dpop present
+        if (dpopKey == null) {
+            throw OAuthException.invalidGrant("Invalid accessToken - no DPoP key present for refresh flow");
+        }
+
+        // check if issued credential exists for the management
+        var requestedCredentialOffers = mgmt.getCredentialOffers().stream()
+                .filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.REQUESTED).toList();
+
+        if (!requestedCredentialOffers.isEmpty()) {
+            throw new RenewalException(HttpStatus.TOO_MANY_REQUESTS, "Request already in progress");
+        }
+
+        var initialCredentialOfferForRenewal = this.credentialManagementService.createInitialCredentialOfferForRenewal(mgmt);
+
+        var renewalData = new RenewalRequestDto(mgmt.getId(), initialCredentialOfferForRenewal.getId(), dpopKey);
+
+        var renewedDataResponse = renewalApiClient.getRenewalData(renewalData);
+
+        var offer = this.credentialManagementService.updateOfferFromRenewalResponse(renewedDataResponse, initialCredentialOfferForRenewal);
+
+        return createCredentialEnvelopeDtoV2(offer, credentialRequest, clientInfo, mgmt);
     }
 
     @Deprecated(since = "OID4VCI 1.0")
@@ -332,7 +356,9 @@ public class CredentialService {
         // We have to check again that the Credential Status has not been changed to
         // catch race condition between holder & issuer
         if (!credentialOffer.getCredentialStatus()
-                .equals(CredentialOfferStatusType.IN_PROGRESS)) {
+                .equals(CredentialOfferStatusType.IN_PROGRESS)
+                && !credentialOffer.getCredentialStatus()
+                .equals(CredentialOfferStatusType.REQUESTED)) {
             log.info("Credential offer {} failed to create VC, as state was not IN_PROGRESS instead was {}",
                     credentialOffer.getId(), credentialOffer.getCredentialStatus());
             throw OAuthException.invalidGrant(String.format(
@@ -379,5 +405,19 @@ public class CredentialService {
                         && o.getTransactionId().equals(transactionId))
                 .findFirst()
                 .orElseThrow(() -> new Oid4vcException(INVALID_TRANSACTION_ID, "Invalid transactional id"));
+    }
+
+    // todo check & maybe refactor
+    private Optional<CredentialOffer> getFirstOffersInProgressAndCheckIfAnyOfferExpiredAndUpdate(CredentialManagement mgmt) {
+        return mgmt.getCredentialOffers().stream()
+                .map(offer -> {
+                    if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED && offer.hasExpirationTimeStampPassed()) {
+                        offer.markAsExpired();
+                        return credentialOfferRepository.save(offer);
+                    }
+                    return offer;
+                })
+                .filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
+                .findFirst();
     }
 }

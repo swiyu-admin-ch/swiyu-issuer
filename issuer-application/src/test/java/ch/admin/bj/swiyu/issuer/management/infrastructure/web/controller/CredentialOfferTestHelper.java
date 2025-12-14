@@ -105,10 +105,8 @@ public class CredentialOfferTestHelper {
             try {
                 var tokenState = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusZipped(), 204800).getStatus(status.getId().getIndex());
                 var expectedState = switch (statusType) {
-                    case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED ->
+                    case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED, REQUESTED ->
                             TokenStatusListBit.VALID.getValue();
-//                    case SUSPENDED -> TokenStatusListBit.SUSPEND.getValue();
-//                    case REVOKED -> TokenStatusListBit.REVOKE.getValue();
                 };
                 if (expectedState != tokenState) {
                     throw new AssertionError(String.format("Offer %s, idx %d: expected %d but got %d", offerId, status.getId().getIndex(), expectedState, tokenState));

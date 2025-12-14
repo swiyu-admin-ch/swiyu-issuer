@@ -44,6 +44,7 @@ public class StatusResponseMapper {
             case DEFERRED -> CredentialStatusTypeDto.DEFERRED;
             case READY -> CredentialStatusTypeDto.READY;
             case ISSUED -> CredentialStatusTypeDto.ISSUED;
+            case REQUESTED -> CredentialStatusTypeDto.REQUESTED;
             case EXPIRED -> CredentialStatusTypeDto.EXPIRED;
         };
     }

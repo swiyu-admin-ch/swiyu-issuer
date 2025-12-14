@@ -2,7 +2,9 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -13,6 +15,7 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.experimental.UtilityClass;
+import org.mockito.Mock;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -26,8 +29,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,6 +40,22 @@ public class IssuanceV2TestUtils {
         return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
                 .header("SWIYU-API-Version", "2")
+                .content(credentialRequestString)
+        );
+    }
+
+    public static ResultActions requestCredentialV2WithDpop(MockMvc mock, String token, String credentialRequestString, IssuerMetadata issuerMetadata, ECKey dpopKey) throws Exception {
+        return mock.perform(post("/oid4vci/api/credential")
+                .header("Authorization", String.format("BEARER %s", token))
+                .header("SWIYU-API-Version", "2")
+                .header("DPoP", createDpop(
+                        mock,
+                        issuerMetadata.getNonceEndpoint(),
+                        "POST",
+                        issuerMetadata.getCredentialEndpoint(),
+                        token,
+                        dpopKey
+                ))
                 .content(credentialRequestString)
         );
     }
@@ -135,5 +153,25 @@ public class IssuanceV2TestUtils {
                 .getAsJsonObject()
                 .get("access_token")
                 .getAsString();
+    }
+
+    public String getPreAuthCodeFromDeeplink(String deeplink) throws Exception {
+        var decodedDeeplink = URLDecoder.decode(deeplink, StandardCharsets.UTF_8);
+        var credentialOfferString = decodedDeeplink.replace("swiyu://?credential_offer=", "");
+
+        var credentialOffer = JsonParser.parseString(credentialOfferString).getAsJsonObject();
+        var grants = credentialOffer.get("grants").getAsJsonObject();
+        return grants.get("urn:ietf:params:oauth:grant-type:pre-authorized_code").getAsJsonObject()
+                .get("pre-authorized_code").getAsString();
+    }
+
+
+    public static String createDpop(MockMvc mockMvc, String nonceEndpoint, String httpMethod, String httpUri, String accessToken, ECKey dpopKey) {
+        // Fetch a fresh nonce
+        var nonceResponse = assertDoesNotThrow(() -> mockMvc.perform(post(nonceEndpoint))
+                .andExpect(status().isOk())
+                .andReturn());
+        String dpopNonce = nonceResponse.getResponse().getHeader("DPoP-Nonce");
+        return DemonstratingProofOfPossessionTestUtil.createDPoPJWT(httpMethod, httpUri, accessToken, dpopKey, dpopNonce);
     }
 }

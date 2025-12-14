@@ -31,5 +31,6 @@ public enum CredentialStatusTypeDto {
     ISSUED,
     SUSPENDED,
     REVOKED,
+    REQUESTED,
     EXPIRED
 }

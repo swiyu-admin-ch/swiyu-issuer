@@ -19,6 +19,8 @@ public enum CredentialOfferStatusType {
     DEFERRED("Deferred"),
     READY("Ready"),
     ISSUED("Issued"),
+    // status only used for renewal flow
+    REQUESTED("Requested"),
     EXPIRED("Expired");
 
     private final String displayName;
@@ -31,7 +33,11 @@ public enum CredentialOfferStatusType {
      * @return List of CredentialStatusType which can lead to "expire"
      */
     public static List<CredentialOfferStatusType> getExpirableStates() {
-        return List.of(CredentialOfferStatusType.OFFERED, CredentialOfferStatusType.IN_PROGRESS, CredentialOfferStatusType.DEFERRED, CredentialOfferStatusType.READY);
+        return List.of(CredentialOfferStatusType.OFFERED,
+                CredentialOfferStatusType.IN_PROGRESS,
+                CredentialOfferStatusType.DEFERRED,
+                CredentialOfferStatusType.READY,
+                CredentialOfferStatusType.REQUESTED);
     }
 
     @Override
@@ -40,7 +46,11 @@ public enum CredentialOfferStatusType {
     }
 
     public boolean isProcessable() {
-        return this == OFFERED || this == IN_PROGRESS || this == DEFERRED || this == READY;
+        return this == OFFERED ||
+                this == IN_PROGRESS ||
+                this == DEFERRED ||
+                this == READY ||
+                this == REQUESTED;
     }
 
     public boolean isTerminalState() {
