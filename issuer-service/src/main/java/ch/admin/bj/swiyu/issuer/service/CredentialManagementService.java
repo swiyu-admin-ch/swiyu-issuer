@@ -59,8 +59,8 @@ public class CredentialManagementService {
     private final AvailableStatusListIndexRepository availableStatusListIndexRepository;
     private final Random random = new Random();
 
-    private static String statusNotChangeable = "Tried to set %s but status is already %s";
-    private static String credentialNotFound = "Credential %s not found";
+    private static final String statusNotChangeable = "Tried to set %s but status is already %s";
+    private static final String credentialNotFound = "Credential %s not found";
 
     /**
      * Retrieve public information about a credential offer.
