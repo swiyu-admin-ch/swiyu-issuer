@@ -11,8 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Service responsible for processing and sending webhook callback events to external systems.
@@ -24,7 +24,7 @@ import org.springframework.web.client.RestClientResponseException;
 public class WebhookEventProcessor {
     private final WebhookProperties webhookProperties;
     private final CallbackEventRepository callbackEventRepository;
-    private final RestClient restClient;
+    private final WebClient webClient;
 
     /**
      * Periodically processes all pending callback events and sends them to the configured callback URI.
@@ -53,7 +53,7 @@ public class WebhookEventProcessor {
     }
 
     private void processCallbackEvent(CallbackEvent event, String callbackUri, String authHeader, String authValue) {
-        var request = restClient.post()
+        var request = webClient.post()
                 .uri(callbackUri);
                 
         if (!StringUtils.isBlank(authHeader)) {
@@ -63,18 +63,18 @@ public class WebhookEventProcessor {
         try {
             request
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(CallbackMapper.toWebhookCallbackDto(event))
+                    .bodyValue(CallbackMapper.toWebhookCallbackDto(event))
                     .retrieve()
-                    .toBodilessEntity();
+                    .toBodilessEntity()
+                    .block();
             
             callbackEventRepository.delete(event);
             log.info("Successfully sent callback event {} to {}", event.getId(), callbackUri);
-        } catch (RestClientResponseException e) {
+        } catch (WebClientResponseException e) {
             // Note: If delivery failed we will keep retrying to send the message ad-infinitum.
             // This is intended behaviour as we have to guarantee an at-least-once delivery.
             log.error("Callback to {} failed with status code {} with message {}", 
-                    callbackUri, e.getStatusCode(), e.getMessage());
+                    callbackUri, e.getRawStatusCode(), e.getMessage());
         }
     }
 }
-
