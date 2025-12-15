@@ -210,8 +210,6 @@ class CredentialOfferStatusMultiThreadedIT {
             }
         });
         assertTrue(mgmtIds.stream().map(credentialManagementRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialManagementStatus() == CredentialStatusManagementType.SUSPENDED));
-        // TODO
-        // offerIds.forEach(o -> testHelper.assertOfferStateConsistent(o, CredentialOfferStatusType.SUSPENDED));
         // Reset Status
         mgmtIds.stream().parallel().forEach(offerId -> {
             try {

@@ -40,7 +40,6 @@ public class CredentialManagementMapper {
             return CredentialStatusTypeDto.valueOf(credentialManagement.getCredentialManagementStatus().name());
         }
 
-        // TODO check all
         var credentialStatus = credentialManagement.getCredentialOffers().stream()
                 .findFirst()
                 .map(CredentialOffer::getCredentialStatus)
