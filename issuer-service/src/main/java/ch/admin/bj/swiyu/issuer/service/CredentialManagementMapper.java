@@ -10,7 +10,9 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
+import jakarta.validation.constraints.Null;
 import lombok.experimental.UtilityClass;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 import java.util.Set;
@@ -36,7 +38,7 @@ public class CredentialManagementMapper {
     }
 
     public static CredentialStatusTypeDto toCredentialStatusTypeDto(CredentialManagement credentialManagement) {
-        if (credentialManagement.getCredentialManagementStatus() != null) {
+        if (credentialManagement.getCredentialManagementStatus() != CredentialStatusManagementType.INIT) {
             return CredentialStatusTypeDto.valueOf(credentialManagement.getCredentialManagementStatus().name());
         }
 
@@ -64,18 +66,16 @@ public class CredentialManagementMapper {
         };
     }
 
-    public static UpdateStatusResponseDto toUpdateStatusResponseDto(CredentialManagement mgmt) {
-        return UpdateStatusResponseDto.builder()
+    public static UpdateStatusResponseDto toUpdateStatusResponseDto(CredentialManagement mgmt, @Nullable List<UUID> statusLists) {
+        var responseDto =  UpdateStatusResponseDto.builder()
                 .id(mgmt.getId())
                 .credentialStatus(toCredentialStatusTypeDto(mgmt))
                 .build();
-    }
 
-    public static UpdateStatusResponseDto toUpdateStatusResponseDto(CredentialManagement mgmt, List<UUID> statusLists) {
-        return UpdateStatusResponseDto.builder()
-                .id(mgmt.getId())
-                .credentialStatus(toCredentialStatusTypeDto(mgmt))
-                .statusLists(statusLists)
-                .build();
+        if (statusLists != null && !statusLists.isEmpty()) {
+            responseDto.setStatusLists(statusLists);
+        }
+
+        return responseDto;
     }
 }

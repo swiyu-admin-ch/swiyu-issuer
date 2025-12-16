@@ -19,7 +19,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.renewal.RenewalApiClient;
+import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalRequestDto;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.AllArgsConstructor;
@@ -50,7 +50,7 @@ public class CredentialService {
     private final EventProducerService eventProducerService;
     private final EncryptionService encryptionService;
     private final CredentialManagementRepository credentialManagementRepository;
-    private final RenewalApiClient renewalApiClient;
+    private final BusinessIssuerRenewalApiClient renewalApiClient;
     private final CredentialManagementService credentialManagementService;
 
     @Deprecated(since = "OID4VCI 1.0")

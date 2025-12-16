@@ -40,9 +40,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
@@ -118,7 +116,7 @@ class CredentialOfferStatusIT {
 
         CredentialStatusTypeDto expectedStatus = CredentialStatusTypeDto.OFFERED;
 
-        mvc.perform(get(testHelper.getUrl(managementId)))
+        mvc.perform(get(testHelper.getStatusUrl(managementId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(expectedStatus.toString()));
     }
@@ -140,7 +138,7 @@ class CredentialOfferStatusIT {
         mvc.perform(patch(testHelper.getUpdateUrl(managementId, CredentialStatusTypeDto.valueOf(value))))
                 .andExpect(status().isOk());
 
-        mvc.perform(get(testHelper.getUrl(managementId)))
+        mvc.perform(get(testHelper.getStatusUrl(managementId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.valueOf(value).toString()));
     }
@@ -252,7 +250,7 @@ class CredentialOfferStatusIT {
             mvc.perform(patch(testHelper.getUpdateUrl(vcId, newValue)))
                     .andExpect(status().isBadRequest());
 
-            mvc.perform(get(testHelper.getUrl(vcId)))
+            mvc.perform(get(testHelper.getStatusUrl(vcId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(originalState));
         }
@@ -272,7 +270,7 @@ class CredentialOfferStatusIT {
             mvc.perform(patch(testHelper.getUpdateUrl(managementId, CredentialStatusTypeDto.OFFERED)))
                     .andExpect(status().isBadRequest());
 
-            mvc.perform(get(testHelper.getUrl(managementId)))
+            mvc.perform(get(testHelper.getStatusUrl(managementId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(originalState));
         }
@@ -293,7 +291,7 @@ class CredentialOfferStatusIT {
             mvc.perform(patch(testHelper.getUpdateUrl(managementId, newValue)))
                     .andExpect(status().isBadRequest());
 
-            mvc.perform(get(testHelper.getUrl(managementId)))
+            mvc.perform(get(testHelper.getStatusUrl(managementId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(originalState));
         }
@@ -313,7 +311,7 @@ class CredentialOfferStatusIT {
             mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
                     .andExpect(status().isBadRequest());
 
-            mvc.perform(get(testHelper.getUrl(managementId)))
+            mvc.perform(get(testHelper.getStatusUrl(managementId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(value));
         }
@@ -350,7 +348,7 @@ class CredentialOfferStatusIT {
             mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
                     .andExpect(status().isBadRequest());
 
-            mvc.perform(get(testHelper.getUrl(managementId)))
+            mvc.perform(get(testHelper.getStatusUrl(managementId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(value));
         }
@@ -373,7 +371,7 @@ class CredentialOfferStatusIT {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.CANCELLED.toString()));
 
-            mvc.perform(get(testHelper.getUrl(managementId)))
+            mvc.perform(get(testHelper.getStatusUrl(managementId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.CANCELLED.toString()));
         }
@@ -387,7 +385,7 @@ class CredentialOfferStatusIT {
             mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
                     .andExpect(status().isBadRequest());
 
-            mvc.perform(get(testHelper.getUrl(managementId)))
+            mvc.perform(get(testHelper.getStatusUrl(managementId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value(originalState.toString()));
         }

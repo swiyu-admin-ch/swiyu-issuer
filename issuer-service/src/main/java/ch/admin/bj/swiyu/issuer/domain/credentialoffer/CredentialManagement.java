@@ -35,7 +35,7 @@ public class CredentialManagement {
     @Id
     private UUID id;
 
-    @Nullable
+    @NotNull
     @Enumerated(EnumType.STRING)
     private CredentialStatusManagementType credentialManagementStatus;
 
@@ -55,7 +55,7 @@ public class CredentialManagement {
      * OAuth refresh token for the offer
      */
     @Nullable
-    @Column(name = "refresh_token", nullable = true)
+    @Column(name = "refresh_token")
     private UUID refreshToken;
 
     private Integer renewalRequestCnt;
@@ -82,7 +82,12 @@ public class CredentialManagement {
     }
 
     public boolean hasTokenExpirationPassed() {
-        return Instant.now().isAfter(Instant.ofEpochSecond(this.accessTokenExpirationTimestamp));
+        return this.accessTokenExpirationTimestamp == null
+                || Instant.now().isAfter(Instant.ofEpochSecond(this.accessTokenExpirationTimestamp));
+    }
+
+    public boolean isPreIssuanceProcess() {
+        return this.credentialManagementStatus == CredentialStatusManagementType.INIT;
     }
 
     // Helper to keep both sides in sync when adding/removing offers
@@ -92,12 +97,22 @@ public class CredentialManagement {
         offer.setCredentialManagement(this);
     }
 
-    public boolean isCredentialAlreadyPublished() {
-        return this.credentialManagementStatus != null;
-    }
-
     public void markAsIssued() {
         this.credentialManagementStatus = CredentialStatusManagementType.ISSUED;
         log.info("Credential issued for {}. ", this.id);
+    }
+
+    public UUID getLastValidLegacyNonce() {
+        return this.isPreIssuanceProcess()
+                // is normal issuance process -> get offer in progress and use this nonce
+                ? this.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
+                .map(o -> o.getNonce())
+                .findFirst()
+                .orElseThrow()
+                // is refresh
+                : this.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.ISSUED)
+                .map(o -> o.getNonce())
+                .findFirst()
+                .orElseThrow();
     }
 }

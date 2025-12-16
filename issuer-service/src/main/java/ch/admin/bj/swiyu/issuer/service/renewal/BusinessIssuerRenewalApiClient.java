@@ -17,7 +17,7 @@ import java.net.URI;
 @Slf4j
 @Service
 @AllArgsConstructor
-public class RenewalApiClient {
+public class BusinessIssuerRenewalApiClient {
 
     private final RestClient restClient;
     private final ApplicationProperties applicationProperties;
@@ -27,19 +27,19 @@ public class RenewalApiClient {
 
         try {
             return restClient.post()
-                    .uri(URI.create(applicationProperties.getRenewalApiEndpoint()))
+                    .uri(URI.create(applicationProperties.getBusinessIssuerRenewalApiEndpoint()))
                     .body(requestDto)
                     .contentType(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (request, response) -> {
                         log.error("Renewal request to {} failed with status code {} with message {}",
-                                applicationProperties.getRenewalApiEndpoint(), request.getURI(), response.getStatusCode());
+                                applicationProperties.getBusinessIssuerRenewalApiEndpoint(), request.getURI(), response.getStatusCode());
                         throw new RenewalException(HttpStatus.valueOf(response.getStatusCode().value()), "Renewal request failed");
                     })
                     .body(RenewalResponseDto.class);
         } catch (RestClientResponseException e) {
             log.error("Renewal request to {} failed with status code {} with message {}",
-                    applicationProperties.getRenewalApiEndpoint(), e.getStatusCode(), e.getMessage());
+                    applicationProperties.getBusinessIssuerRenewalApiEndpoint(), e.getStatusCode(), e.getMessage());
         }
         return null;
     }

@@ -54,6 +54,6 @@ public enum CredentialOfferStatusType {
     }
 
     public boolean isTerminalState() {
-        return this == EXPIRED || this == CANCELLED;
+        return this == EXPIRED || this == CANCELLED || this == ISSUED;
     }
 }

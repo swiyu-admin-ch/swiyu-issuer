@@ -404,6 +404,7 @@ class DeferredIssuanceV2IT {
         var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
                 .renewalRequestCnt(0)
                 .renewalResponseCnt(0)

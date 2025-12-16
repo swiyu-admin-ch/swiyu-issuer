@@ -50,11 +50,11 @@ class OAuthServiceTest {
     void refreshOAuthToken_thenSuccess() {
         var credentialOffer = Mockito.mock(CredentialOffer.class);
         Mockito.when(credentialOffer.getNonce()).thenReturn(UUID.randomUUID());
-        Mockito.when(credentialOffer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.IN_PROGRESS);
+        Mockito.when(credentialOffer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.ISSUED);
         var refreshToken = UUID.randomUUID();
         var mockMgmt = Mockito.mock(CredentialManagement.class);
         Mockito.when(credentialManagementRepository.findByRefreshToken(refreshToken)).thenReturn(Optional.ofNullable(mockMgmt));
-        Mockito.when(mockMgmt.getCredentialManagementStatus()).thenReturn(CredentialStatusManagementType.SUSPENDED);
+        Mockito.when(mockMgmt.getCredentialManagementStatus()).thenReturn(CredentialStatusManagementType.ISSUED);
         Mockito.when(mockMgmt.getId()).thenReturn(UUID.randomUUID());
         Mockito.when(mockMgmt.getCredentialOffers()).thenReturn(Set.of(credentialOffer));
         // ensure save does not throw

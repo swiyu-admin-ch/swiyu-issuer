@@ -81,6 +81,7 @@ class DemonstratingProofOfPossessionIT {
         credentialManagement = CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .renewalRequestCnt(0)
                 .renewalResponseCnt(0)
                 .build();

@@ -599,6 +599,7 @@ class DeferredFlowIT {
         credentialManagement = CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
                 .renewalRequestCnt(0)
                 .renewalResponseCnt(0).credentialOffers(Set.of(unboundOffer))
@@ -660,6 +661,7 @@ class DeferredFlowIT {
         credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
                 .id(deferredOfferId)
                 .accessToken(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
                 .renewalRequestCnt(0)
                 .renewalResponseCnt(0)
@@ -687,10 +689,7 @@ class DeferredFlowIT {
             @Override
             protected void doInTransactionWithoutResult(@NotNull TransactionStatus status) {
                 credentialManagement = credentialManagementRepository.findByAccessToken(UUID.fromString(token));
-                var offers = credentialManagement.getCredentialOffers().stream().filter(co -> co.getCredentialStatus() == CredentialOfferStatusType.DEFERRED).map(o -> {
-                    o.setCredentialStatus(CredentialOfferStatusType.READY);
-                    return o;
-                }).toList();
+                var offers = credentialManagement.getCredentialOffers().stream().filter(co -> co.getCredentialStatus() == CredentialOfferStatusType.DEFERRED).peek(o -> o.setCredentialStatus(CredentialOfferStatusType.READY)).toList();
 
                 credentialOfferRepository.saveAll(offers);
             }

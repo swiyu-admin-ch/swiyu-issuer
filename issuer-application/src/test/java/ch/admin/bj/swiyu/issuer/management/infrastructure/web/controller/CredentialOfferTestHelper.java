@@ -118,14 +118,14 @@ public class CredentialOfferTestHelper {
     }
 
     public String getUpdateUrl(UUID id, CredentialStatusTypeDto credentialStatus) {
-        return String.format("%s?credentialStatus=%s", getUrl(id), credentialStatus);
+        return String.format("%s?credentialStatus=%s", getStatusUrl(id), credentialStatus);
     }
 
     TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws IOException {
         return TokenStatusListToken.loadTokenStatusListToken(bits, lst, 204800);
     }
 
-    String getUrl(UUID id) {
+    String getStatusUrl(UUID id) {
         return String.format("%s/%s/status", BASE_URL, id);
     }
 

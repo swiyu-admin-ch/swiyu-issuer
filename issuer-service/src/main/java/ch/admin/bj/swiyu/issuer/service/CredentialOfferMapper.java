@@ -112,6 +112,7 @@ public class CredentialOfferMapper {
             case DEFERRED -> CredentialOfferStatusType.DEFERRED;
             case READY -> CredentialOfferStatusType.READY;
             case ISSUED -> CredentialOfferStatusType.ISSUED;
+            case INIT -> null;
             case SUSPENDED -> null;
             case REVOKED -> null;
             case REQUESTED -> CredentialOfferStatusType.REQUESTED;

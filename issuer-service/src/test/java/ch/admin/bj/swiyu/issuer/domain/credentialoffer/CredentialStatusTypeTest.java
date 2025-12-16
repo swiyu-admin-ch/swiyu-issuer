@@ -46,10 +46,10 @@ class CredentialStatusTypeTest {
     void testIsTerminalState() {
         assertTrue(CredentialOfferStatusType.EXPIRED.isTerminalState());
         assertTrue(CredentialOfferStatusType.CANCELLED.isTerminalState());
+        assertTrue(CredentialOfferStatusType.ISSUED.isTerminalState());
         assertFalse(CredentialOfferStatusType.OFFERED.isTerminalState());
         assertFalse(CredentialOfferStatusType.IN_PROGRESS.isTerminalState());
         assertFalse(CredentialOfferStatusType.DEFERRED.isTerminalState());
         assertFalse(CredentialOfferStatusType.READY.isTerminalState());
-        assertFalse(CredentialOfferStatusType.ISSUED.isTerminalState());
     }
 }

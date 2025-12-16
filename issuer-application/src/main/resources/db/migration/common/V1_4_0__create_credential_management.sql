@@ -7,7 +7,7 @@ CREATE TABLE credential_management (
     refresh_token uuid,
     dpop_key jsonb,
     access_token_expiration_timestamp bigint,
-    credential_management_status text,
+    credential_management_status text NOT NULL DEFAULT 'INIT',
     renewal_request_cnt int NOT NULL DEFAULT 0,
     renewal_response_cnt int NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -36,7 +36,7 @@ SELECT
     refresh_token,
     dpop_key,
     token_expiration_timestamp,
-    CASE WHEN credential_status IN ('ISSUED', 'SUSPENDED', 'REVOKED') THEN credential_status ELSE NULL END,
+    CASE WHEN credential_status IN ('ISSUED', 'SUSPENDED', 'REVOKED') THEN credential_status ELSE 'INIT' END,
     0,
     0,
     created_at,
@@ -58,7 +58,7 @@ WHERE credential_status IN ('SUSPENDED', 'REVOKED') ;
 ALTER TABLE credential_offer ALTER COLUMN credential_management_id SET NOT NULL;
 ALTER TABLE credential_offer
     ADD CONSTRAINT fk_credential_offer_credential_management FOREIGN KEY (credential_management_id)
-    REFERENCES credential_management (id);
+    REFERENCES credential_management (id) ON DELETE CASCADE;
 
 -- Drop columns that were migrated
 ALTER TABLE credential_offer DROP COLUMN IF EXISTS access_token;

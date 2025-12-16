@@ -24,7 +24,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
-import ch.admin.bj.swiyu.issuer.service.renewal.RenewalApiClient;
+import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
@@ -67,7 +67,7 @@ class CredentialServiceTest {
     private ApplicationEventPublisher applicationEventPublisher;
     private OAuthService oAuthService;
     private CredentialManagementService credentialManagementService;
-    private RenewalApiClient renewalApiClient;
+    private BusinessIssuerRenewalApiClient renewalApiClient;
 
 
     @BeforeEach
@@ -82,7 +82,7 @@ class CredentialServiceTest {
         credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         credentialManagementService = Mockito.mock(CredentialManagementService.class);
-        renewalApiClient = Mockito.mock(RenewalApiClient.class);
+        renewalApiClient = Mockito.mock(BusinessIssuerRenewalApiClient.class);
 
         EncryptionService encryptionService = Mockito.mock(EncryptionService.class);
         EventProducerService eventProducerService = new EventProducerService(applicationEventPublisher, objectMapper);
@@ -499,6 +499,7 @@ class CredentialServiceTest {
                 .accessToken(accessToken)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .credentialOffers(Set.of(credentialOffer))
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .build();
 
         credentialOffer.setCredentialManagement(mgmt);

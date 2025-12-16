@@ -99,16 +99,7 @@ public class OAuthService {
         UUID newAccessToken = UUID.randomUUID();
         mgmt.setAccessToken(newAccessToken);
 
-        var nonce = mgmt.getCredentialManagementStatus() == null
-                ? mgmt.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
-                .map(o -> o.getNonce())
-                .findFirst()
-                .orElseThrow()
-                // is refresh
-                : mgmt.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.ISSUED)
-                .map(o -> o.getNonce())
-                .findFirst()
-                .orElseThrow();
+        var nonce = mgmt.getLastValidLegacyNonce();
 
         OAuthTokenDto.OAuthTokenDtoBuilder oauthTokenResponseBuilder = OAuthTokenDto.builder()
                 .accessToken(newAccessToken.toString())

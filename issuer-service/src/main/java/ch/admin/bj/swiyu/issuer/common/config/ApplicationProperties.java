@@ -97,7 +97,7 @@ public class ApplicationProperties {
     @NotNull
     private boolean renewalFlowAllowed;
 
-    private String renewalApiEndpoint;
+    private String businessIssuerRenewalApiEndpoint;
 
     @NotNull
     private int acceptableProofTimeWindowSeconds;
@@ -133,6 +133,6 @@ public class ApplicationProperties {
     }
 
     public boolean isRenewalFlowEnabled() {
-        return this.isDpopEnforce() && this.isRenewalFlowAllowed() && this.getRenewalApiEndpoint() != null;
+        return this.isDpopEnforce() && this.isRenewalFlowAllowed() && this.getBusinessIssuerRenewalApiEndpoint() != null;
     }
 }

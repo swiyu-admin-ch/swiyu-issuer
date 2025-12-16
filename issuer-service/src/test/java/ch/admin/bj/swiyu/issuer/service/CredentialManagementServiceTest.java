@@ -213,7 +213,8 @@ class CredentialManagementServiceTest {
     void updateCredentialStatus_shouldNotUpdateIfStatusUnchanged() {
         mgmt = CredentialManagement.builder()
                 .id(UUID.randomUUID())
-                .credentialOffers(Set.of(issued))
+                .credentialOffers(Set.of(valid))
+                .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .build();
 
         Mockito.when(credentialManagementRepository.findById(any())).thenReturn(Optional.of(mgmt));
