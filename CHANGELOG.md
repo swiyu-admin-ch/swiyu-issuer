@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 2.1.0
+## Latest
+
+## 2.2.0
 
 ### Added
 
@@ -21,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       according to the OID4VCI spec.
     - Added new endpoint `/management/api/credentials/{credentialId}/signed-metadata` to provide signed
       credential-offer-metadata for a specific credential offer.
+- Batch issuance now supports multiple indexes, preventing linkability through status list index.
+  The used status list indexes are selected at random from remaining free indexes in status list.
+- Updated didresolver dependency from 2.1.3 to 2.3.0
+
+## 2.1.1
+
+### Added
+
 - Added new `vct_metadata_uri`, `vct_metadata_uri#integrity` fields to CredentialOfferMetadataDto which are then added
   to the credential claims
 - Added WebhookCallbackDto to openapi config schemas.
@@ -38,9 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   issuer and the wallet should not retry.
 - Added always available Credential Request Payload encryption, can be enforced to be always active by setting
   APPLICATION_ENCRYPTIONENFORCE=true. Overriding will break compatibility with wallets not supporting encryption.
-- Batch issuance now supports multiple indexes, preventing linkability through status list index.
-  The used status list indexes are selected at random from remaining free indexes in status list.
-- Updated didresolver dependency from 2.1.3 to 2.3.0
 
 ### Changed
 
