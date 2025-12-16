@@ -40,6 +40,6 @@ public class DemonstratingProofOfPossessionTestUtil {
     }
 
     private static String createSha256Hash(String accessToken) {
-        return Base64.getEncoder().encodeToString(sha256.digest(accessToken.getBytes(StandardCharsets.UTF_8)));
+        return Base64.getUrlEncoder().encodeToString(sha256.digest(accessToken.getBytes(StandardCharsets.UTF_8)));
     }
 }
