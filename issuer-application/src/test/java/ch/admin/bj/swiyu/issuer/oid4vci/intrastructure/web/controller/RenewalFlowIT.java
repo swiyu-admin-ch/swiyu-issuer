@@ -74,7 +74,7 @@ class RenewalFlowIT {
                         mockServerContainer.getHost(),
                         mockServerContainer.getServerPort()
                 );
-        registry.add("application.renewal-api-endpoint", mockServerContainer::getEndpoint);
+        registry.add("application.business-issuer-renewal-api-endpoint", mockServerContainer::getEndpoint);
     }
 
     @MockitoBean

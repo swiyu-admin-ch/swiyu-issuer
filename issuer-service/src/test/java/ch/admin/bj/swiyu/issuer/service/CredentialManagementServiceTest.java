@@ -154,6 +154,7 @@ class CredentialManagementServiceTest {
         mgmt = CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .credentialOffers(Set.of(expiredOffer))
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .build();
 
         when(credentialManagementRepository.findById(mgmt.getId())).thenReturn(Optional.of(mgmt));
