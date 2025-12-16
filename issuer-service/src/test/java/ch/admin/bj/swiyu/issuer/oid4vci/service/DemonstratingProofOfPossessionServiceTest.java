@@ -130,7 +130,7 @@ class DemonstratingProofOfPossessionServiceTest {
                 .claim("htu", httpUri)
                 .claim("nonce", dpopNonce);
         if (StringUtils.isNotEmpty(accessToken)) {
-            claimSetBuilder.claim("ath", Base64.getEncoder().encodeToString(assertDoesNotThrow(() -> MessageDigest.getInstance("SHA-256")).digest(accessToken.getBytes(StandardCharsets.UTF_8))));
+            claimSetBuilder.claim("ath", Base64.getUrlEncoder().encodeToString(assertDoesNotThrow(() -> MessageDigest.getInstance("SHA-256")).digest(accessToken.getBytes(StandardCharsets.UTF_8))));
         }
         return new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .jwk(dpopKey.toPublicJWK())
