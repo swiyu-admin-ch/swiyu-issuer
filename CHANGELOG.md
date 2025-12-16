@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Latest
 
+- Added optional support for DPoP for wallets to begin adopting DPoP for more secure communication.
+  As operator of an issuer there is action needed. This feature is added automatically.
+  Note: In the future this will be enforced
+
 ## 2.2.0
 
 ### Added
