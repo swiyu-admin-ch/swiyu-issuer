@@ -4,11 +4,13 @@ import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.migration.testdata.CredentialOfferData;
 import ch.admin.bj.swiyu.issuer.migration.testdata.CredentialOfferTestFactory;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +101,7 @@ class RenewalFlowMigrationTestIT {
 
     @BeforeAll
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    void migrateDatabase() throws Exception {
+    void migrateDatabase() {
         log.info("Migrating schema to {}", PRE_MIGRATION_TARGET);
         Flyway.configure()
                 .dataSource(dataSource)
@@ -211,25 +214,36 @@ class RenewalFlowMigrationTestIT {
     }
 
     void insert(CredentialOfferData data) {
+        PGobject dpopJsonb = null;
+        try {
+            if (data.dpopKey() != null) {
+                dpopJsonb = new PGobject();
+                dpopJsonb.setType("jsonb");
+                dpopJsonb.setValue(data.dpopKey());
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Invalid jsonb test data", e);
+        }
+
         jdbcTemplate.update("""
-                            INSERT INTO credential_offer (
-                                id,
-                              nonce,
-                                credential_status,
-                                access_token,
-                                refresh_token,
-                                dpop_key,
-                                token_expiration_timestamp,
-                                created_at,
-                                last_modified_at
-                            ) VALUES (?, ?, ?, ?, ?, ?::jsonb, ?, now(), now())
+                        INSERT INTO credential_offer (
+                            id,
+                            nonce,
+                            credential_status,
+                            access_token,
+                            refresh_token,
+                            dpop_key,
+                            token_expiration_timestamp,
+                            created_at,
+                            last_modified_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, now(), now())
                         """,
                 data.id(),
                 UUID.randomUUID(),
                 data.offerStatus(),
                 data.accessToken(),
                 data.refreshToken(),
-                data.dpopKey(),
+                dpopJsonb,
                 data.tokenExpirationTimestamp()
         );
     }
