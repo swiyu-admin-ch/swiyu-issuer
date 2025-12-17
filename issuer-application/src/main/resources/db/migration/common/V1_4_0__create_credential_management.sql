@@ -1,5 +1,3 @@
-BEGIN;
-
 -- Create new table
 CREATE TABLE credential_management (
     id uuid NOT NULL,
@@ -15,7 +13,7 @@ CREATE TABLE credential_management (
 );
 ALTER TABLE credential_management ADD CONSTRAINT credential_management_pkey PRIMARY KEY (id);
 
-ALTER TABLE credential_offer ADD COLUMN credential_management_id uuid NOT NULL;
+ALTER TABLE credential_offer ADD COLUMN credential_management_id uuid;
 
 -- Copy data from credential_offer into credential_management
 INSERT INTO credential_management (
@@ -66,5 +64,3 @@ ALTER TABLE credential_offer DROP COLUMN IF EXISTS refresh_token;
 ALTER TABLE credential_offer DROP COLUMN IF EXISTS dpop_key;
 
 ALTER TABLE credential_offer DROP COLUMN IF EXISTS token_expiration_timestamp;
-
-COMMIT;
