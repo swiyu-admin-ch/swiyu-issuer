@@ -214,17 +214,6 @@ class RenewalFlowMigrationTestIT {
     }
 
     void insert(CredentialOfferData data) {
-        PGobject dpopJsonb = null;
-        try {
-            if (data.dpopKey() != null) {
-                dpopJsonb = new PGobject();
-                dpopJsonb.setType("jsonb");
-                dpopJsonb.setValue(data.dpopKey());
-            }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Invalid jsonb test data", e);
-        }
-
         jdbcTemplate.update("""
                         INSERT INTO credential_offer (
                             id,
@@ -236,14 +225,14 @@ class RenewalFlowMigrationTestIT {
                             token_expiration_timestamp,
                             created_at,
                             last_modified_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, now(), now())
+                        ) VALUES (?, ?, ?, ?, ?, to_json(?::json), ?, NOW(), NOW())
                         """,
                 data.id(),
                 UUID.randomUUID(),
                 data.offerStatus(),
                 data.accessToken(),
                 data.refreshToken(),
-                dpopJsonb,
+                data.dpopKey(),
                 data.tokenExpirationTimestamp()
         );
     }
