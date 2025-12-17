@@ -12,7 +12,7 @@ import java.util.UUID;
 public interface CredentialManagementRepository extends JpaRepository<CredentialManagement, UUID> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    CredentialManagement findByAccessToken(UUID accessToken);
+    Optional<CredentialManagement> findByAccessToken(UUID accessToken);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CredentialManagement> findByRefreshToken(UUID refreshToken);

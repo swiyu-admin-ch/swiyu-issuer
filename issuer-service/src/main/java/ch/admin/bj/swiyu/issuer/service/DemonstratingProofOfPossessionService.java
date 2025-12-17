@@ -32,6 +32,7 @@ public class DemonstratingProofOfPossessionService {
 
     private final ApplicationProperties applicationProperties;
     private final NonceService nonceService;
+    private final OAuthService oAuthService;
     private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialManagementRepository credentialManagementRepository;
     private final DemonstratingProofOfPossessionValidationService demonstratingProofOfPossessionValidationService;
@@ -78,7 +79,7 @@ public class DemonstratingProofOfPossessionService {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
-        var credentialManagement = credentialManagementRepository.findByAccessToken(UUID.fromString(accessToken));
+        var credentialManagement = oAuthService.getCredentialManagementByAccessToken(accessToken);
         demonstratingProofOfPossessionValidationService.validateAccessTokenBinding(accessToken, dpopJwt, credentialManagement.getDpopKey());
     }
 

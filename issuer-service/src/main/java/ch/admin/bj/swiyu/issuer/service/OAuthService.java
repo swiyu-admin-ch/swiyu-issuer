@@ -65,11 +65,11 @@ public class OAuthService {
         var mgmt = credentialManagementRepository.findByAccessToken(uuid);
 
         // check expiration
-        if (mgmt == null || mgmt.hasTokenExpirationPassed()) {
+        if (mgmt.isEmpty() || mgmt.get().hasTokenExpirationPassed()) {
             throw OAuthException.invalidToken("Invalid accessToken");
         }
 
-        return mgmt;
+        return mgmt.get();
     }
 
     /**

@@ -688,7 +688,7 @@ class DeferredFlowIT {
         transactionTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             protected void doInTransactionWithoutResult(@NotNull TransactionStatus status) {
-                credentialManagement = credentialManagementRepository.findByAccessToken(UUID.fromString(token));
+                credentialManagement = credentialManagementRepository.findByAccessToken(UUID.fromString(token)).get();
                 var offers = credentialManagement.getCredentialOffers().stream().filter(co -> co.getCredentialStatus() == CredentialOfferStatusType.DEFERRED).peek(o -> o.setCredentialStatus(CredentialOfferStatusType.READY)).toList();
 
                 credentialOfferRepository.saveAll(offers);

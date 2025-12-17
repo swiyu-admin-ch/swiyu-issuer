@@ -53,6 +53,7 @@ class DemonstratingProofOfPossessionIT {
     private CredentialOffer testCredentialOffer;
     private CredentialManagement credentialManagement;
     private ECKey dpopKey;
+    private UUID accessToken;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
 
@@ -71,6 +72,8 @@ class DemonstratingProofOfPossessionIT {
 
     @BeforeEach
     void setUp() {
+        accessToken = UUID.randomUUID();
+
         testCredentialOffer = CredentialOffer.builder()
                 .id(UUID.randomUUID())
                 .preAuthorizedCode(UUID.randomUUID())
@@ -80,7 +83,8 @@ class DemonstratingProofOfPossessionIT {
 
         credentialManagement = CredentialManagement.builder()
                 .id(UUID.randomUUID())
-                .accessToken(UUID.randomUUID())
+                .accessToken(accessToken)
+                .accessTokenExpirationTimestamp(Instant.now().getEpochSecond() + 10)
                 .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .renewalRequestCnt(0)
                 .renewalResponseCnt(0)
@@ -106,8 +110,8 @@ class DemonstratingProofOfPossessionIT {
         registerDPoP(baseTestHttpRequest, nonce);
         nonce = getDPoPNonce();
         var credentialRequest = mockCredentialHttpRequest(baseTestHttpRequest);
-        var requestCredentialDPoP = getDPoPJWT(credentialRequest, nonce, credentialManagement.getAccessToken().toString());
-        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.validateDpop(credentialManagement.getAccessToken().toString(), requestCredentialDPoP, credentialRequest));
+        var requestCredentialDPoP = getDPoPJWT(credentialRequest, nonce, accessToken.toString());
+        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.validateDpop(accessToken.toString(), requestCredentialDPoP, credentialRequest));
     }
 
     @Test
@@ -117,8 +121,7 @@ class DemonstratingProofOfPossessionIT {
         registerDPoP(baseTestHttpRequest, nonce);
         nonce = getDPoPNonce();
         var requestCredentialDPoP = getDPoPJWT(mockCredentialHttpRequest(baseTestHttpRequest), nonce, null);
-        String accessToken = credentialManagement.getAccessToken().toString();
-        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.validateDpop(accessToken, requestCredentialDPoP, baseTestHttpRequest));
+        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.validateDpop(accessToken.toString(), requestCredentialDPoP, baseTestHttpRequest));
     }
 
     @Test
@@ -128,8 +131,7 @@ class DemonstratingProofOfPossessionIT {
         registerDPoP(baseTestHttpRequest, nonce);
         nonce = getDPoPNonce();
         var requestCredentialDPoP = getDPoPJWT(mockCredentialHttpRequest(baseTestHttpRequest), nonce, UUID.randomUUID().toString());
-        String accessToken = credentialManagement.getAccessToken().toString();
-        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.validateDpop(accessToken, requestCredentialDPoP, baseTestHttpRequest));
+        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.validateDpop(accessToken.toString(), requestCredentialDPoP, baseTestHttpRequest));
     }
 
     @Test
@@ -138,9 +140,8 @@ class DemonstratingProofOfPossessionIT {
         String nonce = getDPoPNonce();
         registerDPoP(baseTestHttpRequest, nonce);
         var credentialRequest = mockCredentialHttpRequest(baseTestHttpRequest);
-        var requestCredentialDPoP = getDPoPJWT(credentialRequest, nonce, credentialManagement.getAccessToken().toString());
-        String accessToken = credentialManagement.getAccessToken().toString();
-        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.validateDpop(accessToken, requestCredentialDPoP, credentialRequest));
+        var requestCredentialDPoP = getDPoPJWT(credentialRequest, nonce, accessToken.toString());
+        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.validateDpop(accessToken.toString(), requestCredentialDPoP, credentialRequest));
     }
 
     @ParameterizedTest

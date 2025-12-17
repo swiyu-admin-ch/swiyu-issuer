@@ -138,7 +138,7 @@ class CredentialServiceTest {
                 .credentialOffers(Set.of(offer))
                 .build();
 
-        when(credentialManagementRepository.findByAccessToken(uuid)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(uuid)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // WHEN credential is created for offer with expired timestamp
@@ -210,7 +210,8 @@ class CredentialServiceTest {
         when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("different-test-metadata", mock(CredentialConfiguration.class)));
-        when(credentialManagementRepository.findByAccessToken(mgmt.getAccessToken())).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(mgmt.getAccessToken())).thenReturn(Optional.of(mgmt));
+        when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credConfig);
 
         var accessToken = mgmt.getAccessToken().toString();
@@ -243,7 +244,7 @@ class CredentialServiceTest {
 
         credentialOffer.setCredentialManagement(mgmt);
 
-        when(credentialManagementRepository.findByAccessToken(mgmt.getAccessToken())).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(mgmt.getAccessToken())).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
 
         // Mock the factory to return the builder
@@ -299,7 +300,7 @@ class CredentialServiceTest {
 
         DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId());
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
 
         // Act
@@ -333,7 +334,7 @@ class CredentialServiceTest {
 
         DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId());
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
 
         // Act
@@ -368,7 +369,7 @@ class CredentialServiceTest {
                 .credentialOffers(Set.of(credentialOffer))
                 .build();
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
 
         // Act
         var accessTokenString = accessToken.toString();
@@ -402,7 +403,7 @@ class CredentialServiceTest {
                 .build();
         credentialOffer.setCredentialManagement(mgmt);
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
 
         // Mock the factory to return the builder
@@ -454,7 +455,7 @@ class CredentialServiceTest {
 
         credentialOffer.setCredentialManagement(mgmt);
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
 
         // Mock the factory to return the builder
@@ -557,7 +558,7 @@ class CredentialServiceTest {
         mgmt.setCredentialOffers(Set.of(offer));
 
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.of(offer));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
         when(applicationProperties.getMinDeferredOfferIntervalSeconds()).thenReturn(600L);
@@ -601,7 +602,7 @@ class CredentialServiceTest {
         mgmt.setCredentialOffers(Set.of(offer));
 
         offer.setCredentialManagement(mgmt);
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.of(offer));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
 
@@ -642,7 +643,7 @@ class CredentialServiceTest {
                 .credentialOffers(Set.of(offer))
                 .build();
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         var accessTokenString = accessToken.toString();
         var exception = assertThrows(Oid4vcException.class, () -> credentialService.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
 
@@ -664,7 +665,7 @@ class CredentialServiceTest {
         offer.setCredentialManagement(mgmt);
         mgmt.setCredentialOffers(Set.of(offer));
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         var accessTokenString = accessToken.toString();
         var exception = assertThrows(OAuthException.class, () -> credentialService.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
 
@@ -687,7 +688,7 @@ class CredentialServiceTest {
                 .build();
         offer.setCredentialManagement(mgmt);
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         var accessTokenString = accessToken.toString();
         var exception = assertThrows(OAuthException.class, () -> credentialService.createCredential(credentialRequestDto, accessTokenString, null));
 
@@ -710,7 +711,7 @@ class CredentialServiceTest {
         offer.setCredentialManagement(mgmt);
         when(config.getFormat()).thenReturn("vc+sd-jwt");
 
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mgmt);
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         var accessTokenString = accessToken.toString();
         var exception = assertThrows(Oid4vcException.class, () -> credentialService.createCredentialV2(credentialRequestDto, accessTokenString, null, null));

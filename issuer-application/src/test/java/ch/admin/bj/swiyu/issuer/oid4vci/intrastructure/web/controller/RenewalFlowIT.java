@@ -44,6 +44,7 @@ import org.testcontainers.mockserver.MockServerContainer;
 import org.mockserver.client.MockServerClient;
 import org.testcontainers.utility.DockerImageName;
 
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
@@ -164,12 +165,28 @@ class RenewalFlowIT {
                 .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-
         var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
 
         // set to issued
         requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
                 .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andReturn();
+    }
+
+    @Test
+    void testRenewalInvalidAccessToken_thenException() throws Exception {
+
+        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
+                .boxed()
+                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                .toList();
+
+        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+
+        // set to issued
+        requestCredentialV2WithDpop(mockMvc, UUID.randomUUID().toString(), credentialRequestString, issuerMetadata, dpopKey)
+                .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
     }
@@ -186,7 +203,7 @@ class RenewalFlowIT {
     })
     void testRenewalExternalFailures(String statusCode) throws Exception {
 
-        var expectedStatus = Integer.valueOf(statusCode);
+        var expectedStatus = Integer.parseInt(statusCode);
         mockServerClient
                 .when(
                         new HttpRequest()

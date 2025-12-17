@@ -10,6 +10,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Se
 import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionValidationService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -47,6 +48,7 @@ class DemonstratingProofOfPossessionServiceTest {
     private DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private ApplicationProperties applicationProperties;
     private NonceService nonceService;
+    private OAuthService oAuthService;
     private CredentialOfferRepository credentialOfferRepository;
     private CredentialManagementRepository credentialManagementRepository;
     private ECKey dpopKey;
@@ -58,9 +60,11 @@ class DemonstratingProofOfPossessionServiceTest {
         credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
         CachedNonceRepository cachedNonceRepository = Mockito.mock(CachedNonceRepository.class);
         nonceService = new NonceService(applicationProperties, cachedNonceRepository);
+        oAuthService = Mockito.mock(OAuthService.class);
         demonstratingProofOfPossessionService = new DemonstratingProofOfPossessionService(
                 applicationProperties,
                 nonceService,
+                oAuthService,
                 credentialOfferRepository,
                 credentialManagementRepository,
                 new DemonstratingProofOfPossessionValidationService(applicationProperties, nonceService)
@@ -120,7 +124,7 @@ class DemonstratingProofOfPossessionServiceTest {
         when(request.getMethod()).thenReturn(HttpMethod.POST);
         when(request.getURI()).thenReturn(requestUri);
         var mockManagement = Mockito.mock(CredentialManagement.class);
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(mockManagement);
+        when(oAuthService.getCredentialManagementByAccessToken(accessToken.toString())).thenReturn(mockManagement);
         when(mockManagement.getDpopKey()).thenReturn(dpopKey.toPublicJWK().toJSONObject());
 
         var dpop = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/credential", accessToken.toString(), dpopKey);
