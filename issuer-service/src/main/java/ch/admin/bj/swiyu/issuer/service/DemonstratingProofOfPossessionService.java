@@ -113,7 +113,7 @@ public class DemonstratingProofOfPossessionService {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
-        var credentialManagement = credentialManagementRepository.findByRefreshToken(UUID.fromString(refreshToken)).orElseThrow();
+        var credentialManagement = oAuthService.getUnrevokedCredentialOfferByRefreshToken(refreshToken);
         demonstratingProofOfPossessionValidationService.validateBoundPublicKey(dpopJwt, credentialManagement.getDpopKey());
         credentialManagement.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
         credentialManagementRepository.save(credentialManagement);

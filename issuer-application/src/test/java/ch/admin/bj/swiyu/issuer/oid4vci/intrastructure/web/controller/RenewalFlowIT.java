@@ -158,7 +158,7 @@ class RenewalFlowIT {
                 );
 
         // renew token
-        var tokenResponse = refreshTokenWithDpop(oauthTokenResponse, dpopKey);
+        var tokenResponse = refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey);
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
@@ -191,6 +191,24 @@ class RenewalFlowIT {
                 .andReturn();
     }
 
+    @Test
+    void testRenewalInvalidRefreshToken_thenException() throws Exception {
+
+        mockMvc.perform(post("/oid4vci/api/token")
+                        .header("DPoP", createDpop(
+                                mockMvc,
+                                issuerMetadata.getNonceEndpoint(),
+                                "POST",
+                                "http://localhost:8080/oid4vci/api/token",
+                                null,
+                                dpopKey
+                        ))
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                        .param("grant_type", "refresh_token")
+                        .param("refresh_token", UUID.randomUUID().toString()))
+                .andExpect(status().isBadRequest());
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "400",
@@ -217,7 +235,7 @@ class RenewalFlowIT {
                 );
 
         // renew token
-        var tokenResponse = refreshTokenWithDpop(oauthTokenResponse, dpopKey);
+        var tokenResponse = refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey);
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
@@ -287,7 +305,7 @@ class RenewalFlowIT {
         return objectMapper.readValue(tokenResult.getResponse().getContentAsString(), OAuthTokenDto.class);
     }
 
-    private OAuthTokenDto refreshTokenWithDpop(OAuthTokenDto oAuthTokenDto, ECKey dpopKey) throws Exception {
+    private OAuthTokenDto refreshTokenWithDpop(String refreshToken, ECKey dpopKey) throws Exception {
         MvcResult tokenResult = mockMvc.perform(post("/oid4vci/api/token")
                         .header("DPoP", createDpop(
                                 mockMvc,
@@ -299,7 +317,7 @@ class RenewalFlowIT {
                         ))
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                         .param("grant_type", "refresh_token")
-                        .param("refresh_token", oAuthTokenDto.getRefreshToken()))
+                        .param("refresh_token", refreshToken))
                 .andExpect(status().isOk())
                 .andReturn();
 

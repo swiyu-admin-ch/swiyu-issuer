@@ -89,6 +89,23 @@ public class OAuthService {
     }
 
     /**
+     * Retrieve a non-revoked CredentialManagement by its refresh token.
+     *
+     * Validates that the provided refresh token is a UUID, looks up the
+     * corresponding CredentialManagement and ensures it is not in the
+     * \`REVOKED\` state.
+     *
+     * @param refreshToken the refresh token string (expected UUID)
+     * @return the matching non-revoked CredentialManagement
+     * @throws OAuthException if the token is not a valid UUID or no non-revoked credential is found
+     */
+    @Transactional
+    public CredentialManagement getUnrevokedCredentialOfferByRefreshToken(String refreshToken) {
+        var uuid = uuidOrException(refreshToken);
+        return getNonRevokedCredentialOffer(credentialManagementRepository.findByRefreshToken(uuid)).orElseThrow(() -> OAuthException.invalidToken("Invalid refresh token"));
+    }
+
+    /**
      * Update the OAuth 2.0 access_token and refresh_token
      *
      * @param mgmt credential offer which is being updated
@@ -113,11 +130,6 @@ public class OAuthService {
         }
         credentialManagementRepository.save(mgmt);
         return oauthTokenResponseBuilder.build();
-    }
-
-    private CredentialManagement getUnrevokedCredentialOfferByRefreshToken(String refreshToken) {
-        var uuid = uuidOrException(refreshToken);
-        return getNonRevokedCredentialOffer(credentialManagementRepository.findByRefreshToken(uuid)).orElseThrow(() -> OAuthException.invalidToken("Invalid refresh token"));
     }
 
     private CredentialOffer getCredentialOfferByPreAuthCode(String preAuthCode) {
