@@ -85,6 +85,10 @@ public class CredentialService {
         }
 
         // renewal flow
+        if (mgmt.getCredentialManagementStatus() == CredentialStatusManagementType.REVOKED) {
+            throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential management is revoked, no renewal possible");
+        }
+
         if (!applicationProperties.isRenewalFlowEnabled()) {
             log.info("Tried to renew credential for management id %s".formatted(mgmt.getId()));
             throw new RenewalException(HttpStatus.BAD_REQUEST, "No active offer found for %s and no renewal possible");
@@ -111,7 +115,12 @@ public class CredentialService {
 
         var offer = this.credentialManagementService.updateOfferFromRenewalResponse(renewedDataResponse, initialCredentialOfferForRenewal);
 
-        return createCredentialEnvelopeDtoV2(offer, credentialRequest, clientInfo, mgmt);
+        CredentialEnvelopeDto envelopeDto = createCredentialEnvelopeDtoV2(offer, credentialRequest, clientInfo, mgmt);
+
+        mgmt.setRenewalResponseCnt(mgmt.getRenewalResponseCnt() + 1);
+        credentialManagementRepository.save(mgmt);
+
+        return envelopeDto;
     }
 
     @Deprecated(since = "OID4VCI 1.0")

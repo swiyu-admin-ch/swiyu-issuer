@@ -179,6 +179,8 @@ public class CredentialManagementService {
 
         credentialManagement.addCredentialOffer(offer);
 
+        credentialManagement.setRenewalRequestCnt(credentialManagement.getRenewalRequestCnt() + 1);
+
         credentialManagementRepository.save(credentialManagement);
 
         return offer;
