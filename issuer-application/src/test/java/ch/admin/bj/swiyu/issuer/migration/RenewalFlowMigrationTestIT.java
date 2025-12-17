@@ -214,28 +214,39 @@ class RenewalFlowMigrationTestIT {
     }
 
     void insert(CredentialOfferData data) {
-        jdbcTemplate.update("""
-                        INSERT INTO credential_offer (
-                            id,
-                            nonce,
-                            credential_status,
-                            access_token,
-                            refresh_token,
-                            dpop_key,
-                            token_expiration_timestamp,
-                            created_at,
-                            last_modified_at
-                        ) VALUES (?, ?, ?, ?, ?, to_json(?::json), ?, NOW(), NOW())
-                        """,
-                data.id(),
-                UUID.randomUUID(),
-                data.offerStatus(),
-                data.accessToken(),
-                data.refreshToken(),
-                data.dpopKey(),
-                data.tokenExpirationTimestamp()
-        );
+        jdbcTemplate.update(con -> {
+            var ps = con.prepareStatement("""
+            INSERT INTO credential_offer (
+                id,
+                nonce,
+                credential_status,
+                access_token,
+                refresh_token,
+                dpop_key,
+                token_expiration_timestamp,
+                created_at,
+                last_modified_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        """);
+            ps.setObject(1, data.id());
+            ps.setObject(2, UUID.randomUUID());
+            ps.setObject(3, data.offerStatus(), java.sql.Types.OTHER);
+            ps.setObject(4, data.accessToken());
+            ps.setObject(5, data.refreshToken());
+            if (data.dpopKey() == null) {
+                ps.setNull(6, java.sql.Types.OTHER);
+            } else {
+                ps.setObject(6, data.dpopKey(), java.sql.Types.OTHER);
+            }
+            if (data.tokenExpirationTimestamp() == null) {
+                ps.setNull(7, java.sql.Types.BIGINT);
+            } else {
+                ps.setLong(7, data.tokenExpirationTimestamp());
+            }
+            return ps;
+        });
     }
+
 
 }
 
