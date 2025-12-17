@@ -6,8 +6,10 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepos
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
@@ -27,10 +30,14 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
+@DataJpaTest(properties = {
+        "spring.flyway.enabled=false",
+        "spring.jpa.hibernate.ddl-auto=none"
+})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RenewalFlowMigrationTestIT {
 
     private static final Logger log = LoggerFactory.getLogger(RenewalFlowMigrationTestIT.class);
@@ -41,6 +48,7 @@ class RenewalFlowMigrationTestIT {
     );
 
     private static final String PRE_MIGRATION_TARGET = "1.3.0";
+    private static final String MIGRATION_TARGET = "1.4.0";
     private static final String PRE_MIGRATION_DATA =
             "src/test/resources/db/testdata/pre_v1_4_0__create_credential_management.sql";
 
@@ -56,17 +64,9 @@ class RenewalFlowMigrationTestIT {
     @Autowired
     CredentialManagementRepository credentialManagementRepository;
 
-    @BeforeEach
+    @BeforeAll
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void migrateDatabase() throws Exception {
-        log.info("Cleaning database");
-
-        Flyway.configure()
-                .dataSource(dataSource)
-                .locations(MIGRATION_LOCATIONS.toArray(String[]::new))
-                .cleanDisabled(false)
-                .load()
-                .clean();
-
         log.info("Migrating schema to {}", PRE_MIGRATION_TARGET);
 
         Flyway.configure()
@@ -76,7 +76,7 @@ class RenewalFlowMigrationTestIT {
                 .load()
                 .migrate();
 
-        log.info("Loading legacy data");
+        log.info("Loading test data");
 
         String sql = Files.readString(Path.of(PRE_MIGRATION_DATA));
         jdbcTemplate.execute(sql);
@@ -86,12 +86,12 @@ class RenewalFlowMigrationTestIT {
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations(MIGRATION_LOCATIONS.toArray(String[]::new))
+                .target(MIGRATION_TARGET)
                 .load()
                 .migrate();
     }
 
     @Test
-    @Transactional
     void should_migrate_offer_status_into_credential_management() {
         List<CredentialOffer> offers = credentialOfferRepository.findAll();
         assertThat(offers).isNotEmpty();
