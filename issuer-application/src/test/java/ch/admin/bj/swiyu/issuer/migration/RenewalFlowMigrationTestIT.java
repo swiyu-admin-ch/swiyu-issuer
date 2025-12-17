@@ -2,6 +2,8 @@ package ch.admin.bj.swiyu.issuer.migration;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.migration.testdata.CredentialOfferData;
+import ch.admin.bj.swiyu.issuer.migration.testdata.CredentialOfferTestFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeAll;
@@ -17,12 +19,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,8 +45,6 @@ class RenewalFlowMigrationTestIT {
 
     private static final String PRE_MIGRATION_TARGET = "1.3.0";
     private static final String MIGRATION_TARGET = "1.4.0";
-    private static final String PRE_MIGRATION_DATA =
-            "src/test/resources/db/testdata/pre_v1_4_0__create_credential_management.sql";
 
     @Autowired
     DataSource dataSource;
@@ -85,7 +84,17 @@ class RenewalFlowMigrationTestIT {
             "EXPIRED", CredentialStatusManagementType.INIT
     );
 
-    final int NUMBER_OFFERS = 9;
+    final List<CredentialOfferData> DATASET = List.of(
+            CredentialOfferTestFactory.offered(),
+            CredentialOfferTestFactory.cancelled(),
+            CredentialOfferTestFactory.inProgress(),
+            CredentialOfferTestFactory.deferred(),
+            CredentialOfferTestFactory.ready(),
+            CredentialOfferTestFactory.issued(),
+            CredentialOfferTestFactory.suspended(),
+            CredentialOfferTestFactory.revoked(),
+            CredentialOfferTestFactory.expired()
+    );
 
     @BeforeAll
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -99,11 +108,10 @@ class RenewalFlowMigrationTestIT {
                 .migrate();
 
         log.info("Loading test data");
-        String sql = Files.readString(Path.of(PRE_MIGRATION_DATA));
-        jdbcTemplate.execute(sql);
+        DATASET.forEach(this::insert);
 
-        log.info("Save offers before migration");
-        offers = fetchOffers();
+        offers = DATASET.stream()
+                .collect(Collectors.toMap(CredentialOfferData::id, it -> it));
 
         log.info("Migrating schema to latest");
         Flyway.configure()
@@ -119,7 +127,7 @@ class RenewalFlowMigrationTestIT {
         final List<CredentialOffer> allOffers = credentialOfferRepository.findAll();
         final List<CredentialManagement> allManagements = credentialManagementRepository.findAll();
 
-        assertThat(offers.size()).isEqualTo(NUMBER_OFFERS);
+        assertThat(offers.size()).isEqualTo(DATASET.size());
         assertThat(allOffers).hasSameSizeAs(offers.values());
         assertThat(allManagements).hasSameSizeAs(offers.values());
 
@@ -202,34 +210,31 @@ class RenewalFlowMigrationTestIT {
         }
     }
 
-    Map<UUID, CredentialOfferData> fetchOffers() {
-        return jdbcTemplate.query("""
-                    SELECT id, credential_status, access_token, refresh_token, dpop_key, token_expiration_timestamp 
-                    FROM credential_offer
-                """, rs -> {
-            final Map<UUID, CredentialOfferData> map = new HashMap<>();
-            while (rs.next()) {
-                final UUID id = UUID.fromString(rs.getString("id"));
-                map.put(id, new CredentialOfferData(
-                        id,
-                        rs.getString("credential_status"),
-                        rs.getObject("access_token", UUID.class),
-                        rs.getObject("refresh_token", UUID.class),
-                        rs.getString("dpop_key"),
-                        rs.getObject("token_expiration_timestamp", Long.class)
-                ));
-            }
-            return map;
-        });
+    void insert(CredentialOfferData data) {
+        jdbcTemplate.update("""
+                            INSERT INTO credential_offer (
+                                id,
+                              nonce,
+                                credential_status,
+                                access_token,
+                                refresh_token,
+                                dpop_key,
+                                token_expiration_timestamp,
+                                created_at,
+                                last_modified_at
+                            ) VALUES (?, ?, ?, ?, ?, ?::jsonb, ?, now(), now())
+                        """,
+                data.id(),
+                UUID.randomUUID(),
+                data.offerStatus(),
+                data.accessToken(),
+                data.refreshToken(),
+                data.dpopKey(),
+                data.tokenExpirationTimestamp()
+        );
     }
+
 }
 
-record CredentialOfferData(
-        UUID id,
-        String offerStatus,
-        UUID accessToken,
-        UUID refreshToken,
-        String dpopKey,
-        Long tokenExpirationTimestamp
-) {
-}
+
+
