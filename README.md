@@ -24,6 +24,7 @@ instance of the service.
 - [Overview](#Overview)
 - [Deployment](#deployment)
 - [Development](#development)
+  - [Note on container runtimes](#note-on-container-runtimes)
 - [SWIYU](#swiyu)
 - [Missing Features and Known Issues](#missing-features-and-known-issues)
 - [Contributions and feedback](#contributions-and-feedback)
@@ -148,6 +149,24 @@ flowchart LR
 
 > Please be aware that this section **focus on the development of the issuer service**. For the deployment of
 > the component please consult [deployment section](#Deployment).
+
+## Note on container runtimes
+
+For the purpose of integration testing, `@Testcontainers` annotation is used broadly in this repo.
+Needless to say, to run [Testcontainers](https://java.testcontainers.org)-based tests, you would need a Docker-API compatible container runtime.
+As Docker has made a few changes to its licensing in the past,
+[alternative container runtimes](https://java.testcontainers.org/supported_docker_environment/) started gaining on popularity.
+
+In general, switching the container runtime from Docker to any other (such as Podman/[Podman Desktop](https://podman-desktop.io))
+for [Testcontainers in Java](https://java.testcontainers.org) usually requires awareness of socket configuration, cleanup mechanisms,
+permissions, and underlying differences. So, [customizing Docker host detection](https://java.testcontainers.org/features/configuration/#customizing-docker-host-detection)
+would be more or less all it takes to make it work. 
+
+Luckily, one of the quite popular Docker alternatives featuring pretty seamless integration is [Podman Desktop](https://podman-desktop.io).
+Although the [official manual](https://podman-desktop.io/tutorial/testcontainers-with-podman) suggests otherwise,
+from our experience on macOS, it would be sufficient to enable the [Docker Compatibility](https://podman-desktop.io/docs/migrating-from-docker/managing-docker-compatibility)
+feature and the tests would all run through. Furthermore, running `mvn clean install` for the first time would even implicitly create
+a minimalistic [`$HOME/.testcontainers.properties`](https://java.testcontainers.org/features/configuration/), if not found in your home directory.
 
 ## Setup
 
@@ -521,7 +540,7 @@ Callback Object Structure
 erDiagram
     CREDENTIAL_OFFER {
         uuid id PK
-        enbedded audit_metadata
+        embedded audit_metadata
         text credential_status
         array[text] metadata_credential_supported_id
         jsonb offer_data
@@ -545,7 +564,7 @@ erDiagram
         uuid credential_offer_id PK, FK
         uuid status_list_id PK, FK
         integer index
-        enbedded audit_metadata
+        embedded audit_metadata
     }
 
     STATUS_LIST {
@@ -556,7 +575,7 @@ erDiagram
         text status_zipped
         int next_free_index
         int max_length
-        enbedded audit_metadata
+        embedded audit_metadata
     }
 
     CREDENTIAL_OFFER one to many CREDENTIAL_OFFER_STATUS: "has status"
@@ -722,7 +741,7 @@ Updates to the status registry will fail as long as the auth flow is not restart
 The current default implementation of the issuer service is based on
 the [OID4VCI specs DRAFT 13](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html).
 But there are already some features from
-the [OID4VCI specs DRAFT 16](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) implemented for
+the [OID4VCI 1.0](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) implemented for
 example the:
 
 * new credential-endpoint (with corresponding response)
@@ -843,3 +862,4 @@ Please follow the guidelines for contributing found in [CONTRIBUTING.md](/CONTRI
 ## License
 
 This project is licensed under the terms of the MIT license. See the [LICENSE](/LICENSE) file for details.
+ 

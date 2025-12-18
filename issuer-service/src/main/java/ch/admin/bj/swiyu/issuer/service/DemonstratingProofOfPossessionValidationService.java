@@ -3,7 +3,6 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -38,6 +37,7 @@ public class DemonstratingProofOfPossessionValidationService {
 
     public static final String DPOP_JWT_HEADER_TYP = "dpop+jwt";
     private final ApplicationProperties applicationProperties;
+    private final NonceService nonceService;
 
     /**
      * @return List of supported JWS (Json Web Signature) / JWT (Json Web Token) signing algorithms
@@ -62,7 +62,7 @@ public class DemonstratingProofOfPossessionValidationService {
             byte[] hashBytes = digest.digest(inputBytes);
 
             // Encode the hash bytes to a Base64 string
-            return Base64.getEncoder().encodeToString(hashBytes);
+            return Base64.getUrlEncoder().encodeToString(hashBytes);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 algorithm not found", e);
         }
@@ -223,8 +223,7 @@ public class DemonstratingProofOfPossessionValidationService {
      * Check if the nonce is valid - not yet used and still within the acceptable time window
      */
     private void hasValidSelfContainedNonce(JWTClaimsSet jwtClaims) throws ParseException {
-        var nonce = new SelfContainedNonce(jwtClaims.getStringClaim("nonce"));
-        if (!nonce.isSelfContainedNonce() || !nonce.isValid(applicationProperties.getNonceLifetimeSeconds())) {
+        if (!nonceService.isValidSelfContainedNonce(jwtClaims.getStringClaim("nonce"))) {
             throw new DemonstratingProofOfPossessionException("Must use valid server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
         }
     }

@@ -41,7 +41,23 @@ public class CredentialConfiguration {
      * Optional
      */
     @NotNull
+    @Schema(description = """
+            String designating the type of the Credential, as defined in sd-jwt-vc
+            """)
     private String vct;
+
+    @JsonProperty("vct_metadata_uri")
+    @Schema(description = """
+            Allowing for an indirection if using urn:vct resolver
+            """)
+    @Nullable
+    private String vctMetadataUri;
+    @JsonProperty("vct_metadata_uri#integrity")
+    @Schema(description = """
+            Allowing for validating content received from vct_metadata_uri as defined in W3C SRI (Subresource Integrity)
+            """)
+    @Nullable
+    private String vctMetadataUriIntegrity;
 
     /**
      * SD-JWT specific field <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#appendix-A.3.2">see specs</a>
