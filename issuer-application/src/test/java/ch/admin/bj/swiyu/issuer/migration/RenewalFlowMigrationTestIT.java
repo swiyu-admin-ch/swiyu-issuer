@@ -226,7 +226,7 @@ class RenewalFlowMigrationTestIT {
                 token_expiration_timestamp,
                 created_at,
                 last_modified_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?::json, ?, NOW(), NOW())
         """);
             ps.setObject(1, data.id());
             ps.setObject(2, UUID.randomUUID());
