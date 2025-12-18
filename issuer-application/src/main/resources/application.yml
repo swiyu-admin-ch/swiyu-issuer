@@ -46,7 +46,8 @@ management:
     health:
       probes:
         enabled: true
-      access: read_only
+      show-components: always
+      show-details: always
   health:
     livenessState:
       enabled: true
@@ -75,7 +76,7 @@ application:
   deferred-offer-validity-seconds: ${DEFERRED_OFFER_VALIDITY_SECONDS:}864000 # 60 * 60 * 24 * 10 => 10 days;
   min-deferred-offer-interval-seconds: ${MIN_DEFERRED_OFFER_WAITING_SECONDS:10}
   # List of DID of Attestation providers we trust in
-  trusted-attestation-providers: ${TRUSTED_ATTESTATION_PROVIDERS:[]}
+  trusted-attestation-providers: ${TRUSTED_ATTESTATION_PROVIDERS:}
   enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
   authentication-jwks: ${JWKS_ALLOWLIST:}
   status-list:

@@ -79,19 +79,49 @@ configs:
         "credential_issuer": "${EXTERNAL_URL}",
         "credential_endpoint": "${EXTERNAL_URL}/oid4vci/api/credential",
         "version": "1.0",
+        "credential_response_encryption": {
+          "encryption_required": false,
+          "alg_values_supported": [
+            "ECDH-ES"
+          ],
+          "enc_values_supported": [
+            "A128GCM"
+          ]
+        },
         "display": [
           {
             "name": "Mein Test VC",
             "locale": "de-CH",
             "logo": {
-              "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+              "uri": "data:image/png;base64,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"
             }
           },
           {
-            "name": "My test vc",
-            "locale": "en-US",
+            "name": "Mein Test VC",
+            "locale": "fr-CH",
             "logo": {
-              "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+              "uri": "data:image/png;base64,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"
+            }
+          },
+          {
+            "name": "Mein Test VC",
+            "locale": "it-CH",
+            "logo": {
+              "uri": "data:image/png;base64,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"
+            }
+          },
+          {
+            "name": "Mein Test VC",
+            "locale": "rm-CH",
+            "logo": {
+              "uri": "data:image/png;base64,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"
+            }
+          },
+          {
+            "name": "Mein Test VC",
+            "locale": "en-GB",
+            "logo": {
+              "uri": "data:image/png;base64,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"
             }
           }
         ],
@@ -113,28 +143,50 @@ configs:
             },
             "display": [
               {
-                "name": "Demo-VC",
+                "name": "Test VC",
                 "locale": "de-CH",
                 "logo": {
-                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAt0lEQVR42u3YMQ4BQRiG4a2p3UMi0Wlcih5n2GYTWS6gcBahdZGfSqHZWdNMxvN+/WSe9m8aSZIkSaqiWMYzcV3ZkFWkdgEBAQEBAQEBAQEBAQEBAQEBKQ4S6zi8tx/Y7rM+GfIYfPV70xzIOcppBlIT5AQCAgICApIB6UFAQEBAQDIgx1og89iMWpv8rXtsR25S5jnoWstdCwQEBAQEBAQEBAQEBAQEBOSfIYu4Ja5tJEmSJP3UC98M2ozRcV9yAAAAAElFTkSuQmCC"
                 },
-                "description": "Das ist ein Test-VC",
-                "background_color": "#ff69b4"
+                "background_color": "#4A5F77"
               },
               {
-                "name": "Demo-VC",
-                "locale": "en-US",
+                "name": "Test VC",
+                "locale": "fr-CH",
                 "logo": {
-                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAABD0lEQVR4nOyYsUrEQBRFVQYRYYUtZi0UC0vFUrBeYW1sF2E/wU623P8RkTSCf7FFipDaIkxhmkyapBgCYivz5sKAmynuaS9vOPDgcRlVXl/spcTB2AJ/oRCCQggKIVT8pJ4pfeqNnKmG1u5aaLpc6ecXb2Q26/Yji3s2uZVRCEEhBIUQFEKIl1rp2XS5Ckwe395J0WS+ODw7l1JX1zZ7ldJ9qVMfXd1cvn8GhKLpy+Lr6VFKk1sZhRAUQlAIIR5GZyqzWQcmJ/PFyf2DN2qyty7fSoODbWKEhtaGe/HvLRaEunzLTv1vUAhBIQSFEPGfDa7+7svCG4VvcRixwo5FciujEIJCCAohkhP6CQAA///lDD1tMy8HCAAAAABJRU5ErkJggg=="
+                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAt0lEQVR42u3YMQ4BQRiG4a2p3UMi0Wlcih5n2GYTWS6gcBahdZGfSqHZWdNMxvN+/WSe9m8aSZIkSaqiWMYzcV3ZkFWkdgEBAQEBAQEBAQEBAQEBAQEBKQ4S6zi8tx/Y7rM+GfIYfPV70xzIOcppBlIT5AQCAgICApIB6UFAQEBAQDIgx1og89iMWpv8rXtsR25S5jnoWstdCwQEBAQEBAQEBAQEBAQEBOSfIYu4Ja5tJEmSJP3UC98M2ozRcV9yAAAAAElFTkSuQmCC"
                 },
-                "description": "This is an test vc",
-                "background_color": "#4A412A"
+                "background_color": "#4A5F77"
+              },
+              {
+                "name": "Test VC",
+                "locale": "it-CH",
+                "logo": {
+                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAt0lEQVR42u3YMQ4BQRiG4a2p3UMi0Wlcih5n2GYTWS6gcBahdZGfSqHZWdNMxvN+/WSe9m8aSZIkSaqiWMYzcV3ZkFWkdgEBAQEBAQEBAQEBAQEBAQEBKQ4S6zi8tx/Y7rM+GfIYfPV70xzIOcppBlIT5AQCAgICApIB6UFAQEBAQDIgx1og89iMWpv8rXtsR25S5jnoWstdCwQEBAQEBAQEBAQEBAQEBOSfIYu4Ja5tJEmSJP3UC98M2ozRcV9yAAAAAElFTkSuQmCC"
+                },
+                "background_color": "#4A5F77"
+              },
+              {
+                "name": "Test VC",
+                "locale": "rm-CH",
+                "logo": {
+                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAt0lEQVR42u3YMQ4BQRiG4a2p3UMi0Wlcih5n2GYTWS6gcBahdZGfSqHZWdNMxvN+/WSe9m8aSZIkSaqiWMYzcV3ZkFWkdgEBAQEBAQEBAQEBAQEBAQEBKQ4S6zi8tx/Y7rM+GfIYfPV70xzIOcppBlIT5AQCAgICApIB6UFAQEBAQDIgx1og89iMWpv8rXtsR25S5jnoWstdCwQEBAQEBAQEBAQEBAQEBOSfIYu4Ja5tJEmSJP3UC98M2ozRcV9yAAAAAElFTkSuQmCC"
+                },
+                "background_color": "#4A5F77"
+              },
+              {
+                "name": "Test VC",
+                "locale": "en-GB",
+                "logo": {
+                  "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAQAAADa613fAAAAt0lEQVR42u3YMQ4BQRiG4a2p3UMi0Wlcih5n2GYTWS6gcBahdZGfSqHZWdNMxvN+/WSe9m8aSZIkSaqiWMYzcV3ZkFWkdgEBAQEBAQEBAQEBAQEBAQEBKQ4S6zi8tx/Y7rM+GfIYfPV70xzIOcppBlIT5AQCAgICApIB6UFAQEBAQDIgx1og89iMWpv8rXtsR25S5jnoWstdCwQEBAQEBAQEBAQEBAQEBOSfIYu4Ja5tJEmSJP3UC98M2ozRcV9yAAAAAElFTkSuQmCC"
+                },
+                "background_color": "#4A5F77"
               }
             ],
-              "vct": "my-test-vc",
+            "vct": "betaid-sdjw-v2",
             "claims": {
-              "lastName": {
-                "mandatory": false,
+              "family_name": {
+                "mandatory": true,
                 "value_type": "string",
                 "display": [
                   {
@@ -143,41 +195,49 @@ configs:
                   },
                   {
                     "locale": "fr-CH",
-                    "name": "Nom de famille"
+                    "name": "Nom"
                   },
                   {
                     "locale": "it-CH",
                     "name": "Cognome"
                   },
                   {
-                    "locale": "en-US",
-                    "name": "Last name"
+                    "locale": "rm-CH",
+                    "name": "Num"
+                  },
+                  {
+                    "locale": "en-GB",
+                    "name": "Surname"
                   }
                 ]
               },
-              "firstName": {
-                "mandatory": false,
+              "given_name": {
+                "mandatory": true,
                 "value_type": "string",
                 "display": [
                   {
                     "locale": "de-CH",
-                    "name": "Vorname"
+                    "name": "Vorname(n)"
                   },
                   {
                     "locale": "fr-CH",
-                    "name": "Prénom"
+                    "name": "Prénom(s)"
                   },
                   {
                     "locale": "it-CH",
-                    "name": "Nome"
+                    "name": "Nome(i)"
                   },
                   {
-                    "locale": "en-US",
-                    "name": "First name"
+                    "locale": "rm-CH",
+                    "name": "Prenum(s)"
+                  },
+                  {
+                    "locale": "en-GB",
+                    "name": "Given name(s)"
                   }
                 ]
               },
-              "birthDate": {
+              "birth_date": {
                 "mandatory": true,
                 "value_type": "string",
                 "display": [
@@ -205,9 +265,9 @@ configs:
               }
             },
             "order": [
-              "firstName",
-              "lastName",
-              "birthDate"
+              "family_name",
+              "given_name",
+              "birth_date"
             ]
           }
         }

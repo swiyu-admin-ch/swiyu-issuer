@@ -146,6 +146,52 @@ class HolderBindingServiceTest {
         assertEquals("Proofs should not be duplicated for the same credential request", e.getMessage());
     }
 
+    @Test
+    void validateHolderPublicKeys_invalidProof_throwsOID4VCIException() {
+        CredentialOffer offer = mock(CredentialOffer.class);
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
+        CredentialConfiguration config = mock(CredentialConfiguration.class);
+        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
+        when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
+
+        var credentialRequest = new CredentialRequestClass(
+                SD_JWT_FORMAT,
+                Map.of(
+                        // CAUTION Triggers the deprecated "OpenID for Verifiable Credential Issuance - draft 15" flow
+                        //         (https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html#section-8.2)
+                        "proof_type", ProofType.JWT.toString()
+                ),
+                null,
+                supportedCredentialId);
+
+        var exc = assertThrows(Oid4vcException.class, () ->
+                spy(holderBindingService).getValidateHolderPublicKeys(spy(credentialRequest), offer));
+        assertEquals("Invalid proof", exc.getMessage());
+    }
+
+    @Test
+    void validateHolderPublicKeys_proofNotSupported_throwsOID4VCIException() {
+        CredentialOffer offer = mock(CredentialOffer.class);
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
+        CredentialConfiguration config = mock(CredentialConfiguration.class);
+        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
+        when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
+
+        var credentialRequest = new CredentialRequestClass(
+                SD_JWT_FORMAT,
+                Map.of(
+                        // CAUTION Triggers the deprecated "OpenID for Verifiable Credential Issuance - draft 15" flow
+                        //         (https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html#section-8.2)
+                        "proof_type", ProofType.JWT.toString(),
+                        ProofType.JWT.toString(), ProofType.JWT.toString()
+                ),
+                null,
+                supportedCredentialId);
+
+        var exc = assertThrows(Oid4vcException.class, () ->
+                spy(holderBindingService).getValidateHolderPublicKeys(spy(credentialRequest), offer));
+        assertEquals("Provided proof is not supported for the credential requested.", exc.getMessage());
+    }
 
     @Test
     void throwsIfProofsExceedBatchSize() {

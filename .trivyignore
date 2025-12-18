@@ -5,3 +5,5 @@ CVE-2025-5914
 # Does not apply (directory Traversal)
 CVE-2025-6020
 CVE-2025-8941
+# Java has its own XML parsing API and does not rely on libexpat
+CVE-2025-59375

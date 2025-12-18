@@ -75,7 +75,7 @@
         <dependency>
             <groupId>com.squareup.okio</groupId>
             <artifactId>okio</artifactId>
-            <version>3.12.0</version>
+            <version>3.16.4</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -339,7 +339,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
+                <version>3.5.4</version>
                 <configuration>
                     <includes>
                         <include>**/*Test.java</include>
