@@ -1,14 +1,9 @@
 package ch.admin.bj.swiyu.issuer.migration;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
-import ch.admin.bj.swiyu.issuer.migration.domain.CredentialOfferV13Entity;
-import ch.admin.bj.swiyu.issuer.migration.domain.CredentialOfferV13Repository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.migration.domain.CredentialOfferData;
+import ch.admin.bj.swiyu.issuer.migration.domain.CredentialOfferTestFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,11 +19,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,25 +53,14 @@ class RenewalFlowMigrationTestIT {
     JdbcTemplate jdbcTemplate;
 
     @Autowired
-    CredentialOfferV13Repository legacyRepository;
-
-    @Autowired
     CredentialOfferRepository credentialOfferRepository;
 
     @Autowired
     CredentialManagementRepository credentialManagementRepository;
 
-    private final Map<UUID, LegacyOfferV13> offers = new HashMap<>();
+    Map<UUID, CredentialOfferData> offers = new HashMap<>();
 
-    private static class LegacyOfferV13 {
-        String status;
-        UUID accessToken;
-        UUID refreshToken;
-        String dpopKey;
-        Long tokenExpirationTimestamp;
-    }
-
-    private final Map<String, CredentialOfferStatusType> offerStatusMapping = Map.of(
+    final Map<String, CredentialOfferStatusType> offerStatusMapping = Map.of(
             "OFFERED", CredentialOfferStatusType.OFFERED,
             "CANCELLED", CredentialOfferStatusType.CANCELLED,
             "IN_PROGRESS", CredentialOfferStatusType.IN_PROGRESS,
@@ -88,7 +72,7 @@ class RenewalFlowMigrationTestIT {
             "EXPIRED", CredentialOfferStatusType.EXPIRED
     );
 
-    private final Map<String, CredentialStatusManagementType> managementStatusMapping = Map.of(
+    final Map<String, CredentialStatusManagementType> managementStatusMapping = Map.of(
             "OFFERED", CredentialStatusManagementType.INIT,
             "CANCELLED", CredentialStatusManagementType.INIT,
             "IN_PROGRESS", CredentialStatusManagementType.INIT,
@@ -98,6 +82,18 @@ class RenewalFlowMigrationTestIT {
             "SUSPENDED", CredentialStatusManagementType.SUSPENDED,
             "REVOKED", CredentialStatusManagementType.REVOKED,
             "EXPIRED", CredentialStatusManagementType.INIT
+    );
+
+    final List<CredentialOfferData> DATASET = List.of(
+            CredentialOfferTestFactory.offered(),
+            CredentialOfferTestFactory.cancelled(),
+            CredentialOfferTestFactory.inProgress(),
+            CredentialOfferTestFactory.deferred(),
+            CredentialOfferTestFactory.ready(),
+            CredentialOfferTestFactory.issued(),
+            CredentialOfferTestFactory.suspended(),
+            CredentialOfferTestFactory.revoked(),
+            CredentialOfferTestFactory.expired()
     );
 
     @BeforeAll
@@ -112,17 +108,12 @@ class RenewalFlowMigrationTestIT {
                 .migrate();
 
         log.info("Loading test data");
-        insert("OFFERED", false, false);
-        insert("CANCELLED", false, false);
-        insert("IN_PROGRESS", false, false);
-        insert("DEFERRED", true, true);
-        insert("READY", true, false);
-        insert("ISSUED", true, false);
-        insert("SUSPENDED", true, false);
-        insert("REVOKED", true, false);
-        insert("EXPIRED", false, false);
+        DATASET.forEach(this::insert);
 
-        log.info("Migrating schema to {}", MIGRATION_TARGET);
+        offers = DATASET.stream()
+                .collect(Collectors.toMap(CredentialOfferData::id, it -> it));
+
+        log.info("Migrating schema to latest");
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations(MIGRATION_LOCATIONS.toArray(String[]::new))
@@ -136,8 +127,9 @@ class RenewalFlowMigrationTestIT {
         final List<CredentialOffer> allOffers = credentialOfferRepository.findAll();
         final List<CredentialManagement> allManagements = credentialManagementRepository.findAll();
 
-        assertThat(allOffers).hasSize(offers.size());
-        assertThat(allManagements).hasSize(offers.size());
+        assertThat(offers.size()).isEqualTo(DATASET.size());
+        assertThat(allOffers).hasSameSizeAs(offers.values());
+        assertThat(allManagements).hasSameSizeAs(offers.values());
 
         for (CredentialOffer offer : allOffers) {
             assertThat(offer.getCredentialManagement()).isNotNull();
@@ -149,15 +141,17 @@ class RenewalFlowMigrationTestIT {
     void should_migrate_offer_status_correctly() {
         for (UUID id : offers.keySet()) {
 
-            final LegacyOfferV13 before = offers.get(id);
+            final CredentialOfferData before = offers.get(id);
+            final String previousStatus = before.offerStatus();
 
             final CredentialOffer offer =
                     credentialOfferRepository.findById(id).orElseThrow();
 
-            final CredentialOfferStatusType expected =
-                    offerStatusMapping.get(before.status);
+            final CredentialOfferStatusType expectedStatus =
+                    offerStatusMapping.get(previousStatus);
 
-            assertThat(offer.getCredentialStatus()).isEqualTo(expected);
+            assertThat(offer.getCredentialStatus())
+                    .isEqualTo(expectedStatus);
         }
     }
 
@@ -165,106 +159,108 @@ class RenewalFlowMigrationTestIT {
     void should_migrate_management_statuses_correctly() {
         for (UUID id : offers.keySet()) {
 
-            final LegacyOfferV13 before = offers.get(id);
+            final CredentialOfferData before = offers.get(id);
+            final String previousStatus = before.offerStatus();
 
             final CredentialManagement management =
                     credentialManagementRepository.findById(id).orElseThrow();
 
-            final CredentialStatusManagementType expected =
-                    managementStatusMapping.get(before.status);
+            final CredentialStatusManagementType expectedStatus =
+                    managementStatusMapping.get(previousStatus);
 
             assertThat(management.getCredentialManagementStatus())
-                    .isEqualTo(expected);
+                    .isEqualTo(expectedStatus);
         }
     }
 
     @Test
     void should_copy_and_remove_token_related_fields_correctly() {
-        for (Map.Entry<UUID, LegacyOfferV13> entry : offers.entrySet()) {
-
+        for (var entry : offers.entrySet()) {
             final UUID id = entry.getKey();
-            final LegacyOfferV13 before = entry.getValue();
+            final CredentialOfferData before = entry.getValue();
 
             final CredentialManagement management =
                     credentialManagementRepository.findById(id).orElseThrow();
 
-            assertThat(management.getAccessToken())
-                    .isEqualTo(before.accessToken);
+            assertThat(management.getAccessToken()).isEqualTo(before.accessToken());
 
-            assertThat(management.getRefreshToken())
-                    .isEqualTo(before.refreshToken);
+            assertThat(management.getRefreshToken()).isEqualTo(before.refreshToken());
 
-            assertThat(management.getAccessTokenExpirationTimestamp())
-                    .isEqualTo(before.tokenExpirationTimestamp);
+            if (before.dpopKey() == null) {
+                assertThat(management.getDpopKey()).isNull();
+            } else {
+                assertThat(management.getDpopKey()).isNotNull();
+                assertThat(management.getDpopKey()).containsKeys("x", "y", "crv", "kty", "use", "kid");
+            }
+
+            assertThat(management.getAccessTokenExpirationTimestamp()).isEqualTo(before.tokenExpirationTimestamp());
+
+            final Map<String, Object> offerRow =
+                    jdbcTemplate.queryForMap(
+                            "SELECT * FROM credential_offer WHERE id = ?",
+                            id
+                    );
+
+            assertThat(offerRow).doesNotContainKeys(
+                    "access_token",
+                    "refresh_token",
+                    "dpop_key",
+                    "token_expiration_timestamp"
+            );
         }
     }
 
-    @Test
-    void should_remove_token_columns_from_credential_offer_table() {
-        final List<String> columns = jdbcTemplate.queryForList(
-                """
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name = 'credential_offer'
-                """,
-                String.class
+    void insert(CredentialOfferData data) {
+        Object dpopJsonb = null;
+        Object supportedIdJsonb;
+
+        try {
+            if (data.dpopKey() != null) {
+                var dpop = new org.postgresql.util.PGobject();
+                dpop.setType("jsonb");
+                dpop.setValue(data.dpopKey());
+                dpopJsonb = dpop;
+            }
+
+            var supportedId = new org.postgresql.util.PGobject();
+            supportedId.setType("jsonb");
+            supportedId.setValue("[\"unbound_example_sd_jwt\"]");
+            supportedIdJsonb = supportedId;
+
+        } catch (Exception e) {
+            throw new IllegalStateException("Invalid jsonb test data", e);
+        }
+
+        jdbcTemplate.update("""
+                        INSERT INTO credential_offer (
+                            id,
+                            nonce,
+                            credential_status,
+                            metadata_credential_supported_id,
+                            access_token,
+                            refresh_token,
+                            dpop_key,
+                            token_expiration_timestamp
+                        )
+                        VALUES (
+                            ?, 
+                            ?,
+                            ?,
+                            ?,
+                            ?, 
+                            ?, 
+                            ?,
+                            ?
+                        )
+                        """,
+                data.id(),
+                UUID.randomUUID(),
+                data.offerStatus(),
+                supportedIdJsonb,
+                data.accessToken(),
+                data.refreshToken(),
+                dpopJsonb,
+                data.tokenExpirationTimestamp()
         );
-
-        assertThat(columns).doesNotContain(
-                "access_token",
-                "refresh_token",
-                "dpop_key",
-                "token_expiration_timestamp"
-        );
-    }
-
-
-    private void insert(String status, boolean withDpop, boolean withRefreshToken) {
-        final UUID id = UUID.randomUUID();
-        final LegacyOfferV13 legacy = new LegacyOfferV13();
-        legacy.status = status;
-        legacy.accessToken = UUID.randomUUID();
-        legacy.refreshToken = withRefreshToken ? UUID.randomUUID() : null;
-        legacy.dpopKey = withDpop ? randomDpopJson(id) : null;
-        legacy.tokenExpirationTimestamp =
-                Instant.now().plusSeconds(3600).getEpochSecond();
-
-        legacyRepository.save(
-                CredentialOfferV13Entity.builder()
-                        .id(id)
-                        .credentialStatus(status)
-                        .accessToken(legacy.accessToken)
-                        .refreshToken(legacy.refreshToken)
-                        .dpopKey(legacy.dpopKey)
-                        .tokenExpirationTimestamp(legacy.tokenExpirationTimestamp)
-                        .nonce(UUID.randomUUID())
-                        .build()
-        );
-
-        offers.put(id, legacy);
-    }
-
-    private static String randomDpopJson(UUID id) {
-        return """
-                {
-                  "x": "%s",
-                  "y": "%s",
-                  "crv": "P-256",
-                  "kty": "EC",
-                  "use": "sig",
-                  "kid": "holder-dpop-key-%s"
-                }
-                """.formatted(
-                randomBase64Like(),
-                randomBase64Like(),
-                id
-        );
-    }
-
-    private static String randomBase64Like() {
-        return UUID.randomUUID()
-                .toString()
-                .replace("-", "")
-                .substring(0, 32);
     }
 }
