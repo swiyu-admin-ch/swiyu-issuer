@@ -105,7 +105,7 @@ The integrity can be calculated using shell commands.
     "status_lists": [
         "https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt"
     ],
-    "": {
+    "credential_metadata": {
         "vct#integrity": "sha256-JXU3403niPeAUi8FN0IX6wfXafrgusykHC1LpKMOO94="
     }
 }
