@@ -139,7 +139,7 @@ public class CredentialOffer {
     /**
      * Timestamp after which the credential offer or the deferred credential offer will be regarded as expired.
      */
-    private long offerExpirationTimestamp;
+    private Long offerExpirationTimestamp;
 
     private Integer deferredOfferValiditySeconds;
 
