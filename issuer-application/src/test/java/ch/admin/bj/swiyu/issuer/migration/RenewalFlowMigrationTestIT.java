@@ -189,13 +189,6 @@ class RenewalFlowMigrationTestIT {
 
             assertThat(management.getRefreshToken()).isEqualTo(before.refreshToken());
 
-            if (before.dpopKey() == null) {
-                assertThat(management.getDpopKey()).isNull();
-            } else {
-                assertThat(management.getDpopKey()).isNotNull();
-                assertThat(management.getDpopKey()).containsKeys("x", "y", "crv", "kty", "use", "kid");
-            }
-
             assertThat(management.getAccessTokenExpirationTimestamp()).isEqualTo(before.tokenExpirationTimestamp());
 
             final Map<String, Object> offerRow =
@@ -207,7 +200,6 @@ class RenewalFlowMigrationTestIT {
             assertThat(offerRow).doesNotContainKeys(
                     "access_token",
                     "refresh_token",
-                    "dpop_key",
                     "token_expiration_timestamp"
             );
         }
@@ -222,26 +214,18 @@ class RenewalFlowMigrationTestIT {
                 credential_status,
                 access_token,
                 refresh_token,
-                dpop_key,
-                token_expiration_timestamp,
-                created_at,
-                last_modified_at
-            ) VALUES (?, ?, ?, ?, ?, ?::json, ?, NOW(), NOW())
+                token_expiration_timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?)
         """);
             ps.setObject(1, data.id());
             ps.setObject(2, UUID.randomUUID());
             ps.setObject(3, data.offerStatus(), java.sql.Types.OTHER);
             ps.setObject(4, data.accessToken());
             ps.setObject(5, data.refreshToken());
-            if (data.dpopKey() == null) {
-                ps.setNull(6, java.sql.Types.OTHER);
-            } else {
-                ps.setObject(6, data.dpopKey(), java.sql.Types.OTHER);
-            }
             if (data.tokenExpirationTimestamp() == null) {
-                ps.setNull(7, java.sql.Types.BIGINT);
+                ps.setNull(6, java.sql.Types.BIGINT);
             } else {
-                ps.setLong(7, data.tokenExpirationTimestamp());
+                ps.setLong(6, data.tokenExpirationTimestamp());
             }
             return ps;
         });
