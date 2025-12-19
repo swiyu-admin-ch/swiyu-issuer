@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class RenewalFlowMigrationTestIT {
 
     private static final List<String> MIGRATION_LOCATIONS = List.of(
@@ -128,16 +130,6 @@ class RenewalFlowMigrationTestIT {
                 .dataSource(dataSource)
                 .locations(MIGRATION_LOCATIONS.toArray(String[]::new))
                 .target(MIGRATION_TARGET)
-                .load()
-                .migrate();
-    }
-
-    @AfterAll
-    void migrateBackToLatest() {
-        log.info("Migrating schema to latest");
-        Flyway.configure()
-                .dataSource(dataSource)
-                .locations(MIGRATION_LOCATIONS.toArray(String[]::new))
                 .load()
                 .migrate();
     }
