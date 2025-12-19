@@ -62,7 +62,7 @@ public class DemonstratingProofOfPossessionValidationService {
             byte[] hashBytes = digest.digest(inputBytes);
 
             // Encode the hash bytes to a Base64 string
-            return Base64.getEncoder().encodeToString(hashBytes);
+            return Base64.getUrlEncoder().encodeToString(hashBytes);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 algorithm not found", e);
         }
