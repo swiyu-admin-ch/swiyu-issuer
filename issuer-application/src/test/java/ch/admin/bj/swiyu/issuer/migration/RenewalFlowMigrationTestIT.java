@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.issuer.migration.domain.CredentialOfferData;
 import ch.admin.bj.swiyu.issuer.migration.domain.CredentialOfferTestFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -99,6 +100,15 @@ class RenewalFlowMigrationTestIT {
     @BeforeAll
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void migrateDatabase() {
+        final Flyway flyway = Flyway.configure()
+                .dataSource(dataSource)
+                .locations(MIGRATION_LOCATIONS.toArray(String[]::new))
+                .cleanDisabled(false)
+                .load();
+
+        log.info("Reset database");
+        flyway.clean();
+
         log.info("Migrating schema to {}", PRE_MIGRATION_TARGET);
         Flyway.configure()
                 .dataSource(dataSource)
@@ -113,11 +123,21 @@ class RenewalFlowMigrationTestIT {
         offers = DATASET.stream()
                 .collect(Collectors.toMap(CredentialOfferData::id, it -> it));
 
-        log.info("Migrating schema to latest");
+        log.info("Migrating schema to {}", MIGRATION_TARGET);
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations(MIGRATION_LOCATIONS.toArray(String[]::new))
                 .target(MIGRATION_TARGET)
+                .load()
+                .migrate();
+    }
+
+    @AfterAll
+    void migrateBackToLatest() {
+        log.info("Migrating schema to latest");
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations(MIGRATION_LOCATIONS.toArray(String[]::new))
                 .load()
                 .migrate();
     }
