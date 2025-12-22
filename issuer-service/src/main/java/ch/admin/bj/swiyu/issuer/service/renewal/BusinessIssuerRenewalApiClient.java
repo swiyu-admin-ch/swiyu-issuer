@@ -26,17 +26,17 @@ public class BusinessIssuerRenewalApiClient {
     public RenewalResponseDto getRenewalData(RenewalRequestDto requestDto) {
 
         try {
-            return restClient.post()
-                    .uri(URI.create(applicationProperties.getBusinessIssuerRenewalApiEndpoint()))
-                    .body(requestDto)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError, (request, response) -> {
-                        log.error("Renewal request to {} failed with status code {} with message {}",
-                                applicationProperties.getBusinessIssuerRenewalApiEndpoint(), request.getURI(), response.getStatusCode());
-                        throw new RenewalException(HttpStatus.valueOf(response.getStatusCode().value()), "Renewal request failed");
-                    })
-                    .body(RenewalResponseDto.class);
+        return restClient.post()
+                .uri(URI.create(applicationProperties.getBusinessIssuerRenewalApiEndpoint()))
+                .body(requestDto)
+                .contentType(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (request, response) -> {
+                    log.error("Renewal request to {} failed with status code {} with message {}",
+                            applicationProperties.getBusinessIssuerRenewalApiEndpoint(), request.getURI(), response.getStatusCode());
+                    throw new RenewalException(HttpStatus.valueOf(response.getStatusCode().value()), "Renewal request failed");
+                })
+                .body(RenewalResponseDto.class);
         } catch (RestClientResponseException e) {
             log.error("Renewal request to {} failed with status code {} with message {}",
                     applicationProperties.getBusinessIssuerRenewalApiEndpoint(), e.getStatusCode(), e.getMessage());
