@@ -104,54 +104,54 @@ public class CredentialManagement {
         offer.setCredentialManagement(this);
     }
 
-//    public void sendEvent(StateMachine<CredentialStatusManagementType, CredentialManagementEvent> stateMachine, CredentialManagementEvent event) {
-//        // Set the current state in the state machine
-//        stateMachine.getStateMachineAccessor().doWithAllRegions(access -> access.resetStateMachine(new DefaultStateMachineContext<>(this.credentialManagementStatus, null, null, null)));
-//        // Send event
-//        boolean success = stateMachine.sendEvent(event);
-//        if (success) {
-//            this.credentialManagementStatus = stateMachine.getState().getId();
-//            log.info("Credential issued for {}. ", this.id);
-//        } else {
-//            throw new IllegalStateException("Transition failed");
-//        }
-//    }
-
     public void sendEventAndUpdateStatus(StateMachine<CredentialStatusManagementType, CredentialManagementEvent> stateMachine, CredentialManagementEvent event) {
-
-        stateMachine.getStateMachineAccessor()
-                .doWithAllRegions(access ->
-                        access.resetStateMachineReactively(
-                                new DefaultStateMachineContext<>(
-                                        this.credentialManagementStatus,
-                                        null,
-                                        null,
-                                        null
-                                )
-                        ).block()
-                );
-
-        StateMachineEventResult<CredentialStatusManagementType, CredentialManagementEvent> success = stateMachine
-                .sendEvent(
-                        Mono.just(
-                                MessageBuilder
-                                        .withPayload(event)
-                                        .setHeader("credentialId", this.id)
-                                        .setHeader("oldStatus", this.credentialManagementStatus)
-                                        .build()
-                        )
-                )
-                .blockLast();
-
-        assert success != null;
-        if (success.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
+        // Set the current state in the state machine
+        stateMachine.getStateMachineAccessor().doWithAllRegions(access -> access.resetStateMachine(new DefaultStateMachineContext<>(this.credentialManagementStatus, null, null, null)));
+        // Send event
+        boolean success = stateMachine.sendEvent(event);
+        if (success) {
             this.credentialManagementStatus = stateMachine.getState().getId();
-            log.info("Transaction accepted for: {}. New state = {}", success.getMessage(), this.credentialManagementStatus);
+            log.info("Credential issued for {}. ", this.id);
         } else {
-            log.error("Transaction failed for: {}.", success.getMessage());
-            throw new IllegalStateException("Transition failed for " + success.getMessage());
+            throw new IllegalStateException("Transition failed");
         }
     }
+
+//    public void sendEventAndUpdateStatus(StateMachine<CredentialStatusManagementType, CredentialManagementEvent> stateMachine, CredentialManagementEvent event) {
+//
+//        stateMachine.getStateMachineAccessor()
+//                .doWithAllRegions(access ->
+//                        access.resetStateMachineReactively(
+//                                new DefaultStateMachineContext<>(
+//                                        this.credentialManagementStatus,
+//                                        null,
+//                                        null,
+//                                        null
+//                                )
+//                        ).block()
+//                );
+//
+//        StateMachineEventResult<CredentialStatusManagementType, CredentialManagementEvent> success = stateMachine
+//                .sendEvent(
+//                        Mono.just(
+//                                MessageBuilder
+//                                        .withPayload(event)
+//                                        .setHeader("credentialId", this.id)
+//                                        .setHeader("oldStatus", this.credentialManagementStatus)
+//                                        .build()
+//                        )
+//                )
+//                .blockLast();
+//
+//        assert success != null;
+//        if (success.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
+//            this.credentialManagementStatus = stateMachine.getState().getId();
+//            log.info("Transaction accepted for: {}. New state = {}", success.getMessage(), this.credentialManagementStatus);
+//        } else {
+//            log.error("Transaction failed for: {}.", success.getMessage());
+//            throw new IllegalStateException("Transition failed for " + success.getMessage());
+//        }
+//    }
 
 
     public UUID getLastValidLegacyNonce() {
