@@ -148,7 +148,7 @@ public class CredentialManagement {
             this.credentialManagementStatus = stateMachine.getState().getId();
             log.info("Transaction accepted for: {}. New state = {}", success.getMessage(), this.credentialManagementStatus);
         } else {
-            log.info("Transaction failed for: {}.", success.getMessage());
+            log.error("Transaction failed for: {}.", success.getMessage());
             throw new IllegalStateException("Transition failed for " + success.getMessage());
         }
     }

@@ -59,6 +59,10 @@ public class CredentialStateMachineConfig {
                 .event(CredentialManagementEvent.SUSPEND)
                 .and()
                 .withExternal()
+                .source(CredentialStatusManagementType.ISSUED).target(CredentialStatusManagementType.ISSUED)
+                .event(CredentialManagementEvent.ISSUE)
+                .and()
+                .withExternal()
                 .source(CredentialStatusManagementType.SUSPENDED).target(CredentialStatusManagementType.ISSUED)
                 .event(CredentialManagementEvent.ISSUE) // maybe allow re-issue
                 .and()

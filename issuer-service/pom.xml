@@ -165,13 +165,6 @@
             <artifactId>spring-statemachine-starter</artifactId>
             <version>4.0.1</version>
         </dependency>
-        <!-- Spring State Machine PlantUML -->
-        <dependency>
-            <groupId>com.github.deblockt</groupId>
-            <artifactId>spring-statemachine-plantuml</artifactId>
-            <version>1.0.0</version>
-            <scope>test</scope>
-        </dependency>
 
     </dependencies>
 
