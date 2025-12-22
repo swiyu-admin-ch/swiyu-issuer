@@ -1,9 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,31 +29,22 @@ class CredentialManagementServiceIT {
     CredentialManagementService credentialManagementService;
     @Autowired
     CredentialOfferRepository credentialOfferRepository;
-
-    private static CredentialOffer newOffer(final CredentialStatusType status, final long expirationEpoch) {
-        return CredentialOffer.builder()
-                .credentialStatus(status)
-                .metadataCredentialSupportedId(List.of("metadata"))
-                .offerData(Map.of())
-                .offerExpirationTimestamp(expirationEpoch)
-                .nonce(UUID.randomUUID())
-                .accessToken(UUID.randomUUID())
-                .preAuthorizedCode(UUID.randomUUID())
-                .build();
-    }
+    @Autowired
+    CredentialManagementRepository credentialManagementRepository;
 
     @Test
     void testExpireOffersAllCredentialStatusType() {
-        final List<CredentialStatusType> expirableStatus = List.of(
-                CredentialStatusType.OFFERED,
-                CredentialStatusType.IN_PROGRESS,
-                CredentialStatusType.DEFERRED,
-                CredentialStatusType.READY
+        final List<CredentialOfferStatusType> expirableStatus = List.of(
+                CredentialOfferStatusType.OFFERED,
+                CredentialOfferStatusType.IN_PROGRESS,
+                CredentialOfferStatusType.DEFERRED,
+                CredentialOfferStatusType.REQUESTED,
+                CredentialOfferStatusType.READY
         );
         final long past = Instant.now().minusSeconds(300).getEpochSecond();
         final long future = Instant.now().plusSeconds(300).getEpochSecond();
 
-        final List<CredentialOffer> allOffers = Arrays.stream(CredentialStatusType.values())
+        final List<CredentialOffer> allOffers = Arrays.stream(CredentialOfferStatusType.values())
                 .flatMap(status -> Stream.of(newOffer(status, past), newOffer(status, future)))
                 .map(credentialOfferRepository::save)
                 .toList();
@@ -65,7 +54,7 @@ class CredentialManagementServiceIT {
                     .filter(o ->
                             (expirableStatus.contains(o.getCredentialStatus()) &&
                                     o.getOfferExpirationTimestamp() < Instant.now().getEpochSecond())
-                                    || o.getCredentialStatus() == CredentialStatusType.EXPIRED
+                                    || o.getCredentialStatus() == CredentialOfferStatusType.EXPIRED
                     )
                     .toList();
 
@@ -76,7 +65,7 @@ class CredentialManagementServiceIT {
 
             for (var offer : expectedExpired) {
                 final CredentialOffer offerUpdated = credentialOfferRepository.findById(offer.getId()).orElseThrow();
-                assertThat(offerUpdated.getCredentialStatus()).isEqualTo(CredentialStatusType.EXPIRED);
+                assertThat(offerUpdated.getCredentialStatus()).isEqualTo(CredentialOfferStatusType.EXPIRED);
             }
 
             for (var offer : expectedUnchanged) {
@@ -88,5 +77,30 @@ class CredentialManagementServiceIT {
                     allOffers.stream().map(CredentialOffer::getId).toList()
             );
         }
+    }
+
+    private CredentialOffer newOffer(final CredentialOfferStatusType status, final long expirationEpoch) {
+        var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .accessToken(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .renewalRequestCnt(0)
+                .renewalResponseCnt(0)
+                .build());
+
+        var offer = credentialOfferRepository.save(CredentialOffer.builder()
+                .credentialStatus(status)
+                .metadataCredentialSupportedId(List.of("metadata"))
+                .offerData(Map.of())
+                .offerExpirationTimestamp(expirationEpoch)
+                .nonce(UUID.randomUUID())
+                .preAuthorizedCode(UUID.randomUUID())
+                .credentialManagement(credentialManagement)
+                .build());
+
+        credentialManagement.addCredentialOffer(offer);
+        credentialManagementRepository.save(credentialManagement);
+        return offer;
     }
 }

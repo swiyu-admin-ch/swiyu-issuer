@@ -5,10 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+-- Set credential mgmt id in offer table
+
 ## Latest
 
 ### Added
 
+- New public service methods to support renewal
+    - Renewal uses the existing functionality of issuing a new credential
+    - The change introduces a new state machine with different states for offers and the management of offers
+    - New env variables: 
+      - `RENEWAL_FLOW_ENABLED` (default: false) to enable the renewal functionality
+      - `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT`: (no default) to set the renewal endpoint where the offer data can be fetched from
 - Added possibility to update status list manually and disable the automatic synicnhronization.
   New environment variable `DISABLE_STATUS_LIST_SYNCHRONIZATION` (default: false) to disable automatic updates.
   New endpoint `/management/api/status-list/{statusListId}` to trigger manual update of a status list.

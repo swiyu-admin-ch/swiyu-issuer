@@ -18,6 +18,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Schema(name = "StatusResponse")
 public class StatusResponseDto {
-
     private CredentialStatusTypeDto status;
 }

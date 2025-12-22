@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
@@ -254,7 +255,9 @@ class HolderBindingServiceTest {
     @Test
     void validateHolderPublicKeyV2_isValidHolderBindingFails_thenException() {
         CredentialOffer offer = mock(CredentialOffer.class);
+        CredentialManagement mgmt = mock(CredentialManagement.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
+        when(offer.getCredentialManagement()).thenReturn(mgmt);
         CredentialConfiguration config = mock(CredentialConfiguration.class);
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
@@ -263,8 +266,7 @@ class HolderBindingServiceTest {
         var supportedProofType = new SupportedProofType();
         supportedProofType.setSupportedSigningAlgorithms(List.of("ES256"));
 
-        when(supportedProofTypes.get("type")).thenReturn(supportedProofType);
-        when(supportedProofTypes.get(any())).thenReturn(supportedProofType);
+        when(supportedProofTypes.get(anyString())).thenReturn(supportedProofType);
 
         ProofJwt proofJwt = mock(ProofJwt.class);
         when(proofJwt.getProofType()).thenReturn(ProofType.JWT);
@@ -279,7 +281,9 @@ class HolderBindingServiceTest {
     @Test
     void validateHolderPublicKeyV2_reusedNonce_thenException() {
         CredentialOffer offer = mock(CredentialOffer.class);
+        CredentialManagement mgmt = mock(CredentialManagement.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
+        when(offer.getCredentialManagement()).thenReturn(mgmt);
         CredentialConfiguration config = mock(CredentialConfiguration.class);
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));

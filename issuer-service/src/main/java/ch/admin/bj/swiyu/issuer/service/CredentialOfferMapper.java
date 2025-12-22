@@ -7,36 +7,49 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.ClientAgentInfoDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferMetadataDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.CollectionUtils;
 
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toCredentialStatusTypeDto;
+import static java.util.Objects.isNull;
 
 @UtilityClass
 public class CredentialOfferMapper {
 
-    public static CredentialWithDeeplinkResponseDto toCredentialWithDeeplinkResponseDto(CredentialOffer credential,
-                                                                                        String offerDeeplinkString) {
+    public static CredentialWithDeeplinkResponseDto toCredentialWithDeeplinkResponseDto(ApplicationProperties props,
+                                                                                        CredentialManagement management,
+                                                                                        CredentialOffer credentialOffer) {
         return CredentialWithDeeplinkResponseDto.builder()
-                .managementId(credential.getId())
-                .offerDeeplink(offerDeeplinkString)
+                .managementId(management.getId())
+                .offerId(credentialOffer.getId())
+                .offerDeeplink(getOfferDeeplinkFromCredential(props, credentialOffer))
                 .build();
     }
 
-    public static CredentialInfoResponseDto toCredentialInfoResponseDto(CredentialOffer credential, String offerDeeplinkString) {
+    public static List<CredentialInfoResponseDto> toCredentialInfoResponseDtoList(ApplicationProperties props, Set<CredentialOffer> credentialOffers) {
+        return credentialOffers.stream()
+                .map(credential -> toCredentialInfoResponseDto(credential, props))
+                .toList();
+    }
+
+    public static CredentialInfoResponseDto toCredentialInfoResponseDto(CredentialOffer credential, ApplicationProperties props) {
         return new CredentialInfoResponseDto(
                 toCredentialStatusTypeDto(credential.getCredentialStatus()),
                 credential.getMetadataCredentialSupportedId(),
@@ -49,7 +62,7 @@ public class CredentialOfferMapper {
                 credential.getCredentialValidFrom(),
                 credential.getCredentialValidUntil(),
                 toCredentialRequest(credential.getCredentialRequest()),
-                offerDeeplinkString
+                getOfferDeeplinkFromCredential(props, credential)
         );
     }
 
@@ -88,33 +101,35 @@ public class CredentialOfferMapper {
                 .build();
     }
 
-    public static CredentialStatusType toCredentialStatusType(CredentialStatusTypeDto source) {
+    public static CredentialOfferStatusType toCredentialStatusType(CredentialStatusTypeDto source) {
         if (source == null) {
             return null;
         }
         return switch (source) {
-            case OFFERED -> CredentialStatusType.OFFERED;
-            case CANCELLED -> CredentialStatusType.CANCELLED;
-            case IN_PROGRESS -> CredentialStatusType.IN_PROGRESS;
-            case DEFERRED -> CredentialStatusType.DEFERRED;
-            case READY -> CredentialStatusType.READY;
-            case ISSUED -> CredentialStatusType.ISSUED;
-            case SUSPENDED -> CredentialStatusType.SUSPENDED;
-            case REVOKED -> CredentialStatusType.REVOKED;
-            case EXPIRED -> CredentialStatusType.EXPIRED;
+            case OFFERED -> CredentialOfferStatusType.OFFERED;
+            case CANCELLED -> CredentialOfferStatusType.CANCELLED;
+            case IN_PROGRESS -> CredentialOfferStatusType.IN_PROGRESS;
+            case DEFERRED -> CredentialOfferStatusType.DEFERRED;
+            case READY -> CredentialOfferStatusType.READY;
+            case ISSUED -> CredentialOfferStatusType.ISSUED;
+            case INIT -> null;
+            case SUSPENDED -> null;
+            case REVOKED -> null;
+            case REQUESTED -> CredentialOfferStatusType.REQUESTED;
+            case EXPIRED -> CredentialOfferStatusType.EXPIRED;
         };
     }
 
-    public static CredentialStatusType toCredentialStatusType(UpdateCredentialStatusRequestTypeDto source) {
+    public static CredentialOfferStatusType toCredentialStatusType(UpdateCredentialStatusRequestTypeDto source) {
         if (source == null) {
             return null;
         }
         return switch (source) {
-            case CANCELLED -> CredentialStatusType.CANCELLED;
-            case READY -> CredentialStatusType.READY;
-            case ISSUED -> CredentialStatusType.ISSUED;
-            case SUSPENDED -> CredentialStatusType.SUSPENDED;
-            case REVOKED -> CredentialStatusType.REVOKED;
+            case CANCELLED -> CredentialOfferStatusType.CANCELLED;
+            case READY -> CredentialOfferStatusType.READY;
+            case ISSUED -> CredentialOfferStatusType.ISSUED;
+            case SUSPENDED -> null;
+            case REVOKED -> null;
         };
     }
 
@@ -138,4 +153,41 @@ public class CredentialOfferMapper {
         }
         return new CredentialOfferMetadataDto(metadata.deferred(), metadata.vctIntegrity(), metadata.vctMetadataUri(), metadata.vctMetadataUriIntegrity());
     }
+
+    private static String getCredentialIssuer(ApplicationProperties props, CredentialOffer credential) {
+
+        if (!props.isSignedMetadataEnabled() || isNull(credential.getMetadataTenantId())) {
+            return props.getExternalUrl();
+        }
+
+        return "%s/%s".formatted(props.getExternalUrl(), credential.getMetadataTenantId());
+    }
+
+    private static String getOfferDeeplinkFromCredential(ApplicationProperties props,
+                                                         CredentialOffer credentialOffer) {
+
+        var grants = new GrantsDto(new PreAuthorizedCodeGrantDto(credentialOffer.getPreAuthorizedCode()));
+        var credentialIssuer = getCredentialIssuer(props, credentialOffer);
+        var objectMapper = new ObjectMapper();
+
+        var credentialOfferDto = CredentialOfferDto.builder()
+                .credentialIssuer(credentialIssuer)
+                .credentials(credentialOffer.getMetadataCredentialSupportedId())
+                .grants(grants)
+                .version(props.getRequestOfferVersion())
+                .build();
+
+        String credentialOfferString;
+        try {
+            credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOfferDto),
+                    Charset.defaultCharset());
+        } catch (JsonProcessingException e) {
+            throw new JsonException(
+                    "Error processing credential offer for credential with id %s".formatted(credentialOffer.getId()), e);
+        }
+
+        return String.format("%s://?credential_offer=%s", props.getDeeplinkSchema(),
+                credentialOfferString);
+    }
+
 }

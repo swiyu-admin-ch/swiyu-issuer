@@ -4,10 +4,8 @@ import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -34,6 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -58,6 +57,7 @@ class IssuanceV2IT {
     private final UUID validPreAuthCode = UUID.randomUUID();
     private final UUID validUnboundPreAuthCode = UUID.randomUUID();
     private StatusList testStatusList;
+    private CredentialManagement credentialManagement;
     private List<ECKey> holderKeys;
     @Autowired
     private MockMvc mock;
@@ -75,18 +75,20 @@ class IssuanceV2IT {
     private ObjectMapper objectMapper;
     @MockitoSpyBean
     private IssuerMetadata issuerMetadata;
+    @Autowired
+    private CredentialManagementRepository credentialManagementRepository;
 
     @BeforeEach
     void setUp() {
         testStatusList = saveStatusList(createStatusList());
-        CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt");
         saveStatusListLinkedOffer(offer, testStatusList, 0);
         holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED, "unbound_example_sd_jwt");
+        var unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialOfferStatusType.OFFERED, "unbound_example_sd_jwt");
         saveStatusListLinkedOffer(unboundOffer, testStatusList, 1);
     }
 
@@ -122,7 +124,7 @@ class IssuanceV2IT {
         var vctMetadataUriIntegrity = "vct_metadata_uri#integrity";
 
         var metadata = new CredentialOfferMetadata(false, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
-        var getValidPreAuthCodeWithMetadataOffer = createTestOffer(validPreAuthCodeWithMetadata, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
+        var getValidPreAuthCodeWithMetadataOffer = createTestOffer(validPreAuthCodeWithMetadata, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", metadata);
         saveStatusListLinkedOffer(getValidPreAuthCodeWithMetadataOffer, testStatusList, 2);
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCodeWithMetadata.toString());
@@ -298,9 +300,23 @@ class IssuanceV2IT {
                 .andReturn();
     }
 
-    private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
-        credentialOfferRepository.save(offer);
+    private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
+        credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .accessToken(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .renewalRequestCnt(0)
+                .renewalResponseCnt(0)
+                .build());
+
+        offer.setCredentialManagement(credentialManagement);
+        var storedOffer = credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
+
+        credentialManagement.addCredentialOffer(storedOffer);
+        credentialManagementRepository.save(credentialManagement);
+        return storedOffer;
     }
 
     private StatusList saveStatusList(StatusList statusList) {

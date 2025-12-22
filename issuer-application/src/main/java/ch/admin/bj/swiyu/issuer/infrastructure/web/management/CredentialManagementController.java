@@ -6,8 +6,8 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web.management;
 
+import ch.admin.bj.swiyu.issuer.api.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
@@ -34,7 +34,7 @@ import java.util.UUID;
 @Tag(name = "Credential API", description = "Exposes API endpoints for managing credential offers and their statuses. " +
         "Supports creating new credential offers, retrieving offer data and deeplinks, and updating or querying the " +
         "status of offers and issued verifiable credentials. (IF-114)")
-public class CredentialController {
+public class CredentialManagementController {
 
     private final CredentialManagementService credentialManagementService;
 
@@ -68,7 +68,7 @@ public class CredentialController {
     }
 
     @Timed
-    @GetMapping("/{credentialId}")
+    @GetMapping("/{credentialManagementId}")
     @Operation(
             summary = "Get the offer data, if any is still cached",
             responses = {
@@ -78,30 +78,19 @@ public class CredentialController {
                     )
             }
     )
-    public CredentialInfoResponseDto getCredentialInformation(@PathVariable UUID credentialId) {
-        return this.credentialManagementService.getCredentialOfferInformation(credentialId);
-    }
-
-    @Deprecated(forRemoval = true)
-    @Timed
-    /**
-     * Endpoint to retrieve the deeplink for a credential offer.
-     * @deprecated Use {@link #getCredentialInformation(UUID)} instead. Which contains the deeplink in the response.
-     */
-    @GetMapping("/{credentialId}/offer_deeplink")
-    public String getCredentialOfferDeeplink(@PathVariable UUID credentialId) {
-        return this.credentialManagementService.getCredentialOfferDeeplink(credentialId);
+    public CredentialManagementDto getCredentialInformation(@PathVariable UUID credentialManagementId) {
+        return this.credentialManagementService.getCredentialOfferInformation(credentialManagementId);
     }
 
     @Timed
-    @GetMapping("/{credentialId}/status")
+    @GetMapping("/{credentialManagementId}/status")
     @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
-    public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialId) {
-        return this.credentialManagementService.getCredentialStatus(credentialId);
+    public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialManagementId) {
+        return this.credentialManagementService.getCredentialStatus(credentialManagementId);
     }
 
     @Timed
-    @PatchMapping("/{credentialId}")
+    @PatchMapping("/{credentialManagementId}")
     @Operation(summary = "Update the status of an offer or the verifiable credential associated with the id. This is only for deferred flows. The status is set to ready for issuance",
             responses = {
                     @ApiResponse(
@@ -116,18 +105,18 @@ public class CredentialController {
                     )
             }
     )
-    public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialId, @RequestBody Map<String, Object> credentialOffer) {
+    public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialManagementId, @RequestBody Map<String, Object> credentialOffer) {
 
-        return this.credentialManagementService.updateOfferDataForDeferred(credentialId, credentialOffer);
+        return this.credentialManagementService.updateOfferDataForDeferred(credentialManagementId, credentialOffer);
     }
 
     @Timed
-    @PatchMapping("/{credentialId}/status")
+    @PatchMapping("/{credentialManagementId}/status")
     @Operation(summary = "Set the status of an offer or the verifiable credential associated with the id.")
-    public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialId,
+    public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialManagementId,
                                                           @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = UpdateCredentialStatusRequestTypeDto.class))
                                                           @RequestParam("credentialStatus") UpdateCredentialStatusRequestTypeDto credentialStatus) {
 
-        return credentialManagementService.updateCredentialStatus(credentialId, credentialStatus);
+        return credentialManagementService.updateCredentialStatus(credentialManagementId, credentialStatus);
     }
 }

@@ -103,6 +103,8 @@ public class HolderBindingService {
      */
     public Optional<ProofJwt> getHolderPublicKey(CredentialRequestClass credentialRequest,
                                                  CredentialOffer credentialOffer) {
+
+        var mgmt = credentialOffer.getCredentialManagement();
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId()
                         .getFirst());
@@ -128,10 +130,10 @@ public class HolderBindingService {
                 .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
                         "Provided proof is not supported for the credential requested."));
         if (!requestProof.isValidHolderBinding(
-                (String) openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
+                openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),
                 credentialOffer.getNonce(),
-                credentialOffer.getTokenExpirationTimestamp())) {
+                mgmt.getAccessTokenExpirationTimestamp())) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
         }
         var nonce = new SelfContainedNonce(requestProof.getNonce());
@@ -152,6 +154,8 @@ public class HolderBindingService {
                                               Map<String, SupportedProofType> supportedProofTypes) throws
             Oid4vcException {
 
+        var mgmt = credentialOffer.getCredentialManagement();
+
         var requestProof = proofJwt.orElseThrow(() ->
                 new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
 
@@ -163,10 +167,10 @@ public class HolderBindingService {
         }
 
         if (!requestProof.isValidHolderBinding(
-                (String) openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
+                openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),
                 credentialOffer.getNonce(),
-                credentialOffer.getTokenExpirationTimestamp())) {
+                mgmt.getAccessTokenExpirationTimestamp())) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
         }
 
@@ -175,7 +179,6 @@ public class HolderBindingService {
         if (nonce.isSelfContainedNonce() && nonceService.isUsedNonce(nonce)) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
         }
-
 
         keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
 

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,4 +23,7 @@ public interface CredentialOfferStatusRepository
 
     @Query("SELECT count(*) FROM CredentialOfferStatus c WHERE :statusListId = c.id.statusListId")
     int countByStatusListId(UUID statusListId);
+
+    @Query("SELECT c FROM CredentialOfferStatus c WHERE c.id.offerId in :offerIds")
+    Set<CredentialOfferStatus> findByOfferIdIn(List<UUID> offerIds);
 }

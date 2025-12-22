@@ -4,7 +4,8 @@ import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +35,17 @@ public class EventProducerService {
         applicationEventPublisher.publishEvent(errorEvent);
     }
 
-    public void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusType state) {
+    public void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusManagementType state) {
         var stateChangeEvent = new StateChangeEvent(
+                credentialOfferId,
+                state
+        );
+        applicationEventPublisher.publishEvent(stateChangeEvent);
+    }
+
+    public void produceOfferStateChangeEvent(UUID credentialManagementId, UUID credentialOfferId, CredentialOfferStatusType state) {
+        var stateChangeEvent = new OfferStateChangeEvent(
+                credentialManagementId,
                 credentialOfferId,
                 state
         );

@@ -23,6 +23,7 @@ import lombok.Getter;
             EXPIRED - the lifetime of the VC expired (not used yet)
         """)
 public enum CredentialStatusTypeDto {
+    INIT,
     OFFERED,
     CANCELLED,
     IN_PROGRESS,
@@ -31,5 +32,6 @@ public enum CredentialStatusTypeDto {
     ISSUED,
     SUSPENDED,
     REVOKED,
+    REQUESTED,
     EXPIRED
 }

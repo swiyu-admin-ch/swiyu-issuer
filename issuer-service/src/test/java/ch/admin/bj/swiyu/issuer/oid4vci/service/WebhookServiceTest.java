@@ -5,7 +5,7 @@ import ch.admin.bj.swiyu.issuer.common.config.WebhookProperties;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventType;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProducer;
 import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProcessor;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +63,7 @@ class WebhookServiceTest {
     @Test
     void produceStateChangeEvent_savesEvent() {
         UUID id = UUID.randomUUID();
-        webhookEventProducer.produceStateChangeEvent(id, CredentialStatusType.ISSUED);
+        webhookEventProducer.produceStateChangeEvent(id, CredentialOfferStatusType.ISSUED);
         verify(callbackEventRepository).save(any(CallbackEvent.class));
     }
 

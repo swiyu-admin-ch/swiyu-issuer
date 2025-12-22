@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.domain.openid.credentialrequest.holderb
 
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
@@ -91,7 +91,7 @@ class ProofJwtTest {
         String audience = "http://issuer.com";
         List<String> algorithms = List.of("ES256");
         UUID offerNonce = offer.getNonce();
-        Long expirationTimestamp = offer.getTokenExpirationTimestamp();
+        Long expirationTimestamp = Instant.now().plusSeconds(600).getEpochSecond();
         var exc = assertThrows(Oid4vcException.class,
                 () -> proofJwt.isValidHolderBinding(audience, algorithms, offerNonce, expirationTimestamp));
 
@@ -122,7 +122,7 @@ class ProofJwtTest {
         String audience = "http://issuer.com";
         List<String> algorithms = List.of("ES256");
         UUID offerNonce = offer.getNonce();
-        Long expirationTimestamp = offer.getTokenExpirationTimestamp();
+        Long expirationTimestamp = Instant.now().plusSeconds(600).getEpochSecond();
         var exc = assertThrows(Oid4vcException.class,
                 () -> proofJwt.isValidHolderBinding(audience, algorithms, offerNonce, expirationTimestamp));
         assertTrue(exc.getMessage().contains("could not be parsed to a JWK"));
@@ -135,7 +135,7 @@ class ProofJwtTest {
         String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), true);
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
-        assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
+        assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), Instant.now().plusSeconds(600).getEpochSecond()));
     }
 
     @Test
@@ -145,21 +145,19 @@ class ProofJwtTest {
         String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), false);
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         var offer = createTestOffer(nonce);
-        assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), offer.getTokenExpirationTimestamp()));
+        assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), Instant.now().plusSeconds(600).getEpochSecond()));
     }
 
     private CredentialOffer createTestOffer(UUID nonce) {
 
         return CredentialOffer.builder()
                 .id(UUID.randomUUID())
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .metadataCredentialSupportedId(Collections.emptyList())
                 .offerData(new HashMap<>() {{
                     put("data", "data");
                     put("otherStuff", "data");
                 }})
-                .accessToken(UUID.randomUUID())
-                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .nonce(nonce)
                 .preAuthorizedCode(UUID.randomUUID())
                 .offerExpirationTimestamp(120L)

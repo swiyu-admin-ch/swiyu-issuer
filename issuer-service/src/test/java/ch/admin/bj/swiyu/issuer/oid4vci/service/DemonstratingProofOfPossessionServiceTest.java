@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
@@ -8,6 +10,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Se
 import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionValidationService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -37,25 +40,33 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 class DemonstratingProofOfPossessionServiceTest {
     public static final String DPOP_NONCE_HEADER = "DPoP-Nonce";
     private DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private ApplicationProperties applicationProperties;
     private NonceService nonceService;
+    private OAuthService oAuthService;
     private CredentialOfferRepository credentialOfferRepository;
+    private CredentialManagementRepository credentialManagementRepository;
     private ECKey dpopKey;
 
     @BeforeEach
     void setUp() {
         applicationProperties = Mockito.mock(ApplicationProperties.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
+        credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
         CachedNonceRepository cachedNonceRepository = Mockito.mock(CachedNonceRepository.class);
         nonceService = new NonceService(applicationProperties, cachedNonceRepository);
+        oAuthService = Mockito.mock(OAuthService.class);
         demonstratingProofOfPossessionService = new DemonstratingProofOfPossessionService(
                 applicationProperties,
                 nonceService,
+                oAuthService,
                 credentialOfferRepository,
+                credentialManagementRepository,
                 new DemonstratingProofOfPossessionValidationService(applicationProperties, nonceService)
         );
         dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
@@ -63,9 +74,9 @@ class DemonstratingProofOfPossessionServiceTest {
                 .keyUse(KeyUse.SIGNATURE)
                 .generate());
 
-        Mockito.when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(10);
-        Mockito.when(applicationProperties.getAcceptableProofTimeWindowSeconds()).thenReturn(10);
-        Mockito.when(applicationProperties.getExternalUrl()).thenReturn("https://www.example.com");
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(10);
+        when(applicationProperties.getAcceptableProofTimeWindowSeconds()).thenReturn(10);
+        when(applicationProperties.getExternalUrl()).thenReturn("https://www.example.com");
     }
 
     @Test
@@ -89,13 +100,17 @@ class DemonstratingProofOfPossessionServiceTest {
         var request = Mockito.mock(HttpRequest.class);
         var requestUri = assertDoesNotThrow(() -> new URI("https://www.example.com/token?debug"));
         var preAuthCode = UUID.randomUUID();
-        Mockito.when(request.getMethod()).thenReturn(HttpMethod.POST);
-        Mockito.when(request.getURI()).thenReturn(requestUri);
-        Mockito.when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(Mockito.mock(CredentialOffer.class)));
+        var mgmt = Mockito.mock(CredentialManagement.class);
+        var offer = Mockito.mock(CredentialOffer.class);
+
+        when(offer.getCredentialManagement()).thenReturn(mgmt);
+
+        when(request.getMethod()).thenReturn(HttpMethod.POST);
+        when(request.getURI()).thenReturn(requestUri);
+        when(credentialOfferRepository.findByPreAuthorizedCode(any())).thenReturn(Optional.of(offer));
 
         var dpop = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/token", null, dpopKey);
         assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(preAuthCode.toString(), signAndSerialize(dpop, dpopKey), request));
-
     }
 
     /**
@@ -106,11 +121,11 @@ class DemonstratingProofOfPossessionServiceTest {
         var request = Mockito.mock(HttpRequest.class);
         var requestUri = assertDoesNotThrow(() -> new URI("https://www.example.com/credential?debug"));
         var accessToken = UUID.randomUUID();
-        Mockito.when(request.getMethod()).thenReturn(HttpMethod.POST);
-        Mockito.when(request.getURI()).thenReturn(requestUri);
-        var mockOffer = Mockito.mock(CredentialOffer.class);
-        Mockito.when(credentialOfferRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mockOffer));
-        Mockito.when(mockOffer.getDpopKey()).thenReturn(dpopKey.toPublicJWK().toJSONObject());
+        when(request.getMethod()).thenReturn(HttpMethod.POST);
+        when(request.getURI()).thenReturn(requestUri);
+        var mockManagement = Mockito.mock(CredentialManagement.class);
+        when(oAuthService.getCredentialManagementByAccessToken(accessToken.toString())).thenReturn(mockManagement);
+        when(mockManagement.getDpopKey()).thenReturn(dpopKey.toPublicJWK().toJSONObject());
 
         var dpop = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/credential", accessToken.toString(), dpopKey);
         assertDoesNotThrow(() -> demonstratingProofOfPossessionService.validateDpop(accessToken.toString(), signAndSerialize(dpop, dpopKey), request));

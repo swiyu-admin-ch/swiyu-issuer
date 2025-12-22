@@ -43,7 +43,10 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
@@ -78,27 +81,31 @@ class DeferredIssuanceV2IT {
     private ObjectMapper objectMapper;
     @Autowired
     private SdjwtProperties sdjwtProperties;
-    private CredentialOffer offer;
     private CredentialOffer unboundOffer;
     private StatusList statusList;
+    private UUID offerManagementId;
+    private UUID unboundOfferManagementId;
     @Autowired
     private IssuerMetadata issuerMetadata;
+    @Autowired
+    private CredentialManagementRepository credentialManagementRepository;
 
     private static String getDeferredCredentialRequestString(String transactionId) {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
     }
 
     @BeforeEach
-    void setUp() throws JOSEException {
+    void setUp() {
         statusList = saveStatusList(createStatusList());
         var deferredMetadata = new CredentialOfferMetadata(true, null, null, null);
 
-        offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt",
+        CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt",
                 deferredMetadata);
-        unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialStatusType.OFFERED,
+
+        unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialOfferStatusType.OFFERED,
                 "unbound_example_sd_jwt", deferredMetadata);
-        saveStatusListLinkedOffer(offer, statusList, 0);
-        saveStatusListLinkedOffer(unboundOffer, statusList, 1);
+        offerManagementId = saveStatusListLinkedOffer(offer, statusList, 0).getId();
+        unboundOfferManagementId = saveStatusListLinkedOffer(unboundOffer, statusList, 1).getId();
         holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize()).boxed().map(i -> assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key-" + i)
@@ -123,7 +130,7 @@ class DeferredIssuanceV2IT {
                 .andReturn();
 
         // check status from business issuer perspective
-        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offer.getId(),
+        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offerManagementId,
                         CredentialStatusTypeDto.READY.name()))
                         .contentType("application/json"))
                 .andExpect(status().isOk())
@@ -191,7 +198,7 @@ class DeferredIssuanceV2IT {
                         .getAsLong());
 
         // check status from business issuer perspective
-        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offer.getId(),
+        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offerManagementId,
                         CredentialStatusTypeDto.READY.name()))
                         .contentType("application/json"))
                 .andExpect(status().isOk())
@@ -242,7 +249,7 @@ class DeferredIssuanceV2IT {
                 .andReturn();
 
         // check status from business issuer perspective
-        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offer.getId(),
+        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offerManagementId,
                         CredentialStatusTypeDto.CANCELLED.name()))
                         .contentType("application/json"))
                 .andExpect(status().isOk())
@@ -284,7 +291,7 @@ class DeferredIssuanceV2IT {
 
         // check status from business issuer perspective
         mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s"
-                        .formatted(unboundOffer.getId(), CredentialStatusTypeDto.READY.name())))
+                        .formatted(unboundOfferManagementId, CredentialStatusTypeDto.READY.name())))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -334,7 +341,7 @@ class DeferredIssuanceV2IT {
 
         var expirationInSeconds = 1728000; // 20 days
 
-        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialStatusType.IN_PROGRESS,
+        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS,
                 "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null),
                 expirationInSeconds);
         saveStatusListLinkedOffer(offerWithDynamicExpiration, statusList, 3);
@@ -352,7 +359,7 @@ class DeferredIssuanceV2IT {
                             .getFirst());
 
             requestCredential(mock,
-                    offerWithDynamicExpiration.getAccessToken()
+                    offerWithDynamicExpiration.getCredentialManagement().getAccessToken()
                             .toString(),
                     credentialRequestString)
                     .andExpect(status().isAccepted())
@@ -393,9 +400,23 @@ class DeferredIssuanceV2IT {
     }
 
 
-    private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int statusListIndex) {
-        credentialOfferRepository.save(offer);
-        credentialOfferStatusRepository.save(linkStatusList(offer, statusList, statusListIndex));
+    private CredentialManagement saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
+        var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .accessToken(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .renewalRequestCnt(0)
+                .renewalResponseCnt(0)
+                .build());
+
+        offer.setCredentialManagement(credentialManagement);
+        var storedOffer = credentialOfferRepository.save(offer);
+        credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
+
+        credentialManagement.addCredentialOffer(storedOffer);
+        credentialManagementRepository.save(credentialManagement);
+        return credentialManagementRepository.save(credentialManagement);
     }
 
     private StatusList saveStatusList(StatusList statusList) {

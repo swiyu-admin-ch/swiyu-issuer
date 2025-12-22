@@ -21,14 +21,14 @@ class CredentialOfferTest {
     @Test
     void testBuilderAndStatusChange() {
         CredentialOffer offer = CredentialOffer.builder()
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .metadataCredentialSupportedId(List.of("id1"))
                 .offerExpirationTimestamp(Instant.now().plusSeconds(10).getEpochSecond())
                 .build();
 
-        assertEquals(CredentialStatusType.OFFERED, offer.getCredentialStatus());
-        offer.changeStatus(CredentialStatusType.EXPIRED);
-        assertEquals(CredentialStatusType.EXPIRED, offer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.OFFERED, offer.getCredentialStatus());
+        offer.changeStatus(CredentialOfferStatusType.EXPIRED);
+        assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
     }
 
     @Test
@@ -60,18 +60,18 @@ class CredentialOfferTest {
     void testExpireAndCancel() {
         CredentialOffer offer = CredentialOffer.builder()
                 .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .build();
         offer.expire();
-        assertEquals(CredentialStatusType.EXPIRED, offer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
         assertNull(offer.getOfferData());
 
         offer = CredentialOffer.builder()
                 .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .build();
         offer.cancel();
-        assertEquals(CredentialStatusType.CANCELLED, offer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.CANCELLED, offer.getCredentialStatus());
         assertNull(offer.getOfferData());
     }
 
@@ -80,10 +80,10 @@ class CredentialOfferTest {
         CredentialOffer offer = CredentialOffer.builder()
                 .metadataCredentialSupportedId(List.of("supportedId"))
                 .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .build();
         offer.markAsIssued();
-        assertEquals(CredentialStatusType.ISSUED, offer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.ISSUED, offer.getCredentialStatus());
         assertNull(offer.getOfferData());
     }
 
@@ -101,7 +101,7 @@ class CredentialOfferTest {
                 .metadataCredentialSupportedId(List.of("supportedId"))
                 .offerData(Map.of("data", "test"))
                 .offerExpirationTimestamp(Instant.now().plusSeconds(1000).getEpochSecond())
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .deferredOfferValiditySeconds(null)
                 .build();
 
@@ -113,7 +113,7 @@ class CredentialOfferTest {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
             offer.markAsDeferred(transactionId, credentialRequest, holderPublicKeys, keyAttestationJwts, clientAgentInfo, applicationProperties);
-            assertEquals(CredentialStatusType.DEFERRED, offer.getCredentialStatus());
+            assertEquals(CredentialOfferStatusType.DEFERRED, offer.getCredentialStatus());
             assertEquals(transactionId, offer.getTransactionId());
             assertEquals(credentialRequest, offer.getCredentialRequest());
             assertEquals(holderPublicKeys, offer.getHolderJWKs());
@@ -137,7 +137,7 @@ class CredentialOfferTest {
                 .metadataCredentialSupportedId(List.of("supportedId"))
                 .offerData(Map.of("data", "test"))
                 .offerExpirationTimestamp(Instant.now().plusSeconds(1000).getEpochSecond())
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .deferredOfferValiditySeconds(10)
                 .build();
 

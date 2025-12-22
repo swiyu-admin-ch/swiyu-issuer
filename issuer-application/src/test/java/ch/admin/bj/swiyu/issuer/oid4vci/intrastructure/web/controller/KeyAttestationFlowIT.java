@@ -4,8 +4,7 @@ import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
@@ -13,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.DidKeyResolver;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
+import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
@@ -69,6 +69,9 @@ class KeyAttestationFlowIT {
     CredentialOfferRepository credentialOfferRepository;
 
     @Autowired
+    CredentialManagementRepository credentialManagementRepository;
+
+    @Autowired
     ApplicationProperties applicationProperties;
     @MockitoBean
     AsyncCredentialEventHandler testEventListener;
@@ -77,9 +80,9 @@ class KeyAttestationFlowIT {
 
     @BeforeEach
     void setUp() throws JOSEException {
-        credentialOfferRepository.save(createTestOffer(testOfferNoAttestationId, CredentialStatusType.OFFERED, "university_example_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
-        credentialOfferRepository.save(createTestOffer(testOfferAnyAttestationId, CredentialStatusType.OFFERED, "university_example_any_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
-        credentialOfferRepository.save(createTestOffer(testOfferHighAttestationId, CredentialStatusType.OFFERED, "university_example_high_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
+        createCredentialOffer(createTestOffer(testOfferNoAttestationId, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
+        createCredentialOffer(createTestOffer(testOfferAnyAttestationId, CredentialOfferStatusType.OFFERED, "university_example_any_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
+        createCredentialOffer(createTestOffer(testOfferHighAttestationId, CredentialOfferStatusType.OFFERED, "university_example_high_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
         jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate();
     }
 
@@ -110,7 +113,7 @@ class KeyAttestationFlowIT {
         var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
         assertNotNull(result);
 
-        verify(testEventListener, Mockito.times(2)).handleStateChangeEvent(any(StateChangeEvent.class));
+        verify(testEventListener, Mockito.times(2)).handleStateChangeEvent(any(OfferStateChangeEvent.class));
     }
 
     /**
@@ -192,5 +195,23 @@ class KeyAttestationFlowIT {
 
     private TestInfrastructureUtils.CredentialFetchData prepareAttested(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance) throws Exception {
         return prepareAttestedVC(mock, preAuthCode, resistance, null, jwk, applicationProperties.getTemplateReplacement().get("external-url"));
+    }
+
+    private CredentialOffer createCredentialOffer(CredentialOffer offer) {
+        var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .accessToken(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .renewalRequestCnt(0)
+                .renewalResponseCnt(0)
+                .build());
+
+
+        offer.setCredentialManagement(credentialManagement);
+        var storedOffer = credentialOfferRepository.save(offer);
+        credentialManagement.addCredentialOffer(storedOffer);
+        credentialManagementRepository.save(credentialManagement);
+        return storedOffer;
     }
 }

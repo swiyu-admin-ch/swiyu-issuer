@@ -49,6 +49,17 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiError, apiError.getStatus());
     }
 
+    @ExceptionHandler(RenewalException.class)
+    public ResponseEntity<ApiErrorDto> handleRenewalException(final RenewalException exception) {
+        ApiErrorDto apiError = ApiErrorDto.builder()
+                .errorDescription(exception.getMessage())
+                .status(exception.getHttpStatus())
+                .build();
+        log.debug("OAuthException: {}", exception.getMessage());
+        return new ResponseEntity<>(apiError, apiError.getStatus());
+    }
+
+
     @ExceptionHandler(Oid4vcException.class)
     public ResponseEntity<ApiErrorDto> handleOID4VCException(final Oid4vcException exception) {
         log.debug("Oid4vcException: {}", exception.getMessage());
@@ -142,7 +153,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @NotNull
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(@NotNull MethodArgumentNotValidException ex,
                                                                   @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status,
                                                                   @NonNull WebRequest request) {
