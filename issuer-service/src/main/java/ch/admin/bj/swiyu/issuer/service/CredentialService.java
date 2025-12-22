@@ -155,7 +155,6 @@ public class CredentialService {
 
         credentialOffer.sendEventAndUpdateStatus(credentialOfferStateMachine, CredentialOfferEvent.ISSUE);
         mgmt.sendEventAndUpdateStatus(credentialManagementStateMachine, ISSUE);
-        mgmt.markAsIssued();
 
         credentialOfferRepository.save(credentialOffer);
         credentialManagementRepository.save(mgmt);
@@ -190,7 +189,6 @@ public class CredentialService {
 
         credentialOffer.sendEventAndUpdateStatus(credentialOfferStateMachine, CredentialOfferEvent.ISSUE);
         credentialMgmt.sendEventAndUpdateStatus(credentialManagementStateMachine, ISSUE);
-        credentialMgmt.markAsIssued();
 
         credentialOfferRepository.save(credentialOffer);
         credentialManagementRepository.save(credentialMgmt);
@@ -359,7 +357,6 @@ public class CredentialService {
             responseEnvelope = vcBuilder.buildCredentialEnvelopeV2();
             credentialOffer.sendEventAndUpdateStatus(credentialOfferStateMachine, CredentialOfferEvent.ISSUE);
             mgmt.sendEventAndUpdateStatus(credentialManagementStateMachine, ISSUE);
-            mgmt.markAsIssued();
             credentialOfferRepository.save(credentialOffer);
             credentialManagementRepository.save(mgmt);
             eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
