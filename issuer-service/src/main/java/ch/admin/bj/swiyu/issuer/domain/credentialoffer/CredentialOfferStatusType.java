@@ -12,9 +12,10 @@ import java.util.List;
 
 @Getter
 public enum CredentialOfferStatusType {
+    INIT("INIT"),
     OFFERED("Offered"),
     CANCELLED("Cancelled"),
-    IN_PROGRESS("Claiming in Progress"),
+    IN_PROGRESS("Claiming_in_Progress"),
     // Status necessary for deferred flow
     DEFERRED("Deferred"),
     READY("Ready"),

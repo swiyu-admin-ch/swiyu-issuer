@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
@@ -20,10 +21,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.StateMachineEventResult;
+import org.springframework.statemachine.support.DefaultStateMachineContext;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.*;
 
+import static ch.admin.bj.swiyu.issuer.common.config.CredentialStateMachineConfig.CredentialOfferEvent;
 import static java.util.Objects.nonNull;
 
 /**
@@ -232,6 +239,42 @@ public class CredentialOffer {
         this.credentialStatus = CredentialOfferStatusType.ISSUED;
         log.info("Credential issued for offer {}. Management-ID is {}. ",
                 this.metadataCredentialSupportedId, this.id);
+    }
+
+    public void sendEventAndUpdateStatus(StateMachine<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> stateMachine, CredentialStateMachineConfig.CredentialOfferEvent event) {
+
+        stateMachine.getStateMachineAccessor()
+                .doWithAllRegions(access ->
+                        access.resetStateMachineReactively(
+                                new DefaultStateMachineContext<>(
+                                        this.credentialStatus,
+                                        null,
+                                        null,
+                                        null
+                                )
+                        ).block()
+                );
+
+        StateMachineEventResult<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> success = stateMachine
+                .sendEvent(
+                        Mono.just(
+                                MessageBuilder
+                                        .withPayload(event)
+                                        .setHeader("credentialId", this.id)
+                                        .setHeader("oldStatus", this.credentialStatus)
+                                        .build()
+                        )
+                )
+                .blockLast();
+
+        assert success != null;
+        if (success.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
+            this.credentialStatus = stateMachine.getState().getId();
+            log.info("Transaction accepted for: {}. New state = {}", success.getMessage(), this.credentialStatus);
+        } else {
+            log.info("Transaction failed for: {}.", success.getMessage());
+            throw new IllegalStateException("Transition failed for "+ success.getMessage());
+        }
     }
 
     public void markAsInProgress() {

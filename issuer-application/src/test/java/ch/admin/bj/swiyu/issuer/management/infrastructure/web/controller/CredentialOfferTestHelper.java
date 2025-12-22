@@ -105,7 +105,7 @@ public class CredentialOfferTestHelper {
             try {
                 var tokenState = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusZipped(), 204800).getStatus(status.getId().getIndex());
                 var expectedState = switch (statusType) {
-                    case OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED, REQUESTED ->
+                    case INIT, OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED, REQUESTED ->
                             TokenStatusListBit.VALID.getValue();
                 };
                 if (expectedState != tokenState) {

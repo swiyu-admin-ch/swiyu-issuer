@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
@@ -38,6 +39,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.statemachine.StateMachine;
 
 import java.time.Instant;
 import java.util.*;
@@ -68,6 +70,8 @@ class CredentialServiceTest {
     private OAuthService oAuthService;
     private CredentialManagementService credentialManagementService;
     private BusinessIssuerRenewalApiClient renewalApiClient;
+    private StateMachine<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> credentialManagementStateMachine;
+    private StateMachine<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> credentialOfferStateMachine;
 
 
     @BeforeEach
@@ -83,6 +87,8 @@ class CredentialServiceTest {
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         credentialManagementService = Mockito.mock(CredentialManagementService.class);
         renewalApiClient = Mockito.mock(BusinessIssuerRenewalApiClient.class);
+        credentialManagementStateMachine = Mockito.mock(StateMachine.class);
+        credentialOfferStateMachine = Mockito.mock(StateMachine.class);
 
         EncryptionService encryptionService = Mockito.mock(EncryptionService.class);
         EventProducerService eventProducerService = new EventProducerService(applicationEventPublisher, objectMapper);
@@ -100,7 +106,9 @@ class CredentialServiceTest {
                 encryptionService,
                 credentialManagementRepository,
                 renewalApiClient,
-                credentialManagementService
+                credentialManagementService,
+                credentialManagementStateMachine,
+                credentialOfferStateMachine
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
