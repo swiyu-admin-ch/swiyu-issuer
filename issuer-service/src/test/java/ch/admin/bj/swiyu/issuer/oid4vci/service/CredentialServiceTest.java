@@ -13,7 +13,6 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
@@ -39,7 +38,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.statemachine.StateMachine;
 
 import java.time.Instant;
 import java.util.*;
@@ -70,8 +68,8 @@ class CredentialServiceTest {
     private OAuthService oAuthService;
     private CredentialManagementService credentialManagementService;
     private BusinessIssuerRenewalApiClient renewalApiClient;
-    private StateMachine<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> credentialManagementStateMachine;
-    private StateMachine<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> credentialOfferStateMachine;
+    private CredentialStateMachine credentialStateMachine;
+
 
 
     @BeforeEach
@@ -87,8 +85,54 @@ class CredentialServiceTest {
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         credentialManagementService = Mockito.mock(CredentialManagementService.class);
         renewalApiClient = Mockito.mock(BusinessIssuerRenewalApiClient.class);
-        credentialManagementStateMachine = Mockito.mock(StateMachine.class);
-        credentialOfferStateMachine = Mockito.mock(StateMachine.class);
+        credentialStateMachine = Mockito.mock(CredentialStateMachine.class);
+
+        // Mock sendEventAndUpdateStatus for CredentialManagement
+        Mockito.doAnswer(invocation -> {
+            CredentialManagement entity = invocation.getArgument(0);
+            CredentialStateMachineConfig.CredentialManagementEvent event = invocation.getArgument(1);
+            // Set status based on event (simple mapping for test)
+            switch (event) {
+                case ISSUE -> entity.setCredentialManagementStatus(CredentialStatusManagementType.ISSUED);
+                case SUSPEND -> entity.setCredentialManagementStatus(CredentialStatusManagementType.SUSPENDED);
+                case REVOKE -> entity.setCredentialManagementStatus(CredentialStatusManagementType.REVOKED);
+                default -> {}
+            }
+            return null;
+        }).when(credentialStateMachine).sendEventAndUpdateStatus(
+                Mockito.any(CredentialManagement.class),
+                Mockito.any(CredentialStateMachineConfig.CredentialManagementEvent.class)
+        );
+
+        // Mock sendEventAndUpdateStatus for CredentialOffer
+        Mockito.doAnswer(invocation -> {
+            CredentialOffer entity = invocation.getArgument(0);
+            CredentialStateMachineConfig.CredentialOfferEvent event = invocation.getArgument(1);
+            // Set status based on event (simple mapping for test)
+            switch (event) {
+                case ISSUE -> {
+                    entity.changeStatus(CredentialOfferStatusType.ISSUED);
+                    entity.invalidateOfferData();
+                }
+                case EXPIRE -> {
+                    entity.changeStatus(CredentialOfferStatusType.EXPIRED);
+                    entity.invalidateOfferData();
+                }
+                case CANCEL -> {
+                    entity.changeStatus(CredentialOfferStatusType.CANCELLED);
+                    entity.invalidateOfferData();
+                }
+                case DEFER -> entity.changeStatus(CredentialOfferStatusType.DEFERRED);
+                case READY -> entity.changeStatus(CredentialOfferStatusType.READY);
+                case OFFER -> entity.changeStatus(CredentialOfferStatusType.OFFERED);
+                case CLAIM -> entity.changeStatus(CredentialOfferStatusType.IN_PROGRESS);
+                default -> {}
+            }
+            return null;
+        }).when(credentialStateMachine).sendEventAndUpdateStatus(
+                Mockito.any(CredentialOffer.class),
+                Mockito.any(CredentialStateMachineConfig.CredentialOfferEvent.class)
+        );
 
         EncryptionService encryptionService = Mockito.mock(EncryptionService.class);
         EventProducerService eventProducerService = new EventProducerService(applicationEventPublisher, objectMapper);
@@ -107,8 +151,7 @@ class CredentialServiceTest {
                 credentialManagementRepository,
                 renewalApiClient,
                 credentialManagementService,
-                credentialManagementStateMachine,
-                credentialOfferStateMachine
+                credentialStateMachine
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
@@ -435,7 +478,6 @@ class CredentialServiceTest {
         verify(credentialOfferRepository).save(credentialOffer);
         var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
-        verify(credentialOffer).markAsIssued();
     }
 
     @Test
@@ -487,7 +529,6 @@ class CredentialServiceTest {
         verify(credentialOfferRepository).save(credentialOffer);
         var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
-        verify(credentialOffer).markAsIssued();
     }
 
     @Test
@@ -621,7 +662,6 @@ class CredentialServiceTest {
 
         credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo, null);
 
-        verify(offer).markAsIssued();
         verify(credentialOfferRepository, atLeastOnce()).save(offer);
         var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), offer.getId(), CredentialOfferStatusType.IN_PROGRESS);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
@@ -787,3 +827,4 @@ class CredentialServiceTest {
         return new ClientAgentInfo("test-agent", "1.0", "test-client", "test-client-id");
     }
 }
+

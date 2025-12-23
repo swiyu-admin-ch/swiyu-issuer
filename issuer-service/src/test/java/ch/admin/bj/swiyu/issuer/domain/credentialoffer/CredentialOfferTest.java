@@ -76,18 +76,6 @@ class CredentialOfferTest {
     }
 
     @Test
-    void testMarkAsIssued() {
-        CredentialOffer offer = CredentialOffer.builder()
-                .metadataCredentialSupportedId(List.of("supportedId"))
-                .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialOfferStatusType.OFFERED)
-                .build();
-        offer.markAsIssued();
-        assertEquals(CredentialOfferStatusType.ISSUED, offer.getCredentialStatus());
-        assertNull(offer.getOfferData());
-    }
-
-    @Test
     void testMarkAsDeferred_withDefaultValue() {
         var transactionId = UUID.randomUUID();
         var credentialRequest = new CredentialRequestClass();

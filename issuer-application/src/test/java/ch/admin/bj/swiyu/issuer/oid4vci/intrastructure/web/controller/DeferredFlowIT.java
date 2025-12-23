@@ -522,7 +522,7 @@ class DeferredFlowIT {
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isBadRequest())
-//                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
+                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
                 .andReturn();
     }
 

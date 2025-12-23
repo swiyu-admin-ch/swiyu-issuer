@@ -1,12 +1,12 @@
-package ch.admin.bj.swiyu.issuer.common.config;
+package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.StateMachineBuilder;
 
 import java.util.EnumSet;
@@ -77,6 +77,20 @@ public class CredentialStateMachineConfig {
         return builder.build();
     }
 
+    public static final String CREDENTIAL_OFFER_HEADER = "credential_offer";
+
+    public static Action<CredentialOfferStatusType, CredentialOfferEvent> invalidateOfferDataAction() {
+        return context -> {
+            Message<CredentialOfferEvent> message = context.getMessage();
+            if (message != null && message.getHeaders().containsKey(CREDENTIAL_OFFER_HEADER)) {
+                Object offerObj = message.getHeaders().get(CREDENTIAL_OFFER_HEADER);
+                if (offerObj instanceof CredentialOffer offer) {
+                    offer.invalidateOfferData();
+                }
+            }
+        };
+    }
+
     @Bean
     public StateMachine<CredentialOfferStatusType, CredentialOfferEvent> credentialOfferStateMachine() throws Exception {
         StateMachineBuilder.Builder<CredentialOfferStatusType, CredentialOfferEvent> builder = StateMachineBuilder.builder();
@@ -114,7 +128,8 @@ public class CredentialStateMachineConfig {
                 .and()
                 .withExternal()
                 .source(CredentialOfferStatusType.OFFERED).target(CredentialOfferStatusType.EXPIRED)
-                .event(CredentialOfferEvent.EXPIRE) // When deferred-offer-validity-seconds passed
+                .event(CredentialOfferEvent.EXPIRE)
+                .action(invalidateOfferDataAction()).name("invalidateOfferData")
                 .and()
                 .withExternal()
                 .source(CredentialOfferStatusType.OFFERED).target(CredentialOfferStatusType.IN_PROGRESS)
@@ -125,51 +140,42 @@ public class CredentialStateMachineConfig {
                 .event(CredentialOfferEvent.REQUEST)
                 .and()
 
-                // CANCELLED transitions
-//                .withExternal()
-//                .source(CredentialOfferStatusType.CANCELLED).target(CredentialOfferStatusType.OFFERED)
-//                .event(CredentialOfferEvent.OFFER) // CANCELLED ---> [*] (PlantUML End)
-//                .and()
                 // IN_PROGRESS transitions
                 .withExternal()
                 .source(CredentialOfferStatusType.IN_PROGRESS).target(CredentialOfferStatusType.EXPIRED)
-                .event(CredentialOfferEvent.EXPIRE) // Can expire on status (OFFERED, IN_PROGRESS)
+                .event(CredentialOfferEvent.EXPIRE)
+                .action(invalidateOfferDataAction()).name("invalidateOfferData")
                 .and()
                 .withExternal()
                 .source(CredentialOfferStatusType.IN_PROGRESS).target(CredentialOfferStatusType.DEFERRED)
-                .event(CredentialOfferEvent.DEFER) // Deferred = true
+                .event(CredentialOfferEvent.DEFER)
                 .and()
                 .withExternal()
                 .source(CredentialOfferStatusType.IN_PROGRESS).target(CredentialOfferStatusType.ISSUED)
-                .event(CredentialOfferEvent.ISSUE) // Non-deferred flow
+                .event(CredentialOfferEvent.ISSUE)
+                .action(invalidateOfferDataAction()).name("invalidateOfferData")
                 .and()
                 // DEFERRED transitions
                 .withExternal()
                 .source(CredentialOfferStatusType.DEFERRED).target(CredentialOfferStatusType.READY)
-                .event(CredentialOfferEvent.READY) // Status READY must be set by the business issuer
+                .event(CredentialOfferEvent.READY)
                 .and()
                 .withExternal()
                 .source(CredentialOfferStatusType.DEFERRED).target(CredentialOfferStatusType.EXPIRED)
-                .event(CredentialOfferEvent.EXPIRE) // When deferred-offer-validity-seconds passed
+                .event(CredentialOfferEvent.EXPIRE)
+                .action(invalidateOfferDataAction()).name("invalidateOfferData")
                 .and()
                 // READY transitions
                 .withExternal()
                 .source(CredentialOfferStatusType.READY).target(CredentialOfferStatusType.ISSUED)
                 .event(CredentialOfferEvent.ISSUE)
+                .action(invalidateOfferDataAction()).name("invalidateOfferData")
                 .and()
                 .withExternal()
                 .source(CredentialOfferStatusType.READY).target(CredentialOfferStatusType.EXPIRED)
-                .event(CredentialOfferEvent.EXPIRE); // When deferred-offer-validity-seconds passed
-
-                // ISSUED transitions
-//                .withExternal()
-//                .source(CredentialOfferStatusType.ISSUED).target(CredentialOfferStatusType.OFFERED)
-//                .event(CredentialOfferEvent.OFFER) // ISSUED --> [*] (PlantUML End)
-//                .and()
-                // EXPIRED transitions
-//                .withExternal()
-//                .source(CredentialOfferStatusType.EXPIRED).target(CredentialOfferStatusType.OFFERED)
-//                .event(CredentialOfferEvent.OFFER); // EXPIRED --> [*] (PlantUML End)
+                .event(CredentialOfferEvent.EXPIRE)
+                .action(invalidateOfferDataAction()).name("invalidateOfferData")
+                .and();
 
         builder.configureConfiguration()
                 .withConfiguration()

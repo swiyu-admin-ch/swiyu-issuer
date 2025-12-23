@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.common;
 
+import java.util.stream.Collectors;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.state.State;
 import org.springframework.statemachine.transition.Transition;
@@ -31,6 +32,9 @@ public class PlantUmlExporter<S, E> {
                         label = event.toString();
                     }
                     sb.append(" : ").append(label);
+                }
+                if (transition.getActions() != null && !transition.getActions().isEmpty()) {
+                    sb.append("\\n[").append(transition.getName()).append("]");
                 }
                 sb.append("\n");
             }

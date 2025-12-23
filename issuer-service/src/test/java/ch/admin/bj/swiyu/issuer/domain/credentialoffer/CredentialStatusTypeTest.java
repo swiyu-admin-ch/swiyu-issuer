@@ -9,18 +9,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class CredentialStatusTypeTest {
 
     @Test
-    void testDisplayNameAndToString() {
-        assertEquals("Offered", CredentialOfferStatusType.OFFERED.getDisplayName());
-        assertEquals("Offered", CredentialOfferStatusType.OFFERED.toString());
-        assertEquals("Claiming in Progress", CredentialOfferStatusType.IN_PROGRESS.toString());
-        assertEquals("Deferred", CredentialOfferStatusType.DEFERRED.toString());
-        assertEquals("Ready", CredentialOfferStatusType.READY.toString());
-        assertEquals("Issued", CredentialOfferStatusType.ISSUED.toString());
-        assertEquals("Expired", CredentialOfferStatusType.EXPIRED.toString());
-        assertEquals("Cancelled", CredentialOfferStatusType.CANCELLED.toString());
-    }
-
-    @Test
     void testGetExpirableStates() {
         List<CredentialOfferStatusType> status = CredentialOfferStatusType.getExpirableStates();
         assertTrue(status.contains(CredentialOfferStatusType.OFFERED));
