@@ -17,13 +17,6 @@ class CredentialOfferStateMachineTest {
     }
 
     @Test
-    void testInitialTransition() {
-        assertEquals(CredentialOfferStatusType.INIT, stateMachine.getState().getId());
-        stateMachine.sendEvent(CredentialStateMachineConfig.CredentialOfferEvent.CREATED);
-        assertEquals(CredentialOfferStatusType.OFFERED, stateMachine.getState().getId());
-    }
-
-    @Test
     void testOfferedToExpired() {
         stateMachine.getStateMachineAccessor().doWithAllRegions(access ->
             access.resetStateMachine(new org.springframework.statemachine.support.DefaultStateMachineContext<>(

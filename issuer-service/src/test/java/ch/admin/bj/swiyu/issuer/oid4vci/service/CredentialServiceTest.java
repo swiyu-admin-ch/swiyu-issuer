@@ -49,6 +49,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.service.CredentialStateMachineTestHelper.mockCredentialStateMachine;
+
 class CredentialServiceTest {
     private final Map<String, Object> offerData = Map.of("hello", "world");
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -87,52 +89,7 @@ class CredentialServiceTest {
         renewalApiClient = Mockito.mock(BusinessIssuerRenewalApiClient.class);
         credentialStateMachine = Mockito.mock(CredentialStateMachine.class);
 
-        // Mock sendEventAndUpdateStatus for CredentialManagement
-        Mockito.doAnswer(invocation -> {
-            CredentialManagement entity = invocation.getArgument(0);
-            CredentialStateMachineConfig.CredentialManagementEvent event = invocation.getArgument(1);
-            // Set status based on event (simple mapping for test)
-            switch (event) {
-                case ISSUE -> entity.setCredentialManagementStatus(CredentialStatusManagementType.ISSUED);
-                case SUSPEND -> entity.setCredentialManagementStatus(CredentialStatusManagementType.SUSPENDED);
-                case REVOKE -> entity.setCredentialManagementStatus(CredentialStatusManagementType.REVOKED);
-                default -> {}
-            }
-            return null;
-        }).when(credentialStateMachine).sendEventAndUpdateStatus(
-                Mockito.any(CredentialManagement.class),
-                Mockito.any(CredentialStateMachineConfig.CredentialManagementEvent.class)
-        );
-
-        // Mock sendEventAndUpdateStatus for CredentialOffer
-        Mockito.doAnswer(invocation -> {
-            CredentialOffer entity = invocation.getArgument(0);
-            CredentialStateMachineConfig.CredentialOfferEvent event = invocation.getArgument(1);
-            // Set status based on event (simple mapping for test)
-            switch (event) {
-                case ISSUE -> {
-                    entity.changeStatus(CredentialOfferStatusType.ISSUED);
-                    entity.invalidateOfferData();
-                }
-                case EXPIRE -> {
-                    entity.changeStatus(CredentialOfferStatusType.EXPIRED);
-                    entity.invalidateOfferData();
-                }
-                case CANCEL -> {
-                    entity.changeStatus(CredentialOfferStatusType.CANCELLED);
-                    entity.invalidateOfferData();
-                }
-                case DEFER -> entity.changeStatus(CredentialOfferStatusType.DEFERRED);
-                case READY -> entity.changeStatus(CredentialOfferStatusType.READY);
-                case OFFER -> entity.changeStatus(CredentialOfferStatusType.OFFERED);
-                case CLAIM -> entity.changeStatus(CredentialOfferStatusType.IN_PROGRESS);
-                default -> {}
-            }
-            return null;
-        }).when(credentialStateMachine).sendEventAndUpdateStatus(
-                Mockito.any(CredentialOffer.class),
-                Mockito.any(CredentialStateMachineConfig.CredentialOfferEvent.class)
-        );
+        mockCredentialStateMachine(credentialStateMachine);
 
         EncryptionService encryptionService = Mockito.mock(EncryptionService.class);
         EventProducerService eventProducerService = new EventProducerService(applicationEventPublisher, objectMapper);

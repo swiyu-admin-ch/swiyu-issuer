@@ -27,7 +27,7 @@ class CredentialOfferTest {
                 .build();
 
         assertEquals(CredentialOfferStatusType.OFFERED, offer.getCredentialStatus());
-        offer.changeStatus(CredentialOfferStatusType.EXPIRED);
+        offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.EXPIRED);
         assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
     }
 

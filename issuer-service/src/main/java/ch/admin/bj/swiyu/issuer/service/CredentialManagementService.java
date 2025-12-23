@@ -35,8 +35,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
-import static ch.admin.bj.swiyu.issuer.service.CredentialManagementMapper.toCredentialManagementDto;
-import static ch.admin.bj.swiyu.issuer.service.CredentialManagementMapper.toCredentialStatusManagementType;
+import static ch.admin.bj.swiyu.issuer.service.CredentialManagementMapper.*;
 import static ch.admin.bj.swiyu.issuer.service.CredentialOfferMapper.*;
 import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SDJWT_PROTECTED_CLAIMS;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
@@ -59,6 +58,7 @@ public class CredentialManagementService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final AvailableStatusListIndexRepository availableStatusListIndexRepository;
     private final Random random = new Random();
+    private final CredentialStateMachine credentialStateMachine;
 
     /**
      * Retrieve public information about a credential offer.
@@ -502,7 +502,7 @@ public class CredentialManagementService {
             throw new BadRequestException(String.format(STATUS_NOT_CHANGEABLE, CredentialOfferStatusType.EXPIRED, currentStatus));
         }
 
-        credential.expire();
+        credentialStateMachine.sendEventAndUpdateStatus(credential, CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
 
         var updatedCredential = this.credentialOfferRepository.save(credential);
 
@@ -525,35 +525,12 @@ public class CredentialManagementService {
                         () -> new ResourceNotFoundException(String.format(CREDENTIAL_NOT_FOUND, credentialId)));
     }
 
-
-    /**
-     * Handles status changes before issuance (status cancelled, ready and expired)
-     */
-    private void handlePreIssuanceStatusChange(CredentialOffer credential,
-                                               CredentialOfferStatusType currentStatus,
-                                               CredentialOfferStatusType newStatus) {
-
-        // if the new status is READY, then we can only set it if the old status was
-        // deferred
-        if (currentStatus == CredentialOfferStatusType.DEFERRED && newStatus == CredentialOfferStatusType.READY) {
-            credential.changeStatus(CredentialOfferStatusType.READY);
-            return;
-        }
-
-        if (newStatus == CredentialOfferStatusType.CANCELLED) {
-            credential.cancel();
-            return;
-        }
-
-        throw new BadRequestException(String.format(
-                "Illegal state transition - Status cannot be updated from %s to %s", currentStatus, newStatus));
-    }
-
     /**
      * Handles status changes after issuance (status suspended, revoked and issued)
      *
      * @return
      */
+    // TODO: refactor to reduce complexity and readability
     private List<UUID> handlePostIssuanceStatusChange(CredentialManagement mgmt, CredentialStatusManagementType newStatus) {
 
         var affectedOffers = mgmt.getCredentialOffers().stream().map(CredentialOffer::getId).toList();
@@ -638,29 +615,28 @@ public class CredentialManagementService {
         return statusLists;
     }
 
+    // TODO: refactor to reduce complexity and readability
     private UpdateStatusResponseDto handlePostIssuanceStatusChangeForOffer(CredentialManagement mgmt, UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
 
-        var newStatus = toCredentialStatusManagementType(requestedNewStatus);
-
         var currentStatus = mgmt.getCredentialManagementStatus();
+        var event = toCredentialManagementEvent(requestedNewStatus);
+        CredentialStatusManagementType newStatus = credentialStateMachine.sendEventAndUpdateStatus(mgmt, event);
+
+        var credentialOfferForUpdate = mgmt.getCredentialOffers().stream()
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException("Credential offer is not processable"));
+        credentialStateMachine.sendEventAndUpdateStatus(credentialOfferForUpdate, toCredentialOfferEvent(requestedNewStatus));
 
         // Ignore no status changes and return. This needs to be checked first to
         // prevent unnecessary errors
-        if (currentStatus == newStatus) {
+        if (event != null && currentStatus == newStatus) {
             return CredentialManagementMapper.toUpdateStatusResponseDto(mgmt, null);
-        }
-
-        // status is already in a terminal state and cannot be changed
-        if (currentStatus == CredentialStatusManagementType.REVOKED) {
-            throw new BadRequestException(String.format(STATUS_NOT_CHANGEABLE, newStatus, currentStatus));
         }
 
         // get all
         var statusList = handlePostIssuanceStatusChange(mgmt, newStatus);
 
         log.debug("Updating credential management {} from {} to {}", mgmt.getId(), currentStatus, newStatus);
-
-        mgmt.setCredentialManagementStatus(newStatus);
 
         var updatedMgmt = this.credentialManagementRepository.save(mgmt);
 
@@ -669,38 +645,35 @@ public class CredentialManagementService {
         return CredentialManagementMapper.toUpdateStatusResponseDto(updatedMgmt, statusList);
     }
 
-    private UpdateStatusResponseDto handlePreIssuanceStatusChange(CredentialManagement mgmt, UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
-        var newStatus = toCredentialStatusType(requestedNewStatus);
-
+    // TODO: refactor to reduce complexity and readability
+    @Transactional
+    public UpdateStatusResponseDto handlePreIssuanceStatusChange(CredentialManagement mgmt, UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
+        var managementEvent = toCredentialManagementEvent(requestedNewStatus);
+        var offerEvent = toCredentialOfferEvent(requestedNewStatus);
         var credentialOfferForUpdate = mgmt.getCredentialOffers().stream()
                 .findFirst()
                 .orElseThrow(() -> new BadRequestException("Credential offer is not processable"));
+        var stateBefore = credentialOfferForUpdate.getCredentialStatus();
+        var stateAfter = stateBefore;
 
+        if(offerEvent != null){
+            stateAfter = credentialStateMachine.sendEventAndUpdateStatus(credentialOfferForUpdate, offerEvent);
+        }
 
-        var currentStatus = credentialOfferForUpdate.getCredentialStatus();
+        credentialStateMachine.sendEventAndUpdateStatus(mgmt, managementEvent);
 
         // Ignore no status changes and return. This needs to be checked first to
         // prevent unnecessary errors
-        if (currentStatus == newStatus) {
+        if (stateBefore == stateAfter) {
             return toUpdateStatusResponseDto(credentialOfferForUpdate);
         }
 
-        // status is already in a terminal state and cannot be changed
-        if (currentStatus.isTerminalState()) {
-            throw new BadRequestException(String.format(STATUS_NOT_CHANGEABLE, newStatus, currentStatus));
-        }
 
-        if (newStatus == CredentialOfferStatusType.EXPIRED) {
-            credentialOfferForUpdate.expire();
-        }
-
-        handlePreIssuanceStatusChange(credentialOfferForUpdate, currentStatus, newStatus);
-
-        log.debug("Updating credential {} from {} to {}", credentialOfferForUpdate.getId(), currentStatus, newStatus);
+        log.debug("Updating credential {} from {} to {}", credentialOfferForUpdate.getId(), stateBefore, stateAfter);
 
         var updatedCredentialOffer = this.credentialOfferRepository.save(credentialOfferForUpdate);
 
-        produceOfferStateChangeEvent(credentialOfferForUpdate.getCredentialManagement().getId(), updatedCredentialOffer.getId(), newStatus);
+        produceOfferStateChangeEvent(credentialOfferForUpdate.getCredentialManagement().getId(), updatedCredentialOffer.getId(), stateAfter);
 
         return toUpdateStatusResponseDto(credentialOfferForUpdate);
     }

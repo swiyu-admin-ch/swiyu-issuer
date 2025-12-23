@@ -25,7 +25,11 @@ public class CredentialStateMachine {
     }
 
     // Kapselt die StateMachine-Logik für CredentialManagement
-    public void sendEventAndUpdateStatus(CredentialManagement entity, CredentialStateMachineConfig.CredentialManagementEvent event) {
+    public CredentialStatusManagementType sendEventAndUpdateStatus(CredentialManagement entity, CredentialStateMachineConfig.CredentialManagementEvent event) {
+        if (event == null){
+            log.info("No transaction requested for {} in state {}", entity.getId(), entity.getCredentialManagementStatus());
+            return entity.getCredentialManagementStatus();
+        }
 
         credentialManagementStateMachine.getStateMachineAccessor()
                 .doWithAllRegions(access ->
@@ -55,13 +59,18 @@ public class CredentialStateMachine {
         if (success.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
             entity.setCredentialManagementStatus(credentialManagementStateMachine.getState().getId());
             log.info("Transaction accepted for: {}. New state = {}", success.getMessage(), entity.getCredentialManagementStatus());
+            return entity.getCredentialManagementStatus();
         } else {
             log.error("Transaction failed for: {}.", success.getMessage());
             throw new IllegalStateException("Transition failed for " + success.getMessage());
         }
     }
 
-    public void sendEventAndUpdateStatus(CredentialOffer entity, CredentialStateMachineConfig.CredentialOfferEvent event) {
+    public CredentialOfferStatusType sendEventAndUpdateStatus(CredentialOffer entity, CredentialStateMachineConfig.CredentialOfferEvent event) {
+        if (event == null){
+            log.info("No transaction requested for {} in state {}", entity.getId(), entity.getCredentialStatus());
+            return entity.getCredentialStatus();
+        }
 
         credentialOfferStateMachine.getStateMachineAccessor()
                 .doWithAllRegions(access ->
@@ -90,8 +99,9 @@ public class CredentialStateMachine {
 
         assert success != null;
         if (success.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
-            entity.changeStatus(credentialOfferStateMachine.getState().getId());
+            entity.setCredentialOfferStatusJustForTestUsage(credentialOfferStateMachine.getState().getId());
             log.info("Transaction accepted for: {}. New state = {}", success.getMessage(), entity.getCredentialStatus());
+            return entity.getCredentialStatus();
         } else {
             log.error("Transaction failed for: {}.", success.getMessage());
             throw new IllegalStateException("Transition failed for " + success.getMessage());

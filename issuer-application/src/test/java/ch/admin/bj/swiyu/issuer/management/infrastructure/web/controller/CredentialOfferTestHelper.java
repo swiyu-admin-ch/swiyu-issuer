@@ -75,7 +75,7 @@ public class CredentialOfferTestHelper {
 
         var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
         mgmt.getCredentialOffers().stream().findFirst().ifPresent(offer -> {
-            offer.changeStatus(status);
+            offer.setCredentialOfferStatusJustForTestUsage(status);
             credentialOfferRepository.save(offer);
         });
 
@@ -84,7 +84,7 @@ public class CredentialOfferTestHelper {
 
     public CredentialOffer updateStatusForEntity(UUID id, CredentialOfferStatusType status) {
         CredentialOffer credentialOffer = credentialOfferRepository.findById(id).orElseThrow();
-        credentialOffer.changeStatus(status);
+        credentialOffer.setCredentialOfferStatusJustForTestUsage(status);
         return credentialOfferRepository.save(credentialOffer);
     }
 
@@ -93,7 +93,7 @@ public class CredentialOfferTestHelper {
 
         var credentialOffer = mgmt.getCredentialOffers().stream().findFirst().orElseThrow();
 
-        credentialOffer.changeStatus(status);
+        credentialOffer.setCredentialOfferStatusJustForTestUsage(status);
         return credentialOfferRepository.save(credentialOffer);
     }
 
@@ -133,7 +133,7 @@ public class CredentialOfferTestHelper {
     // Helper function to mock the oid4vci and management processes
     void changeOfferStatus(UUID offerId, CredentialOfferStatusType status) {
         var offer = credentialOfferRepository.findById(offerId).get();
-        offer.changeStatus(status);
+        offer.setCredentialOfferStatusJustForTestUsage(status);
         credentialOfferRepository.save(offer);
     }
 
@@ -145,12 +145,12 @@ public class CredentialOfferTestHelper {
         UUID managementId = createStatusListLinkedOfferAndGetUUID();
 
         var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
-        mgmt.setCredentialManagementStatus(CredentialStatusManagementType.ISSUED);
+        mgmt.setCredentialManagementStatusJustForTestUsage(CredentialStatusManagementType.ISSUED);
         mgmt.getCredentialOffers();
 
         var updatedOffer = mgmt.getCredentialOffers().stream().map(
                 offer -> {
-                    offer.changeStatus(CredentialOfferStatusType.ISSUED);
+                    offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.ISSUED);
                     return credentialOfferRepository.save(offer);
                 }
         ).findFirst().orElseThrow();

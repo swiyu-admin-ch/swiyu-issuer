@@ -56,6 +56,7 @@ public class CredentialOffer {
      * which can not be covered by the status list
      */
     @Enumerated(EnumType.STRING)
+    @Setter(AccessLevel.NONE) //
     private CredentialOfferStatusType credentialStatus;
 
     /**
@@ -209,23 +210,19 @@ public class CredentialOffer {
         this.offerData = null;
     }
 
-    public void changeStatus(CredentialOfferStatusType credentialStatus) {
-        this.credentialStatus = credentialStatus;
-    }
-
     public boolean hasExpirationTimeStampPassed() {
         return Instant.now().isAfter(Instant.ofEpochSecond(this.offerExpirationTimestamp));
     }
 
     @Deprecated
     public void expire() {
-        this.changeStatus(CredentialOfferStatusType.EXPIRED);
+        this.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.EXPIRED);
         this.removeOfferData();
     }
 
     @Deprecated
     public void cancel() {
-        this.changeStatus(CredentialOfferStatusType.CANCELLED);
+        this.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.CANCELLED);
         this.removeOfferData();
     }
 
@@ -305,4 +302,30 @@ public class CredentialOffer {
         this.keyAttestations = null;
         this.offerExpirationTimestamp = 0L;
     }
+
+
+    /**
+     * Sets the status of this credential offer entity.
+     * <p>
+     * <b>Intended for use by {@link CredentialStateMachine} only.</b>
+     * Do not use outside the state machine context to ensure correct state transitions.
+     *
+     * @param credentialOfferStatus the new status to set
+     */
+    void setCredentialOfferStatus(CredentialOfferStatusType credentialOfferStatus) {
+        this.credentialStatus = credentialOfferStatus;
+    }
+
+    /**
+     * Sets the status of this credential offer entity.
+     * <p>
+     * <b>Intended for test usage only.</b>
+     * Do not use in production code.
+     *
+     * @param credentialOfferStatus the new status to set
+     */
+    public void setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType credentialOfferStatus) {
+        this.credentialStatus = credentialOfferStatus;
+    }
+
 }
