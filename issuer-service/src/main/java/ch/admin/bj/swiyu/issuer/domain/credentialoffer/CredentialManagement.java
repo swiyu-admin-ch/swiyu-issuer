@@ -37,6 +37,7 @@ public class CredentialManagement {
 
     @NotNull
     @Enumerated(EnumType.STRING)
+    @Setter(AccessLevel.NONE) // Kein Lombok-Setter für dieses Feld
     private CredentialStatusManagementType credentialManagementStatus;
 
     /**
@@ -97,10 +98,6 @@ public class CredentialManagement {
         offer.setCredentialManagement(this);
     }
 
-    public void markAsIssued() {
-        this.credentialManagementStatus = CredentialStatusManagementType.ISSUED;
-        log.info("Credential issued for {}. ", this.id);
-    }
 
     public UUID getLastValidLegacyNonce() {
         return this.isPreIssuanceProcess()
@@ -114,5 +111,29 @@ public class CredentialManagement {
                 .map(o -> o.getNonce())
                 .findFirst()
                 .orElseThrow();
+    }
+
+    /**
+     * Sets the status of this credential management entity.
+     * <p>
+     * <b>Intended for use by {@link CredentialStateMachine} only.</b>
+     * Do not use outside the state machine context to ensure correct state transitions.
+     *
+     * @param credentialManagementStatus the new status to set
+     */
+    void setCredentialManagementStatus(CredentialStatusManagementType credentialManagementStatus) {
+        this.credentialManagementStatus = credentialManagementStatus;
+    }
+
+    /**
+     * Sets the status of this credential management entity.
+     * <p>
+     * <b>Intended for test usage only.</b>
+     * Do not use in production code.
+     *
+     * @param credentialManagementStatus the new status to set
+     */
+    public void setCredentialManagementStatusJustForTestUsage(CredentialStatusManagementType credentialManagementStatus) {
+        this.credentialManagementStatus = credentialManagementStatus;
     }
 }

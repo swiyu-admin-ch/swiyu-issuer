@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig.CredentialManagementEvent.ISSUE;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.*;
 import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
 import static java.util.Objects.isNull;
@@ -52,6 +53,7 @@ public class CredentialService {
     private final CredentialManagementRepository credentialManagementRepository;
     private final BusinessIssuerRenewalApiClient renewalApiClient;
     private final CredentialManagementService credentialManagementService;
+    private final CredentialStateMachine credentialStateMachine;
 
     @Deprecated(since = "OID4VCI 1.0")
     @Transactional
@@ -147,8 +149,8 @@ public class CredentialService {
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
-        credentialOffer.markAsIssued();
-        mgmt.markAsIssued();
+        credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
+        credentialStateMachine.sendEventAndUpdateStatus(mgmt, ISSUE);
 
         credentialOfferRepository.save(credentialOffer);
         credentialManagementRepository.save(mgmt);
@@ -181,8 +183,8 @@ public class CredentialService {
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelopeV2();
 
-        credentialOffer.markAsIssued();
-        credentialMgmt.markAsIssued();
+        credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
+        credentialStateMachine.sendEventAndUpdateStatus(credentialMgmt, ISSUE);
 
         credentialOfferRepository.save(credentialOffer);
         credentialManagementRepository.save(credentialMgmt);
@@ -289,10 +291,9 @@ public class CredentialService {
             eventProducerService.produceDeferredEvent(credentialOffer, clientInfo);
         } else {
             responseEnvelope = vcBuilder.buildCredentialEnvelope();
-            credentialOffer.markAsIssued();
+            credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
             credentialOfferRepository.save(credentialOffer);
-
-            mgmt.markAsIssued();
+            credentialStateMachine.sendEventAndUpdateStatus(mgmt, ISSUE);
             credentialManagementRepository.save(mgmt);
             eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
         }
@@ -349,8 +350,8 @@ public class CredentialService {
             eventProducerService.produceDeferredEvent(credentialOffer, clientInfo);
         } else {
             responseEnvelope = vcBuilder.buildCredentialEnvelopeV2();
-            credentialOffer.markAsIssued();
-            mgmt.markAsIssued();
+            credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
+            credentialStateMachine.sendEventAndUpdateStatus(mgmt, ISSUE);
             credentialOfferRepository.save(credentialOffer);
             credentialManagementRepository.save(mgmt);
             eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
@@ -430,3 +431,4 @@ public class CredentialService {
                 .findFirst();
     }
 }
+

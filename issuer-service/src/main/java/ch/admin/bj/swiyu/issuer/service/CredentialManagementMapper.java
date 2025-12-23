@@ -5,12 +5,10 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
-import jakarta.validation.constraints.Null;
 import lombok.experimental.UtilityClass;
 import org.springframework.lang.Nullable;
 
@@ -54,15 +52,27 @@ public class CredentialManagementMapper {
         return CredentialStatusTypeDto.valueOf(credentialStatus.name());
     }
 
-    public static CredentialStatusManagementType toCredentialStatusManagementType(UpdateCredentialStatusRequestTypeDto source) {
+    public static CredentialStateMachineConfig.CredentialManagementEvent toCredentialManagementEvent(UpdateCredentialStatusRequestTypeDto source) {
         if (source == null) {
             return null;
         }
         return switch (source) {
-            case ISSUED -> CredentialStatusManagementType.ISSUED;
-            case SUSPENDED -> CredentialStatusManagementType.SUSPENDED;
-            case REVOKED -> CredentialStatusManagementType.REVOKED;
-            default -> throw new BadRequestException("Unsupported status type for management update: " + source.name());
+            case ISSUED -> CredentialStateMachineConfig.CredentialManagementEvent.ISSUE;
+            case SUSPENDED -> CredentialStateMachineConfig.CredentialManagementEvent.SUSPEND;
+            case REVOKED -> CredentialStateMachineConfig.CredentialManagementEvent.REVOKE;
+            default -> null; // we don't handle READY, CANCELLED at management level
+        };
+    }
+
+    public static CredentialStateMachineConfig.CredentialOfferEvent toCredentialOfferEvent(UpdateCredentialStatusRequestTypeDto source) {
+        if (source == null) {
+            return null;
+        }
+        return switch (source) {
+            case ISSUED -> CredentialStateMachineConfig.CredentialOfferEvent.ISSUE;
+            case READY -> CredentialStateMachineConfig.CredentialOfferEvent.READY;
+            case CANCELLED -> CredentialStateMachineConfig.CredentialOfferEvent.CANCEL;
+            default -> null; // we don't handle SUSPENDED and REVOKED at offer level
         };
     }
 

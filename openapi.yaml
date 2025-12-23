@@ -313,14 +313,14 @@ paths:
             '*/*':
               schema:
                 type: string
-  /management/api/credentials/{credentialId}:
+  /management/api/credentials/{credentialManagementId}:
     get:
       tags:
       - Credential API
       summary: "Get the offer data, if any is still cached"
       operationId: getCredentialInformation
       parameters:
-      - name: credentialId
+      - name: credentialManagementId
         in: path
         required: true
         schema:
@@ -334,7 +334,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/CredentialInfoResponse"
+                $ref: "#/components/schemas/CredentialManagementDto"
     patch:
       tags:
       - Credential API
@@ -343,7 +343,7 @@ paths:
         issuance
       operationId: updateCredentialForDeferredFlow
       parameters:
-      - name: credentialId
+      - name: credentialManagementId
         in: path
         required: true
         schema:
@@ -372,7 +372,7 @@ paths:
             '*/*':
               schema:
                 type: string
-  /management/api/credentials/{credentialId}/status:
+  /management/api/credentials/{credentialManagementId}/status:
     get:
       tags:
       - Credential API
@@ -380,7 +380,7 @@ paths:
         \ already issued."
       operationId: getCredentialStatus
       parameters:
-      - name: credentialId
+      - name: credentialManagementId
         in: path
         required: true
         schema:
@@ -402,7 +402,7 @@ paths:
         with the id.
       operationId: updateCredentialStatus
       parameters:
-      - name: credentialId
+      - name: credentialManagementId
         in: path
         required: true
         schema:
@@ -734,28 +734,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OpenIdConfiguration"
-  /management/api/credentials/{credentialId}/offer_deeplink:
-    get:
-      tags:
-      - Credential API
-      operationId: getCredentialOfferDeeplink
-      parameters:
-      - name: credentialId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: string
-      deprecated: true
   /actuator:
     get:
       tags:
@@ -992,7 +970,9 @@ components:
           type: string
           description: |
             String that uniquely identifies one of the keys in the name/value pairs stored in
-            the credential_configurations_supported Credential Issuer metadata
+            the credential_configurations_supported Credential Issuer metadata.
+            Only used if a credential_identifiers parameter was not returned from the Token Response as part of the authorization_details parameter.
+            It MUST NOT be used otherwise.
           example: university_example_sd_jwt
           minLength: 1
         proofs:
@@ -1164,6 +1144,9 @@ components:
         management_id:
           type: string
           format: uuid
+        offer_id:
+          type: string
+          format: uuid
         offer_deeplink:
           type: string
     CreateCredentialOfferRequest:
@@ -1261,6 +1244,7 @@ components:
             REVOKED - the VC has been revoked. This state is final and can not be changed.
             EXPIRED - the lifetime of the VC expired (not used yet)
       enum:
+      - INIT
       - OFFERED
       - CANCELLED
       - IN_PROGRESS
@@ -1269,6 +1253,7 @@ components:
       - ISSUED
       - SUSPENDED
       - REVOKED
+      - REQUESTED
       - EXPIRED
       example: SUSPENDED
     UpdateStatusResponse:
@@ -1327,6 +1312,16 @@ components:
           pattern: "^[dv]c\\+sd-jwt$"
         vct:
           type: string
+          description: |
+            String designating the type of the Credential, as defined in sd-jwt-vc
+        vct_metadata_uri:
+          type: string
+          description: |
+            Allowing for an indirection if using urn:vct resolver
+        vct_metadata_uri#integrity:
+          type: string
+          description: |
+            Allowing for validating content received from vct_metadata_uri as defined in W3C SRI (Subresource Integrity)
         claims:
           type: object
           additionalProperties:
@@ -1687,6 +1682,24 @@ components:
           $ref: "#/components/schemas/CredentialEndpointRequest"
         offer_deeplink:
           type: string
+    CredentialManagementDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+        renewal_request_count:
+          type: integer
+          format: int32
+        renewal_response_count:
+          type: integer
+          format: int32
+        credential_offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialInfoResponse"
     StatusResponse:
       type: object
       properties:

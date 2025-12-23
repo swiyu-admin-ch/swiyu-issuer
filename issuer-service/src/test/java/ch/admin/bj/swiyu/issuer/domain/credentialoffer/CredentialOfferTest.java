@@ -27,7 +27,7 @@ class CredentialOfferTest {
                 .build();
 
         assertEquals(CredentialOfferStatusType.OFFERED, offer.getCredentialStatus());
-        offer.changeStatus(CredentialOfferStatusType.EXPIRED);
+        offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.EXPIRED);
         assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
     }
 
@@ -72,18 +72,6 @@ class CredentialOfferTest {
                 .build();
         offer.cancel();
         assertEquals(CredentialOfferStatusType.CANCELLED, offer.getCredentialStatus());
-        assertNull(offer.getOfferData());
-    }
-
-    @Test
-    void testMarkAsIssued() {
-        CredentialOffer offer = CredentialOffer.builder()
-                .metadataCredentialSupportedId(List.of("supportedId"))
-                .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialOfferStatusType.OFFERED)
-                .build();
-        offer.markAsIssued();
-        assertEquals(CredentialOfferStatusType.ISSUED, offer.getCredentialStatus());
         assertNull(offer.getOfferData());
     }
 
