@@ -33,6 +33,7 @@ public class StatusRegistryClient {
 
     /**
      * Creates a status list entry for the configured business partner
+     *
      * @return response of the status registry
      */
     public StatusListEntryCreationDto createStatusListEntry() {

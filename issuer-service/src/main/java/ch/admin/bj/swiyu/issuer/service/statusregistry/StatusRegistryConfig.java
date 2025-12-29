@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import java.time.Duration;
@@ -33,6 +34,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class StatusRegistryConfig {
     private final SwiyuProperties swiyuProperties;
+    private final WebClient webClient;
 
     @Bean
     public LockConfiguration statusRegistryTokenApiLockConfiguration() {
