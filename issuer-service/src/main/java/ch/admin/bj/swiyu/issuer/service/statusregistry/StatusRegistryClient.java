@@ -20,8 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.util.retry.Retry;
-import reactor.util.retry.RetrySpec;
 
 /**
  * A service to interact with the status registry from the swiyu ecosystem.
@@ -111,13 +109,5 @@ public class StatusRegistryClient {
             throw new UpdateStatusListException(
                     "Failed to update status list.", e);
         }
-    }
-
-    private RetrySpec getRetryCondition() {
-        return Retry.max(1).doBeforeRetry(
-                        retrySignal -> statusBusinessApi.getApiClient().setBearerToken(statusRegistryTokenDomainService.forceRefreshAccessToken()))
-                .filter(throwable -> throwable.getClass().equals(WebClientResponseException.Unauthorized.class)).onRetryExhaustedThrow(
-                        (retryBackoffSpec, retrySignal) -> new ConfigurationException(
-                                "Failed to create status list. Please check your Swiyu Status API access configuration.", retrySignal.failure()));
     }
 }
