@@ -4,12 +4,9 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -17,15 +14,12 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonParser;
 import com.nimbusds.jose.jwk.ECKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -35,21 +29,23 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Mono;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
 @AutoConfigureMockMvc
@@ -105,7 +101,8 @@ class CredentialManagementStatusIT {
 
         statusListTestHelper = new StatusListTestHelper(mvc, objectMapper);
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(statusListEntry);
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(Mono.just(statusListEntry));
+        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
 
@@ -126,7 +123,7 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names ={"SUSPENDED", "REVOKED", "ISSUED"})
+    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
     void testUpdateWithCorrectValues_thenOk(CredentialStatusTypeDto value) throws Exception {
 
         changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
@@ -134,7 +131,7 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names ={"SUSPENDED", "REVOKED", "ISSUED"})
+    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
     void testUpdateWithSameStatus_thenOk(CredentialStatusTypeDto value) throws Exception {
 
         changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
@@ -144,7 +141,7 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names ={"READY", "CANCELLED"})
+    @EnumSource(value = CredentialStatusTypeDto.class, names = {"READY", "CANCELLED"})
     void testUpdateWithPreIssuanceStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
 
         mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), value)))
@@ -155,7 +152,7 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names ={"SUSPENDED", "REVOKED", "ISSUED"})
+    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
     void testUpdateWithPreIssuanceReadyStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
 
         changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
@@ -168,7 +165,7 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names ={"SUSPENDED", "REVOKED", "ISSUED"})
+    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
     void testUpdateWithPreIssuanceCancelledStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
 
         changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
@@ -181,7 +178,7 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names ={"SUSPENDED", "ISSUED", "REVOKED"})
+    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "ISSUED", "REVOKED"})
     void testUpdateOfferRevocation_thenIsOk(CredentialStatusTypeDto value) throws Exception {
         changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
 

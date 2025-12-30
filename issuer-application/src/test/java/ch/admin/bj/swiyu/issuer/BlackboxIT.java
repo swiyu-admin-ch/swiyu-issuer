@@ -1,8 +1,6 @@
 package ch.admin.bj.swiyu.issuer;
 
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
-import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
@@ -19,7 +17,9 @@ import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
+import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryTokenDomainService;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 import com.nimbusds.jose.*;
@@ -39,21 +39,30 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.mockserver.client.MockServerClient;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mockserver.MockServerContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +84,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class BlackboxIT {
     private static final String CREDENTIAL_MANAGEMENT_BASE_URL = "/management/api/credentials";
+    @Container
+    static MockServerContainer mockServerContainer = new MockServerContainer(
+            DockerImageName.parse("mockserver/mockserver:5.15.0")
+    );
+    static MockServerClient mockServerClient;
     protected StatusListTestHelper statusListTestHelper;
     @Autowired
     protected SwiyuProperties swiyuProperties;
@@ -82,18 +96,26 @@ class BlackboxIT {
     private ObjectMapper objectMapper;
     @Autowired
     private MockMvc mvc;
-    @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
-    @Mock
-    private ApiClient mockApiClient;
+    @Autowired
+    private ObjectMapper mapper;
+    @MockitoSpyBean
+    private StatusRegistryTokenDomainService statusRegistryTokenDomainService;
+
+    @DynamicPropertySource
+    static void overrideProperties(DynamicPropertyRegistry registry) {
+        mockServerClient =
+                new MockServerClient(
+                        mockServerContainer.getHost(),
+                        mockServerContainer.getServerPort()
+                );
+        registry.add("swiyu.status-registry.api-url", mockServerContainer::getEndpoint);
+        registry.add("swiyu.status-registry.token-url", mockServerContainer::getEndpoint);
+    }
 
     @BeforeEach
     void setUp() {
         statusListTestHelper = new StatusListTestHelper(mvc, objectMapper);
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(statusListEntry);
-        when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
-        when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
     }
 
     /**
@@ -101,7 +123,53 @@ class BlackboxIT {
      * For details see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-pre-authorized-code-flow">OID4VCI 1.0 Spec</a>
      */
     @Test
-    void preauthorizedCodeFlow_thenSuccess() {
+    void preauthorizedCodeFlow_thenSuccess() throws JsonProcessingException {
+
+        var statusListEntry = statusListTestHelper.buildStatusListEntry();
+        var statusListEntryString = mapper.writeValueAsString(statusListEntry);
+
+        when(statusRegistryTokenDomainService.getAccessToken()).thenReturn("invalidAccessToken").thenReturn("refreshedAccessToken");
+        when(statusRegistryTokenDomainService.forceRefreshAccessToken()).thenReturn("refreshedAccessToken");
+
+        mockServerClient
+                .when(
+                        new HttpRequest()
+                                .withMethod("POST")
+                                .withHeader("Authorization", "bearer invalidAccessToken")
+                                .withPath("/api/v1/status/business-entities/%s/status-list-entries/".formatted(swiyuProperties.businessPartnerId()))
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withStatusCode(401)
+                );
+
+        mockServerClient
+                .when(
+                        new HttpRequest()
+                                .withMethod("POST")
+                                .withHeader("Authorization", "bearer refreshedAccessToken")
+                                .withPath("/api/v1/status/business-entities/%s/status-list-entries/".formatted(swiyuProperties.businessPartnerId()))
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withStatusCode(200)
+                                .withHeader("Content-Type", "application/json")
+                                .withBody(statusListEntryString)
+                );
+
+        mockServerClient
+                .when(
+                        new HttpRequest()
+                                .withHeader("Authorization", "bearer refreshedAccessToken")
+                                .withMethod("PUT")
+                                .withPath("/api/v1/status/business-entities/%s/status-list-entries/%s".formatted(swiyuProperties.businessPartnerId(), statusListEntry.getId()))
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withStatusCode(200)
+                                .withHeader("Content-Type", "application/json")
+                );
+
         // ---------------------
         // -- Business Issuer --
         // ---------------------
@@ -351,7 +419,6 @@ class BlackboxIT {
                 .distinct()
                 .toList();
         assertThat(holderBindings).hasSize(issuerMetadata.getIssuanceBatchSize());
-
     }
 
     private String createDpop(String nonceEndpoint, String httpMethod, String httpUri, String accessToken, ECKey dpopKey) {

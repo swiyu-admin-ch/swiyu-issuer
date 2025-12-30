@@ -42,6 +42,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Mono;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +51,7 @@ import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.date.DateTimeUtils.ISO8601_FORMAT;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -429,7 +431,8 @@ class CredentialOfferCreateIT {
         final StatusListEntryCreationDto firstStatusListEntry = statusListTestHelper.buildStatusListEntry();
         final StatusListEntryCreationDto secondStatusListEntry = statusListTestHelper.buildStatusListEntry();
 
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(firstStatusListEntry);
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(Mono.just(firstStatusListEntry));
+        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(firstStatusListEntry.getStatusRegistryUrl());
 
@@ -450,7 +453,7 @@ class CredentialOfferCreateIT {
 
         final UUID firstCredentialId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.offer_id"));
 
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(secondStatusListEntry);
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(Mono.just(secondStatusListEntry));
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(secondStatusListEntry.getStatusRegistryUrl());
 
