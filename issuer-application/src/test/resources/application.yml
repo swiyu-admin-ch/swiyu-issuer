@@ -34,7 +34,8 @@ application:
   dpop-enforce: false
   deeplink-schema: swiyu
   token-ttl: 600
-  allow_token_refresh: true
+  allow-token-refresh: true
+  allow-refresh-token-rotation: false
   acceptable-proof-time-window-seconds: 120
   nonce-lifetime-seconds: 120
   openid-file: "classpath:example_openid.json"

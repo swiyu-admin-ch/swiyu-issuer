@@ -115,12 +115,14 @@ application:
   encryption-key-rotation-interval: "PT15M"
   encryption-enforce: false
 
+  # Set dpop to be mandatory. Changing this default may break interoperability with the wallet and/or impact security.
   dpop-enforce: false
 
   template-replacement: # Hash Map of Values replaced in the templating
     external-url: "${EXTERNAL_URL:}" # URL under which this service can be reached from the web
   token-ttl: 600
   allow-token-refresh: "${ALLOW_TOKEN_REFRESH:true}"
+  allow-refresh-token-rotation: "${ALLOW_REFRESH_TOKEN_ROTATION:false}"
   renewal-flow-allowed: "${RENEWAL_FLOW_ENABLED:false}"
   business-issuer-renewal-api-endpoint: "${BUSINESS_ISSUER_RENEWAL_API_ENDPOINT:}"
 
