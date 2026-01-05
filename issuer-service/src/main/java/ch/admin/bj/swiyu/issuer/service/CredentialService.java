@@ -64,7 +64,8 @@ public class CredentialService {
         CredentialRequestClass credentialRequest = toCredentialRequest(credentialRequestDto);
         CredentialManagement mgmt = oAuthService.getCredentialManagementByAccessToken(accessToken);
 
-        var credentialOffer = getFirstOffersInProgressAndCheckIfAnyOfferExpiredAndUpdate(mgmt)
+        checkIfAnyOfferExpiredAndUpdate(mgmt);
+        var credentialOffer = getFirstOffersInProgress(mgmt)
                 .orElseThrow(() -> OAuthException.invalidGrant(
                         "Invalid accessToken"));
 
@@ -79,7 +80,8 @@ public class CredentialService {
         var credentialRequest = toCredentialRequest(credentialRequestDto);
         var mgmt = oAuthService.getCredentialManagementByAccessToken(accessToken);
 
-        var credentialOffer = getFirstOffersInProgressAndCheckIfAnyOfferExpiredAndUpdate(mgmt);
+        checkIfAnyOfferExpiredAndUpdate(mgmt);
+        var credentialOffer = getFirstOffersInProgress(mgmt);
 
         // normal issuance flow
         if (credentialOffer.isPresent()) {
@@ -281,7 +283,8 @@ public class CredentialService {
             var transactionId = UUID.randomUUID();
 
             responseEnvelope = vcBuilder.buildDeferredCredential(transactionId);
-            credentialOffer.markAsDeferred(transactionId,
+            credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.DEFER);
+            credentialOffer.initializeDeferredState(transactionId,
                     credentialRequest,
                     holderPublicKeyJwkList,
                     keyAttestationJwkList,
@@ -340,7 +343,8 @@ public class CredentialService {
                     .toList();
 
             responseEnvelope = vcBuilder.buildDeferredCredentialV2(transactionId);
-            credentialOffer.markAsDeferred(transactionId,
+            credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.DEFER);
+            credentialOffer.initializeDeferredState(transactionId,
                     credentialRequest,
                     holderPublicKeyJwkList,
                     keyAttestationJwkList,
@@ -417,18 +421,22 @@ public class CredentialService {
                 .orElseThrow(() -> new Oid4vcException(INVALID_TRANSACTION_ID, "Invalid transactional id"));
     }
 
-    // todo check & maybe refactor
-    private Optional<CredentialOffer> getFirstOffersInProgressAndCheckIfAnyOfferExpiredAndUpdate(CredentialManagement mgmt) {
+    private Optional<CredentialOffer> getFirstOffersInProgress(CredentialManagement mgmt) {
         return mgmt.getCredentialOffers().stream()
-                .map(offer -> {
-                    if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED && offer.hasExpirationTimeStampPassed()) {
-                        offer.markAsExpired();
-                        return credentialOfferRepository.save(offer);
-                    }
-                    return offer;
-                })
                 .filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
                 .findFirst();
+    }
+
+    private void checkIfAnyOfferExpiredAndUpdate(CredentialManagement mgmt) {
+        mgmt.getCredentialOffers()
+                .forEach(this::terminateExpiredOffer);
+    }
+
+    private void terminateExpiredOffer(CredentialOffer offer) {
+        if (!offer.isTerminatedOffer() && offer.hasExpirationTimeStampPassed()) {
+            credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
+            credentialOfferRepository.save(offer);
+        }
     }
 }
 

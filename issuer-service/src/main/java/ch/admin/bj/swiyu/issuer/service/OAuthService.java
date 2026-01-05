@@ -24,6 +24,7 @@ public class OAuthService {
     private final EventProducerService eventProducerService;
     private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialManagementRepository credentialManagementRepository;
+    private final CredentialStateMachine credentialStateMachine;
 
     /**
      * Issues an OAuth token for a given pre-authorization code created by issuer
@@ -46,7 +47,7 @@ public class OAuthService {
         }
         log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {} and new status is {}",
                 mgmt.getAccessToken(), offer.getId(), offer.getCredentialStatus());
-        offer.markAsInProgress();
+        credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
         OAuthTokenDto oauthTokenResponse = updateOAuthTokens(mgmt);
         eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), offer.getId(), offer.getCredentialStatus());
         return oauthTokenResponse;
@@ -148,7 +149,7 @@ public class OAuthService {
                 .map(offer -> {
                     if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED
                             && offer.hasExpirationTimeStampPassed()) {
-                        offer.markAsExpired();
+                        credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
                         return credentialOfferRepository.save(offer);
                     }
                     return offer;

@@ -73,7 +73,6 @@ class CredentialServiceTest {
     private CredentialStateMachine credentialStateMachine;
 
 
-
     @BeforeEach
     void setUp() {
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
@@ -94,7 +93,7 @@ class CredentialServiceTest {
         EncryptionService encryptionService = Mockito.mock(EncryptionService.class);
         EventProducerService eventProducerService = new EventProducerService(applicationEventPublisher, objectMapper);
 
-        oAuthService = new OAuthService(applicationProperties, eventProducerService, credentialOfferRepository, credentialManagementRepository);
+        oAuthService = new OAuthService(applicationProperties, eventProducerService, credentialOfferRepository, credentialManagementRepository, credentialStateMachine);
 
         credentialService = new CredentialService(
                 credentialOfferRepository,
@@ -578,7 +577,7 @@ class CredentialServiceTest {
 
         credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo, null);
 
-        verify(offer).markAsDeferred(any(), any(), anyList(), anyList(), any(), any());
+        verify(offer).initializeDeferredState(any(), any(), anyList(), anyList(), any(), any());
         verify(credentialOfferRepository).save(offer);
         var stateChangeEvent = new DeferredEvent(offer.getId(), objectMapper.writeValueAsString(clientInfo));
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);

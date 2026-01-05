@@ -281,7 +281,8 @@ public class CredentialManagementService {
         validateCredentialRequestOfferData(offerData, true, credentialConfig);
 
         // update the offer data
-        storedCredentialOffer.markAsReadyForIssuance(offerData);
+        credentialStateMachine.sendEventAndUpdateStatus(storedCredentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.READY);
+        storedCredentialOffer.setOfferData(offerData);
         credentialOfferRepository.save(storedCredentialOffer);
 
         return toUpdateStatusResponseDto(storedCredentialOffer);

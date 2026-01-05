@@ -56,27 +56,9 @@ class CredentialOfferTest {
         assertThrows(BadRequestException.class, () -> CredentialOffer.readOfferData(123));
     }
 
-    @Test
-    void testExpireAndCancel() {
-        CredentialOffer offer = CredentialOffer.builder()
-                .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialOfferStatusType.OFFERED)
-                .build();
-        offer.expire();
-        assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
-        assertNull(offer.getOfferData());
-
-        offer = CredentialOffer.builder()
-                .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialOfferStatusType.OFFERED)
-                .build();
-        offer.cancel();
-        assertEquals(CredentialOfferStatusType.CANCELLED, offer.getCredentialStatus());
-        assertNull(offer.getOfferData());
-    }
 
     @Test
-    void testMarkAsDeferred_withDefaultValue() {
+    void testSetDeferred_Data_withDefaultValue() {
         var transactionId = UUID.randomUUID();
         var credentialRequest = new CredentialRequestClass();
         var holderPublicKeys = List.of("publicKey1", "publicKey2");
@@ -100,8 +82,7 @@ class CredentialOfferTest {
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
-            offer.markAsDeferred(transactionId, credentialRequest, holderPublicKeys, keyAttestationJwts, clientAgentInfo, applicationProperties);
-            assertEquals(CredentialOfferStatusType.DEFERRED, offer.getCredentialStatus());
+            offer.initializeDeferredState(transactionId, credentialRequest, holderPublicKeys, keyAttestationJwts, clientAgentInfo, applicationProperties);
             assertEquals(transactionId, offer.getTransactionId());
             assertEquals(credentialRequest, offer.getCredentialRequest());
             assertEquals(holderPublicKeys, offer.getHolderJWKs());
@@ -112,7 +93,7 @@ class CredentialOfferTest {
     }
 
     @Test
-    void testMarkAsDeferred_withDynamicValue() {
+    void testSetDeferred_Data_withDynamicValue() {
         var transactionId = UUID.randomUUID();
         var credentialRequest = new CredentialRequestClass();
         var holderPublicKeys = List.of("publicKey1", "publicKey2");
@@ -136,7 +117,7 @@ class CredentialOfferTest {
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
-            offer.markAsDeferred(transactionId, credentialRequest, holderPublicKeys, keyAttestationJwts, clientAgentInfo, applicationProperties);
+            offer.initializeDeferredState(transactionId, credentialRequest, holderPublicKeys, keyAttestationJwts, clientAgentInfo, applicationProperties);
             assertEquals(Instant.now().plusSeconds(10L).getEpochSecond(), offer.getOfferExpirationTimestamp());
         }
     }

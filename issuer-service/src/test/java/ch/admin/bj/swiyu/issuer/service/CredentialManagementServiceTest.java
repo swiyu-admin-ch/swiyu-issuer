@@ -605,7 +605,6 @@ class CredentialManagementServiceTest {
 
         verify(credentialManagementRepository).findById(mgmtId);
         verify(credentialManagementRepository).save(mgmt);
-        verify(credentialOffer).markAsReadyForIssuance(any());
         verify(credentialOfferRepository).save(credentialOffer);
         assertNotNull(response);
     }
