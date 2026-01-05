@@ -16,6 +16,8 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
@@ -26,10 +28,8 @@ import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -78,6 +78,8 @@ class BlackboxIT {
     protected StatusListTestHelper statusListTestHelper;
     @Autowired
     protected SwiyuProperties swiyuProperties;
+    @Autowired
+    private SdjwtProperties sdjwtProperties;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -184,23 +186,36 @@ class BlackboxIT {
         var baseIssuerUri = issuerUri.toString()
                 .replace(issuerUri.getPath(), "");
 
+        var issuerUriPath = assertDoesNotThrow(() -> new URI(parsedOffer.get("credential_issuer").toString()).getPath());
+
         // Next the wallet wants to fetch the well-known endpoints
         var openidConfigResponse = assertDoesNotThrow(() -> mvc.perform(get(
-                        "/oid4vci/.well-known/oauth-authorization-server"))
+                        "%s/.well-known/oauth-authorization-server".formatted(issuerUriPath))
+                        .accept("application/jwt"))
                 .andExpect(status().isOk())
                 .andReturn());
-        var oauthConfig = assertDoesNotThrow(() -> objectMapper.readValue(openidConfigResponse.getResponse()
-                        .getContentAsString(),
+
+        //
+        var issuerPublicKey = assertDoesNotThrow(() -> JWK.parseFromPEMEncodedObjects(sdjwtProperties.getPrivateKey()).toECKey().toECPublicKey());
+        var issuerSignatureVerifier = assertDoesNotThrow(() -> new ECDSAVerifier(issuerPublicKey));
+        var oauthConfigJwt = assertDoesNotThrow(() -> SignedJWT.parse(openidConfigResponse.getResponse()
+                .getContentAsString()), "Well Known data should be a parsable JWT");
+        assertDoesNotThrow(() -> oauthConfigJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
+        var oauthConfig = assertDoesNotThrow(() -> objectMapper.readValue(oauthConfigJwt.getPayload().toString(),
                 OpenIdConfigurationDto.class));
         assertThat(oauthConfig.issuer()).isEqualTo(baseIssuerUri);
 
         var issuerMetadataResponse = assertDoesNotThrow(() -> mvc.perform(get(
-                        "/oid4vci/.well-known/openid-credential-issuer"))
+                        "%s/.well-known/openid-credential-issuer".formatted(issuerUriPath))
+                        .accept("application/jwt"))
                 .andExpect(status().isOk())
                 .andReturn());
 
-        var issuerMetadata = assertDoesNotThrow(() -> objectMapper.readValue(issuerMetadataResponse.getResponse()
-                        .getContentAsString(),
+        var issuerMetadataJwt = assertDoesNotThrow(() -> SignedJWT.parse(issuerMetadataResponse.getResponse()
+                .getContentAsString()), "Well Known data should be a parsable JWT");
+        assertDoesNotThrow(() -> issuerMetadataJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
+
+        var issuerMetadata = assertDoesNotThrow(() -> objectMapper.readValue(issuerMetadataJwt.getPayload().toString(),
                 IssuerMetadata.class));
 
         assertThat(issuerMetadata.getCredentialConfigurationSupported()
@@ -209,7 +224,6 @@ class BlackboxIT {
                 .containsAll(offeredCredentialIds);
         assertThat(issuerMetadata.getCredentialIssuer()).isEqualTo(baseIssuerUri);
 
-        // TODO EIDOMNI-200 validate metadata signature
 
         // Fetch the bearer token
 
