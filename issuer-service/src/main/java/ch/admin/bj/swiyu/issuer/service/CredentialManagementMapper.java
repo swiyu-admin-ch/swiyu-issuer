@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig;
@@ -36,20 +37,17 @@ public class CredentialManagementMapper {
     }
 
     public static CredentialStatusTypeDto toCredentialStatusTypeDto(CredentialManagement credentialManagement) {
-        if (credentialManagement.getCredentialManagementStatus() != CredentialStatusManagementType.INIT) {
-            return CredentialStatusTypeDto.valueOf(credentialManagement.getCredentialManagementStatus().name());
+        var status = credentialManagement.getCredentialManagementStatus();
+        if (status == null) {
+            throw new BadRequestException("Credential management status is null for credential management id: "
+                    + credentialManagement.getId());
         }
-
-        var credentialStatus = credentialManagement.getCredentialOffers().stream()
-                .findFirst()
-                .map(CredentialOffer::getCredentialStatus)
-                .orElse(null);
-
-        if (isNull(credentialStatus)) {
-            return null;
+        if (status == CredentialStatusManagementType.INIT) {
+            var offer = credentialManagement.getCredentialOffers().stream().findFirst();
+            var credentialStatus = offer.map(CredentialOffer::getCredentialStatus).orElse(null);
+            return credentialStatus != null ? CredentialStatusTypeDto.valueOf(credentialStatus.name()) : null;
         }
-
-        return CredentialStatusTypeDto.valueOf(credentialStatus.name());
+        return CredentialStatusTypeDto.valueOf(status.name());
     }
 
     public static CredentialStateMachineConfig.CredentialManagementEvent toCredentialManagementEvent(UpdateCredentialStatusRequestTypeDto source) {
@@ -77,7 +75,7 @@ public class CredentialManagementMapper {
     }
 
     public static UpdateStatusResponseDto toUpdateStatusResponseDto(CredentialManagement mgmt, @Nullable List<UUID> statusLists) {
-        var responseDto =  UpdateStatusResponseDto.builder()
+        var responseDto = UpdateStatusResponseDto.builder()
                 .id(mgmt.getId())
                 .credentialStatus(toCredentialStatusTypeDto(mgmt))
                 .build();

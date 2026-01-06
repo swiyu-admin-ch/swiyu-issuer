@@ -17,6 +17,11 @@ import java.util.EnumSet;
 public class CredentialStateMachineConfig {
 
     private static final String INVALIDATE_OFFER_DATA = "invalidateOfferData";
+    public static final String CREDENTIAL_OFFER_HEADER = "credential_offer";
+    public static final String CREDENTIAL_MANAGEMENT_HEADER = "credential_management";
+    public static final String OFFER_REPOSITORY_HEADER = "offer_repository";
+    public static final String MANAGEMENT_REPOSITORY_HEADER = "management_repository";
+    public static final String EVENT_PUBLISHER_HEADER = "event_publisher";
 
     public enum CredentialManagementEvent {
         ISSUE,
@@ -99,8 +104,6 @@ public class CredentialStateMachineConfig {
         }
 
     }
-
-    public static final String CREDENTIAL_OFFER_HEADER = "credential_offer";
 
     public static Action<CredentialOfferStatusType, CredentialOfferEvent> invalidateOfferDataAction() {
         return context -> {
