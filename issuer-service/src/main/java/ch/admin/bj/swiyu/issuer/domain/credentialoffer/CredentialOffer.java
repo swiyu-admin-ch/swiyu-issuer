@@ -230,8 +230,8 @@ public class CredentialOffer {
     public void markAsIssued() {
         this.invalidateOfferData();
         this.credentialStatus = CredentialOfferStatusType.ISSUED;
-        log.info("Credential issued for offer {}. Management-ID is {}. ",
-                this.metadataCredentialSupportedId, this.id);
+        log.info("Credential issued for offer {}. Management ID is {} and offer ID is {}. ",
+                this.getMetadataCredentialSupportedId(), this.getCredentialManagement().getId(), this.getId());
     }
 
     public void markAsInProgress() {
@@ -241,7 +241,8 @@ public class CredentialOffer {
     public void markAsExpired() {
         this.credentialStatus = CredentialOfferStatusType.EXPIRED;
         this.invalidateOfferData();
-        log.info("Credential expired for offer {}. Management-ID is {}.", this.metadataCredentialSupportedId, this.id);
+        log.info("Credential expired for offer {}. Management ID is {} and offer ID is {}.",
+                this.getMetadataCredentialSupportedId(), this.getCredentialManagement().getId(), this.getId());
     }
 
     public void markAsDeferred(UUID transactionId,
@@ -265,15 +266,15 @@ public class CredentialOffer {
         // update expiration for deferred flow
         this.offerExpirationTimestamp = expiration.getEpochSecond();
 
-        log.info("Deferred credential response for offer {}. Management-ID is {} and status is {}. ",
-                this.metadataCredentialSupportedId, this.id, this.credentialStatus);
+        log.info("Deferred credential response for offer {}. Management ID is {}, offer ID is {} and status is {}. ",
+                this.getMetadataCredentialSupportedId(), this.getCredentialManagement().getId(), this.getId(), this.getCredentialStatus());
     }
 
     public void markAsReadyForIssuance(Map<String, Object> offerData) {
         this.credentialStatus = CredentialOfferStatusType.READY;
         this.setOfferData(offerData);
-        log.info("Deferred Credential ready for issuance for offer {}. Management-ID is {} and status is {}. ",
-                this.metadataCredentialSupportedId, this.id, this.credentialStatus);
+        log.info("Deferred Credential ready for issuance for offer {}. Management ID is {}, offer ID is {} and status is {}. ",
+                this.getMetadataCredentialSupportedId(), this.getCredentialManagement().getId(), this.getId(), this.getCredentialStatus());
     }
 
     public boolean isDeferredOffer() {
