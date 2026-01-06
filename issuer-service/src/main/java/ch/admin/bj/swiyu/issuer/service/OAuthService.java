@@ -90,7 +90,7 @@ public class OAuthService {
 
     /**
      * Retrieve a non-revoked CredentialManagement by its refresh token.
-     *
+     * <p>
      * Validates that the provided refresh token is a UUID, looks up the
      * corresponding CredentialManagement and ensures it is not in the
      * \`REVOKED\` state.
@@ -123,10 +123,15 @@ public class OAuthService {
                 .cNonce(String.valueOf(nonce))
                 .expiresIn(applicationProperties.getTokenTTL());
 
+
         if (applicationProperties.isAllowTokenRefresh()) {
-            var newRefreshToken = UUID.randomUUID();
-            mgmt.setRefreshToken(newRefreshToken);
-            oauthTokenResponseBuilder.refreshToken(newRefreshToken.toString());
+            if (mgmt.getRefreshToken() == null || applicationProperties.isAllowRefreshTokenRotation()) {
+                var newRefreshToken = UUID.randomUUID();
+                mgmt.setRefreshToken(newRefreshToken);
+                oauthTokenResponseBuilder.refreshToken(newRefreshToken.toString());
+            } else {
+                oauthTokenResponseBuilder.refreshToken(mgmt.getRefreshToken().toString());
+            }
         }
         credentialManagementRepository.save(mgmt);
         return oauthTokenResponseBuilder.build();

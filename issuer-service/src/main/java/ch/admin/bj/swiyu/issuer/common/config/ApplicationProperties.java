@@ -91,8 +91,16 @@ public class ApplicationProperties {
     @NotNull
     private long tokenTTL;
 
+    /**
+     * Flag Indicating if refresh tokens are used
+     */
     @NotNull
     private boolean allowTokenRefresh;
+    /**
+     * Flag indicating if refresh tokens are changed after use
+     */
+    @NotNull
+    private boolean allowRefreshTokenRotation;
 
     @NotNull
     private boolean renewalFlowAllowed;

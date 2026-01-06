@@ -56,6 +56,7 @@ import static ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto.INVALID_GRANT;
 import static ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto.INVALID_REQUEST;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -565,9 +566,10 @@ class IssuanceControllerIT {
                 .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
                 .andExpect(jsonPath("$.token_type").value("BEARER"))
                 .andReturn();
+        assertThat(applicationProperties.isAllowRefreshTokenRotation()).as("This tests expects refresh token rotation to be disabled").isFalse();
         var newToken = assertDoesNotThrow(() -> objectMapper.readValue(refreshResponse.getResponse().getContentAsString(), OAuthTokenDto.class));
-        assertNotEquals(tokenResponse.get("access_token").toString(), newToken.getAccessToken());
-        assertNotEquals(refreshToken.toString(), newToken.getRefreshToken());
+        assertThat(newToken.getAccessToken()).as("refreshing the oauth access token should yield a new token").isNotEqualTo(tokenResponse.get("access_token").toString());
+        assertThat(newToken.getRefreshToken()).as("refresh token rotation is disabled, the refresh token should remain the same").isEqualTo(refreshToken.toString());
     }
 
     private void addOverride(UUID preAuthCode, ConfigurationOverride override) {
