@@ -128,7 +128,7 @@ class WebhookIT {
         triggerCallBackProcess(1); // We received a message, but responded with 500
         triggerCallBackProcess(1); // We received a message, now responded with 200
         // test if error is logged
-        assertThat(output.getAll()).contains("Internal Server Error: [no body]");
+        assertThat(output.getAll()).contains("500 Internal Server Error from POST http://localhost:");
     }
 
     /**

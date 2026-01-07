@@ -43,6 +43,7 @@ import java.time.Instant;
 import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.CREDENTIAL_REQUEST_DENIED;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialManagement;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialOffer;
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
@@ -144,6 +145,7 @@ class CredentialServiceTest {
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .credentialOffers(Set.of(offer))
                 .build();
+        offer.setCredentialManagement(mgmt);
 
         when(credentialManagementRepository.findByAccessToken(uuid)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -166,7 +168,9 @@ class CredentialServiceTest {
     void givenExpiredOffer_whenTokenIsCreated_throwsOAuthException() {
         var uuid = UUID.randomUUID();
         var expirationTimeStamp = Instant.now().minusSeconds(10).getEpochSecond();
+        var mgmt = getCredentialManagement(CredentialStatusManagementType.INIT, UUID.randomUUID());
         var offer = getCredentialOffer(CredentialOfferStatusType.OFFERED, expirationTimeStamp, offerData, uuid, uuid, UUID.randomUUID(), null, null);
+        offer.setCredentialManagement(mgmt);
 
         when(credentialOfferRepository.findByPreAuthorizedCode(uuid)).thenReturn(Optional.of(offer));
 

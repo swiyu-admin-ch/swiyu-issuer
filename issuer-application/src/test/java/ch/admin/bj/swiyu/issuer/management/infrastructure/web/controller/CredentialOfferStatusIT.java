@@ -37,6 +37,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Mono;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -46,7 +47,7 @@ import java.util.stream.IntStream;
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -96,7 +97,8 @@ class CredentialOfferStatusIT {
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
-                .thenReturn(statusListEntryCreationDto);
+                .thenReturn(Mono.just(statusListEntryCreationDto));
+        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
 
@@ -125,7 +127,7 @@ class CredentialOfferStatusIT {
     @ParameterizedTest
     @ValueSource(strings = {"READY", "CANCELLED"})
     void testUpdateWithSameStatus_thenOk(String value) throws Exception {
-        var managementId = testHelper.createStatusListLinkedOfferAndGetUUID();
+        managementId = testHelper.createStatusListLinkedOfferAndGetUUID();
 
         var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
         var offerId = mgmt.getCredentialOffers().stream()
@@ -198,7 +200,7 @@ class CredentialOfferStatusIT {
         var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
 
         // set to issued
-        requestCredentialV2(mvc, (String) token, credentialRequestString)
+        requestCredentialV2(mvc, token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
@@ -259,7 +261,7 @@ class CredentialOfferStatusIT {
         @Test
         void testUpdateOfferStatusWithOfferedWhenInProgress_thenBadRequest() throws Exception {
             var originalState = CredentialStatusTypeDto.IN_PROGRESS.toString();
-            var managementId = testHelper.createBasicOfferJsonAndGetUUID();
+            managementId = testHelper.createBasicOfferJsonAndGetUUID();
 
             var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
             mgmt.getCredentialOffers().stream().findFirst().ifPresent(offer -> {
@@ -281,7 +283,7 @@ class CredentialOfferStatusIT {
         void testUpdateOfferWithIssuedWhenPreIssued_thenBadRequest(String originalState) throws Exception {
 
             var newValue = CredentialStatusTypeDto.ISSUED;
-            var managementId = testHelper.createBasicOfferJsonAndGetUUID();
+            managementId = testHelper.createBasicOfferJsonAndGetUUID();
             var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
             mgmt.getCredentialOffers().stream().findFirst().ifPresent(offer -> {
                 offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.valueOf(originalState));

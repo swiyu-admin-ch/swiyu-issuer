@@ -230,8 +230,8 @@ public class CredentialOffer {
         // update expiration for deferred flow
         this.offerExpirationTimestamp = expiration.getEpochSecond();
 
-        log.info("Deferred credential response for offer {}. Management-ID is {} and status is {}. ",
-                this.metadataCredentialSupportedId, this.id, this.credentialStatus);
+        log.info("Deferred credential response for offer {}. Management ID is {}, offer ID is {} and status is {}. ",
+                this.getMetadataCredentialSupportedId(), this.getCredentialManagement().getId(), this.getId(), this.getCredentialStatus());
     }
 
     public boolean isDeferredOffer() {
