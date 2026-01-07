@@ -23,27 +23,32 @@ public class PlantUmlExporter<S, E> {
 
     private void appendTransitions(StringBuilder sb, StateMachine<S, E> stateMachine) {
         for (Transition<S, E> transition : stateMachine.getTransitions()) {
-            if (transition.getSource() != null && transition.getTarget() != null) {
-                String sourceId = String.valueOf(transition.getSource().getId());
-                String targetId = String.valueOf(transition.getTarget().getId());
-                String from = "INIT".equals(sourceId) ? "[*]" : sourceId;
-                String to = "INIT".equals(targetId) ? "[*]" : targetId;
-                sb.append(from)
-                  .append(" --> ")
-                  .append(to);
-                String label = getTransitionLabel(transition);
-                if (!label.isEmpty()) {
-                    sb.append(" : ").append(label);
-                }
-                String transitionNameAnnotation = getTransitionNameAnnotation(transition);
-                    if (!transitionNameAnnotation.isEmpty()) {
-                    sb.append("\\n").append(transitionNameAnnotation);
-                }
-                sb.append('\n');
-            }
+            appendTransaction(sb, transition);
         }
     }
 
+    private void appendTransaction(StringBuilder sb, Transition<S, E> transition) {
+        if (transition.getSource() != null && transition.getTarget() != null) {
+            String sourceId = String.valueOf(transition.getSource().getId());
+            String targetId = String.valueOf(transition.getTarget().getId());
+            String from = "INIT".equals(sourceId) ? "[*]" : sourceId;
+            String to = "INIT".equals(targetId) ? "[*]" : targetId;
+            sb.append(from)
+                    .append(" --> ")
+                    .append(to);
+            String label = getTransitionLabel(transition);
+            if (!label.isEmpty()) {
+                sb.append(" : ").append(label);
+            }
+            String transitionNameAnnotation = getTransitionNameAnnotation(transition);
+            if (!transitionNameAnnotation.isEmpty()) {
+                sb.append("\\n").append(transitionNameAnnotation);
+            }
+            sb.append('\n');
+        }
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private String getTransitionLabel(Transition<S, E> transition) {
         if (transition.getTrigger() != null && transition.getTrigger().getEvent() != null) {
             Object event = transition.getTrigger().getEvent();

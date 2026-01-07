@@ -47,6 +47,7 @@ public class CredentialStateMachineConfig {
     }
 
     @Bean
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public StateMachine<CredentialStatusManagementType, CredentialManagementEvent> credentialManagementStateMachine() {
         StateMachineBuilder.Builder<CredentialStatusManagementType, CredentialManagementEvent> builder = StateMachineBuilder.builder();
 
@@ -129,6 +130,7 @@ public class CredentialStateMachineConfig {
     }
 
     @Bean
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public StateMachine<CredentialOfferStatusType, CredentialOfferEvent> credentialOfferStateMachine() {
         StateMachineBuilder.Builder<CredentialOfferStatusType, CredentialOfferEvent> builder = StateMachineBuilder.builder();
 
