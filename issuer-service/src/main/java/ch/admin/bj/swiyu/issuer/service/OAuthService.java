@@ -44,8 +44,8 @@ public class OAuthService {
                     offer.getCredentialStatus());
             throw OAuthException.invalidGrant("Credential has already been used");
         }
-        log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {} and new status is {}",
-                mgmt.getAccessToken(), offer.getId(), offer.getCredentialStatus());
+        log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {}, offer ID is {} and new status is {}",
+                mgmt.getAccessToken(), mgmt.getId(), offer.getId(), offer.getCredentialStatus());
         offer.markAsInProgress();
         OAuthTokenDto oauthTokenResponse = updateOAuthTokens(mgmt);
         eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), offer.getId(), offer.getCredentialStatus());

@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -62,6 +63,13 @@ class CredentialOfferTest {
                 .offerData(Map.of("data", "test"))
                 .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .build();
+        CredentialManagement mgmt = CredentialManagement.builder()
+                .accessToken(UUID.randomUUID())
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .credentialOffers(Set.of(offer))
+                .build();
+        offer.setCredentialManagement(mgmt);
+
         offer.expire();
         assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
         assertNull(offer.getOfferData());
@@ -82,6 +90,13 @@ class CredentialOfferTest {
                 .offerData(Map.of("data", "test"))
                 .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .build();
+        CredentialManagement mgmt = CredentialManagement.builder()
+                .accessToken(UUID.randomUUID())
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .credentialOffers(Set.of(offer))
+                .build();
+        offer.setCredentialManagement(mgmt);
+
         offer.markAsIssued();
         assertEquals(CredentialOfferStatusType.ISSUED, offer.getCredentialStatus());
         assertNull(offer.getOfferData());
@@ -104,6 +119,14 @@ class CredentialOfferTest {
                 .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .deferredOfferValiditySeconds(null)
                 .build();
+
+        CredentialManagement mgmt = CredentialManagement.builder()
+                .accessToken(UUID.randomUUID())
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .credentialOffers(Set.of(offer))
+                .build();
+
+        offer.setCredentialManagement(mgmt);
 
         String instantExpected = "2025-01-01T00:00:00.00Z";
         Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
@@ -140,6 +163,14 @@ class CredentialOfferTest {
                 .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .deferredOfferValiditySeconds(10)
                 .build();
+
+        CredentialManagement mgmt = CredentialManagement.builder()
+                .accessToken(UUID.randomUUID())
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .credentialOffers(Set.of(offer))
+                .build();
+
+        offer.setCredentialManagement(mgmt);
 
         String instantExpected = "2025-01-01T00:00:00Z";
         Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
