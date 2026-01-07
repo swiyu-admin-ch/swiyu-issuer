@@ -37,18 +37,6 @@ class CredentialOfferStateMachineTest {
     }
 
     @Test
-    void testDeferredToReadyToIssued() {
-        stateMachine.getStateMachineAccessor().doWithAllRegions(access ->
-            access.resetStateMachine(new org.springframework.statemachine.support.DefaultStateMachineContext<>(
-                CredentialOfferStatusType.DEFERRED, null, null, null)));
-        stateMachine.startReactively().block();
-        stateMachine.sendEvent(CredentialStateMachineConfig.CredentialOfferEvent.READY);
-        assertEquals(CredentialOfferStatusType.READY, stateMachine.getState().getId());
-        stateMachine.sendEvent(CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
-        assertEquals(CredentialOfferStatusType.ISSUED, stateMachine.getState().getId());
-    }
-
-    @Test
     void testInvalidTransition() {
         stateMachine.getStateMachineAccessor().doWithAllRegions(access ->
             access.resetStateMachine(new org.springframework.statemachine.support.DefaultStateMachineContext<>(

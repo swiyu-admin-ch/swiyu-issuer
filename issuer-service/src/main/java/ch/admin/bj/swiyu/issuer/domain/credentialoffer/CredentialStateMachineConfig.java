@@ -9,6 +9,7 @@ import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.StateMachineBuilder;
+import org.springframework.statemachine.guard.Guard;
 
 import java.util.EnumSet;
 
@@ -16,12 +17,9 @@ import java.util.EnumSet;
 @Slf4j
 public class CredentialStateMachineConfig {
 
-    private static final String INVALIDATE_OFFER_DATA = "invalidateOfferData";
+    private static final String INVALIDATE_OFFER_DATA = "invalidateOfferData()";
     public static final String CREDENTIAL_OFFER_HEADER = "credential_offer";
     public static final String CREDENTIAL_MANAGEMENT_HEADER = "credential_management";
-    public static final String OFFER_REPOSITORY_HEADER = "offer_repository";
-    public static final String MANAGEMENT_REPOSITORY_HEADER = "management_repository";
-    public static final String EVENT_PUBLISHER_HEADER = "event_publisher";
 
     public enum CredentialManagementEvent {
         ISSUE,
@@ -117,6 +115,19 @@ public class CredentialStateMachineConfig {
         };
     }
 
+    private static Guard<CredentialOfferStatusType, CredentialOfferEvent> deferredOfferOnlyGuard() {
+        return context -> {
+            Message<CredentialOfferEvent> message = context.getMessage();
+            if (message != null && message.getHeaders().containsKey(CREDENTIAL_OFFER_HEADER)) {
+                Object offerObj = message.getHeaders().get(CREDENTIAL_OFFER_HEADER);
+                if (offerObj instanceof CredentialOffer offer) {
+                    return offer.isDeferredOffer();
+                }
+            }
+            return false;
+        };
+    }
+
     @Bean
     public StateMachine<CredentialOfferStatusType, CredentialOfferEvent> credentialOfferStateMachine() {
         StateMachineBuilder.Builder<CredentialOfferStatusType, CredentialOfferEvent> builder = StateMachineBuilder.builder();
@@ -132,10 +143,12 @@ public class CredentialStateMachineConfig {
                     .withExternal()
                     .source(CredentialOfferStatusType.INIT).target(CredentialOfferStatusType.OFFERED)
                     .event(CredentialOfferEvent.CREATED)
+                    .name(addNote("Only for initial\n requests\nnot renewal"))
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.INIT).target(CredentialOfferStatusType.REQUESTED)
                     .event(CredentialOfferEvent.CREATED)
+                    .name(addNote("Only for renewal\n requests"))
                     .and()
 
                     // Renewal transitions
@@ -155,18 +168,19 @@ public class CredentialStateMachineConfig {
                     // OFFERED transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.OFFERED).target(CredentialOfferStatusType.CANCELLED)
-                    .event(CredentialOfferEvent.CANCEL) // Process can be cancelled as long as the vc is not ISSUED
+                    .event(CredentialOfferEvent.CANCEL)
+                    .name(addNote("Process can be\ncancelled as long\nas the vc is not ISSUED"))
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.OFFERED).target(CredentialOfferStatusType.EXPIRED)
                     .event(CredentialOfferEvent.EXPIRE)
-                    .action(invalidateOfferDataAction()).name(INVALIDATE_OFFER_DATA)
+                    .action(invalidateOfferDataAction())
+                    .name(INVALIDATE_OFFER_DATA)
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.OFFERED).target(CredentialOfferStatusType.IN_PROGRESS)
                     .event(CredentialOfferEvent.CLAIM)
                     .and()
-
 
                     // IN_PROGRESS transitions
                     .withExternal()
@@ -182,16 +196,20 @@ public class CredentialStateMachineConfig {
                     .source(CredentialOfferStatusType.IN_PROGRESS).target(CredentialOfferStatusType.ISSUED)
                     .event(CredentialOfferEvent.ISSUE)
                     .action(invalidateOfferDataAction()).name(INVALIDATE_OFFER_DATA)
+                    .name(addNote("only no deferred"))
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.IN_PROGRESS).target(CredentialOfferStatusType.CANCELLED)
                     .event(CredentialOfferEvent.CANCEL)
                     .action(invalidateOfferDataAction()).name(INVALIDATE_OFFER_DATA)
                     .and()
+
                     // DEFERRED transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.DEFERRED).target(CredentialOfferStatusType.READY)
                     .event(CredentialOfferEvent.READY)
+                    .guard(deferredOfferOnlyGuard())
+                    .name("[isDeferredOffer]" + addNote("Guard to allow\nREADY transition\nonly for deferred offers"))
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.DEFERRED).target(CredentialOfferStatusType.EXPIRED)
@@ -203,6 +221,7 @@ public class CredentialStateMachineConfig {
                     .event(CredentialOfferEvent.CANCEL)
                     .action(invalidateOfferDataAction()).name(INVALIDATE_OFFER_DATA)
                     .and()
+
                     // READY transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.READY).target(CredentialOfferStatusType.ISSUED)
@@ -222,11 +241,13 @@ public class CredentialStateMachineConfig {
                     .source(CredentialOfferStatusType.READY).target(CredentialOfferStatusType.READY)
                     .event(CredentialOfferEvent.READY)
                     .and()
+
                     // ISSUED transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.ISSUED).target(CredentialOfferStatusType.ISSUED)
                     .event(CredentialOfferEvent.ISSUE)
                     .and()
+
                     // CANCELLED transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.CANCELLED).target(CredentialOfferStatusType.CANCELLED)
@@ -242,5 +263,11 @@ public class CredentialStateMachineConfig {
             log.error("Error building CredentialManagement State Machine", e);
             throw new ConfigurationException("Error building CredentialManagement State Machine", e);
         }
+    }
+
+    private String addNote(String s) {
+        return "\nnote on link\n" +
+                s + "\n" +
+                "end note\n";
     }
 }

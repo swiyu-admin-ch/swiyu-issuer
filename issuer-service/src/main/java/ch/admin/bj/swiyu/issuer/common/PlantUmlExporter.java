@@ -35,9 +35,9 @@ public class PlantUmlExporter<S, E> {
                 if (!label.isEmpty()) {
                     sb.append(" : ").append(label);
                 }
-                String actionName = getTransitionNameAnnotation(transition);
-                if (!actionName.isEmpty()) {
-                    sb.append("\\n[").append(actionName).append(']');
+                String transitionNameAnnotation = getTransitionNameAnnotation(transition);
+                    if (!transitionNameAnnotation.isEmpty()) {
+                    sb.append("\\n").append(transitionNameAnnotation);
                 }
                 sb.append('\n');
             }
@@ -57,7 +57,7 @@ public class PlantUmlExporter<S, E> {
     }
 
     private String getTransitionNameAnnotation(Transition<S, E> transition) {
-        if (transition.getActions() != null && !transition.getActions().isEmpty()) {
+        if (transition.getName() != null) {
             return transition.getName();
         }
         return "";
