@@ -45,6 +45,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -97,7 +98,8 @@ class StatusListIT {
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
-                .thenReturn(statusListEntryCreationDto);
+                .thenReturn(Mono.just(statusListEntryCreationDto));
+        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
 

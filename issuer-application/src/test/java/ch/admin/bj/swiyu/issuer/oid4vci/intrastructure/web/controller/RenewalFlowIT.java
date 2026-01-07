@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
+import org.mockserver.client.MockServerClient;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,17 +42,19 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mockserver.MockServerContainer;
-import org.mockserver.client.MockServerClient;
 import org.testcontainers.utility.DockerImageName;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -67,6 +70,25 @@ class RenewalFlowIT {
     );
 
     static MockServerClient mockServerClient;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    ObjectMapper objectMapper;
+    @MockitoSpyBean
+    ApplicationProperties applicationProperties;
+    @Autowired
+    IssuerMetadata issuerMetadata;
+    @Autowired
+    SwiyuProperties swiyuProperties;
+    @MockitoBean
+    private StatusBusinessApiApi statusBusinessApi;
+    @Mock
+    private ApiClient mockApiClient;
+    private JsonObject credentialManagement;
+    private StatusListTestHelper statusListTestHelper;
+    private String payload;
+    private OAuthTokenDto oauthTokenResponse;
+    private ECKey dpopKey;
 
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
@@ -78,44 +100,14 @@ class RenewalFlowIT {
         registry.add("application.business-issuer-renewal-api-endpoint", mockServerContainer::getEndpoint);
     }
 
-    @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
-
-    @Autowired
-    MockMvc mockMvc;
-
-    @Autowired
-    ObjectMapper objectMapper;
-
-    @MockitoSpyBean
-    ApplicationProperties applicationProperties;
-
-    @Autowired
-    IssuerMetadata issuerMetadata;
-
-    @Autowired
-    SwiyuProperties swiyuProperties;
-
-    @Mock
-    private ApiClient mockApiClient;
-
-    private JsonObject credentialManagement;
-
-    private StatusListTestHelper statusListTestHelper;
-
-    private String payload;
-
-    private OAuthTokenDto oauthTokenResponse;
-
-    private ECKey dpopKey;
-
     @BeforeEach
     void setUp() throws Exception {
         mockServerClient.reset();
 
         statusListTestHelper = new StatusListTestHelper(mockMvc, objectMapper);
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(statusListEntry);
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(Mono.just(statusListEntry));
+        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
 
@@ -278,7 +270,7 @@ class RenewalFlowIT {
         var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, (String) oauthTokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
+        requestCredentialV2WithDpop(mockMvc, oauthTokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();

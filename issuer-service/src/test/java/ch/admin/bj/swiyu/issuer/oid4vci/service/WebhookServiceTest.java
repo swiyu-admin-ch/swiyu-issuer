@@ -6,16 +6,15 @@ import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
-import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProducer;
 import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProcessor;
+import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProducer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Instant;
 import java.util.List;
@@ -33,13 +32,15 @@ class WebhookServiceTest {
     @Mock
     private CallbackEventRepository callbackEventRepository;
     @Mock
-    private RestClient restClient;
+    private WebClient webClient;
     @Mock
-    private RestClient.RequestBodyUriSpec requestBodyUriSpec;
+    private WebClient.RequestBodyUriSpec requestBodyUriSpec;
     @Mock
-    private RestClient.RequestBodySpec requestBodySpec;
+    private WebClient.RequestBodySpec requestBodySpec;
     @Mock
-    private RestClient.ResponseSpec responseSpec;
+    private WebClient.ResponseSpec responseSpec;
+    @Mock
+    private WebClient.RequestHeadersSpec requestHeaderSpec;
 
     @InjectMocks
     private WebhookEventProducer webhookEventProducer;
@@ -51,7 +52,7 @@ class WebhookServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         webhookEventProducer = new WebhookEventProducer(webhookProperties, callbackEventRepository);
-        webhookEventProcessor = new WebhookEventProcessor(webhookProperties, callbackEventRepository, restClient);
+        webhookEventProcessor = new WebhookEventProcessor(webhookProperties, callbackEventRepository, webClient);
         when(webhookProperties.getCallbackUri()).thenReturn("http://test/callback");
         when(webhookProperties.getApiKeyHeader()).thenReturn("x-api-key");
         when(webhookProperties.getApiKeyValue()).thenReturn("secret");
@@ -89,18 +90,21 @@ class WebhookServiceTest {
                 .event("ISSUED")
                 .timestamp(Instant.now())
                 .build();
+
         when(callbackEventRepository.findAll()).thenReturn(List.of(event));
-        when(restClient.post()).thenReturn(requestBodyUriSpec);
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(any(Object.class))).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(null);
+        when(requestBodySpec.bodyValue(any(Object.class))).thenReturn(requestHeaderSpec);
+        when(requestHeaderSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(
+                reactor.core.publisher.Mono.just(org.springframework.http.ResponseEntity.noContent().build())
+        );
 
         webhookEventProcessor.triggerProcessCallback();
 
-        verify(restClient).post();
+        verify(webClient).post();
         verify(callbackEventRepository).delete(event);
     }
 
@@ -116,14 +120,15 @@ class WebhookServiceTest {
                 .event("ISSUED")
                 .timestamp(Instant.now())
                 .build();
-        when(callbackEventRepository.findAll()).thenReturn(List.of(event));
-        when(restClient.post()).thenReturn(requestBodyUriSpec);
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(any(Object.class))).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenThrow(mock(RestClientResponseException.class));
+        when(requestBodySpec.bodyValue(any(Object.class))).thenReturn(requestHeaderSpec);
+        when(requestHeaderSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(
+                reactor.core.publisher.Mono.just(org.springframework.http.ResponseEntity.noContent().build())
+        );
 
         webhookEventProcessor.triggerProcessCallback();
 

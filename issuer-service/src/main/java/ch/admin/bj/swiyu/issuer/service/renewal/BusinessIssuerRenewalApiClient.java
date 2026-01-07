@@ -9,8 +9,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.net.URI;
 
@@ -19,22 +18,23 @@ import java.net.URI;
 @AllArgsConstructor
 public class BusinessIssuerRenewalApiClient {
 
-    private final RestClient restClient;
+    private final WebClient webClient;
     private final ApplicationProperties applicationProperties;
 
     @Transactional
     public RenewalResponseDto getRenewalData(RenewalRequestDto requestDto) {
 
-        return restClient.post()
+        return webClient.post()
                 .uri(URI.create(applicationProperties.getBusinessIssuerRenewalApiEndpoint()))
-                .body(requestDto)
                 .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDto)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (request, response) -> {
-                    log.error("Renewal request to {} failed with status code {} with message {}",
-                            applicationProperties.getBusinessIssuerRenewalApiEndpoint(), request.getURI(), response.getStatusCode());
-                    throw new RenewalException(HttpStatus.valueOf(response.getStatusCode().value()), "Renewal request failed");
+                .onStatus(HttpStatusCode::isError, response -> {
+                    log.error("Renewal request to {} failed with status code {}",
+                            applicationProperties.getBusinessIssuerRenewalApiEndpoint(), response.statusCode());
+                    return reactor.core.publisher.Mono.error(new RenewalException(HttpStatus.valueOf(response.statusCode().value()), "Renewal request failed"));
                 })
-                .body(RenewalResponseDto.class);
+                .bodyToMono(RenewalResponseDto.class)
+                .block();
     }
 }
