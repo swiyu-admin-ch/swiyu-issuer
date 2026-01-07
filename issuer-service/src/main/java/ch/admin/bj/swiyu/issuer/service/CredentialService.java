@@ -117,6 +117,10 @@ public class CredentialService {
 
         var renewedDataResponse = renewalApiClient.getRenewalData(renewalData);
 
+        if (renewedDataResponse == null) {
+            throw new RenewalException(HttpStatus.INTERNAL_SERVER_ERROR, "No response from renewal API");
+        }
+
         var offer = this.credentialManagementService.updateOfferFromRenewalResponse(renewedDataResponse, initialCredentialOfferForRenewal);
 
         CredentialEnvelopeDto envelopeDto = createCredentialEnvelopeDtoV2(offer, credentialRequest, clientInfo, mgmt);

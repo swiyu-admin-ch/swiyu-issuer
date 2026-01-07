@@ -13,6 +13,10 @@ import org.springframework.statemachine.guard.Guard;
 
 import java.util.EnumSet;
 
+/**
+ * Configuration for credential state machines.
+ * Provides beans for credential management and offer state machines.
+ */
 @Configuration
 @Slf4j
 public class CredentialStateMachineConfig {
@@ -21,12 +25,18 @@ public class CredentialStateMachineConfig {
     public static final String CREDENTIAL_OFFER_HEADER = "credential_offer";
     public static final String CREDENTIAL_MANAGEMENT_HEADER = "credential_management";
 
+    /**
+     * Events for credential management state machine.
+     */
     public enum CredentialManagementEvent {
         ISSUE,
         SUSPEND,
         REVOKE
     }
 
+    /**
+     * Events for credential offer state machine.
+     */
     @Getter
     public enum CredentialOfferEvent {
         CREATED("Created at start"),
@@ -46,6 +56,11 @@ public class CredentialStateMachineConfig {
         }
     }
 
+    /**
+     * Creates the credential management state machine bean.
+     *
+     * @return StateMachine for credential management
+     */
     @Bean
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public StateMachine<CredentialStatusManagementType, CredentialManagementEvent> credentialManagementStateMachine() {
@@ -104,6 +119,11 @@ public class CredentialStateMachineConfig {
 
     }
 
+    /**
+     * Action to invalidate offer data.
+     *
+     * @return Action for invalidating offer data
+     */
     public static Action<CredentialOfferStatusType, CredentialOfferEvent> invalidateOfferDataAction() {
         return context -> {
             Message<CredentialOfferEvent> message = context.getMessage();
@@ -116,6 +136,11 @@ public class CredentialStateMachineConfig {
         };
     }
 
+    /**
+     * Guard to allow READY transition only for deferred offers.
+     *
+     * @return Guard for deferred offers
+     */
     private static Guard<CredentialOfferStatusType, CredentialOfferEvent> deferredOfferOnlyGuard() {
         return context -> {
             Message<CredentialOfferEvent> message = context.getMessage();
@@ -129,6 +154,11 @@ public class CredentialStateMachineConfig {
         };
     }
 
+    /**
+     * Creates the credential offer state machine bean.
+     *
+     * @return StateMachine for credential offers
+     */
     @Bean
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public StateMachine<CredentialOfferStatusType, CredentialOfferEvent> credentialOfferStateMachine() {
@@ -141,7 +171,7 @@ public class CredentialStateMachineConfig {
                     .states(EnumSet.allOf(CredentialOfferStatusType.class));
 
             builder.configureTransitions()
-                    // Initialtransitions
+                    // Initial transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.INIT).target(CredentialOfferStatusType.OFFERED)
                     .event(CredentialOfferEvent.CREATED)
@@ -267,6 +297,12 @@ public class CredentialStateMachineConfig {
         }
     }
 
+    /**
+     * Adds a PlantUML note to a transition.
+     *
+     * @param s Note text
+     * @return PlantUML note string
+     */
     private String addNote(String s) {
         return "\nnote on link\n" +
                 s + "\n" +

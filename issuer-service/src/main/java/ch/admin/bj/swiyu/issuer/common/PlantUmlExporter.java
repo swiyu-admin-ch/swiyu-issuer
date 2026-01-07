@@ -4,7 +4,20 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.state.State;
 import org.springframework.statemachine.transition.Transition;
 
+/**
+ * Utility to export a Spring StateMachine to PlantUML format.
+ *
+ * @param <S> State type
+ * @param <E> Event type
+ */
 public class PlantUmlExporter<S, E> {
+
+    /**
+     * Exports the given state machine as a PlantUML diagram.
+     *
+     * @param stateMachine the state machine to export
+     * @return PlantUML diagram as a String
+     */
     public String export(StateMachine<S, E> stateMachine) {
         StringBuilder sb = new StringBuilder(64);
         sb.append("@startuml\n");
@@ -14,19 +27,38 @@ public class PlantUmlExporter<S, E> {
         return sb.toString();
     }
 
+    /**
+     * Appends all states to the PlantUML diagram.
+     *
+     * @param sb StringBuilder for the diagram
+     * @param stateMachine the state machine
+     */
     private void appendStates(StringBuilder sb, StateMachine<S, E> stateMachine) {
         for (State<S, E> state : stateMachine.getStates()) {
-            if ("INIT".equals(String.valueOf(state.getId()))) continue; // INIT nicht als eigenen State ausgeben
+            // Do not output INIT as a separate state
+            if ("INIT".equals(String.valueOf(state.getId()))) continue;
             sb.append("state ").append(state.getId()).append('\n');
         }
     }
 
+    /**
+     * Appends all transitions to the PlantUML diagram.
+     *
+     * @param sb StringBuilder for the diagram
+     * @param stateMachine the state machine
+     */
     private void appendTransitions(StringBuilder sb, StateMachine<S, E> stateMachine) {
         for (Transition<S, E> transition : stateMachine.getTransitions()) {
             appendTransaction(sb, transition);
         }
     }
 
+    /**
+     * Appends a single transition to the PlantUML diagram.
+     *
+     * @param sb StringBuilder for the diagram
+     * @param transition the transition
+     */
     private void appendTransaction(StringBuilder sb, Transition<S, E> transition) {
         if (transition.getSource() != null && transition.getTarget() != null) {
             String sourceId = String.valueOf(transition.getSource().getId());
@@ -48,6 +80,12 @@ public class PlantUmlExporter<S, E> {
         }
     }
 
+    /**
+     * Gets the label for a transition, using getDisplayName if available.
+     *
+     * @param transition the transition
+     * @return label for the transition
+     */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private String getTransitionLabel(Transition<S, E> transition) {
         if (transition.getTrigger() != null && transition.getTrigger().getEvent() != null) {
@@ -61,6 +99,12 @@ public class PlantUmlExporter<S, E> {
         return "";
     }
 
+    /**
+     * Gets the name annotation for a transition if present.
+     *
+     * @param transition the transition
+     * @return name annotation or empty string
+     */
     private String getTransitionNameAnnotation(Transition<S, E> transition) {
         if (transition.getName() != null) {
             return transition.getName();

@@ -201,49 +201,42 @@ class RenewalFlowIT {
                 .andExpect(status().isBadRequest());
     }
 
-    // TODO: Why i get other status?
-//    @ParameterizedTest
-//    @ValueSource(strings = {
-//            "400",
-//            "500",
-//            "503",
-//            "404",
-//            "409",
-//            "420",
-//            "429"
-//    })
-//    void testRenewalExternalFailures(String statusCode) throws Exception {
-//
-//        var expectedStatus = Integer.parseInt(statusCode);
-//        mockServerClient
-//                .when(
-//                        new HttpRequest()
-//                                .withMethod("POST")
-//                                .withPath("")
-//                )
-//                .respond(
-//                        HttpResponse.response()
-//                                .withStatusCode(expectedStatus)
-//                                .withHeader("Content-Type", "application/json")
-//                );
-//
-//        // renew token
-//        var tokenResponse = refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey);
-//
-//        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
-//                .boxed()
-//                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
-//                .toList();
-//
-//
-//        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
-//
-//        // set to issued
-//        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
-//                .andExpect(status().is(expectedStatus))
-//                .andExpect(content().contentType("application/json"))
-//                .andReturn();
-//    }
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "500"
+    })
+    void testRenewalExternalFailures(String statusCode) throws Exception {
+
+        var expectedStatus = Integer.parseInt(statusCode);
+        mockServerClient
+                .when(
+                        new HttpRequest()
+                                .withMethod("POST")
+                                .withPath("")
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withStatusCode(expectedStatus)
+                                .withHeader("Content-Type", "application/json")
+                );
+
+        // renew token
+        var tokenResponse = refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey);
+
+        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
+                .boxed()
+                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                .toList();
+
+
+        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+
+        // set to issued
+        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
+                .andExpect(status().is(expectedStatus))
+                .andExpect(content().contentType("application/json"))
+                .andReturn();
+    }
 
     private JsonObject createCredential() throws Exception {
 
