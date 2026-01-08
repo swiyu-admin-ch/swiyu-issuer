@@ -21,6 +21,7 @@ class OAuthServiceTest {
     private CredentialOfferRepository credentialOfferRepository;
     private CredentialManagementRepository credentialManagementRepository;
     private ApplicationProperties applicationProperties;
+    private CredentialStateMachine credentialStateMachine;
 
     @BeforeEach
     void setUp() {
@@ -28,11 +29,13 @@ class OAuthServiceTest {
         EventProducerService eventProducerService = Mockito.mock(EventProducerService.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
+        credentialStateMachine = Mockito.mock(CredentialStateMachine.class);
         oauthService = new OAuthService(
                 applicationProperties,
                 eventProducerService,
                 credentialOfferRepository,
-                credentialManagementRepository
+                credentialManagementRepository,
+                credentialStateMachine
         );
         Mockito.when(applicationProperties.getTokenTTL()).thenReturn(3600L);
         Mockito.when(applicationProperties.isAllowTokenRefresh()).thenReturn(true);

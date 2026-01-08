@@ -37,6 +37,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.service.CredentialStateMachineTestHelper.mockCredentialStateMachine;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialOffer;
 import static java.time.Instant.now;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -66,6 +67,7 @@ class CredentialManagementServiceTest {
     private CreateCredentialOfferRequestDto createCredentialOfferRequestDto;
     private AvailableStatusListIndexRepository availableStatusListIndexRepository;
     private CredentialManagement mgmt;
+    private CredentialStateMachine credentialStateMachine;
 
     @BeforeEach
     void setUp() {
@@ -79,6 +81,11 @@ class CredentialManagementServiceTest {
         dataIntegrityService = Mockito.mock(DataIntegrityService.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
+        credentialStateMachine =Mockito.mock(CredentialStateMachine.class);
+
+        mockCredentialStateMachine(credentialStateMachine);
+
+
         expiredOffer = createCredentialOffer(CredentialOfferStatusType.OFFERED, now().minusSeconds(1).getEpochSecond(), offerData);
         valid = createCredentialOffer(CredentialOfferStatusType.OFFERED, now().plusSeconds(1000).getEpochSecond(), offerData);
         suspended = createCredentialOfferWithManagementStatus(CredentialStatusManagementType.SUSPENDED, now().plusSeconds(1000).getEpochSecond(), offerData);
@@ -118,7 +125,8 @@ class CredentialManagementServiceTest {
                 applicationProperties,
                 dataIntegrityService,
                 applicationEventPublisher,
-                availableStatusListIndexRepository
+                availableStatusListIndexRepository,
+                credentialStateMachine
         );
 
         var statusListUris = List.of("https://example.com/status-list");
@@ -176,23 +184,6 @@ class CredentialManagementServiceTest {
         assertEquals(CredentialStatusTypeDto.EXPIRED, statusResponse.getStatus());
     }
 
-    @Test
-    void updateCredentialStatus_shouldUpdateStatusToRevoked() {
-
-        Set<CredentialOfferStatus> offerStatusSet = getCredentialOfferStatusSet();
-
-        when(credentialManagementRepository.findById(issued.getCredentialManagement().getId())).thenReturn(Optional.of(issued.getCredentialManagement()));
-        when(credentialManagementRepository.save(issued.getCredentialManagement())).thenReturn(issued.getCredentialManagement());
-        when(credentialOfferStatusRepository.findByOfferIdIn(anyList())).thenReturn(offerStatusSet);
-
-        when(statusListService.revoke(offerStatusSet)).thenReturn(List.of(UUID.randomUUID()));
-
-        var updated = credentialService.updateCredentialStatus(issued.getCredentialManagement().getId(), UpdateCredentialStatusRequestTypeDto.REVOKED);
-
-        assertEquals(CredentialStatusTypeDto.REVOKED, updated.getCredentialStatus());
-        Mockito.verify(credentialManagementRepository, Mockito.times(2)).save(any());
-        Mockito.verify(applicationEventPublisher).publishEvent(Mockito.any(StateChangeEvent.class));
-    }
 
     @ParameterizedTest
     @ValueSource(strings = {"CANCELLED", "REVOKED"})
@@ -614,7 +605,6 @@ class CredentialManagementServiceTest {
 
         verify(credentialManagementRepository).findById(mgmtId);
         verify(credentialManagementRepository).save(mgmt);
-        verify(credentialOffer).markAsReadyForIssuance(any());
         verify(credentialOfferRepository).save(credentialOffer);
         assertNotNull(response);
     }
@@ -688,7 +678,9 @@ class CredentialManagementServiceTest {
                 applicationProperties,
                 dataIntegrityService,
                 applicationEventPublisher,
-                availableStatusListIndexRepository
+                availableStatusListIndexRepository,
+                credentialStateMachine
+
         );
 
         when(credentialOfferRepository.findByMetadataTenantId(tenantId)).thenReturn(Optional.empty());

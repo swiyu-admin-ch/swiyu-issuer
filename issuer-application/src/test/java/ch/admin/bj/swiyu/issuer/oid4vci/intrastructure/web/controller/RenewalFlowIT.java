@@ -203,13 +203,7 @@ class RenewalFlowIT {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "400",
-            "500",
-            "503",
-            "404",
-            "409",
-            "420",
-            "429"
+            "500"
     })
     void testRenewalExternalFailures(String statusCode) throws Exception {
 

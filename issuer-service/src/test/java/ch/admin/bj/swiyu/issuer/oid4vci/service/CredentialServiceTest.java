@@ -50,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.service.CredentialStateMachineTestHelper.mockCredentialStateMachine;
+
 class CredentialServiceTest {
     private final Map<String, Object> offerData = Map.of("hello", "world");
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -69,6 +71,7 @@ class CredentialServiceTest {
     private OAuthService oAuthService;
     private CredentialManagementService credentialManagementService;
     private BusinessIssuerRenewalApiClient renewalApiClient;
+    private CredentialStateMachine credentialStateMachine;
 
 
     @BeforeEach
@@ -84,11 +87,14 @@ class CredentialServiceTest {
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         credentialManagementService = Mockito.mock(CredentialManagementService.class);
         renewalApiClient = Mockito.mock(BusinessIssuerRenewalApiClient.class);
+        credentialStateMachine = Mockito.mock(CredentialStateMachine.class);
+
+        mockCredentialStateMachine(credentialStateMachine);
 
         EncryptionService encryptionService = Mockito.mock(EncryptionService.class);
         EventProducerService eventProducerService = new EventProducerService(applicationEventPublisher, objectMapper);
 
-        oAuthService = new OAuthService(applicationProperties, eventProducerService, credentialOfferRepository, credentialManagementRepository);
+        oAuthService = new OAuthService(applicationProperties, eventProducerService, credentialOfferRepository, credentialManagementRepository, credentialStateMachine);
 
         credentialService = new CredentialService(
                 credentialOfferRepository,
@@ -101,7 +107,8 @@ class CredentialServiceTest {
                 encryptionService,
                 credentialManagementRepository,
                 renewalApiClient,
-                credentialManagementService
+                credentialManagementService,
+                credentialStateMachine
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
@@ -431,7 +438,6 @@ class CredentialServiceTest {
         verify(credentialOfferRepository).save(credentialOffer);
         var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
-        verify(credentialOffer).markAsIssued();
     }
 
     @Test
@@ -483,7 +489,6 @@ class CredentialServiceTest {
         verify(credentialOfferRepository).save(credentialOffer);
         var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
-        verify(credentialOffer).markAsIssued();
     }
 
     @Test
@@ -576,7 +581,7 @@ class CredentialServiceTest {
 
         credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo, null);
 
-        verify(offer).markAsDeferred(any(), any(), anyList(), anyList(), any(), any());
+        verify(offer).initializeDeferredState(any(), any(), anyList(), anyList(), any(), any());
         verify(credentialOfferRepository).save(offer);
         var stateChangeEvent = new DeferredEvent(offer.getId(), objectMapper.writeValueAsString(clientInfo));
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
@@ -617,7 +622,6 @@ class CredentialServiceTest {
 
         credentialService.createCredentialV2(requestDto, accessToken.toString(), clientInfo, null);
 
-        verify(offer).markAsIssued();
         verify(credentialOfferRepository, atLeastOnce()).save(offer);
         var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), offer.getId(), CredentialOfferStatusType.IN_PROGRESS);
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
@@ -783,3 +787,4 @@ class CredentialServiceTest {
         return new ClientAgentInfo("test-agent", "1.0", "test-client", "test-client-id");
     }
 }
+

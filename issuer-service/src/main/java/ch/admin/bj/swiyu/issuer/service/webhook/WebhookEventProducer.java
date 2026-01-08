@@ -19,7 +19,7 @@ import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapp
 
 /**
  * Service responsible for producing and persisting webhook callback events.
- * These events are later processed and sent to external systems by the WebhookEventListener.
+ * These events are later processed and sent to external systems by the WebhookEventProcessor.
  */
 @Service
 @RequiredArgsConstructor
@@ -33,11 +33,6 @@ public class WebhookEventProducer {
      */
     @Transactional
     public void produceStateChangeEvent(UUID credentialOfferId, CredentialOfferStatusType state) {
-        createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null);
-    }
-
-    @Transactional
-    public void produceOfferStateChangeEvent(UUID credentialManagementId, UUID credentialOfferId, CredentialOfferStatusType state) {
         createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null);
     }
 

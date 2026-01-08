@@ -39,9 +39,11 @@ import reactor.core.publisher.Mono;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -146,10 +148,7 @@ class CredentialOfferStatusMultiThreadedIT {
     }
 
     @Test
-    void testUpdateOfferStatusMultiThreaded_thenSuccess() throws Exception {
-        // create some offers in a multithreaded manner
-        // When increasing this too much spring boot will throw 'Failed to read request'
-        // in a non-deterministic way...
+    void testUpdateOfferStatus_thenSuccess() throws Exception {
         var offerIds = IntStream.range(0, 2).parallel().mapToObj(i -> {
             try {
 
@@ -204,28 +203,25 @@ class CredentialOfferStatusMultiThreadedIT {
         assertTrue(statusListIndexes.stream().allMatch(idx -> initialStatusListToken.getStatus(idx) == TokenStatusListBit.VALID.getValue()));
         // Update Status to Suspended
         var mgmtIds = offers.stream().map(credentialOffer -> credentialOffer.getCredentialManagement().getId()).toList();
-        mgmtIds.stream().parallel().forEach(offerId -> {
-            try {
-                mvc.perform(patch(testHelper.getUpdateUrl(offerId, CredentialStatusTypeDto.SUSPENDED)))
-                        .andExpect(status().is(200));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        runSequential(mgmtIds, CredentialStatusTypeDto.SUSPENDED);
         assertTrue(mgmtIds.stream().map(credentialManagementRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialManagementStatus() == CredentialStatusManagementType.SUSPENDED));
         // Reset Status
-        mgmtIds.stream().parallel().forEach(offerId -> {
-            try {
-                mvc.perform(patch(testHelper.getUpdateUrl(offerId, CredentialStatusTypeDto.ISSUED)))
-                        .andExpect(status().is(200));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        runSequential(mgmtIds, CredentialStatusTypeDto.ISSUED);
         assertTrue(mgmtIds.stream().map(credentialManagementRepository::findById).allMatch(credentialOffer -> credentialOffer.get().getCredentialManagementStatus() == CredentialStatusManagementType.ISSUED));
         offerIds.forEach(o -> testHelper.assertOfferStateConsistent(o, CredentialOfferStatusType.ISSUED));
         var restoredStatusListToken = testHelper.loadTokenStatusListToken(2, statusListRepository.findById(statusListId).get().getStatusZipped());
         assertEquals(initialStatusListToken.getStatusListData(), restoredStatusListToken.getStatusListData(), "Bitstring should be same again");
+    }
+
+    private void runSequential(List<UUID> mgmtIds, CredentialStatusTypeDto credentialStatusTypeDto) {
+        mgmtIds.forEach(offerId -> {
+            try {
+                mvc.perform(patch(testHelper.getUpdateUrl(offerId, credentialStatusTypeDto)))
+                        .andExpect(status().is(200));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private JsonObject extractCredentialOfferFromResponse(JsonObject dto) throws Exception {

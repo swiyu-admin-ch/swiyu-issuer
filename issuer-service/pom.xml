@@ -163,6 +163,13 @@
             <artifactId>spring-webflux</artifactId>
         </dependency>
 
+        <!-- Spring State Machine -->
+        <dependency>
+            <groupId>org.springframework.statemachine</groupId>
+            <artifactId>spring-statemachine-starter</artifactId>
+            <version>4.0.1</version>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>
@@ -314,3 +321,4 @@
     </build>
 
 </project>
+

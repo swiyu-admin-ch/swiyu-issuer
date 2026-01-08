@@ -229,7 +229,7 @@ class CredentialOfferStatusIT {
             // Set the status to DEFERRED as this is done by the oid4vci
             var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
             mgmt.getCredentialOffers().stream().findFirst().ifPresent(offer -> {
-                offer.changeStatus(CredentialOfferStatusType.DEFERRED);
+                offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.DEFERRED);
                 credentialOfferRepository.save(offer);
             });
 
@@ -265,7 +265,7 @@ class CredentialOfferStatusIT {
 
             var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
             mgmt.getCredentialOffers().stream().findFirst().ifPresent(offer -> {
-                offer.changeStatus(CredentialOfferStatusType.valueOf(originalState));
+                offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.valueOf(originalState));
                 credentialOfferRepository.save(offer);
             });
 
@@ -279,14 +279,14 @@ class CredentialOfferStatusIT {
 
         @Transactional
         @ParameterizedTest
-        @ValueSource(strings = {"OFFERED", "CANCELLED", "IN_PROGRESS", "DEFERRED", "READY", "EXPIRED"})
+        @ValueSource(strings = {"OFFERED", "CANCELLED", "DEFERRED", "EXPIRED"})
         void testUpdateOfferWithIssuedWhenPreIssued_thenBadRequest(String originalState) throws Exception {
 
             var newValue = CredentialStatusTypeDto.ISSUED;
             managementId = testHelper.createBasicOfferJsonAndGetUUID();
             var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
             mgmt.getCredentialOffers().stream().findFirst().ifPresent(offer -> {
-                offer.changeStatus(CredentialOfferStatusType.valueOf(originalState));
+                offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.valueOf(originalState));
                 credentialOfferRepository.save(offer);
             });
 
@@ -327,7 +327,7 @@ class CredentialOfferStatusIT {
 
             var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
             mgmt.getCredentialOffers().stream().findFirst().ifPresent(offer -> {
-                offer.changeStatus(CredentialOfferStatusType.valueOf(value));
+                offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.valueOf(value));
                 credentialOfferRepository.save(offer);
             });
 

@@ -38,6 +38,7 @@ public class StatusResponseMapper {
             return null;
         }
         return switch (source) {
+            case INIT -> CredentialStatusTypeDto.INIT;
             case OFFERED -> CredentialStatusTypeDto.OFFERED;
             case CANCELLED -> CredentialStatusTypeDto.CANCELLED;
             case IN_PROGRESS -> CredentialStatusTypeDto.IN_PROGRESS;

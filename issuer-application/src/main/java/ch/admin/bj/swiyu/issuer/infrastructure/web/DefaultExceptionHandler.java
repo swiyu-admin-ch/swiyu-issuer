@@ -79,7 +79,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
-    @ExceptionHandler({BadRequestException.class, CredentialException.class})
+    @ExceptionHandler({BadRequestException.class, CredentialException.class, IllegalStateException.class})
     public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
         final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(BAD_REQUEST.getReasonPhrase())
