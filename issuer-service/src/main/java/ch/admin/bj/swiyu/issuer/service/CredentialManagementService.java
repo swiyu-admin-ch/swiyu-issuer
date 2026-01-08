@@ -97,6 +97,13 @@ public class CredentialManagementService {
      * {@code requestedNewStatus} DTO to the internal {@link CredentialOfferStatusType},
      * performs the status transition and returns a DTO with the updated state.</p>
      *
+     * <p>In this request, a webhook is also triggered. Through this webhook, the state of the Offer or the
+     * Management Offer is sent back to the Business Issuer. This depends on the current state of the Offer.
+     * If the Management Offer is in a pre-issuance state (INIT), the webhook is first triggered with the status
+     * change of the Offer (in this case, there can only be one).
+     * Afterwards, during the post-issuance process, a possible status change of the Management Offer is processed.
+     * If the status changes, the Management Offer status transition is then sent via webhook.</p>
+     *
      * @param credentialManagementId the id of the credential offer to update
      * @param requestedNewStatus     the requested new status DTO
      * @return an {@link UpdateStatusResponseDto} describing the updated credential status
