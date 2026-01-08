@@ -264,6 +264,18 @@ public class CredentialOffer {
     /**
      * Sets the status of this credential offer entity.
      * <p>
+     * <b>Intended for use by {@link CredentialStateMachine} only.</b>
+     * Do not use outside the state machine context to ensure correct state transitions.
+     *
+     * @param credentialOfferStatus the new status to set
+     */
+    void setCredentialOfferStatus(CredentialOfferStatusType credentialOfferStatus) {
+        this.credentialStatus = credentialOfferStatus;
+    }
+
+    /**
+     * Sets the status of this credential offer entity.
+     * <p>
      * <b>Intended for test usage only.</b>
      * Do not use in production code.
      * Always use the state machine to change states!

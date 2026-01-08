@@ -127,7 +127,7 @@ public class CredentialStateMachine {
         assert success != null;
         if (success.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
             var newStatus = credentialOfferStateMachine.getState().getId();
-            entity.setCredentialOfferStatusJustForTestUsage(newStatus);
+            entity.setCredentialOfferStatus(newStatus);
             boolean stateChanged = oldStatus != newStatus;
             log.info("Transaction accepted for: {}. New state = {} (changed: {})",
                     success.getMessage(), newStatus, stateChanged);

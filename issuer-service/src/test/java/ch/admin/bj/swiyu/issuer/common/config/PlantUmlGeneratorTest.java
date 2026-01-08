@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.common.config;
 
-import ch.admin.bj.swiyu.issuer.common.PlantUmlExporter;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;

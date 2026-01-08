@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.common;
+package ch.admin.bj.swiyu.issuer.common.config;
 
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.state.State;
