@@ -1,11 +1,10 @@
-package ch.admin.bj.swiyu.issuer.service.statuslist;
+package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatus;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
-import ch.admin.bj.swiyu.issuer.service.StatusListService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

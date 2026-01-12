@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.scheduler;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
-import ch.admin.bj.swiyu.issuer.service.state.CredentialStateService;
+import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.service.state;
+package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
@@ -15,7 +15,6 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineCon
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import ch.admin.bj.swiyu.issuer.service.mapper.CredentialManagementMapper;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
-import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListManagementService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import lombok.RequiredArgsConstructor;
