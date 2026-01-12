@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.persistence;
 
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
