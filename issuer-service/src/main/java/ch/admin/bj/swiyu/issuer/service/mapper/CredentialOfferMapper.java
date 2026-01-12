@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.service;
+package ch.admin.bj.swiyu.issuer.service.mapper;
 
 import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.*;
@@ -14,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDt
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
@@ -188,6 +189,46 @@ public class CredentialOfferMapper {
 
         return String.format("%s://?credential_offer=%s", props.getDeeplinkSchema(),
                 credentialOfferString);
+    }
+
+    /**
+     * Converts a renewal response to a credential offer request.
+     *
+     * @param request the renewal response
+     * @return the converted credential offer request
+     */
+    public static CreateCredentialOfferRequestDto toOfferFromRenewal(
+            RenewalResponseDto request) {
+        return CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(request.metadataCredentialSupportedId())
+                .credentialSubjectData(request.credentialSubjectData())
+                .credentialMetadata(request.credentialMetadata())
+                .credentialValidUntil(request.credentialValidUntil())
+                .credentialValidFrom(request.credentialValidFrom())
+                .statusLists(request.statusLists())
+                .build();
+    }
+
+    /**
+     * Updates an existing CredentialOffer with data from a CreateCredentialOfferRequestDto and supporting parameters.
+     *
+     * @param existingOffer the offer to update
+     * @param newOffer the DTO with new data
+     * @param offerData the parsed offer data
+     * @param applicationProperties the application properties
+     */
+    public static void updateOfferFromDto(
+            CredentialOffer existingOffer,
+            CreateCredentialOfferRequestDto newOffer,
+            Map<String, Object> offerData,
+            ApplicationProperties applicationProperties) {
+        existingOffer.setMetadataCredentialSupportedId(newOffer.getMetadataCredentialSupportedId());
+        existingOffer.setOfferData(offerData);
+        existingOffer.setCredentialValidFrom(newOffer.getCredentialValidFrom());
+        existingOffer.setCredentialValidUntil(newOffer.getCredentialValidUntil());
+        existingOffer.setCredentialMetadata(toCredentialOfferMetadataDto(newOffer.getCredentialMetadata()));
+        existingOffer.setConfigurationOverride(toConfigurationOverride(newOffer.getConfigurationOverride()));
+        existingOffer.setMetadataTenantId(applicationProperties.isSignedMetadataEnabled() ? java.util.UUID.randomUUID() : null);
     }
 
 }
