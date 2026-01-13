@@ -145,15 +145,25 @@ public class MetadataService {
                                              String metaDataJson) throws ParseException {
 
         /*
-         * sub: Must match the issuer did
+         * sub: Must match Credential Issuer Identifier, in the metadata under the claim credential_issuer
          * iat: Must be the time when the JWT was issued
          * exp: Optional the time when the Metadata are expiring -> default 24h
          * iss: Optional denoting the party attesting to the claims in the signed metadata
          */
         JWTClaimsSet metaData = JWTClaimsSet.parse(metaDataJson);
+
+        var credentialIssuer = metaData.getClaim("credential_issuer");
+        String subject;
+        if (credentialIssuer != null) {
+            subject = credentialIssuer.toString();
+        } else {
+            subject = metaData.getClaim("issuer").toString();
+        }
+
+
         // Override JWT claims,
         JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder(metaData)
-                .subject(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
+                .subject(subject)
                 .issueTime(new Date())
                 .issuer(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
                 .expirationTime(DateUtils.addHours(new Date(), 24));
