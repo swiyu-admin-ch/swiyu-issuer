@@ -122,7 +122,7 @@ class WellKnownControllerIT {
 
         // openid-configuration
         var metadataResponse = assertDoesNotThrow(() -> mock.perform(get(
-                        "%s/.well-known/openid-credential-issuer".formatted(url))
+                        "%s/.well-known/openid-configuration".formatted(url))
                         .accept("application/jwt"))
                 .andExpect(status().isOk())
                 .andReturn());
@@ -135,7 +135,7 @@ class WellKnownControllerIT {
                 OpenIdConfigurationDto.class));
 
         sub = metadataJwt.getPayload().toJSONObject().get("sub").toString();
-        assertEquals(metadata.issuer(), sub);
+        assertEquals("http://localhost:8080", sub);
     }
 
     @Test
