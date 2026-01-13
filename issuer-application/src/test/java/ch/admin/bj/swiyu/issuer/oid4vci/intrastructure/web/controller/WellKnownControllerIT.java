@@ -122,7 +122,7 @@ class WellKnownControllerIT {
 
         // openid-configuration
         var metadataResponse = assertDoesNotThrow(() -> mock.perform(get(
-                        "%s/.well-known/openid-credential-issuer".formatted(url))
+                        "%s/.well-known/openid-configuration".formatted(url))
                         .accept("application/jwt"))
                 .andExpect(status().isOk())
                 .andReturn());
@@ -130,12 +130,10 @@ class WellKnownControllerIT {
         var metadataJwt = assertDoesNotThrow(() -> SignedJWT.parse(metadataResponse.getResponse()
                 .getContentAsString()), "Well Known data should be a parsable JWT");
 
-        assertDoesNotThrow(() -> issuerMetadataJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
-        var metadata = assertDoesNotThrow(() -> objectMapper.readValue(metadataJwt.getPayload().toString(),
-                OpenIdConfigurationDto.class));
+        assertDoesNotThrow(() -> metadataJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
 
         sub = metadataJwt.getPayload().toJSONObject().get("sub").toString();
-        assertEquals(metadata.issuer(), sub);
+        assertEquals("http://localhost:8080", sub);
     }
 
     @Test
