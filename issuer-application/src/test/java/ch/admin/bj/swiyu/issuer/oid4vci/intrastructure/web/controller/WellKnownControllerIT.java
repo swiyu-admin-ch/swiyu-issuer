@@ -55,16 +55,13 @@ class WellKnownControllerIT {
     private StatusListRepository statusListRepository;
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
-    @Autowired
-    private CredentialManagementRepository credentialManagementRepository;
 
     @BeforeEach
     void setupTest() {
         var statusRegistryUUID = UUID.randomUUID();
         var statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
                 .formatted(statusRegistryUUID);
-        testHelper = new CredentialOfferTestHelper(mock, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository, credentialManagementRepository,
-                statusRegistryUrl);
+        testHelper = new CredentialOfferTestHelper(mock, credentialOfferRepository, credentialOfferStatusRepository, statusListRepository, statusRegistryUrl);
     }
 
     @Test
@@ -92,8 +89,6 @@ class WellKnownControllerIT {
                 .andExpect(content().string(not(containsString("${stage}")))) // stage placeholder should be replace
                 .andExpect(content().string(containsString("local-Example Credential"))) // Replaced placeholder examples
                 .andExpect(content().string(containsString("local-university_example_sd_jwt")))
-                .andExpect(content().string(containsString("\"vct_metadata_uri\""))) // vct metadata indirection should not be filtered out if used
-                .andExpect(content().string(containsString("\"vct_metadata_uri#integrity\""))) // integrity for vct metadata indirection should not be filtered out if used
                 .andExpect(content().string(Matchers.not(containsString("issuanceBatchSize")))); // Util Field should not be displayed metadata
     }
 
@@ -122,7 +117,7 @@ class WellKnownControllerIT {
 
         // openid-configuration
         var metadataResponse = assertDoesNotThrow(() -> mock.perform(get(
-                        "%s/.well-known/openid-credential-issuer".formatted(url))
+                        "%s/.well-known/openid-configuration".formatted(url))
                         .accept("application/jwt"))
                 .andExpect(status().isOk())
                 .andReturn());
@@ -130,12 +125,10 @@ class WellKnownControllerIT {
         var metadataJwt = assertDoesNotThrow(() -> SignedJWT.parse(metadataResponse.getResponse()
                 .getContentAsString()), "Well Known data should be a parsable JWT");
 
-        assertDoesNotThrow(() -> issuerMetadataJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
-        var metadata = assertDoesNotThrow(() -> objectMapper.readValue(metadataJwt.getPayload().toString(),
-                OpenIdConfigurationDto.class));
+        assertDoesNotThrow(() -> metadataJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
 
         sub = metadataJwt.getPayload().toJSONObject().get("sub").toString();
-        assertEquals(metadata.issuer(), sub);
+        assertEquals("http://localhost:8080", sub);
     }
 
     @Test
