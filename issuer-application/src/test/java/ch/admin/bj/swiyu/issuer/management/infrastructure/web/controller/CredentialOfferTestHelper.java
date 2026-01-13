@@ -1,16 +1,23 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -47,6 +54,25 @@ public class CredentialOfferTestHelper {
                 .andReturn();
 
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+    }
+
+    public String createBasicOfferJsonAndGetTenantID() throws Exception {
+        var objectMapper = new ObjectMapper();
+        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\", \"lastName\": \"lastName\"}}";
+
+        MvcResult result = mvc
+                .perform(post(BASE_URL).contentType("application/json").content(minPayloadWithEmptySubject))
+                .andReturn();
+
+        var createCredentialOfferResponse = assertDoesNotThrow(() -> objectMapper.readValue(result.getResponse()
+                .getContentAsString(), CredentialWithDeeplinkResponseDto.class));
+        var deeplink = createCredentialOfferResponse.getOfferDeeplink();
+        var parsedDeeplink = assertDoesNotThrow(() -> new URI(deeplink));
+        var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
+        var credentialOffer = offerQuery.get(0);
+        var parsedOffer = assertDoesNotThrow(
+                () -> objectMapper.readValue(credentialOffer.getValue(), Map.class));
+        return assertDoesNotThrow(() -> new URI(parsedOffer.get("credential_issuer").toString()).getPath());
     }
 
     public UUID createStatusListLinkedOfferAndGetUUID() throws Exception {
