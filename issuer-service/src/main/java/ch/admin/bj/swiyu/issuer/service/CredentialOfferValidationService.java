@@ -43,12 +43,12 @@ public class CredentialOfferValidationService {
             @Valid CreateCredentialOfferRequestDto createCredentialRequest,
             Map<String, Object> offerData) {
 
-        var credentialOfferMetadata = createCredentialRequest.getMetadataCredentialSupportedId().getFirst();
+        var credentialOfferMetadataId = createCredentialRequest.getMetadataCredentialSupportedId().getFirst();
 
         // Date checks, if exists
         validateOfferedCredentialValiditySpan(createCredentialRequest);
 
-        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
+        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadataId);
 
         // Check if credential format is supported otherwise throw error
         validateCredentialFormat(credentialConfiguration);
@@ -177,18 +177,19 @@ public class CredentialOfferValidationService {
      */
     public void validateOfferedCredentialValiditySpan(@Valid CreateCredentialOfferRequestDto credentialOffer) {
         var validUntil = credentialOffer.getCredentialValidUntil();
-        if (validUntil != null) {
-            if (validUntil.isBefore(Instant.now())) {
-                throw new BadRequestException(
-                        "Credential is already expired (would only be valid until %s, server time is %s)"
-                                .formatted(validUntil, Instant.now()));
-            }
-            var validFrom = credentialOffer.getCredentialValidFrom();
-            if (validFrom != null && validFrom.isAfter(validUntil)) {
-                throw new BadRequestException(
-                        "Credential would never be valid - Valid from %s until %s"
-                                .formatted(validFrom, validUntil));
-            }
+        if (validUntil == null) {
+            return;
+        }
+        if (validUntil.isBefore(Instant.now())) {
+            throw new BadRequestException(
+                    "Credential is already expired (would only be valid until %s, server time is %s)"
+                            .formatted(validUntil, Instant.now()));
+        }
+        var validFrom = credentialOffer.getCredentialValidFrom();
+        if (validFrom != null && validFrom.isAfter(validUntil)) {
+            throw new BadRequestException(
+                    "Credential would never be valid - Valid from %s until %s"
+                            .formatted(validFrom, validUntil));
         }
     }
 
