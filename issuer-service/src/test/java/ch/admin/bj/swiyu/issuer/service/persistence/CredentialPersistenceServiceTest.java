@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.persistence;
 
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -41,7 +42,7 @@ class CredentialPersistenceServiceTest {
         );
     }
 
-    @org.junit.jupiter.api.AfterEach
+    @AfterEach
     void tearDown() throws Exception {
         if (mocks != null) {
             mocks.close();
@@ -285,5 +286,33 @@ class CredentialPersistenceServiceTest {
                 () -> persistenceService.saveStatusListEntries(List.of(statusList), offerId, 3));
         assertTrue(ex.getMessage().contains(statusList.getUri()));
     }
-}
 
+    /**
+     * Ensures getRandomIndexes never reuses indexes and only returns unique values from the freeIndexes list.
+     */
+    @Test
+    void getRandomIndexes_shouldReturnUniqueIndexes() {
+        // Arrange
+        var statusList = StatusList.builder()
+                .id(UUID.randomUUID())
+                .uri("https://example.com/status")
+                .build();
+        List<Integer> freeIndexes = Arrays.asList(10, 20, 30, 40, 50, 60, 70, 80, 90, 100);
+        var availableIndexes = AvailableStatusListIndexes.builder()
+                .statusListUri(statusList.getUri())
+                .freeIndexes(new ArrayList<>(freeIndexes))
+                .build();
+        when(availableStatusListIndexRepository.findById(statusList.getUri()))
+                .thenReturn(Optional.of(availableIndexes));
+
+        int batchSize = 5;
+
+        Set<Integer> result = persistenceService.getRandomIndexes(batchSize, statusList);
+
+        // Assert
+        assertEquals(batchSize, result.size(), "Should return exactly batchSize unique indexes");
+        assertTrue(freeIndexes.containsAll(result), "All returned indexes must be from the original freeIndexes");
+        // Ensure no duplicates (Set guarantees this, but we check for clarity)
+        assertEquals(batchSize, result.stream().distinct().count(), "No duplicate indexes should be present");
+    }
+}
