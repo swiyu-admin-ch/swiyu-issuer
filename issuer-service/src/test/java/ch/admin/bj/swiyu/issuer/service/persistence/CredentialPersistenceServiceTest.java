@@ -188,7 +188,7 @@ class CredentialPersistenceServiceTest {
         var freeIndexes = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         var availableIndexes = AvailableStatusListIndexes.builder()
                 .statusListUri(statusList.getUri())
-                .freeIndexes(freeIndexes)
+                .freeIndexes(new ArrayList<>(freeIndexes))
                 .build();
 
         when(availableStatusListIndexRepository.findById(statusList.getUri()))
@@ -227,16 +227,19 @@ class CredentialPersistenceServiceTest {
         var statusList1 = StatusList.builder().id(UUID.randomUUID()).uri("https://example.com/status/1").build();
         var statusList2 = StatusList.builder().id(UUID.randomUUID()).uri("https://example.com/status/2").build();
 
+        var freeIndexes1 = Arrays.asList(1, 2, 3, 4);
+        var freeIndexes2 = Arrays.asList(10, 11, 12, 13);
+
         when(availableStatusListIndexRepository.findById(statusList1.getUri()))
                 .thenReturn(Optional.of(AvailableStatusListIndexes.builder()
                         .statusListUri(statusList1.getUri())
-                        .freeIndexes(Arrays.asList(1, 2, 3, 4))
+                        .freeIndexes(new ArrayList<>(freeIndexes1))
                         .build()));
 
         when(availableStatusListIndexRepository.findById(statusList2.getUri()))
                 .thenReturn(Optional.of(AvailableStatusListIndexes.builder()
                         .statusListUri(statusList2.getUri())
-                        .freeIndexes(Arrays.asList(10, 11, 12, 13))
+                        .freeIndexes(new ArrayList<>(freeIndexes2))
                         .build()));
 
         persistenceService.saveStatusListEntries(List.of(statusList1, statusList2), offerId, issuanceBatchSize);
