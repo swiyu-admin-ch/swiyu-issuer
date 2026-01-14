@@ -14,9 +14,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -56,5 +57,14 @@ class WellKnownControllerIT {
                 .andExpect(content().string(containsString("\"vct_metadata_uri\""))) // vct metadata indirection should not be filtered out if used
                 .andExpect(content().string(containsString("\"vct_metadata_uri#integrity\""))) // integrity for vct metadata indirection should not be filtered out if used
                 .andExpect(content().string(Matchers.not(containsString("issuanceBatchSize")))); // Util Field should not be displayed metadata
+    }
+
+    @Test
+    void testWellknownJwksComplete() throws Exception {
+        assertDoesNotThrow(() -> mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].kty").value("EC"))
+                .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].crv").value("P-256"))
+                .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].alg").value("ECDH-ES")));
     }
 }
