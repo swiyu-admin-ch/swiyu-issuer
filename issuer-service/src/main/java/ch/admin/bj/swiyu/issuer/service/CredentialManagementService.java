@@ -308,7 +308,7 @@ public class CredentialManagementService {
     }
 
     /**
-     * Retrieves credential management and checks for expired offers.
+     * Retrieves credential management and checks for expiration, expiring the affected offers.
      *
      * @param managementId the management ID
      * @return the credential management with updated offer states
