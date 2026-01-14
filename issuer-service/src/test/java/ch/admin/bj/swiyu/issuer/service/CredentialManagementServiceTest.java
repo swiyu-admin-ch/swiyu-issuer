@@ -53,7 +53,7 @@ class CredentialManagementServiceTest {
     private CredentialOfferValidationService validationService;
     private CredentialStateService stateService;
     private CredentialPersistenceService persistenceService;
-    private StatusListManagementService statusListManagementService;
+    private StatusListService statusListService;
 
     private ApplicationProperties applicationProperties;
     private IssuerMetadata issuerMetadata;
@@ -73,7 +73,7 @@ class CredentialManagementServiceTest {
         validationService = Mockito.mock(CredentialOfferValidationService.class);
         stateService = Mockito.mock(CredentialStateService.class);
         persistenceService = Mockito.mock(CredentialPersistenceService.class);
-        statusListManagementService = Mockito.mock(StatusListManagementService.class);
+        statusListService = Mockito.mock(StatusListService.class);
 
         expiredOffer = createCredentialOffer(CredentialOfferStatusType.OFFERED, now().minusSeconds(1).getEpochSecond(), offerData);
         valid = createCredentialOffer(CredentialOfferStatusType.OFFERED, now().plusSeconds(1000).getEpochSecond(), offerData);
@@ -96,7 +96,7 @@ class CredentialManagementServiceTest {
                 validationService,
                 stateService,
                 persistenceService,
-                statusListManagementService
+                statusListService
         );
 
         createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
@@ -266,7 +266,7 @@ class CredentialManagementServiceTest {
      */
     @Test
     void createCredentialOfferAndGetDeeplink_shouldPropagateStatusListResolutionFailure() {
-        when(statusListManagementService.resolveAndValidateStatusLists(any()))
+        when(statusListService.resolveAndValidateStatusLists(any()))
                 .thenThrow(new BadRequestException("Could not resolve all provided status lists"));
 
         var exception = assertThrows(BadRequestException.class, () ->
@@ -290,7 +290,7 @@ class CredentialManagementServiceTest {
                         .maxLength(10000)
                         .build()
         );
-        when(statusListManagementService.resolveAndValidateStatusLists(any())).thenReturn(statusLists);
+        when(statusListService.resolveAndValidateStatusLists(any())).thenReturn(statusLists);
 
         doNothing().when(validationService).validateCredentialOfferCreateRequest(any(), any());
         when(validationService.determineIssuerDid(any(), anyString())).thenReturn("did:example:123456789");
@@ -316,7 +316,7 @@ class CredentialManagementServiceTest {
         assertNotNull(response);
         assertNotNull(response.getOfferDeeplink());
 
-        verify(statusListManagementService, times(1)).resolveAndValidateStatusLists(any());
+        verify(statusListService, times(1)).resolveAndValidateStatusLists(any());
         verify(persistenceService, times(1)).saveStatusListEntries(eq(statusLists), any(UUID.class), eq(batchSize));
     }
 
@@ -339,7 +339,7 @@ class CredentialManagementServiceTest {
                         .maxLength(10000)
                         .build()
         );
-        when(statusListManagementService.resolveAndValidateStatusLists(any())).thenReturn(statusLists);
+        when(statusListService.resolveAndValidateStatusLists(any())).thenReturn(statusLists);
 
         doNothing().when(validationService).validateCredentialOfferCreateRequest(any(), any());
         when(validationService.determineIssuerDid(any(), anyString())).thenReturn("did:example:123456789");
@@ -500,7 +500,7 @@ class CredentialManagementServiceTest {
                         .maxLength(10000)
                         .build()
         );
-        when(statusListManagementService.resolveAndValidateStatusLists(any(CreateCredentialOfferRequestDto.class)))
+        when(statusListService.resolveAndValidateStatusLists(any(CreateCredentialOfferRequestDto.class)))
                 .thenReturn(statusLists);
 
         doNothing().when(validationService).validateCredentialOfferCreateRequest(any(), any());
@@ -544,7 +544,7 @@ class CredentialManagementServiceTest {
         assertNotNull(updated.getOfferData());
 
         verify(validationService, times(1)).validateCredentialOfferCreateRequest(any(CreateCredentialOfferRequestDto.class), anyMap());
-        verify(statusListManagementService, times(1)).resolveAndValidateStatusLists(any(CreateCredentialOfferRequestDto.class));
+        verify(statusListService, times(1)).resolveAndValidateStatusLists(any(CreateCredentialOfferRequestDto.class));
         verify(persistenceService, times(1)).saveCredentialOffer(existing);
         verify(persistenceService, times(1)).saveStatusListEntries(eq(statusLists), eq(existing.getId()), eq(batchSize));
     }

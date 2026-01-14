@@ -32,7 +32,7 @@ class CredentialStateServiceTest {
     private CredentialPersistenceService persistenceService;
 
     @Mock
-    private StatusListManagementService statusListManagementService;
+    private StatusListService statusListService;
 
     private CredentialStateService stateService;
 
@@ -45,7 +45,7 @@ class CredentialStateServiceTest {
                 credentialStateMachine,
                 applicationEventPublisher,
                 persistenceService,
-                statusListManagementService);
+                statusListService);
     }
 
     @AfterEach
@@ -333,7 +333,7 @@ class CredentialStateServiceTest {
                 .thenReturn(persistedStatuses);
 
         var expectedStatusListIds = List.of(UUID.randomUUID());
-        when(statusListManagementService.updateStatusListsForPostIssuance(eq(persistedStatuses), eq(CredentialStatusManagementType.REVOKED)))
+        when(statusListService.updateStatusListsForPostIssuance(eq(persistedStatuses), eq(CredentialStatusManagementType.REVOKED)))
                 .thenReturn(expectedStatusListIds);
 
         when(persistenceService.saveCredentialManagement(eq(mgmt))).thenReturn(mgmt);
@@ -346,7 +346,7 @@ class CredentialStateServiceTest {
 
         assertNotNull(response);
 
-        verify(statusListManagementService).updateStatusListsForPostIssuance(anySet(), eq(CredentialStatusManagementType.REVOKED));
+        verify(statusListService).updateStatusListsForPostIssuance(anySet(), eq(CredentialStatusManagementType.REVOKED));
         verify(persistenceService).saveCredentialManagement(eq(mgmt));
     }
 

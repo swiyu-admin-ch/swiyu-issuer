@@ -50,7 +50,7 @@ public class CredentialManagementService {
     private final CredentialOfferValidationService validationService;
     private final CredentialStateService stateService;
     private final CredentialPersistenceService persistenceService;
-    private final StatusListManagementService statusListManagementService;
+    private final StatusListService statusListService;
 
     /**
      * Retrieve public information about a credential offer.
@@ -231,7 +231,7 @@ public class CredentialManagementService {
 
         validationService.validateCredentialOfferCreateRequest(newOffer, offerData);
 
-        var statusLists = statusListManagementService.resolveAndValidateStatusLists(newOffer);
+        var statusLists = statusListService.resolveAndValidateStatusLists(newOffer);
 
         // Validate issuer DIDs match
         var issuerDid = validationService.determineIssuerDid(newOffer, applicationProperties.getIssuerId());
@@ -343,7 +343,7 @@ public class CredentialManagementService {
                 : applicationProperties.getOfferValidity());
 
         // Get used status lists and ensure they are managed by the issuer
-        var statusLists = statusListManagementService.resolveAndValidateStatusLists(requestDto);
+        var statusLists = statusListService.resolveAndValidateStatusLists(requestDto);
 
         // Validate issuer DIDs match
         var issuerDid = validationService.determineIssuerDid(requestDto, applicationProperties.getIssuerId());

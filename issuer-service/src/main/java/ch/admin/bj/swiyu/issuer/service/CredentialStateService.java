@@ -32,7 +32,7 @@ public class CredentialStateService {
     private final CredentialStateMachine credentialStateMachine;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final CredentialPersistenceService persistenceService;
-    private final StatusListManagementService statusListManagementService;
+    private final StatusListService statusListService;
 
     /**
      * Updates the credential offer state and publishes an event if the state changed.
@@ -239,7 +239,7 @@ public class CredentialStateService {
                 .toList();
 
         var offerStatusSet = persistenceService.findCredentialOfferStatusesByOfferIds(affectedOffers);
-        var statusList = statusListManagementService.updateStatusListsForPostIssuance(
+        var statusList = statusListService.updateStatusListsForPostIssuance(
                 offerStatusSet, (CredentialStatusManagementType) managementResult.newStatus());
 
         var updatedMgmt = persistenceService.saveCredentialManagement(mgmt);

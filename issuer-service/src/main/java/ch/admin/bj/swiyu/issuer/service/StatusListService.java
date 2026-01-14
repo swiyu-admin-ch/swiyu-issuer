@@ -1,12 +1,7 @@
-/*
- * SPDX-FileCopyrightText: 2025 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
-
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
@@ -16,11 +11,9 @@ import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListValidator;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
-import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,20 +37,39 @@ public class StatusListService {
     private static final String BITS_FIELD_NAME = "bits";
     private final ApplicationProperties applicationProperties;
     private final StatusListProperties statusListProperties;
+
     private final StatusRegistryClient statusRegistryClient;
+    private final StatusListSigningService signingService;
+
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
-    private final SignatureService signatureService;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
 
+
+    /**
+     * Returns status list metadata for the given status list id.
+     *
+     * @param statusListId status list id
+     * @return status list information (including currently available capacity)
+     * @throws ResourceNotFoundException if the status list does not exist
+     */
     @Transactional(readOnly = true)
     public StatusListDto getStatusListInformation(UUID statusListId) {
         var statusList = this.statusListRepository.findById(statusListId)
                 .orElseThrow(() -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
 
-        return toStatusListDto(statusList, statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusListId), statusListProperties.getVersion());
+        return toStatusListDto(statusList,
+                statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusListId),
+                statusListProperties.getVersion());
     }
 
+    /**
+     * Creates a new status list, persists it, and publishes the initial entry to the status registry.
+     *
+     * @param request create request
+     * @return the created status list
+     * @throws BadRequestException if a status list with the same URI already exists
+     */
     @Transactional
     public StatusListDto createStatusList(StatusListCreateDto request) {
         try {
@@ -74,7 +86,7 @@ public class StatusListService {
             return toStatusListDto(newStatusList, newStatusList.getMaxLength(), statusListProperties.getVersion());
         } catch (DataIntegrityViolationException e) {
             var msg = e.getMessage();
-            if (msg.toLowerCase().contains("status_list_uri_key")) {
+            if (msg != null && msg.toLowerCase().contains("status_list_uri_key")) {
                 log.debug("Statuslist could not be initialized since already initialized", e);
                 throw new BadRequestException("Status list already initialized");
             } else {
@@ -114,56 +126,118 @@ public class StatusListService {
         }
         statusList.setStatusZipped(token.getStatusListData());
 
-        updateRegistry(statusList, token);
+        publishToRegistry(statusList, token);
 
-        return toStatusListDto(statusList, statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusList.getId()), statusListProperties.getVersion());
+        return toStatusListDto(statusList,
+                statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusList.getId()),
+                statusListProperties.getVersion());
     }
 
+    /**
+     * Marks the given credential entries as revoked in their respective status lists.
+     *
+     * @param offerStatusSet credential status entries to update
+     * @return ids of the affected status lists
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public List<UUID> revoke(Set<CredentialOfferStatus> offerStatusSet) {
-        return offerStatusSet.stream().map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.REVOKE).getId()).toList();
+        return offerStatusSet.stream()
+                .map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.REVOKE).getId())
+                .toList();
     }
 
+    /**
+     * Marks the given credential entries as suspended in their respective status lists.
+     *
+     * @param offerStatusSet credential status entries to update
+     * @return ids of the affected status lists
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public List<UUID> suspend(Set<CredentialOfferStatus> offerStatusSet) {
-        return offerStatusSet.stream().map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.SUSPEND).getId()).toList();
+        return offerStatusSet.stream()
+                .map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.SUSPEND).getId())
+                .toList();
     }
 
+    /**
+     * Marks the given credential entries as valid (re-validated) in their respective status lists.
+     *
+     * @param offerStatusSet credential status entries to update
+     * @return ids of the affected status lists
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public List<UUID> revalidate(Set<CredentialOfferStatus> offerStatusSet) {
-        return offerStatusSet.stream().map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.VALID).getId()).toList();
+        return offerStatusSet.stream()
+                .map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.VALID).getId())
+                .toList();
     }
 
+    /**
+     * Loads status lists by URI.
+     *
+     * @param statusListUris status list registry URIs
+     * @return resolved status lists (may be fewer than requested)
+     */
     @Transactional
     public List<StatusList> findByUriIn(List<String> statusListUris) {
         return this.statusListRepository.findByUriIn(statusListUris);
     }
 
     /**
-     * Updates the token status list by setting the given bit
+     * Resolves and validates status lists from a credential offer request.
      *
-     * @param offerStatus
-     * @param bit         the statusBit to be set
+     * @param request the credential offer request
+     * @return the list of resolved status lists
+     * @throws BadRequestException if not all status lists can be resolved
+     */
+    @Transactional(readOnly = true)
+    public List<StatusList> resolveAndValidateStatusLists(CreateCredentialOfferRequestDto request) {
+        var statusLists = findByUriIn(request.getStatusLists());
+        return StatusListValidator.requireAllStatusListsResolved(request, statusLists);
+    }
+
+    /**
+     * Updates status lists for post-issuance status changes.
+     *
+     * @param offerStatusSet the set of credential offer statuses
+     * @param newStatus      the new status to apply
+     * @return the list of affected status list IDs
+     * @throws BadRequestException if the status transition is invalid or no status lists are found
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<UUID> updateStatusListsForPostIssuance(
+            Set<CredentialOfferStatus> offerStatusSet,
+            CredentialStatusManagementType newStatus) {
+
+        StatusListValidator.requireOfferStatusesPresent(offerStatusSet);
+
+        return StatusListValidator.validateAndMapPostIssuanceTransition(
+                newStatus,
+                () -> revoke(offerStatusSet),
+                () -> suspend(offerStatusSet),
+                () -> revalidate(offerStatusSet));
+    }
+
+    /**
+     * Updates the token status list by setting the given bit
      */
     protected StatusList updateTokenStatusList(CredentialOfferStatus offerStatus, TokenStatusListBit bit) {
-        // TODO Make updating status more efficient
         StatusList statusList = statusListRepository.findByIdForUpdate(offerStatus.getId().getStatusListId()).orElseThrow();
         var statusListBits = (Integer) statusList.getConfig().get(BITS_FIELD_NAME);
-        if (statusListBits < bit.getValue()) {
-            throw new BadRequestException(String.format("Attempted to update a status list %s to a status not supported %s", statusList.getUri(), bit.name()));
-        }
+        StatusListValidator.requireBitSupported(statusListBits, bit, statusList.getUri());
+
         try {
             var token = TokenStatusListToken.loadTokenStatusListToken(statusListBits,
                     statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
             token.setStatus(offerStatus.getId().getIndex(), bit.getValue());
             statusList.setStatusZipped(token.getStatusListData());
             if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
-                updateRegistry(statusList, token);
+                publishToRegistry(statusList, token);
             }
             statusListRepository.save(statusList);
             return statusList;
         } catch (IOException e) {
-            log.error(String.format("Failed to load status list %s", statusList.getId()), e);
+            log.error("Failed to load status list {}", statusList.getId(), e);
             throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
         }
     }
@@ -191,7 +265,7 @@ public class StatusListService {
                 .configurationOverride(toConfigurationOverride(statusListCreateDto.getConfigurationOverride()))
                 .build();
         log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits() * statusList.getMaxLength());
-        updateRegistry(statusList, token);
+        publishToRegistry(statusList, token);
         return statusList;
     }
 
@@ -204,35 +278,11 @@ public class StatusListService {
     }
 
     private StatusListEntryCreationDto createEmptyRegistryEntry() {
-
         return statusRegistryClient.createStatusListEntry();
     }
 
-    private void updateRegistry(StatusList statusListEntity, TokenStatusListToken token) {
-        // Build JWT
-        SignedJWT statusListJWT = buildStatusListJWT(statusListEntity, token);
-        var override = statusListEntity.getConfigurationOverride();
-        try {
-            statusListJWT.sign(signatureService.createSigner(statusListProperties, override.keyId(), override.keyPin()));
-        } catch (Exception e) {
-            log.error("Failed to sign status list JWT with the provided key.", e);
-            throw new ConfigurationException("Failed to sign status list JWT with the provided key.");
-        }
-        statusRegistryClient.updateStatusListEntry(statusListEntity, statusListJWT.serialize());
-    }
-
-    private SignedJWT buildStatusListJWT(StatusList statusListEntity, TokenStatusListToken token) {
-        var override = statusListEntity.getConfigurationOverride();
-
-        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(override.verificationMethodOrDefault(statusListProperties.getVerificationMethod()))
-                .type(new JOSEObjectType("statuslist+jwt")).build();
-        JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
-                .subject(statusListEntity.getUri())
-                .issuer(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
-                .issueTime(new Date())
-                .claim("status_list", token.getStatusListClaims())
-                .build();
-        return new SignedJWT(header, claimSet);
+    private void publishToRegistry(StatusList statusListEntity, TokenStatusListToken token) {
+        SignedJWT jwt = signingService.buildSignedStatusListJwt(statusListEntity, token);
+        statusRegistryClient.updateStatusListEntry(statusListEntity, jwt.serialize());
     }
 }
