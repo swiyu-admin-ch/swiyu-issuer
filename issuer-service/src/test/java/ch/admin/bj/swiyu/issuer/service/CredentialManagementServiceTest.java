@@ -131,7 +131,6 @@ class CredentialManagementServiceTest {
 
         // expiration triggers a persisted offer update (via expireCredentialOffer)
         verify(stateService, times(1)).expireOfferAndPublish(any());
-        verify(persistenceService, times(1)).saveCredentialOffer(any());
 
         // offer data should be removed by state transition logic, so DTO shouldn't expose holder keys / agent info
         assertNull(response.credentialOffers().getFirst().holderJWKs());
@@ -158,7 +157,6 @@ class CredentialManagementServiceTest {
         credentialService.getCredentialOfferInformation(mgmt.getId());
 
         verify(stateService, never()).expireOfferAndPublish(any());
-        verify(persistenceService, never()).saveCredentialOffer(any());
     }
 
     /**

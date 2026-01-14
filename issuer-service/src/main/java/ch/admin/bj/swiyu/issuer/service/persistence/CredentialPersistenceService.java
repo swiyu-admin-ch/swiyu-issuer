@@ -169,7 +169,7 @@ public class CredentialPersistenceService {
      * @return a set of random available indexes
      * @throws BadRequestException if not enough indexes are available
      */
-    private Set<Integer> getRandomIndexes(int issuanceBatchSize, StatusList statusList) {
+    Set<Integer> getRandomIndexes(int issuanceBatchSize, StatusList statusList) {
         // Find all free indexes for this status list
         var freeIndexes = availableStatusListIndexRepository.findById(statusList.getUri())
                 .orElseThrow(() -> new BadRequestException(
@@ -186,7 +186,7 @@ public class CredentialPersistenceService {
         // Random sample free indexes without repetitions
         Set<Integer> sampledNumbers = new LinkedHashSet<>();
         while (sampledNumbers.size() < issuanceBatchSize) {
-            sampledNumbers.add(freeIndexes.get(random.nextInt(freeIndexes.size())));
+            sampledNumbers.add(freeIndexes.remove(random.nextInt(freeIndexes.size())));
         }
         return sampledNumbers;
     }

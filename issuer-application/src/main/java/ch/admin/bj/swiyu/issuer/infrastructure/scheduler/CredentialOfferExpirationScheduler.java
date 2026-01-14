@@ -40,10 +40,7 @@ public class CredentialOfferExpirationScheduler {
         log.info("Expiring {} offers", persistenceService.countExpiredOffers(expireStates, expireTimeStamp));
 
         var expiredOffers = persistenceService.findExpiredOffers(expireStates, expireTimeStamp);
-        expiredOffers.forEach(offer -> {
-            stateService.expireOfferAndPublish(offer);
-            persistenceService.saveCredentialOffer(offer);
-        });
+        expiredOffers.forEach(stateService::expireOfferAndPublish);
     }
 
 

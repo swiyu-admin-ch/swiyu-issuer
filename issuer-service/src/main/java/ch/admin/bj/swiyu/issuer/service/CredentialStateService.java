@@ -149,6 +149,8 @@ public class CredentialStateService {
                 credentialOffer.getCredentialManagement().getId(),
                 credentialOffer.getId(),
                 credentialOffer.getCredentialStatus());
+
+        persistenceService.saveCredentialOffer(credentialOffer);
     }
 
     /**

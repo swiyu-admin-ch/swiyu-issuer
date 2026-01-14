@@ -308,7 +308,7 @@ public class CredentialManagementService {
     }
 
     /**
-     * Retrieves credential management and checks for expired offers.
+     * Retrieves credential management and checks for expiration, expiring the affected offers.
      *
      * @param managementId the management ID
      * @return the credential management with updated offer states
@@ -338,9 +338,12 @@ public class CredentialManagementService {
             CreateCredentialOfferRequestDto requestDto,
             Map<String, Object> offerData) {
 
-        var expiration = Instant.now().plusSeconds(requestDto.getOfferValiditySeconds() > 0
+        long offerDuration = requestDto.getOfferValiditySeconds() > 0
                 ? requestDto.getOfferValiditySeconds()
-                : applicationProperties.getOfferValidity());
+                : applicationProperties.getOfferValidity();
+
+        var expiration = Instant.now().plusSeconds(
+                offerDuration);
 
         // Get used status lists and ensure they are managed by the issuer
         var statusLists = statusListService.resolveAndValidateStatusLists(requestDto);
@@ -405,6 +408,6 @@ public class CredentialManagementService {
 
         stateService.expireOfferAndPublish(credential);
 
-        return persistenceService.saveCredentialOffer(credential);
+        return credential;
     }
 }
