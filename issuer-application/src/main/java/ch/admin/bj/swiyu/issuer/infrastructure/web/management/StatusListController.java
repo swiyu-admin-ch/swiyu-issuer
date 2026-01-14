@@ -10,7 +10,7 @@ import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
-import ch.admin.bj.swiyu.issuer.service.StatusListService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

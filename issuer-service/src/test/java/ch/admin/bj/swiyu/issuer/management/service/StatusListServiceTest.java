@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.SignatureService;
-import ch.admin.bj.swiyu.issuer.service.StatusListService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListService;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;

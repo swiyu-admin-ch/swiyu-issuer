@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.service;
+package ch.admin.bj.swiyu.issuer.service.statuslist;
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
@@ -11,8 +11,6 @@ import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
-import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListValidator;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.AllArgsConstructor;

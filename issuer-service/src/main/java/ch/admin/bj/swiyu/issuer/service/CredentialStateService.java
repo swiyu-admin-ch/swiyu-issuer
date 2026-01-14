@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineCon
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import ch.admin.bj.swiyu.issuer.service.mapper.CredentialManagementMapper;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import lombok.RequiredArgsConstructor;

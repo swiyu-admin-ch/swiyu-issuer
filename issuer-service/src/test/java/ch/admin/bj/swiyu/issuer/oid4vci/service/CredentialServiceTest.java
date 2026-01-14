@@ -25,7 +25,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
-import ch.admin.bj.swiyu.issuer.service.StatusListService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListService;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
