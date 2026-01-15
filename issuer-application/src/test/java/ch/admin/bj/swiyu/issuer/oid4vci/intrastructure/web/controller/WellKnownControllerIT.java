@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -10,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.SignedJWT;
-import io.fabric8.kubernetes.client.utils.OpenIDConnectionUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,8 +28,8 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -98,6 +96,14 @@ class WellKnownControllerIT {
     }
 
     @Test
+    void testWellknownJwksComplete() throws Exception {
+        assertDoesNotThrow(() -> mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].kty").value("EC"))
+                .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].crv").value("P-256"))
+                .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].alg").value("ECDH-ES")));
+    }
+
     void testGetIssuerSignedMetadataSubject_thenSuccess() throws Exception {
         var url = testHelper.createBasicOfferJsonAndGetTenantID();
         var issuerPublicKey = assertDoesNotThrow(() -> JWK.parseFromPEMEncodedObjects(sdjwtProperties.getPrivateKey()).toECKey().toECPublicKey());
