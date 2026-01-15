@@ -64,7 +64,7 @@ public class TestInfrastructureUtils {
                 .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                 .param("pre-authorized_code", preAuthCode);
         if (holderPublicKey != null) {
-            requestBuilder.header("DPoP", createDPoP(mock, "POST", externalUrl + "/api/token", null, holderPublicKey));
+            requestBuilder.header("DPoP", createDPoP(mock, "POST", externalUrl + "/oid4vci/api/token", null, holderPublicKey));
         }
         var response = mock.perform(requestBuilder)
                 .andExpect(status().isOk())
