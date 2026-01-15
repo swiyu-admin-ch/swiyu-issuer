@@ -187,7 +187,7 @@ class IssuanceControllerIT {
          * exp: Optional the time when the Metadata are expiring -> default 24h
          */
 
-        assertEquals(applicationProperties.getIssuerId(), claims.get("sub"));
+        assertEquals("http://localhost:8080", claims.get("sub"));
         assertNotNull(claims.get("iat"));
         assertNotNull(claims.get("exp"));
     }
@@ -554,7 +554,7 @@ class IssuanceControllerIT {
         assertNotNull(refreshToken);
         // Refresh the token
         var refreshResponse = mock.perform(post("/oid4vci/api/token")
-                        .header("DPoP", TestInfrastructureUtils.createDPoP(mock, "POST", applicationProperties.getExternalUrl() + "/api/token", null, dpopKey))
+                        .header("DPoP", TestInfrastructureUtils.createDPoP(mock, "POST", applicationProperties.getExternalUrl() + "/oid4vci/api/token", null, dpopKey))
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                         .param("grant_type", "refresh_token")
                         .param("refresh_token", refreshToken.toString()))

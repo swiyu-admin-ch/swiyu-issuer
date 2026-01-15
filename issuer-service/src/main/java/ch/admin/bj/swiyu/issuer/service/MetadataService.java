@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.*;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
@@ -145,15 +144,16 @@ public class MetadataService {
                                              String metaDataJson) throws ParseException {
 
         /*
-         * sub: Must match the issuer did
+         * sub: Must be the external URL
          * iat: Must be the time when the JWT was issued
          * exp: Optional the time when the Metadata are expiring -> default 24h
          * iss: Optional denoting the party attesting to the claims in the signed metadata
          */
         JWTClaimsSet metaData = JWTClaimsSet.parse(metaDataJson);
+
         // Override JWT claims,
         JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder(metaData)
-                .subject(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
+                .subject(applicationProperties.getExternalUrl())
                 .issueTime(new Date())
                 .issuer(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
                 .expirationTime(DateUtils.addHours(new Date(), 24));
