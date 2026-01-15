@@ -27,6 +27,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class MetadataServiceTest {
+    private final String externalUrl = "http://localhost:8080";
+    private final String issuerId = "did:example:issuer";
 
     private OpenIdIssuerConfiguration openIdIssuerConfiguration;
     private CredentialManagementService credentialManagementService;
@@ -52,7 +54,8 @@ class MetadataServiceTest {
         metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
 
         override = new ConfigurationOverride(null, null, null, null);
-        when(applicationProperties.getIssuerId()).thenReturn("did:example:issuer");
+        when(applicationProperties.getIssuerId()).thenReturn(issuerId);
+        when(applicationProperties.getExternalUrl()).thenReturn(externalUrl);
     }
 
     @Test
@@ -83,7 +86,7 @@ class MetadataServiceTest {
         assertNotNull(jwtStr);
 
         SignedJWT parsed = SignedJWT.parse(jwtStr);
-        assertEquals("did:example:issuer", parsed.getJWTClaimsSet().getSubject());
+        assertEquals(issuerId, parsed.getJWTClaimsSet().getIssuer());
         assertEquals("1.0.0", parsed.getJWTClaimsSet().getStringClaim("version"));
     }
 
@@ -126,7 +129,7 @@ class MetadataServiceTest {
         String jwt = svc.getSignedOpenIdConfiguration(tenantId);
         assertNotNull(jwt);
         SignedJWT parsed = SignedJWT.parse(jwt);
-        assertEquals("did:example:issuer", parsed.getJWTClaimsSet().getSubject());
+        assertEquals(externalUrl, parsed.getJWTClaimsSet().getSubject());
         assertEquals("issuer", parsed.getJWTClaimsSet().getStringClaim("issuer"));
         assertEquals("token_endpoint", parsed.getJWTClaimsSet().getStringClaim("token_endpoint"));
     }
