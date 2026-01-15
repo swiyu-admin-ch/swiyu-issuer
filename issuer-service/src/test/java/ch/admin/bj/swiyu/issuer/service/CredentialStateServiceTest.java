@@ -3,7 +3,7 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
-import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import org.junit.jupiter.api.AfterEach;
@@ -33,7 +33,7 @@ class CredentialStateServiceTest {
     private CredentialPersistenceService persistenceService;
 
     @Mock
-    private StatusListService statusListService;
+    private StatusListPersistenceService statusListPersistenceService;
 
     private CredentialStateService stateService;
 
@@ -46,7 +46,7 @@ class CredentialStateServiceTest {
                 credentialStateMachine,
                 applicationEventPublisher,
                 persistenceService,
-                statusListService);
+                statusListPersistenceService);
     }
 
     @AfterEach
@@ -334,7 +334,7 @@ class CredentialStateServiceTest {
                 .thenReturn(persistedStatuses);
 
         var expectedStatusListIds = List.of(UUID.randomUUID());
-        when(statusListService.updateStatusListsForPostIssuance(eq(persistedStatuses), eq(CredentialStatusManagementType.REVOKED)))
+        when(statusListPersistenceService.revoke(eq(persistedStatuses)))
                 .thenReturn(expectedStatusListIds);
 
         when(persistenceService.saveCredentialManagement(eq(mgmt))).thenReturn(mgmt);
@@ -347,7 +347,7 @@ class CredentialStateServiceTest {
 
         assertNotNull(response);
 
-        verify(statusListService).updateStatusListsForPostIssuance(anySet(), eq(CredentialStatusManagementType.REVOKED));
+        verify(statusListPersistenceService).revoke(anySet());
         verify(persistenceService).saveCredentialManagement(eq(mgmt));
     }
 

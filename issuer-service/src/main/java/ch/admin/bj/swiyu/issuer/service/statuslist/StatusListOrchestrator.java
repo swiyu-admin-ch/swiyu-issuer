@@ -17,7 +17,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -27,10 +26,43 @@ import java.util.*;
 import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialOfferMapper.toConfigurationOverride;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusListMapper.toStatusListDto;
 
+/**
+ * Orchestrates all operations related to status lists, including creation, update, validation,
+ * and synchronization with the external status registry.
+ * <p>
+ * <b>Responsibilities:</b>
+ * <ul>
+ *   <li>Creates and persists new status lists, and publishes them to the status registry.</li>
+ *   <li>Updates status lists and synchronizes changes with the external registry.</li>
+ *   <li>Handles post-issuance status changes (revoke, suspend, revalidate) for credentials via the persistence service.</li>
+ *   <li>Resolves and validates status lists for credential offer requests.</li>
+ *   <li>Ensures transactional integrity and consistency between the database and registry.</li>
+ * </ul>
+ * <p>
+ * <b>Workflow:</b>
+ * <ul>
+ *   <li>Coordinates between repository, signing, and registry services for status list lifecycle management.</li>
+ *   <li>Uses explicit transactions for creation to handle integrity exceptions after commit.</li>
+ *   <li>Delegates low-level status bit updates to {@link StatusListPersistenceService}.</li>
+ *   <li>Publishes status list changes to the registry when required.</li>
+ * </ul>
+ * <p>
+ * <b>Transactional Boundaries:</b>
+ * <ul>
+ *   <li>Read-only for information and resolution queries.</li>
+ *   <li>Transactional for creation and update operations.</li>
+ * </ul>
+ *
+ * <b>Note:</b> This class acts as a coordinator/facade, managing workflows that involve multiple services,
+ * repositories, and transactional boundaries for status list management. It does not perform low-level
+ * status bit manipulations directly.
+ *
+ * @author pgatschet
+ */
 @Slf4j
 @AllArgsConstructor
 @Service
-public class StatusListService {
+public class StatusListOrchestrator {
 
     private static final String BITS_FIELD_NAME = "bits";
     private final ApplicationProperties applicationProperties;
@@ -131,44 +163,6 @@ public class StatusListService {
                 statusListProperties.getVersion());
     }
 
-    /**
-     * Marks the given credential entries as revoked in their respective status lists.
-     *
-     * @param offerStatusSet credential status entries to update
-     * @return ids of the affected status lists
-     */
-    @Transactional(propagation = Propagation.MANDATORY)
-    public List<UUID> revoke(Set<CredentialOfferStatus> offerStatusSet) {
-        return offerStatusSet.stream()
-                .map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.REVOKE).getId())
-                .toList();
-    }
-
-    /**
-     * Marks the given credential entries as suspended in their respective status lists.
-     *
-     * @param offerStatusSet credential status entries to update
-     * @return ids of the affected status lists
-     */
-    @Transactional(propagation = Propagation.MANDATORY)
-    public List<UUID> suspend(Set<CredentialOfferStatus> offerStatusSet) {
-        return offerStatusSet.stream()
-                .map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.SUSPEND).getId())
-                .toList();
-    }
-
-    /**
-     * Marks the given credential entries as valid (re-validated) in their respective status lists.
-     *
-     * @param offerStatusSet credential status entries to update
-     * @return ids of the affected status lists
-     */
-    @Transactional(propagation = Propagation.MANDATORY)
-    public List<UUID> revalidate(Set<CredentialOfferStatus> offerStatusSet) {
-        return offerStatusSet.stream()
-                .map(credentialOfferStatus -> updateTokenStatusList(credentialOfferStatus, TokenStatusListBit.VALID).getId())
-                .toList();
-    }
 
     /**
      * Loads status lists by URI.
@@ -176,7 +170,7 @@ public class StatusListService {
      * @param statusListUris status list registry URIs
      * @return resolved status lists (may be fewer than requested)
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public List<StatusList> findByUriIn(List<String> statusListUris) {
         return this.statusListRepository.findByUriIn(statusListUris);
     }
@@ -194,51 +188,6 @@ public class StatusListService {
         return StatusListValidator.requireAllStatusListsResolved(request, statusLists);
     }
 
-    /**
-     * Updates status lists for post-issuance status changes.
-     *
-     * @param offerStatusSet the set of credential offer statuses
-     * @param newStatus      the new status to apply
-     * @return the list of affected status list IDs
-     * @throws BadRequestException if the status transition is invalid or no status lists are found
-     */
-    @Transactional(propagation = Propagation.MANDATORY)
-    public List<UUID> updateStatusListsForPostIssuance(
-            Set<CredentialOfferStatus> offerStatusSet,
-            CredentialStatusManagementType newStatus) {
-
-        StatusListValidator.requireOfferStatusesPresent(offerStatusSet);
-
-        return StatusListValidator.validateAndMapPostIssuanceTransition(
-                newStatus,
-                () -> revoke(offerStatusSet),
-                () -> suspend(offerStatusSet),
-                () -> revalidate(offerStatusSet));
-    }
-
-    /**
-     * Updates the token status list by setting the given bit
-     */
-    protected StatusList updateTokenStatusList(CredentialOfferStatus offerStatus, TokenStatusListBit bit) {
-        StatusList statusList = statusListRepository.findByIdForUpdate(offerStatus.getId().getStatusListId()).orElseThrow();
-        var statusListBits = (Integer) statusList.getConfig().get(BITS_FIELD_NAME);
-        StatusListValidator.requireBitSupported(statusListBits, bit, statusList.getUri());
-
-        try {
-            var token = TokenStatusListToken.loadTokenStatusListToken(statusListBits,
-                    statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
-            token.setStatus(offerStatus.getId().getIndex(), bit.getValue());
-            statusList.setStatusZipped(token.getStatusListData());
-            if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
-                publishToRegistry(statusList, token);
-            }
-            statusListRepository.save(statusList);
-            return statusList;
-        } catch (IOException e) {
-            log.error("Failed to load status list {}", statusList.getId(), e);
-            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
-        }
-    }
 
     private StatusList initTokenStatusListToken(StatusListCreateDto statusListCreateDto) {
 

@@ -25,7 +25,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
-import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
@@ -61,7 +61,7 @@ class CredentialServiceTest {
     CredentialManagementRepository credentialManagementRepository;
     CredentialService credentialService;
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
-    private StatusListService statusListService;
+    private StatusListOrchestrator statusListOrchestrator;
     private IssuerMetadata issuerMetadata;
     private StatusList statusList;
     private CredentialFormatFactory credentialFormatFactory;
@@ -78,7 +78,7 @@ class CredentialServiceTest {
     @BeforeEach
     void setUp() {
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
-        statusListService = Mockito.mock(StatusListService.class);
+        statusListOrchestrator = Mockito.mock(StatusListOrchestrator.class);
         issuerMetadata = Mockito.mock(IssuerMetadata.class);
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);
         applicationProperties = Mockito.mock(ApplicationProperties.class);
@@ -218,7 +218,7 @@ class CredentialServiceTest {
 
         offer.setCredentialManagement(mgmt);
 
-        when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
+        when(statusListOrchestrator.findByUriIn(any())).thenReturn(List.of(statusList));
         when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
         when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("different-test-metadata", mock(CredentialConfiguration.class)));
@@ -266,7 +266,7 @@ class CredentialServiceTest {
         when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.holderBindings(anyList())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialType(anyList())).thenReturn(sdJwtCredential);
-        when(statusListService.findByUriIn(any())).thenReturn(List.of(statusList));
+        when(statusListOrchestrator.findByUriIn(any())).thenReturn(List.of(statusList));
 
         var claim = new CredentialClaim();
         claim.setMandatory(true);

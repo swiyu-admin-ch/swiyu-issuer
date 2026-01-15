@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.SignatureService;
-import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
@@ -43,8 +43,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
-class StatusListServiceTest {
-    private StatusListService statusListService;
+class StatusListOrchestratorTest {
+    private StatusListOrchestrator statusListOrchestrator;
     private ApplicationProperties applicationProperties;
     private StatusListProperties statusListProperties;
     private StatusRegistryClient statusRegistryClient;
@@ -87,7 +87,7 @@ class StatusListServiceTest {
 
         signingService = new StatusListSigningService(applicationProperties, statusListProperties, signatureService);
 
-        statusListService = new StatusListService(
+        statusListOrchestrator = new StatusListOrchestrator(
                 applicationProperties,
                 statusListProperties,
                 statusRegistryClient,
@@ -112,7 +112,7 @@ class StatusListServiceTest {
                 .build();
         var statusListCaptor = ArgumentCaptor.forClass(StatusList.class);
         var jwtCaptor = ArgumentCaptor.forClass(String.class);
-        statusListService.createStatusList(request);
+        statusListOrchestrator.createStatusList(request);
         verify(statusRegistryClient).updateStatusListEntry(statusListCaptor.capture(), jwtCaptor.capture());
         var jwt = jwtCaptor.getValue();
         var parsedJwt = SignedJWT.parse(jwt);
@@ -121,93 +121,6 @@ class StatusListServiceTest {
         assertEquals(expectedVerificationMethod, parsedJwt.getHeader().getKeyID());
     }
 
-    @Test
-    void revoke_shouldReturnStatusListId() {
-        UUID statusListId = UUID.randomUUID();
-
-        // create a valid token status zipped payload
-        var token = new TokenStatusListToken(8, 10);
-
-        StatusList statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .configurationOverride(null)
-                .build();
-
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
-
-        CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
-        CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
-        when(offerStatus.getId()).thenReturn(id);
-        when(id.getStatusListId()).thenReturn(statusListId);
-        when(id.getIndex()).thenReturn(1);
-
-        List<UUID> result = statusListService.revoke(Set.of(offerStatus));
-
-        assertEquals(1, result.size());
-        assertEquals(statusListId, result.get(0));
-    }
-
-    @Test
-    void suspend_shouldReturnStatusListId() {
-        UUID statusListId = UUID.randomUUID();
-
-        TokenStatusListToken token = new TokenStatusListToken(8, 10);
-
-        StatusList statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .configurationOverride(null)
-                .build();
-
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
-
-        CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
-        CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
-        when(offerStatus.getId()).thenReturn(id);
-        when(id.getStatusListId()).thenReturn(statusListId);
-        when(id.getIndex()).thenReturn(2);
-
-        List<UUID> result = statusListService.suspend(Set.of(offerStatus));
-
-        assertEquals(1, result.size());
-        assertEquals(statusListId, result.getFirst());
-    }
-
-    @Test
-    void revalidate_shouldReturnStatusListId() {
-        UUID statusListId = UUID.randomUUID();
-
-        TokenStatusListToken token = new TokenStatusListToken(8, 10);
-
-        StatusList statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .configurationOverride(null)
-                .build();
-
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
-
-        CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
-        CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
-        when(offerStatus.getId()).thenReturn(id);
-        when(id.getStatusListId()).thenReturn(statusListId);
-        when(id.getIndex()).thenReturn(3);
-
-        List<UUID> result = statusListService.revalidate(Set.of(offerStatus));
-
-        assertEquals(1, result.size());
-        assertEquals(statusListId, result.getFirst());
-    }
 
     @Test
     void getStatusListInformation_whenExists_shouldReturnDtoAndCallCount() {
@@ -224,7 +137,7 @@ class StatusListServiceTest {
         when(credentialOfferStatusRepository.countByStatusListId(statusListId)).thenReturn(3);
         when(statusListProperties.getVersion()).thenReturn("v1");
 
-        var dto = statusListService.getStatusListInformation(statusListId);
+        var dto = statusListOrchestrator.getStatusListInformation(statusListId);
 
         assertEquals(statusList.getUri(), dto.getStatusRegistryUrl());
         // verify repository interactions
@@ -237,7 +150,7 @@ class StatusListServiceTest {
         UUID statusListId = UUID.randomUUID();
         when(statusListRepository.findById(statusListId)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> statusListService.getStatusListInformation(statusListId));
+        assertThrows(ResourceNotFoundException.class, () -> statusListOrchestrator.getStatusListInformation(statusListId));
 
         verify(statusListRepository, times(1)).findById(statusListId);
         verifyNoInteractions(credentialOfferStatusRepository);
@@ -260,7 +173,7 @@ class StatusListServiceTest {
         when(statusListRepository.findByUriIn(List.of(uri1, uri2)))
                 .thenReturn(List.of(statusList1, statusList2));
 
-        var result = statusListService.resolveAndValidateStatusLists(request);
+        var result = statusListOrchestrator.resolveAndValidateStatusLists(request);
 
         assertEquals(List.of(statusList1, statusList2), result);
         verify(statusListRepository).findByUriIn(List.of(uri1, uri2));
@@ -285,7 +198,7 @@ class StatusListServiceTest {
                 .thenReturn(List.of(statusList1)); // Only one resolved
 
         var ex = Assertions.assertThrows(BadRequestException.class,
-                () -> statusListService.resolveAndValidateStatusLists(request));
+                () -> statusListOrchestrator.resolveAndValidateStatusLists(request));
 
         assertTrue(ex.getMessage().contains(uri1));
         assertFalse(ex.getMessage().contains(uri2));
@@ -302,7 +215,7 @@ class StatusListServiceTest {
 
         when(statusListRepository.findByUriIn(List.of())).thenReturn(List.of());
 
-        var result = statusListService.resolveAndValidateStatusLists(request);
+        var result = statusListOrchestrator.resolveAndValidateStatusLists(request);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -310,125 +223,4 @@ class StatusListServiceTest {
         verifyNoMoreInteractions(statusListRepository);
     }
 
-    /**
-     * Happy path: updating to {@link CredentialStatusManagementType#REVOKED} should mark entries as revoked.
-     */
-    @Test
-    void updateStatusListsForPostIssuance_shouldRevokeWhenStatusIsRevoked() {
-        var statusListId = UUID.randomUUID();
-        var token = new TokenStatusListToken(8, 10);
-
-        var statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .build();
-
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
-
-        var offerStatus = CredentialOfferStatus.builder()
-                .id(CredentialOfferStatusKey.builder()
-                        .offerId(UUID.randomUUID())
-                        .statusListId(statusListId)
-                        .index(1)
-                        .build())
-                .build();
-
-        var result = statusListService.updateStatusListsForPostIssuance(Set.of(offerStatus), CredentialStatusManagementType.REVOKED);
-
-        assertEquals(List.of(statusListId), result);
-        verify(statusListRepository, atLeastOnce()).findByIdForUpdate(statusListId);
-    }
-
-    /**
-     * Happy path: updating to {@link CredentialStatusManagementType#SUSPENDED} should mark entries as suspended.
-     */
-    @Test
-    void updateStatusListsForPostIssuance_shouldSuspendWhenStatusIsSuspended() {
-        var statusListId = UUID.randomUUID();
-        var token = new TokenStatusListToken(8, 10);
-
-        var statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .build();
-
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
-
-        var offerStatus = CredentialOfferStatus.builder()
-                .id(CredentialOfferStatusKey.builder()
-                        .offerId(UUID.randomUUID())
-                        .statusListId(statusListId)
-                        .index(2)
-                        .build())
-                .build();
-
-        var result = statusListService.updateStatusListsForPostIssuance(Set.of(offerStatus), CredentialStatusManagementType.SUSPENDED);
-
-        assertEquals(List.of(statusListId), result);
-        verify(statusListRepository, atLeastOnce()).findByIdForUpdate(statusListId);
-    }
-
-    /**
-     * Happy path: updating to {@link CredentialStatusManagementType#ISSUED} should re-validate entries.
-     */
-    @Test
-    void updateStatusListsForPostIssuance_shouldRevalidateWhenStatusIsIssued() {
-        var statusListId = UUID.randomUUID();
-        var token = new TokenStatusListToken(8, 10);
-
-        var statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .build();
-
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
-
-        var offerStatus = CredentialOfferStatus.builder()
-                .id(CredentialOfferStatusKey.builder()
-                        .offerId(UUID.randomUUID())
-                        .statusListId(statusListId)
-                        .index(3)
-                        .build())
-                .build();
-
-        var result = statusListService.updateStatusListsForPostIssuance(Set.of(offerStatus), CredentialStatusManagementType.ISSUED);
-
-        assertEquals(List.of(statusListId), result);
-        verify(statusListRepository, atLeastOnce()).findByIdForUpdate(statusListId);
-    }
-
-    @Test
-    void updateStatusListsForPostIssuance_shouldThrowWhenNoStatusListsFound() {
-        var ex = Assertions.assertThrows(BadRequestException.class,
-                () -> statusListService.updateStatusListsForPostIssuance(Set.of(), CredentialStatusManagementType.REVOKED));
-
-        assertTrue(ex.getMessage().toLowerCase(Locale.ROOT).contains("no associated status lists"));
-    }
-
-    @Test
-    void updateStatusListsForPostIssuance_shouldThrowForInvalidTransition() {
-        var offerStatus = CredentialOfferStatus.builder()
-                .id(CredentialOfferStatusKey.builder()
-                        .offerId(UUID.randomUUID())
-                        .statusListId(UUID.randomUUID())
-                        .index(1)
-                        .build())
-                .build();
-
-        var ex = Assertions.assertThrows(BadRequestException.class,
-                () -> statusListService.updateStatusListsForPostIssuance(Set.of(offerStatus), CredentialStatusManagementType.INIT));
-
-        assertTrue(ex.getMessage().contains("Illegal state transition"));
-    }
-
 }
-

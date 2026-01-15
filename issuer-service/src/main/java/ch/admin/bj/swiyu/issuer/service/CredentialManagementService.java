@@ -15,7 +15,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.mapper.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
-import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +51,7 @@ public class CredentialManagementService {
     private final CredentialOfferValidationService validationService;
     private final CredentialStateService stateService;
     private final CredentialPersistenceService persistenceService;
-    private final StatusListService statusListService;
+    private final StatusListOrchestrator statusListOrchestrator;
 
     /**
      * Retrieve public information about a credential offer.
@@ -232,7 +232,7 @@ public class CredentialManagementService {
 
         validationService.validateCredentialOfferCreateRequest(newOffer, offerData);
 
-        var statusLists = statusListService.resolveAndValidateStatusLists(newOffer);
+        var statusLists = statusListOrchestrator.resolveAndValidateStatusLists(newOffer);
 
         // Validate issuer DIDs match
         var issuerDid = validationService.determineIssuerDid(newOffer, applicationProperties.getIssuerId());
@@ -347,7 +347,7 @@ public class CredentialManagementService {
                 offerDuration);
 
         // Get used status lists and ensure they are managed by the issuer
-        var statusLists = statusListService.resolveAndValidateStatusLists(requestDto);
+        var statusLists = statusListOrchestrator.resolveAndValidateStatusLists(requestDto);
 
         // Validate issuer DIDs match
         var issuerDid = validationService.determineIssuerDid(requestDto, applicationProperties.getIssuerId());
