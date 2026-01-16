@@ -241,7 +241,7 @@ public class CredentialStateService {
 
         // Handle status list updates for post-issuance
         var affectedOffers = mgmt.getCredentialOffers().stream()
-                .map(ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer::getId)
+                .map(CredentialOffer::getId)
                 .toList();
 
         var offerStatusSet = persistenceService.findCredentialOfferStatusesByOfferIds(affectedOffers);
