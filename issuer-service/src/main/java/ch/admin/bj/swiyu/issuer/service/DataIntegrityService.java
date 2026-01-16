@@ -43,6 +43,45 @@ public class DataIntegrityService {
         throw new JOSEException("Unsupported Key Type %s".formatted(kty));
     }
 
+    private boolean isDataIntegrityRequired(Map<String, Object> offerData) {
+        return offerData.containsKey("data_integrity") || applicationProperties.isDataIntegrityEnforced();
+    }
+
+    private Map<String, Object> verifyDataIntegrityJWT(String jwtString, UUID offerId) {
+        var offerIdentifier = offerId == null ? "" : offerId;
+        try {
+            SignedJWT dataIntegrityJWT = SignedJWT.parse(jwtString);
+            JWSHeader jwtHeader = dataIntegrityJWT.getHeader();
+            JWK matchingKey = applicationProperties.getDataIntegrityKeySet().getKeyByKeyId(jwtHeader.getKeyID());
+
+            if (matchingKey == null) {
+                log.error("Data Integrity of offer {} could not be verified with key {}", offerIdentifier, applicationProperties.getDataIntegrityJwks());
+                throw new BadRequestException("Data Integrity of offer could not be verified. No matching key found");
+            }
+
+            KeyType kty = matchingKey.getKeyType();
+
+            if (!dataIntegrityJWT.verify(buildJWSVerifier(kty, matchingKey))) {
+                log.error("Data Integrity of offer {} could not be verified with key {}", offerIdentifier, matchingKey.toJSONString());
+                throw new BadRequestException("Data Integrity of offer could not be verified");
+            }
+            return dataIntegrityJWT.getJWTClaimsSet().toJSONObject();
+        } catch (Exception e) {
+            log.error("Failed setting up Data Integrity check of offer {} with JWKS {} - caused by {}", offerIdentifier, applicationProperties.getDataIntegrityJwks(), e.getMessage());
+            throw new BadRequestException(e.getMessage());
+        }
+    }
+
+    private Map<String, Object> parseOfferData(String data, UUID offerId) {
+        var offerIdentifier = offerId == null ? "" : offerId;
+        try {
+            return objectMapper.readValue(data, HashMap.class);
+        } catch (JsonProcessingException e) {
+            log.error("Could not load offer data of offer {}", offerIdentifier);
+            throw new CredentialException("Failed to parse offer data", e);
+        }
+    }
+
     /**
      * Unpacks the credential offer data and returns is as HashMap.
      * If Data integrity checks are available performs these.
@@ -55,39 +94,14 @@ public class DataIntegrityService {
     public Map<String, Object> getVerifiedOfferData(Map<String, Object> offerData, UUID offerId) {
         var offerIdentifier = offerId == null ? "" : offerId;
         if (offerData == null || !offerData.containsKey("data")) {
-            log.error(String.format("Issuer Management Error - Offer %s lacks any offer data", offerIdentifier));
+            log.error("Issuer Management Error - Offer {} lacks any offer data", offerIdentifier);
             throw new BadRequestException("No offer data found");
-        } else if (offerData.containsKey("data_integrity") || applicationProperties.isDataIntegrityEnforced()) {
-            // Data Integrity Checks
-            try {
-                SignedJWT dataIntegrityJWT = SignedJWT.parse((String) offerData.get("data"));
-                JWSHeader jwtHeader = dataIntegrityJWT.getHeader();
-                JWK matchingKey = applicationProperties.getDataIntegrityKeySet().getKeyByKeyId(jwtHeader.getKeyID());
-
-                if (matchingKey == null) {
-                    log.error(String.format("Data Integrity of offer %s could not be verified with key %s", offerIdentifier, applicationProperties.getDataIntegrityJwks()));
-                    throw new BadRequestException("Data Integrity of offer could not be verified. No matching key found");
-                }
-
-                KeyType kty = matchingKey.getKeyType();
-
-                if (!dataIntegrityJWT.verify(buildJWSVerifier(kty, matchingKey))) {
-                    log.error(String.format("Data Integrity of offer %s could not be verified with key %s", offerIdentifier, matchingKey.toJSONString()));
-                    throw new BadRequestException("Data Integrity of offer could not be verified");
-                }
-                // Return Verified Data
-                return dataIntegrityJWT.getJWTClaimsSet().toJSONObject();
-            } catch (Exception e) {
-                log.error(String.format("Failed setting up Data Integrity check of offer %s with JWKS %s - caused by ", offerIdentifier, applicationProperties.getDataIntegrityJwks()), e.getMessage());
-                throw new BadRequestException(e.getMessage());
-            }
         }
-        // Just return the data if its not data integrity protected from the issuer management
-        try {
-            return objectMapper.readValue((String) offerData.get("data"), HashMap.class);
-        } catch (JsonProcessingException e) {
-            log.error(String.format("Could not load offer data of offer %s", offerIdentifier));
-            throw new CredentialException("Failed to parse offer data", e);
+
+        String data = (String) offerData.get("data");
+        if (isDataIntegrityRequired(offerData)) {
+            return verifyDataIntegrityJWT(data, offerId);
         }
+        return parseOfferData(data, offerId);
     }
 }
