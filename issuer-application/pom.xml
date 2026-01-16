@@ -14,7 +14,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-issuer-parent</artifactId>
-        <version>2.2.0-SNAPSHOT</version>
+        <version>2.4.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>swiyu-issuer-application</artifactId>
@@ -152,7 +152,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>2.2.0-SNAPSHOT</version>
+            <version>2.4.0-SNAPSHOT</version>
         </dependency>
 
         <!-- Miscellaneous / Utility -->
@@ -199,7 +199,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>2.2.0-SNAPSHOT</version>
+            <version>2.4.0-SNAPSHOT</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
