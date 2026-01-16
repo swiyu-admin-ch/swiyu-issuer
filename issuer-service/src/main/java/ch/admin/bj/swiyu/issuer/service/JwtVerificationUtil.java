@@ -13,12 +13,36 @@ import lombok.experimental.UtilityClass;
 
 import java.text.ParseException;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.HashMap;
 
 /**
  * Utility for JWT signature verification and JWSVerifier creation.
  */
 @UtilityClass
 public class JwtVerificationUtil {
+    /**
+     * Registry for JWSVerifier factories by KeyType.
+     * Add new key types here for extensibility.
+     */
+    private static final Map<KeyType, Function<JWK, JWSVerifier>> VERIFIER_FACTORIES = new HashMap<>();
+    static {
+        VERIFIER_FACTORIES.put(KeyType.EC, key -> {
+            try {
+                return new ECDSAVerifier(key.toECKey().toPublicJWK());
+            } catch (JOSEException e) {
+                throw new JwtVerifierFactoryException("Failed to create EC verifier", e);
+            }
+        });
+        VERIFIER_FACTORIES.put(KeyType.RSA, key -> {
+            try {
+                return new RSASSAVerifier(key.toRSAKey().toPublicJWK());
+            } catch (JOSEException e) {
+                throw new JwtVerifierFactoryException("Failed to create RSA verifier", e);
+            }
+        });
+    }
+
     /**
      * Verifies JWT signature and returns claims as a map.
      * @param jwtString JWT string
@@ -32,7 +56,7 @@ public class JwtVerificationUtil {
         JWSHeader header = jwt.getHeader();
         JWK key = keySet.getKeyByKeyId(header.getKeyID());
         if (key == null) {
-            throw new JOSEException("No matching key found for JWT");
+            throw new JOSEException("Data Integrity of offer could not be verified. No matching key found");
         }
         JWSVerifier verifier = buildVerifier(key.getKeyType(), key);
         if (!jwt.verify(verifier)) {
@@ -42,18 +66,26 @@ public class JwtVerificationUtil {
     }
 
     /**
-     * Creates a JWSVerifier for EC or RSA keys.
+     * Creates a JWSVerifier for supported key types using the registry.
      * @param kty KeyType
      * @param key JWK
      * @return JWSVerifier
      * @throws JOSEException if key type is unsupported
      */
-    JWSVerifier buildVerifier(KeyType kty, JWK key) throws JOSEException {
-        if (KeyType.EC.equals(kty)) {
-            return new ECDSAVerifier(key.toECKey().toPublicJWK());
-        } else if (KeyType.RSA.equals(kty)) {
-            return new RSASSAVerifier(key.toRSAKey().toPublicJWK());
+    public JWSVerifier buildVerifier(KeyType kty, JWK key) throws JOSEException {
+        Function<JWK, JWSVerifier> factory = VERIFIER_FACTORIES.get(kty);
+        if (factory == null) {
+            throw new JOSEException("Unsupported Key Type " + kty);
         }
-        throw new JOSEException("Unsupported Key Type " + kty);
+        return factory.apply(key);
+    }
+
+    /**
+     * Custom exception for verifier factory errors.
+     */
+    public static class JwtVerifierFactoryException extends RuntimeException {
+        public JwtVerifierFactoryException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

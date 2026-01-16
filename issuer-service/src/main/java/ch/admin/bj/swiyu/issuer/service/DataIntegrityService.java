@@ -36,6 +36,9 @@ public class DataIntegrityService {
      * @return true if required
      */
     private boolean isDataIntegrityRequired(Map<String, Object> offerData) {
+        if (offerData == null) {
+            return applicationProperties.isDataIntegrityEnforced();
+        }
         return offerData.containsKey("data_integrity") || applicationProperties.isDataIntegrityEnforced();
     }
 
@@ -49,9 +52,13 @@ public class DataIntegrityService {
     private Map<String, Object> verifyDataIntegrityJWT(String jwtString, UUID offerId) {
         var offerIdentifier = offerId == null ? "" : offerId;
         try {
+            if (jwtString == null || jwtString.isBlank()) {
+                log.error("Data integrity JWT is missing for offer {}", offerIdentifier);
+                throw new BadRequestException("Data integrity JWT is missing");
+            }
             return JwtVerificationUtil.verifyJwt(jwtString, applicationProperties.getDataIntegrityKeySet());
         } catch (Exception e) {
-            log.error("Failed setting up Data Integrity check of offer {} with JWKS {} - caused by {}", offerIdentifier, applicationProperties.getDataIntegrityJwks(), e.getMessage());
+            log.error("Failed setting up Data Integrity check of offer {} with JWKS {} - caused by {}", offerIdentifier, applicationProperties.getDataIntegrityJwks(), e.getMessage(), e);
             throw new BadRequestException(e.getMessage());
         }
     }
@@ -66,9 +73,13 @@ public class DataIntegrityService {
     private Map<String, Object> parseOfferData(String data, UUID offerId) {
         var offerIdentifier = offerId == null ? "" : offerId;
         try {
-            return objectMapper.readValue(data, HashMap.class);
+            if (data == null || data.isBlank()) {
+                log.error("Offer data is missing or empty for offer {}", offerIdentifier);
+                throw new CredentialException("Offer data is missing or empty");
+            }
+            return objectMapper.readValue(data, objectMapper.getTypeFactory().constructMapType(HashMap.class, String.class, Object.class));
         } catch (JsonProcessingException e) {
-            log.error("Could not load offer data of offer {}", offerIdentifier);
+            log.error("Could not load offer data of offer {}", offerIdentifier, e);
             throw new CredentialException("Failed to parse offer data", e);
         }
     }
@@ -86,8 +97,11 @@ public class DataIntegrityService {
             log.error("Issuer Management Error - Offer {} lacks any offer data", offerIdentifier);
             throw new BadRequestException("No offer data found");
         }
-
-        String data = (String) offerData.get("data");
+        Object dataObj = offerData.get("data");
+        if (!(dataObj instanceof String data) || data.isBlank()) {
+            log.error("Offer {} contains invalid or empty 'data' field", offerIdentifier);
+            throw new BadRequestException("Offer data is invalid or empty");
+        }
         if (isDataIntegrityRequired(offerData)) {
             return verifyDataIntegrityJWT(data, offerId);
         }
