@@ -24,8 +24,6 @@ import java.util.UUID;
  * This service handles the low-level operations of updating status bits in token status lists,
  * persisting changes to the database, and optionally publishing updates to the external registry.
  * </p>
- *
- * @author pgatschet
  */
 @Slf4j
 @RequiredArgsConstructor
