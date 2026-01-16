@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.service;
+package ch.admin.bj.swiyu.issuer.service.mapper;
 
 import ch.admin.bj.swiyu.issuer.api.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
@@ -17,8 +17,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.service.CredentialOfferMapper.toCredentialInfoResponseDtoList;
-import static java.util.Objects.isNull;
+import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialOfferMapper.toCredentialInfoResponseDtoList;
 
 @UtilityClass
 public class CredentialManagementMapper {

@@ -33,7 +33,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.io.IOException;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.service.CredentialOfferMapper.toConfigurationOverride;
+import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialOfferMapper.toConfigurationOverride;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusListMapper.toStatusListDto;
 
 @Slf4j

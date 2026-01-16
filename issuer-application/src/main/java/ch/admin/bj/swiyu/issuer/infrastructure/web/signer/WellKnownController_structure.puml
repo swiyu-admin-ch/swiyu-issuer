@@ -1,0 +1,281 @@
+@startuml
+
+/' diagram meta data start
+config=StructureConfiguration;
+{
+  "projectClassification": {
+    "searchMode": "OpenProject", // OpenProject, AllProjects
+    "includedProjects": "",
+    "pathEndKeywords": "*.impl",
+    "isClientPath": "",
+    "isClientName": "",
+    "isTestPath": "",
+    "isTestName": "",
+    "isMappingPath": "",
+    "isMappingName": "",
+    "isDataAccessPath": "",
+    "isDataAccessName": "",
+    "isDataStructurePath": "",
+    "isDataStructureName": "",
+    "isInterfaceStructuresPath": "",
+    "isInterfaceStructuresName": "",
+    "isEntryPointPath": "",
+    "isEntryPointName": "",
+    "treatFinalFieldsAsMandatory": false
+  },
+  "graphRestriction": {
+    "classPackageExcludeFilter": "*domain*",
+    "classPackageIncludeFilter": "",
+    "classNameExcludeFilter": "*Dto;*Mapper;*Properties;*Exception;*Configuration",
+    "classNameIncludeFilter": "",
+    "methodNameExcludeFilter": "",
+    "methodNameIncludeFilter": "",
+    "removeByInheritance": "", // inheritance/annotation based filtering is done in a second step
+    "removeByAnnotation": "",
+    "removeByClassPackage": "", // cleanup the graph after inheritance/annotation based filtering is done
+    "removeByClassName": "",
+    "cutMappings": false,
+    "cutEnum": true,
+    "cutTests": true,
+    "cutClient": true,
+    "cutDataAccess": false,
+    "cutInterfaceStructures": false,
+    "cutDataStructures": false,
+    "cutGetterAndSetter": true,
+    "cutConstructors": true
+  },
+  "graphTraversal": {
+    "forwardDepth": 3,
+    "backwardDepth": 3,
+    "classPackageExcludeFilter": "",
+    "classPackageIncludeFilter": "",
+    "classNameExcludeFilter": "",
+    "classNameIncludeFilter": "",
+    "methodNameExcludeFilter": "",
+    "methodNameIncludeFilter": "",
+    "hideMappings": false,
+    "hideDataStructures": false,
+    "hidePrivateMethods": true,
+    "hideInterfaceCalls": true, // indirection: implementation -> interface (is hidden) -> implementation
+    "onlyShowApplicationEntryPoints": false, // root node is included
+    "useMethodCallsForStructureDiagram": "ForwardOnly" // ForwardOnly, BothDirections, No
+  },
+  "details": {
+    "aggregation": "GroupByClass", // ByClass, GroupByClass, None
+    "showClassGenericTypes": false,
+    "showMethods": true,
+    "showMethodParameterNames": true,
+    "showMethodParameterTypes": true,
+    "showMethodReturnType": true,
+    "showPackageLevels": 5,
+    "showDetailedClassStructure": false
+  },
+  "rootClass": "ch.admin.bj.swiyu.issuer.infrastructure.web.signer.WellKnownController",
+  "extensionCallbackMethod": "" // qualified.class.name#methodName - signature: public static String method(String)
+}
+diagram meta data end '/
+
+
+
+digraph g {
+    rankdir="TB"
+    splines=polyline
+    
+
+'nodes 
+subgraph cluster_92668751 { 
+   	label=admin
+	labeljust=l
+	fillcolor="#ececec"
+	style=filled
+   
+   subgraph cluster_969162937 { 
+   	label=bj
+	labeljust=l
+	fillcolor="#d8d8d8"
+	style=filled
+   
+   subgraph cluster_1256842502 { 
+   	label=swiyu
+	labeljust=l
+	fillcolor="#c4c4c4"
+	style=filled
+   
+   subgraph cluster_297046061 { 
+   	label=issuer
+	labeljust=l
+	fillcolor="#bababa"
+	style=filled
+   
+   subgraph cluster_1073771132 { 
+   	label=infrastructure
+	labeljust=l
+	fillcolor="#b0b0b0"
+	style=filled
+   
+   WellKnownController281199067[
+	label="(C)WellKnownController"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+} 
+
+subgraph cluster_2017206988 { 
+   	label=common
+	labeljust=l
+	fillcolor="#b0b0b0"
+	style=filled
+   
+   CacheCustomizer1858348955[
+	label="(C)CacheCustomizer"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+} 
+
+subgraph cluster_857347596 { 
+   	label=service
+	labeljust=l
+	fillcolor="#b0b0b0"
+	style=filled
+   
+   CredentialManagementService354864683[
+	label="(C)CredentialManagementService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+DataIntegrityService354864683[
+	label="(C)DataIntegrityService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+DemonstratingProofOfPossessionService354864683[
+	label="(C)DemonstratingProofOfPossessionService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+DemonstratingProofOfPossessionValidationService354864683[
+	label="(C)DemonstratingProofOfPossessionValidationService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+EncryptionService354864683[
+	label="(C)EncryptionService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+KeyManagementStrategyFactory245844921[
+	label="(C)KeyManagementStrategyFactory"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+KeyStrategy2073312966[
+	label="(C)KeyStrategy"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+MetadataService354864683[
+	label="(C)MetadataService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+NonceService354864683[
+	label="(C)NonceService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+OAuthService354864683[
+	label="(C)OAuthService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+PKCS11Strategy2073312966[
+	label="(C)PKCS11Strategy"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+SecurosysStrategy2073312966[
+	label="(C)SecurosysStrategy"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+SignatureService354864683[
+	label="(C)SignatureService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+StatusListService354864683[
+	label="(C)StatusListService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+} 
+} 
+} 
+} 
+} 
+
+'edges    
+CredentialManagementService354864683 -> DataIntegrityService354864683[label="dataIntegrityService
+[0..1]"];
+CredentialManagementService354864683 -> StatusListService354864683[label="statusListService
+[0..1]"];
+DemonstratingProofOfPossessionService354864683 -> DemonstratingProofOfPossessionValidationService354864683[label="demonstratingProofOfPossessionValidationService
+[0..1]"];
+DemonstratingProofOfPossessionService354864683 -> NonceService354864683[label="nonceService
+[0..1]"];
+DemonstratingProofOfPossessionService354864683 -> OAuthService354864683[label="oAuthService
+[0..1]"];
+EncryptionService354864683 -> CacheCustomizer1858348955[label="cacheCustomizer
+[0..1]"];
+MetadataService354864683 -> CredentialManagementService354864683[label="credentialManagementService
+[0..1]"];
+MetadataService354864683 -> DemonstratingProofOfPossessionService354864683[label="demonstratingProofOfPossessionService
+[0..1]"];
+MetadataService354864683 -> EncryptionService354864683[label="encryptionService
+[0..1]"];
+MetadataService354864683 -> SignatureService354864683[label="signatureService
+[0..1]"];
+SignatureService354864683 -> KeyManagementStrategyFactory245844921[label="strategyFactory
+[0..1]"];
+SignatureService354864683 -> KeyStrategy2073312966[arrowhead=none];
+SignatureService354864683 -> PKCS11Strategy2073312966[arrowhead=none];
+SignatureService354864683 -> SecurosysStrategy2073312966[arrowhead=none];
+WellKnownController281199067 -> DemonstratingProofOfPossessionService354864683[label="demonstratingProofOfPossessionService
+[0..1]"];
+WellKnownController281199067 -> EncryptionService354864683[label="encryptionService
+[0..1]"];
+WellKnownController281199067 -> MetadataService354864683[label="metadataService
+[0..1]"];
+    
+}
+@enduml

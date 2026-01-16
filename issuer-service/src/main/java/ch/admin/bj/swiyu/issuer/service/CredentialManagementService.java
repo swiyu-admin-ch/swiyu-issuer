@@ -9,56 +9,48 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatus
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.service.mapper.CredentialOfferMapper;
+import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
-import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
-import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
-import static ch.admin.bj.swiyu.issuer.service.CredentialManagementMapper.*;
-import static ch.admin.bj.swiyu.issuer.service.CredentialOfferMapper.*;
-import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SDJWT_PROTECTED_CLAIMS;
+import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialManagementMapper.*;
+import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialOfferMapper.*;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
+/**
+ * Service responsible for coordinating credential management operations.
+ *
+ * <p>This service acts as a facade, orchestrating calls to specialized services
+ * for validation, state management, persistence, and status list operations.</p>
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class CredentialManagementService {
 
     private static final String STATUS_NOT_CHANGEABLE = "Tried to set %s but status is already %s";
-    private static final String CREDENTIAL_NOT_FOUND = "Credential %s not found";
-    private final CredentialOfferRepository credentialOfferRepository;
-    private final CredentialManagementRepository credentialManagementRepository;
-    private final CredentialOfferStatusRepository credentialOfferStatusRepository;
-    private final ObjectMapper objectMapper;
-    private final StatusListService statusListService;
+
     private final IssuerMetadata issuerMetadata;
     private final ApplicationProperties applicationProperties;
-    private final DataIntegrityService dataIntegrityService;
-    private final ApplicationEventPublisher applicationEventPublisher;
-    private final AvailableStatusListIndexRepository availableStatusListIndexRepository;
-    private final Random random = new Random();
-    private final CredentialStateMachine credentialStateMachine;
+
+    private final CredentialOfferValidationService validationService;
+    private final CredentialStateService stateService;
+    private final CredentialPersistenceService persistenceService;
+    private final StatusListManagementService statusListManagementService;
 
     /**
      * Retrieve public information about a credential offer.
@@ -73,19 +65,26 @@ public class CredentialManagementService {
      */
     @Transactional
     public CredentialManagementDto getCredentialOfferInformation(UUID managementId) {
+        var mgmt = persistenceService.findCredentialManagementById(managementId);
 
-        var mgmt = credentialManagementRepository.findById(managementId).orElseThrow(() -> new ResourceNotFoundException(String.format(CREDENTIAL_NOT_FOUND, managementId)));
-
-        // TODO refactor to improve performance
-        var credentialOffers = mgmt.getCredentialOffers().stream().map(this::checkOffer).collect(Collectors.toSet());
+        // Check and expire offers if needed
+        var credentialOffers = mgmt.getCredentialOffers().stream()
+                .map(this::checkAndExpireOffer)
+                .collect(Collectors.toSet());
 
         return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
     }
 
-    private CredentialOffer checkOffer(CredentialOffer offer) {
+    /**
+     * Checks if an offer has expired and updates its state if necessary.
+     *
+     * @param offer the credential offer to check
+     * @return the (potentially updated) credential offer
+     */
+    private CredentialOffer checkAndExpireOffer(CredentialOffer offer) {
         if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
                 && offer.hasExpirationTimeStampPassed()) {
-            return expireCredentialOffer(getCredentialById(offer.getId()));
+            return expireCredentialOffer(offer);
         }
         return offer;
     }
@@ -111,10 +110,11 @@ public class CredentialManagementService {
      * @throws BadRequestException       if the requested transition is invalid or cannot be performed
      */
     @Transactional
-    public UpdateStatusResponseDto updateCredentialStatus(@NotNull UUID credentialManagementId,
-                                                          @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
+    public UpdateStatusResponseDto updateCredentialStatus(
+            @NotNull UUID credentialManagementId,
+            @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
 
-        var mgmt = getCredentialManagement(credentialManagementId);
+        var mgmt = getCredentialManagementWithExpirationCheck(credentialManagementId);
 
         var managementEvent = toCredentialManagementEvent(requestedNewStatus);
         var offerEvent = toCredentialOfferEvent(requestedNewStatus);
@@ -124,10 +124,12 @@ public class CredentialManagementService {
                 .orElseThrow(() -> new BadRequestException("Credential offer is not processable"));
 
         if (mgmt.isPreIssuanceProcess()) {
-            return handleStatusChangeForPreIssuanceProcess(mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
+            return stateService.handleStatusChangeForPreIssuanceProcess(
+                    mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
         }
 
-        return handleStatusChangeForPostIssuanceProcess(mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
+        return stateService.handleStatusChangeForPostIssuanceProcess(
+                mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
     }
 
     /**
@@ -143,14 +145,14 @@ public class CredentialManagementService {
      */
     @Transactional
     public StatusResponseDto getCredentialStatus(UUID credentialManagementId) {
-
-        CredentialManagement credentialManagement = getCredentialManagement(credentialManagementId);
+        CredentialManagement credentialManagement = getCredentialManagementWithExpirationCheck(credentialManagementId);
 
         if (credentialManagement.isPreIssuanceProcess()) {
             var credentialOffer = credentialManagement.getCredentialOffers()
                     .stream()
                     .findFirst()
-                    .orElseThrow(() -> new ResourceNotFoundException("No credential offer found for management id %s".formatted(credentialManagementId)));
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "No credential offer found for management id %s".formatted(credentialManagementId)));
 
             return toStatusResponseDto(credentialOffer);
         }
@@ -158,7 +160,6 @@ public class CredentialManagementService {
         return toStatusResponseDto(credentialManagement);
     }
 
-    @Transactional
     /**
      * Create a credential offer and return its deeplink.
      *
@@ -168,23 +169,33 @@ public class CredentialManagementService {
      *
      * @param request the create credential offer request
      * @return a {@link CredentialWithDeeplinkResponseDto} containing the created credential offer and its deeplink
-     * @throws BadRequestException if the request is invalid or referenced resources cannot be resolved
+     * @throws BadRequestException   if the request is invalid or referenced resources cannot be resolved
      * @throws IllegalStateException if the credential configuration format is unsupported
-     * @throws JsonException if the created credential offer cannot be serialized to build the deeplink
      */
-    public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(@Valid CreateCredentialOfferRequestDto request) {
+    @Transactional
+    public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(
+            @Valid CreateCredentialOfferRequestDto request) {
 
-        validateCredentialOfferCreateRequest(request);
-        var credentialMgmt = this.createCredentialOffer(request);
+        var offerData = readOfferData(request.getCredentialSubjectData());
+        validationService.validateCredentialOfferCreateRequest(request, offerData);
+
+        var credentialMgmt = createCredentialOffer(request, offerData);
         var credentialOffer = credentialMgmt.getCredentialOffers().stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No credential offer created"));
 
-        return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(applicationProperties, credentialMgmt, credentialOffer);
+        return CredentialOfferMapper.toCredentialWithDeeplinkResponseDto(
+                applicationProperties, credentialMgmt, credentialOffer);
     }
 
+    /**
+     * Creates an initial credential offer for renewal purposes.
+     *
+     * @param credentialManagement the credential management
+     * @return the created credential offer
+     */
     public CredentialOffer createInitialCredentialOfferForRenewal(CredentialManagement credentialManagement) {
-        var offer = credentialOfferRepository.save(
+        var offer = persistenceService.saveCredentialOffer(
                 CredentialOffer.builder()
                         .nonce(UUID.randomUUID())
                         .credentialManagement(credentialManagement)
@@ -192,10 +203,9 @@ public class CredentialManagementService {
                         .build());
 
         credentialManagement.addCredentialOffer(offer);
-
         credentialManagement.setRenewalRequestCnt(credentialManagement.getRenewalRequestCnt() + 1);
 
-        credentialManagementRepository.save(credentialManagement);
+        persistenceService.saveCredentialManagement(credentialManagement);
 
         return offer;
     }
@@ -216,49 +226,29 @@ public class CredentialManagementService {
      */
     public CredentialOffer updateOfferFromRenewalResponse(@Valid RenewalResponseDto request, CredentialOffer existingOffer) {
 
-        CreateCredentialOfferRequestDto newOffer = toOfferFromRenewal(request);
+        CreateCredentialOfferRequestDto newOffer = CredentialOfferMapper.toOfferFromRenewal(request);
+        var offerData = readOfferData(newOffer.getCredentialSubjectData());
 
-        validateCredentialOfferCreateRequest(newOffer);
+        validationService.validateCredentialOfferCreateRequest(newOffer, offerData);
 
-        var statusLists = checkStatusLists(newOffer);
+        var statusLists = statusListManagementService.resolveAndValidateStatusLists(newOffer);
 
-        existingOffer.setMetadataCredentialSupportedId(newOffer.getMetadataCredentialSupportedId());
-        existingOffer.setOfferData(readOfferData(newOffer.getCredentialSubjectData()));
-        existingOffer.setCredentialValidFrom(newOffer.getCredentialValidFrom());
-        existingOffer.setCredentialValidUntil(newOffer.getCredentialValidUntil());
-        existingOffer.setCredentialMetadata(toCredentialOfferMetadataDto(newOffer.getCredentialMetadata()));
-        existingOffer.setConfigurationOverride(toConfigurationOverride(newOffer.getConfigurationOverride()));
-        existingOffer.setMetadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null);
+        // Validate issuer DIDs match
+        var issuerDid = validationService.determineIssuerDid(newOffer, applicationProperties.getIssuerId());
+        validationService.ensureMatchingIssuerDids(issuerDid, applicationProperties.getIssuerId(), statusLists);
 
-        CredentialOffer entity = credentialOfferRepository.save(existingOffer);
+        CredentialOfferMapper.updateOfferFromDto(existingOffer, newOffer, offerData, applicationProperties);
 
-        saveStatusList(statusLists, entity.getId());
+        CredentialOffer entity = persistenceService.saveCredentialOffer(existingOffer);
+
+        persistenceService.saveStatusListEntries(
+                statusLists,
+                entity.getId(),
+                issuerMetadata.getIssuanceBatchSize());
 
         return entity;
     }
 
-    /**
-     * Scheduled job that expires credential offers whose expiration timestamp has passed.
-     *
-     * <p>Finds offers in expirable states with an offer expiration timestamp less than the
-     * current time, updates their status to {@link CredentialOfferStatusType#EXPIRED} and triggers
-     * the usual status-change processing (including deletion of associated person data).
-     * Runs according to the configured {@code application.offer-expiration-interval} and uses
-     * a distributed lock ("expireOffers") to avoid concurrent execution across instances.
-     * Executes within a transaction.</p>
-     */
-    @Scheduled(initialDelay = 0, fixedDelayString = "${application.offer-expiration-interval}")
-    @SchedulerLock(name = "expireOffers")
-    @Transactional
-    public void expireOffers() {
-        var expireStates = CredentialOfferStatusType.getExpirableStates();
-        var expireTimeStamp = Instant.now().getEpochSecond();
-        log.info("Expiring {} offers", credentialOfferRepository
-                .countByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp));
-        var expiredOffers = credentialOfferRepository
-                .findByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp);
-        expiredOffers.forEach(this::expireCredentialOffer);
-    }
 
     /**
      * Update the offer data for a deferred credential.
@@ -276,28 +266,30 @@ public class CredentialManagementService {
      */
     @Transactional
     public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialManagementId, Map<String, Object> offerDataMap) {
-        var mgmt = getCredentialManagement(credentialManagementId);
-        var storedCredentialOffer = mgmt.getCredentialOffers().stream().filter(o -> o.isDeferredOffer()).findFirst().orElseThrow(() -> new BadRequestException("Credential is either not deferred or has an incorrect status, cannot update offer data"));
+        var mgmt = getCredentialManagementWithExpirationCheck(credentialManagementId);
+        var storedCredentialOffer = mgmt.getCredentialOffers().stream()
+                .filter(CredentialOffer::isDeferredOffer)
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException(
+                        "Credential is either not deferred or has an incorrect status, cannot update offer data"));
 
         if (!storedCredentialOffer.isDeferredOffer()
-                && storedCredentialOffer.getCredentialStatus() == CredentialOfferStatusType.DEFERRED) {
+                || storedCredentialOffer.getCredentialStatus() != CredentialOfferStatusType.DEFERRED) {
             throw new BadRequestException(
                     "Credential is either not deferred or has an incorrect status, cannot update offer data");
         }
 
         // check if offerData matches the expected metadata claims
         var offerData = readOfferData(offerDataMap);
-
         var credentialOfferMetadata = storedCredentialOffer.getMetadataCredentialSupportedId().getFirst();
-
         var credentialConfig = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
 
-        validateCredentialRequestOfferData(offerData, true, credentialConfig);
+        validationService.validateCredentialRequestOfferData(offerData, true, credentialConfig);
 
         // update the offer data
-        credentialStateMachine.sendEventAndUpdateStatus(storedCredentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.READY);
+        stateService.markOfferAsReady(storedCredentialOffer);
         storedCredentialOffer.setOfferData(offerData);
-        credentialOfferRepository.save(storedCredentialOffer);
+        persistenceService.saveCredentialOffer(storedCredentialOffer);
 
         return toUpdateStatusResponseDto(storedCredentialOffer);
     }
@@ -311,402 +303,111 @@ public class CredentialManagementService {
      */
     @Transactional
     public ConfigurationOverride getConfigurationOverrideByTenantId(UUID tenantId) {
-        var offer = credentialOfferRepository.findByMetadataTenantId(tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("No credential offer found for tenant %s".formatted(tenantId)));
-
+        var offer = persistenceService.findCredentialOfferByMetadataTenantId(tenantId);
         return offer.getConfigurationOverride();
     }
 
-    private CredentialManagement getCredentialManagement(UUID managementId) {
-        var mgmt = this.credentialManagementRepository.findById(managementId)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException(String.format("Credential Management %s not found", managementId)));
+    /**
+     * Retrieves credential management and checks for expiration, expiring the affected offers.
+     *
+     * @param managementId the management ID
+     * @return the credential management with updated offer states
+     */
+    private CredentialManagement getCredentialManagementWithExpirationCheck(UUID managementId) {
+        var mgmt = persistenceService.findCredentialManagementById(managementId);
 
         mgmt.getCredentialOffers().forEach(offer -> {
             // Make sure only offer is returned if it is not expired
             if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
                     && offer.hasExpirationTimeStampPassed()) {
-                expireCredentialOffer(getCredentialById(offer.getId()));
+                expireCredentialOffer(offer);
             }
         });
 
-        return credentialManagementRepository.save(mgmt);
+        return persistenceService.saveCredentialManagement(mgmt);
     }
 
     /**
-     * Validates a credential offer create request, doing sanity checks with
-     * configurations
+     * Creates and persists a new credential offer.
      *
-     * @param createCredentialRequest the create credential request to be validated
+     * @param requestDto the credential offer request
+     * @param offerData  the parsed offer data
+     * @return the created credential management with the offer
      */
-    private void validateCredentialOfferCreateRequest(@Valid CreateCredentialOfferRequestDto createCredentialRequest) {
-        var credentialOfferMetadata = createCredentialRequest.getMetadataCredentialSupportedId().getFirst();
+    private CredentialManagement createCredentialOffer(
+            CreateCredentialOfferRequestDto requestDto,
+            Map<String, Object> offerData) {
 
-        // Date checks, if exists
-        validateOfferedCredentialValiditySpan(createCredentialRequest);
-        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
-
-        // Check if credential format is supported otherwise throw error
-        if (!List.of("vc+sd-jwt", "dc+sd-jwt").contains(credentialConfiguration.getFormat())) {
-            throw new IllegalStateException("Unsupported credential configuration format %s, only supporting dc+sd-jwt"
-                    .formatted(credentialConfiguration.getFormat()));
-        }
-
-        var metadata = createCredentialRequest.getCredentialMetadata();
-        var isDeferredRequest = (metadata != null && Boolean.TRUE.equals(metadata.deferred()));
-        var offerData = readOfferData(createCredentialRequest.getCredentialSubjectData());
-
-        validateCredentialRequestOfferData(offerData, isDeferredRequest, credentialConfiguration);
-    }
-
-    /**
-     * Checks the offerData for claims not expected in the metadata
-     */
-    private void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
-        var surplusOfferedClaims = new HashSet<>(offerData.keySet());
-        surplusOfferedClaims.removeAll(metadataClaims);
-
-        if (!surplusOfferedClaims.isEmpty()) {
-            throw new BadRequestException(
-                    "Unexpected credential claims found! %s".formatted(String.join(",", surplusOfferedClaims)));
-        }
-    }
-
-    /**
-     * checks if all claims published as mandatory in the metadata are present in
-     * the offer
-     */
-    private void validateClaimsMissing(Set<String> metadataClaims, Map<String, Object> offerData,
-                                       CredentialConfiguration credentialConfiguration) {
-        var missingOfferedClaims = new HashSet<>(metadataClaims);
-        missingOfferedClaims.removeAll(offerData.keySet());
-        // Remove optional claims
-        missingOfferedClaims.removeIf(claimKey -> !credentialConfiguration.getClaims().get(claimKey).isMandatory());
-        if (!missingOfferedClaims.isEmpty()) {
-            throw new BadRequestException(
-                    "Mandatory credential claims are missing! %s".formatted(String.join(",", missingOfferedClaims)));
-        }
-    }
-
-    private void validateOfferedCredentialValiditySpan(@Valid CreateCredentialOfferRequestDto credentialOffer) {
-        var validUntil = credentialOffer.getCredentialValidUntil();
-        if (validUntil != null) {
-            if (validUntil.isBefore(Instant.now())) {
-                throw new BadRequestException(
-                        "Credential is already expired (would only be valid until %s, server time is %s)"
-                                .formatted(validUntil, Instant.now()));
-            }
-            var validFrom = credentialOffer.getCredentialValidFrom();
-            if (validFrom != null && validFrom.isAfter(validUntil)) {
-                throw new BadRequestException(
-                        "Credential would never be valid - Valid from %s until %s".formatted(validFrom, validUntil));
-            }
-        }
-    }
-
-    private CredentialManagement createCredentialOffer(CreateCredentialOfferRequestDto requestDto) {
-        var expiration = Instant.now().plusSeconds(requestDto.getOfferValiditySeconds() > 0
+        long offerDuration = requestDto.getOfferValiditySeconds() > 0
                 ? requestDto.getOfferValiditySeconds()
-                : applicationProperties.getOfferValidity());
-        // Check if credentialSubjectData contains protected claims
-        var offerData = readOfferData(requestDto.getCredentialSubjectData());
+                : applicationProperties.getOfferValidity();
+
+        var expiration = Instant.now().plusSeconds(
+                offerDuration);
 
         // Get used status lists and ensure they are managed by the issuer
-        var statusLists = checkStatusLists(requestDto);
+        var statusLists = statusListManagementService.resolveAndValidateStatusLists(requestDto);
 
-        CredentialManagement credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .accessToken(UUID.randomUUID())
-                .credentialManagementStatus(CredentialStatusManagementType.INIT)
-                .renewalResponseCnt(0)
-                .renewalRequestCnt(0)
-                .build());
+        // Validate issuer DIDs match
+        var issuerDid = validationService.determineIssuerDid(requestDto, applicationProperties.getIssuerId());
+        validationService.ensureMatchingIssuerDids(issuerDid, applicationProperties.getIssuerId(), statusLists);
 
-        CredentialOffer entity = credentialOfferRepository.save(CredentialOffer.builder()
-                .credentialStatus(CredentialOfferStatusType.OFFERED)
-                .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
-                .preAuthorizedCode(UUID.randomUUID())
-                .offerData(offerData)
-                .offerExpirationTimestamp(expiration.getEpochSecond())
-                .nonce(UUID.randomUUID())
-                .credentialValidFrom(requestDto.getCredentialValidFrom())
-                .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
-                .credentialValidUntil(requestDto.getCredentialValidUntil())
-                .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
-                .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
-                .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
-                .credentialManagement(credentialManagement)
-                .build());
+        CredentialManagement credentialManagement = persistenceService.saveCredentialManagement(
+                CredentialManagement.builder()
+                        .id(UUID.randomUUID())
+                        .accessToken(UUID.randomUUID())
+                        .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                        .renewalResponseCnt(0)
+                        .renewalRequestCnt(0)
+                        .build());
 
-        entity = this.credentialOfferRepository.save(entity);
+        CredentialOffer entity = persistenceService.saveCredentialOffer(
+                CredentialOffer.builder()
+                        .credentialStatus(CredentialOfferStatusType.OFFERED)
+                        .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
+                        .preAuthorizedCode(UUID.randomUUID())
+                        .offerData(offerData)
+                        .offerExpirationTimestamp(expiration.getEpochSecond())
+                        .nonce(UUID.randomUUID())
+                        .credentialValidFrom(requestDto.getCredentialValidFrom())
+                        .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
+                        .credentialValidUntil(requestDto.getCredentialValidUntil())
+                        .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
+                        .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
+                        .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
+                        .credentialManagement(credentialManagement)
+                        .build());
+
         credentialManagement.addCredentialOffer(entity);
+        var newCredentialManagement = persistenceService.saveCredentialManagement(credentialManagement);
 
-        var newCredentialManagement = credentialManagementRepository.save(credentialManagement);
         log.debug("Created Credential offer {} valid until {}", entity.getId(), expiration.toEpochMilli());
 
-        var offerId = entity.getId();
-        saveStatusList(statusLists, offerId);
+        persistenceService.saveStatusListEntries(
+                statusLists,
+                entity.getId(),
+                issuerMetadata.getIssuanceBatchSize());
 
         return newCredentialManagement;
     }
 
-    private void saveStatusList(List<StatusList> statusLists, UUID credentialOfferId) {
-        for (StatusList statusList : statusLists) {
-            Set<Integer> randomIndexes = getRandomIndexes(issuerMetadata.getIssuanceBatchSize(), statusList);
-            // Create Status List entries
-            var offerStatuses = randomIndexes.stream().map(freeIndex -> {
-                var offerStatusKey = CredentialOfferStatusKey.builder()
-                        .offerId(credentialOfferId)
-                        .statusListId(statusList.getId())
-                        .index(freeIndex)
-                        .build();
-                log.debug("Credential offer {} uses status list {} indexes {}", credentialOfferId, statusList.getUri(), freeIndex);
-                return CredentialOfferStatus.builder()
-                        .id(offerStatusKey)
-                        .build();
-            }).toList();
-            credentialOfferStatusRepository.saveAll(offerStatuses);
-        }
-    }
-
-    private Set<Integer> getRandomIndexes(int issuanceBatchSize, StatusList statusList) {
-        // Find all free indexes for this status list
-        var freeIndexes = availableStatusListIndexRepository.findById(statusList.getUri())
-                .orElseThrow(() -> new BadRequestException("No status indexes remain in status list %s to create credential offer".formatted(statusList.getUri())))
-                .getFreeIndexes();
-        if (freeIndexes.size() < issuanceBatchSize) {
-            throw new BadRequestException("Too few status indexes remain in status list %s to create credential offer".formatted(statusList.getUri()));
-        }
-        // Random sample free indexes without repetitions
-        Set<Integer> sampledNumbers = new LinkedHashSet<>();
-        while (sampledNumbers.size() < issuanceBatchSize) {
-            sampledNumbers.add(freeIndexes.get(random.nextInt(freeIndexes.size())));
-        }
-        return sampledNumbers;
-    }
-
-
     /**
-     * The issuer did (iss) of VCs and the linked status lists have to be the same or verifications will fail.
-     * <p>
-     * Developer Note: Since Token Status List Draft 04 requirement for matching iss claim in Referenced Token and Status List Token has been removed
-     * The wallet and verifier must be first migrated before this check can be removed
+     * Expires a credential offer by updating its state and publishing an event.
+     *
+     * @param credential the credential offer to expire
+     * @return the updated credential offer
+     * @throws BadRequestException if the credential is already in a terminal state
      */
-    @Deprecated(since = "Token Status List Draft 04")
-    private void ensureMatchingIssuerDids(CreateCredentialOfferRequestDto requestDto, List<StatusList> statusLists) {
-        // Ensure that chosen stats lists issuer dids match the vc issuer did
-        var override = requestDto.getConfigurationOverride();
-        String issuerDid;
-        if (override != null && StringUtils.isNotEmpty(override.issuerDid())) {
-            issuerDid = override.issuerDid();
-        } else {
-            issuerDid = applicationProperties.getIssuerId();
-        }
-
-        var mismatchingStatusLists = statusLists.stream().filter(statusList -> !Objects.requireNonNullElseGet(statusList.getConfigurationOverride().issuerDid(), applicationProperties::getIssuerId).equals(issuerDid)).toList();
-        if (!mismatchingStatusLists.isEmpty()) {
-            throw new BadRequestException(String.format("Status List issuer did is not the same as credential issuer did for %s",
-                    mismatchingStatusLists.stream().map(StatusList::getUri).collect(Collectors.joining(", "))));
-        }
-    }
-
     private CredentialOffer expireCredentialOffer(CredentialOffer credential) {
         var currentStatus = credential.getCredentialStatus();
 
         if (credential.getCredentialStatus().isTerminalState()) {
-            throw new BadRequestException(String.format(STATUS_NOT_CHANGEABLE, CredentialOfferStatusType.EXPIRED, currentStatus));
-        }
-
-        credentialStateMachine.sendEventAndUpdateStatus(credential, CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
-
-        var updatedCredential = this.credentialOfferRepository.save(credential);
-
-        produceOfferStateChangeEvent(credential.getCredentialManagement().getId(), credential.getId(), credential.getCredentialStatus());
-
-        return updatedCredential;
-    }
-
-    /**
-     * Load a credential by id while acquiring a database lock to prevent modifications.
-     * The repository method `findByIdForUpdate`uses a pessimistic lock.
-     *
-     * @param credentialId the credential identifier
-     * @return the locked {@link CredentialOffer}
-     * @throws ResourceNotFoundException if no credential with the given id exists
-     */
-    private CredentialOffer getCredentialById(UUID credentialId) {
-        return this.credentialOfferRepository.findByIdForUpdate(credentialId)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException(String.format(CREDENTIAL_NOT_FOUND, credentialId)));
-    }
-
-    /**
-     * Handles status changes after issuance (status suspended, revoked and issued)
-     *
-     * @return
-     */
-    // TODO: refactor to reduce complexity and readability
-    private List<UUID> handlePostIssuanceStatusChange(CredentialManagement mgmt, CredentialStatusManagementType newStatus) {
-
-        var affectedOffers = mgmt.getCredentialOffers().stream().map(CredentialOffer::getId).toList();
-
-        final Set<CredentialOfferStatus> offerStatusSet = credentialOfferStatusRepository
-                .findByOfferIdIn(affectedOffers);
-
-        if (offerStatusSet.isEmpty()) {
             throw new BadRequestException(
-                    "No associated status lists found. Can not set a status to an already issued credential");
+                    String.format(STATUS_NOT_CHANGEABLE, CredentialOfferStatusType.EXPIRED, currentStatus));
         }
 
-        return switch (newStatus) {
-            case REVOKED -> statusListService.revoke(offerStatusSet);
-            case SUSPENDED -> statusListService.suspend(offerStatusSet);
-            case ISSUED -> statusListService.revalidate(offerStatusSet);
-            default -> throw new BadRequestException(String.format(
-                    "Illegal state transition - Status cannot be updated for %s to %s",
-                    mgmt.getId(), newStatus));
-        };
-    }
+        stateService.expireOfferAndPublish(credential);
 
-    private void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusManagementType state) {
-        var stateChangeEvent = new StateChangeEvent(
-                credentialOfferId,
-                state
-        );
-        applicationEventPublisher.publishEvent(stateChangeEvent);
-    }
-
-    private void produceOfferStateChangeEvent(UUID credentialManagementId, UUID credentialOfferId, CredentialOfferStatusType state) {
-        var stateChangeEvent = new OfferStateChangeEvent(
-                credentialManagementId,
-                credentialOfferId,
-                state
-        );
-        applicationEventPublisher.publishEvent(stateChangeEvent);
-    }
-
-    private void validateCredentialRequestOfferData(Map<String, Object> offerData,
-                                                    boolean isDeferredRequest,
-                                                    CredentialConfiguration credentialConfiguration) {
-
-        // with deferred requests the offer data can be empty initially if the data is set it must be validated
-        if (isDeferredRequest && CollectionUtils.isEmpty(offerData)) {
-            return;
-        }
-
-        // data cannot be empty
-        if (CollectionUtils.isEmpty(offerData)) {
-            throw new BadRequestException("Credential claims (credential subject data) is missing!");
-        }
-
-        var validatedOfferData = dataIntegrityService.getVerifiedOfferData(offerData, null);
-
-        // check if credentialSubjectData contains protected claims
-        List<String> reservedClaims = new ArrayList<>(validatedOfferData.keySet().stream()
-                .filter(SDJWT_PROTECTED_CLAIMS::contains)
-                .toList());
-
-        if (!reservedClaims.isEmpty()) {
-            throw new BadRequestException(
-                    "The following claims are not allowed in the credentialSubjectData: " + reservedClaims);
-        }
-
-        var metadataClaims = Optional.ofNullable(credentialConfiguration.getClaims()).orElseGet(HashMap::new).keySet();
-
-        validateClaimsMissing(metadataClaims, validatedOfferData, credentialConfiguration);
-        validateClaimsSurplus(metadataClaims, validatedOfferData);
-    }
-
-    private List<StatusList> checkStatusLists(CreateCredentialOfferRequestDto newOffer) {
-        var statusListUris = newOffer.getStatusLists();
-        var statusLists = statusListService.findByUriIn(statusListUris);
-        if (statusLists.size() != newOffer.getStatusLists().size()) {
-            throw new BadRequestException(String.format("Could not resolve all provided status lists, only found %s",
-                    statusLists.stream().map(StatusList::getUri).collect(Collectors.joining(", "))));
-        }
-
-        ensureMatchingIssuerDids(newOffer, statusLists);
-
-        return statusLists;
-    }
-
-    /**
-     * Handle status changes for pre-issuance process.
-     * In pre-issuance, the CredentialOffer status is leading.
-     */
-    private UpdateStatusResponseDto handleStatusChangeForPreIssuanceProcess(
-            CredentialManagement mgmt,
-            CredentialOffer credentialOffer,
-            CredentialStateMachineConfig.CredentialManagementEvent managementEvent,
-            CredentialStateMachineConfig.CredentialOfferEvent offerEvent) {
-
-        // Update CredentialOffer state first (leading in pre-issuance)
-        var offerResult = credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, offerEvent);
-
-        // Update CredentialManagement state
-        credentialStateMachine.sendEventAndUpdateStatus(mgmt, managementEvent);
-
-        // Only persist and publish if offer state actually changed
-        if (!offerResult.changed()) {
-            return toUpdateStatusResponseDto(credentialOffer);
-        }
-
-        log.debug("Updating credential offer {} from previous state to {}",
-                credentialOffer.getId(), offerResult.newStatus());
-
-        var updatedCredentialOffer = this.credentialOfferRepository.save(credentialOffer);
-
-        produceOfferStateChangeEvent(
-                credentialOffer.getCredentialManagement().getId(),
-                updatedCredentialOffer.getId(),
-                offerResult.newStatus());
-
-        return toUpdateStatusResponseDto(credentialOffer);
-    }
-
-    /**
-     * Handle status changes for post-issuance process.
-     * In post-issuance, the CredentialManagement status is leading.
-     */
-    private UpdateStatusResponseDto handleStatusChangeForPostIssuanceProcess(
-            CredentialManagement mgmt,
-            CredentialOffer credentialOffer,
-            CredentialStateMachineConfig.CredentialManagementEvent managementEvent,
-            CredentialStateMachineConfig.CredentialOfferEvent offerEvent) {
-
-        // Update CredentialManagement state first (leading in post-issuance)
-        var managementResult = credentialStateMachine.sendEventAndUpdateStatus(mgmt, managementEvent);
-
-        // Update CredentialOffer state
-        credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, offerEvent);
-
-        // Only persist and publish if management state actually changed
-        if (!managementResult.changed()) {
-            return CredentialManagementMapper.toUpdateStatusResponseDto(mgmt, null);
-        }
-
-        // Handle status list updates for post-issuance
-        var statusList = handlePostIssuanceStatusChange(mgmt, managementResult.newStatus());
-
-        log.debug("Updating credential management {} from previous state to {}",
-                mgmt.getId(), managementResult.newStatus());
-
-        var updatedMgmt = this.credentialManagementRepository.save(mgmt);
-
-        produceStateChangeEvent(updatedMgmt.getId(), managementResult.newStatus());
-
-        return CredentialManagementMapper.toUpdateStatusResponseDto(updatedMgmt, statusList);
-    }
-
-
-    private CreateCredentialOfferRequestDto toOfferFromRenewal(RenewalResponseDto request) {
-        return CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(request.metadataCredentialSupportedId())
-                .credentialSubjectData(request.credentialSubjectData())
-                .credentialMetadata(request.credentialMetadata())
-                .credentialValidUntil(request.credentialValidUntil())
-                .credentialValidFrom(request.credentialValidFrom())
-                .statusLists(request.statusLists())
-                .build();
+        return credential;
     }
 }
