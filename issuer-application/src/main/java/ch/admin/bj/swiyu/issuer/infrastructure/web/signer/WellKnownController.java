@@ -72,7 +72,7 @@ public class WellKnownController {
             @PathVariable UUID tenantId,
             @RequestHeader("Accept") String acceptHeader) {
 
-        if (CONTENT_TYPE_APPLICATION_JWT.equals(acceptHeader)) {
+        if (expectsSignedResponse(acceptHeader)) {
             return metadataService.getSignedIssuerMetadata(tenantId);
         }
 
@@ -85,10 +85,14 @@ public class WellKnownController {
             @PathVariable UUID tenantId,
             @RequestHeader("Accept") String acceptHeader) {
 
-        if (acceptHeader.startsWith(CONTENT_TYPE_APPLICATION_JWT)) {
+        if (expectsSignedResponse(acceptHeader)) {
             return metadataService.getSignedOpenIdConfiguration(tenantId);
         }
 
         return metadataService.getUnsignedOpenIdConfiguration();
+    }
+
+    private static boolean expectsSignedResponse(String acceptHeader) {
+        return acceptHeader.contains(CONTENT_TYPE_APPLICATION_JWT);
     }
 }

@@ -151,8 +151,9 @@ public class EncryptionService {
     private void createNewKeys() {
         try {
             log.debug("Create new ephemeral encryption key");
-            ECKey ephemeralEncryptionKey = new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID()
-                            .toString())
+            ECKey ephemeralEncryptionKey = new ECKeyGenerator(Curve.P_256)
+                    .algorithm(new Algorithm("ECDH-ES"))
+                    .keyID(UUID.randomUUID().toString())
                     .generate();
             JWKSet jwks = new JWKSet(ephemeralEncryptionKey);
             EncryptionKey key = EncryptionKey.builder()
