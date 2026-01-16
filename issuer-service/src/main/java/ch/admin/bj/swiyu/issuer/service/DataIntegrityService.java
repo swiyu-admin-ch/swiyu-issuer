@@ -11,14 +11,6 @@ import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jose.crypto.RSASSAVerifier;
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.KeyType;
-import com.nimbusds.jwt.SignedJWT;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +19,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Service for verifying and parsing credential offer data.
+ * Performs JWT-based data integrity checks if required.
+ */
 @Service
 @AllArgsConstructor
 @Slf4j
@@ -34,44 +30,39 @@ public class DataIntegrityService {
     private final ApplicationProperties applicationProperties;
     private final ObjectMapper objectMapper;
 
-    private static JWSVerifier buildJWSVerifier(KeyType kty, JWK key) throws JOSEException {
-        if (KeyType.EC.equals(kty)) {
-            return new ECDSAVerifier(key.toECKey().toPublicJWK());
-        } else if (KeyType.RSA.equals(kty)) {
-            return new RSASSAVerifier(key.toRSAKey().toPublicJWK());
-        }
-        throw new JOSEException("Unsupported Key Type %s".formatted(kty));
-    }
-
+    /**
+     * Checks if data integrity verification is required for the offer.
+     * @param offerData offer data map
+     * @return true if required
+     */
     private boolean isDataIntegrityRequired(Map<String, Object> offerData) {
         return offerData.containsKey("data_integrity") || applicationProperties.isDataIntegrityEnforced();
     }
 
+    /**
+     * Verifies the JWT signature and returns claims as a map.
+     * Throws BadRequestException on failure.
+     * @param jwtString JWT string
+     * @param offerId offer identifier (for logging)
+     * @return claims as map
+     */
     private Map<String, Object> verifyDataIntegrityJWT(String jwtString, UUID offerId) {
         var offerIdentifier = offerId == null ? "" : offerId;
         try {
-            SignedJWT dataIntegrityJWT = SignedJWT.parse(jwtString);
-            JWSHeader jwtHeader = dataIntegrityJWT.getHeader();
-            JWK matchingKey = applicationProperties.getDataIntegrityKeySet().getKeyByKeyId(jwtHeader.getKeyID());
-
-            if (matchingKey == null) {
-                log.error("Data Integrity of offer {} could not be verified with key {}", offerIdentifier, applicationProperties.getDataIntegrityJwks());
-                throw new BadRequestException("Data Integrity of offer could not be verified. No matching key found");
-            }
-
-            KeyType kty = matchingKey.getKeyType();
-
-            if (!dataIntegrityJWT.verify(buildJWSVerifier(kty, matchingKey))) {
-                log.error("Data Integrity of offer {} could not be verified with key {}", offerIdentifier, matchingKey.toJSONString());
-                throw new BadRequestException("Data Integrity of offer could not be verified");
-            }
-            return dataIntegrityJWT.getJWTClaimsSet().toJSONObject();
+            return JwtVerificationUtil.verifyJwt(jwtString, applicationProperties.getDataIntegrityKeySet());
         } catch (Exception e) {
             log.error("Failed setting up Data Integrity check of offer {} with JWKS {} - caused by {}", offerIdentifier, applicationProperties.getDataIntegrityJwks(), e.getMessage());
             throw new BadRequestException(e.getMessage());
         }
     }
 
+    /**
+     * Parses offer data from JSON string to map.
+     * Throws CredentialException on failure.
+     * @param data JSON string
+     * @param offerId offer identifier (for logging)
+     * @return offer data map
+     */
     private Map<String, Object> parseOfferData(String data, UUID offerId) {
         var offerIdentifier = offerId == null ? "" : offerId;
         try {
@@ -83,13 +74,11 @@ public class DataIntegrityService {
     }
 
     /**
-     * Unpacks the credential offer data and returns is as HashMap.
-     * If Data integrity checks are available performs these.
-     *
-     * @param offerData the data to be verified if needed
-     * @param offerId id of the offer used only for logging purposes - nullable
-     *
-     * @return the Offered Credential Subject Data.
+     * Unpacks and verifies credential offer data.
+     * Performs data integrity check if required.
+     * @param offerData offer data map
+     * @param offerId offer identifier (for logging)
+     * @return verified offer data map
      */
     public Map<String, Object> getVerifiedOfferData(Map<String, Object> offerData, UUID offerId) {
         var offerIdentifier = offerId == null ? "" : offerId;
