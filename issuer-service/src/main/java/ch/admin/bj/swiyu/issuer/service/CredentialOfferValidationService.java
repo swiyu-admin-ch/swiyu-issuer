@@ -212,10 +212,7 @@ public class CredentialOfferValidationService {
             List<StatusList> statusLists) {
 
         var mismatchingStatusLists = statusLists.stream()
-                .filter(statusList -> {
-                    String statusListIssuerDid = statusList.getConfigurationOverride().issuerDid();
-                    return !Objects.requireNonNullElse(statusListIssuerDid, defaultIssuerId).equals(issuerDid);
-                })
+                .filter(statusList -> !resolveIssuerDid(statusList, defaultIssuerId).equals(issuerDid))
                 .toList();
 
         if (!mismatchingStatusLists.isEmpty()) {
@@ -226,6 +223,24 @@ public class CredentialOfferValidationService {
                                     .toList()
                                     .toString()));
         }
+    }
+
+    /**
+     * Resolves the issuer DID for a given status list.
+     * <p>
+     * If the status list contains a configuration override with a non-empty issuer DID,
+     * that value is returned. Otherwise, the provided default issuer ID is used.
+     *
+     * @param statusList the status list to resolve the issuer DID from
+     * @param defaultIssuerId the default issuer ID to use if no override is present
+     * @return the resolved issuer DID
+     */
+    private static String resolveIssuerDid(StatusList statusList, String defaultIssuerId) {
+        var override = statusList.getConfigurationOverride();
+        if (override != null && StringUtils.isNotEmpty(override.issuerDid())) {
+            return override.issuerDid();
+        }
+        return defaultIssuerId;
     }
 
     /**
@@ -240,6 +255,7 @@ public class CredentialOfferValidationService {
         if (override != null && StringUtils.isNotEmpty(override.issuerDid())) {
             return override.issuerDid();
         }
+
         return defaultIssuerId;
     }
 }
