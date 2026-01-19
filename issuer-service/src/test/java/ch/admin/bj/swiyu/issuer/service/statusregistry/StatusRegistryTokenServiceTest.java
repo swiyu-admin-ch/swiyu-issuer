@@ -2,27 +2,23 @@ package ch.admin.bj.swiyu.issuer.service.statusregistry;
 
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
-import ch.admin.bj.swiyu.issuer.domain.ecosystem.EcosystemApiType;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenApi;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenSet;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenSetRepository;
 import net.javacrumbs.shedlock.core.LockAssert;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockingTaskExecutor;
-import net.javacrumbs.shedlock.core.SimpleLock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -67,8 +63,8 @@ class StatusRegistryTokenServiceTest {
         when(registryProperties.customerSecret()).thenReturn("test-customer-secret");
         when(registryProperties.enableRefreshTokenFlow()).thenReturn(true);
         when(registryProperties.bootstrapRefreshToken()).thenReturn("bootstrap-refresh-token");
-        when(registryProperties.apiUrl()).thenReturn(new URL("https://api.example.com"));
-        when(registryProperties.tokenUrl()).thenReturn(new URL("https://token.example.com"));
+        when(registryProperties.apiUrl()).thenReturn(URI.create("https://api.example.com").toURL());
+        when(registryProperties.tokenUrl()).thenReturn(URI.create("https://token.example.com").toURL());
         when(registryProperties.tokenRefreshInterval()).thenReturn(Duration.ofMinutes(30));
         when(swiyuProperties.businessPartnerId()).thenReturn(UUID.randomUUID());
 
@@ -330,4 +326,3 @@ class StatusRegistryTokenServiceTest {
         verify(lockingTaskExecutor).executeWithLock(any(Runnable.class), eq(statusRegistryTokenApiLockConfiguration));
     }
 }
-

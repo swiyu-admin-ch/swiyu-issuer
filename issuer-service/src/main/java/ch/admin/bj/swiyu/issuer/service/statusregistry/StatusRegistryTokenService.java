@@ -147,7 +147,7 @@ public class StatusRegistryTokenService {
             // if initialized: try it with the token in the DB
 
             var tokenResponse = getTokenResponse(dbTokenSet.getRefreshToken());
-            log.info("Status Registry OAuth refresh token set based on refresh token in DB (refreshToken: {}).", dbTokenSet.getRefreshToken());
+            log.info("Status Registry OAuth refresh token set based on refresh token in DB");
             return tokenResponse;
 
         } catch (Exception e) {
