@@ -11,10 +11,12 @@ import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -57,9 +59,9 @@ public class DataIntegrityService {
                 throw new BadRequestException("Data integrity JWT is missing");
             }
             return JwtVerificationUtil.verifyJwt(jwtString, applicationProperties.getDataIntegrityKeySet());
-        } catch (Exception e) {
+        } catch (JOSEException | ParseException e) {
             log.error("Failed setting up Data Integrity check of offer {} with JWKS {} - caused by {}", offerIdentifier, applicationProperties.getDataIntegrityJwks(), e.getMessage(), e);
-            throw new BadRequestException(e.getMessage());
+            throw new BadRequestException(e.getMessage(), e);
         }
     }
 
@@ -79,7 +81,7 @@ public class DataIntegrityService {
             }
             return objectMapper.readValue(data, objectMapper.getTypeFactory().constructMapType(HashMap.class, String.class, Object.class));
         } catch (JsonProcessingException e) {
-            log.error("Could not load offer data of offer {}", offerIdentifier, e);
+            log.error("Could not load offer data of offer {}", offerIdentifier);
             throw new CredentialException("Failed to parse offer data", e);
         }
     }

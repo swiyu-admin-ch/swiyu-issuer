@@ -11,6 +11,7 @@ import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.experimental.UtilityClass;
 
+import java.io.Serial;
 import java.text.ParseException;
 import java.util.Map;
 import java.util.function.Function;
@@ -84,6 +85,9 @@ public class JwtVerificationUtil {
      * Custom exception for verifier factory errors.
      */
     public static class JwtVerifierFactoryException extends RuntimeException {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         public JwtVerifierFactoryException(String message, Throwable cause) {
             super(message, cause);
         }
