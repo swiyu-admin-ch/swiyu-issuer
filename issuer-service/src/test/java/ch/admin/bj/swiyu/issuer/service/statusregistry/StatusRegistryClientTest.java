@@ -31,7 +31,7 @@ class StatusRegistryClientTest {
 
     private SwiyuProperties swiyuProperties;
     private StatusBusinessApiApi statusBusinessApi;
-    private StatusRegistryTokenDomainService tokenDomainService;
+    private StatusRegistryTokenService tokenDomainService;
     private StatusRegistryClient client;
     private ApiClient apiClient;
 
@@ -44,7 +44,7 @@ class StatusRegistryClientTest {
         apiClient = Mockito.mock(ApiClient.class);
         when(statusBusinessApi.getApiClient()).thenReturn(apiClient);
 
-        tokenDomainService = Mockito.mock(StatusRegistryTokenDomainService.class);
+        tokenDomainService = Mockito.mock(StatusRegistryTokenService.class);
         when(tokenDomainService.getAccessToken()).thenReturn("access-token");
 
         client = new StatusRegistryClient(swiyuProperties, statusBusinessApi, tokenDomainService);
