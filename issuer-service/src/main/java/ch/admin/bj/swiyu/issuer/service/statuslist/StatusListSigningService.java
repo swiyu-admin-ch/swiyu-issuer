@@ -46,7 +46,7 @@ public class StatusListSigningService {
             jwt.sign(signatureService.createSigner(statusListProperties, override.keyId(), override.keyPin()));
             return jwt;
         } catch (JOSEException | KeyStrategyException e) {
-            log.error("Failed to sign status list JWT with the provided key.", e);
+            log.error("Failed to sign status list JWT with the provided key.");
             throw new ConfigurationException("Failed to sign status list JWT with the provided key.", e);
         }
     }
