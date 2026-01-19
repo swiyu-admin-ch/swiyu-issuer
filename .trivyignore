@@ -8,6 +8,6 @@ CVE-2025-8941
 # Java has its own XML parsing API and does not rely on libexpat
 CVE-2025-59375
 # We do not use the LIBPNG library - Need to be fixed in the base image
-CVE-2025-64720
-CVE-2025-65018
-CVE-2025-66293
+CVE-2025-64720 exp:2026-03-01
+CVE-2025-65018 exp:2026-03-01
+CVE-2025-66293 exp:2026-03-01

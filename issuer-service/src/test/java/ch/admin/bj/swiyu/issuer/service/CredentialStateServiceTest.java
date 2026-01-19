@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
 import org.junit.jupiter.api.AfterEach;
@@ -32,7 +33,7 @@ class CredentialStateServiceTest {
     private CredentialPersistenceService persistenceService;
 
     @Mock
-    private StatusListManagementService statusListManagementService;
+    private StatusListPersistenceService statusListPersistenceService;
 
     private CredentialStateService stateService;
 
@@ -45,7 +46,7 @@ class CredentialStateServiceTest {
                 credentialStateMachine,
                 applicationEventPublisher,
                 persistenceService,
-                statusListManagementService);
+                statusListPersistenceService);
     }
 
     @AfterEach
@@ -333,7 +334,7 @@ class CredentialStateServiceTest {
                 .thenReturn(persistedStatuses);
 
         var expectedStatusListIds = List.of(UUID.randomUUID());
-        when(statusListManagementService.updateStatusListsForPostIssuance(eq(persistedStatuses), eq(CredentialStatusManagementType.REVOKED)))
+        when(statusListPersistenceService.revoke(eq(persistedStatuses)))
                 .thenReturn(expectedStatusListIds);
 
         when(persistenceService.saveCredentialManagement(eq(mgmt))).thenReturn(mgmt);
@@ -346,7 +347,7 @@ class CredentialStateServiceTest {
 
         assertNotNull(response);
 
-        verify(statusListManagementService).updateStatusListsForPostIssuance(anySet(), eq(CredentialStatusManagementType.REVOKED));
+        verify(statusListPersistenceService).revoke(anySet());
         verify(persistenceService).saveCredentialManagement(eq(mgmt));
     }
 

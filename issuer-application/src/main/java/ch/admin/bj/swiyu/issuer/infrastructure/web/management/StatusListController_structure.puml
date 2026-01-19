@@ -127,43 +127,29 @@ subgraph cluster_857347596 {
 	fillcolor="#b0b0b0"
 	style=filled
    
-   KeyManagementStrategyFactory245844921[
-	label="(C)KeyManagementStrategyFactory"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-KeyStrategy2073312966[
-	label="(C)KeyStrategy"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-PKCS11Strategy2073312966[
-	label="(C)PKCS11Strategy"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-SecurosysStrategy2073312966[
-	label="(C)SecurosysStrategy"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-SignatureService354864683[
+   SignatureService354864683[
 	label="(C)SignatureService"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
 ];
 
-StatusListService354864683[
-	label="(C)StatusListService"
+StatusListOrchestrator1693355827[
+	label="(C)StatusListOrchestrator"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+StatusListSigningService1693355827[
+	label="(C)StatusListSigningService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+StatusListValidator1693355827[
+	label="(C)StatusListValidator"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
@@ -210,16 +196,14 @@ subgraph cluster_335321619 {
 } 
 
 'edges    
-SignatureService354864683 -> KeyManagementStrategyFactory245844921[label="strategyFactory
+StatusListController1123570110 -> StatusListOrchestrator1693355827[label="statusListOrchestrator
 [0..1]"];
-SignatureService354864683 -> KeyStrategy2073312966[arrowhead=none];
-SignatureService354864683 -> PKCS11Strategy2073312966[arrowhead=none];
-SignatureService354864683 -> SecurosysStrategy2073312966[arrowhead=none];
-StatusListController1123570110 -> StatusListService354864683[label="statusListService
+StatusListOrchestrator1693355827 -> StatusListSigningService1693355827[label="signingService
 [0..1]"];
-StatusListService354864683 -> SignatureService354864683[label="signatureService
+StatusListOrchestrator1693355827 -> StatusListValidator1693355827[label="resolveAndValidateStatusLists() -> requireAllStatusListsResolved()"];
+StatusListOrchestrator1693355827 -> StatusRegistryClient1498629038[label="statusRegistryClient
 [0..1]"];
-StatusListService354864683 -> StatusRegistryClient1498629038[label="statusRegistryClient
+StatusListSigningService1693355827 -> SignatureService354864683[label="signatureService
 [0..1]"];
 StatusRegistryClient1498629038 -> StatusBusinessApiApi390685392[label="statusBusinessApi
 [0..1]"];
