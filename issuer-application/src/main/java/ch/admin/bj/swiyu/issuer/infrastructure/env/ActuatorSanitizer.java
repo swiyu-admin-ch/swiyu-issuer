@@ -1,12 +1,6 @@
-/*
- * SPDX-FileCopyrightText: 2025 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
-
 package ch.admin.bj.swiyu.issuer.infrastructure.env;
 
-import org.springframework.beans.factory.annotation.Value;
+import ch.admin.bj.swiyu.issuer.infrastructure.config.ActuatorEnvProperties;
 import org.springframework.boot.actuate.endpoint.SanitizableData;
 import org.springframework.boot.actuate.endpoint.SanitizingFunction;
 import org.springframework.stereotype.Component;
@@ -29,8 +23,9 @@ public class ActuatorSanitizer implements SanitizingFunction {
     private final List<Pattern> blacklist = new ArrayList<>();
 
 
-    public ActuatorSanitizer(@Value("${management.endpoint.env.allowedProperties}") List<String> whitelist) {
-        for (String key : whitelist) {
+    public ActuatorSanitizer(ActuatorEnvProperties properties) {
+        List<String> allowedProperties = properties.getAllowedProperties();
+        for (String key : allowedProperties) {
             this.whitelist.add(getPattern(key));
         }
         for (String key : keysToSanitize) {
@@ -63,7 +58,7 @@ public class ActuatorSanitizer implements SanitizingFunction {
         if (isRegex(value)) {
             return Pattern.compile(value, Pattern.CASE_INSENSITIVE);
         }
-        return Pattern.compile(".*" + value + "$", Pattern.CASE_INSENSITIVE);
+        return Pattern.compile(".*" + Pattern.quote(value) + "$", Pattern.CASE_INSENSITIVE);
     }
 
     private boolean isRegex(String value) {

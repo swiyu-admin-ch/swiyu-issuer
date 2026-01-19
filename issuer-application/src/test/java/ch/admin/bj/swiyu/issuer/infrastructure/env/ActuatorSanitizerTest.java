@@ -1,11 +1,6 @@
-/*
- * SPDX-FileCopyrightText: 2026 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
-
 package ch.admin.bj.swiyu.issuer.infrastructure.env;
 
+import ch.admin.bj.swiyu.issuer.infrastructure.config.ActuatorEnvProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.actuate.endpoint.SanitizableData;
 
@@ -14,12 +9,13 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class ActuatorSanitizerTest {
+class ActuatorSanitizerTest {
 
     @Test
     void testActuatorSanitizer() {
-        var whitelist = List.of("foo", "password");
-        var sanitizer = new ActuatorSanitizer(whitelist);
+        var properties = new ActuatorEnvProperties();
+        properties.setAllowedProperties(List.of("foo", "password"));
+        var sanitizer = new ActuatorSanitizer(properties);
 
         var value = "placeholder";
 
@@ -44,8 +40,9 @@ public class ActuatorSanitizerTest {
     @Test
     void testActuatorSanitizer_Regex() {
         // allow everything
-        var whitelist = List.of(".*");
-        var sanitizer = new ActuatorSanitizer(whitelist);
+        var properties = new ActuatorEnvProperties();
+        properties.setAllowedProperties(List.of(".*"));
+        var sanitizer = new ActuatorSanitizer(properties);
 
         var value = "placeholder";
 
