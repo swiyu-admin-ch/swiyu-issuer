@@ -2,16 +2,19 @@ package ch.admin.bj.swiyu.issuer.management.service;
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.SignatureService;
-import ch.admin.bj.swiyu.issuer.service.StatusListService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
@@ -22,6 +25,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,12 +39,12 @@ import java.text.ParseException;
 import java.util.*;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
-class StatusListServiceTest {
-    private StatusListService statusListService;
+class StatusListOrchestratorTest {
+    private StatusListOrchestrator statusListOrchestrator;
     private ApplicationProperties applicationProperties;
     private StatusListProperties statusListProperties;
     private StatusRegistryClient statusRegistryClient;
@@ -50,6 +54,8 @@ class StatusListServiceTest {
     private ECKey ecKey;
     private JWSSigner signer;
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
+
+    private StatusListSigningService signingService;
 
     private UUID statusRegistryEntryId = UUID.randomUUID();
 
@@ -78,7 +84,18 @@ class StatusListServiceTest {
                 .thenReturn(signer);
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         when(credentialOfferStatusRepository.countByStatusListId(Mockito.any())).thenReturn(0);
-        statusListService = new StatusListService(applicationProperties, statusListProperties, statusRegistryClient, statusListRepository, transaction, signatureService, credentialOfferStatusRepository);
+
+        signingService = new StatusListSigningService(applicationProperties, statusListProperties, signatureService);
+
+        statusListOrchestrator = new StatusListOrchestrator(
+                applicationProperties,
+                statusListProperties,
+                statusRegistryClient,
+                signingService,
+                statusListRepository,
+                transaction,
+                credentialOfferStatusRepository);
+
         when(statusListProperties.getStatusListSizeLimit()).thenReturn(1000);
     }
 
@@ -95,7 +112,7 @@ class StatusListServiceTest {
                 .build();
         var statusListCaptor = ArgumentCaptor.forClass(StatusList.class);
         var jwtCaptor = ArgumentCaptor.forClass(String.class);
-        statusListService.createStatusList(request);
+        statusListOrchestrator.createStatusList(request);
         verify(statusRegistryClient).updateStatusListEntry(statusListCaptor.capture(), jwtCaptor.capture());
         var jwt = jwtCaptor.getValue();
         var parsedJwt = SignedJWT.parse(jwt);
@@ -104,93 +121,6 @@ class StatusListServiceTest {
         assertEquals(expectedVerificationMethod, parsedJwt.getHeader().getKeyID());
     }
 
-    @Test
-    void revoke_shouldReturnStatusListId() {
-        UUID statusListId = UUID.randomUUID();
-
-        // create a valid token status zipped payload
-        var token = new TokenStatusListToken(8, 10);
-
-        StatusList statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .configurationOverride(null)
-                .build();
-
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
-
-        CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
-        CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
-        when(offerStatus.getId()).thenReturn(id);
-        when(id.getStatusListId()).thenReturn(statusListId);
-        when(id.getIndex()).thenReturn(1);
-
-        List<UUID> result = statusListService.revoke(Set.of(offerStatus));
-
-        assertEquals(1, result.size());
-        assertEquals(statusListId, result.get(0));
-    }
-
-    @Test
-    void suspend_shouldReturnStatusListId() {
-        UUID statusListId = UUID.randomUUID();
-
-        TokenStatusListToken token = new TokenStatusListToken(8, 10);
-
-        StatusList statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .configurationOverride(null)
-                .build();
-
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
-
-        CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
-        CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
-        when(offerStatus.getId()).thenReturn(id);
-        when(id.getStatusListId()).thenReturn(statusListId);
-        when(id.getIndex()).thenReturn(2);
-
-        List<UUID> result = statusListService.suspend(Set.of(offerStatus));
-
-        assertEquals(1, result.size());
-        assertEquals(statusListId, result.getFirst());
-    }
-
-    @Test
-    void revalidate_shouldReturnStatusListId() {
-        UUID statusListId = UUID.randomUUID();
-
-        TokenStatusListToken token = new TokenStatusListToken(8, 10);
-
-        StatusList statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .configurationOverride(null)
-                .build();
-
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
-
-        CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
-        CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
-        when(offerStatus.getId()).thenReturn(id);
-        when(id.getStatusListId()).thenReturn(statusListId);
-        when(id.getIndex()).thenReturn(3);
-
-        List<UUID> result = statusListService.revalidate(Set.of(offerStatus));
-
-        assertEquals(1, result.size());
-        assertEquals(statusListId, result.getFirst());
-    }
 
     @Test
     void getStatusListInformation_whenExists_shouldReturnDtoAndCallCount() {
@@ -207,7 +137,7 @@ class StatusListServiceTest {
         when(credentialOfferStatusRepository.countByStatusListId(statusListId)).thenReturn(3);
         when(statusListProperties.getVersion()).thenReturn("v1");
 
-        var dto = statusListService.getStatusListInformation(statusListId);
+        var dto = statusListOrchestrator.getStatusListInformation(statusListId);
 
         assertEquals(statusList.getUri(), dto.getStatusRegistryUrl());
         // verify repository interactions
@@ -220,9 +150,77 @@ class StatusListServiceTest {
         UUID statusListId = UUID.randomUUID();
         when(statusListRepository.findById(statusListId)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> statusListService.getStatusListInformation(statusListId));
+        assertThrows(ResourceNotFoundException.class, () -> statusListOrchestrator.getStatusListInformation(statusListId));
 
         verify(statusListRepository, times(1)).findById(statusListId);
         verifyNoInteractions(credentialOfferStatusRepository);
     }
+
+    /**
+     * Happy path: all requested status list URIs can be resolved and are returned.
+     */
+    @Test
+    void resolveAndValidateStatusLists_shouldReturnListsWhenAllResolved() {
+        var uri1 = "https://example.com/status1";
+        var uri2 = "https://example.com/status2";
+        var statusList1 = StatusList.builder().uri(uri1).build();
+        var statusList2 = StatusList.builder().uri(uri2).build();
+
+        var request = CreateCredentialOfferRequestDto.builder()
+                .statusLists(List.of(uri1, uri2))
+                .build();
+
+        when(statusListRepository.findByUriIn(List.of(uri1, uri2)))
+                .thenReturn(List.of(statusList1, statusList2));
+
+        var result = statusListOrchestrator.resolveAndValidateStatusLists(request);
+
+        assertEquals(List.of(statusList1, statusList2), result);
+        verify(statusListRepository).findByUriIn(List.of(uri1, uri2));
+        verifyNoMoreInteractions(statusListRepository);
+    }
+
+    /**
+     * Exception path: if not all provided URIs can be resolved, the method must fail and include
+     * the resolved URIs in the error message.
+     */
+    @Test
+    void resolveAndValidateStatusLists_shouldThrowWhenNotAllResolved() {
+        var uri1 = "https://example.com/status1";
+        var uri2 = "https://example.com/status2";
+        var statusList1 = StatusList.builder().uri(uri1).build();
+
+        var request = CreateCredentialOfferRequestDto.builder()
+                .statusLists(List.of(uri1, uri2))
+                .build();
+
+        when(statusListRepository.findByUriIn(List.of(uri1, uri2)))
+                .thenReturn(List.of(statusList1)); // Only one resolved
+
+        var ex = Assertions.assertThrows(BadRequestException.class,
+                () -> statusListOrchestrator.resolveAndValidateStatusLists(request));
+
+        assertTrue(ex.getMessage().contains(uri1));
+        assertFalse(ex.getMessage().contains(uri2));
+    }
+
+    /**
+     * Edge case: an empty list of status lists should be considered valid and results in an empty resolution.
+     */
+    @Test
+    void resolveAndValidateStatusLists_shouldReturnEmptyWhenRequestIsEmpty() {
+        var request = CreateCredentialOfferRequestDto.builder()
+                .statusLists(List.of())
+                .build();
+
+        when(statusListRepository.findByUriIn(List.of())).thenReturn(List.of());
+
+        var result = statusListOrchestrator.resolveAndValidateStatusLists(request);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(statusListRepository).findByUriIn(List.of());
+        verifyNoMoreInteractions(statusListRepository);
+    }
+
 }

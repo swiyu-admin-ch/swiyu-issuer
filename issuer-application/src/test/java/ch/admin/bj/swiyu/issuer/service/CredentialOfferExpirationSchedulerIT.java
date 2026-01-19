@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.infrastructure.scheduler.CredentialOfferExpirationScheduler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +25,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 //@Transactional will break filtering to currently used indexes
-class CredentialManagementServiceIT {
+class CredentialOfferExpirationSchedulerIT {
     @Autowired
     CredentialManagementService credentialManagementService;
     @Autowired
     CredentialOfferRepository credentialOfferRepository;
     @Autowired
     CredentialManagementRepository credentialManagementRepository;
+    @Autowired
+    CredentialOfferExpirationScheduler credentialOfferExpirationScheduler;
+
 
     @Test
     void testExpireOffersAllCredentialStatusType() {
@@ -61,7 +65,7 @@ class CredentialManagementServiceIT {
             final List<CredentialOffer> expectedUnchanged = new ArrayList<>(allOffers);
             expectedUnchanged.removeAll(expectedExpired);
 
-            credentialManagementService.expireOffers();
+            credentialOfferExpirationScheduler.expireOffers();
 
             for (var offer : expectedExpired) {
                 final CredentialOffer offerUpdated = credentialOfferRepository.findById(offer.getId()).orElseThrow();

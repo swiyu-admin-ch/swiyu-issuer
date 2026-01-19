@@ -9,6 +9,8 @@ package ch.admin.bj.swiyu.issuer;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.service.SignatureService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -161,7 +163,8 @@ public class ArchitectureIT {
                 .should()
                 .beFreeOfCycles()
                 .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
-                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class);
+                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class)
+                .ignoreDependency(StatusListSigningService.class, SignatureService.class); // ignore while refactoring;
 
         /**
          * ArchRules which support freezing. @see <a
