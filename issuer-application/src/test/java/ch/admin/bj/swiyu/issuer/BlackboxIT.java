@@ -14,12 +14,11 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
-import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryTokenDomainService;
+import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryTokenService;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -101,7 +100,7 @@ class BlackboxIT {
     @Autowired
     private ObjectMapper mapper;
     @MockitoSpyBean
-    private StatusRegistryTokenDomainService statusRegistryTokenDomainService;
+    private StatusRegistryTokenService statusRegistryTokenService;
 
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
@@ -130,8 +129,8 @@ class BlackboxIT {
         var statusListEntry = statusListTestHelper.buildStatusListEntry();
         var statusListEntryString = mapper.writeValueAsString(statusListEntry);
 
-        when(statusRegistryTokenDomainService.getAccessToken()).thenReturn("invalidAccessToken").thenReturn("refreshedAccessToken");
-        when(statusRegistryTokenDomainService.forceRefreshAccessToken()).thenReturn("refreshedAccessToken");
+        when(statusRegistryTokenService.getAccessToken()).thenReturn("invalidAccessToken").thenReturn("refreshedAccessToken");
+        when(statusRegistryTokenService.forceRefreshAccessToken()).thenReturn("refreshedAccessToken");
 
         mockServerClient
                 .when(
