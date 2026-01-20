@@ -3,10 +3,12 @@ package ch.admin.bj.swiyu.issuer.service.credential;
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.EncryptionService;
 import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
@@ -17,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig.CredentialManagementEvent.ISSUE;
@@ -34,7 +35,7 @@ public class CredentialEnvelopeService {
     private final EncryptionService encryptionService;
     private final HolderBindingService holderBindingService;
     private final EventProducerService eventProducerService;
-    private final CredentialRequestValidator credentialRequestValidator;
+    private final IssuerMetadata issuerMetadata;
     private final CredentialStateMachine credentialStateMachine;
     private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialManagementRepository credentialManagementRepository;
@@ -47,9 +48,16 @@ public class CredentialEnvelopeService {
     public CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
                                                              CredentialRequestClass credentialRequest,
                                                              ClientAgentInfo clientInfo) {
-        credentialRequestValidator.validateCredentialRequest(credentialOffer, credentialRequest);
-
         CredentialManagement mgmt = credentialOffer.getCredentialManagement();
+
+        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst());
+
+        if (mgmt.hasTokenExpirationPassed()) {
+            handleExpiredToken(credentialOffer);
+        }
+
+        CredentialRequestValidator.validateCredentialRequest(credentialOffer, credentialRequest, credentialConfiguration);
 
         List<ProofJwt> holderPublicKey;
         try {
@@ -113,7 +121,14 @@ public class CredentialEnvelopeService {
                                                                CredentialRequestClass credentialRequest,
                                                                ClientAgentInfo clientInfo,
                                                                CredentialManagement mgmt) {
-        credentialRequestValidator.validateCredentialRequest(credentialOffer, credentialRequest);
+        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst());
+
+        if (mgmt.hasTokenExpirationPassed()) {
+            handleExpiredToken(credentialOffer);
+        }
+
+        CredentialRequestValidator.validateCredentialRequest(credentialOffer, credentialRequest, credentialConfiguration);
 
         List<ProofJwt> holderJwkList;
         try {
@@ -168,5 +183,13 @@ public class CredentialEnvelopeService {
 
         return responseEnvelope;
     }
-}
 
+    private void handleExpiredToken(CredentialOffer credentialOffer) {
+        log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
+        eventProducerService.produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS",
+                CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
+                credentialOffer);
+
+        throw OAuthException.invalidRequest("AccessToken expired.");
+    }
+}

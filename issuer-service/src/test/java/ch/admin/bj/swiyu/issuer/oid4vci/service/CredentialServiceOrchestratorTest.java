@@ -104,14 +104,14 @@ class CredentialServiceOrchestratorTest {
 
         oAuthService = new OAuthService(applicationProperties, eventProducerService, credentialOfferRepository, credentialManagementRepository, credentialStateMachine);
 
-        var credentialRequestValidator = new CredentialRequestValidator(issuerMetadata, eventProducerService);
+        // validator is static utility now
         var credentialOfferStateService = new CredentialOfferStateService(credentialStateMachine, credentialOfferRepository);
         var credentialEnvelopeService = new CredentialEnvelopeService(
                 credentialFormatFactory,
                 encryptionService,
                 holderBindingService,
                 eventProducerService,
-                credentialRequestValidator,
+                issuerMetadata,
                 credentialStateMachine,
                 credentialOfferRepository,
                 credentialManagementRepository,
