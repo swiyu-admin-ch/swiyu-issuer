@@ -77,3 +77,9 @@ webhook:
 
 caching:
   publicKeyCacheTTL: 5000
+
+management:
+  endpoint:
+    env:
+      show-values: NEVER
+      allowedProperties:
