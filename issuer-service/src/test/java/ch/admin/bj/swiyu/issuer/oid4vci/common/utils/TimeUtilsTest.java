@@ -10,22 +10,30 @@ import ch.admin.bj.swiyu.issuer.common.date.TimeUtils;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class TimeUtilsTest {
 
     @Test
-    void testInstantToUnixTimestamp() {
+    void testInstantToRoundedUnixTimestamp() {
         Instant now = Instant.now();
-        Long timestamp = TimeUtils.instantToUnixTimestamp(now);
+        Long timestamp = TimeUtils.instantToRoundedUnixTimestamp(now);
         assertNotNull(timestamp);
-        assertEquals(now.getEpochSecond(), timestamp);
+        assertTrue(now.getEpochSecond() > timestamp);
+        assertTrue(now.plus(-1, ChronoUnit.DAYS).getEpochSecond() < timestamp);
+        var timestampInstant = Instant.ofEpochSecond(timestamp).atZone(ZoneOffset.UTC);
+        assertEquals(0, timestampInstant.getHour());
+        assertEquals(0, timestampInstant.getMinute());
+        assertEquals(0, timestampInstant.getSecond());
+        assertEquals(0, timestampInstant.getNano());
     }
 
     @Test
     void testInstantToUnixTimestampWithNull() {
-        assertNull(TimeUtils.instantToUnixTimestamp(null));
+        assertNull(TimeUtils.instantToRoundedUnixTimestamp(null));
     }
 
     @Test

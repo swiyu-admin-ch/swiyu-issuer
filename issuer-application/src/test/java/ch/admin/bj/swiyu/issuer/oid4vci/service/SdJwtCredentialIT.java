@@ -30,11 +30,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.Period;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.JwtTestUtils.getJWTPayload;
 import static java.util.Objects.nonNull;
@@ -126,8 +127,53 @@ class SdJwtCredentialIT {
         String alg = JsonPath.read(payload, "$._sd_alg");
         assertEquals("sha-256", alg);
 
-        assertEquals(now.getEpochSecond(), ((Integer) JsonPath.read(payload, "$.nbf")).longValue());
-        assertEquals(expiration.getEpochSecond(), ((Integer) JsonPath.read(payload, "$.exp")).longValue());
+        // timestamps are rounded down to the day, hence the less than
+        assertEquals(instantToRoundedUnixTimestamp(Instant.now()), ((Integer) JsonPath.read(payload, "$.nbf")).longValue());
+        assertEquals(instantToRoundedUnixTimestamp(Instant.now()), ((Integer) JsonPath.read(payload, "$.iat")).longValue());
+        assertEquals(instantToRoundedUnixTimestamp(expiration), ((Integer) JsonPath.read(payload, "$.exp")).longValue());
+    }
+
+    @Test
+    void getSdJwtCredentialV2TestClaims_thenSuccess() {
+
+        Instant now = Instant.now();
+        Instant expiration = now.plus(30, ChronoUnit.DAYS);
+
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", now, expiration);
+
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
+        credentialRequest.setCredentialResponseEncryption(null);
+
+        CredentialEnvelopeDto vc = vcFormatFactory
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredentialEnvelopeV2();
+
+        Base64.Decoder decoder = Base64.getUrlDecoder();
+        List<HashMap<String, String>> credentialsMap = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credentials");
+        var credentials = credentialsMap.stream().map(c -> c.values().stream().toList()).flatMap(List::stream).collect(Collectors.toList());
+
+        Set<String> payloads = new HashSet<>();
+        for (var credential : credentials) {
+            String[] chunks = credential.split("\\.");
+            String payload = new String(decoder.decode(chunks[1]));
+            payloads.add(payload);
+
+            List<String> sd = JsonPath.read(payload, "$._sd");
+            assertEquals(3, sd.size());
+
+            String alg = JsonPath.read(payload, "$._sd_alg");
+            assertEquals("sha-256", alg);
+
+            // timestamps are rounded down to the day to break traceability
+            assertEquals(instantToRoundedUnixTimestamp(Instant.now()), ((Integer) JsonPath.read(payload, "$.nbf")).longValue());
+            assertEquals(instantToRoundedUnixTimestamp(Instant.now()), ((Integer) JsonPath.read(payload, "$.iat")).longValue());
+            assertEquals(instantToRoundedUnixTimestamp(expiration), ((Integer) JsonPath.read(payload, "$.exp")).longValue());
+        }
+        // test that payloads within the same batch are unique
+        assertEquals(credentials.size(), payloads.size());
     }
 
     @Test
