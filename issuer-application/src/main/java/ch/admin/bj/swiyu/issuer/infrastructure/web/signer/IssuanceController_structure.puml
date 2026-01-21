@@ -141,36 +141,22 @@ subgraph cluster_857347596 {
 	fillcolor="#b0b0b0"
 	style=filled
    
-   BusinessIssuerRenewalApiClient1938500277[
-	label="(C)BusinessIssuerRenewalApiClient"
+   CredentialIssuanceService761217018[
+	label="(C)CredentialIssuanceService"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
 ];
 
-CredentialBuilder354864683[
-	label="(C)CredentialBuilder"
+CredentialServiceOrchestrator761217018[
+	label="(C)CredentialServiceOrchestrator"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
 ];
 
-CredentialFormatFactory354864683[
-	label="(C)CredentialFormatFactory"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-CredentialManagementService354864683[
-	label="(C)CredentialManagementService"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-CredentialService354864683[
-	label="(C)CredentialService"
+DeferredCredentialService761217018[
+	label="(C)DeferredCredentialService"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
@@ -197,20 +183,6 @@ EncryptionService354864683[
 	fillcolor="#FFFFFF"
 ];
 
-EventProducerService2070051252[
-	label="(C)EventProducerService"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-HolderBindingService354864683[
-	label="(C)HolderBindingService"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
 NonceService354864683[
 	label="(C)NonceService"
 	style=filled
@@ -231,19 +203,9 @@ OAuthService354864683[
 } 
 
 'edges    
-CredentialService354864683 -> BusinessIssuerRenewalApiClient1938500277[label="renewalApiClient
+CredentialServiceOrchestrator761217018 -> CredentialIssuanceService761217018[label="credentialIssuanceService
 [0..1]"];
-CredentialService354864683 -> CredentialFormatFactory354864683[label="vcFormatFactory
-[0..1]"];
-CredentialService354864683 -> CredentialManagementService354864683[label="credentialManagementService
-[0..1]"];
-CredentialService354864683 -> EncryptionService354864683[label="encryptionService
-[0..1]"];
-CredentialService354864683 -> EventProducerService2070051252[label="eventProducerService
-[0..1]"];
-CredentialService354864683 -> HolderBindingService354864683[label="holderBindingService
-[0..1]"];
-CredentialService354864683 -> OAuthService354864683[label="oAuthService
+CredentialServiceOrchestrator761217018 -> DeferredCredentialService761217018[label="deferredCredentialService
 [0..1]"];
 DemonstratingProofOfPossessionService354864683 -> DemonstratingProofOfPossessionValidationService354864683[label="demonstratingProofOfPossessionValidationService
 [0..1]"];
@@ -253,7 +215,7 @@ DemonstratingProofOfPossessionService354864683 -> OAuthService354864683[label="o
 [0..1]"];
 EncryptionService354864683 -> CacheCustomizer1858348955[label="cacheCustomizer
 [0..1]"];
-IssuanceController281199067 -> CredentialService354864683[label="credentialService
+IssuanceController281199067 -> CredentialServiceOrchestrator761217018[label="credentialServiceOrchestrator
 [0..1]"];
 IssuanceController281199067 -> DemonstratingProofOfPossessionService354864683[label="demonstratingProofOfPossessionService
 [0..1]"];

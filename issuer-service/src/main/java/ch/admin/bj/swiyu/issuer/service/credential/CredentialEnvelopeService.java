@@ -38,7 +38,7 @@ import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMac
 @AllArgsConstructor
 public class CredentialEnvelopeService {
 
-    private final CredentialFormatFactory vcFormatFactory;
+    private final CredentialFormatFactory credentialFormatFactory;
     private final EncryptionService encryptionService;
     private final HolderBindingService holderBindingService;
     private final EventProducerService eventProducerService;
@@ -184,7 +184,7 @@ public class CredentialEnvelopeService {
     private CredentialBuilder buildVcBuilder(CredentialOffer credentialOffer,
                                              CredentialRequestClass credentialRequest,
                                              List<String> holderBindings) {
-        return vcFormatFactory
+        return credentialFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId()
                         .getFirst())
                 .credentialOffer(credentialOffer)

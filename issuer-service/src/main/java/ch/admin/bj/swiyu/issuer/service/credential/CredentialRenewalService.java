@@ -15,7 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 /**
- * Handles credential renewal flow.
+ * Orchestrates the credential renewal lifecycle: validates eligibility, fetches renewal data,
+ * updates the credential offer, builds the envelope, and persists state.
  */
 @Slf4j
 @Service
@@ -29,26 +30,59 @@ public class CredentialRenewalService {
     private final CredentialEnvelopeService credentialEnvelopeService;
 
     /**
-     * Executes the renewal flow and returns the resulting credential envelope.
+     * Runs the end-to-end renewal flow for a credential management record.
+     *
+     * @param credentialRequest the credential request details provided by the client
+     * @param mgmt the credential management aggregate to validate and update
+     * @param clientInfo metadata about the calling client agent
+     * @param dpopKey the DPoP public key associated with the access token
+     * @return the envelope containing the renewed credential offer
+     * @throws RenewalException when renewal is disallowed or already in progress
+     * @throws OAuthException when the DPoP key is missing or invalid for renewal
      */
     public CredentialEnvelopeDto handleRenewalFlow(CredentialRequestClass credentialRequest,
                                                    CredentialManagement mgmt,
                                                    ClientAgentInfo clientInfo,
                                                    String dpopKey) {
 
+        ensureManagementNotRevoked(mgmt);
+        ensureRenewalFlowEnabled(mgmt);
+        ensureDpopKeyPresent(dpopKey);
+        ensureNoPendingRenewalRequest(mgmt);
+
+        var initialCredentialOfferForRenewal = credentialManagementService.createInitialCredentialOfferForRenewal(mgmt);
+        var renewalData = buildRenewalRequestDto(mgmt, initialCredentialOfferForRenewal, dpopKey);
+        var renewedDataResponse = renewalApiClient.getRenewalData(renewalData);
+
+        var offer = credentialManagementService.updateOfferFromRenewalResponse(renewedDataResponse, initialCredentialOfferForRenewal);
+        var envelopeDto = credentialEnvelopeService.createCredentialEnvelopeDtoV2(offer, credentialRequest, clientInfo, mgmt);
+
+        incrementRenewalResponseCount(mgmt);
+        credentialManagementRepository.save(mgmt);
+
+        return envelopeDto;
+    }
+
+    void ensureManagementNotRevoked(CredentialManagement mgmt) {
         if (mgmt.getCredentialManagementStatus() == CredentialStatusManagementType.REVOKED) {
             throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential management is revoked, no renewal possible");
         }
+    }
 
+    void ensureRenewalFlowEnabled(CredentialManagement mgmt) {
         if (!applicationProperties.isRenewalFlowEnabled()) {
             log.info("Tried to renew credential for management id %s".formatted(mgmt.getId()));
             throw new RenewalException(HttpStatus.BAD_REQUEST, "No active offer found for %s and no renewal possible");
         }
+    }
 
+    void ensureDpopKeyPresent(String dpopKey) {
         if (dpopKey == null) {
             throw OAuthException.invalidGrant("Invalid accessToken - no DPoP key present for refresh flow");
         }
+    }
 
+    void ensureNoPendingRenewalRequest(CredentialManagement mgmt) {
         var requestedCredentialOffers = mgmt.getCredentialOffers().stream()
                 .filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.REQUESTED)
                 .toList();
@@ -56,20 +90,13 @@ public class CredentialRenewalService {
         if (!requestedCredentialOffers.isEmpty()) {
             throw new RenewalException(HttpStatus.TOO_MANY_REQUESTS, "Request already in progress");
         }
+    }
 
-        var initialCredentialOfferForRenewal = this.credentialManagementService.createInitialCredentialOfferForRenewal(mgmt);
+    RenewalRequestDto buildRenewalRequestDto(CredentialManagement mgmt, CredentialOffer initialOffer, String dpopKey) {
+        return new RenewalRequestDto(mgmt.getId(), initialOffer.getId(), dpopKey);
+    }
 
-        var renewalData = new RenewalRequestDto(mgmt.getId(), initialCredentialOfferForRenewal.getId(), dpopKey);
-        var renewedDataResponse = renewalApiClient.getRenewalData(renewalData);
-
-        var offer = this.credentialManagementService.updateOfferFromRenewalResponse(renewedDataResponse, initialCredentialOfferForRenewal);
-
-        CredentialEnvelopeDto envelopeDto = credentialEnvelopeService.createCredentialEnvelopeDtoV2(offer, credentialRequest, clientInfo, mgmt);
-
+    void incrementRenewalResponseCount(CredentialManagement mgmt) {
         mgmt.setRenewalResponseCnt(mgmt.getRenewalResponseCnt() + 1);
-        credentialManagementRepository.save(mgmt);
-
-        return envelopeDto;
     }
 }
-

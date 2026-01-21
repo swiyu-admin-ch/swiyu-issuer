@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package ch.admin.bj.swiyu.issuer.oid4vci.service;
+package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
@@ -24,13 +24,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
-import ch.admin.bj.swiyu.issuer.service.credential.CredentialEnvelopeService;
-import ch.admin.bj.swiyu.issuer.service.credential.CredentialIssuanceService;
-import ch.admin.bj.swiyu.issuer.service.credential.CredentialOfferStateService;
-import ch.admin.bj.swiyu.issuer.service.credential.CredentialRenewalService;
-import ch.admin.bj.swiyu.issuer.service.credential.CredentialRequestValidator;
-import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
-import ch.admin.bj.swiyu.issuer.service.credential.DeferredCredentialService;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
@@ -51,14 +44,13 @@ import java.time.Instant;
 import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.CREDENTIAL_REQUEST_DENIED;
+import static ch.admin.bj.swiyu.issuer.oid4vci.service.CredentialStateMachineTestHelper.mockCredentialStateMachine;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialManagement;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialOffer;
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-
-import static ch.admin.bj.swiyu.issuer.oid4vci.service.CredentialStateMachineTestHelper.mockCredentialStateMachine;
 
 class CredentialServiceOrchestratorTest {
     private final Map<String, Object> offerData = Map.of("hello", "world");
@@ -105,7 +97,6 @@ class CredentialServiceOrchestratorTest {
         oAuthService = new OAuthService(applicationProperties, eventProducerService, credentialOfferRepository, credentialManagementRepository, credentialStateMachine);
 
         // validator is static utility now
-        var credentialOfferStateService = new CredentialOfferStateService(credentialStateMachine, credentialOfferRepository);
         var credentialEnvelopeService = new CredentialEnvelopeService(
                 credentialFormatFactory,
                 encryptionService,
@@ -132,9 +123,11 @@ class CredentialServiceOrchestratorTest {
                 credentialStateMachine);
         var credentialIssuanceService = new CredentialIssuanceService(
                 oAuthService,
-                credentialOfferStateService,
                 credentialEnvelopeService,
-                credentialRenewalService);
+                credentialRenewalService,
+                credentialStateMachine,
+                credentialOfferRepository
+                );
 
         credentialServiceOrchestrator = new CredentialServiceOrchestrator(
                 credentialIssuanceService,

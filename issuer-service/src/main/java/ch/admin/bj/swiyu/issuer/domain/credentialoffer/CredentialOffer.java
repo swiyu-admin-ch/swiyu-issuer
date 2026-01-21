@@ -207,7 +207,8 @@ public class CredentialOffer {
     }
 
     public boolean hasExpirationTimeStampPassed() {
-        return Instant.now().isAfter(Instant.ofEpochSecond(this.offerExpirationTimestamp));
+        return this.offerExpirationTimestamp != null &&
+                Instant.now().isAfter(Instant.ofEpochSecond(this.offerExpirationTimestamp));
     }
 
     public void initializeDeferredState(UUID transactionId,
