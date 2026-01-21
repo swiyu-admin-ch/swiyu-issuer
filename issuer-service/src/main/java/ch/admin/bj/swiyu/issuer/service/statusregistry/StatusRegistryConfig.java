@@ -79,16 +79,16 @@ public class StatusRegistryConfig {
     }
 
     @Bean
-    public ApiClient statusRegistryApiClient(StatusRegistryTokenDomainService statusRegistryTokenDomainService) {
+    public ApiClient statusRegistryApiClient(StatusRegistryTokenService statusRegistryTokenService) {
 
         var reConfigured = webClient.mutate()
                 .filter((request, next) ->
-                        Mono.defer(() -> Mono.justOrEmpty(statusRegistryTokenDomainService.getAccessToken()))
+                        Mono.defer(() -> Mono.justOrEmpty(statusRegistryTokenService.getAccessToken()))
                                 .flatMap(token -> next.exchange(withBearer(request, token)))
                                 .flatMap(response -> {
                                     if (response.statusCode() == HttpStatusCode.valueOf(401)) {
                                         log.debug("Token expired - retrying after refresh");
-                                        return Mono.justOrEmpty(statusRegistryTokenDomainService.forceRefreshAccessToken())
+                                        return Mono.justOrEmpty(statusRegistryTokenService.forceRefreshAccessToken())
                                                 .flatMap(newToken -> next.exchange(withBearer(request, newToken)));
                                     }
                                     return Mono.just(response);
