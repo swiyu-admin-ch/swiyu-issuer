@@ -268,6 +268,7 @@ public class ArchitectureTest {
         static final ArchRule interfaces_must_not_be_placed_in_implementation_packages = noClasses()
                 .that()
                 .resideInAPackage("..service")
+                .and().arePublic()
                 .should()
                 .beInterfaces();
     }

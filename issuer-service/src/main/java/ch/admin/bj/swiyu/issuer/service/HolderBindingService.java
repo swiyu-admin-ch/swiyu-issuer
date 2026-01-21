@@ -20,6 +20,11 @@ import java.util.UUID;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_CREDENTIAL_REQUEST;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 
+/**
+ * Service for handling holder binding operations, including validation and processing of proofs
+ * and holder public keys in the context of credential issuance. This service manages proof validation,
+ * nonce handling, and ensures compliance with supported proof types and batch issuance constraints.
+ */
 @Service
 @AllArgsConstructor
 public class HolderBindingService {
@@ -30,6 +35,15 @@ public class HolderBindingService {
     private final KeyAttestationService keyAttestationService;
     private final ApplicationProperties applicationProperties;
 
+    /**
+     * Validates the holder public keys from the credential request and credential offer.
+     * Handles proof extraction, validation, nonce management, and batch issuance constraints.
+     *
+     * @param credentialRequest the credential request containing proofs
+     * @param credentialOffer the credential offer for which the request was sent
+     * @return a list of validated ProofJwt objects
+     * @throws Oid4vcException if validation fails or proofs are invalid
+     */
     public List<ProofJwt> getValidateHolderPublicKeys(CredentialRequestClass credentialRequest,
                                                       CredentialOffer credentialOffer) throws Oid4vcException {
 
@@ -43,7 +57,7 @@ public class HolderBindingService {
         validateBatchIssuanceConstraints(proofs);
 
         var proofJwts = proofs.stream()
-                .map(pk -> validateHolderPublicKeyV2(Optional.of(pk), credentialOffer, supportedProofTypes))
+                .map(proof -> validateProof(proof, credentialOffer, supportedProofTypes, this::ensureNonceNotReused))
                 .toList();
 
         ensureUniqueProofBindings(proofs);
@@ -53,12 +67,11 @@ public class HolderBindingService {
     }
 
     /**
-     * Validate and process the credentialRequest
+     * Validate and process the credentialRequest to extract the holder's public key.
      *
      * @param credentialRequest the credential request containing the holder's public key
-     * @param credentialOffer   the credential offer for which the request was sent
-     * @return the holder's public key or an empty optional
-     * if for the offered credential no holder binding is required
+     * @param credentialOffer the credential offer for which the request was sent
+     * @return an Optional containing the holder's public key if holder binding is required, otherwise empty
      * @throws Oid4vcException if the credential request is invalid in some form
      */
     public Optional<ProofJwt> getHolderPublicKey(CredentialRequestClass credentialRequest,
@@ -71,29 +84,10 @@ public class HolderBindingService {
 
         var proofs = extractProofs(credentialRequest);
         var requestProof = selectFirstProof(proofs);
-        var bindingProofType = resolveBindingProofType(requestProof, supportedProofTypes);
 
-        validateHolderBinding(requestProof, bindingProofType, credentialOffer);
-        registerNonceIfNeeded(requestProof);
-        keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
-
-        return Optional.of(requestProof);
+        return Optional.of(validateProof(requestProof, credentialOffer, supportedProofTypes, this::registerNonceIfNeeded));
     }
 
-    public ProofJwt validateHolderPublicKeyV2(Optional<ProofJwt> proofJwt,
-                                              CredentialOffer credentialOffer,
-                                              Map<String, SupportedProofType> supportedProofTypes) throws
-            Oid4vcException {
-
-        var requestProof = unwrapProof(proofJwt);
-        var bindingProofType = resolveBindingProofType(requestProof, supportedProofTypes);
-
-        validateHolderBinding(requestProof, bindingProofType, credentialOffer);
-        ensureNonceNotReused(requestProof);
-        keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
-
-        return requestProof;
-    }
 
     private Map<String, SupportedProofType> resolveSupportedProofTypes(CredentialOffer credentialOffer) {
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
@@ -159,10 +153,6 @@ public class HolderBindingService {
                         "Provided proof is not supported for the credential requested."));
     }
 
-    private ProofJwt unwrapProof(Optional<ProofJwt> proofJwt) throws Oid4vcException {
-        return proofJwt.orElseThrow(() ->
-                new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
-    }
 
     private void validateHolderBinding(ProofJwt requestProof, SupportedProofType bindingProofType,
                                        CredentialOffer credentialOffer) throws Oid4vcException {
@@ -191,5 +181,32 @@ public class HolderBindingService {
             }
             nonceService.registerNonce(nonce);
         }
+    }
+
+    /**
+     * Validates a single proof against the credential offer and supported proof types, applying the provided nonce handler.
+     *
+     * @param requestProof the proof to validate
+     * @param credentialOffer the credential offer for which the request was sent
+     * @param supportedProofTypes the supported proof types for the credential
+     * @param nonceHandler the handler to apply for nonce validation/registration
+     * @return the validated ProofJwt
+     * @throws Oid4vcException if validation fails or the proof is invalid
+     */
+    ProofJwt validateProof(ProofJwt requestProof, CredentialOffer credentialOffer,
+                           Map<String, SupportedProofType> supportedProofTypes,
+                           NonceHandler nonceHandler) throws Oid4vcException {
+
+        var bindingProofType = resolveBindingProofType(requestProof, supportedProofTypes);
+        validateHolderBinding(requestProof, bindingProofType, credentialOffer);
+        nonceHandler.apply(requestProof);
+        keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
+
+        return requestProof;
+    }
+
+    @FunctionalInterface
+    private interface NonceHandler {
+        void apply(ProofJwt proof) throws Oid4vcException;
     }
 }
