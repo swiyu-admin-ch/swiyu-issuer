@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.service;
+package ch.admin.bj.swiyu.issuer.service.dpop;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
@@ -7,8 +7,6 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
-import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionService;
-import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionValidationService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import com.nimbusds.jose.JOSEObjectType;
