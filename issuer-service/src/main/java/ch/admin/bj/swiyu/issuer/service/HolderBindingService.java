@@ -33,61 +33,21 @@ public class HolderBindingService {
     public List<ProofJwt> getValidateHolderPublicKeys(CredentialRequestClass credentialRequest,
                                                       CredentialOffer credentialOffer) throws Oid4vcException {
 
-        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
-                credentialOffer.getMetadataCredentialSupportedId()
-                        .getFirst());
-        Map<String, SupportedProofType> supportedProofTypes = credentialConfiguration.getProofTypesSupported();
-
-        // If no proof types are supported, no holder binding is returned
-        if (supportedProofTypes == null || supportedProofTypes.isEmpty()) {
+        var supportedProofTypes = resolveSupportedProofTypes(credentialOffer);
+        if (supportedProofTypes.isEmpty()) {
             return List.of();
         }
-        List<ProofJwt> proofs;
-        try {
-            proofs = credentialRequest.getProofs(
-                    applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                    applicationProperties.getAcceptableProofTimeWindowSeconds());
-        } catch (IllegalArgumentException e) {
-            throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof");
-        }
-        // check if proofs requested
-        if (proofs.isEmpty()) {
-            throw new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential");
-        }
 
-        var batchCredentialIssuanceMetadata = issuerMetadata.getBatchCredentialIssuance();
-
-        // check batch issuance
-        if (batchCredentialIssuanceMetadata == null && proofs.size() > 1) {
-            throw new Oid4vcException(INVALID_PROOF, "Multiple proofs are not allowed for this credential request");
-        }
-
-        if (batchCredentialIssuanceMetadata != null && batchCredentialIssuanceMetadata.batchSize() != proofs.size()) {
-            throw new Oid4vcException(INVALID_PROOF, "The number of proofs must match the batch size");
-        }
+        List<ProofJwt> proofs = extractProofs(credentialRequest);
+        validateProofsPresence(proofs);
+        validateBatchIssuanceConstraints(proofs);
 
         var proofJwts = proofs.stream()
                 .map(pk -> validateHolderPublicKeyV2(Optional.of(pk), credentialOffer, supportedProofTypes))
                 .toList();
 
-        // check if proof is unique
-        // todo move up once proof jwt is refactored
-        if (proofs.stream()
-                .map(ProofJwt::getBinding)
-                .distinct()
-                .count() != proofs.size()) {
-            throw new Oid4vcException(INVALID_PROOF, "Proofs should not be duplicated for the same credential request");
-        }
-
-        // OID4VCI 1.0 does not specify if the nonce can be the same or have to be different ones, so we allow both!
-        // There is no benefit to using a different nonce for each proof
-        List<String> nonces = proofs.stream()
-                .map(ProofJwt::getNonce)
-                .toList();
-
-        nonceService.invalidateSelfContainedNonce(nonces);
-        // TODO EIDOMNI-166: Remove once token provided c_nonce is phased out
-        credentialOffer.setNonce(UUID.randomUUID()); // Change c_nonce value
+        ensureUniqueProofBindings(proofs);
+        handleProofNonces(proofs, credentialOffer);
 
         return proofJwts;
     }
@@ -104,46 +64,17 @@ public class HolderBindingService {
     public Optional<ProofJwt> getHolderPublicKey(CredentialRequestClass credentialRequest,
                                                  CredentialOffer credentialOffer) {
 
-        var mgmt = credentialOffer.getCredentialManagement();
-        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
-                credentialOffer.getMetadataCredentialSupportedId()
-                        .getFirst());
-
-        // Process Holder Binding if a Proof Type is required
-        var supportedProofTypes = credentialConfiguration.getProofTypesSupported();
-
-        if (CollectionUtils.isEmpty(supportedProofTypes)) {
+        var supportedProofTypes = resolveSupportedProofTypes(credentialOffer);
+        if (supportedProofTypes.isEmpty()) {
             return Optional.empty();
         }
 
-        var proofsJwt = credentialRequest.getProofs(applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                applicationProperties.getAcceptableProofTimeWindowSeconds());
+        var proofs = extractProofs(credentialRequest);
+        var requestProof = selectFirstProof(proofs);
+        var bindingProofType = resolveBindingProofType(requestProof, supportedProofTypes);
 
-        if (CollectionUtils.isEmpty(proofsJwt) || proofsJwt.getFirst() == null) {
-            throw new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential");
-        }
-
-        var requestProof = proofsJwt.getFirst();
-
-        var bindingProofType = Optional.ofNullable(supportedProofTypes.get(requestProof.getProofType()
-                        .toString()))
-                .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
-                        "Provided proof is not supported for the credential requested."));
-        if (!requestProof.isValidHolderBinding(
-                openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
-                bindingProofType.getSupportedSigningAlgorithms(),
-                credentialOffer.getNonce(),
-                mgmt.getAccessTokenExpirationTimestamp())) {
-            throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
-        }
-        var nonce = new SelfContainedNonce(requestProof.getNonce());
-        if (nonce.isSelfContainedNonce()) {
-            if (nonceService.isUsedNonce(nonce)) {
-                throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
-            }
-            nonceService.registerNonce(nonce);
-        }
-
+        validateHolderBinding(requestProof, bindingProofType, credentialOffer);
+        registerNonceIfNeeded(requestProof);
         keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
 
         return Optional.of(requestProof);
@@ -154,18 +85,88 @@ public class HolderBindingService {
                                               Map<String, SupportedProofType> supportedProofTypes) throws
             Oid4vcException {
 
-        var mgmt = credentialOffer.getCredentialManagement();
+        var requestProof = unwrapProof(proofJwt);
+        var bindingProofType = resolveBindingProofType(requestProof, supportedProofTypes);
 
-        var requestProof = proofJwt.orElseThrow(() ->
-                new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
+        validateHolderBinding(requestProof, bindingProofType, credentialOffer);
+        ensureNonceNotReused(requestProof);
+        keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
 
-        var bindingProofType = supportedProofTypes.get(requestProof.getProofType()
-                .toString());
+        return requestProof;
+    }
 
-        if (bindingProofType == null) {
-            throw new Oid4vcException(INVALID_PROOF, "Provided proof is not supported for the credential requested.");
+    private Map<String, SupportedProofType> resolveSupportedProofTypes(CredentialOffer credentialOffer) {
+        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
+                credentialOffer.getMetadataCredentialSupportedId()
+                        .getFirst());
+        return Optional.ofNullable(credentialConfiguration.getProofTypesSupported())
+                .orElse(Map.of());
+    }
+
+    private List<ProofJwt> extractProofs(CredentialRequestClass credentialRequest) throws Oid4vcException {
+        try {
+            return credentialRequest.getProofs(
+                    applicationProperties.getAcceptableProofTimeWindowSeconds(),
+                    applicationProperties.getAcceptableProofTimeWindowSeconds());
+        } catch (IllegalArgumentException e) {
+            throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof");
         }
+    }
 
+    private void validateProofsPresence(List<ProofJwt> proofs) throws Oid4vcException {
+        if (CollectionUtils.isEmpty(proofs)) {
+            throw new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential");
+        }
+    }
+
+    private void validateBatchIssuanceConstraints(List<ProofJwt> proofs) throws Oid4vcException {
+        var batchCredentialIssuanceMetadata = issuerMetadata.getBatchCredentialIssuance();
+        if (batchCredentialIssuanceMetadata == null && proofs.size() > 1) {
+            throw new Oid4vcException(INVALID_PROOF, "Multiple proofs are not allowed for this credential request");
+        }
+        if (batchCredentialIssuanceMetadata != null && batchCredentialIssuanceMetadata.batchSize() != proofs.size()) {
+            throw new Oid4vcException(INVALID_PROOF, "The number of proofs must match the batch size");
+        }
+    }
+
+    private void ensureUniqueProofBindings(List<ProofJwt> proofs) throws Oid4vcException {
+        if (proofs.stream()
+                .map(ProofJwt::getBinding)
+                .distinct()
+                .count() != proofs.size()) {
+            throw new Oid4vcException(INVALID_PROOF, "Proofs should not be duplicated for the same credential request");
+        }
+    }
+
+    private void handleProofNonces(List<ProofJwt> proofs, CredentialOffer credentialOffer) {
+        List<String> nonces = proofs.stream()
+                .map(ProofJwt::getNonce)
+                .toList();
+        nonceService.invalidateSelfContainedNonce(nonces);
+        credentialOffer.setNonce(UUID.randomUUID()); // Change c_nonce value
+    }
+
+    private ProofJwt selectFirstProof(List<ProofJwt> proofs) throws Oid4vcException {
+        validateProofsPresence(proofs);
+        return proofs.getFirst();
+    }
+
+    private SupportedProofType resolveBindingProofType(ProofJwt requestProof,
+                                                       Map<String, SupportedProofType> supportedProofTypes) throws
+            Oid4vcException {
+        return Optional.ofNullable(supportedProofTypes.get(requestProof.getProofType().toString()))
+                .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
+                        "Provided proof is not supported for the credential requested."));
+    }
+
+    private ProofJwt unwrapProof(Optional<ProofJwt> proofJwt) throws Oid4vcException {
+        return proofJwt.orElseThrow(() ->
+                new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
+    }
+
+    private void validateHolderBinding(ProofJwt requestProof, SupportedProofType bindingProofType,
+                                       CredentialOffer credentialOffer) throws Oid4vcException {
+        var mgmt = credentialOffer.getCredentialManagement();
         if (!requestProof.isValidHolderBinding(
                 openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),
@@ -173,15 +174,22 @@ public class HolderBindingService {
                 mgmt.getAccessTokenExpirationTimestamp())) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
         }
+    }
 
+    private void ensureNonceNotReused(ProofJwt requestProof) throws Oid4vcException {
         var nonce = new SelfContainedNonce(requestProof.getNonce());
-
         if (nonce.isSelfContainedNonce() && nonceService.isUsedNonce(nonce)) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
         }
+    }
 
-        keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
-
-        return requestProof;
+    private void registerNonceIfNeeded(ProofJwt requestProof) throws Oid4vcException {
+        var nonce = new SelfContainedNonce(requestProof.getNonce());
+        if (nonce.isSelfContainedNonce()) {
+            if (nonceService.isUsedNonce(nonce)) {
+                throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
+            }
+            nonceService.registerNonce(nonce);
+        }
     }
 }
