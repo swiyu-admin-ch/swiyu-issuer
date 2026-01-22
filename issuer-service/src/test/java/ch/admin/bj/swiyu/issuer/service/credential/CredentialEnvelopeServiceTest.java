@@ -8,7 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialBuilder;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
-import ch.admin.bj.swiyu.issuer.service.EncryptionService;
+import ch.admin.bj.swiyu.issuer.service.enc.EncryptionJweService;
 import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import org.junit.jupiter.api.AfterEach;
@@ -29,7 +29,7 @@ class CredentialEnvelopeServiceTest {
     @Mock
     private CredentialFormatFactory credentialFormatFactory;
     @Mock
-    private EncryptionService encryptionService;
+    private EncryptionJweService encryptionJweService;
     @Mock
     private HolderBindingService holderBindingService;
     @Mock
@@ -55,7 +55,7 @@ class CredentialEnvelopeServiceTest {
         closeable = MockitoAnnotations.openMocks(this);
         service = new CredentialEnvelopeService(
                 credentialFormatFactory,
-                encryptionService,
+                encryptionJweService,
                 holderBindingService,
                 eventProducerService,
                 issuerMetadata,
@@ -89,7 +89,7 @@ class CredentialEnvelopeServiceTest {
                 .thenReturn(credentialConfiguration);
         when(holderBindingService.getHolderPublicKey(any(), any())).thenReturn(Optional.empty());
         when(credentialFormatFactory.getFormatBuilder("config-id")).thenReturn(credentialBuilder);
-        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(issuerMetadata);
+        when(encryptionJweService.issuerMetadataWithEncryptionOptions()).thenReturn(issuerMetadata);
         when(credentialBuilder.credentialOffer(offer)).thenReturn(credentialBuilder);
         when(credentialBuilder.credentialResponseEncryption(any(), any())).thenReturn(credentialBuilder);
         when(credentialBuilder.holderBindings(any())).thenReturn(credentialBuilder);
@@ -124,7 +124,7 @@ class CredentialEnvelopeServiceTest {
                 .thenReturn(credentialConfiguration);
         when(holderBindingService.getValidateHolderPublicKeys(any(), any())).thenReturn(List.of());
         when(credentialFormatFactory.getFormatBuilder("config-id")).thenReturn(credentialBuilder);
-        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(issuerMetadata);
+        when(encryptionJweService.issuerMetadataWithEncryptionOptions()).thenReturn(issuerMetadata);
         when(credentialBuilder.credentialOffer(offer)).thenReturn(credentialBuilder);
         when(credentialBuilder.credentialResponseEncryption(any(), any())).thenReturn(credentialBuilder);
         when(credentialBuilder.holderBindings(any())).thenReturn(credentialBuilder);

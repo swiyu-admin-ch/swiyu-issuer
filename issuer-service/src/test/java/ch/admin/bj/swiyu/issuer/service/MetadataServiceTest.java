@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
+import ch.admin.bj.swiyu.issuer.service.enc.EncryptionJweService;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
@@ -35,7 +36,7 @@ class MetadataServiceTest {
     private CredentialManagementService credentialManagementService;
     private SignatureService signatureService;
     private SdjwtProperties sdjwtProperties;
-    private EncryptionService encryptionService;
+    private EncryptionJweService encryptionJweService;
     private DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private MetadataService metadataService;
     private ConfigurationOverride override;
@@ -48,11 +49,11 @@ class MetadataServiceTest {
         signatureService = mock(SignatureService.class);
         sdjwtProperties = mock(SdjwtProperties.class);
         applicationProperties = mock(ApplicationProperties.class);
-        encryptionService = mock(EncryptionService.class);
+        encryptionJweService = mock(EncryptionJweService.class);
         demonstratingProofOfPossessionService = mock(DemonstratingProofOfPossessionService.class);
 
         // ObjectMapper not needed for tested methods here
-        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
+        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionJweService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
 
         override = new ConfigurationOverride(null, null, null, null);
         when(applicationProperties.getIssuerId()).thenReturn(issuerId);
@@ -63,7 +64,7 @@ class MetadataServiceTest {
     void getUnsignedIssuerMetadata_returnsMap() {
         IssuerMetadata metadata = new IssuerMetadata();
         metadata.setVersion("1.0.0");
-        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
+        when(encryptionJweService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
 
         IssuerMetadata result = metadataService.getUnsignedIssuerMetadata();
 
@@ -76,7 +77,7 @@ class MetadataServiceTest {
         UUID tenantId = UUID.randomUUID();
         IssuerMetadata metadata = new IssuerMetadata();
         metadata.setVersion("1.0.0");
-        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
+        when(encryptionJweService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = createDummySigner();
@@ -104,7 +105,7 @@ class MetadataServiceTest {
     void getSignedIssuerMetadata_throwsConfigurationException_onJoseException() throws Exception {
         UUID tenantId = UUID.randomUUID();
 
-        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(new IssuerMetadata());
+        when(encryptionJweService.issuerMetadataWithEncryptionOptions()).thenReturn(new IssuerMetadata());
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = mock(JWSSigner.class);
@@ -122,7 +123,7 @@ class MetadataServiceTest {
 
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
-        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
+        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionJweService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
 
         JWSSigner signer = createDummySigner();
         when(signatureService.createSigner(sdjwtProperties, null, null)).thenReturn(signer);

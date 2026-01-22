@@ -11,7 +11,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialBuilder;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
-import ch.admin.bj.swiyu.issuer.service.EncryptionService;
+import ch.admin.bj.swiyu.issuer.service.enc.EncryptionJweService;
 import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.AllArgsConstructor;
@@ -39,7 +39,7 @@ import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMac
 public class CredentialEnvelopeService {
 
     private final CredentialFormatFactory credentialFormatFactory;
-    private final EncryptionService encryptionService;
+    private final EncryptionJweService encryptionJweService;
     private final HolderBindingService holderBindingService;
     private final EventProducerService eventProducerService;
     private final IssuerMetadata issuerMetadata;
@@ -188,7 +188,7 @@ public class CredentialEnvelopeService {
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId()
                         .getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions()
+                .credentialResponseEncryption(encryptionJweService.issuerMetadataWithEncryptionOptions()
                         .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(holderBindings)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId());

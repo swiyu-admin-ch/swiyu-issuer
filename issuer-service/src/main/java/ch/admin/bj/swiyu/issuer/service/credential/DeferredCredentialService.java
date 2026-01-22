@@ -8,7 +8,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
-import ch.admin.bj.swiyu.issuer.service.EncryptionService;
+import ch.admin.bj.swiyu.issuer.service.enc.EncryptionJweService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.AllArgsConstructor;
@@ -31,7 +31,7 @@ public class DeferredCredentialService {
     private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialManagementRepository credentialManagementRepository;
     private final CredentialFormatFactory credentialFormatFactory;
-    private final EncryptionService encryptionService;
+    private final EncryptionJweService encryptionJweService;
     private final OAuthService oAuthService;
     private final EventProducerService eventProducerService;
     private final CredentialStateMachine credentialStateMachine;
@@ -93,7 +93,7 @@ public class DeferredCredentialService {
         return credentialFormatFactory
                 .getFormatBuilder(credentialSupportedId)
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions()
+                .credentialResponseEncryption(encryptionJweService.issuerMetadataWithEncryptionOptions()
                         .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(credentialOffer.getHolderJWKs())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
@@ -109,7 +109,7 @@ public class DeferredCredentialService {
                 .getFormatBuilder(credentialSupportedId)
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(
-                        encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(),
+                        encryptionJweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(),
                         credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(credentialOffer.getHolderJWKs())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
