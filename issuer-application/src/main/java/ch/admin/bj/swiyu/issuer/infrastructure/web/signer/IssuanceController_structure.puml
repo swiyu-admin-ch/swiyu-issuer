@@ -24,9 +24,9 @@ config=StructureConfiguration;
     "treatFinalFieldsAsMandatory": false
   },
   "graphRestriction": {
-    "classPackageExcludeFilter": "*domain*",
+    "classPackageExcludeFilter": "",
     "classPackageIncludeFilter": "",
-    "classNameExcludeFilter": "*Dto;*Mapper;*Properties;*Exception",
+    "classNameExcludeFilter": "*Dto;*Mapper;*Properties",
     "classNameIncludeFilter": "",
     "methodNameExcludeFilter": "",
     "methodNameIncludeFilter": "",
@@ -127,8 +127,22 @@ subgraph cluster_2017206988 {
 	fillcolor="#b0b0b0"
 	style=filled
    
-   CacheCustomizer1858348955[
-	label="(C)CacheCustomizer"
+   OAuthException2063523498[
+	label="(C)OAuthException"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+} 
+
+subgraph cluster_2045824421 { 
+   	label=domain
+	labeljust=l
+	fillcolor="#b0b0b0"
+	style=filled
+   
+   IssuerMetadata314384712[
+	label="(C)IssuerMetadata"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
@@ -162,22 +176,29 @@ DeferredCredentialService761217018[
 	fillcolor="#FFFFFF"
 ];
 
-DemonstratingProofOfPossessionService354864683[
+DemonstratingProofOfPossessionService83998032[
 	label="(C)DemonstratingProofOfPossessionService"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
 ];
 
-DemonstratingProofOfPossessionValidationService354864683[
+DemonstratingProofOfPossessionValidationService83998032[
 	label="(C)DemonstratingProofOfPossessionValidationService"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
 ];
 
-EncryptionService354864683[
-	label="(C)EncryptionService"
+EncryptionJweService1803825815[
+	label="(C)EncryptionJweService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+EncryptionKeyService1803825815[
+	label="(C)EncryptionKeyService"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
@@ -207,19 +228,21 @@ CredentialServiceOrchestrator761217018 -> CredentialIssuanceService761217018[lab
 [0..1]"];
 CredentialServiceOrchestrator761217018 -> DeferredCredentialService761217018[label="deferredCredentialService
 [0..1]"];
-DemonstratingProofOfPossessionService354864683 -> DemonstratingProofOfPossessionValidationService354864683[label="demonstratingProofOfPossessionValidationService
+DemonstratingProofOfPossessionService83998032 -> DemonstratingProofOfPossessionValidationService83998032[label="demonstratingProofOfPossessionValidationService
 [0..1]"];
-DemonstratingProofOfPossessionService354864683 -> NonceService354864683[label="nonceService
+DemonstratingProofOfPossessionService83998032 -> NonceService354864683[label="nonceService
 [0..1]"];
-DemonstratingProofOfPossessionService354864683 -> OAuthService354864683[label="oAuthService
+DemonstratingProofOfPossessionService83998032 -> OAuthService354864683[label="oAuthService
 [0..1]"];
-EncryptionService354864683 -> CacheCustomizer1858348955[label="cacheCustomizer
+EncryptionJweService1803825815 -> EncryptionKeyService1803825815[label="encryptionKeyService
+[0..1]"];
+EncryptionJweService1803825815 -> IssuerMetadata314384712[label="issuerMetadata
 [0..1]"];
 IssuanceController281199067 -> CredentialServiceOrchestrator761217018[label="credentialServiceOrchestrator
 [0..1]"];
-IssuanceController281199067 -> DemonstratingProofOfPossessionService354864683[label="demonstratingProofOfPossessionService
+IssuanceController281199067 -> DemonstratingProofOfPossessionService83998032[label="demonstratingProofOfPossessionService
 [0..1]"];
-IssuanceController281199067 -> EncryptionService354864683[label="encryptionService
+IssuanceController281199067 -> EncryptionJweService1803825815[label="encryptionJweService
 [0..1]"];
 IssuanceController281199067 -> NonceService354864683[label="nonceService
 [0..1]"];
