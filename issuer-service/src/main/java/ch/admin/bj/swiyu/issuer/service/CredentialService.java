@@ -19,6 +19,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalRequestDto;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
@@ -171,7 +172,9 @@ public class CredentialService {
 
         CredentialManagement credentialMgmt = credentialOffer.getCredentialManagement();
 
-        var credentialRequest = credentialOffer.getCredentialRequest();
+        var responseEncryption = Optional.ofNullable(deferredCredentialRequest.credentialResponseEncryption())
+                .map(CredentialRequestMapper::toCredentialResponseEncryption)
+                .orElse(credentialOffer.getCredentialRequest().getCredentialResponseEncryption());
 
         CredentialEnvelopeDto vc = vcFormatFactory
                 // get first entry because we expect the list to only contain one item
@@ -179,7 +182,7 @@ public class CredentialService {
                         .getFirst())
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions()
-                        .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                        .getResponseEncryption(), responseEncryption)
                 .holderBindings(credentialOffer.getHolderJWKs())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelopeV2();

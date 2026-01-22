@@ -309,7 +309,7 @@ class CredentialServiceTest {
                 .credentialOffers(Set.of(credentialOffer))
                 .build();
 
-        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId());
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId(), null);
 
         when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
@@ -343,7 +343,7 @@ class CredentialServiceTest {
                 .credentialOffers(Set.of(credentialOffer))
                 .build();
 
-        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId());
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId(), null);
 
         when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
@@ -363,7 +363,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         UUID accessToken = UUID.randomUUID();
 
-        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId, null);
 
         CredentialOffer credentialOffer = getCredentialOffer(
                 CredentialOfferStatusType.DEFERRED,
@@ -396,7 +396,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         UUID accessToken = UUID.randomUUID();
 
-        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId, null);
 
         CredentialOffer credentialOffer = spy(getCredentialOffer(
                 CredentialOfferStatusType.READY,
@@ -446,7 +446,7 @@ class CredentialServiceTest {
         UUID transactionId = UUID.randomUUID();
         UUID accessToken = UUID.randomUUID();
 
-        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId, null);
 
         CredentialOffer credentialOffer = spy(getCredentialOffer(
                 CredentialOfferStatusType.READY,
@@ -643,7 +643,7 @@ class CredentialServiceTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(1000).getEpochSecond();
-        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId, null);
         var offer = getCredentialOffer(CredentialOfferStatusType.IN_PROGRESS, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, UUID.randomUUID());
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
@@ -664,7 +664,7 @@ class CredentialServiceTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().minusSeconds(1).getEpochSecond();
-        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId);
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId, null);
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
                 .accessTokenExpirationTimestamp(expirationTimeStamp)
