@@ -90,17 +90,28 @@ public class EncryptionJweService {
         if (encryptionSpec == null) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Encryption not supported by issuer metadata");
         }
-        if (header.getEncryptionMethod() == null || !encryptionSpec.getEncValuesSupported()
-                .contains(header.getEncryptionMethod()
-                        .toString())) {
+        checkEncryptionMethodSupported(header, encryptionSpec);
+        checkCompressionMethodSupported(header, encryptionSpec);
+    }
+
+    /**
+     * Checks if the encryption method in the JWE header is supported by the issuer metadata.
+     * Throws Oid4vcException if not supported.
+     */
+    private void checkEncryptionMethodSupported(JWEHeader header, IssuerCredentialEncryption encryptionSpec) {
+        if (header.getEncryptionMethod() == null || !encryptionSpec.getEncValuesSupported().contains(header.getEncryptionMethod().toString())) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
                     "Unsupported encryption method. Must be one of %s but was %s".formatted(encryptionSpec.getEncValuesSupported(),
                             header.getEncryptionMethod()));
         }
-        // Zip value is optional
-        if (encryptionSpec.getZipValuesSupported() != null && (header.getCompressionAlgorithm() == null || !encryptionSpec.getZipValuesSupported()
-                .contains(header.getCompressionAlgorithm()
-                        .toString()))) {
+    }
+
+    /**
+     * Checks if the compression (zip) method in the JWE header is supported by the issuer metadata.
+     * Throws Oid4vcException if not supported.
+     */
+    private void checkCompressionMethodSupported(JWEHeader header, IssuerCredentialEncryption encryptionSpec) {
+        if (encryptionSpec.getZipValuesSupported() != null && (header.getCompressionAlgorithm() == null || !encryptionSpec.getZipValuesSupported().contains(header.getCompressionAlgorithm().toString()))) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
                     "Unsupported compression (zip) method. Must be one of %s but was %s".formatted(encryptionSpec.getZipValuesSupported(),
                             header.getCompressionAlgorithm()));
