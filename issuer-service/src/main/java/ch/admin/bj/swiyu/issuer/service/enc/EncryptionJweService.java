@@ -111,10 +111,11 @@ public class EncryptionJweService {
      * Throws Oid4vcException if not supported.
      */
     private void checkCompressionMethodSupported(JWEHeader header, IssuerCredentialEncryption encryptionSpec) {
-        if (encryptionSpec.getZipValuesSupported() != null && (header.getCompressionAlgorithm() == null || !encryptionSpec.getZipValuesSupported().contains(header.getCompressionAlgorithm().toString()))) {
+        var supportedZips = encryptionSpec.getZipValuesSupported();
+        var headerZip = header.getCompressionAlgorithm();
+        if (supportedZips != null && (headerZip == null || !supportedZips.contains(headerZip.toString()))) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
-                    "Unsupported compression (zip) method. Must be one of %s but was %s".formatted(encryptionSpec.getZipValuesSupported(),
-                            header.getCompressionAlgorithm()));
+                    "Unsupported compression (zip) method. Must be one of %s but was %s".formatted(supportedZips, headerZip));
         }
     }
 
