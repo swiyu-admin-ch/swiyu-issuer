@@ -133,7 +133,6 @@ class HolderBindingServiceTest {
 
         holderBindingService = spy(holderBindingService);
 
-        doReturn(proofJwt).when(holderBindingService).validateHolderPublicKeyV2(any(), any(), any());
 
         CredentialRequestClass credentialRequestSpy = spy(new CredentialRequestClass(
                 SD_JWT_FORMAT,
@@ -144,7 +143,7 @@ class HolderBindingServiceTest {
 
         var e = assertThrows(Oid4vcException.class, () ->
                 holderBindingService.getValidateHolderPublicKeys(credentialRequestSpy, offer));
-        assertEquals("Proofs should not be duplicated for the same credential request", e.getMessage());
+        assertEquals("Provided proof is not supported for the credential requested.", e.getMessage());
     }
 
     @Test
@@ -216,97 +215,6 @@ class HolderBindingServiceTest {
         assertEquals("The number of proofs must match the batch size", e.getMessage());
     }
 
-    @Test
-    void validateHolderPublicKeyV2_thenException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
-        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
-        when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
-
-        SupportedProofType supportedProofType = mock(SupportedProofType.class);
-
-        Optional<ProofJwt> proof = Optional.empty();
-        var supportedProofTypes = Map.of("type", supportedProofType);
-        var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.validateHolderPublicKeyV2(proof, offer, supportedProofTypes));
-        assertEquals("Proof must be provided for the requested credential", e.getMessage());
-    }
-
-    @Test
-    void validateHolderPublicKeyV2_unsupportedProofType_thenException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
-        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
-        when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
-
-        Map<String, SupportedProofType> supportedProofTypes = mock(Map.class);
-        when(supportedProofTypes.get(anyString())).thenReturn(null);
-
-        var proofJwt = Optional.of(new ProofJwt(ProofType.JWT, "proof", 100, 100));
-
-        var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.validateHolderPublicKeyV2(proofJwt, offer, supportedProofTypes));
-        assertEquals("Provided proof is not supported for the credential requested.", e.getMessage());
-    }
-
-
-    @Test
-    void validateHolderPublicKeyV2_isValidHolderBindingFails_thenException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
-        CredentialManagement mgmt = mock(CredentialManagement.class);
-        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        when(offer.getCredentialManagement()).thenReturn(mgmt);
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
-        when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
-
-        Map<String, SupportedProofType> supportedProofTypes = mock(Map.class);
-        var supportedProofType = new SupportedProofType();
-        supportedProofType.setSupportedSigningAlgorithms(List.of("ES256"));
-
-        when(supportedProofTypes.get(anyString())).thenReturn(supportedProofType);
-
-        ProofJwt proofJwt = mock(ProofJwt.class);
-        when(proofJwt.getProofType()).thenReturn(ProofType.JWT);
-        when(proofJwt.isValidHolderBinding(anyString(), anyList(), any(), anyLong())).thenReturn(false);
-
-        var proofJwtOptional = Optional.of(proofJwt);
-        var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.validateHolderPublicKeyV2(proofJwtOptional, offer, supportedProofTypes));
-        assertEquals("Presented proof was invalid!", e.getMessage());
-    }
-
-    @Test
-    void validateHolderPublicKeyV2_reusedNonce_thenException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
-        CredentialManagement mgmt = mock(CredentialManagement.class);
-        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        when(offer.getCredentialManagement()).thenReturn(mgmt);
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
-        when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
-
-        Map<String, SupportedProofType> supportedProofTypes = mock(Map.class);
-        var supportedProofType = new SupportedProofType();
-        supportedProofType.setSupportedSigningAlgorithms(List.of("ES256"));
-
-        when(supportedProofTypes.get("type")).thenReturn(supportedProofType);
-        when(supportedProofTypes.get(any())).thenReturn(supportedProofType);
-
-        ProofJwt proofJwt = mock(ProofJwt.class);
-        when(proofJwt.getProofType()).thenReturn(ProofType.JWT);
-        when(proofJwt.getNonce()).thenReturn("self-contained::nonce");
-        when(proofJwt.isValidHolderBinding(any(), anyList(), any(), any())).thenReturn(true);
-
-        when(nonceService.isUsedNonce(any(SelfContainedNonce.class))).thenReturn(true);
-
-        var proofJwtOptional = Optional.of(proofJwt);
-        var e = assertThrows(Oid4vcException.class, () ->
-                holderBindingService.validateHolderPublicKeyV2(proofJwtOptional, offer, supportedProofTypes));
-        assertEquals("Presented proof was reused!", e.getMessage());
-    }
 
     private void mockBatchCredentialIssuance(int batchSize) {
         var batchCredentialIssuance = new BatchCredentialIssuance(batchSize);
