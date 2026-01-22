@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.service;
+package ch.admin.bj.swiyu.issuer.service.dpop;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -6,6 +6,8 @@ import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionE
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -91,7 +93,7 @@ public class DemonstratingProofOfPossessionService {
      */
     public OpenIdConfigurationDto addSigningAlgorithmsSupported(OpenIdConfigurationDto openIdConfiguration) {
         var builder = openIdConfiguration.toBuilder();
-        builder.dpop_signing_alg_values_supported(DemonstratingProofOfPossessionValidationService.getSupportedAlgorithms());
+        builder.dpop_signing_alg_values_supported(DemonstratingProofOfPossessionUtils.getSupportedAlgorithms());
         return builder.build();
     }
 

@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
