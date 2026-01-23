@@ -8,7 +8,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionService;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.EncryptionService;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import io.swagger.v3.oas.annotations.Operation;

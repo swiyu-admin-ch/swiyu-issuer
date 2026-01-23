@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;

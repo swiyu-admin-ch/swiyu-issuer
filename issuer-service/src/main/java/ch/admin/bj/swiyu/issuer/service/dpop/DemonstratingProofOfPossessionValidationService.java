@@ -1,16 +1,15 @@
-package ch.admin.bj.swiyu.issuer.service;
+package ch.admin.bj.swiyu.issuer.service.dpop;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpRequest;
@@ -18,12 +17,8 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -38,47 +33,6 @@ public class DemonstratingProofOfPossessionValidationService {
     public static final String DPOP_JWT_HEADER_TYP = "dpop+jwt";
     private final ApplicationProperties applicationProperties;
     private final NonceService nonceService;
-
-    /**
-     * @return List of supported JWS (Json Web Signature) / JWT (Json Web Token) signing algorithms
-     */
-    public static List<String> getSupportedAlgorithms() {
-        return List.of(JWSAlgorithm.ES256.getName());
-    }
-
-    /**
-     * @param input String to be hashed
-     * @return base64url-encoded SHA-256 hash of the ASCII encoding of the input
-     */
-    private static String sha256(@NotBlank String input) {
-        try {
-            // Get an instance of MessageDigest for SHA-256
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            // Convert the input string to bytes
-            byte[] inputBytes = input.getBytes(StandardCharsets.US_ASCII);
-
-            // Update the digest with the input bytes
-            byte[] hashBytes = digest.digest(inputBytes);
-
-            // Encode the hash bytes to a Base64 string
-            return Base64.getUrlEncoder().encodeToString(hashBytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 algorithm not found", e);
-        }
-    }
-
-    /**
-     * Computs the SHA256 hash of the expected access token and compares it with the access token hash of the DPoP.
-     *
-     * @param expectedAccessToken the access token as received in the bearer token
-     * @param dpopAccessTokenHash access token in sha256 hashed form as found in DPoP claim "ath"
-     */
-    private static void validateAccessTokenHash(String expectedAccessToken, String dpopAccessTokenHash) {
-        if (!sha256(expectedAccessToken).equals(dpopAccessTokenHash)) {
-            throw new DemonstratingProofOfPossessionException("Access token mismatch. ath must be base64url-encoded SHA-256 hash of the ASCII encoding of the associated access token's value", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
 
     /**
      * Validate if the dpopJwt (provided key) and boundPublicKey (expected key) are the same
@@ -113,7 +67,7 @@ public class DemonstratingProofOfPossessionValidationService {
             // https://datatracker.ietf.org/doc/html/rfc9449#section-4.3
             // 12 - If presented to a protected resource in conjunction with an access token,
             // * ensure that the value of the ath claim equals the hash of that access token, and
-            validateAccessTokenHash(accessToken, dpopJwt.getJWTClaimsSet().getStringClaim("ath"));
+            DemonstratingProofOfPossessionUtils.validateAccessTokenHash(accessToken, dpopJwt.getJWTClaimsSet().getStringClaim("ath"));
             // * confirm that the public key to which the access token is bound matches the public key from the DPoP proof.
             validateBoundPublicKey(dpopJwt, boundPublicKey);
         } catch (ParseException e) {
@@ -211,7 +165,7 @@ public class DemonstratingProofOfPossessionValidationService {
     }
 
     private void matchesSupportedAlgorithms(JWSHeader header) {
-        var supportedAlgorithms = getSupportedAlgorithms();
+        var supportedAlgorithms = DemonstratingProofOfPossessionUtils.getSupportedAlgorithms();
         if (!supportedAlgorithms.contains(header.getAlgorithm().getName())) {
             throw new DemonstratingProofOfPossessionException("DPoP alg MUST be one of %s".formatted(
                     String.join(",", supportedAlgorithms)),

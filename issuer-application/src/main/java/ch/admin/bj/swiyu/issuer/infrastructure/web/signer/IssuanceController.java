@@ -13,6 +13,8 @@ import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.DeferredDataDtoV2;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.service.*;
+import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -64,7 +66,7 @@ public class IssuanceController {
     public static final String DPOP_HTTP_HEADER = "DPoP";
     public static final String SWIYU_API_VERSION_HTTP_HEADER = "SWIYU-API-Version";
 
-    private final CredentialService credentialService;
+    private final CredentialServiceOrchestrator credentialServiceOrchestrator;
     private final NonceService nonceService;
     private final EncryptionService encryptionService;
     private final OAuthService oauthService;
@@ -220,12 +222,12 @@ public class IssuanceController {
         if (API_VERSION_OID4VCI_1_0.equals(version)) {
             var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDtoV2.class);
             validateRequestDtoOrThrow(dto, validator);
-            credentialEnvelope = credentialService.createCredentialV2(dto, accessToken, clientInfo, dpop);
+            credentialEnvelope = credentialServiceOrchestrator.createCredentialV2(dto, accessToken, clientInfo, dpop);
         } else {
             var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDto.class);
             validateRequestDtoOrThrow(dto, validator);
 
-            credentialEnvelope = credentialService.createCredential(dto, accessToken, clientInfo);
+            credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo);
         }
 
         var headers = new HttpHeaders();
@@ -285,9 +287,9 @@ public class IssuanceController {
         String accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
         if (API_VERSION_OID4VCI_1_0.equals(version)) {
-            credentialEnvelope = credentialService.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, accessToken);
+            credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, accessToken);
         } else {
-            credentialEnvelope = credentialService.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
+            credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         }
 
         var headers = new HttpHeaders();

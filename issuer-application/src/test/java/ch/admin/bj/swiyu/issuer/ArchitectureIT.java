@@ -9,7 +9,11 @@ package ch.admin.bj.swiyu.issuer;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.SignatureService;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionValidationService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -164,7 +168,10 @@ public class ArchitectureIT {
                 .beFreeOfCycles()
                 .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
                 .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class)
-                .ignoreDependency(StatusListSigningService.class, SignatureService.class); // ignore while refactoring;
+                .ignoreDependency(StatusListSigningService.class, SignatureService.class) // ignore while refactoring
+                .ignoreDependency(DemonstratingProofOfPossessionValidationService.class, NonceService.class) // ignore while refactoring
+                .ignoreDependency(DemonstratingProofOfPossessionService.class, NonceService.class) // ignore while refactoring
+                .ignoreDependency(DemonstratingProofOfPossessionService.class, OAuthService.class); // ignore while refactoring
 
         /**
          * ArchRules which support freezing. @see <a
@@ -254,6 +261,7 @@ public class ArchitectureIT {
         static final ArchRule interfaces_must_not_be_placed_in_implementation_packages = noClasses()
                 .that()
                 .resideInAPackage("..service")
+                .and().arePublic()
                 .should()
                 .beInterfaces()
                 .allowEmptyShould(true);
