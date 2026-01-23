@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -- Set credential mgmt id in offer table
 
+## 2.3.1
+
+### Fixed
+
+- Allow encryption to be used for deferred credential request
+- Allow wallets changing the deferred credential request encryption key using
+
 ## 2.3.0
 
 ### Added
@@ -15,7 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   As operator of an issuer there is action needed. This feature is added automatically.
   Note: In the future this will be enforced
 - Implemented Refresh Flow as Draft implementation according spez. Should not yet used in production (#292)
-- Integrated Spring State Machine for credential offer and management lifecycles, improving state management and error handling (#292).
+- Integrated Spring State Machine for credential offer and management lifecycles, improving state management and error
+  handling (#292).
 - Added option to disable/enable refresh_token rotation after usage (#464).
 - Added test coverage for signed metadata usage and renewal flow (#200, #292).
 
@@ -30,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed response size limitation for token calls (#363).
 - Fixed error handling for credential requests missing JWT proof (#425).
 - Fixed IT tests for RFC6749 compliance (#504).
-  
+
 ## 2.2.0
 
 ### Added
@@ -38,9 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New public service methods to support renewal
     - Renewal uses the existing functionality of issuing a new credential
     - The change introduces a new state machine with different states for offers and the management of offers
-    - New env variables: 
-      - `RENEWAL_FLOW_ENABLED` (default: false) to enable the renewal functionality
-      - `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT`: (no default) to set the renewal endpoint where the offer data can be fetched from
+    - New env variables:
+        - `RENEWAL_FLOW_ENABLED` (default: false) to enable the renewal functionality
+        - `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT`: (no default) to set the renewal endpoint where the offer data can be
+          fetched from
 - Added possibility to update status list manually and disable the automatic synicnhronization.
   New environment variable `DISABLE_STATUS_LIST_SYNCHRONIZATION` (default: false) to disable automatic updates.
   New endpoint `/management/api/status-list/{statusListId}` to trigger manual update of a status list.
