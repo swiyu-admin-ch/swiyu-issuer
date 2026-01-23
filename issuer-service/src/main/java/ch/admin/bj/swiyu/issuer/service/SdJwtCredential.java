@@ -121,11 +121,13 @@ public class SdJwtCredential extends CredentialBuilder {
             throw new IllegalStateException(
                     "Batch size and status references do not match anymore. Cannot issue credential");
         }
+
         var override = getCredentialOffer().getConfigurationOverride();
-        SDObjectBuilder builder = new SDObjectBuilder();
 
         var sdjwts = new ArrayList<String>(batchSize);
         for (int i = 0; i < batchSize; i++) {
+            SDObjectBuilder builder = new SDObjectBuilder();
+
             addTechnicalData(builder, override);
             List<Disclosure> disclosures = prepareDisclosures(builder);
 

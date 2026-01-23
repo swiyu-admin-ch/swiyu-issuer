@@ -156,6 +156,7 @@ class SdJwtCredentialIT {
         var credentials = credentialsMap.stream().map(c -> c.values().stream().toList()).flatMap(List::stream).collect(Collectors.toList());
 
         Set<String> payloads = new HashSet<>();
+        Set<String> sdHashes = new HashSet<>();
         for (var credential : credentials) {
             String[] chunks = credential.split("\\.");
             String payload = new String(decoder.decode(chunks[1]));
@@ -163,6 +164,7 @@ class SdJwtCredentialIT {
 
             List<String> sd = JsonPath.read(payload, "$._sd");
             assertEquals(3, sd.size());
+            sdHashes.addAll(sd);
 
             String alg = JsonPath.read(payload, "$._sd_alg");
             assertEquals("sha-256", alg);
@@ -174,6 +176,8 @@ class SdJwtCredentialIT {
         }
         // test that payloads within the same batch are unique
         assertEquals(credentials.size(), payloads.size());
+        // test that the sd hashes are all unique
+        assertEquals(credentials.size() * 3, sdHashes.size());
     }
 
     @Test
