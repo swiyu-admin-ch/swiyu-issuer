@@ -53,7 +53,7 @@ application:
       key-management-method: "key"
       private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
       verification-method: "did:example:localhost%3A8080:abcabc#sdjwt"
-  signed-metadata-enabled: true
+  signed-metadata-enabled: false
 swiyu:
   status-registry:
     api-url: "https://irrelevant.as.all.interaction.are.mocked"

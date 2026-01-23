@@ -15,6 +15,7 @@ import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
+import org.jspecify.annotations.NonNull;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,22 @@ public class MetadataService {
     }
 
     /**
+     * Returns an instance of the issuer metadata without signing where the credential_issuer path has been extended by the tenantId.
+     * Note: The credential issuer identifier needs to match exactly the one provided in the credential offer. <br>
+     * Append the tenant ID to the credential identifier; for example <br>
+     * https://www.example.com/oid4vci will become <br>
+     * https://www.example.com/oid4vci/00000000-0000-0000-0000-000000000000<br>
+     *
+     * @param tenantId the tenant identifier for which to produce the unsigned issuer metadata
+     * @return the unsigned {@link IssuerMetadata} instance for this issuer tenant
+     */
+    public IssuerMetadata getUnsignedIssuerMetadata(UUID tenantId) {
+        return getUnsignedIssuerMetadata().toBuilder()
+                .credentialIssuer(createTenantCredentialIssuerIdentifier(tenantId))
+                .build();
+    }
+
+    /**
      * Returns a signed issuer metadata JWT for the specified tenant.
      *
      * <p>Retrieves the tenant-specific {@code ConfigurationOverride} from
@@ -66,7 +83,7 @@ public class MetadataService {
     public String getSignedIssuerMetadata(UUID tenantId) {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
         try {
-            return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedIssuerMetadata()), override, tenantId);
+            return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedIssuerMetadata(tenantId)), override, tenantId);
         } catch (JsonProcessingException e) {
             throw new ConfigurationException("Unsigned Issuer Metadata could not be serialized as string", e);
         }
@@ -98,10 +115,37 @@ public class MetadataService {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
 
         try {
-            return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedOpenIdConfiguration()), override, tenantId);
+            return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedOpenIdConfiguration(tenantId)), override, tenantId);
         } catch (JsonProcessingException e) {
             throw new ConfigurationException("Unsigned OAuth 2.0 configuration could not be serialized as string", e);
         }
+    }
+
+    /**
+     * Returns the Authorization Server Metadata as a DTO without signing.
+     *
+     * <p>The configuration is retrieved from {@code openIdIssuerConfiguration} and is returned
+     * in its original, unsigned form.
+     *
+     * @return the unsigned {@link OpenIdConfigurationDto} for this issuer
+     */
+    public OpenIdConfigurationDto getUnsignedOpenIdConfiguration(UUID tenantId) {
+        return getUnsignedOpenIdConfiguration().toBuilder()
+                .issuer(createTenantCredentialIssuerIdentifier(tenantId))
+                .build();
+    }
+
+    /**
+     * Calculates the Credential Issuer Identifier for a specific tenant.
+     * <br>
+     * Credential Issuer Identifiers contain the full path of a tenant.
+     *
+     * @param tenantId the tenant identifier for which to create a credential issuer identifier
+     * @return credential Issuer Identifier (credential_issuer) for the tenant
+     */
+    private @NonNull String createTenantCredentialIssuerIdentifier(UUID tenantId) {
+        String commonCredentialIssuerIdentifier = encryptionService.issuerMetadataWithEncryptionOptions().getCredentialIssuer();
+        return String.format("%s/%s", commonCredentialIssuerIdentifier, tenantId);
     }
 
     private String signMetadataJwt(String metaDataJson, ConfigurationOverride override, UUID tenantId) {
@@ -121,7 +165,7 @@ public class MetadataService {
                     .type(new JOSEObjectType("openidvci-issuer-metadata+jwt"))
                     .build();
 
-            JWTClaimsSet claimsSet = prepareJWTClaimsSet(override, metaDataJson);
+            JWTClaimsSet claimsSet = prepareJWTClaimsSet(override, metaDataJson, createTenantCredentialIssuerIdentifier(tenantId));
 
             SignedJWT jwt = new SignedJWT(header, claimsSet);
             jwt.sign(signer);
@@ -141,7 +185,7 @@ public class MetadataService {
     }
 
     private JWTClaimsSet prepareJWTClaimsSet(ConfigurationOverride override,
-                                             String metaDataJson) throws ParseException {
+                                             String metaDataJson, String subject) throws ParseException {
 
         /*
          * sub: Must be the external URL
@@ -153,7 +197,7 @@ public class MetadataService {
 
         // Override JWT claims,
         JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder(metaData)
-                .subject(applicationProperties.getExternalUrl())
+                .subject(subject)
                 .issueTime(new Date())
                 .issuer(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
                 .expirationTime(DateUtils.addHours(new Date(), 24));

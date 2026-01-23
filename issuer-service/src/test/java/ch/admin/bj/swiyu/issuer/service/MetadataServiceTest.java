@@ -39,6 +39,7 @@ class MetadataServiceTest {
     private MetadataService metadataService;
     private ConfigurationOverride override;
     private ApplicationProperties applicationProperties;
+    private IssuerMetadata defaultTestIssuerMetadata;
 
     @BeforeEach
     void setUp() {
@@ -49,7 +50,11 @@ class MetadataServiceTest {
         applicationProperties = mock(ApplicationProperties.class);
         encryptionService = mock(EncryptionService.class);
         demonstratingProofOfPossessionService = mock(DemonstratingProofOfPossessionService.class);
-
+        defaultTestIssuerMetadata = IssuerMetadata.builder()
+                .credentialIssuer(externalUrl)
+                .version("1.0.0")
+                .build();
+        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(defaultTestIssuerMetadata);
         // ObjectMapper not needed for tested methods here
         metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, encryptionService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
 
@@ -60,22 +65,15 @@ class MetadataServiceTest {
 
     @Test
     void getUnsignedIssuerMetadata_returnsMap() {
-        IssuerMetadata metadata = new IssuerMetadata();
-        metadata.setVersion("1.0.0");
-        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
-
         IssuerMetadata result = metadataService.getUnsignedIssuerMetadata();
 
         assertNotNull(result);
-        assertEquals(metadata, result);
+        assertEquals(defaultTestIssuerMetadata, result);
     }
 
     @Test
     void getSignedIssuerMetadata_successfulSigning_returnsJwt() throws Exception {
         UUID tenantId = UUID.randomUUID();
-        IssuerMetadata metadata = new IssuerMetadata();
-        metadata.setVersion("1.0.0");
-        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = createDummySigner();
@@ -102,8 +100,6 @@ class MetadataServiceTest {
     @Test
     void getSignedIssuerMetadata_throwsConfigurationException_onJoseException() throws Exception {
         UUID tenantId = UUID.randomUUID();
-
-        when(encryptionService.issuerMetadataWithEncryptionOptions()).thenReturn(new IssuerMetadata());
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = mock(JWSSigner.class);
@@ -116,7 +112,7 @@ class MetadataServiceTest {
     @Test
     void getSignedOpenIdConfiguration_successfulSigning_returnsJwt() throws Exception {
         UUID tenantId = UUID.randomUUID();
-        var oidConfig = new OpenIdConfigurationDto("issuer", "token_endpoint", null);
+        var oidConfig = new OpenIdConfigurationDto(externalUrl, "token_endpoint", null);
         when(demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(Mockito.any())).thenReturn(oidConfig);
 
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
@@ -129,8 +125,9 @@ class MetadataServiceTest {
         String jwt = svc.getSignedOpenIdConfiguration(tenantId);
         assertNotNull(jwt);
         SignedJWT parsed = SignedJWT.parse(jwt);
-        assertEquals(externalUrl, parsed.getJWTClaimsSet().getSubject());
-        assertEquals("issuer", parsed.getJWTClaimsSet().getStringClaim("issuer"));
+        String credentialIssuerIdentifier = String.format("%s/%s", externalUrl, tenantId);
+        assertEquals(credentialIssuerIdentifier, parsed.getJWTClaimsSet().getSubject());
+        assertEquals(credentialIssuerIdentifier, parsed.getJWTClaimsSet().getStringClaim("issuer"));
         assertEquals("token_endpoint", parsed.getJWTClaimsSet().getStringClaim("token_endpoint"));
     }
 
