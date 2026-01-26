@@ -66,14 +66,14 @@ public class SdJwtCredential extends CredentialBuilder {
             IssuerMetadata issuerMetadata,
             DataIntegrityService dataIntegrityService,
             SdjwtProperties sdjwtProperties,
-            SignatureService signatureService,
+            JwsSignatureFacade jwsSignatureFacade,
             StatusListRepository statusListRepository,
             CredentialOfferStatusRepository credentialOfferStatusRepository) {
         super(applicationProperties,
                 issuerMetadata,
                 dataIntegrityService,
                 statusListRepository,
-                signatureService,
+                jwsSignatureFacade,
                 credentialOfferStatusRepository);
         this.sdjwtProperties = sdjwtProperties;
     }
@@ -142,7 +142,7 @@ public class SdJwtCredential extends CredentialBuilder {
         var override = this.getCredentialOffer()
                 .getConfigurationOverride();
         try {
-            return getSignatureService().createSigner(
+            return getJwsSignatureFacade().createSigner(
                     sdjwtProperties,
                     override.keyId(),
                     override.keyPin());

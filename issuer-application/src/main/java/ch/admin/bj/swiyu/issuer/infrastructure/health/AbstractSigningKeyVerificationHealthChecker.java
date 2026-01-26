@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
-import ch.admin.bj.swiyu.issuer.service.SignatureService;
+import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -27,14 +27,14 @@ public abstract class AbstractSigningKeyVerificationHealthChecker<T extends Sign
     private static final String TEST_JWT_SUBJECT = "health-check-test";
 
     private final KeyResolver keyResolver;
-    private final SignatureService signatureService;
+    private final JwsSignatureFacade jwsSignatureFacade;
     private final T properties;
 
     protected AbstractSigningKeyVerificationHealthChecker(KeyResolver keyResolver,
-                                                          SignatureService signatureService,
+                                                          JwsSignatureFacade jwsSignatureFacade,
                                                           T properties) {
         this.keyResolver = keyResolver;
-        this.signatureService = signatureService;
+        this.jwsSignatureFacade = jwsSignatureFacade;
         this.properties = properties;
     }
 
@@ -63,7 +63,7 @@ public abstract class AbstractSigningKeyVerificationHealthChecker<T extends Sign
     }
 
     private boolean verifySigningCapability(JWK jwk) throws KeyStrategyException, JOSEException {
-        var signer = signatureService.createSigner(properties, null, null);
+        var signer = jwsSignatureFacade.createSigner(properties, null, null);
 
         SignedJWT testJwt = createTestJwt();
         testJwt.sign(signer);

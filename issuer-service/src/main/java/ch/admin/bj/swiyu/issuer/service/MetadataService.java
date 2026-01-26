@@ -32,7 +32,7 @@ public class MetadataService {
 
     private final OpenIdIssuerConfiguration openIdIssuerConfiguration;
     private final CredentialManagementService credentialManagementService;
-    private final SignatureService signatureService;
+    private final JwsSignatureFacade jwsSignatureFacade;
     private final JweService jweService;
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final SdjwtProperties sdjwtProperties;
@@ -110,7 +110,7 @@ public class MetadataService {
         try {
             JWSSigner signer;
 
-            signer = signatureService.createSigner(sdjwtProperties, override.keyId(), override.keyPin());
+            signer = jwsSignatureFacade.createSigner(sdjwtProperties, override.keyId(), override.keyPin());
 
 
             /*

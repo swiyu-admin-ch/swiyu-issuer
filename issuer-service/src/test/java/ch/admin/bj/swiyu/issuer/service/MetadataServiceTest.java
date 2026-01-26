@@ -34,7 +34,7 @@ class MetadataServiceTest {
 
     private OpenIdIssuerConfiguration openIdIssuerConfiguration;
     private CredentialManagementService credentialManagementService;
-    private SignatureService signatureService;
+    private JwsSignatureFacade jwsSignatureFacade;
     private SdjwtProperties sdjwtProperties;
     private JweService jweService;
     private DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
@@ -46,14 +46,14 @@ class MetadataServiceTest {
     void setUp() {
         openIdIssuerConfiguration = mock(OpenIdIssuerConfiguration.class);
         credentialManagementService = mock(CredentialManagementService.class);
-        signatureService = mock(SignatureService.class);
+        jwsSignatureFacade = mock(JwsSignatureFacade.class);
         sdjwtProperties = mock(SdjwtProperties.class);
         applicationProperties = mock(ApplicationProperties.class);
         jweService = mock(JweService.class);
         demonstratingProofOfPossessionService = mock(DemonstratingProofOfPossessionService.class);
 
         // ObjectMapper not needed for tested methods here
-        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, jweService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
+        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, jwsSignatureFacade, jweService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
 
         override = new ConfigurationOverride(null, null, null, null);
         when(applicationProperties.getIssuerId()).thenReturn(issuerId);
@@ -82,7 +82,7 @@ class MetadataServiceTest {
 
         JWSSigner signer = createDummySigner();
 
-        when(signatureService.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
 
         String jwtStr = metadataService.getSignedIssuerMetadata(tenantId);
         assertNotNull(jwtStr);
@@ -96,7 +96,7 @@ class MetadataServiceTest {
     void getSignedIssuerMetadata_throwsConfigurationException_onKeyStrategyError() throws KeyStrategyException {
         UUID tenantId = UUID.randomUUID();
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
-        when(signatureService.createSigner(sdjwtProperties, null, null)).thenThrow(new KeyStrategyException("bad", null));
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenThrow(new KeyStrategyException("bad", null));
 
         assertThrows(ConfigurationException.class, () -> metadataService.getSignedIssuerMetadata(tenantId));
     }
@@ -110,7 +110,7 @@ class MetadataServiceTest {
 
         JWSSigner signer = mock(JWSSigner.class);
         when(signer.sign(any(), any())).thenThrow(new JOSEException("bad"));
-        when(signatureService.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
 
         assertThrows(ConfigurationException.class, () -> metadataService.getSignedIssuerMetadata(tenantId));
     }
@@ -123,10 +123,10 @@ class MetadataServiceTest {
 
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
-        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, jweService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
+        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, jwsSignatureFacade, jweService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
 
         JWSSigner signer = createDummySigner();
-        when(signatureService.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
 
         String jwt = svc.getSignedOpenIdConfiguration(tenantId);
         assertNotNull(jwt);
