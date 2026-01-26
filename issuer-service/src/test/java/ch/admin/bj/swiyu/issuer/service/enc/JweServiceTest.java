@@ -26,11 +26,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Verifies JWE-facing behavior of {@link EncryptionJweService}:
+ * Verifies JWE-facing behavior of {@link JweService}:
  */
-class EncryptionJweServiceTest {
+class JweServiceTest {
     static final Duration KEY_ROTATION_INTERVAL = Duration.ofSeconds(10);
-    private EncryptionJweService encryptionJweService;
+    private JweService jweService;
     private EncryptionKeyRepository encryptionKeyRepository;
     private EncryptionKeyService encryptionKeyService;
     private List<EncryptionKey> encryptionKeyTestCache;
@@ -42,7 +42,7 @@ class EncryptionJweServiceTest {
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
         issuerMetadata = new IssuerMetadata();
         encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository, new CacheCustomizer());
-        encryptionJweService = new EncryptionJweService(applicationProperties, issuerMetadata, encryptionKeyService);
+        jweService = new JweService(applicationProperties, issuerMetadata, encryptionKeyService);
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())
                 .thenReturn(KEY_ROTATION_INTERVAL);
         encryptionKeyService.rotateEncryptionKeys();
@@ -51,7 +51,7 @@ class EncryptionJweServiceTest {
     @Test
     // Ensures issuer metadata exposes supported enc/zip values populated by the service
     void testIssuerMetadataWithEncryptionOptions() {
-        encryptionJweService.issuerMetadataWithEncryptionOptions();
+        jweService.issuerMetadataWithEncryptionOptions();
         assertThat(issuerMetadata.getRequestEncryption()).isNotNull();
         assertThat(issuerMetadata.getResponseEncryption()).isNotNull();
         var requestEncryption = issuerMetadata.getRequestEncryption();
@@ -65,26 +65,26 @@ class EncryptionJweServiceTest {
     @Test
     // Verifies decrypt succeeds when using an active key from the published JWKS
     void decryptsWithActiveKey() {
-        encryptionJweService.issuerMetadataWithEncryptionOptions();
+        jweService.issuerMetadataWithEncryptionOptions();
         var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
         var activeKey = jwks.getKeys().getFirst();
 
         String plaintext = "Hello World";
         String encrypted = assertDoesNotThrow(() -> createEncryptedMessage(plaintext, activeKey));
-        String decrypted = assertDoesNotThrow(() -> encryptionJweService.decrypt(encrypted));
+        String decrypted = assertDoesNotThrow(() -> jweService.decrypt(encrypted));
         assertEquals(plaintext, decrypted);
     }
 
     @Test
     // Confirms decryption fails for a JWE encrypted with an unknown/foreign key ID
     void rejectsUnknownKeyId() throws JOSEException {
-        encryptionJweService.issuerMetadataWithEncryptionOptions();
+        jweService.issuerMetadataWithEncryptionOptions();
         ECKey foreignKey = new ECKeyGenerator(Curve.P_256)
                 .algorithm(new Algorithm("ECDH-ES"))
                 .keyID(UUID.randomUUID().toString())
                 .generate();
         String encrypted = createEncryptedMessage("Hello", foreignKey);
-        assertThrows(Oid4vcException.class, () -> encryptionJweService.decrypt(encrypted));
+        assertThrows(Oid4vcException.class, () -> jweService.decrypt(encrypted));
     }
 
     private void setupMockRepository() {

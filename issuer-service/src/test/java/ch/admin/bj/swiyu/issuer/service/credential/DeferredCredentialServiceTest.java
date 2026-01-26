@@ -10,7 +10,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialBuilder;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
-import ch.admin.bj.swiyu.issuer.service.enc.EncryptionJweService;
+import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import org.junit.jupiter.api.AfterEach;
@@ -39,7 +39,7 @@ class DeferredCredentialServiceTest {
     @Mock
     private CredentialFormatFactory vcFormatFactory;
     @Mock
-    private EncryptionJweService encryptionJweService;
+    private JweService jweService;
     @Mock
     private OAuthService oAuthService;
     @Mock
@@ -89,7 +89,7 @@ class DeferredCredentialServiceTest {
 
         when(oAuthService.getCredentialManagementByAccessToken("token")).thenReturn(mgmt);
         when(vcFormatFactory.getFormatBuilder("cfg")).thenReturn(builder);
-        when(encryptionJweService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
+        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
         when(builder.credentialOffer(offer)).thenReturn(builder);
         when(builder.credentialResponseEncryption(any(), any())).thenReturn(builder);
         when(builder.holderBindings(any())).thenReturn(builder);

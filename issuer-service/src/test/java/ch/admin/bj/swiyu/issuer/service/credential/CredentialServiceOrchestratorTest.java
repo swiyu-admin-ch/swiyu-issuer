@@ -24,7 +24,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
-import ch.admin.bj.swiyu.issuer.service.enc.EncryptionJweService;
+import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
@@ -92,7 +92,7 @@ class CredentialServiceOrchestratorTest {
 
         mockCredentialStateMachine(credentialStateMachine);
 
-        EncryptionJweService encryptionJweService = Mockito.mock(EncryptionJweService.class);
+        JweService jweService = Mockito.mock(JweService.class);
         EventProducerService eventProducerService = new EventProducerService(applicationEventPublisher, objectMapper);
 
         oAuthService = new OAuthService(applicationProperties, eventProducerService, credentialOfferRepository, credentialManagementRepository, credentialStateMachine);
@@ -100,7 +100,7 @@ class CredentialServiceOrchestratorTest {
         // validator is static utility now
         var credentialEnvelopeService = new CredentialEnvelopeService(
                 credentialFormatFactory,
-                encryptionJweService,
+                jweService,
                 holderBindingService,
                 eventProducerService,
                 issuerMetadata,
@@ -118,7 +118,7 @@ class CredentialServiceOrchestratorTest {
                 credentialOfferRepository,
                 credentialManagementRepository,
                 credentialFormatFactory,
-                encryptionJweService,
+                jweService,
                 oAuthService,
                 eventProducerService,
                 credentialStateMachine);
@@ -152,7 +152,7 @@ class CredentialServiceOrchestratorTest {
         when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credentialConfiguration);
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test", credentialConfiguration));
 
-        when(encryptionJweService.issuerMetadataWithEncryptionOptions()).thenReturn(issuerMetadata);
+        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(issuerMetadata);
 
     }
 
