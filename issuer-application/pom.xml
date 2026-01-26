@@ -162,6 +162,11 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>io.github.swiyu-admin-ch</groupId>
+            <artifactId>swiyu-jws-signature-service</artifactId>
+        </dependency>
+
 
         <!-- Test Dependencies -->
         <dependency>

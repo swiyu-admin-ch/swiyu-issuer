@@ -169,6 +169,10 @@
             <artifactId>spring-statemachine-starter</artifactId>
             <version>4.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.swiyu-admin-ch</groupId>
+            <artifactId>swiyu-jws-signature-service</artifactId>
+        </dependency>
 
     </dependencies>
 
