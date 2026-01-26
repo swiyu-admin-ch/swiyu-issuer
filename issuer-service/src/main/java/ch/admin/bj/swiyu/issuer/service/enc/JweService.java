@@ -27,7 +27,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class EncryptionJweService {
+public class JweService {
 
     private final ApplicationProperties applicationProperties;
     private final IssuerMetadata issuerMetadata;

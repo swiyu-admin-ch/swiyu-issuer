@@ -15,7 +15,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.service.*;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
-import ch.admin.bj.swiyu.issuer.service.enc.EncryptionJweService;
+import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,7 +69,7 @@ public class IssuanceController {
 
     private final CredentialServiceOrchestrator credentialServiceOrchestrator;
     private final NonceService nonceService;
-    private final EncryptionJweService encryptionJweService;
+    private final JweService jweService;
     private final OAuthService oauthService;
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
 
@@ -207,8 +207,8 @@ public class IssuanceController {
         String requestString = requestDto;
         // Decrypt if holder sent an encrypted
         if (StringUtils.equalsIgnoreCase("application/jwt", request.getContentType())) {
-            requestString = encryptionJweService.decrypt(requestDto);
-        } else if (encryptionJweService.isRequestEncryptionMandatory()) {
+            requestString = jweService.decrypt(requestDto);
+        } else if (jweService.isRequestEncryptionMandatory()) {
             throw new IllegalArgumentException("Credential Request must be encrypted");
         }
 

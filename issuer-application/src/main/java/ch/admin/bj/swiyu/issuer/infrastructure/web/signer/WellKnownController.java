@@ -9,7 +9,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
-import ch.admin.bj.swiyu.issuer.service.enc.EncryptionJweService;
+import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,7 +38,7 @@ import java.util.UUID;
 public class WellKnownController {
 
     private static final String CONTENT_TYPE_APPLICATION_JWT = "application/jwt";
-    private final EncryptionJweService encryptionJweService;
+    private final JweService jweService;
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final MetadataService metadataService;
 
@@ -63,7 +63,7 @@ public class WellKnownController {
     @Operation(summary = "Information about credentials which can be issued.")
     public IssuerMetadata getIssuerMetadata() {
         // Unwrap the object from the spring cache object.
-        return (IssuerMetadata) AopProxyUtils.getSingletonTarget(encryptionJweService.issuerMetadataWithEncryptionOptions());
+        return (IssuerMetadata) AopProxyUtils.getSingletonTarget(jweService.issuerMetadataWithEncryptionOptions());
     }
 
     @GetMapping(value = {"/{tenantId}/.well-known/openid-credential-issuer", "/oid4vci/{tenantId}/.well-known/openid-credential-issuer"})
