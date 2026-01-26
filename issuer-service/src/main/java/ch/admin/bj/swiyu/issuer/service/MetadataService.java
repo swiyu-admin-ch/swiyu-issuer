@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
+import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +33,7 @@ public class MetadataService {
     private final OpenIdIssuerConfiguration openIdIssuerConfiguration;
     private final CredentialManagementService credentialManagementService;
     private final SignatureService signatureService;
-    private final EncryptionService encryptionService;
+    private final JweService jweService;
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final SdjwtProperties sdjwtProperties;
     private final ApplicationProperties applicationProperties;
@@ -48,7 +49,7 @@ public class MetadataService {
      * @return the unsigned {@link IssuerMetadata} for this issuer
      */
     public IssuerMetadata getUnsignedIssuerMetadata() {
-        IssuerMetadata issuerMetadata = encryptionService.issuerMetadataWithEncryptionOptions();
+        IssuerMetadata issuerMetadata = jweService.issuerMetadataWithEncryptionOptions();
         // If we have a Spring Cache managed singleton, it would get serialized with the AOP wrapper when used directly
         return issuerMetadata instanceof Advised ? (IssuerMetadata) AopProxyUtils.getSingletonTarget(issuerMetadata) : issuerMetadata;
     }
