@@ -12,6 +12,8 @@ import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.JWK;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,6 +80,26 @@ public class JweService {
     public boolean isRequestEncryptionMandatory() {
         IssuerCredentialRequestEncryption encryptionOptions = issuerMetadata.getRequestEncryption();
         return encryptionOptions != null && encryptionOptions.isEncRequired();
+    }
+
+
+    /**
+     * Decrypts the message if the content type indicates it is a JWE.
+     * If the content type is not JWE and encryption is mandatory, an exception is thrown.
+     * Otherwise, the original message is returned.
+     * 
+     * @param requestMessage the message to be decrypted
+     * @param contentType the content type of the message
+     * @return decrypted message or original message
+     */
+    public String decryptRequest(String requestMessage, String contentType) {
+        // Decrypt if holder sent an encrypted
+        if (StringUtils.equalsIgnoreCase("application/jwt", contentType)) {
+            return decrypt(requestMessage);
+        } else if (isRequestEncryptionMandatory()) {
+            throw new IllegalArgumentException("Credential Request must be encrypted");
+        }
+        return requestMessage;
     }
 
     /**
