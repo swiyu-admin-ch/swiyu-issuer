@@ -97,7 +97,7 @@ class DeferredCredentialServiceTest {
         when(builder.buildCredentialEnvelopeV2()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
 
         var result = service.createCredentialFromDeferredRequestV2(
-                new DeferredCredentialEndpointRequestDto(offer.getTransactionId()),
+                new DeferredCredentialEndpointRequestDto(offer.getTransactionId(), null),
                 "token");
 
         assertThat(result).isNotNull();

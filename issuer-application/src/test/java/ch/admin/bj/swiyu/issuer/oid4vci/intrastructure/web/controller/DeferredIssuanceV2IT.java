@@ -10,21 +10,26 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.enc.JweService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jose.EncryptionMethod;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWEAlgorithm;
-import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
+import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.EncryptedJWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,10 +93,24 @@ class DeferredIssuanceV2IT {
     @Autowired
     private IssuerMetadata issuerMetadata;
     @Autowired
+    private JweService encryptionService;
+    @Autowired
     private CredentialManagementRepository credentialManagementRepository;
 
     private static String getDeferredCredentialRequestString(String transactionId) {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
+    }
+
+    private static String createResponseEncryptionJson(ECKey ecJWK) {
+        return String.format("""
+                        {
+                            "alg": "%s",
+                            "enc": "%s",
+                            "jwk": %s
+                        }
+                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
+                ecJWK.toPublicJWK()
+                        .toJSONString());
     }
 
     @BeforeEach
@@ -158,8 +177,9 @@ class DeferredIssuanceV2IT {
                 .andReturn();
     }
 
-    @Test
-    void testDeferredOffer_withResponseEncryption_thenSuccess() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void testDeferredOffer_withResponseEncryption_thenSuccess(boolean rotateHolderEncryptionKey) throws Exception {
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
@@ -168,21 +188,23 @@ class DeferredIssuanceV2IT {
                 .keyID("transportEncKeyEC")
                 .generate();
 
-        var responseEncryptionJson = String.format("""
-                        {
-                            "alg": "%s",
-                            "enc": "%s",
-                            "jwk": %s
-                        }
-                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
-                ecJWK.toPublicJWK()
-                        .toJSONString());
+        var responseEncryptionJson = createResponseEncryptionJson(ecJWK);
 
         // credential_response_encryption
         var credentialRequestString = getCredentialRequestString(tokenResponse.get("c_nonce").toString(),
                 "university_example_sd_jwt", responseEncryptionJson);
 
-        var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
+        var requestEncryptionSpec = encryptionService.issuerMetadataWithEncryptionOptions().getRequestEncryption();
+        var issuerEncryptionKey = JWKSet.parse(requestEncryptionSpec.getJwks()).getKeys().getFirst();
+        var issuerEncrypter = new ECDHEncrypter(issuerEncryptionKey.toECKey());
+        var jweHeader = new JWEHeader.Builder(JWEAlgorithm.ECDH_ES,
+                EncryptionMethod.A128GCM).keyID(issuerEncryptionKey.getKeyID())
+                .compressionAlgorithm(CompressionAlgorithm.DEF)
+                .build();
+        var encryptedRequest = new EncryptedJWT(jweHeader,
+                JWTClaimsSet.parse(credentialRequestString));
+        encryptedRequest.encrypt(issuerEncrypter);
+        var deferredCredentialResponse = requestCredential(mock, (String) token, encryptedRequest.serialize(), true)
                 .andExpect(status().isAccepted())
                 .andExpect(content().contentType("application/jwt"))
                 .andExpect(jsonPath("$").isNotEmpty())
@@ -205,15 +227,25 @@ class DeferredIssuanceV2IT {
                 .andExpect(jsonPath("$.status").value("READY"))
                 .andReturn();
 
-        String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                deferredCredential.get("transaction_id")
-                        .getAsString());
+        // Deferred Credential Request
+        var deferredCredentialRequestClaimBuilder = new JWTClaimsSet.Builder()
+                .claim("transaction_id", deferredCredential.get("transaction_id").getAsString());
+        if (rotateHolderEncryptionKey) {
+            ecJWK = new ECKeyGenerator(Curve.P_256)
+                    .keyID("transportEncKeyECNew")
+                    .generate();
+            deferredCredentialRequestClaimBuilder.claim("credential_response_encryption", JWTClaimsSet.parse(createResponseEncryptionJson(ecJWK)).getClaims());
+        }
+        String deferredCredentialRequestString = deferredCredentialRequestClaimBuilder.build().toString();
+        var encryptedDeferredCredentialRequest = new EncryptedJWT(jweHeader,
+                JWTClaimsSet.parse(deferredCredentialRequestString));
+        encryptedDeferredCredentialRequest.encrypt(issuerEncrypter);
 
         var credentialsWrapperResponse = mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
                         .header("SWIYU-API-Version", "2")
-                        .contentType("application/json")
-                        .content(deferredCredentialRequestString))
+                        .contentType("application/jwt")
+                        .content(encryptedDeferredCredentialRequest.serialize()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/jwt"))
                 .andReturn();
@@ -423,11 +455,22 @@ class DeferredIssuanceV2IT {
 
     private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString)
             throws Exception {
-        return mock.perform(post("/oid4vci/api/credential")
+                return requestCredential(mock, token, credentialRequestString, false);
+    }
+
+    private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString, boolean encrypted)
+            throws Exception {
+        var requestBuilder = post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
                 .header("SWIYU-API-Version", "2")
                 .contentType("application/json")
-                .content(credentialRequestString));
+                .content(credentialRequestString);
+        if (encrypted) {
+            requestBuilder.contentType("application/jwt");
+        } else {
+            requestBuilder.contentType("application/json");
+        }
+        return mock.perform(requestBuilder);
     }
 
     private JsonObject getEncryptedPayload(MvcResult deferredCredentialResponse, ECKey ecJWK)

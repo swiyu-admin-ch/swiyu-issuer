@@ -7,14 +7,17 @@ import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
+import ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.*;
@@ -79,8 +82,10 @@ public class DeferredCredentialService {
                 accessToken);
 
         CredentialManagement credentialMgmt = credentialOffer.getCredentialManagement();
-        var credentialRequest = credentialOffer.getCredentialRequest();
-        var credentialEnvelopeDto = buildEnvelopeV2(credentialOffer, credentialRequest);
+        var responseEncryption = Optional.ofNullable(deferredCredentialRequest.credentialResponseEncryption())
+                .map(CredentialRequestMapper::toCredentialResponseEncryption)
+                .orElse(credentialOffer.getCredentialRequest().getCredentialResponseEncryption());
+        var credentialEnvelopeDto = buildEnvelopeV2(credentialOffer, responseEncryption);
 
         finalizeIssuance(credentialOffer, credentialMgmt);
 
@@ -103,14 +108,14 @@ public class DeferredCredentialService {
     /**
      * Builds a credential envelope for OID4VCI 2.0 requests.
      */
-    CredentialEnvelopeDto buildEnvelopeV2(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest) {
+    CredentialEnvelopeDto buildEnvelopeV2(CredentialOffer credentialOffer, CredentialResponseEncryptionClass responseEncryption) {
         var credentialSupportedId = getMetadataCredentialSupportedId(credentialOffer);
         return credentialFormatFactory
                 .getFormatBuilder(credentialSupportedId)
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(
                         jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(),
-                        credentialRequest.getCredentialResponseEncryption())
+                        responseEncryption)
                 .holderBindings(credentialOffer.getHolderJWKs())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelopeV2();
