@@ -16,7 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed weak unlinkability by rounding down the timestamps within issued credetials.
+<<<<<<< HEAD
     - Affected fields are iat, epx, and nbf.
+=======
+  Affected fields are iat, epx, and nbf.
+
+>>>>>>> 6fc52c5c (Merge remote-tracking branch 'github/main' into fix/EIDOMNI-602_apply_fix_to_main)
 
 ## 2.3.1
 
@@ -26,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow wallets changing the deferred credential request encryption key using credential_response_encryption
 - When using signed metadata with generates dynamic tenant ids, the tenant id is now automatically added to the
   credential issuer identifiers
+
 
 ## 2.3.0
 
