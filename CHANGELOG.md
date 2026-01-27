@@ -16,7 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed weak unlinkability by rounding down the timestamps within issued credetials.
-    - Affected fields are iat, epx, and nbf.
+  Affected fields are iat, epx, and nbf.
+
+
+## 2.3.1
+
+### Fixed
+
+- Allow encryption to be used for deferred credential request
+- Allow wallets changing the deferred credential request encryption key using credential_response_encryption
+
 
 ## 2.3.0
 
@@ -25,6 +34,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added optional support for DPoP for wallets to begin adopting DPoP for more secure communication.
   As operator of an issuer there is action needed. This feature is added automatically.
   Note: In the future this will be enforced
+- Implemented Refresh Flow as Draft implementation according spez. Should not yet used in production (#292)
+- Integrated Spring State Machine for credential offer and management lifecycles, improving state management and error
+  handling (#292).
+- Added option to disable/enable refresh_token rotation after usage (#464).
+- Added test coverage for signed metadata usage and renewal flow (#200, #292).
+
+### Fixed
+
+- Fixed missing alg field in JWKS keys for metadata endpoint (#597).
+- Corrected subject claim in signed metadata and improved metadata endpoint to prefer signed data (#570).
+- Fixed size limitations for incoming token calls and responses (#363).
+- Fixed edge case with ephemeral signing keys causing server errors (#426).
+- Fixed logs displaying management id incorrectly.
+- Fixed tests and improved code for signed metadata (#570, #597).
+- Fixed response size limitation for token calls (#363).
+- Fixed error handling for credential requests missing JWT proof (#425).
+- Fixed IT tests for RFC6749 compliance (#504).
 
 ## 2.2.0
 
