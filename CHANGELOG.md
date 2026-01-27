@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Latest
 
-- New endpoint `/actuator/env` to retrieve configuration details.## 2.3.1
+### Added
+
+- New endpoint `/actuator/env` to retrieve configuration details.
+
+### Fixed
+
+- Fixed weak unlinkability by rounding down the timestamps within issued credetials.
+  Affected fields are iat, epx, and nbf.
+
 
 ## 2.3.1
 
@@ -17,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Allow encryption to be used for deferred credential request
 - Allow wallets changing the deferred credential request encryption key using credential_response_encryption
+
 
 ## 2.3.0
 
