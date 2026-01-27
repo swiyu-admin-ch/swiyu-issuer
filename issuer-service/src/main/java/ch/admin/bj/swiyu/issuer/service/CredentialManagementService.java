@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.api.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
@@ -74,6 +75,31 @@ public class CredentialManagementService {
                 .collect(Collectors.toSet());
 
         return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
+    }
+
+
+    /**
+     * Retrieve public information about a specific credential offer.
+     *
+     * <p>This method will check the credential's expiration and update its state if necessary
+     * (hence the method is not read-only). It also constructs the deeplink representation
+     * of the offer and maps the result to a DTO suitable for clients.</p>
+     *
+     * @param managementId the id of the management object
+     * @param offerId the id of the offer object
+     * @return a {@link CredentialInfoResponseDto} containing credential offer information and a deeplink
+     * @throws ResourceNotFoundException if no credential with the given id exists
+     */
+    @Transactional
+    public CredentialManagementDto getCredentialOfferInformation(UUID managementId, UUID offerId) {
+        var mgmt = persistenceService.findCredentialManagementById(managementId);
+
+        var offer = mgmt.getCredentialOffers().stream().filter(x -> x.getId().equals(offerId)).findFirst();
+        if (offer.isEmpty()) {
+            throw new ResourceNotFoundException("No offer with offerId %s found".formatted(offerId));
+        }
+
+        return toCredentialManagementDto(applicationProperties, mgmt, Set.of(offer.get()));
     }
 
     /**
@@ -159,6 +185,30 @@ public class CredentialManagementService {
         }
 
         return toStatusResponseDto(credentialManagement);
+    }
+
+    /**
+     * Retrieve the current status of a specific credential offer.
+     *
+     * <p>Loads the credential and returns a mapped {@link StatusResponseDto}. This method is
+     * transactional and not read-only because loading the credential may update its state when
+     * the offer has expired.</p>
+     *
+     * @param credentialManagementId the id of the credential offer
+     * @param offerId the id of the offer
+     * @return the {@link StatusResponseDto} representing the credential's current status
+     * @throws ResourceNotFoundException if no credential with the given id exists
+     */
+    @Transactional
+    public StatusResponseDto getCredentialOfferStatus(UUID credentialManagementId, UUID offerId) {
+        CredentialManagement credentialManagement = getCredentialManagementWithExpirationCheck(credentialManagementId);
+
+        var offer = credentialManagement.getCredentialOffers().stream().filter(x -> x.getId().equals(offerId)).findFirst();
+        if (offer.isEmpty()) {
+            throw new ResourceNotFoundException("No offer with offerId %s found".formatted(offerId));
+        }
+
+        return toStatusResponseDto(offer.get());
     }
 
     /**
