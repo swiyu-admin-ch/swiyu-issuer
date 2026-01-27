@@ -34,7 +34,7 @@ class EncryptionServiceTest {
     void setUp() {
         setupMockRepository();
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
-        issuerMetadata = new IssuerMetadata();
+        issuerMetadata = IssuerMetadata.builder().build();
         encryptionService = new EncryptionService(
                 applicationProperties,
                 encryptionKeyRepository,

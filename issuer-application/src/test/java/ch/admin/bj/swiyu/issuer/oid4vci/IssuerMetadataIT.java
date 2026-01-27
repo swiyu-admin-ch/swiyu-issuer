@@ -18,20 +18,12 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @Testcontainers
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "signed-metadata"})
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class IssuerMetadataIT {
 
     @Autowired
     IssuerMetadata issuerMetadata;
-
-    private SupportedProofType getSupportedProofType(IssuerMetadata metadata, String credentialConfigurationId) {
-        var credentialConfigurations = metadata.getCredentialConfigurationSupported();
-        assertTrue(credentialConfigurations.containsKey(credentialConfigurationId), "Credential configuration '" + credentialConfigurationId + "' not found");
-        var proofTypesSupported = credentialConfigurations.get(credentialConfigurationId).getProofTypesSupported();
-        assertTrue(proofTypesSupported.containsKey("jwt"), "Proof type 'jwt' not found");
-        return proofTypesSupported.get("jwt");
-    }
 
     @Test
     void testNoKeyAttestation() {
@@ -57,5 +49,13 @@ class IssuerMetadataIT {
         assertEquals(1, allowedAttackPotentialResistanceOptions.size());
         assertTrue(allowedAttackPotentialResistanceOptions.contains(AttackPotentialResistance.ISO_18045_HIGH));
 
+    }
+
+    private SupportedProofType getSupportedProofType(IssuerMetadata metadata, String credentialConfigurationId) {
+        var credentialConfigurations = metadata.getCredentialConfigurationSupported();
+        assertTrue(credentialConfigurations.containsKey(credentialConfigurationId), "Credential configuration '" + credentialConfigurationId + "' not found");
+        var proofTypesSupported = credentialConfigurations.get(credentialConfigurationId).getProofTypesSupported();
+        assertTrue(proofTypesSupported.containsKey("jwt"), "Proof type 'jwt' not found");
+        return proofTypesSupported.get("jwt");
     }
 }

@@ -80,7 +80,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Blackbox Test")
 @AutoConfigureMockMvc
 @Testcontainers
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "signed-metadata"})
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class BlackboxIT {
     private static final String CREDENTIAL_MANAGEMENT_BASE_URL = "/management/api/credentials";
@@ -271,7 +271,7 @@ class BlackboxIT {
         assertDoesNotThrow(() -> oauthConfigJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
         var oauthConfig = assertDoesNotThrow(() -> objectMapper.readValue(oauthConfigJwt.getPayload().toString(),
                 OpenIdConfigurationDto.class));
-        assertThat(oauthConfig.issuer()).isEqualTo(baseIssuerUri);
+        assertThat(oauthConfig.issuer()).isEqualTo(issuerUri.toString());
 
         var issuerMetadataResponse = assertDoesNotThrow(() -> mvc.perform(get(
                         "%s/.well-known/openid-credential-issuer".formatted(issuerUriPath))
@@ -290,7 +290,7 @@ class BlackboxIT {
                 .keySet())
                 .as("The issuer must declare in its metadata that is offers the credential type offered")
                 .containsAll(offeredCredentialIds);
-        assertThat(issuerMetadata.getCredentialIssuer()).isEqualTo(baseIssuerUri);
+        assertThat(issuerMetadata.getCredentialIssuer()).isEqualTo(issuerUri.toString());
 
 
         // Fetch the bearer token

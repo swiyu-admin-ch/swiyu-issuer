@@ -140,7 +140,7 @@ class IssuanceControllerIT {
 
     @Test
     void testGetIssuerMetadataWithSignedMetadata_thenSuccess() throws Exception {
-
+        // Override with always enabled signed metadata
         when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
 
         String minPayloadWithEmptySubject = String.format(
@@ -187,7 +187,7 @@ class IssuanceControllerIT {
          * exp: Optional the time when the Metadata are expiring -> default 24h
          */
 
-        assertEquals("http://localhost:8080", claims.get("sub"));
+        assertEquals(issuerUrl, claims.get("sub"));
         assertNotNull(claims.get("iat"));
         assertNotNull(claims.get("exp"));
     }

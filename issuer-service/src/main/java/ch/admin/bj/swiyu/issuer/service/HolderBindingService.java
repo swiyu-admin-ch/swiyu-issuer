@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Se
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import lombok.AllArgsConstructor;
+import org.hibernate.boot.Metadata;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -24,8 +25,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @AllArgsConstructor
 public class HolderBindingService {
 
-    private final IssuerMetadata issuerMetadata;
-    private final OpenIdIssuerConfiguration openIDConfiguration;
+    private final MetadataService metadataService;
     private final NonceService nonceService;
     private final KeyAttestationService keyAttestationService;
     private final ApplicationProperties applicationProperties;
@@ -33,6 +33,7 @@ public class HolderBindingService {
     public List<ProofJwt> getValidateHolderPublicKeys(CredentialRequestClass credentialRequest,
                                                       CredentialOffer credentialOffer) throws Oid4vcException {
 
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId()
                         .getFirst());
@@ -105,6 +106,7 @@ public class HolderBindingService {
                                                  CredentialOffer credentialOffer) {
 
         var mgmt = credentialOffer.getCredentialManagement();
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId()
                         .getFirst());
@@ -130,7 +132,7 @@ public class HolderBindingService {
                 .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
                         "Provided proof is not supported for the credential requested."));
         if (!requestProof.isValidHolderBinding(
-                openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
+                issuerMetadata.getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),
                 credentialOffer.getNonce(),
                 mgmt.getAccessTokenExpirationTimestamp())) {
@@ -155,6 +157,7 @@ public class HolderBindingService {
             Oid4vcException {
 
         var mgmt = credentialOffer.getCredentialManagement();
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
 
         var requestProof = proofJwt.orElseThrow(() ->
                 new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential"));
@@ -167,7 +170,7 @@ public class HolderBindingService {
         }
 
         if (!requestProof.isValidHolderBinding(
-                openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
+                issuerMetadata.getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),
                 credentialOffer.getNonce(),
                 mgmt.getAccessTokenExpirationTimestamp())) {
@@ -183,5 +186,12 @@ public class HolderBindingService {
         keyAttestationService.validateAndGetHolderKeyAttestation(bindingProofType, requestProof);
 
         return requestProof;
+    }
+
+    private IssuerMetadata getIssuerMetadata(UUID tenantId) {
+        if (applicationProperties.isSignedMetadataEnabled()) {
+            return metadataService.getUnsignedIssuerMetadata(tenantId);
+        }
+        return metadataService.getUnsignedIssuerMetadata();
     }
 }

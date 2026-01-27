@@ -12,10 +12,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
-import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
-import ch.admin.bj.swiyu.issuer.service.KeyAttestationService;
-import ch.admin.bj.swiyu.issuer.service.NonceService;
-import ch.admin.bj.swiyu.issuer.service.OpenIdIssuerConfiguration;
+import ch.admin.bj.swiyu.issuer.service.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,8 +40,10 @@ class HolderBindingServiceTest {
         nonceService = mock(NonceService.class);
         KeyAttestationService keyAttestationService = mock(KeyAttestationService.class);
         ApplicationProperties applicationProperties = mock(ApplicationProperties.class);
+        var metadataService = mock(MetadataService.class);
+        when(metadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
         holderBindingService = new HolderBindingService(
-                issuerMetadata, openIdIssuerConfiguration, nonceService, keyAttestationService, applicationProperties
+                metadataService, nonceService, keyAttestationService, applicationProperties
         );
     }
 

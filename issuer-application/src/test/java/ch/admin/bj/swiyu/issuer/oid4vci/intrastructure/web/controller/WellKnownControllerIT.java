@@ -34,19 +34,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "signed-metadata"})
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
 class WellKnownControllerIT {
+    protected CredentialOfferTestHelper testHelper;
     @Autowired
     private MockMvc mock;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
     private SdjwtProperties sdjwtProperties;
-
-    protected CredentialOfferTestHelper testHelper;
-
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired

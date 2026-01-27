@@ -18,6 +18,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -27,6 +29,8 @@ import java.util.Map;
  * The issuer metadata represented here are the fields used for technical decisions in creating the VC.
  */
 @Data
+@SuperBuilder(toBuilder = true)
+@RequiredArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Validated
 @Schema(name = "IssuerMetadata", description = """
