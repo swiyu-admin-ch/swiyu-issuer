@@ -40,7 +40,7 @@ class JweServiceTest {
     void setUp() {
         setupMockRepository();
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
-        issuerMetadata = new IssuerMetadata();
+        issuerMetadata = IssuerMetadata.builder().build();
         encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository, new CacheCustomizer());
         jweService = new JweService(applicationProperties, issuerMetadata, encryptionKeyService);
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())

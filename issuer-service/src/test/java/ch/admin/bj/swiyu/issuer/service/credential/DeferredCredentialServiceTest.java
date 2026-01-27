@@ -81,8 +81,9 @@ class DeferredCredentialServiceTest {
                 .build();
         mgmt.addCredentialOffer(offer);
 
-        IssuerMetadata metadata = new IssuerMetadata();
-        metadata.setVersion("1.0.0");
+        IssuerMetadata metadata = IssuerMetadata.builder()
+                .version("1.0.0")
+                .build();
 
         var request = new CredentialRequestClass();
         offer.setCredentialRequest(request);

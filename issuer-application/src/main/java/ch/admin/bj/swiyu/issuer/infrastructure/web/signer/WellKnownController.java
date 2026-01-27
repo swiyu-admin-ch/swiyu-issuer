@@ -76,7 +76,7 @@ public class WellKnownController {
             return metadataService.getSignedIssuerMetadata(tenantId);
         }
 
-        return metadataService.getUnsignedIssuerMetadata();
+        return metadataService.getUnsignedIssuerMetadata(tenantId);
     }
 
     @GetMapping(value = {"/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/oauth-authorization-server", "/{tenantId}/.well-known/oauth-authorization-server"})
@@ -89,7 +89,7 @@ public class WellKnownController {
             return metadataService.getSignedOpenIdConfiguration(tenantId);
         }
 
-        return metadataService.getUnsignedOpenIdConfiguration();
+        return metadataService.getUnsignedOpenIdConfiguration(tenantId);
     }
 
     private static boolean expectsSignedResponse(String acceptHeader) {

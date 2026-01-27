@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @Testcontainers
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "signed-metadata"})
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class IssuerMetadataIT {
 
