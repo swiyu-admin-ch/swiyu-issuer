@@ -41,6 +41,7 @@ class MetadataServiceTest {
     private MetadataService metadataService;
     private ConfigurationOverride override;
     private ApplicationProperties applicationProperties;
+    private IssuerMetadata defaultTestIssuerMetadata;
 
     @BeforeEach
     void setUp() {
@@ -52,6 +53,12 @@ class MetadataServiceTest {
         jweService = mock(JweService.class);
         demonstratingProofOfPossessionService = mock(DemonstratingProofOfPossessionService.class);
 
+        defaultTestIssuerMetadata = IssuerMetadata.builder()
+                .credentialIssuer(externalUrl)
+                .version("1.0.0")
+                .build();
+        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(defaultTestIssuerMetadata);
+
         // ObjectMapper not needed for tested methods here
         metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, signatureService, jweService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
 
@@ -62,22 +69,15 @@ class MetadataServiceTest {
 
     @Test
     void getUnsignedIssuerMetadata_returnsMap() {
-        IssuerMetadata metadata = new IssuerMetadata();
-        metadata.setVersion("1.0.0");
-        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
-
         IssuerMetadata result = metadataService.getUnsignedIssuerMetadata();
 
         assertNotNull(result);
-        assertEquals(metadata, result);
+        assertEquals(defaultTestIssuerMetadata, result);
     }
 
     @Test
     void getSignedIssuerMetadata_successfulSigning_returnsJwt() throws Exception {
         UUID tenantId = UUID.randomUUID();
-        IssuerMetadata metadata = new IssuerMetadata();
-        metadata.setVersion("1.0.0");
-        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = createDummySigner();
@@ -105,7 +105,7 @@ class MetadataServiceTest {
     void getSignedIssuerMetadata_throwsConfigurationException_onJoseException() throws Exception {
         UUID tenantId = UUID.randomUUID();
 
-        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(new IssuerMetadata());
+        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(IssuerMetadata.builder().build());
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = mock(JWSSigner.class);
@@ -118,7 +118,7 @@ class MetadataServiceTest {
     @Test
     void getSignedOpenIdConfiguration_successfulSigning_returnsJwt() throws Exception {
         UUID tenantId = UUID.randomUUID();
-        var oidConfig = new OpenIdConfigurationDto("issuer", "token_endpoint", null);
+        var oidConfig = new OpenIdConfigurationDto(externalUrl, "token_endpoint", null);
         when(demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(Mockito.any())).thenReturn(oidConfig);
 
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
@@ -131,8 +131,10 @@ class MetadataServiceTest {
         String jwt = svc.getSignedOpenIdConfiguration(tenantId);
         assertNotNull(jwt);
         SignedJWT parsed = SignedJWT.parse(jwt);
-        assertEquals(externalUrl, parsed.getJWTClaimsSet().getSubject());
-        assertEquals("issuer", parsed.getJWTClaimsSet().getStringClaim("issuer"));
+        // Constructing the expected tenant's credential issuer identifier
+        String credentialIssuerIdentifier = String.format("%s/%s", externalUrl, tenantId);
+        assertEquals(credentialIssuerIdentifier, parsed.getJWTClaimsSet().getSubject(), "Subject claim must be the credential issuer identifier");
+        assertEquals(credentialIssuerIdentifier, parsed.getJWTClaimsSet().getStringClaim("issuer"), "Issuer claim must be the credential issuer identifier");
         assertEquals("token_endpoint", parsed.getJWTClaimsSet().getStringClaim("token_endpoint"));
     }
 

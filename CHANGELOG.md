@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Allow encryption to be used for deferred credential request
 - Allow wallets changing the deferred credential request encryption key using credential_response_encryption
+- When using signed metadata with generates dynamic tenant ids, the tenant id is now automatically added to the
+  credential issuer identifiers
 
 ## 2.3.0
 
