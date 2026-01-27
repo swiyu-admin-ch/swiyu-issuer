@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Latest
 
+### Added
+
 - New endpoint `/actuator/env` to retrieve configuration details.
+
+### Fixed
+
+- Fixed weak unlinkability by rounding down the timestamps within issued credetials.
+    - Affected fields are iat, epx, and nbf.
 
 ## 2.3.0
 
