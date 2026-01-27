@@ -202,15 +202,9 @@ public class IssuanceController {
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
                                                    @RequestHeader(name = SWIYU_API_VERSION_HTTP_HEADER, required = false) String version,
                                                    @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
-                                                   @NotNull @RequestBody String requestDto,
+                                                   @NotNull @RequestBody String requestMessage,
                                                    HttpServletRequest request) throws IOException {
-        String requestString = requestDto;
-        // Decrypt if holder sent an encrypted
-        if (StringUtils.equalsIgnoreCase("application/jwt", request.getContentType())) {
-            requestString = jweService.decrypt(requestDto);
-        } else if (jweService.isRequestEncryptionMandatory()) {
-            throw new IllegalArgumentException("Credential Request must be encrypted");
-        }
+        String unparsedRequestDto = jweService.decryptRequest(requestMessage, request.getContentType());
 
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
         var clientInfo = getClientAgentInfo(request);
@@ -221,11 +215,11 @@ public class IssuanceController {
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
 
         if (API_VERSION_OID4VCI_1_0.equals(version)) {
-            var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDtoV2.class);
+            var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDtoV2.class);
             validateRequestDtoOrThrow(dto, validator);
             credentialEnvelope = credentialServiceOrchestrator.createCredentialV2(dto, accessToken, clientInfo, dpop);
         } else {
-            var dto = objectMapper.readValue(requestString, CredentialEndpointRequestDto.class);
+            var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDto.class);
             validateRequestDtoOrThrow(dto, validator);
 
             credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo);
@@ -295,16 +289,11 @@ public class IssuanceController {
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
                                                            @RequestHeader(name = SWIYU_API_VERSION_HTTP_HEADER, required = false) String version,
                                                            @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
-                                                           @NotNull @RequestBody String requestDto,
+                                                           @NotNull @RequestBody String requestMessage,
                                                            HttpServletRequest request) throws IOException {
-        String requestString = requestDto;
-        // Decrypt if holder sent an encrypted
-        if (StringUtils.equalsIgnoreCase("application/jwt", request.getContentType())) {
-            requestString = jweService.decrypt(requestDto);
-        } else if (jweService.isRequestEncryptionMandatory()) {
-            throw new IllegalArgumentException("Credential Request must be encrypted");
-        }
-        DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = objectMapper.readValue(requestString, DeferredCredentialEndpointRequestDto.class);
+        String unparsedRequestDto = jweService.decryptRequest(requestMessage, request.getContentType());
+
+        DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
 
         CredentialEnvelopeDto credentialEnvelope;
 
