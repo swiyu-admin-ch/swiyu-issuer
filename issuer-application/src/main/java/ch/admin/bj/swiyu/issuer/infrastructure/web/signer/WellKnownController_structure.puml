@@ -24,9 +24,9 @@ config=StructureConfiguration;
     "treatFinalFieldsAsMandatory": false
   },
   "graphRestriction": {
-    "classPackageExcludeFilter": "*domain*",
+    "classPackageExcludeFilter": "",
     "classPackageIncludeFilter": "",
-    "classNameExcludeFilter": "*Dto;*Mapper;*Properties;*Exception;*Configuration",
+    "classNameExcludeFilter": "*Dto;*Mapper;*Properties",
     "classNameIncludeFilter": "",
     "methodNameExcludeFilter": "",
     "methodNameIncludeFilter": "",
@@ -63,10 +63,10 @@ config=StructureConfiguration;
   "details": {
     "aggregation": "GroupByClass", // ByClass, GroupByClass, None
     "showClassGenericTypes": false,
-    "showMethods": true,
-    "showMethodParameterNames": true,
-    "showMethodParameterTypes": true,
-    "showMethodReturnType": true,
+    "showMethods": false,
+    "showMethodParameterNames": false,
+    "showMethodParameterTypes": false,
+    "showMethodReturnType": false,
     "showPackageLevels": 5,
     "showDetailedClassStructure": false
   },
@@ -121,14 +121,14 @@ subgraph cluster_92668751 {
 ];
 } 
 
-subgraph cluster_2017206988 { 
-   	label=common
+subgraph cluster_2045824421 { 
+   	label=domain
 	labeljust=l
 	fillcolor="#b0b0b0"
 	style=filled
    
-   CacheCustomizer1858348955[
-	label="(C)CacheCustomizer"
+   ConfigurationOverride1875433733[
+	label="(C)ConfigurationOverride"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
@@ -148,43 +148,15 @@ subgraph cluster_857347596 {
 	fillcolor="#FFFFFF"
 ];
 
-DataIntegrityService354864683[
-	label="(C)DataIntegrityService"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-DemonstratingProofOfPossessionService354864683[
+DemonstratingProofOfPossessionService83998032[
 	label="(C)DemonstratingProofOfPossessionService"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
 ];
 
-DemonstratingProofOfPossessionValidationService354864683[
-	label="(C)DemonstratingProofOfPossessionValidationService"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-EncryptionService354864683[
-	label="(C)EncryptionService"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-KeyManagementStrategyFactory245844921[
-	label="(C)KeyManagementStrategyFactory"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-KeyStrategy2073312966[
-	label="(C)KeyStrategy"
+EncryptionJweService1803825815[
+	label="(C)EncryptionJweService"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
@@ -197,29 +169,8 @@ MetadataService354864683[
 	fillcolor="#FFFFFF"
 ];
 
-NonceService354864683[
-	label="(C)NonceService"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-OAuthService354864683[
-	label="(C)OAuthService"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-PKCS11Strategy2073312966[
-	label="(C)PKCS11Strategy"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
-
-SecurosysStrategy2073312966[
-	label="(C)SecurosysStrategy"
+OpenIdIssuerConfiguration354864683[
+	label="(C)OpenIdIssuerConfiguration"
 	style=filled
 	shape=rect
 	fillcolor="#FFFFFF"
@@ -231,13 +182,6 @@ SignatureService354864683[
 	shape=rect
 	fillcolor="#FFFFFF"
 ];
-
-StatusListService354864683[
-	label="(C)StatusListService"
-	style=filled
-	shape=rect
-	fillcolor="#FFFFFF"
-];
 } 
 } 
 } 
@@ -245,34 +189,19 @@ StatusListService354864683[
 } 
 
 'edges    
-CredentialManagementService354864683 -> DataIntegrityService354864683[label="dataIntegrityService
-[0..1]"];
-CredentialManagementService354864683 -> StatusListService354864683[label="statusListService
-[0..1]"];
-DemonstratingProofOfPossessionService354864683 -> DemonstratingProofOfPossessionValidationService354864683[label="demonstratingProofOfPossessionValidationService
-[0..1]"];
-DemonstratingProofOfPossessionService354864683 -> NonceService354864683[label="nonceService
-[0..1]"];
-DemonstratingProofOfPossessionService354864683 -> OAuthService354864683[label="oAuthService
-[0..1]"];
-EncryptionService354864683 -> CacheCustomizer1858348955[label="cacheCustomizer
-[0..1]"];
 MetadataService354864683 -> CredentialManagementService354864683[label="credentialManagementService
 [0..1]"];
-MetadataService354864683 -> DemonstratingProofOfPossessionService354864683[label="demonstratingProofOfPossessionService
+MetadataService354864683 -> DemonstratingProofOfPossessionService83998032[label="demonstratingProofOfPossessionService
 [0..1]"];
-MetadataService354864683 -> EncryptionService354864683[label="encryptionService
+MetadataService354864683 -> EncryptionJweService1803825815[label="encryptionJweService
+[0..1]"];
+MetadataService354864683 -> OpenIdIssuerConfiguration354864683[label="openIdIssuerConfiguration
 [0..1]"];
 MetadataService354864683 -> SignatureService354864683[label="signatureService
 [0..1]"];
-SignatureService354864683 -> KeyManagementStrategyFactory245844921[label="strategyFactory
+WellKnownController281199067 -> DemonstratingProofOfPossessionService83998032[label="demonstratingProofOfPossessionService
 [0..1]"];
-SignatureService354864683 -> KeyStrategy2073312966[arrowhead=none];
-SignatureService354864683 -> PKCS11Strategy2073312966[arrowhead=none];
-SignatureService354864683 -> SecurosysStrategy2073312966[arrowhead=none];
-WellKnownController281199067 -> DemonstratingProofOfPossessionService354864683[label="demonstratingProofOfPossessionService
-[0..1]"];
-WellKnownController281199067 -> EncryptionService354864683[label="encryptionService
+WellKnownController281199067 -> EncryptionJweService1803825815[label="encryptionJweService
 [0..1]"];
 WellKnownController281199067 -> MetadataService354864683[label="metadataService
 [0..1]"];
