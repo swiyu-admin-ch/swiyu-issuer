@@ -78,9 +78,14 @@
 
             <!-- centrally manage swiyu-jws-signature-service version -->
             <dependency>
-                <groupId>io.github.swiyu-admin-ch</groupId>
+                <groupId>ch.admin.swiyu</groupId>
                 <artifactId>swiyu-jws-signature-service</artifactId>
-                <version>1.0.1</version>
+                <version>1.1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.admin.swiyu</groupId>
+                <artifactId>swiyu-did-resolver-adapter</artifactId>
+                <version>1.1.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
