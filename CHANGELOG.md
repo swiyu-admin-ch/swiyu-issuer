@@ -11,10 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New endpoint `/actuator/env` to retrieve configuration details.## 2.3.1
 
+## 2.3.1
+
 ### Fixed
 
 - Allow encryption to be used for deferred credential request
-- Allow wallets changing the deferred credential request encryption key using
+- Allow wallets changing the deferred credential request encryption key using credential_response_encryption
 
 ## 2.3.0
 

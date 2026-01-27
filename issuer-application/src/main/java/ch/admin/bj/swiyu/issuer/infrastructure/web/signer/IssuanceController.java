@@ -240,7 +240,7 @@ public class IssuanceController {
     }
 
     @Timed
-    @PostMapping(value = {"/deferred_credential"}, consumes = {"application/json"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
+    @PostMapping(value = {"/deferred_credential"}, consumes = {"application/json", "application/jwt"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
     @Operation(
             summary = "Collect credential associated with the bearer token and the transaction id. This endpoint is used for deferred issuance.",
             description = "Issues a credential for a deferred transaction. Requires a valid bearer token and transaction details in the request body.",
@@ -257,6 +257,21 @@ public class IssuanceController {
                             in = ParameterIn.HEADER
                     )
             },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = {
+                            @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = DeferredCredentialEndpointRequestDto.class)
+                            ),
+                            @Content(
+                                    mediaType = "application/jwt", // See: OID4VCI 1.0 Chapter 10
+                                    schema = @Schema(implementation = String.class, description = """
+                                            An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
+                                            """)
+                            )
+                    }
+            ),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -280,8 +295,16 @@ public class IssuanceController {
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
                                                            @RequestHeader(name = SWIYU_API_VERSION_HTTP_HEADER, required = false) String version,
                                                            @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
-                                                           @Valid @RequestBody DeferredCredentialEndpointRequestDto deferredCredentialRequestDto,
-                                                           HttpServletRequest request) {
+                                                           @NotNull @RequestBody String requestDto,
+                                                           HttpServletRequest request) throws IOException {
+        String requestString = requestDto;
+        // Decrypt if holder sent an encrypted
+        if (StringUtils.equalsIgnoreCase("application/jwt", request.getContentType())) {
+            requestString = jweService.decrypt(requestDto);
+        } else if (jweService.isRequestEncryptionMandatory()) {
+            throw new IllegalArgumentException("Credential Request must be encrypted");
+        }
+        DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = objectMapper.readValue(requestString, DeferredCredentialEndpointRequestDto.class);
 
         CredentialEnvelopeDto credentialEnvelope;
 
