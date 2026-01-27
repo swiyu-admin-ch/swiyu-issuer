@@ -2,8 +2,8 @@ package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
-import ch.admin.bj.swiyu.issuer.service.SignatureService;
-import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
+import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -29,20 +29,20 @@ import static org.mockito.Mockito.when;
 class SigningKeyVerificationHealthCheckerTest {
 
     private KeyResolver keyResolver;
-    private SignatureService signatureService;
+    private JwsSignatureFacade jwsSignatureFacade;
     private SdjwtProperties properties;
 
     // Concrete minimal subclass to expose performCheck
     private static class TestChecker extends AbstractSigningKeyVerificationHealthChecker<SdjwtProperties> {
-        protected TestChecker(KeyResolver keyResolver, SignatureService signatureService, SdjwtProperties properties) {
-            super(keyResolver, signatureService, properties);
+        protected TestChecker(KeyResolver keyResolver, JwsSignatureFacade jwsSignatureFacade, SdjwtProperties properties) {
+            super(keyResolver, jwsSignatureFacade, properties);
         }
     }
 
     @BeforeEach
     void setup() throws JOSEException, KeyStrategyException, ParseException {
         keyResolver = Mockito.mock(KeyResolver.class);
-        signatureService = Mockito.mock(SignatureService.class);
+        jwsSignatureFacade = Mockito.mock(JwsSignatureFacade.class);
         properties = new SdjwtProperties();
         properties.setVerificationMethod("did:example:123#key-1");
 
@@ -52,12 +52,12 @@ class SigningKeyVerificationHealthCheckerTest {
 
         // Provide a signer that can sign ES256
         JWSSigner signer = new ECDSASigner(ecKey.toECPrivateKey());
-        when(signatureService.createSigner(any(), any(), any())).thenReturn(signer);
+        when(jwsSignatureFacade.createSigner(any(), any(), any())).thenReturn(signer);
     }
 
     @Test
     void performCheck_successfulVerification_setsUpStatus() {
-        var checker = new TestChecker(keyResolver, signatureService, properties);
+        var checker = new TestChecker(keyResolver, jwsSignatureFacade, properties);
         Health.Builder builder = Health.up(); // initial state, will be overridden
         checker.performCheck(builder);
         var result = builder.build();
@@ -70,7 +70,7 @@ class SigningKeyVerificationHealthCheckerTest {
     void performCheck_failedDidResolution_setsDownStatus() {
         properties.setVerificationMethod("did:example:unknown#k1");
         when(keyResolver.resolveKey("did:example:unknown#k1")).thenReturn(null); // simulate failure
-        var checker = new TestChecker(keyResolver, signatureService, properties);
+        var checker = new TestChecker(keyResolver, jwsSignatureFacade, properties);
         Health.Builder builder = Health.up();
         checker.performCheck(builder);
         var result = builder.build();

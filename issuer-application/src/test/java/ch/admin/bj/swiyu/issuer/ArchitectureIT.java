@@ -11,7 +11,7 @@ import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
-import ch.admin.bj.swiyu.issuer.service.SignatureService;
+import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionValidationService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
@@ -168,7 +168,7 @@ public class ArchitectureIT {
                 .beFreeOfCycles()
                 .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
                 .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class)
-                .ignoreDependency(StatusListSigningService.class, SignatureService.class) // ignore while refactoring
+                .ignoreDependency(StatusListSigningService.class, JwsSignatureFacade.class) // ignore while refactoring
                 .ignoreDependency(DemonstratingProofOfPossessionValidationService.class, NonceService.class) // ignore while refactoring
                 .ignoreDependency(DemonstratingProofOfPossessionService.class, NonceService.class) // ignore while refactoring
                 .ignoreDependency(DemonstratingProofOfPossessionService.class, OAuthService.class); // ignore while refactoring

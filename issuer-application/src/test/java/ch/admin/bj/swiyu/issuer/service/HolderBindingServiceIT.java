@@ -54,7 +54,7 @@ class HolderBindingServiceIT {
     @Autowired
     private HolderBindingService holderBindingService;
     @MockitoBean
-    private DidKeyResolver didKeyResolver;
+    private DidKeyResolverFacade didKeyResolver;
 
     private ECKey attestationKey;
 

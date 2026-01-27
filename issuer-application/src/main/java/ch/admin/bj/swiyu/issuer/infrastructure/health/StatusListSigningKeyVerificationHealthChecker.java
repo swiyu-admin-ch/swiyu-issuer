@@ -3,7 +3,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
-import ch.admin.bj.swiyu.issuer.service.SignatureService;
+import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,7 +14,7 @@ public class StatusListSigningKeyVerificationHealthChecker extends AbstractSigni
 
     public StatusListSigningKeyVerificationHealthChecker(KeyResolver keyResolver,
                                                          StatusListProperties statusListProperties,
-                                                         SignatureService signatureService) {
-        super(keyResolver, signatureService, statusListProperties);
+                                                         JwsSignatureFacade jwsSignatureFacade) {
+        super(keyResolver, jwsSignatureFacade, statusListProperties);
     }
 }

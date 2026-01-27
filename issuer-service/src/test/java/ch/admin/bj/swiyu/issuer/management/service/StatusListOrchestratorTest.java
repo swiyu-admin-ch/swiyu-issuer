@@ -11,11 +11,11 @@ import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.service.SignatureService;
+import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
-import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
+import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -50,7 +50,7 @@ class StatusListOrchestratorTest {
     private StatusRegistryClient statusRegistryClient;
     private StatusListRepository statusListRepository;
     private TransactionTemplate transaction;
-    private SignatureService signatureService;
+    private JwsSignatureFacade jwsSignatureFacade;
     private ECKey ecKey;
     private JWSSigner signer;
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
@@ -77,15 +77,15 @@ class StatusListOrchestratorTest {
             TransactionCallback<StatusList> callback = invocation.getArgument(0);
             return callback.doInTransaction(null);
         });
-        signatureService = Mockito.mock(SignatureService.class);
+        jwsSignatureFacade = Mockito.mock(JwsSignatureFacade.class);
         ecKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:mock#key1").generate();
         signer = new ECDSASigner(ecKey);
-        when(signatureService.createSigner(Mockito.any(), Mockito.any(), Mockito.any()))
+        when(jwsSignatureFacade.createSigner(Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(signer);
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         when(credentialOfferStatusRepository.countByStatusListId(Mockito.any())).thenReturn(0);
 
-        signingService = new StatusListSigningService(applicationProperties, statusListProperties, signatureService);
+        signingService = new StatusListSigningService(applicationProperties, statusListProperties, jwsSignatureFacade);
 
         statusListOrchestrator = new StatusListOrchestrator(
                 applicationProperties,

@@ -8,7 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
-import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.*;
@@ -32,7 +32,7 @@ public class MetadataService {
 
     private final OpenIdIssuerConfiguration openIdIssuerConfiguration;
     private final CredentialManagementService credentialManagementService;
-    private final SignatureService signatureService;
+    private final JwsSignatureFacade jwsSignatureFacade;
     private final JweService jweService;
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final SdjwtProperties sdjwtProperties;
@@ -110,7 +110,7 @@ public class MetadataService {
         try {
             JWSSigner signer;
 
-            signer = signatureService.createSigner(sdjwtProperties, override.keyId(), override.keyPin());
+            signer = jwsSignatureFacade.createSigner(sdjwtProperties, override.keyId(), override.keyPin());
 
 
             /*

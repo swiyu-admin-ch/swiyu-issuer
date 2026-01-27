@@ -40,7 +40,7 @@ public abstract class CredentialBuilder {
     private final DataIntegrityService dataIntegrityService;
     private final StatusListRepository statusListRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
-    private final SignatureService signatureService;
+    private final JwsSignatureFacade jwsSignatureFacade;
     private final VerifiableCredentialStatusFactory statusFactory;
     private CredentialResponseEncryptor credentialResponseEncryptor;
     private CredentialOffer credentialOffer;
@@ -52,14 +52,14 @@ public abstract class CredentialBuilder {
                       IssuerMetadata issuerMetadata,
                       DataIntegrityService dataIntegrityService,
                       StatusListRepository statusListRepository,
-                      SignatureService signatureService,
+                      JwsSignatureFacade jwsSignatureFacade,
                       CredentialOfferStatusRepository credentialOfferStatusRepository) {
         this.applicationProperties = applicationProperties;
         this.issuerMetadata = issuerMetadata;
         this.dataIntegrityService = dataIntegrityService;
         this.statusListRepository = statusListRepository;
         this.credentialOfferStatusRepository = credentialOfferStatusRepository;
-        this.signatureService = signatureService;
+        this.jwsSignatureFacade = jwsSignatureFacade;
         this.statusFactory = new VerifiableCredentialStatusFactory();
     }
 

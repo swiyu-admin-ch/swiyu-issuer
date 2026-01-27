@@ -9,7 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.At
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
-import ch.admin.bj.swiyu.issuer.service.DidKeyResolver;
+import ch.admin.bj.swiyu.issuer.service.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
@@ -60,7 +60,7 @@ class KeyAttestationFlowIT {
     private final UUID testOfferAnyAttestationId = UUID.randomUUID();
     private final UUID testOfferHighAttestationId = UUID.randomUUID();
     @MockitoBean
-    DidKeyResolver resolver;
+    DidKeyResolverFacade resolver;
 
     @Autowired
     MockMvc mock;
@@ -76,7 +76,7 @@ class KeyAttestationFlowIT {
     @MockitoBean
     AsyncCredentialEventHandler testEventListener;
     @Autowired
-    private DidKeyResolver didKeyResolver;
+    private DidKeyResolverFacade didKeyResolver;
 
     @BeforeEach
     void setUp() throws JOSEException {
