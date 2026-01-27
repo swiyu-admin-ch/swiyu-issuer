@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateCredentialStatus
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -246,11 +247,11 @@ class CredentialManagementServiceTest {
     }
 
     /**
-     * Verifies that {@link CredentialManagementService#getCredentialStatus(UUID)} returns the management status
+     * Verifies that {@link CredentialManagementService#getCredentialStatus(UUID)} returns the offer
      * during post-issuance.
      */
     @Test
-    void getCredentialStatus_shouldReturnMgmtStatus_whenPostIssuance() {
+    void getOfferStatus_shouldReturnStatus() {
         var mgmt = suspended.getCredentialManagement();
         when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
 
@@ -258,6 +259,43 @@ class CredentialManagementServiceTest {
 
         assertNotNull(response);
         assertNotNull(response.getStatus());
+    }
+
+    /**
+     * Verifies that {@link CredentialManagementService#getCredentialOfferStatus(UUID, UUID)} (UUID)} returns the offer status
+     */
+    @Test
+    void getCredentialOfferStatus_shouldReturnOfferStatus() {
+        var mgmt = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .credentialOffers(Set.of(valid))
+                .build();
+        valid.setCredentialManagement(mgmt);
+
+        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+
+        StatusResponseDto response = credentialService.getCredentialOfferStatus(mgmt.getId(), valid.getId());
+
+        assertNotNull(response);
+        assertNotNull(response.getStatus());
+    }
+
+    /**
+     * Verifies that {@link CredentialManagementService#getCredentialOfferStatus(UUID, UUID)} returns not found
+     */
+    @Test
+    void getCredentialOfferStatus_shouldReturnNotFound_whenNotInDB() {
+        var mgmt = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .credentialOffers(Set.of(valid))
+                .build();
+        valid.setCredentialManagement(mgmt);
+
+        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+
+        assertThrows(ResourceNotFoundException.class, () -> credentialService.getCredentialOfferStatus(mgmt.getId(), UUID.randomUUID()));
     }
 
     /**
