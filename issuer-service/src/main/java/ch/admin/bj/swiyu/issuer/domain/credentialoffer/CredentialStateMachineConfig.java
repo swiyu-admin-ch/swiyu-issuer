@@ -20,7 +20,8 @@ import java.util.EnumSet;
 @Configuration
 @Slf4j
 public class CredentialStateMachineConfig {
-
+    // TODO@MP define an action here, to produce the callback event
+    // check side effects and viability of this approach
     private static final String INVALIDATE_OFFER_DATA = "invalidateOfferData()";
     public static final String CREDENTIAL_OFFER_HEADER = "credential_offer";
     public static final String CREDENTIAL_MANAGEMENT_HEADER = "credential_management";

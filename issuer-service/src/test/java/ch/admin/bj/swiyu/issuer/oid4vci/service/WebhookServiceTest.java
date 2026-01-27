@@ -64,7 +64,7 @@ class WebhookServiceTest {
     @Test
     void produceStateChangeEvent_savesEvent() {
         UUID id = UUID.randomUUID();
-        webhookEventProducer.produceStateChangeEvent(id, CredentialOfferStatusType.ISSUED);
+        webhookEventProducer.produceOfferStateChangeEvent(id, CredentialOfferStatusType.ISSUED);
         verify(callbackEventRepository).save(any(CallbackEvent.class));
     }
 

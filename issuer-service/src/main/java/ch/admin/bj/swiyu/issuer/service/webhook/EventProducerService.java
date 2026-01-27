@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.webhook;
 
 import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
+import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventTrigger;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
@@ -35,7 +36,7 @@ public class EventProducerService {
         applicationEventPublisher.publishEvent(errorEvent);
     }
 
-    public void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusManagementType state) {
+    public void produceManagementStateChangeEvent(UUID credentialOfferId, CredentialStatusManagementType state) {
         var stateChangeEvent = new StateChangeEvent(
                 credentialOfferId,
                 state
@@ -44,12 +45,12 @@ public class EventProducerService {
     }
 
     public void produceOfferStateChangeEvent(UUID credentialManagementId, UUID credentialOfferId, CredentialOfferStatusType state) {
-        var stateChangeEvent = new OfferStateChangeEvent(
+        var offerStateChangeEvent = new OfferStateChangeEvent(
                 credentialManagementId,
                 credentialOfferId,
                 state
         );
-        applicationEventPublisher.publishEvent(stateChangeEvent);
+        applicationEventPublisher.publishEvent(offerStateChangeEvent);
     }
 
     public void produceDeferredEvent(CredentialOffer credentialOffer, ClientAgentInfo clientInfo) {
