@@ -16,12 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed weak unlinkability by rounding down the timestamps within issued credetials.
-<<<<<<< HEAD
-    - Affected fields are iat, epx, and nbf.
-=======
   Affected fields are iat, epx, and nbf.
 
->>>>>>> 6fc52c5c (Merge remote-tracking branch 'github/main' into fix/EIDOMNI-602_apply_fix_to_main)
 
 ## 2.3.1
 
