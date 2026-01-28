@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
-import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.WebhookProperties;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;

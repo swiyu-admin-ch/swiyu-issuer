@@ -6,7 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;

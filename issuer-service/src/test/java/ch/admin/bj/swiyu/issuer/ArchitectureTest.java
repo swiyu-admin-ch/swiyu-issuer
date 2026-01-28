@@ -6,9 +6,9 @@
 
 package ch.admin.bj.swiyu.issuer;
 
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.ValidStatusListMaxLengthValidator;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;

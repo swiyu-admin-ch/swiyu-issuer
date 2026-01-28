@@ -6,8 +6,8 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web;
 
-import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
-import ch.admin.bj.swiyu.issuer.api.exception.DpopErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.exception.DpopErrorDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import jakarta.validation.ConstraintViolationException;
@@ -27,9 +27,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

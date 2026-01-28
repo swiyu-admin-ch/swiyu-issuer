@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.renewal;
 
-import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferMetadataDto;
+import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

@@ -6,9 +6,9 @@
 
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;

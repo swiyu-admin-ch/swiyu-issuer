@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.mapper;
 
-import ch.admin.bj.swiyu.issuer.api.callback.CallbackEventTypeDto;
-import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackEventTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.callback.WebhookCallbackDto;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventType;
 import lombok.experimental.UtilityClass;

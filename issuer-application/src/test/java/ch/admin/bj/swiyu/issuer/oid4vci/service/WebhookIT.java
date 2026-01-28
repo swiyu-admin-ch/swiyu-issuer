@@ -1,9 +1,9 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.callback.CallbackEventTypeDto;
-import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
-import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackEventTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.callback.WebhookCallbackDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProcessor;
 import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProducer;

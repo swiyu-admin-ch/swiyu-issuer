@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.api.issuance_v2;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;

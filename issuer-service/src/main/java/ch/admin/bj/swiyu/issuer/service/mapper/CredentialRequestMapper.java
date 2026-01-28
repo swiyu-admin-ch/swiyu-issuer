@@ -6,9 +6,9 @@
 
 package ch.admin.bj.swiyu.issuer.service.mapper;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEndpointRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialResponseEncryptionDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
