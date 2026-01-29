@@ -1,9 +1,9 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 
+import ch.admin.bj.swiyu.didresolveradapter.DidResolverAdapter;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
-import ch.admin.bj.swiyu.issuer.service.DidKeyResolverApiClient;
 import ch.admin.eid.did_sidekicks.DidDoc;
 import ch.admin.eid.didresolver.Did;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
 
-    private final DidKeyResolverApiClient didKeyResolverApiClient;
+    private final DidResolverAdapter didResolverAdapter;
+
 
     private final ApplicationProperties applicationProperties;
 
@@ -74,10 +75,9 @@ public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
         }
         try (Did resolved = new Did(did)) {
             final String url = resolved.getUrl();
-            final String didLog = didKeyResolverApiClient.fetchDidLog(url);
-            final DidDoc doc = resolved.resolve(didLog);
+            DidDoc didDoc = didResolverAdapter.resolveDid(url, null);
 
-            return doc != null;
+            return didDoc != null;
         } catch (Exception e) {
             return false;
         }

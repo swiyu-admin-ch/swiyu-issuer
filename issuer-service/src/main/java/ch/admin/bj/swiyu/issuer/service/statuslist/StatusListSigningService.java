@@ -5,8 +5,8 @@ import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
-import ch.admin.bj.swiyu.issuer.service.SignatureService;
-import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
+import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -37,13 +37,13 @@ public class StatusListSigningService {
 
     private final ApplicationProperties applicationProperties;
     private final StatusListProperties statusListProperties;
-    private final SignatureService signatureService;
+    private final JwsSignatureFacade jwsSignatureFacade;
 
     public SignedJWT buildSignedStatusListJwt(StatusList statusList, TokenStatusListToken token) {
         SignedJWT jwt = buildUnsignedStatusListJwt(statusList, token);
         var override = statusList.getConfigurationOverride();
         try {
-            jwt.sign(signatureService.createSigner(statusListProperties, override.keyId(), override.keyPin()));
+            jwt.sign(jwsSignatureFacade.createSigner(statusListProperties, override.keyId(), override.keyPin()));
             return jwt;
         } catch (JOSEException | KeyStrategyException e) {
             log.error("Failed to sign status list JWT with the provided key.");

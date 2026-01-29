@@ -162,6 +162,15 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-jws-signature-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-did-resolver-adapter</artifactId>
+        </dependency>
+
 
         <!-- Test Dependencies -->
         <dependency>

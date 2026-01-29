@@ -23,7 +23,7 @@ public class CredentialFormatFactory {
     private final IssuerMetadata issuerMetadata;
     private final DataIntegrityService dataIntegrityService;
     private final SdjwtProperties sdjwtProperties;
-    private final SignatureService signatureService;
+    private final JwsSignatureFacade jwsSignatureFacade;
     private final StatusListRepository statusListRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
 
@@ -47,7 +47,7 @@ public class CredentialFormatFactory {
                             issuerMetadata,
                             dataIntegrityService,
                             sdjwtProperties,
-                            signatureService,
+                            jwsSignatureFacade,
                             statusListRepository,
                             credentialOfferStatusRepository);
                 } catch (Exception e) {
