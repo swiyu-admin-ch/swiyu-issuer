@@ -29,7 +29,6 @@ import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
-import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -70,8 +69,6 @@ class CredentialServiceOrchestratorTest {
     private CredentialConfiguration credentialConfiguration;
     private ApplicationEventPublisher applicationEventPublisher;
     private OAuthService oAuthService;
-    private CredentialManagementService credentialManagementService;
-    private BusinessIssuerRenewalApiClient renewalApiClient;
     private CredentialStateMachine credentialStateMachine;
 
 
@@ -86,8 +83,8 @@ class CredentialServiceOrchestratorTest {
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
         applicationEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
-        credentialManagementService = Mockito.mock(CredentialManagementService.class);
-        renewalApiClient = Mockito.mock(BusinessIssuerRenewalApiClient.class);
+        CredentialManagementService credentialManagementService = Mockito.mock(CredentialManagementService.class);
+        BusinessIssuerRenewalApiClient renewalApiClient = Mockito.mock(BusinessIssuerRenewalApiClient.class);
         credentialStateMachine = Mockito.mock(CredentialStateMachine.class);
 
         mockCredentialStateMachine(credentialStateMachine);
@@ -460,8 +457,7 @@ class CredentialServiceOrchestratorTest {
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);
-        var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
-        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
+        verify(credentialStateMachine).sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
     }
 
     @Test
@@ -511,8 +507,7 @@ class CredentialServiceOrchestratorTest {
         assertNull(credentialOffer.getClientAgentInfo());
 
         verify(credentialOfferRepository).save(credentialOffer);
-        var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), CredentialOfferStatusType.ISSUED);
-        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
+        verify(credentialStateMachine).sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
     }
 
     @Test
@@ -546,8 +541,7 @@ class CredentialServiceOrchestratorTest {
         assertEquals(600, token.getExpiresIn());
         assertEquals(credentialOffer.getNonce().toString(), token.getCNonce());
         verify(credentialManagementRepository).save(mgmt);
-        var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
-        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
+        verify(credentialStateMachine).sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
     }
 
     @Test
@@ -647,8 +641,7 @@ class CredentialServiceOrchestratorTest {
         credentialServiceOrchestrator.createCredentialV2(requestDto, accessToken.toString(), clientInfo, null);
 
         verify(credentialOfferRepository, atLeastOnce()).save(offer);
-        var stateChangeEvent = new OfferStateChangeEvent(mgmt.getId(), offer.getId(), CredentialOfferStatusType.IN_PROGRESS);
-        verify(applicationEventPublisher).publishEvent(stateChangeEvent);
+        verify(credentialStateMachine).sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
     }
 
     @Test

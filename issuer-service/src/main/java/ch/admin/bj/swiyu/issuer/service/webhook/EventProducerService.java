@@ -35,7 +35,7 @@ public class EventProducerService {
         applicationEventPublisher.publishEvent(errorEvent);
     }
 
-    public void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusManagementType state) {
+    public void produceManagementStateChangeEvent(UUID credentialOfferId, CredentialStatusManagementType state) {
         var stateChangeEvent = new StateChangeEvent(
                 credentialOfferId,
                 state
@@ -43,13 +43,12 @@ public class EventProducerService {
         applicationEventPublisher.publishEvent(stateChangeEvent);
     }
 
-    public void produceOfferStateChangeEvent(UUID credentialManagementId, UUID credentialOfferId, CredentialOfferStatusType state) {
-        var stateChangeEvent = new OfferStateChangeEvent(
-                credentialManagementId,
+    public void produceOfferStateChangeEvent(UUID credentialOfferId, CredentialOfferStatusType state) {
+        var offerStateChangeEvent = new OfferStateChangeEvent(
                 credentialOfferId,
                 state
         );
-        applicationEventPublisher.publishEvent(stateChangeEvent);
+        applicationEventPublisher.publishEvent(offerStateChangeEvent);
     }
 
     public void produceDeferredEvent(CredentialOffer credentialOffer, ClientAgentInfo clientInfo) {

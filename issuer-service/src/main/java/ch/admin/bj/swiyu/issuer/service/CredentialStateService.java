@@ -48,8 +48,7 @@ public class CredentialStateService {
      */
     public CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType> updateOfferStateAndPublish(
             CredentialOffer credentialOffer,
-            CredentialStateMachineConfig.CredentialOfferEvent event,
-            UUID credentialManagementId) {
+            CredentialStateMachineConfig.CredentialOfferEvent event) {
 
         var result = credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, event);
 
@@ -57,7 +56,7 @@ public class CredentialStateService {
             log.debug("Updating credential offer {} from previous state to {}",
                     credentialOffer.getId(), result.newStatus());
 
-            publishOfferStateChangeEvent(credentialManagementId, credentialOffer.getId(), result.newStatus());
+            publishOfferStateChangeEvent(credentialOffer.getId(), result.newStatus());
         }
 
         return result;
@@ -105,8 +104,7 @@ public class CredentialStateService {
         // Update CredentialOffer state first (leading in pre-issuance)
         var offerResult = updateOfferStateAndPublish(
                 credentialOffer,
-                offerEvent,
-                credentialManagement.getId());
+                offerEvent);
 
         // Update CredentialManagement state
         credentialStateMachine.sendEventAndUpdateStatus(credentialManagement, managementEvent);
@@ -150,7 +148,6 @@ public class CredentialStateService {
                 CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
 
         publishOfferStateChangeEvent(
-                credentialOffer.getCredentialManagement().getId(),
                 credentialOffer.getId(),
                 credentialOffer.getCredentialStatus());
 
@@ -187,12 +184,10 @@ public class CredentialStateService {
      * @param state                  the new state
      */
     private void publishOfferStateChangeEvent(
-            UUID credentialManagementId,
             UUID credentialOfferId,
             CredentialOfferStatusType state) {
 
         var stateChangeEvent = new OfferStateChangeEvent(
-                credentialManagementId,
                 credentialOfferId,
                 state);
         applicationEventPublisher.publishEvent(stateChangeEvent);

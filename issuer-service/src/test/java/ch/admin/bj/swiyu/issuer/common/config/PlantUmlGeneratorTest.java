@@ -1,9 +1,12 @@
 package ch.admin.bj.swiyu.issuer.common.config;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineAction;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.statemachine.StateMachine;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -22,7 +25,7 @@ class PlantUmlGeneratorTest {
      */
     @Test
     void exportStateMachinesToPlantUmlFiles() throws Exception {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(CredentialStateMachineConfig.class);
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(CredentialStateMachineConfig.class, CredentialStateMachineAction.class, EventProducerService.class, ObjectMapper.class);
 
         // Target directory for PlantUML files
         String outputDir = "src/main/resources/plantuml/";

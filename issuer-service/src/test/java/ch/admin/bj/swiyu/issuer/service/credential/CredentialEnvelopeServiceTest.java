@@ -102,7 +102,6 @@ class CredentialEnvelopeServiceTest {
         verify(credentialStateMachine).sendEventAndUpdateStatus(mgmt, CredentialStateMachineConfig.CredentialManagementEvent.ISSUE);
         verify(credentialOfferRepository).save(offer);
         verify(credentialManagementRepository).save(mgmt);
-        verify(eventProducerService).produceOfferStateChangeEvent(mgmt.getId(), offer.getId(), offer.getCredentialStatus());
     }
 
     @Test
@@ -137,7 +136,6 @@ class CredentialEnvelopeServiceTest {
         verify(credentialStateMachine).sendEventAndUpdateStatus(mgmt, CredentialStateMachineConfig.CredentialManagementEvent.ISSUE);
         verify(credentialOfferRepository).save(offer);
         verify(credentialManagementRepository).save(mgmt);
-        verify(eventProducerService).produceOfferStateChangeEvent(mgmt.getId(), offer.getId(), offer.getCredentialStatus());
     }
 
 

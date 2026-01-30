@@ -20,6 +20,8 @@ public class WebhookCallbackDto {
     private String event;
     @JsonProperty(value = "event_description")
     private String eventDescription;
+    @JsonProperty(value = "event_trigger")
+    private CallbackEventTriggerDto eventTrigger;
     @JsonProperty(value = "timestamp")
     private Instant timestamp;
 }

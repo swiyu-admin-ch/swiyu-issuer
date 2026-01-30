@@ -106,7 +106,6 @@ class DeferredCredentialServiceTest {
         verify(credentialManagementRepository).save(mgmt);
         verify(credentialStateMachine).sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
         verify(credentialStateMachine).sendEventAndUpdateStatus(mgmt, CredentialStateMachineConfig.CredentialManagementEvent.ISSUE);
-        verify(eventProducerService).produceOfferStateChangeEvent(mgmt.getId(), offer.getId(), offer.getCredentialStatus());
     }
 
     @Test
