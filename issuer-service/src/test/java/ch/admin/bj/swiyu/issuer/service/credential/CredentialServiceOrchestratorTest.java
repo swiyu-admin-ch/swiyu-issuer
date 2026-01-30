@@ -128,7 +128,7 @@ class CredentialServiceOrchestratorTest {
                 credentialRenewalService,
                 credentialStateMachine,
                 credentialOfferRepository
-                );
+        );
 
         credentialServiceOrchestrator = new CredentialServiceOrchestrator(
                 credentialIssuanceService,
@@ -313,6 +313,51 @@ class CredentialServiceOrchestratorTest {
         verify(applicationEventPublisher).publishEvent(stateChangeEvent);
     }
 
+    // only for V2!
+    @Test
+    void testCreateCredentialFromDeferredRequestV2_notReady_noException() {
+
+        UUID accessToken = UUID.randomUUID();
+
+        CredentialOffer credentialOffer = getCredentialOffer(
+                CredentialOfferStatusType.DEFERRED,
+                Instant.now().plusSeconds(600).getEpochSecond(),
+                Map.of(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                new CredentialOfferMetadata(true, null, null, null),
+                UUID.randomUUID());
+        var mgmt = CredentialManagement.builder()
+                .accessToken(accessToken)
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .credentialOffers(Set.of(credentialOffer))
+                .build();
+
+        credentialOffer.setCredentialManagement(mgmt);
+
+        // Mock the factory to return the builder
+        var sdJwtCredential = mock(SdJwtCredential.class);
+        when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
+
+        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId(), null);
+
+        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
+        when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
+
+        // Act
+        var accessTokenString = accessToken.toString();
+
+        credentialServiceOrchestrator.createCredentialFromDeferredRequestV2(deferredRequest, accessTokenString);
+
+
+    }
+
+    // only for V1!
     @Test
     void testCreateCredentialFromDeferredRequest_notReady_thenException() {
 
@@ -332,6 +377,16 @@ class CredentialServiceOrchestratorTest {
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .credentialOffers(Set.of(credentialOffer))
                 .build();
+
+        credentialOffer.setCredentialManagement(mgmt);
+
+        // Mock the factory to return the builder
+        var sdJwtCredential = mock(SdJwtCredential.class);
+        when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
+        when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
 
         DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId(), null);
 

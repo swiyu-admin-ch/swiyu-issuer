@@ -389,6 +389,7 @@ class DeferredFlowIT {
                 .andReturn();
     }
 
+    // only for V1, we return 400 when Issuance pending!
     @Test
     void testBoundDeferredFlow_thenIssuancePendingException() throws Exception {
 
