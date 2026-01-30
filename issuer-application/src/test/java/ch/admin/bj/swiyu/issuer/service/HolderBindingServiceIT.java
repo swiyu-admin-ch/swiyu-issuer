@@ -12,7 +12,9 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.At
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.credential.HolderBindingService;
+import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -37,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
+import static ch.admin.bj.swiyu.issuer.service.credential.CredentialRequestMapper.toCredentialRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest()

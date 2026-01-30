@@ -8,7 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachine;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
-import ch.admin.bj.swiyu.issuer.service.mapper.CredentialManagementMapper;
+import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementMapper;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;

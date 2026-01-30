@@ -9,7 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

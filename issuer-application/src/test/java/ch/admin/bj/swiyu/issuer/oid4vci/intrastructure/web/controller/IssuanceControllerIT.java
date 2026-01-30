@@ -15,7 +15,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.GsonBuilder;

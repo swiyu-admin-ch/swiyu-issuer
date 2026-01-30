@@ -9,7 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialBuilder;
-import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;

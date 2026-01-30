@@ -15,7 +15,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

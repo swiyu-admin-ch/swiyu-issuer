@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.service.CredentialManagementService;
+import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

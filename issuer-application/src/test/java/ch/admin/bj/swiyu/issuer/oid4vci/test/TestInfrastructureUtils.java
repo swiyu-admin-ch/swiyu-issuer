@@ -9,6 +9,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.test;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.authlete.sd.Disclosure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;

@@ -7,9 +7,8 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialBuilder;
-import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
-import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

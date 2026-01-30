@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ch.admin.bj.swiyu.issuer.service.CredentialMapper.oauthErrorToApiErrorDto;
-import static ch.admin.bj.swiyu.issuer.service.CredentialMapper.toCredentialRequestErrorResponseDto;
+import static ch.admin.bj.swiyu.issuer.infrastructure.web.CredentialMapper.oauthErrorToApiErrorDto;
+import static ch.admin.bj.swiyu.issuer.infrastructure.web.CredentialMapper.toCredentialRequestErrorResponseDto;
 import static org.springframework.http.HttpStatus.*;
 
 @RestControllerAdvice

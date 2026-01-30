@@ -10,9 +10,8 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialBuilder;
-import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
-import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

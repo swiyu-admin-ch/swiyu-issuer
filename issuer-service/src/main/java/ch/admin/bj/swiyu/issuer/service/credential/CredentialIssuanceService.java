@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
+import static ch.admin.bj.swiyu.issuer.service.credential.CredentialRequestMapper.toCredentialRequest;
 
 /**
  * Service responsible for handling the issuance of credentials, including both OID4VCI 1.0 (deprecated) and 2.0 flows.

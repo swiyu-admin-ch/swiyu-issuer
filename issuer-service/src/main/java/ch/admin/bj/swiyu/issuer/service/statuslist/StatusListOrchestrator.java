@@ -23,8 +23,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.io.IOException;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialOfferMapper.toConfigurationOverride;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusListMapper.toStatusListDto;
+import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toConfigurationOverride;
+import static ch.admin.bj.swiyu.issuer.service.statuslist.StatusListMapper.toStatusListDto;
 
 /**
  * Orchestrates all operations related to status lists, including creation, update, validation,
