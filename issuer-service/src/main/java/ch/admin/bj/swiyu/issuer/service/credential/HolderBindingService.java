@@ -30,8 +30,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @AllArgsConstructor
 public class HolderBindingService {
 
-    private final IssuerMetadata issuerMetadata;
-    private final OpenIdIssuerConfiguration openIDConfiguration;
+    private final MetadataService metadataService;
     private final NonceService nonceService;
     private final KeyAttestationService keyAttestationService;
     private final ApplicationProperties applicationProperties;
@@ -48,6 +47,7 @@ public class HolderBindingService {
     public List<ProofJwt> getValidateHolderPublicKeys(CredentialRequestClass credentialRequest,
                                                       CredentialOffer credentialOffer) throws Oid4vcException {
 
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
         var supportedProofTypes = resolveSupportedProofTypes(credentialOffer);
         if (supportedProofTypes.isEmpty()) {
             return List.of();
@@ -55,7 +55,7 @@ public class HolderBindingService {
 
         List<ProofJwt> proofs = extractProofs(credentialRequest);
         validateProofsPresence(proofs);
-        validateBatchIssuanceConstraints(proofs);
+        validateBatchIssuanceConstraints(proofs, issuerMetadata);
 
         var proofJwts = proofs.stream()
                 .map(proof -> validateProof(proof, credentialOffer, supportedProofTypes, this::ensureNonceNotReused))
@@ -91,6 +91,7 @@ public class HolderBindingService {
 
 
     private Map<String, SupportedProofType> resolveSupportedProofTypes(CredentialOffer credentialOffer) {
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId()
                         .getFirst());
@@ -114,7 +115,7 @@ public class HolderBindingService {
         }
     }
 
-    private void validateBatchIssuanceConstraints(List<ProofJwt> proofs) throws Oid4vcException {
+    private void validateBatchIssuanceConstraints(List<ProofJwt> proofs, IssuerMetadata issuerMetadata) throws Oid4vcException {
         var batchCredentialIssuanceMetadata = issuerMetadata.getBatchCredentialIssuance();
         if (batchCredentialIssuanceMetadata == null && proofs.size() > 1) {
             throw new Oid4vcException(INVALID_PROOF, "Multiple proofs are not allowed for this credential request");
@@ -158,8 +159,9 @@ public class HolderBindingService {
     private void validateHolderBinding(ProofJwt requestProof, SupportedProofType bindingProofType,
                                        CredentialOffer credentialOffer) throws Oid4vcException {
         var mgmt = credentialOffer.getCredentialManagement();
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
         if (!requestProof.isValidHolderBinding(
-                openIDConfiguration.getIssuerMetadata().getCredentialIssuer(),
+                issuerMetadata.getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),
                 credentialOffer.getNonce(),
                 mgmt.getAccessTokenExpirationTimestamp())) {
@@ -209,5 +211,12 @@ public class HolderBindingService {
     @FunctionalInterface
     private interface NonceHandler {
         void apply(ProofJwt proof) throws Oid4vcException;
+    }
+
+    private IssuerMetadata getIssuerMetadata(UUID tenantId) {
+        if (applicationProperties.isSignedMetadataEnabled()) {
+            return metadataService.getUnsignedIssuerMetadata(tenantId);
+        }
+        return metadataService.getUnsignedIssuerMetadata();
     }
 }

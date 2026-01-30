@@ -140,7 +140,7 @@ class IssuanceControllerIT {
 
     @Test
     void testGetIssuerMetadataWithSignedMetadata_thenSuccess() throws Exception {
-
+        // Override with always enabled signed metadata
         when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
 
         String minPayloadWithEmptySubject = String.format(
@@ -182,12 +182,12 @@ class IssuanceControllerIT {
         assertEquals(sdjwtProperties.getVerificationMethod(), headers.getKeyID());
 
         /*
-         * sub: Must match the issuer did
+         * sub: Must be the credential issuer identifier (generally external url)
          * iat: Must be the time when the JWT was issued
          * exp: Optional the time when the Metadata are expiring -> default 24h
          */
 
-        assertEquals("http://localhost:8080", claims.get("sub"));
+        assertEquals(issuerUrl, claims.get("sub"), "Subject must match the credential issuer identifier");
         assertNotNull(claims.get("iat"));
         assertNotNull(claims.get("exp"));
     }
