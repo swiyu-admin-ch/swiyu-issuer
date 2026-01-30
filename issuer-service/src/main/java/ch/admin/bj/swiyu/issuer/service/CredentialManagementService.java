@@ -91,15 +91,13 @@ public class CredentialManagementService {
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
-    public CredentialManagementDto getCredentialOfferInformation(UUID managementId, UUID offerId) {
-        var mgmt = persistenceService.findCredentialManagementById(managementId);
-
-        var offer = mgmt.getCredentialOffers().stream().filter(x -> x.getId().equals(offerId)).findFirst();
-        if (offer.isEmpty()) {
+    public CredentialInfoResponseDto getSpecificCredentialOfferInformation(UUID managementId, UUID offerId) {
+        var offer = getCredentialOfferWithExpirationCheck(offerId);
+        if (!offer.getCredentialManagement().getId().equals(managementId)) {
             throw new ResourceNotFoundException("No offer with offerId %s found".formatted(offerId));
         }
 
-        return toCredentialManagementDto(applicationProperties, mgmt, Set.of(offer.get()));
+        return toCredentialInfoResponseDto(offer, applicationProperties);
     }
 
     /**
@@ -201,14 +199,12 @@ public class CredentialManagementService {
      */
     @Transactional
     public StatusResponseDto getCredentialOfferStatus(UUID credentialManagementId, UUID offerId) {
-        CredentialManagement credentialManagement = getCredentialManagementWithExpirationCheck(credentialManagementId);
-
-        var offer = credentialManagement.getCredentialOffers().stream().filter(x -> x.getId().equals(offerId)).findFirst();
-        if (offer.isEmpty()) {
+        CredentialOffer offer = getCredentialOfferWithExpirationCheck(offerId);
+        if (!offer.getCredentialManagement().getId().equals(credentialManagementId)) {
             throw new ResourceNotFoundException("No offer with offerId %s found".formatted(offerId));
         }
 
-        return toStatusResponseDto(offer.get());
+        return toStatusResponseDto(offer);
     }
 
     /**
@@ -376,6 +372,19 @@ public class CredentialManagementService {
         });
 
         return persistenceService.saveCredentialManagement(mgmt);
+    }
+
+    private CredentialOffer getCredentialOfferWithExpirationCheck(UUID offerId) {
+        var offer = persistenceService.findCredentialOfferByIdForUpdate(offerId);
+
+        if (CredentialOfferStatusType.getExpirableStates()
+                .contains(
+                        offer.getCredentialStatus())
+                && offer.hasExpirationTimeStampPassed()) {
+            expireCredentialOffer(offer);
+        }
+
+        return offer;
     }
 
     /**

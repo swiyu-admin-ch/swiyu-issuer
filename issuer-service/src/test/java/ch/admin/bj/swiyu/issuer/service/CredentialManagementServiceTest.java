@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.api.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
@@ -162,6 +163,58 @@ class CredentialManagementServiceTest {
     }
 
     /**
+     * Verifies that {@link CredentialManagementService#getSpecificCredentialOfferInformation(UUID, UUID)}
+     * triggers expiration handling for offers in an expirable state when the expiration timestamp
+     * is in the past.
+     *
+     * <p>Expectation: the offer is expired via {@link CredentialStateService#expireOfferAndPublish(CredentialOffer)}
+     * and persisted, and the returned DTO must not expose sensitive data.</p>
+     */
+    @Test
+    void getSpecificCredentialOfferInformation_shouldExpireExpirableOfferAndNullOutSensitiveParts() {
+        var mgmt = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .credentialOffers(Set.of(expiredOffer))
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .build();
+        expiredOffer.setCredentialManagement(mgmt);
+
+        when(persistenceService.findCredentialOfferByIdForUpdate(expiredOffer.getId())).thenReturn(expiredOffer);
+        doNothing().when(stateService).expireOfferAndPublish(any());
+
+        CredentialInfoResponseDto response = credentialService.getSpecificCredentialOfferInformation(mgmt.getId(), expiredOffer.getId());
+
+        // expiration triggers a persisted offer update (via expireCredentialOffer)
+        verify(stateService, times(1)).expireOfferAndPublish(any());
+
+        // offer data should be removed by state transition logic, so DTO shouldn't expose holder keys / agent info
+        assertNull(response.holderJWKs());
+        assertNull(response.clientAgentInfo());
+    }
+
+    /**
+     * Verifies that a non-expired offer is not modified when calling
+     * {@link CredentialManagementService#getCredentialOfferInformation(UUID)}.
+     *
+     * <p>Expectation: no expiration workflow is executed and the offer is not persisted.</p>
+     */
+    @Test
+    void getSpecificCredentialOfferInformation_shouldNotTouchNonExpiredOffer() {
+        var mgmt = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .credentialOffers(Set.of(valid))
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .build();
+        valid.setCredentialManagement(mgmt);
+
+        when(persistenceService.findCredentialOfferByIdForUpdate(valid.getId())).thenReturn(valid);
+
+        credentialService.getSpecificCredentialOfferInformation(mgmt.getId(), valid.getId());
+
+        verify(stateService, never()).expireOfferAndPublish(any());
+    }
+
+    /**
      * Ensures that {@link CredentialManagementService#updateCredentialStatus(UUID, UpdateCredentialStatusRequestTypeDto)}
      * routes to the <em>pre-issuance</em> handler when the management is in a pre-issuance process.
      */
@@ -273,7 +326,7 @@ class CredentialManagementServiceTest {
                 .build();
         valid.setCredentialManagement(mgmt);
 
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialOfferByIdForUpdate(valid.getId())).thenReturn(valid);
 
         StatusResponseDto response = credentialService.getCredentialOfferStatus(mgmt.getId(), valid.getId());
 
@@ -285,7 +338,7 @@ class CredentialManagementServiceTest {
      * Verifies that {@link CredentialManagementService#getCredentialOfferStatus(UUID, UUID)} returns not found
      */
     @Test
-    void getCredentialOfferStatus_shouldReturnNotFound_whenNotInDB() {
+    void getCredentialOfferStatus_shouldReturnNotFound_whenOfferNotOfManagement() {
         var mgmt = CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .credentialManagementStatus(CredentialStatusManagementType.INIT)
@@ -293,9 +346,9 @@ class CredentialManagementServiceTest {
                 .build();
         valid.setCredentialManagement(mgmt);
 
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialOfferByIdForUpdate(valid.getId())).thenReturn(valid);
 
-        assertThrows(ResourceNotFoundException.class, () -> credentialService.getCredentialOfferStatus(mgmt.getId(), UUID.randomUUID()));
+        assertThrows(ResourceNotFoundException.class, () -> credentialService.getCredentialOfferStatus(UUID.randomUUID(), valid.getId()));
     }
 
     /**

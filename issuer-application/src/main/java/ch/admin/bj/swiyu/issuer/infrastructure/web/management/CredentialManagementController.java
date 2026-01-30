@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.management;
 
 import ch.admin.bj.swiyu.issuer.api.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.StatusResponseDto;
@@ -84,7 +85,7 @@ public class CredentialManagementController {
     }
 
     @Timed
-    @GetMapping("/{credentialManagementId}/{offerId}")
+    @GetMapping("/{credentialManagementId}/offer/{offerId}")
     @Operation(
             summary = "Get a specific offer data, if it is still cached",
             responses = {
@@ -94,8 +95,8 @@ public class CredentialManagementController {
                     )
             }
     )
-    public CredentialManagementDto getCredentialOfferInformation(@PathVariable UUID credentialManagementId, @PathVariable UUID offerId) {
-        return this.credentialManagementService.getCredentialOfferInformation(credentialManagementId, offerId);
+    public CredentialInfoResponseDto getCredentialOfferInformation(@PathVariable UUID credentialManagementId, @PathVariable UUID offerId) {
+        return this.credentialManagementService.getSpecificCredentialOfferInformation(credentialManagementId, offerId);
     }
 
     @Timed
@@ -106,8 +107,8 @@ public class CredentialManagementController {
     }
 
     @Timed
-    @GetMapping("/{credentialManagementId}/{offerId}/status")
-    @Operation(summary = "Get the current status of a specific offer or the verifiable credential, if already issued.")
+    @GetMapping("/{credentialManagementId}/offer/{offerId}/status")
+    @Operation(summary = "Get the current status of a specific offer.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialManagementId, @PathVariable UUID offerId) {
         return this.credentialManagementService.getCredentialOfferStatus(credentialManagementId, offerId);
     }
