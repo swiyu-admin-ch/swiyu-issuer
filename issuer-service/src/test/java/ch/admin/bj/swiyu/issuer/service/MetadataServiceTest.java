@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OpenIdConfigurationDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
@@ -118,9 +118,9 @@ class MetadataServiceTest {
     }
 
     @Test
-    void getSignedOpenIdConfiguration_successfulSigning_returnsJwt() throws Exception {
+    void getSignedOAuthAuthorizationServerMetadata_successfulSigning_returnsJwt() throws Exception {
         UUID tenantId = UUID.randomUUID();
-        var oidConfig = new OpenIdConfigurationDto(externalUrl, "token_endpoint", null);
+        var oidConfig = new OAuthAuthorizationServerMetadataDto(externalUrl, "token_endpoint", null);
         when(demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(Mockito.any())).thenReturn(oidConfig);
 
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
@@ -130,7 +130,7 @@ class MetadataServiceTest {
         JWSSigner signer = createDummySigner();
         when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
 
-        String jwt = svc.getSignedOpenIdConfiguration(tenantId);
+        String jwt = svc.getSignedOAuthAuthorizationServerMetadata(tenantId);
         assertNotNull(jwt);
         SignedJWT parsed = SignedJWT.parse(jwt);
         // Constructing the expected tenant's credential issuer identifier
