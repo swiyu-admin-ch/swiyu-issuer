@@ -19,7 +19,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.At
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
-import ch.admin.bj.swiyu.issuer.service.DidKeyResolver;
+import ch.admin.bj.swiyu.issuer.service.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
@@ -87,7 +87,7 @@ class DeferredFlowIT {
     private final String deferredCredentialEndpoint = "/oid4vci/api/deferred_credential";
     private final ObjectMapper objectMapper = new ObjectMapper();
     @MockitoBean
-    DidKeyResolver didKeyResolver;
+    DidKeyResolverFacade didKeyResolver;
     @MockitoBean
     AsyncCredentialEventHandler testEventListener;
     @Autowired

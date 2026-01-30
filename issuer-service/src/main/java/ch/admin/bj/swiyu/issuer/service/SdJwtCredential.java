@@ -16,7 +16,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatusReference;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
 import com.authlete.sd.SDObjectBuilder;
@@ -66,14 +66,14 @@ public class SdJwtCredential extends CredentialBuilder {
             IssuerMetadata issuerMetadata,
             DataIntegrityService dataIntegrityService,
             SdjwtProperties sdjwtProperties,
-            SignatureService signatureService,
+            JwsSignatureFacade jwsSignatureFacade,
             StatusListRepository statusListRepository,
             CredentialOfferStatusRepository credentialOfferStatusRepository) {
         super(applicationProperties,
                 issuerMetadata,
                 dataIntegrityService,
                 statusListRepository,
-                signatureService,
+                jwsSignatureFacade,
                 credentialOfferStatusRepository);
         this.sdjwtProperties = sdjwtProperties;
     }
@@ -143,7 +143,7 @@ public class SdJwtCredential extends CredentialBuilder {
         var override = this.getCredentialOffer()
                 .getConfigurationOverride();
         try {
-            return getSignatureService().createSigner(
+            return getJwsSignatureFacade().createSigner(
                     sdjwtProperties,
                     override.keyId(),
                     override.keyPin());
