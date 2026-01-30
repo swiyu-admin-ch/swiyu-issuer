@@ -6,8 +6,8 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
-import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
-import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.callback.WebhookCallbackDto;
+import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;

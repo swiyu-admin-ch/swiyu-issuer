@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.dpop;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OpenIdConfigurationDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;

@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.webhook;
 
-import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 
 public record ErrorEvent(
         String errorMessage,

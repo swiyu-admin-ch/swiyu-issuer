@@ -1,12 +1,12 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.service.CredentialManagementService;
+import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalRequestDto;
 import lombok.AllArgsConstructor;

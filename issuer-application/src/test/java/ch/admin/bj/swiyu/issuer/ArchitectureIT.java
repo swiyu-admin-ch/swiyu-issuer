@@ -6,9 +6,9 @@
 
 package ch.admin.bj.swiyu.issuer;
 
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.ValidStatusListMaxLengthValidator;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
@@ -163,15 +163,9 @@ public class ArchitectureIT {
 
         @ArchTest
         static final ArchRule no_cycles_between_slices = SlicesRuleDefinition.slices()
-                .matching("..issuer.(**)..")
+                .matching("..infrastructure.(**)..")
                 .should()
-                .beFreeOfCycles()
-                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
-                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class)
-                .ignoreDependency(StatusListSigningService.class, JwsSignatureFacade.class) // ignore while refactoring
-                .ignoreDependency(DemonstratingProofOfPossessionValidationService.class, NonceService.class) // ignore while refactoring
-                .ignoreDependency(DemonstratingProofOfPossessionService.class, NonceService.class) // ignore while refactoring
-                .ignoreDependency(DemonstratingProofOfPossessionService.class, OAuthService.class); // ignore while refactoring
+                .beFreeOfCycles();
 
         /**
          * ArchRules which support freezing. @see <a

@@ -6,12 +6,12 @@
 
 package ch.admin.bj.swiyu.issuer.service.credential;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEndpointRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.DeferredCredentialEndpointRequestDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
@@ -25,6 +25,8 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.*;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
+import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
@@ -45,9 +47,9 @@ import java.time.Instant;
 import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.CREDENTIAL_REQUEST_DENIED;
-import static ch.admin.bj.swiyu.issuer.oid4vci.service.CredentialStateMachineTestHelper.mockCredentialStateMachine;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialManagement;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils.getCredentialOffer;
+import static ch.admin.bj.swiyu.issuer.service.CredentialStateMachineTestHelper.mockCredentialStateMachine;
+import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.getCredentialManagement;
+import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.getCredentialOffer;
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;

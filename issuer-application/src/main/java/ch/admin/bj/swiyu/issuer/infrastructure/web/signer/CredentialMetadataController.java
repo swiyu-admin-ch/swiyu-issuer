@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
-import ch.admin.bj.swiyu.issuer.service.CredentialMetadataService;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialMetadataService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
