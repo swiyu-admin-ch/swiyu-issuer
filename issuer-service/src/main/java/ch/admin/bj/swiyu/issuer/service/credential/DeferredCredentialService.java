@@ -44,10 +44,10 @@ public class DeferredCredentialService {
      * Issues a deferred credential using the OID4VCI 1.0 flow.
      *
      * @param deferredCredentialRequest request payload containing transaction and credential parameters
-     * @param accessToken               access token authorizing issuance for the transaction
+     * @param accessToken access token authorizing issuance for the transaction
      * @return envelope with the issued credential response
      * @throws Oid4vcException when validation fails (expired, cancelled, or not ready)
-     * @throws OAuthException  when the provided access token is invalid or expired
+     * @throws OAuthException when the provided access token is invalid or expired
      */
     @Deprecated(since = "OID4VCI 1.0")
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(
@@ -76,10 +76,10 @@ public class DeferredCredentialService {
      * Issues a deferred credential using the OID4VCI 2.0 flow.
      *
      * @param deferredCredentialRequest request payload containing transaction and credential parameters
-     * @param accessToken               access token authorizing issuance for the transaction
+     * @param accessToken access token authorizing issuance for the transaction
      * @return envelope with the issued credential response
      * @throws Oid4vcException when validation fails (expired, cancelled, or not ready)
-     * @throws OAuthException  when the provided access token is invalid or expired
+     * @throws OAuthException when the provided access token is invalid or expired
      */
     public CredentialEnvelopeDto createCredentialFromDeferredRequestV2(
             DeferredCredentialEndpointRequestDto deferredCredentialRequest,
@@ -98,7 +98,6 @@ public class DeferredCredentialService {
         if (isOfferReady(credentialOffer)) {
             markIssuanceCompleted(credentialOffer, credentialMgmt);
         }
-
 
         return credentialEnvelopeDto;
     }
