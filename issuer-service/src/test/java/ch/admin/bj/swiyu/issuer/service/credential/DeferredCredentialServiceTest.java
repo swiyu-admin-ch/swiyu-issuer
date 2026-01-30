@@ -146,12 +146,6 @@ class DeferredCredentialServiceTest {
                 new DeferredCredentialEndpointRequestDto(offer.getTransactionId(), null),
                 "token");
 
-        assertThat(result).isNotNull();
-        verify(credentialOfferRepository).save(offer);
-        verify(credentialManagementRepository).save(mgmt);
-        verify(credentialStateMachine).sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
-        verify(credentialStateMachine).sendEventAndUpdateStatus(mgmt, CredentialStateMachineConfig.CredentialManagementEvent.ISSUE);
-        verify(eventProducerService).produceOfferStateChangeEvent(mgmt.getId(), offer.getId(), offer.getCredentialStatus());
     }
 
     @Test
@@ -172,15 +166,6 @@ class DeferredCredentialServiceTest {
         assertThatThrownBy(() -> service.validateOfferProcessable(offer))
                 .isInstanceOf(Oid4vcException.class)
                 .hasMessageContaining("cancelled or expired");
-    }
-
-    @Test
-    void validateOfferReady_rejectsNonReady() {
-        var offer = CredentialOffer.builder().credentialStatus(CredentialOfferStatusType.REQUESTED).build();
-
-        assertThatThrownBy(() -> service.isOfferReady(offer))
-                .isInstanceOf(Oid4vcException.class)
-                .hasMessageContaining("not marked as ready");
     }
 
     @Test

@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
+import ch.admin.bj.swiyu.issuer.service.CredentialBuilder;
 import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper;
@@ -43,10 +44,10 @@ public class DeferredCredentialService {
      * Issues a deferred credential using the OID4VCI 1.0 flow.
      *
      * @param deferredCredentialRequest request payload containing transaction and credential parameters
-     * @param accessToken access token authorizing issuance for the transaction
+     * @param accessToken               access token authorizing issuance for the transaction
      * @return envelope with the issued credential response
      * @throws Oid4vcException when validation fails (expired, cancelled, or not ready)
-     * @throws OAuthException when the provided access token is invalid or expired
+     * @throws OAuthException  when the provided access token is invalid or expired
      */
     @Deprecated(since = "OID4VCI 1.0")
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(
@@ -60,7 +61,13 @@ public class DeferredCredentialService {
         var credentialRequest = credentialOffer.getCredentialRequest();
         var credentialEnvelopeDto = buildEnvelopeV1(credentialOffer, credentialRequest);
 
-        finalizeIssuance(credentialOffer, mgmt);
+        // Just to be aligned old but wrong implementation! Must be removed when ending of support of V1
+        if(!isOfferReady(credentialOffer)){
+            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued");
+        }
+
+        markIssuanceCompleted(credentialOffer, mgmt);
+
 
         return credentialEnvelopeDto;
     }
@@ -69,10 +76,10 @@ public class DeferredCredentialService {
      * Issues a deferred credential using the OID4VCI 2.0 flow.
      *
      * @param deferredCredentialRequest request payload containing transaction and credential parameters
-     * @param accessToken access token authorizing issuance for the transaction
+     * @param accessToken               access token authorizing issuance for the transaction
      * @return envelope with the issued credential response
      * @throws Oid4vcException when validation fails (expired, cancelled, or not ready)
-     * @throws OAuthException when the provided access token is invalid or expired
+     * @throws OAuthException  when the provided access token is invalid or expired
      */
     public CredentialEnvelopeDto createCredentialFromDeferredRequestV2(
             DeferredCredentialEndpointRequestDto deferredCredentialRequest,
@@ -87,7 +94,11 @@ public class DeferredCredentialService {
                 .orElse(credentialOffer.getCredentialRequest().getCredentialResponseEncryption());
         var credentialEnvelopeDto = buildEnvelopeV2(credentialOffer, responseEncryption);
 
-        finalizeIssuance(credentialOffer, credentialMgmt);
+        // Only mark issuance completed if the offer is READY (do nothing if still in DEFERRED)
+        if (isOfferReady(credentialOffer)) {
+            markIssuanceCompleted(credentialOffer, credentialMgmt);
+        }
+
 
         return credentialEnvelopeDto;
     }
@@ -110,15 +121,23 @@ public class DeferredCredentialService {
      */
     CredentialEnvelopeDto buildEnvelopeV2(CredentialOffer credentialOffer, CredentialResponseEncryptionClass responseEncryption) {
         var credentialSupportedId = getMetadataCredentialSupportedId(credentialOffer);
-        return credentialFormatFactory
+        CredentialBuilder credentialBuilder = credentialFormatFactory
                 .getFormatBuilder(credentialSupportedId)
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(
                         jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(),
                         responseEncryption)
                 .holderBindings(credentialOffer.getHolderJWKs())
-                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelopeV2();
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId());
+        // Depending on the offer status, build either a ready credential or a deferred one
+        if (isOfferReady(credentialOffer)) {
+            return credentialBuilder
+                    .buildCredentialEnvelopeV2();
+        } else {
+            var transactionId = UUID.randomUUID();
+            return credentialBuilder
+                    .buildDeferredCredentialV2(transactionId);
+        }
     }
 
     /**
@@ -137,7 +156,7 @@ public class DeferredCredentialService {
     /**
      * Advances state, persists entities, and emits offer state change events after issuance.
      */
-    void finalizeIssuance(CredentialOffer credentialOffer, CredentialManagement mgmt) {
+    void markIssuanceCompleted(CredentialOffer credentialOffer, CredentialManagement mgmt) {
         credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
         credentialStateMachine.sendEventAndUpdateStatus(mgmt, ISSUE);
 
@@ -163,7 +182,9 @@ public class DeferredCredentialService {
         validateOfferProcessable(credentialOffer);
         isOfferReady(credentialOffer);
         validateTokenNotExpired(credentialOffer, mgmt);
-        if(isOfferReady(credentialOffer)){
+
+        // Only validate presence of credential request when the offer is READY (i.e., not DEFERRED)
+        if (isOfferReady(credentialOffer)) {
             validateCredentialRequestPresent(credentialOffer);
         }
 
@@ -184,7 +205,7 @@ public class DeferredCredentialService {
      * Ensures the offer is marked READY before issuing.
      */
     boolean isOfferReady(CredentialOffer credentialOffer) {
-        if (credentialOffer.getCredentialStatus() != CredentialOfferStatusType.READY) {
+        if (credentialOffer.getCredentialStatus() == CredentialOfferStatusType.READY) {
             return true;
         }
         return false;
