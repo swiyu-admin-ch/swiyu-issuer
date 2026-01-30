@@ -143,8 +143,6 @@ public class DeferredCredentialService {
 
         credentialOfferRepository.save(credentialOffer);
         credentialManagementRepository.save(mgmt);
-
-        eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), credentialOffer.getId(), credentialOffer.getCredentialStatus());
     }
 
     /**

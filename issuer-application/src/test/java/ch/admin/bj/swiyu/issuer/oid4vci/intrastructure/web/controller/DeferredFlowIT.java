@@ -222,7 +222,8 @@ class DeferredFlowIT {
                 .andExpect(jsonPath("$.credential").isNotEmpty())
                 .andExpect(jsonPath("$.format").value("vc+sd-jwt"))
                 .andReturn();
-        verify(testEventListener, Mockito.times(2)).handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
+        // -> Claming_in_Progress -> Deferred -> Ready -> Issued
+        verify(testEventListener, Mockito.times(4)).handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
 
         var vc = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject().get("credential").getAsString();
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, offerData);

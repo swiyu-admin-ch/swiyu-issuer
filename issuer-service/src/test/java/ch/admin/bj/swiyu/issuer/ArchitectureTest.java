@@ -9,6 +9,7 @@ package ch.admin.bj.swiyu.issuer;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineAction;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
@@ -16,6 +17,7 @@ import ch.admin.bj.swiyu.issuer.service.SignatureService;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionValidationService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
+import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -183,6 +185,7 @@ public class ArchitectureTest {
                 .matching("..issuer.(**)..")
                 .should()
                 .beFreeOfCycles()
+                .ignoreDependency(CredentialStateMachineAction.class, EventProducerService.class)
                 .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
                 .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class)
                 .ignoreDependency(StatusListSigningService.class, SignatureService.class) // ignore while refactoring

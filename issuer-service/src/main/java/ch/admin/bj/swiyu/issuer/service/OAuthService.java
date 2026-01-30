@@ -49,7 +49,6 @@ public class OAuthService {
                 mgmt.getAccessToken(), mgmt.getId(), offer.getId(), offer.getCredentialStatus());
         credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
         OAuthTokenDto oauthTokenResponse = updateOAuthTokens(mgmt);
-        eventProducerService.produceOfferStateChangeEvent(mgmt.getId(), offer.getId(), offer.getCredentialStatus());
         return oauthTokenResponse;
     }
 

@@ -76,7 +76,7 @@ class CredentialStateServiceTest {
                 .thenReturn(result);
 
         var actual = stateService.updateOfferStateAndPublish(
-                offer, CredentialStateMachineConfig.CredentialOfferEvent.READY, mgmtId);
+                offer, CredentialStateMachineConfig.CredentialOfferEvent.READY);
 
         assertSame(result, actual);
 
@@ -84,7 +84,6 @@ class CredentialStateServiceTest {
         verify(applicationEventPublisher, times(1)).publishEvent(eventCaptor.capture());
         assertInstanceOf(OfferStateChangeEvent.class, eventCaptor.getValue());
         var evt = (OfferStateChangeEvent) eventCaptor.getValue();
-        assertEquals(mgmtId, evt.credentialManagementId());
         assertEquals(offerId, evt.credentialOfferId());
         assertEquals(CredentialOfferStatusType.READY, evt.newState());
     }
@@ -103,7 +102,7 @@ class CredentialStateServiceTest {
                 .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType>(CredentialOfferStatusType.OFFERED, false));
 
         var result = stateService.updateOfferStateAndPublish(
-                offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM, UUID.randomUUID());
+                offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
 
         assertFalse(result.changed());
         verifyNoInteractions(applicationEventPublisher);
@@ -237,7 +236,6 @@ class CredentialStateServiceTest {
         verify(applicationEventPublisher, times(1)).publishEvent(eventCaptor.capture());
         assertInstanceOf(OfferStateChangeEvent.class, eventCaptor.getValue());
         var evt = (OfferStateChangeEvent) eventCaptor.getValue();
-        assertEquals(mgmt.getId(), evt.credentialManagementId());
         assertEquals(offerId, evt.credentialOfferId());
         assertEquals(CredentialOfferStatusType.EXPIRED, evt.newState());
     }
