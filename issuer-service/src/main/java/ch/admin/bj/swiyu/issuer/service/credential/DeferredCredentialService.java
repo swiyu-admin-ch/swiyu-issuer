@@ -161,9 +161,11 @@ public class DeferredCredentialService {
         CredentialManagement mgmt = credentialOffer.getCredentialManagement();
 
         validateOfferProcessable(credentialOffer);
-        validateOfferReady(credentialOffer);
+        isOfferReady(credentialOffer);
         validateTokenNotExpired(credentialOffer, mgmt);
-        validateCredentialRequestPresent(credentialOffer);
+        if(isOfferReady(credentialOffer)){
+            validateCredentialRequestPresent(credentialOffer);
+        }
 
         return credentialOffer;
     }
@@ -181,10 +183,11 @@ public class DeferredCredentialService {
     /**
      * Ensures the offer is marked READY before issuing.
      */
-    void validateOfferReady(CredentialOffer credentialOffer) {
+    boolean isOfferReady(CredentialOffer credentialOffer) {
         if (credentialOffer.getCredentialStatus() != CredentialOfferStatusType.READY) {
-            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued");
+            return true;
         }
+        return false;
     }
 
     /**

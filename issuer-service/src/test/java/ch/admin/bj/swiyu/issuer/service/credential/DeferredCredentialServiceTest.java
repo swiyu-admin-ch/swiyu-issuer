@@ -110,6 +110,51 @@ class DeferredCredentialServiceTest {
     }
 
     @Test
+    void createCredentialFromDeferredRequestV2_not_Ready() {
+        var mgmt = CredentialManagement.builder()
+                .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
+                .id(UUID.randomUUID())
+                .renewalResponseCnt(0)
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .build();
+        var offer = CredentialOffer.builder()
+                .credentialStatus(CredentialOfferStatusType.DEFERRED)
+                .credentialManagement(mgmt)
+                .transactionId(UUID.randomUUID())
+                .metadataCredentialSupportedId(List.of("cfg"))
+                .holderJWKs(List.of())
+                .build();
+        mgmt.addCredentialOffer(offer);
+
+        IssuerMetadata metadata = IssuerMetadata.builder()
+                .version("1.0.0")
+                .build();
+
+        var request = new CredentialRequestClass();
+        offer.setCredentialRequest(request);
+
+        when(oAuthService.getCredentialManagementByAccessToken("token")).thenReturn(mgmt);
+        when(vcFormatFactory.getFormatBuilder("cfg")).thenReturn(builder);
+        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
+        when(builder.credentialOffer(offer)).thenReturn(builder);
+        when(builder.credentialResponseEncryption(any(), any())).thenReturn(builder);
+        when(builder.holderBindings(any())).thenReturn(builder);
+        when(builder.credentialType(any())).thenReturn(builder);
+        when(builder.buildCredentialEnvelopeV2()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
+
+        var result = service.createCredentialFromDeferredRequestV2(
+                new DeferredCredentialEndpointRequestDto(offer.getTransactionId(), null),
+                "token");
+
+        assertThat(result).isNotNull();
+        verify(credentialOfferRepository).save(offer);
+        verify(credentialManagementRepository).save(mgmt);
+        verify(credentialStateMachine).sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
+        verify(credentialStateMachine).sendEventAndUpdateStatus(mgmt, CredentialStateMachineConfig.CredentialManagementEvent.ISSUE);
+        verify(eventProducerService).produceOfferStateChangeEvent(mgmt.getId(), offer.getId(), offer.getCredentialStatus());
+    }
+
+    @Test
     void getMetadataCredentialSupportedId_missing_throws() {
         var offer = CredentialOffer.builder().build();
         assertThatThrownBy(() -> service.getMetadataCredentialSupportedId(offer))
@@ -133,7 +178,7 @@ class DeferredCredentialServiceTest {
     void validateOfferReady_rejectsNonReady() {
         var offer = CredentialOffer.builder().credentialStatus(CredentialOfferStatusType.REQUESTED).build();
 
-        assertThatThrownBy(() -> service.validateOfferReady(offer))
+        assertThatThrownBy(() -> service.isOfferReady(offer))
                 .isInstanceOf(Oid4vcException.class)
                 .hasMessageContaining("not marked as ready");
     }
