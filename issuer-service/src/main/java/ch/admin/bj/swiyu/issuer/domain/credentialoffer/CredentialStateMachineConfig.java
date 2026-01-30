@@ -28,7 +28,7 @@ public class CredentialStateMachineConfig {
     public static final String CREDENTIAL_OFFER_HEADER = "credential_offer";
     public static final String CREDENTIAL_MANAGEMENT_HEADER = "credential_management";
 
-    private CredentialStateMachineAction actions;
+    private final CredentialStateMachineAction actions;
 
     @Autowired
     public CredentialStateMachineConfig(CredentialStateMachineAction actions) {

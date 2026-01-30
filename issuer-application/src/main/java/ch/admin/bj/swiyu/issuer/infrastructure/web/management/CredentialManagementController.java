@@ -85,7 +85,7 @@ public class CredentialManagementController {
     }
 
     @Timed
-    @GetMapping("/{credentialManagementId}/offer/{offerId}")
+    @GetMapping("/{credentialManagementId}/offers/{offerId}")
     @Operation(
             summary = "Get a specific offer data, if it is still cached",
             responses = {
@@ -107,7 +107,7 @@ public class CredentialManagementController {
     }
 
     @Timed
-    @GetMapping("/{credentialManagementId}/offer/{offerId}/status")
+    @GetMapping("/{credentialManagementId}/offers/{offerId}/status")
     @Operation(summary = "Get the current status of a specific offer.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialManagementId, @PathVariable UUID offerId) {
         return this.credentialManagementService.getCredentialOfferStatus(credentialManagementId, offerId);

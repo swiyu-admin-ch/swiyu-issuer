@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New endpoint `/actuator/env` to retrieve configuration details.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}` to retrieve offer specific information.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}/status` to retrieve the status of the offer.
+- Send callback on every credential offer status change.
+- Send callback on every credential management status change.
+- Added field `eventTrigger` to callback request
+  - Field is set to `CREDENTIAL_MANAGEMENT` on credential management status change.
+  - Field is set to `CREDENTIAL_OFFER` on credential offer status change.
 
 ### Fixed
 
@@ -25,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Allow encryption to be used for deferred credential request
 - Allow wallets changing the deferred credential request encryption key using credential_response_encryption
+- When using signed metadata with generates dynamic tenant ids, the tenant id is now automatically added to the
+  credential issuer identifiers
 
 
 ## 2.3.0
