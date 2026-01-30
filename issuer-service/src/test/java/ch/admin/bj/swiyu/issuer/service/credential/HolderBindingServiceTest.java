@@ -1,24 +1,5 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
-import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SD_JWT_FORMAT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
-import java.util.Map;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
@@ -29,19 +10,17 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
-import ch.admin.bj.swiyu.issuer.service.HolderBindingService;
-import ch.admin.bj.swiyu.issuer.service.KeyAttestationService;
+import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
-import ch.admin.bj.swiyu.issuer.service.OpenIdIssuerConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SD_JWT_FORMAT;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class HolderBindingServiceTest {

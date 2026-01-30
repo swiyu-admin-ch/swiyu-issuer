@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
+import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
