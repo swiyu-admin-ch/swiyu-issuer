@@ -1,10 +1,10 @@
 package ch.admin.bj.swiyu.issuer.service.statuslist;
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
@@ -23,8 +23,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.io.IOException;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialOfferMapper.toConfigurationOverride;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusListMapper.toStatusListDto;
+import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toConfigurationOverride;
+import static ch.admin.bj.swiyu.issuer.service.statuslist.StatusListMapper.toStatusListDto;
 
 /**
  * Orchestrates all operations related to status lists, including creation, update, validation,

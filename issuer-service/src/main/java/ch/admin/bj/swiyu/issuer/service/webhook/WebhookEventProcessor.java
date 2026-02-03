@@ -3,7 +3,6 @@ package ch.admin.bj.swiyu.issuer.service.webhook;
 import ch.admin.bj.swiyu.issuer.common.config.WebhookProperties;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
-import ch.admin.bj.swiyu.issuer.service.mapper.CallbackMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.util.StringUtils;
