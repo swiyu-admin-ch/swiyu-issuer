@@ -45,7 +45,7 @@ public class WellKnownController {
     /**
      * Returns OAuth 2.0 / OpenID Connect Authorization Server metadata.
      * <p>
-     * This endpoint is OpenAPI description for the well-known URLs defined in RFC 8414 and
+     * This endpoint is an OpenAPI description for the well-known URLs defined in RFC 8414 and
      * OID4VCI. It exposes issuer, token, and authorization endpoints, supported grant types, DPoP and
      * OID4VCI-specific extensions.
      * </p>
