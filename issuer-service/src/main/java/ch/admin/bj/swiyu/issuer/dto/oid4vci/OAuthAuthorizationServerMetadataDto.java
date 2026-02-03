@@ -14,9 +14,9 @@ import lombok.Builder;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Schema(name = "OpenIdConfiguration")
+@Schema(name = "OAuthAuthorizationServerMetadata")
 @Builder(toBuilder = true)
-public record OpenIdConfigurationDto(String issuer, String token_endpoint,
-                                     @Nullable List<String> dpop_signing_alg_values_supported) {
+public record OAuthAuthorizationServerMetadataDto(String issuer, String token_endpoint,
+                                                  @Nullable List<String> dpop_signing_alg_values_supported) {
 
 }

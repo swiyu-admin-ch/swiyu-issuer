@@ -7,7 +7,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OpenIdConfigurationDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
@@ -269,7 +269,7 @@ class BlackboxIT {
                 .getContentAsString()), "Well Known data should be a parsable JWT");
         assertDoesNotThrow(() -> oauthConfigJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
         var oauthConfig = assertDoesNotThrow(() -> objectMapper.readValue(oauthConfigJwt.getPayload().toString(),
-                OpenIdConfigurationDto.class));
+                OAuthAuthorizationServerMetadataDto.class));
         assertThat(oauthConfig.issuer()).isEqualTo(issuerUri.toString());
 
         var issuerMetadataResponse = assertDoesNotThrow(() -> mvc.perform(get(

@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OpenIdConfigurationDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
@@ -98,9 +98,9 @@ public class MetadataService {
      * <p>The configuration is retrieved from {@code openIdIssuerConfiguration} and is returned
      * in its original, unsigned form.
      *
-     * @return the unsigned {@link OpenIdConfigurationDto} for this issuer
+     * @return the unsigned {@link OAuthAuthorizationServerMetadataDto} for this issuer
      */
-    public OpenIdConfigurationDto getUnsignedOpenIdConfiguration() {
+    public OAuthAuthorizationServerMetadataDto getUnsignedOAuthAuthorizationServerMetadata() {
         return demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(openIdIssuerConfiguration.getOpenIdConfiguration());
     }
 
@@ -114,11 +114,11 @@ public class MetadataService {
      * @param tenantId the tenant identifier for which to sign the OpenID configuration
      * @return a serialized JWT containing the signed OpenID configuration
      */
-    public String getSignedOpenIdConfiguration(UUID tenantId) {
+    public String getSignedOAuthAuthorizationServerMetadata(UUID tenantId) {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
 
         try {
-            return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedOpenIdConfiguration(tenantId)), override, tenantId);
+            return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedOAuthAuthorizationServerMetadata(tenantId)), override, tenantId);
         } catch (JsonProcessingException e) {
             throw new ConfigurationException("Unsigned OAuth 2.0 configuration could not be serialized as string", e);
         }
@@ -127,13 +127,13 @@ public class MetadataService {
         /**
      * Returns the Authorization Server Metadata as a DTO without signing.
      *
-     * <p>The configuration is retrieved from {@code openIdIssuerConfiguration} and is returned
+     * <p>The configuration is retrieved from {@code OAuthAuthorizationServerMetadata} and is returned
      * in its original, unsigned form.
      *
-     * @return the unsigned {@link OpenIdConfigurationDto} for this issuer
+     * @return the unsigned {@link OAuthAuthorizationServerMetadataDto} for this issuer
      */
-    public OpenIdConfigurationDto getUnsignedOpenIdConfiguration(UUID tenantId) {
-        return getUnsignedOpenIdConfiguration().toBuilder()
+    public OAuthAuthorizationServerMetadataDto getUnsignedOAuthAuthorizationServerMetadata(UUID tenantId) {
+        return getUnsignedOAuthAuthorizationServerMetadata().toBuilder()
                 .issuer(createTenantCredentialIssuerIdentifier(tenantId))
                 .build();
     }

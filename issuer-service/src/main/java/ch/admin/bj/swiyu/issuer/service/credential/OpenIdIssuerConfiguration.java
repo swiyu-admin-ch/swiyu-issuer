@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OpenIdConfigurationDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.type_metadata.OcaDto;
 import ch.admin.bj.swiyu.issuer.dto.type_metadata.TypeMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -89,9 +89,9 @@ public class OpenIdIssuerConfiguration {
     }
 
     @Cacheable(OPEN_ID_CONFIGURATION_CACHE)
-    public OpenIdConfigurationDto getOpenIdConfiguration() {
+    public OAuthAuthorizationServerMetadataDto getOpenIdConfiguration() {
         try {
-            return resourceToMappedData(openIdResource, OpenIdConfigurationDto.class);
+            return resourceToMappedData(openIdResource, OAuthAuthorizationServerMetadataDto.class);
         } catch (IOException e) {
             throw new ConfigurationException("Cannot read openid config", e);
         }
