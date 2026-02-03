@@ -4,5 +4,5 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagemen
 
 import java.util.UUID;
 
-public record StateChangeEvent(UUID credentialOfferId, CredentialStatusManagementType newState) {
+public record ManagementStateChangeEvent(UUID credentialManagementId, CredentialStatusManagementType newState) {
 }

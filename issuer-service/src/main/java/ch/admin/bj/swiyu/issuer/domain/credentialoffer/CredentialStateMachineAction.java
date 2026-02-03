@@ -31,4 +31,16 @@ public class CredentialStateMachineAction {
             eventProducer.produceOfferStateChangeEvent(offerId, target);
         };
     }
+
+    public Action<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> invalidateOfferDataAction() {
+        return context -> {
+            var message = context.getMessage();
+            if (message != null && message.getHeaders().containsKey(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER)) {
+                Object offerObj = message.getHeaders().get(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER);
+                if (offerObj instanceof CredentialOffer offer) {
+                    offer.invalidateOfferData();
+                }
+            }
+        };
+    }
 }

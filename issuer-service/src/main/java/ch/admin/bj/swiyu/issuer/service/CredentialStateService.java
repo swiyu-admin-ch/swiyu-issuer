@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.service.mapper.CredentialManagementMapper;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
-import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
+import ch.admin.bj.swiyu.issuer.service.webhook.ManagementStateChangeEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -172,7 +172,7 @@ public class CredentialStateService {
      * @param state                  the new state
      */
     private void publishStateChangeEvent(UUID credentialManagementId, CredentialStatusManagementType state) {
-        var stateChangeEvent = new StateChangeEvent(credentialManagementId, state);
+        var stateChangeEvent = new ManagementStateChangeEvent(credentialManagementId, state);
         applicationEventPublisher.publishEvent(stateChangeEvent);
     }
 

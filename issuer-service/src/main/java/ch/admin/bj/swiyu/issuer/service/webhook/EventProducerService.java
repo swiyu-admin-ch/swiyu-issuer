@@ -35,14 +35,24 @@ public class EventProducerService {
         applicationEventPublisher.publishEvent(errorEvent);
     }
 
-    public void produceManagementStateChangeEvent(UUID credentialOfferId, CredentialStatusManagementType state) {
-        var stateChangeEvent = new StateChangeEvent(
-                credentialOfferId,
+    /**
+     * Only used for Credential Management State Changes from CredentialStateMachineAction
+     * @param credentialManagementId
+     * @param state
+     */
+    public void produceManagementStateChangeEvent(UUID credentialManagementId, CredentialStatusManagementType state) {
+        var managementStateChangeEvent = new ManagementStateChangeEvent(
+                credentialManagementId,
                 state
         );
-        applicationEventPublisher.publishEvent(stateChangeEvent);
+        applicationEventPublisher.publishEvent(managementStateChangeEvent);
     }
 
+    /**
+     * Only used for Credential Offer State Changes from CredentialStateMachineAction
+     * @param credentialOfferId
+     * @param state
+     */
     public void produceOfferStateChangeEvent(UUID credentialOfferId, CredentialOfferStatusType state) {
         var offerStateChangeEvent = new OfferStateChangeEvent(
                 credentialOfferId,
