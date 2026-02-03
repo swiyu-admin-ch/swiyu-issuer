@@ -177,6 +177,42 @@ class DeferredIssuanceV2IT {
                 .andReturn();
     }
 
+    @Test
+    void testDeferredOffer_notReady_thenAccepted() throws Exception {
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+
+        var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.credentials").doesNotExist())
+                .andExpect(jsonPath("$.transaction_id").isNotEmpty())
+                .andExpect(jsonPath("$.interval").isNotEmpty())
+                .andReturn();
+
+        DeferredDataDto deferredDataDto = objectMapper.readValue(
+                deferredCredentialResponse.getResponse()
+                        .getContentAsString(), DeferredDataDto.class);
+
+        String deferredCredentialRequestString = getDeferredCredentialRequestString(
+                deferredDataDto.transactionId()
+                        .toString());
+
+        mock.perform(post("/oid4vci/api/deferred_credential")
+                        .header("Authorization", String.format("BEARER %s", token))
+                        .contentType("application/json")
+                        .header("SWIYU-API-Version", "2")
+                        .content(deferredCredentialRequestString))
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.credentials").doesNotExist())
+                .andExpect(jsonPath("$.transaction_id").isNotEmpty())
+                .andExpect(jsonPath("$.interval").isNotEmpty())
+                .andReturn();
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void testDeferredOffer_withResponseEncryption_thenSuccess(boolean rotateHolderEncryptionKey) throws Exception {

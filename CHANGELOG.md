@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed weak unlinkability by rounding down the timestamps within issued credetials.
   Affected fields are iat, epx, and nbf.
+- Removed credential request errors ISSUANCE_PENDING to be aligned with the spec.
 
 
 ## 2.3.1
