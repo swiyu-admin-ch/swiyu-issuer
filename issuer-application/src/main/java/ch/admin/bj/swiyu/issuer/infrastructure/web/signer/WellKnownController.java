@@ -56,7 +56,7 @@ public class WellKnownController {
     @GetMapping(value = {"/oid4vci/.well-known/openid-configuration", ".well-known/openid-configuration", "/oid4vci/.well-known/oauth-authorization-server", ".well-known/oauth-authorization-server"})
     @Operation(summary = "Retrieve OAuth 2.0 Authorization Server Metadata",
             description = "Returns the configuration metadata of the Authorization Server in accordance with RFC 8414. " +
-                    "This includes URLs to endpoints (e.g., Token Endpoint), supported grant types, as well as " +
+                    "This includes URLs to endpoints (e.g., token endpoint), supported grant types, as well as " +
                     "extensions for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP."
     )
     public OAuthAuthorizationServerMetadataDto getAuthorizationServerMetadata() {
