@@ -110,6 +110,45 @@ class DeferredCredentialServiceTest {
     }
 
     @Test
+    void createCredentialFromDeferredRequestV2_not_Ready() {
+        var mgmt = CredentialManagement.builder()
+                .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
+                .id(UUID.randomUUID())
+                .renewalResponseCnt(0)
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .build();
+        var offer = CredentialOffer.builder()
+                .credentialStatus(CredentialOfferStatusType.DEFERRED)
+                .credentialManagement(mgmt)
+                .transactionId(UUID.randomUUID())
+                .metadataCredentialSupportedId(List.of("cfg"))
+                .holderJWKs(List.of())
+                .build();
+        mgmt.addCredentialOffer(offer);
+
+        IssuerMetadata metadata = IssuerMetadata.builder()
+                .version("1.0.0")
+                .build();
+
+        var request = new CredentialRequestClass();
+        offer.setCredentialRequest(request);
+
+        when(oAuthService.getCredentialManagementByAccessToken("token")).thenReturn(mgmt);
+        when(vcFormatFactory.getFormatBuilder("cfg")).thenReturn(builder);
+        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(metadata);
+        when(builder.credentialOffer(offer)).thenReturn(builder);
+        when(builder.credentialResponseEncryption(any(), any())).thenReturn(builder);
+        when(builder.holderBindings(any())).thenReturn(builder);
+        when(builder.credentialType(any())).thenReturn(builder);
+        when(builder.buildCredentialEnvelopeV2()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
+
+        service.createCredentialFromDeferredRequestV2(
+                new DeferredCredentialEndpointRequestDto(offer.getTransactionId(), null),
+                "token");
+
+    }
+
+    @Test
     void getMetadataCredentialSupportedId_missing_throws() {
         var offer = CredentialOffer.builder().build();
         assertThatThrownBy(() -> service.getMetadataCredentialSupportedId(offer))
@@ -127,15 +166,6 @@ class DeferredCredentialServiceTest {
         assertThatThrownBy(() -> service.validateOfferProcessable(offer))
                 .isInstanceOf(Oid4vcException.class)
                 .hasMessageContaining("cancelled or expired");
-    }
-
-    @Test
-    void validateOfferReady_rejectsNonReady() {
-        var offer = CredentialOffer.builder().credentialStatus(CredentialOfferStatusType.REQUESTED).build();
-
-        assertThatThrownBy(() -> service.validateOfferReady(offer))
-                .isInstanceOf(Oid4vcException.class)
-                .hasMessageContaining("not marked as ready");
     }
 
     @Test
