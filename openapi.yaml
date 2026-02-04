@@ -115,6 +115,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/DeferredCredentialEndpointRequest"
+          application/jwt:
+            schema:
+              type: string
+              description: |
+                An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
         required: true
       responses:
         "404":
@@ -286,8 +291,8 @@ paths:
       - Credential API
       summary: Create a generic credential offer with the given content
       description: |
-        Create a new credential offer, which can the be collected by the holder.
-        The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
+        Create a new credential offer, which can then be collected by the holder.
+        The returned deep link has to be provided to the holder through another channel, for example as QR-Code.
         The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
         Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
       operationId: createCredential_1
@@ -480,8 +485,14 @@ paths:
     get:
       tags:
       - Well-known endpoints API
-      summary: Information about credentials which can be issued.
-      operationId: getOpenIdConfigurationByTenantId
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId
       parameters:
       - name: tenantId
         in: path
@@ -507,8 +518,14 @@ paths:
     get:
       tags:
       - Well-known endpoints API
-      summary: Information about credentials which can be issued.
-      operationId: getOpenIdConfigurationByTenantId_1
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId_1
       parameters:
       - name: tenantId
         in: path
@@ -534,8 +551,14 @@ paths:
     get:
       tags:
       - Well-known endpoints API
-      summary: Information about credentials which can be issued.
-      operationId: getOpenIdConfigurationByTenantId_2
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId_2
       parameters:
       - name: tenantId
         in: path
@@ -561,8 +584,14 @@ paths:
     get:
       tags:
       - Well-known endpoints API
-      summary: Information about credentials which can be issued.
-      operationId: getOpenIdConfigurationByTenantId_3
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId_3
       parameters:
       - name: tenantId
         in: path
@@ -678,8 +707,12 @@ paths:
     get:
       tags:
       - Well-known endpoints API
-      summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfiguration
+      summary: Retrieve OAuth 2.0 Authorization Server Metadata
+      description: "Returns the configuration metadata of the Authorization Server\
+        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
+        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
+        \ Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadata
       responses:
         "404":
           description: Not Found
@@ -688,13 +721,17 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/OpenIdConfiguration"
+                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
   /.well-known/oauth-authorization-server:
     get:
       tags:
       - Well-known endpoints API
-      summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfiguration_1
+      summary: Retrieve OAuth 2.0 Authorization Server Metadata
+      description: "Returns the configuration metadata of the Authorization Server\
+        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
+        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
+        \ Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadata_1
       responses:
         "404":
           description: Not Found
@@ -703,13 +740,17 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/OpenIdConfiguration"
+                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
   /oid4vci/.well-known/oauth-authorization-server:
     get:
       tags:
       - Well-known endpoints API
-      summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfiguration_2
+      summary: Retrieve OAuth 2.0 Authorization Server Metadata
+      description: "Returns the configuration metadata of the Authorization Server\
+        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
+        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
+        \ Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadata_2
       responses:
         "404":
           description: Not Found
@@ -718,13 +759,17 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/OpenIdConfiguration"
+                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
   /oid4vci/.well-known/openid-configuration:
     get:
       tags:
       - Well-known endpoints API
-      summary: OpenID Connect information required for issuing VCs
-      operationId: getOpenIDConfiguration_3
+      summary: Retrieve OAuth 2.0 Authorization Server Metadata
+      description: "Returns the configuration metadata of the Authorization Server\
+        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
+        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
+        \ Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadata_3
       responses:
         "404":
           description: Not Found
@@ -733,7 +778,63 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/OpenIdConfiguration"
+                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
+  /management/api/credentials/{credentialManagementId}/offers/{offerId}:
+    get:
+      tags:
+      - Credential API
+      summary: "Get a specific offer data, if it is still cached"
+      operationId: getCredentialOfferInformation
+      parameters:
+      - name: credentialManagementId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: offerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: Credential offer found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CredentialInfoResponse"
+  /management/api/credentials/{credentialManagementId}/offers/{offerId}/status:
+    get:
+      tags:
+      - Credential API
+      summary: Get the current status of a specific offer.
+      operationId: getCredentialStatus_1
+      parameters:
+      - name: credentialManagementId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: offerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
   /actuator:
     get:
       tags:
@@ -843,6 +944,59 @@ paths:
             application/json:
               schema:
                 type: object
+  /actuator/env:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'env'
+      operationId: environment
+      parameters:
+      - name: pattern
+        in: query
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
+  /actuator/env/{toMatch}:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'env-toMatch'
+      operationId: environmentEntry
+      parameters:
+      - name: toMatch
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
 components:
   schemas:
     OauthAccessTokenRequest:
@@ -891,6 +1045,36 @@ components:
             creating a proof of possession of the key.
       required:
       - c_nonce
+    CredentialResponseEncryption:
+      type: object
+      properties:
+        jwk:
+          type: object
+          additionalProperties: {}
+        alg:
+          type: string
+        enc:
+          type: string
+      required:
+      - alg
+      - enc
+      - jwk
+    DeferredCredentialEndpointRequest:
+      type: object
+      description: Request to the deferred credential endpoint.
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+          description: Id received from the create credential request for the deferred
+            flow.
+        credential_response_encryption:
+          $ref: "#/components/schemas/CredentialResponseEncryption"
+          description: |
+            Note that this object will be used for encrypting the response, regardless of what was sent in the initial Credential Request.
+            If this parameter is missing, the credential_response_encryption sent in the credential request will be used.
+      required:
+      - transaction_id
     CredentialEndpointResponse:
       type: object
       properties:
@@ -921,17 +1105,6 @@ components:
           description: |
             One sdjwt credential as string, if multiple credentials are issued each is wrapped in
             a separate CredentialObjectDtoV2 object.
-    DeferredCredentialEndpointRequest:
-      type: object
-      description: Request to the deferred credential endpoint.
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
-          description: Id received from the create credential request for the deferred
-            flow.
-      required:
-      - transaction_id
     CredentialEndpointRequest:
       type: object
       description: Request to the Credential Endpoint as defined in OID4VCI draft
@@ -948,20 +1121,6 @@ components:
           $ref: "#/components/schemas/CredentialResponseEncryption"
       required:
       - format
-    CredentialResponseEncryption:
-      type: object
-      properties:
-        jwk:
-          type: object
-          additionalProperties: {}
-        alg:
-          type: string
-        enc:
-          type: string
-      required:
-      - alg
-      - enc
-      - jwk
     CredentialEndpointRequestV2:
       type: object
       description: Request to the Credential Endpoint as defined in OID4VCI 1.0 specification
@@ -1623,7 +1782,7 @@ components:
             pattern: ^ES256$
         key_attestations_required:
           $ref: "#/components/schemas/KeyAttestationRequirement"
-    OpenIdConfiguration:
+    OAuthAuthorizationServerMetadata:
       type: object
       properties:
         issuer:
@@ -1712,6 +1871,17 @@ components:
           type: string
         templated:
           type: boolean
+    ApiError:
+      description: Error response object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        detail:
+          type: string
+        trace_id:
+          type: string
     WebhookCallback:
       description: Callback transmitting information about an event which occurred.
       properties:
@@ -1728,20 +1898,14 @@ components:
           type: string
         event_description:
           type: string
+        event_trigger:
+          type: string
+          enum:
+          - CREDENTIAL_MANAGEMENT
+          - CREDENTIAL_OFFER
         timestamp:
           type: string
           format: date-time
-    ApiError:
-      description: Error response object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-        detail:
-          type: string
-        trace_id:
-          type: string
   securitySchemes:
     bearer-jwt:
       type: http
