@@ -1,9 +1,7 @@
 package ch.admin.bj.swiyu.issuer.domain.callback;
 
-import ch.admin.bj.swiyu.issuer.api.callback.CallbackEventTriggerDto;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Null;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 

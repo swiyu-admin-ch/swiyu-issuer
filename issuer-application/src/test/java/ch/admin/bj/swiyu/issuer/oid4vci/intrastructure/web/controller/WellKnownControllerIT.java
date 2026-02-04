@@ -65,7 +65,7 @@ class WellKnownControllerIT {
     }
 
     @Test
-    void testGetOpenIdConfiguration_thenSuccess() throws Exception {
+    void testGetAuthorizationServerMetadata_thenSuccess() throws Exception {
         mock.perform(get("/oid4vci/.well-known/openid-configuration"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("token_endpoint")))

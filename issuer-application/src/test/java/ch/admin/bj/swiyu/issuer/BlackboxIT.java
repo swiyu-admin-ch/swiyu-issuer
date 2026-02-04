@@ -2,18 +2,18 @@ package ch.admin.bj.swiyu.issuer;
 
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialResponseEncryptionDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.NonceResponseDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -269,7 +269,7 @@ class BlackboxIT {
                 .getContentAsString()), "Well Known data should be a parsable JWT");
         assertDoesNotThrow(() -> oauthConfigJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
         var oauthConfig = assertDoesNotThrow(() -> objectMapper.readValue(oauthConfigJwt.getPayload().toString(),
-                OpenIdConfigurationDto.class));
+                OAuthAuthorizationServerMetadataDto.class));
         assertThat(oauthConfig.issuer()).isEqualTo(issuerUri.toString());
 
         var issuerMetadataResponse = assertDoesNotThrow(() -> mvc.perform(get(
