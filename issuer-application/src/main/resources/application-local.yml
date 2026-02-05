@@ -6,7 +6,7 @@ spring:
   docker:
     compose:
       enabled: true
-      file: compose.yaml
+      file: issuer-application/compose.yaml
   datasource:
     url: "jdbc:postgresql://localhost:5434/issuer_db"
     username: "issuer_mgmt_user"
