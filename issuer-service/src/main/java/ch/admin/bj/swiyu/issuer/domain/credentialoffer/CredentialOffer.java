@@ -287,4 +287,9 @@ public class CredentialOffer {
         this.credentialStatus = credentialOfferStatus;
     }
 
+    public UUID getOrGenerateTransactionId() {
+        UUID transactionId = Optional.ofNullable(getTransactionId()).orElse(UUID.randomUUID());
+        setTransactionId(transactionId);
+        return transactionId;
+    }
 }

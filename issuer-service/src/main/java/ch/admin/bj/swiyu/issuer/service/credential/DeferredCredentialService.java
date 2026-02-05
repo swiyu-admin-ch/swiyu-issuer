@@ -116,6 +116,7 @@ public class DeferredCredentialService {
 
     /**
      * Builds a credential envelope for OID4VCI 2.0 requests.
+     * If transaction_id is missing, will generate a new one
      */
     CredentialEnvelopeDto buildEnvelopeV2(CredentialOffer credentialOffer, CredentialResponseEncryptionClass responseEncryption) {
         var credentialSupportedId = getMetadataCredentialSupportedId(credentialOffer);
@@ -132,7 +133,7 @@ public class DeferredCredentialService {
             return credentialBuilder
                     .buildCredentialEnvelopeV2();
         } else {
-            var transactionId = UUID.randomUUID();
+            var transactionId = credentialOffer.getOrGenerateTransactionId();
             return credentialBuilder
                     .buildDeferredCredentialV2(transactionId);
         }
