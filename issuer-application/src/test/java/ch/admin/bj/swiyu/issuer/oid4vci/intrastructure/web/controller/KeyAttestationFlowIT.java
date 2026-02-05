@@ -112,7 +112,7 @@ class KeyAttestationFlowIT {
         var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
         assertNotNull(result);
 
-        verify(testEventListener, Mockito.times(2)).handleStateChangeEvent(any(OfferStateChangeEvent.class));
+        verify(testEventListener, Mockito.times(2)).handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
     }
 
     /**

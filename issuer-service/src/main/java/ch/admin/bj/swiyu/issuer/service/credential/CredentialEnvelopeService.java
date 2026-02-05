@@ -173,7 +173,6 @@ public class CredentialEnvelopeService {
         credentialStateMachine.sendEventAndUpdateStatus(context.mgmt(), ISSUE);
         credentialOfferRepository.save(context.offer());
         credentialManagementRepository.save(context.mgmt());
-        eventProducerService.produceOfferStateChangeEvent(context.mgmt().getId(), context.offer().getId(), context.offer().getCredentialStatus());
         return responseEnvelope;
     }
 

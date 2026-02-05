@@ -8,6 +8,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.management;
 
 import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
@@ -43,8 +44,8 @@ public class CredentialManagementController {
     @Operation(
             summary = "Create a generic credential offer with the given content",
             description = """
-                    Create a new credential offer, which can the be collected by the holder.
-                    The returned deep link has to be provided to the holder via an other channel, for example as QR-Code.
+                    Create a new credential offer, which can then be collected by the holder.
+                    The returned deep link has to be provided to the holder through another channel, for example as QR-Code.
                     The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
                     Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
                     """,
@@ -83,10 +84,32 @@ public class CredentialManagementController {
     }
 
     @Timed
+    @GetMapping("/{credentialManagementId}/offers/{offerId}")
+    @Operation(
+            summary = "Get a specific offer data, if it is still cached",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential offer found"
+                    )
+            }
+    )
+    public CredentialInfoResponseDto getCredentialOfferInformation(@PathVariable UUID credentialManagementId, @PathVariable UUID offerId) {
+        return this.credentialManagementService.getSpecificCredentialOfferInformation(credentialManagementId, offerId);
+    }
+
+    @Timed
     @GetMapping("/{credentialManagementId}/status")
     @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
     public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialManagementId) {
         return this.credentialManagementService.getCredentialStatus(credentialManagementId);
+    }
+
+    @Timed
+    @GetMapping("/{credentialManagementId}/offers/{offerId}/status")
+    @Operation(summary = "Get the current status of a specific offer.")
+    public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialManagementId, @PathVariable UUID offerId) {
+        return this.credentialManagementService.getCredentialOfferStatus(credentialManagementId, offerId);
     }
 
     @Timed

@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New endpoint `/actuator/env` to retrieve configuration details.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}` to retrieve offer specific information.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}/status` to retrieve the status of the offer.
+- Send callback on every credential offer status change.
+- Send callback on every credential management status change.
+- Added field `event_trigger` to callback request
+  - Field is set to `CREDENTIAL_MANAGEMENT` on credential management status change.
+  - Field is set to `CREDENTIAL_OFFER` on credential offer status change.
 
 ### Fixed
 

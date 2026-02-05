@@ -5,7 +5,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
-import ch.admin.bj.swiyu.issuer.service.webhook.StateChangeEvent;
+import ch.admin.bj.swiyu.issuer.service.webhook.ManagementStateChangeEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +76,7 @@ class CredentialStateServiceTest {
                 .thenReturn(result);
 
         var actual = stateService.updateOfferStateAndPublish(
-                offer, CredentialStateMachineConfig.CredentialOfferEvent.READY, mgmtId);
+                offer, CredentialStateMachineConfig.CredentialOfferEvent.READY);
 
         assertSame(result, actual);
 
@@ -84,7 +84,6 @@ class CredentialStateServiceTest {
         verify(applicationEventPublisher, times(1)).publishEvent(eventCaptor.capture());
         assertInstanceOf(OfferStateChangeEvent.class, eventCaptor.getValue());
         var evt = (OfferStateChangeEvent) eventCaptor.getValue();
-        assertEquals(mgmtId, evt.credentialManagementId());
         assertEquals(offerId, evt.credentialOfferId());
         assertEquals(CredentialOfferStatusType.READY, evt.newState());
     }
@@ -103,14 +102,14 @@ class CredentialStateServiceTest {
                 .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType>(CredentialOfferStatusType.OFFERED, false));
 
         var result = stateService.updateOfferStateAndPublish(
-                offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM, UUID.randomUUID());
+                offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
 
         assertFalse(result.changed());
         verifyNoInteractions(applicationEventPublisher);
     }
 
     /**
-     * Happy path: when the management state changes, the service must publish a {@link StateChangeEvent}.
+     * Happy path: when the management state changes, the service must publish a {@link ManagementStateChangeEvent}.
      */
     @Test
     void updateManagementStateAndPublish_shouldPublishEventWhenStateChanged() {
@@ -130,9 +129,9 @@ class CredentialStateServiceTest {
 
         var eventCaptor = org.mockito.ArgumentCaptor.forClass(Object.class);
         verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
-        assertInstanceOf(StateChangeEvent.class, eventCaptor.getValue());
-        var evt = (StateChangeEvent) eventCaptor.getValue();
-        assertEquals(mgmtId, evt.credentialOfferId());
+        assertInstanceOf(ManagementStateChangeEvent.class, eventCaptor.getValue());
+        var evt = (ManagementStateChangeEvent) eventCaptor.getValue();
+        assertEquals(mgmtId, evt.credentialManagementId());
         assertEquals(CredentialStatusManagementType.ISSUED, evt.newState());
     }
 
@@ -237,7 +236,6 @@ class CredentialStateServiceTest {
         verify(applicationEventPublisher, times(1)).publishEvent(eventCaptor.capture());
         assertInstanceOf(OfferStateChangeEvent.class, eventCaptor.getValue());
         var evt = (OfferStateChangeEvent) eventCaptor.getValue();
-        assertEquals(mgmt.getId(), evt.credentialManagementId());
         assertEquals(offerId, evt.credentialOfferId());
         assertEquals(CredentialOfferStatusType.EXPIRED, evt.newState());
     }
