@@ -111,7 +111,7 @@ class CredentialOfferStatusMultiThreadedIT {
         mvc.perform(post("/management/api/status-list")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 255,\"config\": {\"bits\": 2}}"))
+                                "{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": 30000,\"config\": {\"bits\": 2}}"))
                 .andExpect(status().isOk());
     }
 
@@ -128,10 +128,11 @@ class CredentialOfferStatusMultiThreadedIT {
         // create some offers in a multithreaded manner
         // When increasing this too much spring boot will throw 'Failed to read request'
         // in a non-deterministic way...
-        var results = IntStream.range(0, 20).parallel().mapToObj(i -> {
+        var results = IntStream.range(0, 1000).parallel().mapToObj(i -> {
             try {
                 return testHelper.createStatusListLinkedOfferAndGetUUID();
             } catch (Exception e) {
+                System.out.println(e.toString());
                 throw new RuntimeException(e);
             }
         }).toList();
