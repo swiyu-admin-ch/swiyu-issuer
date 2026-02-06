@@ -6,8 +6,8 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web;
 
-import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
-import ch.admin.bj.swiyu.issuer.api.exception.DpopErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.exception.DpopErrorDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import jakarta.validation.ConstraintViolationException;
@@ -27,14 +27,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ch.admin.bj.swiyu.issuer.service.CredentialMapper.oauthErrorToApiErrorDto;
-import static ch.admin.bj.swiyu.issuer.service.CredentialMapper.toCredentialRequestErrorResponseDto;
+import static ch.admin.bj.swiyu.issuer.infrastructure.web.CredentialMapper.oauthErrorToApiErrorDto;
+import static ch.admin.bj.swiyu.issuer.infrastructure.web.CredentialMapper.toCredentialRequestErrorResponseDto;
 import static org.springframework.http.HttpStatus.*;
 
 @RestControllerAdvice
@@ -48,6 +46,17 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         log.debug("OAuthException: {}", exception.getMessage());
         return new ResponseEntity<>(apiError, apiError.getStatus());
     }
+
+    @ExceptionHandler(RenewalException.class)
+    public ResponseEntity<ApiErrorDto> handleRenewalException(final RenewalException exception) {
+        ApiErrorDto apiError = ApiErrorDto.builder()
+                .errorDescription(exception.getMessage())
+                .status(exception.getHttpStatus())
+                .build();
+        log.debug("OAuthException: {}", exception.getMessage());
+        return new ResponseEntity<>(apiError, apiError.getStatus());
+    }
+
 
     @ExceptionHandler(Oid4vcException.class)
     public ResponseEntity<ApiErrorDto> handleOID4VCException(final Oid4vcException exception) {
@@ -68,7 +77,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
-    @ExceptionHandler({BadRequestException.class, CredentialException.class})
+    @ExceptionHandler({BadRequestException.class, CredentialException.class, IllegalStateException.class})
     public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
         final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(BAD_REQUEST.getReasonPhrase())
@@ -142,7 +151,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @NotNull
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(@NotNull MethodArgumentNotValidException ex,
                                                                   @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status,
                                                                   @NonNull WebRequest request) {

@@ -185,11 +185,10 @@ With response:
     "credential_response_encryption": {
         "encryption_required": false,
         "alg_values_supported": [
-            "RSA-OAEP-256",
-            "ECDH-ES+A128KW"
+            "ECDH-ES"
         ],
         "enc_values_supported": [
-            "A128CBC-HS256"
+            "A128GCM"
         ]
     },
     "display": [

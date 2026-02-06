@@ -10,7 +10,7 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
@@ -19,8 +19,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.SignatureService;
-import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
+import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
@@ -45,6 +45,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -81,7 +82,7 @@ class StatusListIT {
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
     @MockitoBean
-    private SignatureService signatureService;
+    private JwsSignatureFacade jwsSignatureFacade;
     @Mock
     private ApiClient mockApiClient;
     @Autowired
@@ -97,12 +98,13 @@ class StatusListIT {
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
-                .thenReturn(statusListEntryCreationDto);
+                .thenReturn(Mono.just(statusListEntryCreationDto));
+        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
 
         final JWSSigner es256Signer = new ECDSASigner(new ECKeyGenerator(Curve.P_256).keyID("test-key").generate());
-        when(signatureService.createSigner(any(SignatureConfiguration.class), any(), any()))
+        when(jwsSignatureFacade.createSigner(any(SignatureConfiguration.class), any(), any()))
                 .thenReturn(es256Signer);
     }
 
@@ -174,7 +176,7 @@ class StatusListIT {
         assertEquals(keyId, newStatusList.getConfigurationOverride().keyId());
         assertEquals(keyPin, newStatusList.getConfigurationOverride().keyPin());
 
-        verify(signatureService, atLeastOnce()).createSigner(
+        verify(jwsSignatureFacade, atLeastOnce()).createSigner(
                 same(statusListProperties),
                 eq(keyId),
                 eq(keyPin)

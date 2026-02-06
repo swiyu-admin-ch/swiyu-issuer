@@ -18,8 +18,8 @@ query-filters:
       kind: path-problem
   - include:
       severity: ["error", "warning"]  # Only errors and warnings
-#  - exclude:
-#      tags: ["external/cwe/cwe-798"] # Exclude specific CWEs
+  - exclude:
+      id: java/deprecated-call # Exclude deprecated calls because of V1 version
 
 # Extended analysis options
 disable-default-queries: false

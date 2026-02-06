@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,14 +22,14 @@ class CredentialOfferTest {
     @Test
     void testBuilderAndStatusChange() {
         CredentialOffer offer = CredentialOffer.builder()
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .metadataCredentialSupportedId(List.of("id1"))
                 .offerExpirationTimestamp(Instant.now().plusSeconds(10).getEpochSecond())
                 .build();
 
-        assertEquals(CredentialStatusType.OFFERED, offer.getCredentialStatus());
-        offer.changeStatus(CredentialStatusType.EXPIRED);
-        assertEquals(CredentialStatusType.EXPIRED, offer.getCredentialStatus());
+        assertEquals(CredentialOfferStatusType.OFFERED, offer.getCredentialStatus());
+        offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.EXPIRED);
+        assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
     }
 
     @Test
@@ -56,39 +57,9 @@ class CredentialOfferTest {
         assertThrows(BadRequestException.class, () -> CredentialOffer.readOfferData(123));
     }
 
-    @Test
-    void testExpireAndCancel() {
-        CredentialOffer offer = CredentialOffer.builder()
-                .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialStatusType.OFFERED)
-                .build();
-        offer.expire();
-        assertEquals(CredentialStatusType.EXPIRED, offer.getCredentialStatus());
-        assertNull(offer.getOfferData());
-
-        offer = CredentialOffer.builder()
-                .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialStatusType.OFFERED)
-                .build();
-        offer.cancel();
-        assertEquals(CredentialStatusType.CANCELLED, offer.getCredentialStatus());
-        assertNull(offer.getOfferData());
-    }
 
     @Test
-    void testMarkAsIssued() {
-        CredentialOffer offer = CredentialOffer.builder()
-                .metadataCredentialSupportedId(List.of("supportedId"))
-                .offerData(Map.of("data", "test"))
-                .credentialStatus(CredentialStatusType.OFFERED)
-                .build();
-        offer.markAsIssued();
-        assertEquals(CredentialStatusType.ISSUED, offer.getCredentialStatus());
-        assertNull(offer.getOfferData());
-    }
-
-    @Test
-    void testMarkAsDeferred_withDefaultValue() {
+    void testSetDeferred_Data_withDefaultValue() {
         var transactionId = UUID.randomUUID();
         var credentialRequest = new CredentialRequestClass();
         var holderPublicKeys = List.of("publicKey1", "publicKey2");
@@ -101,9 +72,17 @@ class CredentialOfferTest {
                 .metadataCredentialSupportedId(List.of("supportedId"))
                 .offerData(Map.of("data", "test"))
                 .offerExpirationTimestamp(Instant.now().plusSeconds(1000).getEpochSecond())
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .deferredOfferValiditySeconds(null)
                 .build();
+
+        CredentialManagement mgmt = CredentialManagement.builder()
+                .accessToken(UUID.randomUUID())
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .credentialOffers(Set.of(offer))
+                .build();
+
+        offer.setCredentialManagement(mgmt);
 
         String instantExpected = "2025-01-01T00:00:00.00Z";
         Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
@@ -112,8 +91,7 @@ class CredentialOfferTest {
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
-            offer.markAsDeferred(transactionId, credentialRequest, holderPublicKeys, keyAttestationJwts, clientAgentInfo, applicationProperties);
-            assertEquals(CredentialStatusType.DEFERRED, offer.getCredentialStatus());
+            offer.initializeDeferredState(transactionId, credentialRequest, holderPublicKeys, keyAttestationJwts, clientAgentInfo, applicationProperties);
             assertEquals(transactionId, offer.getTransactionId());
             assertEquals(credentialRequest, offer.getCredentialRequest());
             assertEquals(holderPublicKeys, offer.getHolderJWKs());
@@ -124,7 +102,7 @@ class CredentialOfferTest {
     }
 
     @Test
-    void testMarkAsDeferred_withDynamicValue() {
+    void testSetDeferred_Data_withDynamicValue() {
         var transactionId = UUID.randomUUID();
         var credentialRequest = new CredentialRequestClass();
         var holderPublicKeys = List.of("publicKey1", "publicKey2");
@@ -137,9 +115,17 @@ class CredentialOfferTest {
                 .metadataCredentialSupportedId(List.of("supportedId"))
                 .offerData(Map.of("data", "test"))
                 .offerExpirationTimestamp(Instant.now().plusSeconds(1000).getEpochSecond())
-                .credentialStatus(CredentialStatusType.OFFERED)
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .deferredOfferValiditySeconds(10)
                 .build();
+
+        CredentialManagement mgmt = CredentialManagement.builder()
+                .accessToken(UUID.randomUUID())
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .credentialOffers(Set.of(offer))
+                .build();
+
+        offer.setCredentialManagement(mgmt);
 
         String instantExpected = "2025-01-01T00:00:00Z";
         Clock clock = Clock.fixed(Instant.parse(instantExpected), ZoneId.of("UTC"));
@@ -148,7 +134,7 @@ class CredentialOfferTest {
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
-            offer.markAsDeferred(transactionId, credentialRequest, holderPublicKeys, keyAttestationJwts, clientAgentInfo, applicationProperties);
+            offer.initializeDeferredState(transactionId, credentialRequest, holderPublicKeys, keyAttestationJwts, clientAgentInfo, applicationProperties);
             assertEquals(Instant.now().plusSeconds(10L).getEpochSecond(), offer.getOfferExpirationTimestamp());
         }
     }

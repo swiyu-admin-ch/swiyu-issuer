@@ -12,7 +12,6 @@ import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -57,7 +56,8 @@ public class CredentialOffer {
      * which can not be covered by the status list
      */
     @Enumerated(EnumType.STRING)
-    private CredentialStatusType credentialStatus;
+    @Setter(AccessLevel.NONE) //
+    private CredentialOfferStatusType credentialStatus;
 
     /**
      * ID String referencing the entry in the issuer metadata of the signer
@@ -98,20 +98,6 @@ public class CredentialOffer {
     private CredentialOfferMetadata credentialMetadata;
 
     /**
-     * Value used for the oid bearer token given to the holder
-     */
-    @NotNull
-    private UUID accessToken;
-
-
-    /**
-     * OAuth refresh token for the offer
-     */
-    @Nullable
-    @Column(name = "refresh_token", nullable = true)
-    private UUID refreshToken;
-
-    /**
      * Value used for the deferred flow to get the credential
      */
     private UUID transactionId;
@@ -141,12 +127,6 @@ public class CredentialOffer {
     private ClientAgentInfo clientAgentInfo;
 
     /**
-     * Expiration in unix epoch (since 1.1.1970) timestamp in seconds
-     */
-    @Nullable
-    private Long tokenExpirationTimestamp;
-
-    /**
      * Value used in the holder binding process to prevent replay attacks
      */
     @Deprecated(since = "OID4VCI 1.0")
@@ -160,7 +140,7 @@ public class CredentialOffer {
     /**
      * Timestamp after which the credential offer or the deferred credential offer will be regarded as expired.
      */
-    private long offerExpirationTimestamp;
+    private Long offerExpirationTimestamp;
 
     private Integer deferredOfferValiditySeconds;
 
@@ -183,12 +163,11 @@ public class CredentialOffer {
     private ConfigurationOverride configurationOverride;
 
     /**
-     * Wallet Public Key used for DPoP header JWT
+     * Reference to Credential Management entry
      */
-    @Nullable
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "dpop_key", columnDefinition = "jsonb", nullable = true)
-    private Map<String, Object> dpopKey;
+    @ManyToOne
+    @JoinColumn(name = "credential_management_id", nullable = false)
+    private CredentialManagement credentialManagement;
 
     /**
      * Read the offer data depending on input type and add it to offer
@@ -227,64 +206,22 @@ public class CredentialOffer {
         }
     }
 
-    public void removeOfferData() {
-        this.offerData = null;
-    }
-
-    public void changeStatus(CredentialStatusType credentialStatus) {
-        this.credentialStatus = credentialStatus;
-    }
-
     public boolean hasExpirationTimeStampPassed() {
-        return Instant.now().isAfter(Instant.ofEpochSecond(this.offerExpirationTimestamp));
+        return this.offerExpirationTimestamp != null &&
+                Instant.now().isAfter(Instant.ofEpochSecond(this.offerExpirationTimestamp));
     }
 
-    public void expire() {
-        this.changeStatus(CredentialStatusType.EXPIRED);
-        this.removeOfferData();
-    }
-
-    public void cancel() {
-        this.changeStatus(CredentialStatusType.CANCELLED);
-        this.removeOfferData();
-    }
-
-    public void markAsIssued() {
-        this.invalidateOfferData();
-        this.credentialStatus = CredentialStatusType.ISSUED;
-        log.info("Credential issued for offer {}. Management-ID is {}. ",
-                this.metadataCredentialSupportedId, this.id);
-    }
-
-    public void markAsInProgress() {
-        this.credentialStatus = CredentialStatusType.IN_PROGRESS;
-        if (this.accessToken == null) {
-            this.accessToken = UUID.randomUUID();
-        }
-    }
-
-    public void setTokenIssuanceTimestamp(long tokenTTL) {
-        this.tokenExpirationTimestamp = Instant.now().plusSeconds(tokenTTL).getEpochSecond();
-    }
-
-    public void markAsExpired() {
-        this.credentialStatus = CredentialStatusType.EXPIRED;
-        this.invalidateOfferData();
-        log.info("Credential expired for offer {}. Management-ID is {}.", this.metadataCredentialSupportedId, this.id);
-    }
-
-    public void markAsDeferred(UUID transactionId,
-                               CredentialRequestClass credentialRequest,
-                               List<String> holderPublicKey,
-                               List<String> keyAttestationJWTs,
-                               ClientAgentInfo clientAgentInfo,
-                               ApplicationProperties applicationProperties) {
+    public void initializeDeferredState(UUID transactionId,
+                                        CredentialRequestClass credentialRequest,
+                                        List<String> holderPublicKey,
+                                        List<String> keyAttestationJWTs,
+                                        ClientAgentInfo clientAgentInfo,
+                                        ApplicationProperties applicationProperties) {
 
         var expiration = Instant.now().plusSeconds(nonNull(deferredOfferValiditySeconds) && deferredOfferValiditySeconds > 0
                 ? deferredOfferValiditySeconds
                 : applicationProperties.getDeferredOfferValiditySeconds());
 
-        this.credentialStatus = CredentialStatusType.DEFERRED;
         this.credentialRequest = credentialRequest;
         this.transactionId = transactionId;
         this.holderJWKs = !holderPublicKey.isEmpty() ? holderPublicKey : null;
@@ -294,19 +231,8 @@ public class CredentialOffer {
         // update expiration for deferred flow
         this.offerExpirationTimestamp = expiration.getEpochSecond();
 
-        log.info("Deferred credential response for offer {}. Management-ID is {} and status is {}. ",
-                this.metadataCredentialSupportedId, this.id, this.credentialStatus);
-    }
-
-    public void markAsReadyForIssuance(Map<String, Object> offerData) {
-        this.credentialStatus = CredentialStatusType.READY;
-        this.setOfferData(offerData);
-        log.info("Deferred Credential ready for issuance for offer {}. Management-ID is {} and status is {}. ",
-                this.metadataCredentialSupportedId, this.id, this.credentialStatus);
-    }
-
-    public boolean hasTokenExpirationPassed() {
-        return Instant.now().isAfter(Instant.ofEpochSecond(this.tokenExpirationTimestamp));
+        log.info("Deferred credential response for offer {}. Management ID is {}, offer ID is {} and status is {}. ",
+                this.getMetadataCredentialSupportedId(), this.getCredentialManagement().getId(), this.getId(), this.getCredentialStatus());
     }
 
     public boolean isDeferredOffer() {
@@ -317,24 +243,48 @@ public class CredentialOffer {
         return this.credentialStatus.isProcessable();
     }
 
+    public boolean isTerminatedOffer() {
+        return this.credentialStatus.isTerminalState();
+    }
+
     @NotNull
     public ConfigurationOverride getConfigurationOverride() {
         return Objects.requireNonNullElseGet(this.configurationOverride, () -> new ConfigurationOverride(null, null, null, null));
     }
 
-    public void setDPoPKey(Map<String, Object> dPoPKey) {
-        this.dpopKey = dPoPKey;
-    }
-
-
-    private void invalidateOfferData() {
+    public void invalidateOfferData() {
         this.offerData = null;
         this.transactionId = null;
         this.credentialRequest = null;
         this.holderJWKs = null;
         this.clientAgentInfo = null;
-        this.preAuthorizedCode = null;
         this.keyAttestations = null;
         this.offerExpirationTimestamp = 0L;
     }
+
+    /**
+     * Sets the status of this credential offer entity.
+     * <p>
+     * <b>Intended for use by {@link CredentialStateMachine} only.</b>
+     * Do not use outside the state machine context to ensure correct state transitions.
+     *
+     * @param credentialOfferStatus the new status to set
+     */
+    void setCredentialOfferStatus(CredentialOfferStatusType credentialOfferStatus) {
+        this.credentialStatus = credentialOfferStatus;
+    }
+
+    /**
+     * Sets the status of this credential offer entity.
+     * <p>
+     * <b>Intended for test usage only.</b>
+     * Do not use in production code.
+     * Always use the state machine to change states!
+     *
+     * @param credentialOfferStatus the new status to set
+     */
+    public void setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType credentialOfferStatus) {
+        this.credentialStatus = credentialOfferStatus;
+    }
+
 }

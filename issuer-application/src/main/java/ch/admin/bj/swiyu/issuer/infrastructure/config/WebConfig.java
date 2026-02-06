@@ -6,7 +6,7 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
-import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import lombok.Data;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;

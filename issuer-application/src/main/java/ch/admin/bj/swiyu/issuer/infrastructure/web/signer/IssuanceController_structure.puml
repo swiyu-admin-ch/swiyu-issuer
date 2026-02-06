@@ -1,0 +1,253 @@
+@startuml
+
+/' diagram meta data start
+config=StructureConfiguration;
+{
+  "projectClassification": {
+    "searchMode": "OpenProject", // OpenProject, AllProjects
+    "includedProjects": "",
+    "pathEndKeywords": "*.impl",
+    "isClientPath": "",
+    "isClientName": "",
+    "isTestPath": "",
+    "isTestName": "",
+    "isMappingPath": "",
+    "isMappingName": "",
+    "isDataAccessPath": "",
+    "isDataAccessName": "",
+    "isDataStructurePath": "",
+    "isDataStructureName": "",
+    "isInterfaceStructuresPath": "",
+    "isInterfaceStructuresName": "",
+    "isEntryPointPath": "",
+    "isEntryPointName": "",
+    "treatFinalFieldsAsMandatory": false
+  },
+  "graphRestriction": {
+    "classPackageExcludeFilter": "",
+    "classPackageIncludeFilter": "",
+    "classNameExcludeFilter": "*Dto;*Mapper;*Properties",
+    "classNameIncludeFilter": "",
+    "methodNameExcludeFilter": "",
+    "methodNameIncludeFilter": "",
+    "removeByInheritance": "", // inheritance/annotation based filtering is done in a second step
+    "removeByAnnotation": "",
+    "removeByClassPackage": "", // cleanup the graph after inheritance/annotation based filtering is done
+    "removeByClassName": "",
+    "cutMappings": false,
+    "cutEnum": true,
+    "cutTests": true,
+    "cutClient": true,
+    "cutDataAccess": false,
+    "cutInterfaceStructures": false,
+    "cutDataStructures": false,
+    "cutGetterAndSetter": true,
+    "cutConstructors": true
+  },
+  "graphTraversal": {
+    "forwardDepth": 3,
+    "backwardDepth": 3,
+    "classPackageExcludeFilter": "",
+    "classPackageIncludeFilter": "",
+    "classNameExcludeFilter": "",
+    "classNameIncludeFilter": "",
+    "methodNameExcludeFilter": "",
+    "methodNameIncludeFilter": "",
+    "hideMappings": false,
+    "hideDataStructures": false,
+    "hidePrivateMethods": true,
+    "hideInterfaceCalls": true, // indirection: implementation -> interface (is hidden) -> implementation
+    "onlyShowApplicationEntryPoints": false, // root node is included
+    "useMethodCallsForStructureDiagram": "ForwardOnly" // ForwardOnly, BothDirections, No
+  },
+  "details": {
+    "aggregation": "GroupByClass", // ByClass, GroupByClass, None
+    "showClassGenericTypes": false,
+    "showMethods": false,
+    "showMethodParameterNames": false,
+    "showMethodParameterTypes": false,
+    "showMethodReturnType": false,
+    "showPackageLevels": 5,
+    "showDetailedClassStructure": false
+  },
+  "rootClass": "ch.admin.bj.swiyu.issuer.infrastructure.web.signer.IssuanceController",
+  "extensionCallbackMethod": "" // qualified.class.name#methodName - signature: public static String method(String)
+}
+diagram meta data end '/
+
+
+
+digraph g {
+    rankdir="TB"
+    splines=polyline
+    
+
+'nodes 
+subgraph cluster_92668751 { 
+   	label=admin
+	labeljust=l
+	fillcolor="#ececec"
+	style=filled
+   
+   subgraph cluster_969162937 { 
+   	label=bj
+	labeljust=l
+	fillcolor="#d8d8d8"
+	style=filled
+   
+   subgraph cluster_1256842502 { 
+   	label=swiyu
+	labeljust=l
+	fillcolor="#c4c4c4"
+	style=filled
+   
+   subgraph cluster_297046061 { 
+   	label=issuer
+	labeljust=l
+	fillcolor="#bababa"
+	style=filled
+   
+   subgraph cluster_1073771132 { 
+   	label=infrastructure
+	labeljust=l
+	fillcolor="#b0b0b0"
+	style=filled
+   
+   IssuanceController281199067[
+	label="(C)IssuanceController"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+} 
+
+subgraph cluster_2017206988 { 
+   	label=common
+	labeljust=l
+	fillcolor="#b0b0b0"
+	style=filled
+   
+   OAuthException2063523498[
+	label="(C)OAuthException"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+} 
+
+subgraph cluster_2045824421 { 
+   	label=domain
+	labeljust=l
+	fillcolor="#b0b0b0"
+	style=filled
+   
+   IssuerMetadata314384712[
+	label="(C)IssuerMetadata"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+} 
+
+subgraph cluster_857347596 { 
+   	label=service
+	labeljust=l
+	fillcolor="#b0b0b0"
+	style=filled
+   
+   CredentialIssuanceService761217018[
+	label="(C)CredentialIssuanceService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+CredentialServiceOrchestrator761217018[
+	label="(C)CredentialServiceOrchestrator"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+DeferredCredentialService761217018[
+	label="(C)DeferredCredentialService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+DemonstratingProofOfPossessionService83998032[
+	label="(C)DemonstratingProofOfPossessionService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+DemonstratingProofOfPossessionValidationService83998032[
+	label="(C)DemonstratingProofOfPossessionValidationService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+EncryptionJweService1803825815[
+	label="(C)EncryptionJweService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+EncryptionKeyService1803825815[
+	label="(C)EncryptionKeyService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+NonceService354864683[
+	label="(C)NonceService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+
+OAuthService354864683[
+	label="(C)OAuthService"
+	style=filled
+	shape=rect
+	fillcolor="#FFFFFF"
+];
+} 
+} 
+} 
+} 
+} 
+
+'edges    
+CredentialServiceOrchestrator761217018 -> CredentialIssuanceService761217018[label="credentialIssuanceService
+[0..1]"];
+CredentialServiceOrchestrator761217018 -> DeferredCredentialService761217018[label="deferredCredentialService
+[0..1]"];
+DemonstratingProofOfPossessionService83998032 -> DemonstratingProofOfPossessionValidationService83998032[label="demonstratingProofOfPossessionValidationService
+[0..1]"];
+DemonstratingProofOfPossessionService83998032 -> NonceService354864683[label="nonceService
+[0..1]"];
+DemonstratingProofOfPossessionService83998032 -> OAuthService354864683[label="oAuthService
+[0..1]"];
+EncryptionJweService1803825815 -> EncryptionKeyService1803825815[label="encryptionKeyService
+[0..1]"];
+EncryptionJweService1803825815 -> IssuerMetadata314384712[label="issuerMetadata
+[0..1]"];
+IssuanceController281199067 -> CredentialServiceOrchestrator761217018[label="credentialServiceOrchestrator
+[0..1]"];
+IssuanceController281199067 -> DemonstratingProofOfPossessionService83998032[label="demonstratingProofOfPossessionService
+[0..1]"];
+IssuanceController281199067 -> EncryptionJweService1803825815[label="encryptionJweService
+[0..1]"];
+IssuanceController281199067 -> NonceService354864683[label="nonceService
+[0..1]"];
+IssuanceController281199067 -> OAuthService354864683[label="oauthService
+[0..1]"];
+    
+}
+@enduml

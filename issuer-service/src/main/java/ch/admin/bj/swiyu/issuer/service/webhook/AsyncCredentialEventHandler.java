@@ -11,26 +11,33 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class AsyncCredentialEventHandler {
 
-    private final WebhookService webhookService;
+    private final WebhookEventProducer webhookEventProducer;
 
     @EventListener
     @Async
     public void handleErrorEvent(ErrorEvent errorEvent) {
-        webhookService.produceErrorEvent(errorEvent.credentialOfferId(), errorEvent.errorCode(), errorEvent.errorMessage());
+        webhookEventProducer.produceErrorEvent(errorEvent.credentialOfferId(), errorEvent.errorCode(), errorEvent.errorMessage());
         log.info("Processed ErrorEvent for CredentialOfferId: {}", errorEvent.credentialOfferId());
     }
 
     @EventListener
     @Async
-    public void handleStateChangeEvent(StateChangeEvent stateChangeEvent) {
-        webhookService.produceStateChangeEvent(stateChangeEvent.credentialOfferId(), stateChangeEvent.newState());
+    public void handleOfferStateChangeEvent(OfferStateChangeEvent stateChangeEvent) {
+        webhookEventProducer.produceOfferStateChangeEvent(stateChangeEvent.credentialOfferId(), stateChangeEvent.newState());
         log.info("Processed StateChangeEvent for CredentialOfferId: {}", stateChangeEvent.credentialOfferId());
     }
 
     @EventListener
     @Async
+    public void handleManagementStateChangeEvent(ManagementStateChangeEvent managementStateChangeEvent) {
+        webhookEventProducer.produceManagementStateChangeEvent(managementStateChangeEvent.credentialManagementId(), managementStateChangeEvent.newState());
+        log.info("Processed StateChangeEvent for CredentialManagementId: {}", managementStateChangeEvent.credentialManagementId());
+    }
+
+    @EventListener
+    @Async
     public void handleDeferredEvent(DeferredEvent deferredEvent) {
-        webhookService.produceDeferredEvent(deferredEvent.credentialOfferId(), deferredEvent.clientAgentInfo());
+        webhookEventProducer.produceDeferredEvent(deferredEvent.credentialOfferId(), deferredEvent.clientAgentInfo());
         log.info("Processed DeferredEvent for CredentialOfferId: {}", deferredEvent.credentialOfferId());
     }
 }
