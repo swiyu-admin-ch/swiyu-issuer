@@ -1,0 +1,145 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Swiss Confederation
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+package ch.admin.bj.swiyu.issuer.infrastructure.web.management;
+
+import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
+import io.micrometer.core.annotation.Timed;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.UUID;
+
+@RestController
+@RequestMapping(value = {"/management/api/credentials"})
+@AllArgsConstructor
+@Tag(name = "Credential API", description = "Exposes API endpoints for managing credential offers and their statuses. " +
+        "Supports creating new credential offers, retrieving offer data and deeplinks, and updating or querying the " +
+        "status of offers and issued verifiable credentials. (IF-114)")
+public class CredentialManagementController {
+
+    private final CredentialManagementService credentialManagementService;
+
+    @Timed
+    @PostMapping("")
+    @Operation(
+            summary = "Create a generic credential offer with the given content",
+            description = """
+                    Create a new credential offer, which can then be collected by the holder.
+                    The returned deep link has to be provided to the holder through another channel, for example as QR-Code.
+                    The credentialSubjectData can be a json object or a JWT, if the signer has been configured to perform data integrity checks.
+                    Returns both the ID used to interact with the offer and later issued VC, and the deep link to be provided to
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential offer created",
+                            content = @Content(schema = @Schema(implementation = CredentialWithDeeplinkResponseDto.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    Bad request due to user content or internal call to external service like statuslist
+                                    """,
+                            content = @Content(schema = @Schema(implementation = Object.class))
+                    )
+            }
+    )
+    public CredentialWithDeeplinkResponseDto createCredential(@Valid @RequestBody CreateCredentialOfferRequestDto request) {
+        return this.credentialManagementService.createCredentialOfferAndGetDeeplink(request);
+    }
+
+    @Timed
+    @GetMapping("/{credentialManagementId}")
+    @Operation(
+            summary = "Get the offer data, if any is still cached",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential offer found"
+                    )
+            }
+    )
+    public CredentialManagementDto getCredentialInformation(@PathVariable UUID credentialManagementId) {
+        return this.credentialManagementService.getCredentialOfferInformation(credentialManagementId);
+    }
+
+    @Timed
+    @GetMapping("/{credentialManagementId}/offers/{offerId}")
+    @Operation(
+            summary = "Get a specific offer data, if it is still cached",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential offer found"
+                    )
+            }
+    )
+    public CredentialInfoResponseDto getCredentialOfferInformation(@PathVariable UUID credentialManagementId, @PathVariable UUID offerId) {
+        return this.credentialManagementService.getSpecificCredentialOfferInformation(credentialManagementId, offerId);
+    }
+
+    @Timed
+    @GetMapping("/{credentialManagementId}/status")
+    @Operation(summary = "Get the current status of an offer or the verifiable credential, if already issued.")
+    public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialManagementId) {
+        return this.credentialManagementService.getCredentialStatus(credentialManagementId);
+    }
+
+    @Timed
+    @GetMapping("/{credentialManagementId}/offers/{offerId}/status")
+    @Operation(summary = "Get the current status of a specific offer.")
+    public StatusResponseDto getCredentialStatus(@PathVariable UUID credentialManagementId, @PathVariable UUID offerId) {
+        return this.credentialManagementService.getCredentialOfferStatus(credentialManagementId, offerId);
+    }
+
+    @Timed
+    @PatchMapping("/{credentialManagementId}")
+    @Operation(summary = "Update the status of an offer or the verifiable credential associated with the id. This is only for deferred flows. The status is set to ready for issuance",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential status updated",
+                            content = @Content(schema = @Schema(implementation = UpdateStatusResponseDto.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Bad request due to user content or internal call to external service like statuslist",
+                            content = @Content(schema = @Schema(implementation = Object.class))
+                    )
+            }
+    )
+    public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialManagementId, @RequestBody Map<String, Object> credentialOffer) {
+
+        return this.credentialManagementService.updateOfferDataForDeferred(credentialManagementId, credentialOffer);
+    }
+
+    @Timed
+    @PatchMapping("/{credentialManagementId}/status")
+    @Operation(summary = "Set the status of an offer or the verifiable credential associated with the id.")
+    public UpdateStatusResponseDto updateCredentialStatus(@PathVariable UUID credentialManagementId,
+                                                          @Parameter(in = ParameterIn.QUERY, schema = @Schema(implementation = UpdateCredentialStatusRequestTypeDto.class))
+                                                          @RequestParam("credentialStatus") UpdateCredentialStatusRequestTypeDto credentialStatus) {
+
+        return credentialManagementService.updateCredentialStatus(credentialManagementId, credentialStatus);
+    }
+}

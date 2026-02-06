@@ -7,15 +7,15 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.NonceResponseDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.GsonBuilder;
@@ -51,13 +51,13 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
-import static ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto.INVALID_GRANT;
-import static ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto.INVALID_REQUEST;
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_REQUEST;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -90,6 +90,8 @@ class IssuanceControllerIT {
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
+    private CredentialManagementRepository credentialManagementRepository;
+    @Autowired
     private SdjwtProperties sdjwtProperties;
     @MockitoSpyBean
     private ApplicationProperties applicationProperties;
@@ -105,15 +107,13 @@ class IssuanceControllerIT {
         return credentialSubjectData;
     }
 
-    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode, CredentialStatusType status) {
+    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode, CredentialOfferStatusType status) {
         var offerData = new HashMap<String, Object>();
         offerData.put("data", new GsonBuilder().create().toJson(getUnboundCredentialSubjectData()));
         return CredentialOffer.builder().credentialStatus(status)
                 .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
                 .offerData(offerData)
                 .credentialMetadata(null)
-                .accessToken(UUID.randomUUID())
-                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
                 .nonce(UUID.randomUUID())
                 .preAuthorizedCode(preAuthCode)
@@ -124,12 +124,12 @@ class IssuanceControllerIT {
     void setUp() throws JOSEException {
         testStatusList = saveStatusList(createStatusList());
         CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
-        var offer = createTestOffer(validPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", metadata);
+        var offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", metadata);
         saveStatusListLinkedOffer(offer, testStatusList, 0);
         offerId = offer.getId();
-        var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
+        var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
         saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, testStatusList, 1);
-        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialStatusType.OFFERED);
+        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialOfferStatusType.OFFERED);
         saveStatusListLinkedOffer(unboundOffer, testStatusList, 2);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
@@ -139,35 +139,8 @@ class IssuanceControllerIT {
     }
 
     @Test
-    void testGetOpenIdConfiguration_thenSuccess() throws Exception {
-        mock.perform(get("/oid4vci/.well-known/openid-configuration"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("token_endpoint")))
-                .andExpect(content().string(not(containsString("${external-url}"))));
-    }
-
-    @Test
-    void testGetOauthAuthorizationServer_thenSuccess() throws Exception {
-        mock.perform(get("/oid4vci/.well-known/oauth-authorization-server"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("token_endpoint")))
-                .andExpect(content().string(not(containsString("${external-url}"))));
-    }
-
-    @Test
-    void testGetIssuerMetadata_thenSuccess() throws Exception {
-        mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(not(containsString("${external-url}"))))
-                .andExpect(content().string(containsString("credential_endpoint")))
-                .andExpect(content().string(not(containsString("${stage}"))))
-                .andExpect(content().string(containsString("local-Example Credential")))
-                .andExpect(content().string(containsString("local-university_example_sd_jwt")));
-    }
-
-    @Test
     void testGetIssuerMetadataWithSignedMetadata_thenSuccess() throws Exception {
-
+        // Override with always enabled signed metadata
         when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
 
         String minPayloadWithEmptySubject = String.format(
@@ -191,7 +164,7 @@ class IssuanceControllerIT {
 
         var issuerUrl = credentialOffer.get("credential_issuer").getAsString();
 
-        var response = mock.perform(get(issuerUrl.split("http://localhost:8080")[1] + "/.well-known/openid-configuration").header(HttpHeaders.CONTENT_TYPE, "application/jwt"))
+        var response = mock.perform(get(issuerUrl.split("http://localhost:8080")[1] + "/.well-known/openid-configuration").header(HttpHeaders.ACCEPT, "application/jwt"))
                 .andReturn().getResponse().getContentAsString();
 
         var test = SignedJWT.parse(response);
@@ -209,12 +182,12 @@ class IssuanceControllerIT {
         assertEquals(sdjwtProperties.getVerificationMethod(), headers.getKeyID());
 
         /*
-         * sub: Must match the issuer did
+         * sub: Must be the credential issuer identifier (generally external url)
          * iat: Must be the time when the JWT was issued
          * exp: Optional the time when the Metadata are expiring -> default 24h
          */
 
-        assertEquals(applicationProperties.getIssuerId(), claims.get("sub"));
+        assertEquals(issuerUrl, claims.get("sub"), "Subject must match the credential issuer identifier");
         assertNotNull(claims.get("iat"));
         assertNotNull(claims.get("exp"));
     }
@@ -246,7 +219,7 @@ class IssuanceControllerIT {
 
         // Open new Request
         var newOfferPreAuthCode = UUID.randomUUID();
-        var newOffer = createTestOffer(newOfferPreAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        var newOffer = createTestOffer(newOfferPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt");
         saveStatusListLinkedOffer(newOffer, testStatusList, 5);
         tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, newOfferPreAuthCode.toString());
         token = tokenResponse.get("access_token");
@@ -394,7 +367,13 @@ class IssuanceControllerIT {
         mock.perform(post("/oid4vci/api/token")
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
+                // specified at https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.access_token").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").value("BEARER"));
     }
 
     @Test
@@ -403,7 +382,13 @@ class IssuanceControllerIT {
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
+                // specified at https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.access_token").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").value("BEARER"));
     }
 
     @Test
@@ -569,15 +554,22 @@ class IssuanceControllerIT {
         assertNotNull(refreshToken);
         // Refresh the token
         var refreshResponse = mock.perform(post("/oid4vci/api/token")
-                        .header("DPoP", TestInfrastructureUtils.createDPoP(mock, "POST", applicationProperties.getExternalUrl() + "/api/token", null, dpopKey))
+                        .header("DPoP", TestInfrastructureUtils.createDPoP(mock, "POST", applicationProperties.getExternalUrl() + "/oid4vci/api/token", null, dpopKey))
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                         .param("grant_type", "refresh_token")
                         .param("refresh_token", refreshToken.toString()))
                 .andExpect(status().isOk())
+                // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
+                // specified at https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.access_token").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
+                .andExpect(jsonPath("$.token_type").value("BEARER"))
                 .andReturn();
+        assertThat(applicationProperties.isAllowRefreshTokenRotation()).as("This tests expects refresh token rotation to be disabled").isFalse();
         var newToken = assertDoesNotThrow(() -> objectMapper.readValue(refreshResponse.getResponse().getContentAsString(), OAuthTokenDto.class));
-        assertNotEquals(tokenResponse.get("access_token").toString(), newToken.getAccessToken());
-        assertNotEquals(refreshToken.toString(), newToken.getRefreshToken());
+        assertThat(newToken.getAccessToken()).as("refreshing the oauth access token should yield a new token").isNotEqualTo(tokenResponse.get("access_token").toString());
+        assertThat(newToken.getRefreshToken()).as("refresh token rotation is disabled, the refresh token should remain the same").isEqualTo(refreshToken.toString());
     }
 
     private void addOverride(UUID preAuthCode, ConfigurationOverride override) {
@@ -635,9 +627,23 @@ class IssuanceControllerIT {
         return JWEObject.parse(response.getResponse().getContentAsString());
     }
 
-    private void saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
-        credentialOfferRepository.save(offer);
+    private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
+        var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .accessToken(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .renewalRequestCnt(0)
+                .renewalResponseCnt(0)
+                .build());
+
+        offer.setCredentialManagement(credentialManagement);
+        var storedOffer = credentialOfferRepository.save(offer);
         credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
+
+        credentialManagement.addCredentialOffer(storedOffer);
+        credentialManagementRepository.save(credentialManagement);
+        return storedOffer;
     }
 
     private StatusList saveStatusList(StatusList statusList) {

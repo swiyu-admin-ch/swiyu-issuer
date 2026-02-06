@@ -6,10 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.DemonstratingProofOfPossessionService;
-import ch.admin.bj.swiyu.issuer.service.EncryptionService;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
+import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,20 +38,29 @@ import java.util.UUID;
 public class WellKnownController {
 
     private static final String CONTENT_TYPE_APPLICATION_JWT = "application/jwt";
-    private final EncryptionService encryptionService;
+    private final JweService jweService;
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final MetadataService metadataService;
 
     /**
-     * OpenID Connect information for the OAuth Authorization Server
-     * This endpoint is a duplicate of the getOpenIDConfiguration endpoint in order to generate a clean openapi doc
+     * Returns OAuth 2.0 / OpenID Connect Authorization Server metadata.
+     * <p>
+     * This endpoint is an OpenAPI description for the well-known URLs defined in RFC 8414 and
+     * OID4VCI. It exposes issuer, token, and authorization endpoints, supported grant types, DPoP and
+     * OID4VCI-specific extensions.
+     * </p>
      *
-     * @return OpenIdConfigurationDto as defined by OIDConnect and extended by OID4VCI
+     * @return {@link OAuthAuthorizationServerMetadataDto} containing the unsigned Authorization Server
+     * configuration metadata, enriched with the signing algorithms supported for DPoP.
      */
     @GetMapping(value = {"/oid4vci/.well-known/openid-configuration", ".well-known/openid-configuration", "/oid4vci/.well-known/oauth-authorization-server", ".well-known/oauth-authorization-server"})
-    @Operation(summary = "OpenID Connect information required for issuing VCs")
-    public OpenIdConfigurationDto getOpenIDConfiguration() {
-        return demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(metadataService.getUnsignedOpenIdConfiguration());
+    @Operation(summary = "Retrieve OAuth 2.0 Authorization Server Metadata",
+            description = "Returns the configuration metadata of the Authorization Server in accordance with RFC 8414. " +
+                    "This includes URLs to endpoints (e.g., token endpoint), supported grant types, as well as " +
+                    "extensions for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP."
+    )
+    public OAuthAuthorizationServerMetadataDto getAuthorizationServerMetadata() {
+        return demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(metadataService.getUnsignedOAuthAuthorizationServerMetadata());
     }
 
     /**
@@ -63,32 +72,56 @@ public class WellKnownController {
     @Operation(summary = "Information about credentials which can be issued.")
     public IssuerMetadata getIssuerMetadata() {
         // Unwrap the object from the spring cache object.
-        return (IssuerMetadata) AopProxyUtils.getSingletonTarget(encryptionService.issuerMetadataWithEncryptionOptions());
+        return (IssuerMetadata) AopProxyUtils.getSingletonTarget(jweService.issuerMetadataWithEncryptionOptions());
     }
 
     @GetMapping(value = {"/{tenantId}/.well-known/openid-credential-issuer", "/oid4vci/{tenantId}/.well-known/openid-credential-issuer"})
     @Operation(summary = "Information about credentials which can be issued.")
     public Object getIssuerMetadataByTenantId(
             @PathVariable UUID tenantId,
-            @RequestHeader("Content-Type") String contentType) {
+            @RequestHeader("Accept") String acceptHeader) {
 
-        if (CONTENT_TYPE_APPLICATION_JWT.equals(contentType)) {
+        if (expectsSignedResponse(acceptHeader)) {
             return metadataService.getSignedIssuerMetadata(tenantId);
         }
 
-        return metadataService.getUnsignedIssuerMetadata();
+        return metadataService.getUnsignedIssuerMetadata(tenantId);
     }
 
+    /**
+     * Returns tenant-specific OAuth 2.0 / OpenID Connect Authorization Server metadata.
+     * <p>
+     * This endpoint serves the well-known configuration documents defined by RFC 8414 and OID4VCI
+     * for a given tenant. Depending on the {@code Accept} header, it returns either a signed JWT
+     * representation of the Authorization Server metadata or an unsigned JSON document.
+     * </p>
+     *
+     * @param tenantId     unique identifier of the tenant whose Authorization Server configuration
+     *                     should be returned.
+     * @param acceptHeader value of the {@code Accept} HTTP header used to determine whether a
+     *                     signed (JWT) or unsigned JSON response is expected.
+     * @return signed or unsigned tenant-specific Authorization Server metadata, matching the
+     *         requested content type.
+     */
     @GetMapping(value = {"/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/oauth-authorization-server", "/{tenantId}/.well-known/oauth-authorization-server"})
-    @Operation(summary = "Information about credentials which can be issued.")
-    public Object getOpenIdConfigurationByTenantId(
+    @Operation(
+            summary = "Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata",
+            description = "Returns the Authorization Server configuration metadata for the given tenant in accordance with RFC 8414. " +
+                    "Depending on the 'Accept' header, the response is provided either as an unsigned JSON document or as a signed JWT. " +
+                    "The metadata includes issuer information, endpoint URLs (e.g., token endpoint), supported grant types and extensions " +
+                    "required for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP.")
+    public Object getAuthorizationServerMetadataByTenantId(
             @PathVariable UUID tenantId,
-            @RequestHeader("Content-Type") String contentType) {
+            @RequestHeader("Accept") String acceptHeader) {
 
-        if (contentType.startsWith(CONTENT_TYPE_APPLICATION_JWT)) {
-            return metadataService.getSignedOpenIdConfiguration(tenantId);
+        if (expectsSignedResponse(acceptHeader)) {
+            return metadataService.getSignedOAuthAuthorizationServerMetadata(tenantId);
         }
 
-        return metadataService.getUnsignedOpenIdConfiguration();
+        return metadataService.getUnsignedOAuthAuthorizationServerMetadata(tenantId);
+    }
+
+    private static boolean expectsSignedResponse(String acceptHeader) {
+        return acceptHeader.contains(CONTENT_TYPE_APPLICATION_JWT);
     }
 }

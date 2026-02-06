@@ -46,5 +46,8 @@ public class CallbackEvent {
     @CreatedDate
     private Instant timestamp;
 
-
+    @Column
+    @Nullable
+    @Enumerated(EnumType.STRING)
+    private CallbackEventTrigger eventTrigger;
 }

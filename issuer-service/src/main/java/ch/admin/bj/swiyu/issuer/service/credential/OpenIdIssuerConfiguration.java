@@ -1,0 +1,171 @@
+package ch.admin.bj.swiyu.issuer.service.credential;
+
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
+import ch.admin.bj.swiyu.issuer.dto.type_metadata.OcaDto;
+import ch.admin.bj.swiyu.issuer.dto.type_metadata.TypeMetadataDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialMetadata;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.*;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.util.PropertyPlaceholderHelper;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.*;
+
+@Configuration
+@Data
+@Slf4j
+public class OpenIdIssuerConfiguration {
+
+    private final ApplicationProperties applicationProperties;
+    private final ResourceLoader resourceLoader;
+    private final ObjectMapper objectMapper;
+
+    @Value("${application.openid-file}")
+    private Resource openIdResource;
+
+    @Value("${application.metadata-file}")
+    private Resource issuerMetadataResource;
+
+    /**
+     * @return Issuer Metadata for using in creation of a vc
+     * @throws IOException if the required json resource is not found
+     */
+    @Bean
+    public IssuerMetadata createIssuerMetadataBean() throws IOException {
+        var mapped = resourceToMappedData(issuerMetadataResource, IssuerMetadata.class);
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        var validator = factory.getValidator();
+        var validationResult = validator.validate(mapped).stream()
+                .map(v -> String.format("- Invalid value for %s. Current is %s but the constraint is %s", v.getPropertyPath().toString(), v.getInvalidValue(), v.getMessage()))
+                .collect(Collectors.joining("\n"));
+        if (!validationResult.isEmpty()) {
+            throw new IllegalArgumentException(String.format("An invalid issuer metadata configuration was provided. Please adapt the following values:%n%s", validationResult));
+        }
+        return mapped;
+    }
+
+    @Bean
+    public CredentialMetadata createCredentialMetadataBean() throws IOException {
+        var builder = CredentialMetadata.builder();
+
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            Validator validator = factory.getValidator();
+
+            builder.vctMetadataMap(loadMetadataFiles(applicationProperties.getVctMetadataFiles(), validator, TypeMetadataDto.class));
+            builder.jsonSchemaMap(loadMetadataFiles(applicationProperties.getJsonSchemaMetadataFiles(), validator, null));
+            builder.overlayCaptureArchitectureMap(loadMetadataFiles(applicationProperties.getOverlaysCaptureArchitectureMetadataFiles(), validator, OcaDto.class));
+            return builder.build();
+        }
+    }
+
+    /**
+     * @return the full Issuer Metadata in a recursive Map
+     */
+    @Cacheable(ISSUER_METADATA_CACHE)
+    public IssuerMetadata getIssuerMetadata() {
+        try {
+            return resourceToMappedData(issuerMetadataResource, IssuerMetadata.class);
+        } catch (IOException e) {
+            throw new ConfigurationException("Cannot read issuer metadata", e);
+        }
+    }
+
+    @Cacheable(OPEN_ID_CONFIGURATION_CACHE)
+    public OAuthAuthorizationServerMetadataDto getOpenIdConfiguration() {
+        try {
+            return resourceToMappedData(openIdResource, OAuthAuthorizationServerMetadataDto.class);
+        } catch (IOException e) {
+            throw new ConfigurationException("Cannot read openid config", e);
+        }
+    }
+
+    @Cacheable(ISSUER_METADATA_MAP_CACHE)
+    public Map<String, Object> getIssuerMetadataMap() {
+        try {
+            return resourceToMappedData(issuerMetadataResource, HashMap.class);
+        } catch (IOException e) {
+            throw new ConfigurationException("Cannot read issuer metadata config", e);
+        }
+    }
+
+    @Cacheable(OPEN_ID_CONFIGURATION_MAP_CACHE)
+    public Map<String, Object> getOpenIdConfigurationMap() {
+        try {
+            return resourceToMappedData(openIdResource, HashMap.class);
+        } catch (IOException e) {
+            throw new ConfigurationException("Cannot read issuer metadata config", e);
+        }
+    }
+
+    public <T> Map<String, String> loadMetadataFiles(Map<String, String> metadataFiles, Validator validator, Class<T> clazz) throws IOException {
+        var metadata = new HashMap<String, String>();
+        if (metadataFiles == null) {
+            return metadata;
+        }
+        for (Map.Entry<String, String> entry : metadataFiles.entrySet()) {
+            var resource = resourceLoader.getResource(entry.getValue());
+            if (!resource.exists()) {
+                log.error("Could not find configured resource: {}", entry.getValue());
+                continue;
+            }
+
+            if (validator != null && clazz != null) {
+                validateMetadataFile(entry, validator, clazz);
+            }
+
+            log.debug("Loading metadata {}: {}", entry.getKey(), entry.getValue());
+            metadata.put(entry.getKey(), loadMetadata(resource));
+        }
+        return metadata;
+    }
+
+    public <T> void validateMetadataFile(Map.Entry<String, String> entry, Validator validator, Class<T> clazz) throws IOException {
+        var resource = resourceLoader.getResource(entry.getValue());
+        var metadataFileContent = loadMetadata(resource);
+
+        T metadata = objectMapper.readValue(metadataFileContent, clazz);
+        Set<ConstraintViolation<T>> violations = validator.validate(metadata);
+        if (!violations.isEmpty()) {
+            log.error("Validation error in {} with message: {}", entry.getValue(), violations);
+            throw new ConstraintViolationException(violations);
+        }
+    }
+
+    private String replaceExternalUri(String template) {
+        Properties prop = new Properties();
+        for (Map.Entry<String, String> replacementEntrySet : applicationProperties.getTemplateReplacement().entrySet()) {
+            prop.setProperty(replacementEntrySet.getKey(), replacementEntrySet.getValue());
+        }
+        PropertyPlaceholderHelper helper = new PropertyPlaceholderHelper("${", "}");
+        return helper.replacePlaceholders(template, prop);
+    }
+
+    private <T> T resourceToMappedData(Resource res, Class<T> clazz) throws IOException {
+        var json = res.getContentAsString(Charset.defaultCharset());
+        json = replaceExternalUri(json);
+        return new ObjectMapper().readValue(json, clazz);
+    }
+
+    private String loadMetadata(Resource res) throws IOException {
+        var json = res.getContentAsString(Charset.defaultCharset());
+        return replaceExternalUri(json);
+    }
+}

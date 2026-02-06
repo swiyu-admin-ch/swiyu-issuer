@@ -112,8 +112,6 @@ class OAuthSingleKeyJWTTest {
         var randomUUID = UUID.randomUUID();
         mvc.perform(get(MANAGEMENT_BASE_URL + "/" + randomUUID))
                 .andExpect(status().isUnauthorized());
-
-
     }
 
     @Test
@@ -134,7 +132,6 @@ class OAuthSingleKeyJWTTest {
         mvc.perform(get(MANAGEMENT_BASE_URL + "/" + id)
                         .header("Authorization", "Bearer " + bearerToken))
                 .andExpect(status().isOk());
-
     }
 
     @Test
@@ -156,6 +153,5 @@ class OAuthSingleKeyJWTTest {
         mvc.perform(get(STATUS_BASE_URL + "/" + randomUUID)
                         .header("Authorization", "Bearer " + bearerToken))
                 .andExpect(status().isNotFound());
-
     }
 }

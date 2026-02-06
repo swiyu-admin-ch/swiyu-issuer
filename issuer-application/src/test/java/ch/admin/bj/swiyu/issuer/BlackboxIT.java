@@ -1,60 +1,67 @@
 package ch.admin.bj.swiyu.issuer;
 
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
-import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.api.credentialoffer.CredentialWithDeeplinkResponseDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialResponseEncryptionDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.NonceResponseDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OpenIdConfigurationDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
+import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
+import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryTokenService;
+import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.mockserver.client.MockServerClient;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mockserver.MockServerContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,30 +79,44 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Blackbox Test")
 @AutoConfigureMockMvc
 @Testcontainers
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "signed-metadata"})
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class BlackboxIT {
     private static final String CREDENTIAL_MANAGEMENT_BASE_URL = "/management/api/credentials";
-    private static final MessageDigest sha256 = assertDoesNotThrow(() -> MessageDigest.getInstance("SHA-256"));
+    @Container
+    static MockServerContainer mockServerContainer = new MockServerContainer(
+            DockerImageName.parse("mockserver/mockserver:5.15.0")
+    );
+    static MockServerClient mockServerClient;
     protected StatusListTestHelper statusListTestHelper;
     @Autowired
     protected SwiyuProperties swiyuProperties;
     @Autowired
+    private SdjwtProperties sdjwtProperties;
+    @Autowired
     private ObjectMapper objectMapper;
     @Autowired
     private MockMvc mvc;
-    @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
-    @Mock
-    private ApiClient mockApiClient;
+    @Autowired
+    private ObjectMapper mapper;
+    @MockitoSpyBean
+    private StatusRegistryTokenService statusRegistryTokenService;
+
+    @DynamicPropertySource
+    static void overrideProperties(DynamicPropertyRegistry registry) {
+        mockServerClient =
+                new MockServerClient(
+                        mockServerContainer.getHost(),
+                        mockServerContainer.getServerPort()
+                );
+        registry.add("swiyu.status-registry.api-url", mockServerContainer::getEndpoint);
+        registry.add("swiyu.status-registry.token-url", mockServerContainer::getEndpoint);
+    }
 
     @BeforeEach
     void setUp() {
         statusListTestHelper = new StatusListTestHelper(mvc, objectMapper);
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(statusListEntry);
-        when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
-        when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
     }
 
     /**
@@ -103,7 +124,53 @@ class BlackboxIT {
      * For details see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-pre-authorized-code-flow">OID4VCI 1.0 Spec</a>
      */
     @Test
-    void preauthorizedCodeFlow_thenSuccess() {
+    void preauthorizedCodeFlow_thenSuccess() throws JsonProcessingException {
+
+        var statusListEntry = statusListTestHelper.buildStatusListEntry();
+        var statusListEntryString = mapper.writeValueAsString(statusListEntry);
+
+        when(statusRegistryTokenService.getAccessToken()).thenReturn("invalidAccessToken").thenReturn("refreshedAccessToken");
+        when(statusRegistryTokenService.forceRefreshAccessToken()).thenReturn("refreshedAccessToken");
+
+        mockServerClient
+                .when(
+                        new HttpRequest()
+                                .withMethod("POST")
+                                .withHeader("Authorization", "bearer invalidAccessToken")
+                                .withPath("/api/v1/status/business-entities/%s/status-list-entries/".formatted(swiyuProperties.businessPartnerId()))
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withStatusCode(401)
+                );
+
+        mockServerClient
+                .when(
+                        new HttpRequest()
+                                .withMethod("POST")
+                                .withHeader("Authorization", "bearer refreshedAccessToken")
+                                .withPath("/api/v1/status/business-entities/%s/status-list-entries/".formatted(swiyuProperties.businessPartnerId()))
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withStatusCode(200)
+                                .withHeader("Content-Type", "application/json")
+                                .withBody(statusListEntryString)
+                );
+
+        mockServerClient
+                .when(
+                        new HttpRequest()
+                                .withHeader("Authorization", "bearer refreshedAccessToken")
+                                .withMethod("PUT")
+                                .withPath("/api/v1/status/business-entities/%s/status-list-entries/%s".formatted(swiyuProperties.businessPartnerId(), statusListEntry.getId()))
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withStatusCode(200)
+                                .withHeader("Content-Type", "application/json")
+                );
+
         // ---------------------
         // -- Business Issuer --
         // ---------------------
@@ -186,32 +253,44 @@ class BlackboxIT {
         var baseIssuerUri = issuerUri.toString()
                 .replace(issuerUri.getPath(), "");
 
+        var issuerUriPath = assertDoesNotThrow(() -> new URI(parsedOffer.get("credential_issuer").toString()).getPath());
+
         // Next the wallet wants to fetch the well-known endpoints
         var openidConfigResponse = assertDoesNotThrow(() -> mvc.perform(get(
-                        "/oid4vci/.well-known/oauth-authorization-server"))
+                        "%s/.well-known/oauth-authorization-server".formatted(issuerUriPath))
+                        .accept("application/jwt"))
                 .andExpect(status().isOk())
                 .andReturn());
-        var oauthConfig = assertDoesNotThrow(() -> objectMapper.readValue(openidConfigResponse.getResponse()
-                        .getContentAsString(),
-                OpenIdConfigurationDto.class));
-        assertThat(oauthConfig.issuer()).isEqualTo(baseIssuerUri);
+
+        //
+        var issuerPublicKey = assertDoesNotThrow(() -> JWK.parseFromPEMEncodedObjects(sdjwtProperties.getPrivateKey()).toECKey().toECPublicKey());
+        var issuerSignatureVerifier = assertDoesNotThrow(() -> new ECDSAVerifier(issuerPublicKey));
+        var oauthConfigJwt = assertDoesNotThrow(() -> SignedJWT.parse(openidConfigResponse.getResponse()
+                .getContentAsString()), "Well Known data should be a parsable JWT");
+        assertDoesNotThrow(() -> oauthConfigJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
+        var oauthConfig = assertDoesNotThrow(() -> objectMapper.readValue(oauthConfigJwt.getPayload().toString(),
+                OAuthAuthorizationServerMetadataDto.class));
+        assertThat(oauthConfig.issuer()).isEqualTo(issuerUri.toString());
 
         var issuerMetadataResponse = assertDoesNotThrow(() -> mvc.perform(get(
-                        "/oid4vci/.well-known/openid-credential-issuer"))
+                        "%s/.well-known/openid-credential-issuer".formatted(issuerUriPath))
+                        .accept("application/jwt"))
                 .andExpect(status().isOk())
                 .andReturn());
 
-        var issuerMetadata = assertDoesNotThrow(() -> objectMapper.readValue(issuerMetadataResponse.getResponse()
-                        .getContentAsString(),
+        var issuerMetadataJwt = assertDoesNotThrow(() -> SignedJWT.parse(issuerMetadataResponse.getResponse()
+                .getContentAsString()), "Well Known data should be a parsable JWT");
+        assertDoesNotThrow(() -> issuerMetadataJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
+
+        var issuerMetadata = assertDoesNotThrow(() -> objectMapper.readValue(issuerMetadataJwt.getPayload().toString(),
                 IssuerMetadata.class));
 
         assertThat(issuerMetadata.getCredentialConfigurationSupported()
                 .keySet())
                 .as("The issuer must declare in its metadata that is offers the credential type offered")
                 .containsAll(offeredCredentialIds);
-        assertThat(issuerMetadata.getCredentialIssuer()).isEqualTo(baseIssuerUri);
+        assertThat(issuerMetadata.getCredentialIssuer()).isEqualTo(issuerUri.toString());
 
-        // TODO EIDOMNI-200 validate metadata signature
 
         // Fetch the bearer token
 
@@ -353,7 +432,6 @@ class BlackboxIT {
                 .distinct()
                 .toList();
         assertThat(holderBindings).hasSize(issuerMetadata.getIssuanceBatchSize());
-
     }
 
     private String createDpop(String nonceEndpoint, String httpMethod, String httpUri, String accessToken, ECKey dpopKey) {
@@ -362,23 +440,7 @@ class BlackboxIT {
                 .andExpect(status().isOk())
                 .andReturn());
         String dpopNonce = nonceResponse.getResponse().getHeader("DPoP-Nonce");
-        // Create a DPoP JWT
-        var claimSetBuilder = new JWTClaimsSet.Builder()
-                .jwtID(UUID.randomUUID().toString())
-                .issueTime(new Date())
-                .claim("htm", httpMethod)
-                .claim("htu", httpUri)
-                .claim("nonce", dpopNonce);
-        if (StringUtils.isNotEmpty(accessToken)) {
-            claimSetBuilder.claim("ath", Base64.getEncoder().encodeToString(sha256.digest(accessToken.getBytes(StandardCharsets.UTF_8))));
-        }
-        var signedJwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .jwk(dpopKey.toPublicJWK())
-                .type(new JOSEObjectType("dpop+jwt"))
-                .build(),
-                claimSetBuilder.build());
-        assertDoesNotThrow(() -> signedJwt.sign(new ECDSASigner(dpopKey)));
-        return signedJwt.serialize();
+        return DemonstratingProofOfPossessionTestUtil.createDPoPJWT(httpMethod, httpUri, accessToken, dpopKey, dpopNonce);
     }
 
     @NotNull

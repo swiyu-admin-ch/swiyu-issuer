@@ -91,8 +91,21 @@ public class ApplicationProperties {
     @NotNull
     private long tokenTTL;
 
+    /**
+     * Flag Indicating if refresh tokens are used
+     */
     @NotNull
     private boolean allowTokenRefresh;
+    /**
+     * Flag indicating if refresh tokens are changed after use
+     */
+    @NotNull
+    private boolean allowRefreshTokenRotation;
+
+    @NotNull
+    private boolean renewalFlowAllowed;
+
+    private String businessIssuerRenewalApiEndpoint;
 
     @NotNull
     private int acceptableProofTimeWindowSeconds;
@@ -103,6 +116,8 @@ public class ApplicationProperties {
     private boolean encryptionEnforce;
 
     private boolean dpopEnforce;
+
+    private boolean automaticStatusListSynchronizationDisabled;
 
     private String dataIntegrityJwks;
     private JWKSet dataIntegrityKeySet;
@@ -125,4 +140,7 @@ public class ApplicationProperties {
         }
     }
 
+    public boolean isRenewalFlowEnabled() {
+        return this.isDpopEnforce() && this.isRenewalFlowAllowed() && this.getBusinessIssuerRenewalApiEndpoint() != null;
+    }
 }

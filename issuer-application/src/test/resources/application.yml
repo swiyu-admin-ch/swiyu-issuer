@@ -11,7 +11,7 @@ spring:
 
 application:
   issuer-id: "did:tdw:example"
-  external-url: "http://localhost:8080/oid4vci"
+  external-url: "http://localhost:8080"
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
   deferred-offer-validity-seconds: 864000 # 60 * 60 * 24 * 10 => 10 days;
   trusted-attestation-providers: [ "did:test:test-attestation-builder" ]
@@ -34,7 +34,8 @@ application:
   dpop-enforce: false
   deeplink-schema: swiyu
   token-ttl: 600
-  allow_token_refresh: true
+  allow-token-refresh: true
+  allow-refresh-token-rotation: false
   acceptable-proof-time-window-seconds: 120
   nonce-lifetime-seconds: 120
   openid-file: "classpath:example_openid.json"
@@ -52,7 +53,7 @@ application:
       key-management-method: "key"
       private-key: "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIDqMm9PvL4vpyFboAwaeViQsH30CkaDcVtRniZPezFxpoAoGCCqGSM49\nAwEHoUQDQgAEQgjeqGSdu+2jq8+n78+6fXk2Yh22lQKBYCnu5FWPvKtat3wFEsQX\nqNHYgPXBxWmOBw5l2PE/gUDUJqGJSc1LuQ==\n-----END EC PRIVATE KEY-----"
       verification-method: "did:example:localhost%3A8080:abcabc#sdjwt"
-  enable-signed-metadata: ${ENABLE_SIGNED_METADATA:false}
+  signed-metadata-enabled: false
 swiyu:
   status-registry:
     api-url: "https://irrelevant.as.all.interaction.are.mocked"
@@ -76,3 +77,9 @@ webhook:
 
 caching:
   publicKeyCacheTTL: 5000
+
+management:
+  endpoint:
+    env:
+      show-values: NEVER
+      allowedProperties:

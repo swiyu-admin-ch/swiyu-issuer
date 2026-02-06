@@ -7,6 +7,7 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -17,6 +18,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -26,6 +30,8 @@ import java.util.Map;
  * The issuer metadata represented here are the fields used for technical decisions in creating the VC.
  */
 @Data
+@SuperBuilder(toBuilder = true)
+@RequiredArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Validated
 @Schema(name = "IssuerMetadata", description = """
@@ -120,6 +126,7 @@ public class IssuerMetadata {
      *
      * @return the configured batchSize or 1, if no batch size has been configured
      */
+    @JsonIgnore
     public int getIssuanceBatchSize() {
         return batchCredentialIssuance == null ? 1 : batchCredentialIssuance.batchSize();
     }

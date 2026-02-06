@@ -1,9 +1,8 @@
 package ch.admin.bj.swiyu.issuer;
 
-import ch.admin.bj.swiyu.core.status.registry.client.model.ApiError;
-import ch.admin.bj.swiyu.issuer.api.exception.ApiErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialRequestErrorDto;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.OAuthErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.DefaultExceptionHandler;
 import jakarta.validation.ConstraintViolationException;
@@ -14,13 +13,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.Set;

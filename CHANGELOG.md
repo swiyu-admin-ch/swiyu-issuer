@@ -5,10 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+-- Set credential mgmt id in offer table
+
 ## Latest
 
 ### Added
 
+- New endpoint `/actuator/env` to retrieve configuration details.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}` to retrieve offer specific information.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}/status` to retrieve the status of the offer.
+- Send callback on every credential offer status change.
+- Send callback on every credential management status change.
+- Added field `event_trigger` to callback request
+  - Field is set to `CREDENTIAL_MANAGEMENT` on credential management status change.
+  - Field is set to `CREDENTIAL_OFFER` on credential offer status change.
+
+### Fixed
+
+- Fixed weak unlinkability by rounding down the timestamps within issued credetials.
+  Affected fields are iat, epx, and nbf.
+- Removed credential request errors ISSUANCE_PENDING to be aligned with the spec.
+
+
+## 2.3.1
+
+### Fixed
+
+- Allow encryption to be used for deferred credential request
+- Allow wallets changing the deferred credential request encryption key using credential_response_encryption
+- When using signed metadata with generates dynamic tenant ids, the tenant id is now automatically added to the
+  credential issuer identifiers
+
+
+## 2.3.0
+
+### Added
+
+- Added optional support for DPoP for wallets to begin adopting DPoP for more secure communication.
+  As operator of an issuer there is action needed. This feature is added automatically.
+  Note: In the future this will be enforced
+- Implemented Refresh Flow as Draft implementation according spez. Should not yet used in production (#292)
+- Integrated Spring State Machine for credential offer and management lifecycles, improving state management and error
+  handling (#292).
+- Added option to disable/enable refresh_token rotation after usage (#464).
+- Added test coverage for signed metadata usage and renewal flow (#200, #292).
+
+### Fixed
+
+- Fixed missing alg field in JWKS keys for metadata endpoint (#597).
+- Corrected subject claim in signed metadata and improved metadata endpoint to prefer signed data (#570).
+- Fixed size limitations for incoming token calls and responses (#363).
+- Fixed edge case with ephemeral signing keys causing server errors (#426).
+- Fixed logs displaying management id incorrectly.
+- Fixed tests and improved code for signed metadata (#570, #597).
+- Fixed response size limitation for token calls (#363).
+- Fixed error handling for credential requests missing JWT proof (#425).
+- Fixed IT tests for RFC6749 compliance (#504).
+
+## 2.2.0
+
+### Added
+
+- New public service methods to support renewal
+    - Renewal uses the existing functionality of issuing a new credential
+    - The change introduces a new state machine with different states for offers and the management of offers
+    - New env variables: 
+      - `RENEWAL_FLOW_ENABLED` (default: false) to enable the renewal functionality
+      - `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT`: (no default) to set the renewal endpoint where the offer data can be fetched from
+- Added possibility to update status list manually and disable the automatic synicnhronization.
+  New environment variable `DISABLE_STATUS_LIST_SYNCHRONIZATION` (default: false) to disable automatic updates.
+  New endpoint `/management/api/status-list/{statusListId}` to trigger manual update of a status list.
 - Added support for OAuth 2.0 refresh_token. These are active by default and can be deactivated using the environment
   variable `ALLOW_TOKEN_REFRESH=false`. Only access_tokens belonging to a REVOKED offer can not be refreshed.
 - Added new endpoints for signed metadata. The functionality is disabled by default at the moment and can be
@@ -18,6 +84,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       according to the OID4VCI spec.
     - Added new endpoint `/management/api/credentials/{credentialId}/signed-metadata` to provide signed
       credential-offer-metadata for a specific credential offer.
+- Batch issuance now supports multiple indexes, preventing linkability through status list index.
+  The used status list indexes are selected at random from remaining free indexes in status list.
+- Updated didresolver dependency from 2.1.3 to 2.3.0
+
+## 2.1.1
+
+### Added
+
 - Added new `vct_metadata_uri`, `vct_metadata_uri#integrity` fields to CredentialOfferMetadataDto which are then added
   to the credential claims
 - Added WebhookCallbackDto to openapi config schemas.
@@ -35,9 +109,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   issuer and the wallet should not retry.
 - Added always available Credential Request Payload encryption, can be enforced to be always active by setting
   APPLICATION_ENCRYPTIONENFORCE=true. Overriding will break compatibility with wallets not supporting encryption.
-- Batch issuance now supports multiple indexes, preventing linkability through status list index.
-  The used status list indexes are selected at random from remaining free indexes in status list.
-- Updated didresolver dependency from 2.1.3 to 2.3.0
 
 ### Changed
 

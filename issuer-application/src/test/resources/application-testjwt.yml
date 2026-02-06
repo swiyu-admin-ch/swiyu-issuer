@@ -43,4 +43,4 @@ application:
       }
     ]
     }
-  enable-signed-metadata: ${ENABLE_SIGNED_METADATA:false}
+  signed-metadata-enabled: ${ENABLE_SIGNED_METADATA:false}

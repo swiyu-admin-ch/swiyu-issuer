@@ -59,7 +59,9 @@
           "background_color": "#007AFF"
         }
       ],
-      "vct": "${stage}_university_example_sd_jwt",
+      "vct": "urn:vct:com.example.credential",
+      "vct_metadata_uri": "${external-url}/oid4vci/vct/my-vct-v01",
+      "vct_metadata_uri#integrity": "sha256-ThisIsNotActuallyTheCorrectSRI.ItDependsOnTheExactContentOfVctMetadata=",
       "claims": {
         "type": {
           "mandatory": true,

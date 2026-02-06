@@ -1,14 +1,12 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.api.common.ConfigurationOverrideDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListTypeDto;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.JsonPath;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -27,14 +25,14 @@ public class StatusListTestHelper {
     private final ObjectMapper objectMapper;
 
     public StatusListTestHelper(MockMvc mvc,
-                                     ObjectMapper objectMapper) {
+                                ObjectMapper objectMapper) {
         this.mvc = mvc;
         this.objectMapper = objectMapper;
     }
 
     public StatusListDto createStatusList(final StatusListTypeDto statusListTypeDto, final int length, final String purpose,
-                          final int bits, final String issuerDid, final String verificationMethod, final String keyId,
-                          final String keyPin) throws Exception {
+                                          final int bits, final String issuerDid, final String verificationMethod, final String keyId,
+                                          final String keyPin) throws Exception {
         final ConfigurationOverrideDto configurationOverrideDto = new ConfigurationOverrideDto(issuerDid, verificationMethod, keyId, keyPin);
 
         final StatusListCreateDto statusListCreateDto = StatusListCreateDto.builder()

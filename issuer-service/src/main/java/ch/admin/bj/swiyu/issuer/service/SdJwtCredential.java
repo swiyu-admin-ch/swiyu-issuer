@@ -16,7 +16,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatusReference;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
 import com.authlete.sd.SDObjectBuilder;
@@ -27,10 +27,10 @@ import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.ParseException;
+import java.time.Instant;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.getUnixTimeStamp;
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.*;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 import static java.util.Objects.nonNull;
 
@@ -66,14 +66,14 @@ public class SdJwtCredential extends CredentialBuilder {
             IssuerMetadata issuerMetadata,
             DataIntegrityService dataIntegrityService,
             SdjwtProperties sdjwtProperties,
-            SignatureService signatureService,
+            JwsSignatureFacade jwsSignatureFacade,
             StatusListRepository statusListRepository,
             CredentialOfferStatusRepository credentialOfferStatusRepository) {
         super(applicationProperties,
                 issuerMetadata,
                 dataIntegrityService,
                 statusListRepository,
-                signatureService,
+                jwsSignatureFacade,
                 credentialOfferStatusRepository);
         this.sdjwtProperties = sdjwtProperties;
     }
@@ -121,15 +121,16 @@ public class SdJwtCredential extends CredentialBuilder {
             throw new IllegalStateException(
                     "Batch size and status references do not match anymore. Cannot issue credential");
         }
+
         var override = getCredentialOffer().getConfigurationOverride();
-
-        SDObjectBuilder builder = new SDObjectBuilder();
-
-        addTechnicalData(builder, override);
-        List<Disclosure> disclosures = prepareDisclosures(builder);
 
         var sdjwts = new ArrayList<String>(batchSize);
         for (int i = 0; i < batchSize; i++) {
+            SDObjectBuilder builder = new SDObjectBuilder();
+
+            addTechnicalData(builder, override);
+            List<Disclosure> disclosures = prepareDisclosures(builder);
+
             addHolderBinding(holderPublicKeys, i, builder);
             addStatusReferences(statusReferences, i, builder);
             sdjwts.add(createSignedSDJWT(override, builder, disclosures));
@@ -142,7 +143,7 @@ public class SdJwtCredential extends CredentialBuilder {
         var override = this.getCredentialOffer()
                 .getConfigurationOverride();
         try {
-            return getSignatureService().createSigner(
+            return getJwsSignatureFacade().createSigner(
                     sdjwtProperties,
                     override.keyId(),
                     override.keyPin());
@@ -169,16 +170,16 @@ public class SdJwtCredential extends CredentialBuilder {
             Optional.ofNullable(credentialMetadata.vctMetadataUriIntegrity())
                     .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
         }
-        builder.putClaim("iat", getUnixTimeStamp());
+        builder.putClaim("iat", instantToRoundedUnixTimestamp(Instant.now()));
 
         // optional field -> only added when set
         if (nonNull(getCredentialOffer().getCredentialValidFrom())) {
-            builder.putClaim("nbf", instantToUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
+            builder.putClaim("nbf", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
         }
 
         // optional field -> only added when set
         if (nonNull(getCredentialOffer().getCredentialValidUntil())) {
-            builder.putClaim("exp", instantToUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
+            builder.putClaim("exp", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
         }
     }
 
