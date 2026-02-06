@@ -6,9 +6,6 @@
 
 package ch.admin.bj.swiyu.issuer;
 
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -51,26 +48,21 @@ public class ArchitectureTest {
     private static Architectures.LayeredArchitecture getArchitectureLayers() {
         return layeredArchitecture()
                 .consideringAllDependencies()
-                .layer(Layer.API.layerName)
-                .definedBy(Layer.API.packageIdentifiers)
+                .layer(Layer.DTO.layerName)
+                .definedBy(Layer.DTO.packageIdentifiers)
                 .layer(Layer.DOMAIN.layerName)
                 .definedBy(Layer.DOMAIN.packageIdentifiers)
                 .layer(Layer.SERVICE.layerName)
                 .definedBy(Layer.SERVICE.packageIdentifiers)
-                .optionalLayer(Layer.WEB.layerName)
-                .definedBy(Layer.WEB.packageIdentifiers)
                 .optionalLayer(Layer.COMMON.layerName)
-                .definedBy(Layer.COMMON.packageIdentifiers)
-                .whereLayer(Layer.WEB.layerName)
-                .mayNotBeAccessedByAnyLayer();
+                .definedBy(Layer.COMMON.packageIdentifiers);
     }
 
     @Getter
     enum Layer {
         DOMAIN("Domain", "..domain.."),
         SERVICE("Service", "..service.."),
-        API("Api", "..api.."),
-        WEB("Web"),
+        DTO("Dto", "..dto.."),
         COMMON("Common", "..common..");
 
         final String layerName;
@@ -163,7 +155,7 @@ public class ArchitectureTest {
 
         @ArchTest
         static final ArchRule architecture_is_respected = getArchitectureLayers()
-                .whereLayer(Layer.API.layerName)
+                .whereLayer(Layer.DTO.layerName)
                 .mayOnlyBeAccessedByLayers(
                         Layer.SERVICE.layerName
                 )
@@ -172,12 +164,10 @@ public class ArchitectureTest {
                         Layer.SERVICE.layerName);
 
         @ArchTest
-        static final ArchRule no_cycles_between_slices = SlicesRuleDefinition.slices()
-                .matching("..issuer.(**)..")
+        static final ArchRule no_cycles_between_non_service_slices = SlicesRuleDefinition.slices()
+                .matching("..issuer.(common|domain|dto).(*)..")
                 .should()
-                .beFreeOfCycles()
-                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
-                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class);
+                .beFreeOfCycles();
 
         /**
          * ArchRules which support freezing. @see <a
@@ -192,7 +182,7 @@ public class ArchitectureTest {
             );
 
             @ArchTest
-            static final ArchRule freezing_no_cycles_between_slices = FreezingArchRule.freeze(no_cycles_between_slices);
+            static final ArchRule freezing_no_cycles_between_slices = FreezingArchRule.freeze(no_cycles_between_non_service_slices);
         }
     }
 
@@ -265,6 +255,7 @@ public class ArchitectureTest {
         static final ArchRule interfaces_must_not_be_placed_in_implementation_packages = noClasses()
                 .that()
                 .resideInAPackage("..service")
+                .and().arePublic()
                 .should()
                 .beInterfaces();
     }

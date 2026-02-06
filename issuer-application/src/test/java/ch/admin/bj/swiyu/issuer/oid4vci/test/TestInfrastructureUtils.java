@@ -6,10 +6,10 @@
 
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.authlete.sd.Disclosure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
@@ -64,7 +64,7 @@ public class TestInfrastructureUtils {
                 .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                 .param("pre-authorized_code", preAuthCode);
         if (holderPublicKey != null) {
-            requestBuilder.header("DPoP", createDPoP(mock, "POST", externalUrl + "/api/token", null, holderPublicKey));
+            requestBuilder.header("DPoP", createDPoP(mock, "POST", externalUrl + "/oid4vci/api/token", null, holderPublicKey));
         }
         var response = mock.perform(requestBuilder)
                 .andExpect(status().isOk())

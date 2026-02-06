@@ -22,9 +22,16 @@ public class AsyncCredentialEventHandler {
 
     @EventListener
     @Async
-    public void handleStateChangeEvent(StateChangeEvent stateChangeEvent) {
-        webhookEventProducer.produceStateChangeEvent(stateChangeEvent.credentialOfferId(), stateChangeEvent.newState());
+    public void handleOfferStateChangeEvent(OfferStateChangeEvent stateChangeEvent) {
+        webhookEventProducer.produceOfferStateChangeEvent(stateChangeEvent.credentialOfferId(), stateChangeEvent.newState());
         log.info("Processed StateChangeEvent for CredentialOfferId: {}", stateChangeEvent.credentialOfferId());
+    }
+
+    @EventListener
+    @Async
+    public void handleManagementStateChangeEvent(ManagementStateChangeEvent managementStateChangeEvent) {
+        webhookEventProducer.produceManagementStateChangeEvent(managementStateChangeEvent.credentialManagementId(), managementStateChangeEvent.newState());
+        log.info("Processed StateChangeEvent for CredentialManagementId: {}", managementStateChangeEvent.credentialManagementId());
     }
 
     @EventListener

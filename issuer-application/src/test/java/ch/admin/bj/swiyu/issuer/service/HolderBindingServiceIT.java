@@ -1,17 +1,20 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.credential.HolderBindingService;
+import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -30,12 +33,14 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.time.Instant;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.service.mapper.CredentialRequestMapper.toCredentialRequest;
+import static ch.admin.bj.swiyu.issuer.service.credential.CredentialRequestMapper.toCredentialRequest;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest()
 @AutoConfigureMockMvc
@@ -51,16 +56,29 @@ class HolderBindingServiceIT {
     @Autowired
     private HolderBindingService holderBindingService;
     @MockitoBean
-    private DidKeyResolver didKeyResolver;
+    private DidKeyResolverFacade didKeyResolver;
 
     private ECKey attestationKey;
 
     private static CredentialOffer createHolderBindingTestOffer() {
-        return CredentialOffer.builder()
-                .metadataCredentialSupportedId(List.of("university_example_any_key_attestation_required_sd_jwt"))
-                .nonce(UUID.randomUUID())
-                .tokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+        var credentialManagement = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .accessToken(UUID.randomUUID())
+                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
+                .renewalRequestCnt(0)
+                .renewalResponseCnt(0)
                 .build();
+
+        var offer = CredentialOffer.builder()
+                .metadataCredentialSupportedId(List.of("university_example_any_key_attestation_required_sd_jwt"))
+                .offerData(Map.of())
+                .nonce(UUID.randomUUID())
+                .preAuthorizedCode(UUID.randomUUID())
+                .credentialManagement(credentialManagement)
+                .build();
+
+        credentialManagement.addCredentialOffer(offer);
+        return offer;
     }
 
     @BeforeEach

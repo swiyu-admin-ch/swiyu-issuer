@@ -6,9 +6,15 @@
 
 package ch.admin.bj.swiyu.issuer;
 
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListConfigDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.api.statuslist.ValidStatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.ValidStatusListMaxLengthValidator;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.OAuthService;
+import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionValidationService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -157,11 +163,9 @@ public class ArchitectureIT {
 
         @ArchTest
         static final ArchRule no_cycles_between_slices = SlicesRuleDefinition.slices()
-                .matching("..issuer.(**)..")
+                .matching("..infrastructure.(**)..")
                 .should()
-                .beFreeOfCycles()
-                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListCreateDto.class)
-                .ignoreDependency(ValidStatusListMaxLengthValidator.class, StatusListConfigDto.class);
+                .beFreeOfCycles();
 
         /**
          * ArchRules which support freezing. @see <a
@@ -251,6 +255,7 @@ public class ArchitectureIT {
         static final ArchRule interfaces_must_not_be_placed_in_implementation_packages = noClasses()
                 .that()
                 .resideInAPackage("..service")
+                .and().arePublic()
                 .should()
                 .beInterfaces()
                 .allowEmptyShould(true);

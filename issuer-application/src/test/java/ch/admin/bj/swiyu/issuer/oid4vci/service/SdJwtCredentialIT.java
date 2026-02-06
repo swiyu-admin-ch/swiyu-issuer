@@ -7,16 +7,16 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.CredentialFormatFactory;
-import ch.admin.bj.swiyu.issuer.service.EncryptionService;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
+import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
@@ -31,10 +31,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.JwtTestUtils.getJWTPayload;
 import static java.util.Objects.nonNull;
@@ -53,7 +53,7 @@ class SdJwtCredentialIT {
     @Autowired
     private ApplicationProperties applicationProperties;
     @Autowired
-    private EncryptionService encryptionService;
+    private JweService jweService;
 
     @Autowired
     private IssuerMetadata issuerMetadata;
@@ -61,7 +61,7 @@ class SdJwtCredentialIT {
     @Test
     void getMinimalSdJwtCredentialTestClaims_thenSuccess() {
 
-        CredentialOffer credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        CredentialOffer credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt");
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -69,7 +69,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -100,7 +100,7 @@ class SdJwtCredentialIT {
         Instant now = Instant.now();
         Instant expiration = now.plus(30, ChronoUnit.DAYS);
 
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", now, expiration);
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", now, expiration);
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -108,7 +108,7 @@ class SdJwtCredentialIT {
         CredentialEnvelopeDto vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -126,14 +126,63 @@ class SdJwtCredentialIT {
         String alg = JsonPath.read(payload, "$._sd_alg");
         assertEquals("sha-256", alg);
 
-        assertEquals(now.getEpochSecond(), ((Integer) JsonPath.read(payload, "$.nbf")).longValue());
-        assertEquals(expiration.getEpochSecond(), ((Integer) JsonPath.read(payload, "$.exp")).longValue());
+        // timestamps are rounded down to the day, hence the less than
+        assertEquals(instantToRoundedUnixTimestamp(Instant.now()), ((Integer) JsonPath.read(payload, "$.nbf")).longValue());
+        assertEquals(instantToRoundedUnixTimestamp(Instant.now()), ((Integer) JsonPath.read(payload, "$.iat")).longValue());
+        assertEquals(instantToRoundedUnixTimestamp(expiration), ((Integer) JsonPath.read(payload, "$.exp")).longValue());
+    }
+
+    @Test
+    void getSdJwtCredentialV2TestClaims_thenSuccess() {
+
+        Instant now = Instant.now();
+        Instant expiration = now.plus(30, ChronoUnit.DAYS);
+
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", now, expiration);
+
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
+        credentialRequest.setCredentialResponseEncryption(null);
+
+        CredentialEnvelopeDto vc = vcFormatFactory
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredentialEnvelopeV2();
+
+        Base64.Decoder decoder = Base64.getUrlDecoder();
+        List<HashMap<String, String>> credentialsMap = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credentials");
+        var credentials = credentialsMap.stream().map(c -> c.values().stream().toList()).flatMap(List::stream).collect(Collectors.toList());
+
+        Set<String> payloads = new HashSet<>();
+        Set<String> sdHashes = new HashSet<>();
+        for (var credential : credentials) {
+            String[] chunks = credential.split("\\.");
+            String payload = new String(decoder.decode(chunks[1]));
+            payloads.add(payload);
+
+            List<String> sd = JsonPath.read(payload, "$._sd");
+            assertEquals(3, sd.size());
+            sdHashes.addAll(sd);
+
+            String alg = JsonPath.read(payload, "$._sd_alg");
+            assertEquals("sha-256", alg);
+
+            // timestamps are rounded down to the day to break traceability
+            assertEquals(instantToRoundedUnixTimestamp(Instant.now()), ((Integer) JsonPath.read(payload, "$.nbf")).longValue());
+            assertEquals(instantToRoundedUnixTimestamp(Instant.now()), ((Integer) JsonPath.read(payload, "$.iat")).longValue());
+            assertEquals(instantToRoundedUnixTimestamp(expiration), ((Integer) JsonPath.read(payload, "$.exp")).longValue());
+        }
+        // test that payloads within the same batch are unique
+        assertEquals(credentials.size(), payloads.size());
+        // test that the sd hashes are all unique
+        assertEquals(credentials.size() * 3, sdHashes.size());
     }
 
     @Test
     void getSdJwtCredentialTestSD_thenSuccess() {
 
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt");
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt");
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -141,7 +190,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -162,7 +211,7 @@ class SdJwtCredentialIT {
         var vctMetadataUriIntegrity = "vct_metadata_uri#integrity_example";
 
         var credentialOfferMetadata = new CredentialOfferMetadata(null, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -170,7 +219,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -187,7 +236,7 @@ class SdJwtCredentialIT {
     void getSdJwtCredential_withoutAnyMetadata_thenSuccess() {
 
         var credentialOfferMetadata = new CredentialOfferMetadata(null, null, null, null);
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", credentialOfferMetadata);
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -195,7 +244,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 
@@ -213,7 +262,7 @@ class SdJwtCredentialIT {
         var overrideDid = "did:example:override";
         var overrideVerificationMethod = overrideDid + "#key1";
 
-        var credentialOffer = createTestOffer(preAuthCode, CredentialStatusType.OFFERED, "university_example_sd_jwt", new ConfigurationOverride(overrideDid, overrideVerificationMethod, null, null));
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", new ConfigurationOverride(overrideDid, overrideVerificationMethod, null, null));
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -221,7 +270,7 @@ class SdJwtCredentialIT {
         var vc = vcFormatFactory
                 .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
                 .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(encryptionService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                 .buildCredentialEnvelope();
 

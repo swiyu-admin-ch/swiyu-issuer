@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.api.oid4vci.issuance_v2.CredentialObjectDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
@@ -13,7 +13,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.oid4vci.test.TestServiceUtils;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.jwk.Curve;
@@ -49,12 +49,12 @@ class CredentialBuilderTest {
         issuerMetadata = mock(IssuerMetadata.class);
         DataIntegrityService dataIntegrityService = mock(DataIntegrityService.class);
         JWSSigner signer = mock(JWSSigner.class);
-        SignatureService signatureService = mock(SignatureService.class);
+        JwsSignatureFacade jwsSignatureFacade = mock(JwsSignatureFacade.class);
         StatusListRepository statusListRepository = mock(StatusListRepository.class);
         CredentialOfferStatusRepository credentialOfferStatusRepository = mock(CredentialOfferStatusRepository.class);
         objectMapper = new ObjectMapper();
 
-        builder = spy(new TestCredentialBuilder(applicationProperties, issuerMetadata, dataIntegrityService, signatureService,
+        builder = spy(new TestCredentialBuilder(applicationProperties, issuerMetadata, dataIntegrityService, jwsSignatureFacade,
                 statusListRepository, credentialOfferStatusRepository));
     }
 
@@ -219,9 +219,9 @@ class CredentialBuilderTest {
 
     // subclass for testing
     static class TestCredentialBuilder extends CredentialBuilder {
-        TestCredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadata issuerMetadata, DataIntegrityService dataIntegrityService, SignatureService signatureService,
+        TestCredentialBuilder(ApplicationProperties applicationProperties, IssuerMetadata issuerMetadata, DataIntegrityService dataIntegrityService, JwsSignatureFacade jwsSignatureFacade,
                               StatusListRepository statusListRepository, CredentialOfferStatusRepository credentialOfferStatusRepository) {
-            super(applicationProperties, issuerMetadata, dataIntegrityService, statusListRepository, signatureService, credentialOfferStatusRepository);
+            super(applicationProperties, issuerMetadata, dataIntegrityService, statusListRepository, jwsSignatureFacade, credentialOfferStatusRepository);
         }
 
         @Override

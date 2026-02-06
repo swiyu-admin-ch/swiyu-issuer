@@ -91,8 +91,21 @@ public class ApplicationProperties {
     @NotNull
     private long tokenTTL;
 
+    /**
+     * Flag Indicating if refresh tokens are used
+     */
     @NotNull
     private boolean allowTokenRefresh;
+    /**
+     * Flag indicating if refresh tokens are changed after use
+     */
+    @NotNull
+    private boolean allowRefreshTokenRotation;
+
+    @NotNull
+    private boolean renewalFlowAllowed;
+
+    private String businessIssuerRenewalApiEndpoint;
 
     @NotNull
     private int acceptableProofTimeWindowSeconds;
@@ -125,5 +138,9 @@ public class ApplicationProperties {
             throw new ConfigurationException(
                     "Provided Allow JWKSet can not be parsed! %s".formatted(authenticationJwks));
         }
+    }
+
+    public boolean isRenewalFlowEnabled() {
+        return this.isDpopEnforce() && this.isRenewalFlowAllowed() && this.getBusinessIssuerRenewalApiEndpoint() != null;
     }
 }

@@ -1,11 +1,13 @@
 package ch.admin.bj.swiyu.issuer.service.webhook;
 
-import ch.admin.bj.swiyu.issuer.api.callback.CallbackErrorEventTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.WebhookProperties;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
+import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventTrigger;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventType;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.util.StringUtils;
@@ -19,7 +21,7 @@ import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapp
 
 /**
  * Service responsible for producing and persisting webhook callback events.
- * These events are later processed and sent to external systems by the WebhookEventListener.
+ * These events are later processed and sent to external systems by the WebhookEventProcessor.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,11 +31,19 @@ public class WebhookEventProducer {
     private final CallbackEventRepository callbackEventRepository;
 
     /**
+     * Produces a state change event when a credential offer status changes.
+     */
+    @Transactional
+    public void produceOfferStateChangeEvent(UUID credentialOfferId, CredentialOfferStatusType state) {
+        createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null, CallbackEventTrigger.CREDENTIAL_OFFER);
+    }
+
+    /**
      * Produces a state change event when a credential status changes.
      */
     @Transactional
-    public void produceStateChangeEvent(UUID credentialOfferId, CredentialStatusType state) {
-        createEvent(credentialOfferId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null);
+    public void produceManagementStateChangeEvent(UUID credentialOfferManagementId, CredentialStatusManagementType state) {
+        createEvent(credentialOfferManagementId, CallbackEventType.VC_STATUS_CHANGED, toCredentialStatusTypeDto(state).name(), null, CallbackEventTrigger.CREDENTIAL_MANAGEMENT);
     }
 
     /**
@@ -41,7 +51,7 @@ public class WebhookEventProducer {
      */
     @Transactional
     public void produceErrorEvent(UUID credentialOfferId, CallbackErrorEventTypeDto errorCode, String errorMessage) {
-        createEvent(credentialOfferId, CallbackEventType.ERROR, errorCode.name(), errorMessage);
+        createEvent(credentialOfferId, CallbackEventType.ERROR, errorCode.name(), errorMessage, null);
     }
 
     /**
@@ -49,11 +59,11 @@ public class WebhookEventProducer {
      */
     @Transactional
     public void produceDeferredEvent(UUID credentialOfferId, String clientAgentInfo) {
-        var message = CredentialStatusType.DEFERRED.getDisplayName();
-        createEvent(credentialOfferId, CallbackEventType.VC_DEFERRED, message, clientAgentInfo);
+        var message = CredentialOfferStatusType.DEFERRED.getDisplayName();
+        createEvent(credentialOfferId, CallbackEventType.VC_DEFERRED, message, clientAgentInfo, CallbackEventTrigger.CREDENTIAL_OFFER);
     }
 
-    private void createEvent(UUID subjectId, CallbackEventType callbackEventType, String message, String description) {
+    private void createEvent(UUID subjectId, CallbackEventType callbackEventType, String message, String description, CallbackEventTrigger trigger) {
         if (StringUtils.isBlank(webhookProperties.getCallbackUri())) {
             // No Callback URI defined; We can not do callbacks
             log.debug("Skipping callback event creation - no callback URI configured");
@@ -65,9 +75,9 @@ public class WebhookEventProducer {
                 .event(message)
                 .timestamp(Instant.now())
                 .eventDescription(description)
+                .eventTrigger(trigger)
                 .build();
         callbackEventRepository.save(event);
         log.debug("Created callback event for subject {} with type {}", subjectId, callbackEventType);
     }
 }
-

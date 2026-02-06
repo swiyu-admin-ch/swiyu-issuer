@@ -1,10 +1,10 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.api.callback.CallbackEventTypeDto;
-import ch.admin.bj.swiyu.issuer.api.callback.WebhookCallbackDto;
-import ch.admin.bj.swiyu.issuer.api.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusType;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackEventTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.callback.WebhookCallbackDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProcessor;
 import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProducer;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -82,7 +82,7 @@ class WebhookIT {
         // Note: This is in one single test as failing tests would influence other running tests
         // through the enqueued responses.
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-        this.webhookEventProducer.produceStateChangeEvent(UUID.randomUUID(), CredentialStatusType.ISSUED);
+        this.webhookEventProducer.produceOfferStateChangeEvent(UUID.randomUUID(), CredentialOfferStatusType.ISSUED);
 
         // When triggered the callback event should be sent and received by our mock business server
         triggerCallBackProcess(1);
@@ -105,7 +105,7 @@ class WebhookIT {
         var num = 4;
         for (int i = 0; i < num; i++) {
             mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-            this.webhookEventProducer.produceStateChangeEvent(UUID.randomUUID(), CredentialStatusType.ISSUED);
+            this.webhookEventProducer.produceOfferStateChangeEvent(UUID.randomUUID(), CredentialOfferStatusType.ISSUED);
         }
         this.webhookEventProcessor.triggerProcessCallback();
         for (int i = 0; i < num; i++) {
@@ -124,18 +124,18 @@ class WebhookIT {
         // If the server has an error we want to try again until success
         mockWebServer.enqueue(new MockResponse().setResponseCode(500));
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-        this.webhookEventProducer.produceStateChangeEvent(UUID.randomUUID(), CredentialStatusType.ISSUED);
+        this.webhookEventProducer.produceOfferStateChangeEvent(UUID.randomUUID(), CredentialOfferStatusType.ISSUED);
         triggerCallBackProcess(1); // We received a message, but responded with 500
         triggerCallBackProcess(1); // We received a message, now responded with 200
         // test if error is logged
-        assertThat(output.getAll()).contains("Internal Server Error: [no body]");
+        assertThat(output.getAll()).contains("500 Internal Server Error from POST http://localhost:");
     }
 
     /**
      * Cleanup helper, preventing the need to restart the server to clear queue
      */
     private void consumeEnqueued() throws InterruptedException {
-        this.webhookEventProducer.produceStateChangeEvent(UUID.randomUUID(), CredentialStatusType.ISSUED);
+        this.webhookEventProducer.produceOfferStateChangeEvent(UUID.randomUUID(), CredentialOfferStatusType.ISSUED);
         triggerCallBackProcess(1);
         var request = mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS);
         Assertions.assertThat(request).isNotNull();

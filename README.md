@@ -1,14 +1,8 @@
-<!--
-SPDX-FileCopyrightText: 2025 Swiss Confederation
-
-SPDX-License-Identifier: MIT
--->
-
 ![github-banner](https://github.com/swiyu-admin-ch/swiyu-admin-ch.github.io/blob/main/assets/images/github-banner.jpg)
 
 # Generic issuer service
 
-This software is a web server implementing the technical standards as specified in
+This software is a web server implementing the technical standards as specified in 
 the [swiyu Trust Infrastructure Interoperability Profile](https://swiyu-admin-ch.github.io/specifications/interoperability-profile/).
 Together with the other generic components provided, this software forms a collection of APIs allowing issuance and
 verification of verifiable credentials without the need of reimplementing the standards.
@@ -538,48 +532,70 @@ Callback Object Structure
 
 ```mermaid
 erDiagram
+    CREDENTIAL_MANAGEMENT {
+        UUID id PK
+        UUID access_token
+        UUID refresh_token
+        JSONB dpop_key
+        BIGINT access_token_expiration_timestamp
+        TEXT credential_management_status
+        INTEGER renewal_request_cnt
+        INTEGER renewal_response_cnt
+        TIMESTAMP created_at
+        TIMESTAMP last_modified_at
+    }
+
     CREDENTIAL_OFFER {
-        uuid id PK
-        embedded audit_metadata
-        text credential_status
-        array[text] metadata_credential_supported_id
-        jsonb offer_data
-        jsonb credential_metadata
-        jsonb credential_request
-        uuid transaction_id
-        array[text] holder_jwks
-        array[text] key_attestations
-        jsonb client_agent_info
-        uuid holder_binding_nonce
-        long token_expiration_timestamp
-        uuid access_token
-        uuid nonce
-        uuid pre_authorized_code
-        integer offer_expiration_timestamp
-        text credential_valid_from
-        text credential_valid_until
+        UUID id PK
+        EMBEDDED audit_metadata
+        TEXT credential_status
+        JSONB offer_data
+        UUID nonce
+        LONG offer_expiration_timestamp
+        TIMESTAMP credential_valid_from
+        TIMESTAMP credential_valid_until
+        JSONB metadata_credential_supported_id
+        UUID pre_authorized_code
+        JSONB credential_metadata
+        JSONB credential_request
+        UUID transaction_id
+        TIMESTAMP created_at
+        TIMESTAMP last_modified_at
+        JSONB client_agent_info
+        TEXT[] holder_jwks
+        JSONB configuration_override
+        TEXT[] key_attestations
+        INTEGER deferred_offer_validity_seconds
+        UUID metadata_tenant_id
+        UUID credential_management_id FK
     }
 
     CREDENTIAL_OFFER_STATUS {
-        uuid credential_offer_id PK, FK
-        uuid status_list_id PK, FK
-        integer index
-        embedded audit_metadata
+        TIMESTAMP created_at
+        TIMESTAMP last_modified_at
+        UUID credential_offer_id FK
+        UUID status_list_id FK
+        EMBEDDED audit_metadata
+        INTEGER index
     }
 
     STATUS_LIST {
-        uuid id PK
-        text type
-        jsonb config
-        text uri
-        text status_zipped
-        int next_free_index
-        int max_length
-        embedded audit_metadata
+        UUID id PK
+        TEXT type
+        JSONB config
+        TEXT uri
+        TEXT status_zipped
+        INTEGER next_free_index
+        INTEGER max_length
+        TIMESTAMP created_at
+        TIMESTAMP last_modified_at
+        JSONB configuration_override
+        EMBEDDED audit_metadata
     }
 
-    CREDENTIAL_OFFER one to many CREDENTIAL_OFFER_STATUS: "has status"
-    STATUS_LIST one to many CREDENTIAL_OFFER_STATUS: "is referenced in"
+    CREDENTIAL_MANAGEMENT ||--o{ CREDENTIAL_OFFER : "has"
+    CREDENTIAL_OFFER ||--o{ CREDENTIAL_OFFER_STATUS : "has_status"
+    STATUS_LIST ||--o{ CREDENTIAL_OFFER_STATUS : "provides"
 ```
 
 Note: Status List info comes from config and are populated to the DB the first time a Credential uses the status.
@@ -684,9 +700,40 @@ To get more information about the different calls please check the detail docume
 * [Credential issuance flow](./issuance.md)
 * [Deferred issuance flow](./deferred.md)
 
-## Credential Status
+## Credential Management Status
+
+Status diagram for the management status of a credential. This status manages the overall lifecycle of a credential.
+If this status is changed all related status list entries are updated accordingly.
 
 ```mermaid
+---
+title: Management Status
+---
+
+stateDiagram-v2
+    INIT
+    ISSUED
+    SUSPENDED
+    REVOKED
+
+    [*] --> INIT : BI creates the VC-Offer
+    INIT --> ISSUED : VC has been collected by the holder and is valid.
+    ISSUED --> SUSPENDED : BI suspends the vc temporarly
+    SUSPENDED --> ISSUED : BI reactives vc by setting the status to ISSUED
+    ISSUED --> REVOKED : BI revokes the vc premanently
+    REVOKED --> [*]
+
+```
+
+## Credential Status
+
+The credential status manages the state of a single credential offer and can influence the issuance process.
+
+```mermaid
+---
+title: Credential Offer Status
+---
+
 stateDiagram-v2
     OFFERED
     IN_PROGRESS
@@ -696,10 +743,11 @@ stateDiagram-v2
     state join_state <<join>>
     EXPIRED
     ISSUED
-    SUSPENDED
-    REVOKED
+    REQUESTED
+
     [*] --> OFFERED
-    OFFERED --> CANCELLED : Process can be cancelled as long as the vc is not ISSUED
+    [*] --> REQUESTED : Wallet requests new  credential renewal
+    OFFERED --> CANCELLED : All processes can be cancelled as long as the vc is not ISSUED
     CANCELLED --> [*]
     OFFERED --> IN_PROGRESS
     IN_PROGRESS --> fork_state
@@ -712,10 +760,8 @@ stateDiagram-v2
     READY --> join_state
     READY --> EXPIRED : When deferred-offer-validity-seconds passed
     join_state --> ISSUED
-    ISSUED --> SUSPENDED
-    SUSPENDED --> ISSUED
-    ISSUED --> REVOKED
-    REVOKED --> [*]
+    REQUESTED --> ISSUED
+    ISSUED --> [*]
 ```
 
 ## SWIYU
@@ -862,4 +908,3 @@ Please follow the guidelines for contributing found in [CONTRIBUTING.md](/CONTRI
 ## License
 
 This project is licensed under the terms of the MIT license. See the [LICENSE](/LICENSE) file for details.
- 
