@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;
 
+@Deprecated(since = "OID4VCI")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(name = "CredentialEndpointResponse")
 public record CredentialEndpointResponseDto(
