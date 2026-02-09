@@ -80,7 +80,7 @@ public class CredentialPersistenceService {
      * @throws ResourceNotFoundException if not found
      */
     public CredentialOffer findCredentialOfferByMetadataTenantId(UUID tenantId) {
-        return credentialOfferRepository.findByMetadataTenantId(tenantId)
+        return credentialOfferRepository.findLatestOfferByMetadataTenantId(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No credential offer found for tenant %s".formatted(tenantId)));
     }
@@ -98,7 +98,7 @@ public class CredentialPersistenceService {
     /**
      * Finds expired credential offers.
      *
-     * @param expireStates the states that can expire
+     * @param expireStates    the states that can expire
      * @param expireTimeStamp the expiration timestamp
      * @return the list of expired offers
      */
@@ -114,7 +114,7 @@ public class CredentialPersistenceService {
     /**
      * Counts expired credential offers.
      *
-     * @param expireStates the states that can expire
+     * @param expireStates    the states that can expire
      * @param expireTimeStamp the expiration timestamp
      * @return the count of expired offers
      */
@@ -129,7 +129,7 @@ public class CredentialPersistenceService {
     /**
      * Saves status list entries for a credential offer.
      *
-     * @param statusLists the status lists
+     * @param statusLists       the status lists
      * @param credentialOfferId the credential offer ID
      * @param issuanceBatchSize the batch size for issuance
      */
@@ -165,7 +165,7 @@ public class CredentialPersistenceService {
      * Gets random available indexes from a status list.
      *
      * @param issuanceBatchSize the number of indexes needed
-     * @param statusList the status list
+     * @param statusList        the status list
      * @return a set of random available indexes
      * @throws BadRequestException if not enough indexes are available
      */

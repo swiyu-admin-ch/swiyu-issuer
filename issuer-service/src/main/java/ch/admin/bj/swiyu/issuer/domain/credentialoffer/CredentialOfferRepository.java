@@ -22,7 +22,14 @@ public interface CredentialOfferRepository extends JpaRepository<CredentialOffer
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CredentialOffer> findByPreAuthorizedCode(UUID uuid);
 
-    Optional<CredentialOffer> findByMetadataTenantId(UUID tenantId);
+    /**
+     * Find the latest created CredentialOffer by the tenantId.
+     *
+     * @param tenantId the unique identifier of the tenant
+     * @return the latest CredentialOffer Optional is empty if no CredentialOffer is found
+     */
+    @Query("SELECT o FROM CredentialManagement m RIGHT JOIN m.credentialOffers o WHERE m.metadataTenantId = :tenantId ORDER BY o.auditMetadata.createdAt DESC LIMIT 1")
+    Optional<CredentialOffer> findLatestOfferByMetadataTenantId(UUID tenantId);
 
     @Query("SELECT c FROM CredentialOffer c WHERE :uuid = c.id")
     @Lock(LockModeType.PESSIMISTIC_WRITE)
