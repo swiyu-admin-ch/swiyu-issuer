@@ -97,7 +97,7 @@ public class JweService {
         if (StringUtils.equalsIgnoreCase("application/jwt", contentType)) {
             return decrypt(requestMessage);
         } else if (isRequestEncryptionMandatory()) {
-            throw new IllegalArgumentException("Credential Request must be encrypted");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Request encryption is mandatory with content type set to application/jwt");
         }
         return requestMessage;
     }
