@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.issuer.common.config.CacheCustomizer;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKey;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKeyRepository;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHEncrypter;
@@ -40,7 +41,11 @@ class JweServiceTest {
     void setUp() {
         setupMockRepository();
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
-        issuerMetadata = IssuerMetadata.builder().build();
+        issuerMetadata = IssuerMetadata.builder()
+            .requestEncryption(IssuerCredentialRequestEncryption.builder()
+                .encRequired(true)
+                .build())
+            .build();
         encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository, new CacheCustomizer());
         jweService = new JweService(applicationProperties, issuerMetadata, encryptionKeyService);
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())
@@ -85,6 +90,11 @@ class JweServiceTest {
                 .generate();
         String encrypted = createEncryptedMessage("Hello", foreignKey);
         assertThrows(Oid4vcException.class, () -> jweService.decrypt(encrypted));
+    }
+
+    @Test
+    void rejectMissingEncryption() {
+        assertThrows(Oid4vcException.class, () -> jweService.decryptRequest("Anything", "application/json"));
     }
 
     private void setupMockRepository() {
