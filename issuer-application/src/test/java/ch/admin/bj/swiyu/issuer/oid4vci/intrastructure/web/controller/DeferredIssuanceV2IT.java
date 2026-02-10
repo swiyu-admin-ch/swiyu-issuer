@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
@@ -26,6 +27,7 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,6 +42,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -55,6 +58,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mockStatic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -148,6 +152,24 @@ class DeferredIssuanceV2IT {
                 .andExpect(jsonPath("$.interval").isNotEmpty())
                 .andReturn();
 
+        var deferredResponseDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), CredentialEndpointResponseDtoV2.class);
+        // Wallet starts polling
+        String transactionId = deferredResponseDto.transactionId();
+        String deferredCredentialRequestString = getDeferredCredentialRequestString(
+                transactionId);
+        mock.perform(post("/oid4vci/api/deferred_credential")
+                        .header("Authorization", String.format("BEARER %s", token))
+                        .contentType("application/json")
+                        .header("SWIYU-API-Version", "2")
+                        .content(deferredCredentialRequestString))
+                .andExpect(status().isAccepted())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.credentials").doesNotExist())
+                .andExpect(jsonPath("$.transaction_id").isNotEmpty())
+                .andExpect(jsonPath("$.transaction_id").value(transactionId))
+                .andExpect(jsonPath("$.interval").isNotEmpty())
+                .andReturn();
+
         // check status from business issuer perspective
         mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offerManagementId,
                         CredentialStatusTypeDto.READY.name()))
@@ -159,10 +181,6 @@ class DeferredIssuanceV2IT {
         DeferredDataDto deferredDataDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(), DeferredDataDto.class);
-
-        String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                deferredDataDto.transactionId()
-                        .toString());
 
         mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
@@ -255,7 +273,13 @@ class DeferredIssuanceV2IT {
                 deferredCredential.get("interval")
                         .getAsLong());
 
-        // check status from business issuer perspective
+
+        var transactionId = deferredCredential.get("transaction_id").getAsString();
+        // Deferred Credential Request
+        JsonObject credentialsWrapper = deferredCredentialCall(
+                token, transactionId, issuerEncrypter, jweHeader, status().isAccepted(), ecJWK, rotateHolderEncryptionKey);
+        assertThat(credentialsWrapper.get("transaction_id").getAsString()).isEqualTo(transactionId).as("When not yet ready, the transaction id should be returned");
+        // update from business issuer perspective
         mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offerManagementId,
                         CredentialStatusTypeDto.READY.name()))
                         .contentType("application/json"))
@@ -264,8 +288,41 @@ class DeferredIssuanceV2IT {
                 .andReturn();
 
         // Deferred Credential Request
+        credentialsWrapper = deferredCredentialCall(
+                token, transactionId, issuerEncrypter, jweHeader, status().isOk(), ecJWK, rotateHolderEncryptionKey);
+
+
+        JsonArray credentials = credentialsWrapper.get("credentials")
+                .getAsJsonArray();
+        JsonObject credential = credentials.get(0)
+                .getAsJsonObject();
+        var vc = credential.get("credential")
+                .getAsString();
+
+        assertTrue(credentialsWrapper.has("credentials"));
+        assertFalse(credentialsWrapper.has("transaction_id"));
+        assertFalse(credentialsWrapper.has("interval"));
+
+        TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
+    }
+
+    /**
+     * Handles the process of requesting a deferred credential and decrypting the response.
+     * Optionally allows to rotate the encryption keys
+     *
+     * @param token                     The OAuth token used for authorization
+     * @param transactionId             The transaction ID associated with the deferred credential request
+     * @param issuerEncrypter           The ECDHEncrypter used for encrypting the request
+     * @param jweHeader                 The JWE header used for the encrypted request
+     * @param expectedStatus            The expected result status for the deferred credential request
+     * @param ecJWK                     The ECKey used for response encryption
+     * @param rotateHolderEncryptionKey A flag indicating whether to rotate the holder's encryption key
+     * @return A JsonObject containing the encrypted payload of the credentials wrapper response
+     * @throws Exception if any I/O or parsing error occurs
+     */
+    private @NonNull JsonObject deferredCredentialCall(Object token, String transactionId, ECDHEncrypter issuerEncrypter, JWEHeader jweHeader, ResultMatcher expectedStatus, ECKey ecJWK, boolean rotateHolderEncryptionKey) throws Exception {
         var deferredCredentialRequestClaimBuilder = new JWTClaimsSet.Builder()
-                .claim("transaction_id", deferredCredential.get("transaction_id").getAsString());
+                .claim("transaction_id", transactionId);
         if (rotateHolderEncryptionKey) {
             ecJWK = new ECKeyGenerator(Curve.P_256)
                     .keyID("transportEncKeyECNew")
@@ -282,23 +339,10 @@ class DeferredIssuanceV2IT {
                         .header("SWIYU-API-Version", "2")
                         .contentType("application/jwt")
                         .content(encryptedDeferredCredentialRequest.serialize()))
-                .andExpect(status().isOk())
+                .andExpect(expectedStatus)
                 .andExpect(content().contentType("application/jwt"))
                 .andReturn();
-
-        JsonObject credentialsWrapper = getEncryptedPayload(credentialsWrapperResponse, ecJWK);
-        JsonArray credentials = credentialsWrapper.get("credentials")
-                .getAsJsonArray();
-        JsonObject credential = credentials.get(0)
-                .getAsJsonObject();
-        var vc = credential.get("credential")
-                .getAsString();
-
-        assertTrue(credentialsWrapper.has("credentials"));
-        assertFalse(credentialsWrapper.has("transaction_id"));
-        assertFalse(credentialsWrapper.has("interval"));
-
-        TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
+        return getEncryptedPayload(credentialsWrapperResponse, ecJWK);
     }
 
     @Test
@@ -491,7 +535,7 @@ class DeferredIssuanceV2IT {
 
     private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString)
             throws Exception {
-                return requestCredential(mock, token, credentialRequestString, false);
+        return requestCredential(mock, token, credentialRequestString, false);
     }
 
     private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString, boolean encrypted)

@@ -5,7 +5,7 @@
 This software is a web server implementing the technical standards as specified in
 the [swiyu Trust Infrastructure Interoperability Profile](https://swiyu-admin-ch.github.io/specifications/interoperability-profile/).
 Together with the other generic components provided, this software forms a collection of APIs allowing issuance and
-verification of verifiable credentials without the need of reimplementing the standards.
+verification of verifiable credentials without the need of reimplementing the standards. 
 
 The Generic Issuer Service is the interface to offer a credential. It should be only accessible from the
 issuers internal organization.
@@ -240,11 +240,12 @@ The Generic Issuer service is configured using environment variables.
 
 #### DB Connection
 
-| Variable          | Description                                        |
-|:------------------|:---------------------------------------------------|
-| POSTGRES_USER     | Username to connect to the Issuer service Database |
-| POSTGRES_PASSWORD | Password to connect to the Issuer service Database |
-| POSTGRES_JDBC     | JDBC Connection string to the shared DB            |
+| Variable           | Description                                        |
+|:-------------------|:---------------------------------------------------|
+| POSTGRES_USER      | Username to connect to the Issuer service Database |
+| POSTGRES_PASSWORD  | Password to connect to the Issuer service Database |
+| POSTGRES_JDBC      | JDBC Connection string to the shared DB            |
+| POSTGRES_DB_SCHEMA | Database Schema to be used, default is `public`    |
 
 #### Verifiable Credential Issuing
 
