@@ -22,6 +22,7 @@ import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -305,11 +305,11 @@ class RenewalFlowMigrationTestIT {
             assertThat(initialOffer.isPresent())
                     .as("The initial offer should have the same ID as the management entity after migration")
                     .isTrue();
-            var offer = credentialOfferRepository.findLatestOfferByMetadataTenantId(rmgmt.getMetadataTenantId());
-            assertThat(offer.isPresent())
+            var offer = credentialOfferRepository.findLatestOffersByMetadataTenantId(rmgmt.getMetadataTenantId(), PageRequest.of(0, 1));
+            assertThat(offer)
                     .as("Should find the secondary offer that has been migrated")
-                    .isTrue();
-            assertThat(offer.get().getId())
+                    .hasSize(1);
+            assertThat(offer.getFirst())
                     .as("The latest offer found should be not the initial offer")
                     .isNotEqualTo(initialOffer.get().getId());
 

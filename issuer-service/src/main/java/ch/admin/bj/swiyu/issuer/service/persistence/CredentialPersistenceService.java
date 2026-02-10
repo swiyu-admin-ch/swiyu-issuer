@@ -5,6 +5,8 @@ import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -80,9 +82,12 @@ public class CredentialPersistenceService {
      * @throws ResourceNotFoundException if not found
      */
     public CredentialOffer findCredentialOfferByMetadataTenantId(UUID tenantId) {
-        return credentialOfferRepository.findLatestOfferByMetadataTenantId(tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "No credential offer found for tenant %s".formatted(tenantId)));
+        var offers = credentialOfferRepository.findLatestOffersByMetadataTenantId(tenantId, PageRequest.of(0, 1));
+        if (offers.size() < 1) {
+            throw new ResourceNotFoundException(
+                        "No credential offer found for tenant %s".formatted(tenantId));
+        }
+        return offers.getFirst();
     }
 
     /**
