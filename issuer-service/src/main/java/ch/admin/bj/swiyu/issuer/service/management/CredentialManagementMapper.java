@@ -10,8 +10,11 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 import org.springframework.lang.Nullable;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Set;
@@ -22,16 +25,19 @@ import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toCre
 @UtilityClass
 public class CredentialManagementMapper {
 
+    final private static ObjectMapper mapper = new ObjectMapper();
+
     public static CredentialManagementDto toCredentialManagementDto(ApplicationProperties props,
                                                                     CredentialManagement credentialManagement,
                                                                     Set<CredentialOffer> credentialOffers
-    ) {
+    ) throws JsonProcessingException {
         return new CredentialManagementDto(
                 credentialManagement.getId(),
                 toCredentialStatusTypeDto(credentialManagement),
                 credentialManagement.getRenewalRequestCnt(),
                 credentialManagement.getRenewalResponseCnt(),
-                toCredentialInfoResponseDtoList(props, credentialOffers)
+                toCredentialInfoResponseDtoList(props, credentialOffers),
+                !CollectionUtils.isEmpty(credentialManagement.getDpopKey()) ? mapper.writeValueAsString(credentialManagement.getDpopKey()) : null
         );
     }
 

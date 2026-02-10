@@ -63,7 +63,8 @@ public class CredentialOfferMapper {
                 credential.getCredentialValidFrom(),
                 credential.getCredentialValidUntil(),
                 toCredentialRequest(credential.getCredentialRequest()),
-                getOfferDeeplinkFromCredential(props, credential)
+                getOfferDeeplinkFromCredential(props, credential),
+                !CollectionUtils.isEmpty(credential.getVcHashes()) ? credential.getVcHashes() : null
         );
     }
 
@@ -212,9 +213,9 @@ public class CredentialOfferMapper {
     /**
      * Updates an existing CredentialOffer with data from a CreateCredentialOfferRequestDto and supporting parameters.
      *
-     * @param existingOffer the offer to update
-     * @param newOffer the DTO with new data
-     * @param offerData the parsed offer data
+     * @param existingOffer         the offer to update
+     * @param newOffer              the DTO with new data
+     * @param offerData             the parsed offer data
      * @param applicationProperties the application properties
      */
     public static void updateOfferFromDto(

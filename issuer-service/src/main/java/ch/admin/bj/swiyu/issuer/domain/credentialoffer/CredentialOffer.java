@@ -170,6 +170,12 @@ public class CredentialOffer {
     private CredentialManagement credentialManagement;
 
     /**
+     * List of Hashes / Json Web Signatures, allowing a minimal tracing possibility in case of VC misuse
+     */
+    @Column(name = "vc_hashes")
+    private List<String> vcHashes;
+
+    /**
      * Read the offer data depending on input type and add it to offer
      *
      * @param offerData can be string or map -> other will throw exception

@@ -52,7 +52,7 @@ class RenewalFlowMigrationTestIT {
     );
 
     private static final String PRE_MIGRATION_TARGET = "1.3.0";
-    private static final String MIGRATION_TARGET = "1.4.0";
+    private static final String MIGRATION_TARGET = "1.4.2";
 
     @Autowired
     DataSource dataSource;

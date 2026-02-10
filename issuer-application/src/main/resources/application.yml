@@ -83,6 +83,10 @@ application:
   # List of DID of Attestation providers we trust in
   trusted-attestation-providers: ${TRUSTED_ATTESTATION_PROVIDERS:}
   enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
+  # Flag to enable the storage of hashes of *each* VC signed by the generic issuer. This is the JWS of the SD-JWT VC.
+  # This is more reliable than using the already present key_attestations,
+  # for which reused key could lead to false positives
+  enable-vc-hash-storage: ${ENABLE_VC_HASH_STORAGE:false}
   authentication-jwks: ${JWKS_ALLOWLIST:}
   status-list:
     # private key for singing status list VCs
