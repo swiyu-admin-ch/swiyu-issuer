@@ -12,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 
 import java.net.URLEncoder;
@@ -49,8 +50,8 @@ public class CredentialOfferMapper {
                 toCredentialStatusTypeDto(credential.getCredentialStatus()),
                 credential.getMetadataCredentialSupportedId(),
                 toCredentialOfferMetadata(credential.getCredentialMetadata()),
-                !CollectionUtils.isEmpty(credential.getHolderJWKs()) ? credential.getHolderJWKs() : null,
-                !CollectionUtils.isEmpty(credential.getKeyAttestations()) ? credential.getKeyAttestations() : null,
+                nullIfEmptyList(credential.getHolderJWKs()),
+                nullIfEmptyList(credential.getKeyAttestations()),
                 toClientAgentInfoDto(credential.getClientAgentInfo()),
                 credential.getOfferExpirationTimestamp(),
                 credential.getDeferredOfferValiditySeconds(),
@@ -58,8 +59,12 @@ public class CredentialOfferMapper {
                 credential.getCredentialValidUntil(),
                 toCredentialRequest(credential.getCredentialRequest()),
                 getOfferDeeplinkFromCredential(props, credential),
-                !CollectionUtils.isEmpty(credential.getVcHashes()) ? credential.getVcHashes() : null
+                nullIfEmptyList(credential.getVcHashes())
         );
+    }
+
+    private static @Nullable List<String> nullIfEmptyList(List<String> credential) {
+        return !CollectionUtils.isEmpty(credential) ? credential : null;
     }
 
     public static ClientAgentInfoDto toClientAgentInfoDto(ClientAgentInfo clientAgentInfo) {

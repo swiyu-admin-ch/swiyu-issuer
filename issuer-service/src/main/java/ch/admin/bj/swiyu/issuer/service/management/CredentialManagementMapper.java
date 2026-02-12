@@ -37,8 +37,12 @@ public class CredentialManagementMapper {
                 credentialManagement.getRenewalRequestCnt(),
                 credentialManagement.getRenewalResponseCnt(),
                 toCredentialInfoResponseDtoList(props, credentialOffers),
-                !CollectionUtils.isEmpty(credentialManagement.getDpopKey()) ? mapper.writeValueAsString(credentialManagement.getDpopKey()) : null
+                serializeDpopKeyIfPresent(credentialManagement)
         );
+    }
+
+    private static @Nullable String serializeDpopKeyIfPresent(CredentialManagement credentialManagement) throws JsonProcessingException {
+        return !CollectionUtils.isEmpty(credentialManagement.getDpopKey()) ? mapper.writeValueAsString(credentialManagement.getDpopKey()) : null;
     }
 
     public static CredentialStatusTypeDto toCredentialStatusTypeDto(CredentialManagement credentialManagement) {
