@@ -9,6 +9,8 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
+import ch.admin.bj.swiyu.jwtutil.JwtUtil;
+import ch.admin.bj.swiyu.jwtutil.JwtUtilException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
@@ -58,8 +60,8 @@ public class DataIntegrityService {
                 log.error("Data integrity JWT is missing for offer {}", offerIdentifier);
                 throw new BadRequestException("Data integrity JWT is missing");
             }
-            return JwtVerificationUtil.verifyJwt(jwtString, applicationProperties.getDataIntegrityKeySet());
-        } catch (JOSEException | ParseException e) {
+            return JwtUtil.verifyJwt(jwtString, applicationProperties.getDataIntegrityKeySet());
+        } catch (JwtUtilException e) {
             log.error("Failed setting up Data Integrity check of offer {} with JWKS {} - caused by {}", offerIdentifier, applicationProperties.getDataIntegrityJwks(), e.getMessage(), e);
             throw new BadRequestException(e.getMessage(), e);
         }

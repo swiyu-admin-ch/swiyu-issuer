@@ -118,7 +118,7 @@ class CredentialOfferCreateJwtIT {
                 """, offerData);
         createOfferMvcResult(jsonPayload)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Data Integrity of offer could not be verified. No matching key found"));
+                .andExpect(jsonPath("$.detail").value("No matching key found"));
     }
 
     @Test
