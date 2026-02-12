@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SD_JWT_FORMAT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,6 +31,9 @@ class HolderBindingServiceTest {
     private IssuerMetadata issuerMetadata;
     private NonceService nonceService;
     private HolderBindingService holderBindingService;
+    private CredentialOffer offer;
+    private CredentialConfiguration config;
+    private CredentialManagement management;
 
     @BeforeEach
     void setUp() {
@@ -42,6 +47,13 @@ class HolderBindingServiceTest {
         var metadataService = mock(MetadataService.class);
         when(metadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
 
+        offer = mock(CredentialOffer.class);
+        management = mock(CredentialManagement.class);
+        when(management.getMetadataTenantId()).thenReturn(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+        when(offer.getCredentialManagement()).thenReturn(management);
+        config = mock(CredentialConfiguration.class);
+        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
+
         holderBindingService = new HolderBindingService(
                 metadataService, nonceService, keyAttestationService, applicationProperties
         );
@@ -51,11 +63,7 @@ class HolderBindingServiceTest {
     void returnsEmptyListIfNoProofTypesSupported() {
         SupportedProofType proofType = new SupportedProofType();
         proofType.setSupportedSigningAlgorithms(List.of("ES256"));
-        CredentialOffer offer = mock(CredentialOffer.class);
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
-
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(null);
         List<String> proofs = List.of("Proof1", "Proof2");
 
@@ -74,11 +82,7 @@ class HolderBindingServiceTest {
         SupportedProofType proofType = new SupportedProofType();
         proofType.setSupportedSigningAlgorithms(List.of("ES256"));
         Map<String, SupportedProofType> proofTypesSupported = Map.of("jwt", proofType);
-        CredentialOffer offer = mock(CredentialOffer.class);
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
-
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(proofTypesSupported);
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(
@@ -95,10 +99,7 @@ class HolderBindingServiceTest {
 
     @Test
     void throwsIfMultipleProofsAndNoBatchIssuance() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
         when(issuerMetadata.getBatchCredentialIssuance()).thenReturn(null);
 
@@ -117,10 +118,7 @@ class HolderBindingServiceTest {
 
     @Test
     void validateHolderPublicKeys_reusedProof_throwsOID4VCIException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
         mockBatchCredentialIssuance(2);
 
@@ -147,10 +145,7 @@ class HolderBindingServiceTest {
 
     @Test
     void validateHolderPublicKeys_invalidProof_throwsOID4VCIException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
 
         var credentialRequest = new CredentialRequestClass(
@@ -170,10 +165,7 @@ class HolderBindingServiceTest {
 
     @Test
     void validateHolderPublicKeys_proofNotSupported_throwsOID4VCIException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
 
         var credentialRequest = new CredentialRequestClass(
@@ -194,10 +186,7 @@ class HolderBindingServiceTest {
 
     @Test
     void throwsIfProofsExceedBatchSize() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
         mockBatchCredentialIssuance(1);
 

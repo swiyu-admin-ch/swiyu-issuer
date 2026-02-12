@@ -549,6 +549,7 @@ Callback Object Structure
 erDiagram
     CREDENTIAL_MANAGEMENT {
         UUID id PK
+        UUID metadata_tenant_id
         UUID access_token
         UUID refresh_token
         JSONB dpop_key
@@ -581,7 +582,6 @@ erDiagram
         JSONB configuration_override
         TEXT[] key_attestations
         INTEGER deferred_offer_validity_seconds
-        UUID metadata_tenant_id
         UUID credential_management_id FK
     }
 
