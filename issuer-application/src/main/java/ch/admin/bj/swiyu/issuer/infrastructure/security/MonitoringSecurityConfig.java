@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2025 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
-
 package ch.admin.bj.swiyu.issuer.infrastructure.security;
 
 import ch.admin.bj.swiyu.issuer.infrastructure.config.MonitoringBasicAuthProperties;
