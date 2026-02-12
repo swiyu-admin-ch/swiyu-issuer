@@ -34,6 +34,7 @@ application:
   token-ttl: 600
   allow-token-refresh: true
   allow-refresh-token-rotation: false
+  enable-vc-hash-storage: true
   acceptable-proof-time-window-seconds: 120
   nonce-lifetime-seconds: 120
   openid-file: "classpath:example_openid.json"
