@@ -83,9 +83,9 @@ public class CredentialPersistenceService {
      */
     public CredentialOffer findCredentialOfferByMetadataTenantId(UUID tenantId) {
         var offers = credentialOfferRepository.findLatestOffersByMetadataTenantId(tenantId, PageRequest.of(0, 1));
-        if (offers.size() < 1) {
+        if (offers.isEmpty()) {
             throw new ResourceNotFoundException(
-                        "No credential offer found for tenant %s".formatted(tenantId));
+                    "No credential offer found for tenant %s".formatted(tenantId));
         }
         return offers.getFirst();
     }
