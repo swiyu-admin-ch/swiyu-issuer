@@ -1,11 +1,5 @@
 package ch.admin.bj.swiyu.issuer.common.config;
 
-/*
- * SPDX-FileCopyrightText: 2025 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

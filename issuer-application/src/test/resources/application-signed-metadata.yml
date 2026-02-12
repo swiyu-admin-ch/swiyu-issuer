@@ -1,6 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Swiss Confederation
-#
-# SPDX-License-Identifier: MIT
+
 application:
   # Feature Flag for signed metadata
   signed-metadata-enabled: true

@@ -105,6 +105,11 @@ The integrity can be calculated using shell commands.
 }
 ```
 
+> [!NOTE]
+> The `metadata_credential_supported_id` must exist in the issuer metadata at
+> `/.well-known/openid-credential-issuer` under `credential_configurations_supported`.
+> If it does not, the credential request will fail later.
+
 More details on the vct claim can be found in
 the [swiss profile](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#sd-jwt-vc)
 and the latest version

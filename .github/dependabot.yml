@@ -10,6 +10,43 @@ updates:
       - "/"
       - "/issuer-application"
       - "/issuer-service"
+    groups:
+      spring:
+        patterns:
+          - "org.springframework.*"
+          - "org.springdoc*"
+        update-types:
+          - "patch"
+          - "minor"
+      swiyu:
+        patterns:
+          - "ch.admin.*"
+          - "io.github.swiyu*"
+      cryptography:
+        patterns:
+          - "org.bouncycastle*"
+          - "com.nimbus*"
+      database:
+        patterns:
+          - "org.flywaydb*"
+          - "org.postgresql*"
+          - "org.hibernate*"
+          - "org.testcontainers*"
+      monitoring:
+        patterns:
+          - "io.micrometer*"
+          - "io.prometheus*"
+      logging:
+        patterns:
+          - "ch.qos.logback*"
+          - "net.logstash*"
+      utility:
+        patterns:
+          - "org.projectlombok*"
+          - "com.tngtech.archunit*"
+          - "org.mock-server*"
+          - "net.javacrumbs.shedlock*"
+          - "net.java.dev.jna*" # For didresolver
     schedule:
       interval: "weekly"
   - package-ecosystem: "docker"
