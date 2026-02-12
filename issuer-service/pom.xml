@@ -185,6 +185,10 @@
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-jwt-util</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-dpop-util</artifactId>
+        </dependency>
 
     </dependencies>
 

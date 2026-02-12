@@ -55,7 +55,7 @@
         <springframework.cloud.version>2024.0.0</springframework.cloud.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <generic-java-lib.version>1.1.0</generic-java-lib.version>
+        <generic-java-lib.version>1.2.0</generic-java-lib.version>
     </properties>
 
     <dependencyManagement>
@@ -95,6 +95,11 @@
             <dependency>
                 <groupId>ch.admin.swiyu</groupId>
                 <artifactId>swiyu-jwt-util</artifactId>
+                <version>${generic-java-lib.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.admin.swiyu</groupId>
+                <artifactId>swiyu-dpop-util</artifactId>
                 <version>${generic-java-lib.version}</version>
             </dependency>
         </dependencies>
