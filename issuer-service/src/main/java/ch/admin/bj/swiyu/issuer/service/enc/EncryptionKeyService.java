@@ -82,7 +82,12 @@ public class EncryptionKeyService {
         return allKeys.stream()
                 .filter(k -> k.getCreationTimestamp().isAfter(deprecateTime))
                 .max(Comparator.comparing(EncryptionKey::getCreationTimestamp))
-                .orElseThrow(() -> new Oid4vcException(CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS, "No active encryption key available (rotation window exceeded)"))
+                .orElseThrow(() -> new Oid4vcException(CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS,
+                        "No active encryption key available (rotation window exceeded)",
+                        Map.of(
+                                "totalKeys", allKeys.size(),
+                                "deprecateTime", deprecateTime
+                        )))
                 .getJwkSet()
                 .toJSONObject(true);
     }
