@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2025 Swiss Confederation
- *
- * SPDX-License-Identifier: MIT
- */
-
 package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
@@ -45,11 +39,13 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
     private final SignedJWT jwt;
     private final String dataClaim;
 
-    public JWTResolveRequestWrapper(HttpServletRequest request) throws IOException, ParseException {
+    private JWTResolveRequestWrapper(HttpServletRequest request, JWKSet allowedKeys)
+            throws IOException, ParseException, JOSEException {
         super(request);
         var mapper = new ObjectMapper();
         String jwtString = request.getReader().lines().collect(Collectors.joining());
         this.jwt = SignedJWT.parse(jwtString);
+        verifyJwt(this.jwt, allowedKeys);
         this.dataClaim = mapper.readTree(jwt.getJWTClaimsSet().getStringClaim("data")).toString();
     }
 
@@ -62,22 +58,23 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
         throw new JOSEException("Unsupported Key Type %s".formatted(kty));
     }
 
+    private static void verifyJwt(SignedJWT jwt, JWKSet allowedKeys) throws JOSEException {
+        JWSHeader jwtHeader = jwt.getHeader();
+        JWK matchingKey = allowedKeys.getKeyByKeyId(jwtHeader.getKeyID());
+        if (matchingKey == null) {
+            log.warn("No matching allowed key has been found for the received JWT");
+            throw new BadRequestException("Unknown Key has been used in signing the JWT");
+        }
+        KeyType kty = matchingKey.getKeyType();
+        if (!jwt.verify(buildVerifier(kty, matchingKey))) {
+            log.warn("Request with invalid JWT encoding intercepted");
+            throw new BadRequestException("Request JWT verification failed");
+        }
+    }
+
     public static JWTResolveRequestWrapper createAndValidate(HttpServletRequest request, JWKSet allowedKeys) {
         try {
-            JWTResolveRequestWrapper wrappedRequest = new JWTResolveRequestWrapper(request);
-            SignedJWT jwt = wrappedRequest.getJwt();
-            JWSHeader jwtHeader = jwt.getHeader();
-            JWK matchingKey = allowedKeys.getKeyByKeyId(jwtHeader.getKeyID());
-            if (matchingKey == null) {
-                log.warn("No matching allowed key has been found for the received JWT");
-                throw new BadRequestException("Unknown Key has been used in signing the JWT");
-            }
-            KeyType kty = matchingKey.getKeyType();
-            if (!jwt.verify(buildVerifier(kty, matchingKey))) {
-                log.warn("Request with invalid JWT encoding intercepted");
-                throw new BadRequestException("Request JWT verification failed");
-            }
-            return wrappedRequest;
+            return new JWTResolveRequestWrapper(request, allowedKeys);
         } catch (Exception e) {
             log.info("Parsing communication JWT failed.", e);
             throw new BadRequestException("Request is not JWT encoded");
@@ -111,7 +108,7 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
     }
 
     @Override
-    public BufferedReader getReader() throws IOException {
+    public BufferedReader getReader() {
         return new BufferedReader(new InputStreamReader(getInputStream()));
     }
 }

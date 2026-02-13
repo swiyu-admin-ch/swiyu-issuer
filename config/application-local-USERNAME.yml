@@ -1,7 +1,3 @@
-# SPDX-FileCopyrightText: 2025 Swiss Confederation
-#
-# SPDX-License-Identifier: MIT
-
 # 1. please copy and re-name this file so that USERNAME is your linux username
 # 2. Create a business partner to your account on ePortal REF (via portal: https://eportal-r.admin.ch/start?search=swiyu)
 # 3. Gather customer key and secret from the API self-service portal (https://eportal-r.admin.ch/start?search=selfservice)
