@@ -426,7 +426,7 @@ class CredentialServiceOrchestratorTest {
                 credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
 
         assertEquals(CREDENTIAL_REQUEST_DENIED, exception.getError());
-        assertEquals("The credential can not be issued anymore, the offer was either cancelled or expired", exception.getMessage());
+        assertEquals("The credential cannot be issued anymore, the offer was either cancelled or expired", exception.getMessage());
     }
 
     @Test
@@ -724,7 +724,7 @@ class CredentialServiceOrchestratorTest {
         var exception = assertThrows(Oid4vcException.class, () -> credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
 
         assertEquals(CredentialRequestError.INVALID_TRANSACTION_ID, exception.getError());
-        assertEquals("Invalid transactional id", exception.getMessage());
+        assertEquals("Invalid transaction id", exception.getMessage());
     }
 
     @Test
