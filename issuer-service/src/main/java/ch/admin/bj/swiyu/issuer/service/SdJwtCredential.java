@@ -24,7 +24,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.*;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 import static java.util.Objects.nonNull;
 
@@ -110,7 +110,12 @@ public class SdJwtCredential extends CredentialBuilder {
     @Override
     public List<String> getCredential(@Nullable List<DidJwk> holderPublicKeys) {
         var statusReferences = getStatusReferences();
-        var batchSize = getIssuerMetadata().getIssuanceBatchSize();
+
+        // calculate batch size by the number of proofs provided by the holder or batch size defined in issuer metadata
+        var batchSize = holderPublicKeys != null && !holderPublicKeys.isEmpty()
+                ? holderPublicKeys.size()
+                : getIssuerMetadata().getIssuanceBatchSize();
+
         if (!getStatusFactory().isCompatibleStatusReferencesToBatchSize(statusReferences, batchSize)) {
             throw new IllegalStateException(
                     "Batch size and status references do not match anymore. Cannot issue credential");
