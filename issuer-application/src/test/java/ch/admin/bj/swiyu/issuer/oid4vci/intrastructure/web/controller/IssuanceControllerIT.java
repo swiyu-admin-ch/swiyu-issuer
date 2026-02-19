@@ -222,7 +222,7 @@ class IssuanceControllerIT {
         // Should BadRequest with some error hinting that proof was reused
         requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("proof")))
+                .andExpect(content().string(containsString("nonce")))
                 .andExpect(content().string(containsString("reused")))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
         // Should still be registered as used

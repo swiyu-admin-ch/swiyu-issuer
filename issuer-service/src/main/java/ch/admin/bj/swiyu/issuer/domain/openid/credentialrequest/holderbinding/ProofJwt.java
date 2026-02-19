@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
+import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
@@ -156,18 +158,12 @@ public class ProofJwt extends Proof implements AttestableProof {
     }
 
     private void validateNonce() {
-        // the nonce claim matches the server-provided c_nonce value, if the server had previously provided a c_nonce,
-        var presentedNonce = getNonce();
-
-        if (presentedNonce.contains("::")) {
-            // Self-contained nonce
-            var selfContainedNonce = new SelfContainedNonce(presentedNonce);
-            if (!selfContainedNonce.isValid(nonceLifetimeSeconds)) {
-                throw proofException("Nonce is expired");
-            }
-
-        } else {
+        try {
+            new SelfContainedNonce(getNonce(), nonceLifetimeSeconds);
+        } catch (InvalidNonceException e) {
             throw proofException("Invalid nonce claim in proof JWT");
+        } catch (ExpiredNonceException e) {
+            throw proofException("Nonce is expired");
         }
     }
 

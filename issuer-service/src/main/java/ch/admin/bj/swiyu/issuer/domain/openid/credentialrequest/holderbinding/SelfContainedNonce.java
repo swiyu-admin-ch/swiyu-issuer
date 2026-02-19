@@ -1,20 +1,37 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
-import lombok.AllArgsConstructor;
+import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import lombok.Getter;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
-@AllArgsConstructor
 @Getter
 public class SelfContainedNonce {
 
-    private String nonce;
+    private final String nonce;
 
     public SelfContainedNonce() {
         nonce = UUID.randomUUID() + "::" + Instant.now().toString();
+    }
+
+    public SelfContainedNonce(String nonce) {
+        this.nonce = nonce;
+
+        if (!isSelfContainedNonce()) {
+            throw new InvalidNonceException("Invalid nonce. Nonce must consist of 2 parts being split by double colon '::'");
+        }
+    }
+
+    public SelfContainedNonce(String nonce, int nonceLifetimeSeconds) throws ExpiredNonceException, InvalidNonceException {
+
+        this(nonce);
+
+        if (!isValid(nonceLifetimeSeconds)) {
+            throw new ExpiredNonceException("Invalid nonce. Nonce is expired.");
+        }
     }
 
     /**

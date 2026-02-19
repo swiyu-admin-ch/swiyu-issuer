@@ -17,10 +17,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ProofJwtTest {
 
@@ -138,6 +138,42 @@ class ProofJwtTest {
         String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), false);
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
         assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().plusSeconds(600).getEpochSecond()));
+    }
+
+    @Test
+    void givenExpiredNonce_whenIsValidHolderBinding_thenThrowProofException() throws JOSEException {
+        var nonce = UUID.randomUUID() + "::" + Instant.now().minus(1, ChronoUnit.DAYS).toString();
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
+        var exception = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().getEpochSecond()));
+        assertEquals("Nonce is expired", exception.getMessage());
+    }
+
+    @Test
+    void givenInvalidNonce_whenIsValidHolderBinding_thenThrowProofException() throws JOSEException {
+        var nonce = UUID.randomUUID() + "::";
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
+        var exception = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().getEpochSecond()));
+        assertEquals("Invalid nonce claim in proof JWT", exception.getMessage());
+    }
+
+    @Test
+    void givenExpiredToken_whenIsValidHolderBinding_thenThrowProofException() throws JOSEException {
+        var nonce = getNonce();
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
+        var exception = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().minusSeconds(10).getEpochSecond()));
+        assertEquals("Token is expired", exception.getMessage());
+    }
+
+    @Test
+    void givenNoBinding_whenGetBinding_thenThrowIllegalStateException() throws JOSEException {
+        var nonce = getNonce();
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
+        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
+        var exception = assertThrows(IllegalStateException.class, () -> proofJwt.getBinding());
+        assertEquals("Must first call isValidHolderBinding", exception.getMessage());
     }
 
     private CredentialOffer createTestOffer() {

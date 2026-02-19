@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
@@ -12,11 +13,20 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SD_JWT_FORMAT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,6 +39,7 @@ class HolderBindingServiceTest {
     private IssuerMetadata issuerMetadata;
     private NonceService nonceService;
     private HolderBindingService holderBindingService;
+    private List<ECKey> holderKeys;
 
     @BeforeEach
     void setUp() {
@@ -41,10 +52,19 @@ class HolderBindingServiceTest {
         ApplicationProperties applicationProperties = mock(ApplicationProperties.class);
         var metadataService = mock(MetadataService.class);
         when(metadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
+        when(applicationProperties.getAcceptableProofTimeWindowSeconds()).thenReturn(60);
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(60);
 
         holderBindingService = new HolderBindingService(
                 metadataService, nonceService, keyAttestationService, applicationProperties
         );
+
+        holderKeys = IntStream.range(0, 3).boxed().map(i -> assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
+                .keyUse(KeyUse.SIGNATURE)
+                .keyID("Test-Key-" + i)
+                .issueTime(new Date())
+                .generate())
+        ).toList();
     }
 
     @Test
@@ -214,6 +234,32 @@ class HolderBindingServiceTest {
         assertEquals("The number of proofs must match the batch size", e.getMessage());
     }
 
+    @Test
+    void givenCorrectParams_whenGetValidateHolderPublicKeys_thenSuccess() {
+        CredentialOffer offer = mock(CredentialOffer.class);
+        CredentialManagement mgmt = mock(CredentialManagement.class);
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
+        when(offer.getCredentialManagement()).thenReturn(mgmt);
+        when(mgmt.getAccessTokenExpirationTimestamp()).thenReturn(Instant.now().plusSeconds(600).getEpochSecond());
+        CredentialConfiguration config = mock(CredentialConfiguration.class);
+        SupportedProofType proofType = new SupportedProofType();
+        proofType.setSupportedSigningAlgorithms(List.of("ES256"));
+        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
+        when(config.getProofTypesSupported()).thenReturn(Map.of("jwt", proofType));
+        mockBatchCredentialIssuance(3);
+
+        List<String> proofs = holderKeys.stream().map(holderKey -> assertDoesNotThrow(() -> TestServiceUtils.createHolderProof(holderKey,
+                "did:example:issuer", UUID.randomUUID() + "::" + Instant.now().minusSeconds(1).toString(),
+                ProofType.JWT.getClaimTyp(), false))).toList();
+
+        CredentialRequestClass credentialRequest = new CredentialRequestClass(
+                SD_JWT_FORMAT,
+                Map.of(ProofType.JWT.toString(), proofs),
+                null,
+                supportedCredentialId);
+
+        assertDoesNotThrow(() -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer));
+    }
 
     private void mockBatchCredentialIssuance(int batchSize) {
         var batchCredentialIssuance = new BatchCredentialIssuance(batchSize);

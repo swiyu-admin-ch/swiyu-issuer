@@ -12,13 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New endpoint `/actuator/env` to retrieve configuration details.
-- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}` to retrieve offer specific information.
-- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}/status` to retrieve the status of the offer.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}` to retrieve offer specific
+  information.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}/status` to retrieve the status of
+  the offer.
 - Send callback on every credential offer status change.
 - Send callback on every credential management status change.
 - Added field `event_trigger` to callback request
-  - Field is set to `CREDENTIAL_MANAGEMENT` on credential management status change.
-  - Field is set to `CREDENTIAL_OFFER` on credential offer status change.
+    - Field is set to `CREDENTIAL_MANAGEMENT` on credential management status change.
+    - Field is set to `CREDENTIAL_OFFER` on credential offer status change.
 - Allow setting the used Database Schema with environment variable `POSTGRES_DB_SCHEMA`. Default remains public as
   before.
 
@@ -29,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed credential request errors ISSUANCE_PENDING to be aligned with the spec.
 - Deferred credential response when credential data is not ready is now 202 ACCEPTED
 - Deferred credential transaction_id will not change anymore during deferred flow
+
+### Removed
+
+- Breaking Contract change -> Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
+    - The nonce column from credential_offer table is also removed.
 
 ## 2.3.1
 

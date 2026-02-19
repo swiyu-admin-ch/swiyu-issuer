@@ -1,10 +1,11 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -32,13 +33,19 @@ public class NonceService {
      * @return True if the nonce is valid and has not been used.
      */
     @Transactional
-    public boolean isValidSelfContainedNonce(String nonce) {
-        var selfContainedNonce = new SelfContainedNonce(nonce);
-        if (!selfContainedNonce.isSelfContainedNonce() || !selfContainedNonce.isValid(applicationProperties.getNonceLifetimeSeconds()) || isNonceRegisteredInCache(selfContainedNonce)) {
+    public boolean isValidSelfContainedNonce(String nonce) throws IllegalArgumentException {
+        SelfContainedNonce selfContainedNonce;
+        try {
+            selfContainedNonce = new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds());
+
+            if (isNonceRegisteredInCache(selfContainedNonce)) {
+                return false;
+            }
+            saveNonceInCache(selfContainedNonce);
+            return true;
+        } catch (InvalidNonceException e) {
             return false;
         }
-        saveNonceInCache(selfContainedNonce);
-        return true;
     }
 
     @Transactional(readOnly = true)
@@ -56,7 +63,6 @@ public class NonceService {
 
         var selfContainedNonces = nonces.stream()
                 .map(SelfContainedNonce::new)
-                .filter(SelfContainedNonce::isSelfContainedNonce)
                 .toList();
 
         if (!selfContainedNonces.isEmpty()) {
