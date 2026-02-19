@@ -14,8 +14,9 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
-import java.util.Set;
+import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -38,6 +39,8 @@ class CredentialStateServiceTest {
     private CredentialStateService stateService;
 
     private AutoCloseable mocks;
+
+    private static final Random rand = new Random();
 
     @BeforeEach
     void setUp() {
@@ -304,12 +307,13 @@ class CredentialStateServiceTest {
      */
     @Test
     void handleStatusChangeForPostIssuanceProcess_shouldUpdateStatusListsAndPersistManagementWhenChanged() {
-        var offer1 = CredentialOffer.builder().id(UUID.randomUUID()).credentialStatus(CredentialOfferStatusType.ISSUED).build();
-        var offer2 = CredentialOffer.builder().id(UUID.randomUUID()).credentialStatus(CredentialOfferStatusType.REQUESTED).build();
+        var offers = List.of(CredentialOfferStatusType.ISSUED, CredentialOfferStatusType.ISSUED, CredentialOfferStatusType.EXPIRED, CredentialOfferStatusType.CANCELLED, CredentialOfferStatusType.REQUESTED)
+                .stream().map(state -> CredentialOffer.builder().id(UUID.randomUUID()).credentialStatus(state).build())
+                .collect(Collectors.toSet());
 
         var mgmt = CredentialManagement.builder()
                 .id(UUID.randomUUID())
-                .credentialOffers(Set.of(offer1, offer2))
+                .credentialOffers(offers)
                 .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .build();
 
@@ -319,16 +323,16 @@ class CredentialStateServiceTest {
         when(credentialStateMachine.sendEventAndUpdateStatus(any(CredentialOffer.class), any()))
                 .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType>(CredentialOfferStatusType.OFFERED, true));
 
-        var persistedStatuses = Set.<CredentialOfferStatus>of(
-                CredentialOfferStatus.builder()
+        var persistedStatuses = offers.stream().map(offer -> CredentialOfferStatus.builder()
                         .id(CredentialOfferStatusKey.builder()
-                                .offerId(offer1.getId())
-                                .statusListId(UUID.randomUUID())
-                                .index(1)
-                                .build())
-                        .build());
+                        .offerId(offer.getId())
+                        .statusListId(UUID.randomUUID())
+                        .index(rand.nextInt(10000))
+                        .build()).build())
+                .collect(Collectors.toSet());
 
-        when(persistenceService.findCredentialOfferStatusesByOfferIds(eq(List.of(offer1.getId(), offer2.getId()))))
+        var offerIds = offers.stream().map(CredentialOffer::getId).toList();
+        when(persistenceService.findCredentialOfferStatusesByOfferIds(eq(offerIds)))
                 .thenReturn(persistedStatuses);
 
         var expectedStatusListIds = List.of(UUID.randomUUID());
@@ -339,13 +343,12 @@ class CredentialStateServiceTest {
 
         UpdateStatusResponseDto response = stateService.handleStatusChangeForPostIssuanceProcess(
                 mgmt,
-                offer1,
+                offers.stream().findFirst().get(),
                 CredentialStateMachineConfig.CredentialManagementEvent.REVOKE,
                 CredentialStateMachineConfig.CredentialOfferEvent.CANCEL);
 
         assertNotNull(response);
-
-        verify(statusListPersistenceService).revoke(anySet());
+        verify(statusListPersistenceService).revoke(eq(persistedStatuses));
         verify(persistenceService).saveCredentialManagement(eq(mgmt));
     }
 
