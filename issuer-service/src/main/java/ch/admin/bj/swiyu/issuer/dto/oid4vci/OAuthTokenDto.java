@@ -31,10 +31,6 @@ public class OAuthTokenDto implements SpringDocOAuth2Token, Serializable {
     @JsonProperty("expires_in")
     private long expiresIn;
 
-    @Deprecated(since = "OID4VCI 1.0")
-    @JsonProperty("c_nonce")
-    private String cNonce;
-
     @Override
     public String getAccessToken() {
         return this.accessToken;

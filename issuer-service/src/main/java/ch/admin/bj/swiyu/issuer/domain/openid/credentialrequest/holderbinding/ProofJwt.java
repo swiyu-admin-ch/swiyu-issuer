@@ -13,7 +13,6 @@ import org.springframework.util.StringUtils;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class ProofJwt extends Proof implements AttestableProof {
@@ -44,10 +43,8 @@ public class ProofJwt extends Proof implements AttestableProof {
     /**
      * Validates the Proof JWT according to <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#section-7.2.1.1">OID4VCI 7.2.1.1</a>
      */
-    @Override
     public boolean isValidHolderBinding(String issuerId,
                                         List<String> supportedSigningAlgorithms,
-                                        UUID nonce,
                                         Long tokenExpirationTimestamp) {
 
         try {
@@ -74,7 +71,7 @@ public class ProofJwt extends Proof implements AttestableProof {
                 throw proofException("Proof JWT is not valid!");
             }
 
-            validateNonce(nonce);
+            validateNonce();
 
             if (tokenExpirationTimestamp != null && Instant.now().isAfter(Instant.ofEpochSecond(tokenExpirationTimestamp))) {
                 throw proofException("Token is expired");
@@ -158,7 +155,7 @@ public class ProofJwt extends Proof implements AttestableProof {
         }
     }
 
-    private void validateNonce(UUID nonce) {
+    private void validateNonce() {
         // the nonce claim matches the server-provided c_nonce value, if the server had previously provided a c_nonce,
         var presentedNonce = getNonce();
 
@@ -170,12 +167,7 @@ public class ProofJwt extends Proof implements AttestableProof {
             }
 
         } else {
-            // fixed nonce (provided via c_nonce)
-            // Once ready to contract -> Remove fixed token based nonce (EIDOMNI-166)
-            var nonceString = nonce.toString();
-            if (nonceString != null && !nonceString.equals(presentedNonce)) {
-                throw proofException("Nonce claim does not match the server-provided c_nonce value");
-            }
+            throw proofException("Invalid nonce claim in proof JWT");
         }
     }
 

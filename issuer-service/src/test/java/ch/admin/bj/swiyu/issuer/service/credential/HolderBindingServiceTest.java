@@ -127,7 +127,7 @@ class HolderBindingServiceTest {
         List<String> proofs = List.of("Proof1", "Proof1");
         var proofJwt = mock(ProofJwt.class);
         when(proofJwt.getProofType()).thenReturn(ProofType.JWT);
-        when(proofJwt.isValidHolderBinding(anyString(), anyList(), any(), anyLong())).thenReturn(true);
+        when(proofJwt.isValidHolderBinding(anyString(), anyList(), anyLong())).thenReturn(true);
         when(proofJwt.getBinding()).thenReturn("binding");
 
         holderBindingService = spy(holderBindingService);

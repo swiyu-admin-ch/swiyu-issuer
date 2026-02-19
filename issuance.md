@@ -286,14 +286,31 @@ With response:
 {
     "access_token": "your $ACCESS_TOKEN",
     "expires_in": 600,
-    "c_nonce": "your $C_NONCE_V1",
     "token_type": "BEARER"
 }
 ```
 
 > [!NOTE]
 > Please store the `access_token` as it is needed in later steps and will be referenced as `$ACCESS_TOKEN`.
-> Also store the `c_nonce` ($C_NONCE_V1) as it is needed to create a holder proof.
+
+### Get Nonce
+
+Actor: Wallet
+
+```bash
+curl -X 'POST' 'http://localhost:8080/oid4vci/api/nonce' -H 'accept: application/json'
+```
+
+With response:
+
+```json
+{
+    "c_nonce": "c9c737f3-f37b-4331-a23c-313dc821fac5::2025-08-07T16:30:19.021045078Z"
+}
+```
+
+> [!NOTE]
+> Please store the `c_nonce` ($C_NONCE) as it is needed to create a proof in the next step.
 
 ## Credential Issuance V1
 
@@ -330,7 +347,7 @@ ISS-->>-WALLET: VC
 
 ### Get credential
 
-To create the proof for the credential, you need the `$C_NONCE_V1` then build a JWT according to
+To create the proof for the credential, you need the `$C_NONCE` then build a JWT according to
 the [SWISS-Profile-jwt-proof-type](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#jwt-proof-type).
 It is not recommended to reuse your private keys to sign different credentials.
 
@@ -395,28 +412,9 @@ ISS->>+DB: Invalidate Nonce
 ISS-->>-WALLET: VC
 ```
 
-### Get Nonce
-
-Actor: Wallet
-
-```bash
-curl -X 'POST' 'http://localhost:8080/oid4vci/api/nonce' -H 'accept: application/json'
-```
-
-With response:
-
-```json
-{
-    "c_nonce": "c9c737f3-f37b-4331-a23c-313dc821fac5::2025-08-07T16:30:19.021045078Z"
-}
-```
-
-> [!NOTE]
-> Please store the `c_nonce` ($C_NONCE_V2) as it is needed to create a proof in the next step.
-
 ### Request credential
 
-To create the proof for the credential, you need the `$C_NONCE_V2` then build a JWT according to
+To create the proof for the credential, you need the `$C_NONCE` then build a JWT according to
 the [SWISS-Profile-jwt-proof-type](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#jwt-proof-type).
 It is not recommended to reuse your private keys to sign different credentials.
 

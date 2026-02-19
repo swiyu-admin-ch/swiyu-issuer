@@ -1,16 +1,15 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
-import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -50,6 +49,7 @@ import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_REQUEST;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestNonce;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
@@ -101,15 +101,15 @@ class IssuanceControllerIT {
         return credentialSubjectData;
     }
 
-    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode, CredentialOfferStatusType status) {
+    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode) {
         var offerData = new HashMap<String, Object>();
         offerData.put("data", new GsonBuilder().create().toJson(getUnboundCredentialSubjectData()));
-        return CredentialOffer.builder().credentialStatus(status)
+        return CredentialOffer.builder()
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
                 .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
                 .offerData(offerData)
                 .credentialMetadata(null)
                 .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
-                .nonce(UUID.randomUUID())
                 .preAuthorizedCode(preAuthCode)
                 .build();
     }
@@ -123,7 +123,7 @@ class IssuanceControllerIT {
         offerId = offer.getId();
         var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
         saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, testStatusList, 1);
-        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialOfferStatusType.OFFERED);
+        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode);
         saveStatusListLinkedOffer(unboundOffer, testStatusList, 2);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
@@ -263,7 +263,7 @@ class IssuanceControllerIT {
             expectedIssuer = applicationProperties.getIssuerId();
             expectedVerificationMethod = sdjwtProperties.getVerificationMethod();
         }
-        String vc = getBoundVc(useNewNonce, override);
+        String vc = getBoundVc(override);
 
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
         var jwt = SignedJWT.parse(vc.split("~")[0]);
@@ -280,26 +280,12 @@ class IssuanceControllerIT {
     }
 
     @Test
-    void testCredentialFlowSendIncorrectNonce_thenError() throws Exception {
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
-        var token = tokenResponse.get("access_token");
-
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), UUID.randomUUID().toString(), ProofType.JWT.getClaimTyp(), true);
-        String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
-
-        requestCredential(mock, (String) token, credentialRequestString)
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value(INVALID_PROOF.name()))
-                .andExpect(jsonPath("$.error_description").value("Nonce claim does not match the server-provided c_nonce value"))
-                .andReturn();
-    }
-
-    @Test
     void testWrongProofType_thenBadRequest() throws Exception {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
+        var nonce = requestNonce(mock);
 
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), "wrong type", true);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, "wrong type", true);
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
 
@@ -308,9 +294,10 @@ class IssuanceControllerIT {
 
     @Test
     void testHolderBindingProof_GivenIssuedAtWindowInFuture_thenBadRequest() throws Exception {
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), true, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
 
@@ -319,9 +306,10 @@ class IssuanceControllerIT {
 
     @Test
     void testHolderBindingProof_GivenIssuedAtWindowInPast_thenBadRequest() throws Exception {
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true, Date.from(Instant.now().minus(1, ChronoUnit.HOURS)));
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), true, Date.from(Instant.now().minus(1, ChronoUnit.HOURS)));
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
 
@@ -471,10 +459,11 @@ class IssuanceControllerIT {
     @Test
     void testSdJwtOffer_thenSuccess() throws Exception {
 
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         var format = "vc+sd-jwt";
-        var credentialRequestString = getCredentialRequestString(tokenResponse, format);
+        var credentialRequestString = getCredentialRequestString(nonce, format);
 
         var response = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -513,10 +502,11 @@ class IssuanceControllerIT {
 
     @Test
     void testOfferWrongFormat_thenFailure() throws Exception {
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         var invalidFormat = "ldp_vc";
-        var credentialRequestString = getCredentialRequestString(tokenResponse, invalidFormat);
+        var credentialRequestString = getCredentialRequestString(nonce, invalidFormat);
 
         requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isUnprocessableEntity())
@@ -530,7 +520,7 @@ class IssuanceControllerIT {
     @ValueSource(booleans = {true, false})
     void testVcTypeIssuing_thenSuccess(boolean useNewNonce) throws Exception {
         // Get VC where vct#integrity is set. Claim should be there and filled
-        var boundVc = SignedJWT.parse(getBoundVc(useNewNonce));
+        var boundVc = SignedJWT.parse(getBoundVc(null));
         assertNotNull(boundVc.getJWTClaimsSet().getClaims().get("vct#integrity"));
 
         // Get VC where vct#integrity is not set. Claim should not exist
@@ -572,20 +562,14 @@ class IssuanceControllerIT {
         offer.get().setConfigurationOverride(override);
     }
 
-    private String getBoundVc(boolean useNonceEndpoint) throws Exception {
-        return getBoundVc(useNonceEndpoint, null);
-    }
-
-    private String getBoundVc(boolean useNonceEndpoint, ConfigurationOverride override) throws Exception {
+    private String getBoundVc(ConfigurationOverride override) throws Exception {
         if (override != null) {
             addOverride(validPreAuthCode, override);
         }
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var nonce = tokenResponse.get("c_nonce").toString();
-        if (useNonceEndpoint) {
-            nonce = fetchSelfContainedNonce().getNonce();
-        }
+        var nonce = requestNonce(mock);
+
 
         String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), true);
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
@@ -601,17 +585,18 @@ class IssuanceControllerIT {
         return TestInfrastructureUtils.getCredential(mock, token, credentialRequestString);
     }
 
-    private String getCredentialRequestString(Map<String, Object> tokenResponse, String format) throws JOSEException {
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+    private String getCredentialRequestString(String nonce, String format) throws JOSEException {
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), false);
         return String.format("{ \"format\": \"%s\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", format, proof);
     }
 
     @NonNull
     private JWEObject fetchEncryptedCredentialFlow(String responseEncryptionJson) throws Exception {
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
 
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), true);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), true);
         String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}, \"credential_response_encryption\": %s}", proof, responseEncryptionJson);
         var response = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -647,8 +632,7 @@ class IssuanceControllerIT {
 
     @NotNull
     private SelfContainedNonce fetchSelfContainedNonce() throws Exception {
-        var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn();
-        var nonceDto = objectMapper.readValue(nonceResponse.getResponse().getContentAsString(), NonceResponseDto.class);
-        return new SelfContainedNonce(nonceDto.nonce());
+        var nonce = requestNonce(mock);
+        return new SelfContainedNonce(nonce);
     }
 }

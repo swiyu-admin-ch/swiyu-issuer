@@ -41,7 +41,7 @@ public class HolderBindingService {
      * Handles proof extraction, validation, nonce management, and batch issuance constraints.
      *
      * @param credentialRequest the credential request containing proofs
-     * @param credentialOffer the credential offer for which the request was sent
+     * @param credentialOffer   the credential offer for which the request was sent
      * @return a list of validated ProofJwt objects
      * @throws Oid4vcException if validation fails or proofs are invalid
      */
@@ -63,7 +63,7 @@ public class HolderBindingService {
                 .toList();
 
         ensureUniqueProofBindings(proofs);
-        handleProofNonces(proofs, credentialOffer);
+        handleProofNonces(proofs);
 
         return proofJwts;
     }
@@ -72,7 +72,7 @@ public class HolderBindingService {
      * Validate and process the credentialRequest to extract the holder's public key.
      *
      * @param credentialRequest the credential request containing the holder's public key
-     * @param credentialOffer the credential offer for which the request was sent
+     * @param credentialOffer   the credential offer for which the request was sent
      * @return an Optional containing the holder's public key if holder binding is required, otherwise empty
      * @throws Oid4vcException if the credential request is invalid in some form
      */
@@ -135,12 +135,11 @@ public class HolderBindingService {
         }
     }
 
-    private void handleProofNonces(List<ProofJwt> proofs, CredentialOffer credentialOffer) {
+    private void handleProofNonces(List<ProofJwt> proofs) {
         List<String> nonces = proofs.stream()
                 .map(ProofJwt::getNonce)
                 .toList();
         nonceService.invalidateSelfContainedNonce(nonces);
-        credentialOffer.setNonce(UUID.randomUUID()); // Change c_nonce value
     }
 
     private ProofJwt selectFirstProof(List<ProofJwt> proofs) throws Oid4vcException {
@@ -164,7 +163,6 @@ public class HolderBindingService {
         if (!requestProof.isValidHolderBinding(
                 issuerMetadata.getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),
-                credentialOffer.getNonce(),
                 mgmt.getAccessTokenExpirationTimestamp())) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
         }
@@ -190,10 +188,10 @@ public class HolderBindingService {
     /**
      * Validates a single proof against the credential offer and supported proof types, applying the provided nonce handler.
      *
-     * @param requestProof the proof to validate
-     * @param credentialOffer the credential offer for which the request was sent
+     * @param requestProof        the proof to validate
+     * @param credentialOffer     the credential offer for which the request was sent
      * @param supportedProofTypes the supported proof types for the credential
-     * @param nonceHandler the handler to apply for nonce validation/registration
+     * @param nonceHandler        the handler to apply for nonce validation/registration
      * @return the validated ProofJwt
      * @throws Oid4vcException if validation fails or the proof is invalid
      */
@@ -209,15 +207,15 @@ public class HolderBindingService {
         return requestProof;
     }
 
-    @FunctionalInterface
-    private interface NonceHandler {
-        void apply(ProofJwt proof) throws Oid4vcException;
-    }
-
     private IssuerMetadata getIssuerMetadata(UUID tenantId) {
         if (applicationProperties.isSignedMetadataEnabled()) {
             return metadataService.getUnsignedIssuerMetadata(tenantId);
         }
         return metadataService.getUnsignedIssuerMetadata();
+    }
+
+    @FunctionalInterface
+    private interface NonceHandler {
+        void apply(ProofJwt proof) throws Oid4vcException;
     }
 }

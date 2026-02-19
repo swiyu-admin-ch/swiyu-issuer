@@ -1,18 +1,17 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
-import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
-
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -53,11 +52,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestNonce;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mockStatic;
@@ -140,9 +139,10 @@ class DeferredIssuanceV2IT {
     @Test
     void testDeferredOffer_withProof_thenSuccess() throws Exception {
 
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -178,10 +178,6 @@ class DeferredIssuanceV2IT {
                 .andExpect(jsonPath("$.status").value("READY"))
                 .andReturn();
 
-        DeferredDataDto deferredDataDto = objectMapper.readValue(
-                deferredCredentialResponse.getResponse()
-                        .getContentAsString(), DeferredDataDto.class);
-
         mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
                         .contentType("application/json")
@@ -198,9 +194,10 @@ class DeferredIssuanceV2IT {
     @Test
     void testDeferredOffer_notReady_thenAccepted() throws Exception {
 
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -237,6 +234,7 @@ class DeferredIssuanceV2IT {
 
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
+        var nonce = TestInfrastructureUtils.requestNonceDPopHeader(mock);
 
         ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
                 .keyID("transportEncKeyEC")
@@ -245,8 +243,7 @@ class DeferredIssuanceV2IT {
         var responseEncryptionJson = createResponseEncryptionJson(ecJWK);
 
         // credential_response_encryption
-        var credentialRequestString = getCredentialRequestString(tokenResponse.get("c_nonce").toString(),
-                "university_example_sd_jwt", responseEncryptionJson);
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt", responseEncryptionJson);
 
         var requestEncryptionSpec = encryptionService.issuerMetadataWithEncryptionOptions().getRequestEncryption();
         var issuerEncryptionKey = JWKSet.parse(requestEncryptionSpec.getJwks()).getKeys().getFirst();
@@ -347,10 +344,10 @@ class DeferredIssuanceV2IT {
 
     @Test
     void testDeferredOffer_alreadyCancelled_thenSuccess() throws Exception {
-
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -391,9 +388,10 @@ class DeferredIssuanceV2IT {
     @Test
     void testDeferredOffer_withoutProof_thenSuccess() throws Exception {
 
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validUnboundPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "unbound_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "unbound_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -424,9 +422,10 @@ class DeferredIssuanceV2IT {
     @Test
     void testDeferredOffer_withDefaultDeferredExpiration_thenSuccess() throws Exception {
 
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validUnboundPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "unbound_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "unbound_example_sd_jwt");
 
         Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
 
@@ -462,9 +461,10 @@ class DeferredIssuanceV2IT {
             mockedStatic.when(Instant::now)
                     .thenReturn(instant);
 
+            var nonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
+
             var credentialRequestString = getCredentialRequestString(
-                    offerWithDynamicExpiration.getNonce()
-                            .toString(),
+                    nonce,
                     offerWithDynamicExpiration.getMetadataCredentialSupportedId()
                             .getFirst());
 
@@ -482,11 +482,6 @@ class DeferredIssuanceV2IT {
                             .getEpochSecond(),
                     result.getOfferExpirationTimestamp());
         }
-    }
-
-    private String getCredentialRequestString(Map<String, Object> tokenResponse, String configurationId) {
-        return getCredentialRequestString(tokenResponse.get("c_nonce")
-                .toString(), configurationId);
     }
 
     private String getCredentialRequestString(String cNonce, String configurationId) {

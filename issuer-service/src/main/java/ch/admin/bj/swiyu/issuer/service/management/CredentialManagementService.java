@@ -1,5 +1,10 @@
 package ch.admin.bj.swiyu.issuer.service.management;
 
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
@@ -7,11 +12,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
@@ -26,11 +26,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.service.management.CredentialManagementMapper.*;
+import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toUpdateStatusResponseDto;
 import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.*;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
@@ -87,7 +89,7 @@ public class CredentialManagementService {
      * of the offer and maps the result to a DTO suitable for clients.</p>
      *
      * @param managementId the id of the management object
-     * @param offerId the id of the offer object
+     * @param offerId      the id of the offer object
      * @return a {@link CredentialInfoResponseDto} containing credential offer information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
@@ -194,7 +196,7 @@ public class CredentialManagementService {
      * the offer has expired.</p>
      *
      * @param credentialManagementId the id of the credential offer
-     * @param offerId the id of the offer
+     * @param offerId                the id of the offer
      * @return the {@link StatusResponseDto} representing the credential's current status
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
@@ -245,7 +247,6 @@ public class CredentialManagementService {
     public CredentialOffer createInitialCredentialOfferForRenewal(CredentialManagement credentialManagement) {
         var offer = persistenceService.saveCredentialOffer(
                 CredentialOffer.builder()
-                        .nonce(UUID.randomUUID())
                         .credentialManagement(credentialManagement)
                         .credentialStatus(CredentialOfferStatusType.REQUESTED)
                         .build());
@@ -429,7 +430,6 @@ public class CredentialManagementService {
                         .preAuthorizedCode(UUID.randomUUID())
                         .offerData(offerData)
                         .offerExpirationTimestamp(expiration.getEpochSecond())
-                        .nonce(UUID.randomUUID())
                         .credentialValidFrom(requestDto.getCredentialValidFrom())
                         .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
                         .credentialValidUntil(requestDto.getCredentialValidUntil())

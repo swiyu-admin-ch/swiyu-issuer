@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.test;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.authlete.sd.Disclosure;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +23,7 @@ import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -32,7 +34,6 @@ import java.util.*;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -70,7 +71,6 @@ public class TestInfrastructureUtils {
     }
 
     /**
-     *
      * @param mock        MockMvc to perform call with
      * @param httpMethod  Method the call the dpop will be used for will be using
      * @param httpUri     absolute URI to the location the call the dpop will be used for will be going to
@@ -81,10 +81,7 @@ public class TestInfrastructureUtils {
      */
     public static String createDPoP(MockMvc mock, String httpMethod, String httpUri, String accessToken, JWK dpopKey) throws Exception {
         // Fetch fresh nonce
-        var nonce = mock.perform(post("/oid4vci/api/nonce"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse()
-                .getHeader("DPoP-Nonce");
+        var nonce = requestNonceDPopHeader(mock);
         assertNotNull(nonce);
         var claimSetBuilder = new JWTClaimsSet.Builder()
                 .jwtID(UUID.randomUUID().toString())
@@ -117,6 +114,24 @@ public class TestInfrastructureUtils {
                 .contentType("application/json")
                 .content(credentialRequestString)
         );
+    }
+
+    private static MockHttpServletResponse requestNonceResponse(MockMvc mock) throws Exception {
+        return mock.perform(post("/oid4vci/api/nonce"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse();
+    }
+
+    public static String requestNonceDPopHeader(MockMvc mock) throws Exception {
+        return requestNonceResponse(mock)
+                .getHeader("DPoP-Nonce");
+    }
+
+    public static String requestNonce(MockMvc mock) throws Exception {
+        var objectMapper = new ObjectMapper();
+        var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn();
+        var nonceDto = objectMapper.readValue(nonceResponse.getResponse().getContentAsString(), NonceResponseDto.class);
+        return nonceDto.nonce();
     }
 
     public static String getCredential(MockMvc mock, Object token, String credentialRequestString) throws Exception {
@@ -178,15 +193,14 @@ public class TestInfrastructureUtils {
         }
     }
 
-    public static CredentialFetchData prepareAttestedVC(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance, String attestationIssuerDid, ECKey jwk, String issuerId) throws Exception {
+    public static CredentialFetchData prepareAttestedVC(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance, String attestationIssuerDid, ECKey jwk, String issuerId, String nonce) throws Exception {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, preAuthCode.toString());
         var token = tokenResponse.get("access_token");
         Assertions.assertThat(token).isNotNull();
-        Assertions.assertThat(tokenResponse).containsKey("c_nonce");
         String proof = TestServiceUtils.createAttestedHolderProof(
                 jwk,
                 issuerId,
-                tokenResponse.get("c_nonce").toString(),
+                nonce,
                 ProofType.JWT.getClaimTyp(),
                 false,
                 resistance,

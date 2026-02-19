@@ -12,6 +12,7 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +37,7 @@ class ProofJwtTest {
 
     @Test
     void givenNoKey_whenHolderBindingValidate_thenThrow() throws JOSEException {
-        var nonce = UUID.randomUUID();
+        var nonce = getNonce();
         var aud = "http://issuer.com";
         var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType(ProofType.JWT.getClaimTyp()));
@@ -53,20 +54,19 @@ class ProofJwtTest {
         var proof = jwt.serialize();
 
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
-        var offer = createTestOffer(nonce);
+        var offer = createTestOffer();
 
         var audience = "http://issuer.com";
         var algorithms = List.of("ES256");
-        var offerNonce = offer.getNonce();
         var expirationTimestamp = offer.getOfferExpirationTimestamp();
         var exc = assertThrows(Oid4vcException.class,
-                () -> proofJwt.isValidHolderBinding(audience, algorithms, offerNonce, expirationTimestamp));
+                () -> proofJwt.isValidHolderBinding(audience, algorithms, expirationTimestamp));
         assertTrue(exc.getMessage().contains("None of the supported binding method/s was found in the header"));
     }
 
     @Test
     void givenUnsupportedDidMethod_whenHolderBindingValidate_thenThrow() throws JOSEException {
-        var nonce = UUID.randomUUID();
+        var nonce = getNonce();
         var aud = "http://issuer.com";
         var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType(ProofType.JWT.getClaimTyp()));
@@ -84,21 +84,19 @@ class ProofJwtTest {
         var proof = jwt.serialize();
 
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
-        var offer = createTestOffer(nonce);
 
         String audience = "http://issuer.com";
         List<String> algorithms = List.of("ES256");
-        UUID offerNonce = offer.getNonce();
         Long expirationTimestamp = Instant.now().plusSeconds(600).getEpochSecond();
         var exc = assertThrows(Oid4vcException.class,
-                () -> proofJwt.isValidHolderBinding(audience, algorithms, offerNonce, expirationTimestamp));
+                () -> proofJwt.isValidHolderBinding(audience, algorithms, expirationTimestamp));
 
         assertTrue(exc.getMessage().contains("Did method provided in kid attribute did:tdw is not supported"));
     }
 
     @Test
     void givenInvalidJwtDidKeyRepresentation_whenHolderBindingValidate_thenThrow() throws JOSEException {
-        var nonce = UUID.randomUUID();
+        var nonce = getNonce();
         var aud = "http://issuer.com";
         var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType(ProofType.JWT.getClaimTyp()));
@@ -116,37 +114,33 @@ class ProofJwtTest {
         var proof = jwt.serialize();
 
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
-        var offer = createTestOffer(nonce);
         String audience = "http://issuer.com";
         List<String> algorithms = List.of("ES256");
-        UUID offerNonce = offer.getNonce();
         Long expirationTimestamp = Instant.now().plusSeconds(600).getEpochSecond();
         var exc = assertThrows(Oid4vcException.class,
-                () -> proofJwt.isValidHolderBinding(audience, algorithms, offerNonce, expirationTimestamp));
+                () -> proofJwt.isValidHolderBinding(audience, algorithms, expirationTimestamp));
         assertTrue(exc.getMessage().contains("could not be parsed to a JWK"));
     }
 
     @Test
     void givenValidKidAttributeRepresentation_whenHolderBindingValidate_thenValid_() throws JOSEException {
         // Check holder proof with didJwk
-        var nonce = UUID.randomUUID();
-        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), true);
+        var nonce = getNonce();
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
-        var offer = createTestOffer(nonce);
-        assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), Instant.now().plusSeconds(600).getEpochSecond()));
+        assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().plusSeconds(600).getEpochSecond()));
     }
 
     @Test
     void givenValidJwkAttributeRepresentation_whenHolderBindingValidate_thenValid_() throws JOSEException {
         // Check holder proof with didJwk
-        var nonce = UUID.randomUUID();
-        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce.toString(), ProofType.JWT.getClaimTyp(), false);
+        var nonce = getNonce();
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), false);
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120);
-        var offer = createTestOffer(nonce);
-        assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), offer.getNonce(), Instant.now().plusSeconds(600).getEpochSecond()));
+        assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().plusSeconds(600).getEpochSecond()));
     }
 
-    private CredentialOffer createTestOffer(UUID nonce) {
+    private CredentialOffer createTestOffer() {
 
         return CredentialOffer.builder()
                 .id(UUID.randomUUID())
@@ -156,11 +150,14 @@ class ProofJwtTest {
                     put("data", "data");
                     put("otherStuff", "data");
                 }})
-                .nonce(nonce)
                 .preAuthorizedCode(UUID.randomUUID())
                 .offerExpirationTimestamp(120L)
                 .deferredOfferValiditySeconds(120)
                 .credentialValidFrom(Instant.now())
                 .build();
+    }
+
+    private @NotNull String getNonce() {
+        return UUID.randomUUID() + "::" + Instant.now().toString();
     }
 }
