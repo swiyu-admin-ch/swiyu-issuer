@@ -122,7 +122,7 @@ public class HolderBindingService {
             throw new Oid4vcException(INVALID_PROOF, "Multiple proofs are not allowed for this credential request");
         }
         if (batchCredentialIssuanceMetadata != null && batchCredentialIssuanceMetadata.batchSize() < proofs.size()) {
-            throw new Oid4vcException(INVALID_PROOF, "The number of proofs must match the batch size");
+            throw new Oid4vcException(INVALID_PROOF, "The number of proofs must be at least the same as the batch size");
         }
     }
 
