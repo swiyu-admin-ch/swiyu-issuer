@@ -1,18 +1,17 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
-import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
-
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -57,11 +56,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mockStatic;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -171,14 +170,9 @@ class DeferredIssuanceV2IT {
                 .andReturn();
 
         // check status from business issuer perspective
-        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offerManagementId,
-                        CredentialStatusTypeDto.READY.name()))
-                        .contentType("application/json"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("READY"))
-                .andReturn();
+        updateStatus(mock, offerManagementId.toString(), UpdateCredentialStatusRequestTypeDto.READY);
 
-        DeferredDataDto deferredDataDto = objectMapper.readValue(
+        objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(), DeferredDataDto.class);
 
@@ -280,12 +274,7 @@ class DeferredIssuanceV2IT {
                 token, transactionId, issuerEncrypter, jweHeader, status().isAccepted(), ecJWK, rotateHolderEncryptionKey);
         assertThat(credentialsWrapper.get("transaction_id").getAsString()).isEqualTo(transactionId).as("When not yet ready, the transaction id should be returned");
         // update from business issuer perspective
-        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offerManagementId,
-                        CredentialStatusTypeDto.READY.name()))
-                        .contentType("application/json"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("READY"))
-                .andReturn();
+        updateStatus(mock, offerManagementId.toString(), UpdateCredentialStatusRequestTypeDto.READY);
 
         // Deferred Credential Request
         credentialsWrapper = deferredCredentialCall(
@@ -361,12 +350,7 @@ class DeferredIssuanceV2IT {
                 .andReturn();
 
         // check status from business issuer perspective
-        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(offerManagementId,
-                        CredentialStatusTypeDto.CANCELLED.name()))
-                        .contentType("application/json"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CANCELLED"))
-                .andReturn();
+        updateStatus(mock, offerManagementId.toString(), UpdateCredentialStatusRequestTypeDto.CANCELLED);
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
@@ -400,10 +384,7 @@ class DeferredIssuanceV2IT {
                 .andReturn();
 
         // check status from business issuer perspective
-        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s"
-                        .formatted(unboundOfferManagementId, CredentialStatusTypeDto.READY.name())))
-                .andExpect(status().isOk())
-                .andReturn();
+        updateStatus(mock, unboundOfferManagementId.toString(), UpdateCredentialStatusRequestTypeDto.READY);
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()

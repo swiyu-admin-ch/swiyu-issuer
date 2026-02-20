@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils;
@@ -40,6 +41,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -124,20 +126,26 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
-    void testUpdateWithCorrectValues_thenOk(CredentialStatusTypeDto value) throws Exception {
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
+    void testUpdateWithCorrectValues_thenOk(UpdateCredentialStatusRequestTypeDto value) throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
     }
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
-    void testUpdateWithSameStatus_thenOk(CredentialStatusTypeDto value) throws Exception {
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
+    void testUpdateWithSameStatus_thenOk(UpdateCredentialStatusRequestTypeDto value) throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
     }
 
     @Transactional
@@ -145,7 +153,7 @@ class CredentialManagementStatusIT {
     @EnumSource(value = CredentialStatusTypeDto.class, names = {"READY", "CANCELLED"})
     void testUpdateWithPreIssuanceStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
 
-        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), value)))
+        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), value.name())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").exists());
@@ -153,12 +161,12 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
-    void testUpdateWithPreIssuanceReadyStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
+    void testUpdateWithPreIssuanceReadyStatus_thenBadRequest(UpdateCredentialStatusRequestTypeDto value) throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value);
 
-        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.READY)))
+        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.READY.name())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").exists());
@@ -166,12 +174,12 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
-    void testUpdateWithPreIssuanceCancelledStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
+    void testUpdateWithPreIssuanceCancelledStatus_thenBadRequest(UpdateCredentialStatusRequestTypeDto value) throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value);
 
-        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.CANCELLED)))
+        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.CANCELLED.name())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").exists());
@@ -179,20 +187,25 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "ISSUED", "REVOKED"})
-    void testUpdateOfferRevocation_thenIsOk(CredentialStatusTypeDto value) throws Exception {
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "ISSUED", "REVOKED"})
+    void testUpdateOfferRevocation_thenIsOk(UpdateCredentialStatusRequestTypeDto value) throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.REVOKED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
+
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.REVOKED)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(UpdateCredentialStatusRequestTypeDto.REVOKED.name()));
     }
 
     @Transactional
     @Test
     void testUpdateOfferIssuanceWhenRevoked_thenBadRequest() throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.REVOKED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.REVOKED);
 
-        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.ISSUED)))
+        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.ISSUED.name())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").exists());
@@ -201,19 +214,27 @@ class CredentialManagementStatusIT {
     @Transactional
     @Test
     void testUpdateOfferStatusSuspendedWithRevoked_thenSuccess() throws Exception {
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.SUSPENDED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.SUSPENDED)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(UpdateCredentialStatusRequestTypeDto.SUSPENDED.name()));
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.REVOKED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.REVOKED)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(UpdateCredentialStatusRequestTypeDto.REVOKED.name()));
     }
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"ISSUED", "SUSPENDED"})
-    void testUpdateOfferStatusWhenSuspended_thenSuccess(CredentialStatusTypeDto value) throws Exception {
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"ISSUED", "SUSPENDED"})
+    void testUpdateOfferStatusWhenSuspended_thenSuccess(UpdateCredentialStatusRequestTypeDto value) throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.SUSPENDED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.SUSPENDED)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(UpdateCredentialStatusRequestTypeDto.SUSPENDED.name()));
     }
 
     @Test
@@ -222,7 +243,7 @@ class CredentialManagementStatusIT {
         assertThat(STATUS_LIST_MAX_LENGTH).as("This test requires more than 9 indexes").isGreaterThanOrEqualTo(9);
         Set<Integer> unusedIndexes = IntStream.range(0, STATUS_LIST_MAX_LENGTH).boxed().collect(Collectors.toSet());
         // Add Revoked VCS
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.REVOKED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.REVOKED);
 
         var offer = credentialOfferRepository.findById(UUID.fromString(String.valueOf(credentialManagementOffer.getOfferId()))).orElseThrow();
 
@@ -252,7 +273,7 @@ class CredentialManagementStatusIT {
         }
         var suspendedMgmt = prepareIssuedCredential();
 
-        changeCredentialManagementStatus(suspendedMgmt.getManagementId(), CredentialStatusTypeDto.SUSPENDED);
+        updateStatus(mvc, suspendedMgmt.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.SUSPENDED);
 
         offer = credentialOfferRepository.findById(UUID.fromString(String.valueOf(suspendedMgmt.getOfferId()))).orElseThrow();
         assertEquals(CredentialStatusManagementType.SUSPENDED, offer.getCredentialManagement().getCredentialManagementStatus());
@@ -276,8 +297,7 @@ class CredentialManagementStatusIT {
             assertThat(tokenStatusList.getStatus(index)).as("Index is still unused / valid").isZero();
         }
 
-        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.ISSUED;
-        changeCredentialManagementStatus(suspendedMgmt.getManagementId(), newStatus);
+        updateStatus(mvc, suspendedMgmt.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.ISSUED);
 
         var issuedOffer = credentialOfferRepository.findById(offer.getId()).orElseThrow();
         assertEquals(CredentialOfferStatusType.ISSUED, issuedOffer.getCredentialStatus());
@@ -334,14 +354,7 @@ class CredentialManagementStatusIT {
         return credentialWithDeeplinkResponseDto;
     }
 
-    private void changeCredentialManagementStatus(UUID managementId, CredentialStatusTypeDto newStatus) throws Exception {
-        mvc.perform(patch(getUpdateUrl(managementId, newStatus)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(newStatus.toString()));
-    }
-
-    // todo fix
-    private String getUpdateUrl(UUID id, CredentialStatusTypeDto credentialStatus) {
+    private String getUpdateUrl(UUID id, String credentialStatus) {
         return String.format("%s/%s/status?credentialStatus=%s", CREDENTIAL_MANAGEMENT_BASE_URL, id, credentialStatus);
     }
 }
