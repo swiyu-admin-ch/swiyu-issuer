@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.dpop;
 
+import ch.admin.bj.swiyu.dpop.DpopConstants;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
@@ -93,7 +94,7 @@ public class DemonstratingProofOfPossessionService {
      */
     public OAuthAuthorizationServerMetadataDto addSigningAlgorithmsSupported(OAuthAuthorizationServerMetadataDto openIdConfiguration) {
         var builder = openIdConfiguration.toBuilder();
-        builder.dpop_signing_alg_values_supported(DemonstratingProofOfPossessionUtils.getSupportedAlgorithms());
+        builder.dpop_signing_alg_values_supported(DpopConstants.SUPPORTED_ALGORITHMS);
         return builder.build();
     }
 
