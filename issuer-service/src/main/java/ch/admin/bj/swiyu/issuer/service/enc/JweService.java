@@ -177,23 +177,6 @@ public class JweService {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported Encryption Algorithm");
         }
 
-//        if (JWEAlgorithm.Family.ECDH_ES.contains(header.getAlgorithm())) {
-//            try {
-//                return new ECDHDecrypter(key.toECKey());
-//            } catch (JOSEException e) {
-//                var kid = header.getKeyID();
-//                throw new Oid4vcException(e,
-//                        INVALID_ENCRYPTION_PARAMETERS,
-//                        "Unsupported Key and Algorithm combination",
-//                        Map.of(
-//                                "kidPresent", kid != null,
-//                                "alg", header.getAlgorithm() != null ? header.getAlgorithm().getName() : "null"
-//                        ));
-//            }
-//        } else {
-//            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported Encryption Algorithm",
-//                    Map.of("alg", header.getAlgorithm() != null ? header.getAlgorithm().getName() : "null"));
-//        }
         return key;
     }
 
