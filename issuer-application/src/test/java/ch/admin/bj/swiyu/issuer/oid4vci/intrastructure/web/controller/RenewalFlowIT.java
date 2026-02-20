@@ -40,8 +40,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -56,7 +54,6 @@ import reactor.core.publisher.Mono;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -168,12 +165,7 @@ class RenewalFlowIT {
         // issue batches of VCs
         var credentials = new LinkedList<JWTClaimsSet>();
         for (var i = 0 ; i < RENEWAL_FLOWS ; i++) {
-                var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
-                .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
-                .toList();
-
-                var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+                var credentialRequestString = createCredentialRequestStringWithNewKeys();
                 var credentialResponseString = requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
                         .andExpect(status().isOk())
                         .andExpect(content().contentType("application/json"))
@@ -190,24 +182,21 @@ class RenewalFlowIT {
                 assertThat(statusIndexes).hasSameSizeAs(credentialClaims);
                 credentials.addAll(credentialClaims);
         }
-        assertThat(credentials).hasSize(RENEWAL_FLOWS*issuerMetadata.getIssuanceBatchSize());
+        assertThat(credentials)
+                .as("Should have gotten issued the full batch of VCs for each renewal flow run")
+                .hasSize(RENEWAL_FLOWS*issuerMetadata.getIssuanceBatchSize());
         var allStatusIndexes = credentials.stream()
                 .map(this::getStatusIndex)
                 .collect(Collectors.toSet());
-        assertThat(allStatusIndexes).hasSameSizeAs(credentials);
+        assertThat(allStatusIndexes)
+                .as("Every VC accross all batches should have a disinct state to prevent linking through states")
+                .hasSameSizeAs(credentials);
 
     }
 
     @Test
     void testRenewalInvalidAccessToken_thenException() throws Exception {
-
-        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
-                .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
-                .toList();
-
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
-
+        var credentialRequestString = createCredentialRequestStringWithNewKeys();
         // set to issued
         requestCredentialV2WithDpop(mockMvc, UUID.randomUUID().toString(), credentialRequestString, issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
@@ -247,7 +236,7 @@ class RenewalFlowIT {
             "500", // Internal Error Business Issuer
             "503" // Peripheral systems not available
     })
-    void testRenewalExternalFailures(String statusCode) {
+    void testRenewalExternalFailures(String statusCode) throws Exception {
 
         var expectedStatus = Integer.parseInt(statusCode);
         mockServerClient
@@ -265,13 +254,8 @@ class RenewalFlowIT {
         // renew token
         var tokenResponse = assertDoesNotThrow(() -> refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey));
 
-        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
-                .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
-                .toList();
+        var credentialRequestString = createCredentialRequestStringWithNewKeys();
 
-
-        var credentialRequestString = assertDoesNotThrow(() -> getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties));
 
         // set to issued
         var credentialResponse = assertDoesNotThrow(() -> requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
@@ -353,11 +337,21 @@ class RenewalFlowIT {
         return objectMapper.readValue(tokenResult.getResponse().getContentAsString(), OAuthTokenDto.class);
     }
 
+     private String createCredentialRequestStringWithNewKeys() throws Exception {
+        var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
+        .boxed()
+        .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+        .toList();
+        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+        return credentialRequestString;
+    }
+
     private JWTClaimsSet getCredentialClaimsSet(CredentialObjectDtoV2 issuedCredential) {
         var sdjwt = SDJWT.parse(issuedCredential.credential());
          var jwt = assertDoesNotThrow(() -> SignedJWT.parse(sdjwt.getCredentialJwt()));
         return assertDoesNotThrow(() ->  jwt.getJWTClaimsSet());
     }
+
     private long getStatusIndex(JWTClaimsSet credentialClaimSet) {
         Map<String, Map<String, Object>> tokenStatusListMap = (Map<String, Map<String, Object>>) credentialClaimSet.getClaim("status");
         return (long) tokenStatusListMap.get("status_list").get("idx");
