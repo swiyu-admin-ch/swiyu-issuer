@@ -74,6 +74,7 @@ configs:
       {
         "credential_issuer": "${EXTERNAL_URL}",
         "credential_endpoint": "${EXTERNAL_URL}/oid4vci/api/credential",
+        "nonce_endpoint": "${EXTERNAL_URL}/oid4vci/api/nonce",
         "version": "1.0",
         "credential_response_encryption": {
           "encryption_required": false,

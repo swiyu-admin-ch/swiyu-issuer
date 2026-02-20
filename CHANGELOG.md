@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Min batch size must be 10 in metadata to improve privacy
     - If wallet sends fewer proofs than requested, the issuer will return a vc for every proof provided and will not
       throw an error.
+- Added health checks for:
+    - stale callbacks
+    - Registry token getting refreshed
+    - Status List availability
 
 ### Fixed
 
