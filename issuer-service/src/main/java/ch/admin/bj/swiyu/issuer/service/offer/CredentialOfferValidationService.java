@@ -36,8 +36,8 @@ public class CredentialOfferValidationService {
      * Validates a credential offer create request, performing sanity checks with configurations.
      *
      * @param createCredentialRequest the create credential request to be validated
-     * @param offerData the parsed offer data
-     * @throws BadRequestException if validation fails
+     * @param offerData               the parsed offer data
+     * @throws BadRequestException   if validation fails
      * @throws IllegalStateException if the credential configuration format is unsupported
      */
     public void validateCredentialOfferCreateRequest(
@@ -76,8 +76,8 @@ public class CredentialOfferValidationService {
     /**
      * Validates the credential request offer data.
      *
-     * @param offerData the offer data to validate
-     * @param isDeferredRequest whether this is a deferred request
+     * @param offerData               the offer data to validate
+     * @param isDeferredRequest       whether this is a deferred request
      * @param credentialConfiguration the credential configuration
      * @throws BadRequestException if validation fails
      */
@@ -129,8 +129,8 @@ public class CredentialOfferValidationService {
     /**
      * Checks if all claims published as mandatory in the metadata are present in the offer.
      *
-     * @param metadataClaims the expected metadata claims
-     * @param offerData the offer data
+     * @param metadataClaims          the expected metadata claims
+     * @param offerData               the offer data
      * @param credentialConfiguration the credential configuration
      * @throws BadRequestException if mandatory claims are missing
      */
@@ -156,7 +156,7 @@ public class CredentialOfferValidationService {
      * Checks the offerData for claims not expected in the metadata.
      *
      * @param metadataClaims the expected metadata claims
-     * @param offerData the offer data
+     * @param offerData      the offer data
      * @throws BadRequestException if unexpected claims are found
      */
     private void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
@@ -201,9 +201,9 @@ public class CredentialOfferValidationService {
      * and Status List Token has been removed. The wallet and verifier must be first migrated before this check
      * can be removed.
      *
-     * @param issuerDid the issuer DID
+     * @param issuerDid       the issuer DID
      * @param defaultIssuerId the default issuer ID
-     * @param statusLists the status lists to validate
+     * @param statusLists     the status lists to validate
      * @throws BadRequestException if issuer DIDs don't match
      */
     @Deprecated(since = "Token Status List Draft 04")
@@ -232,31 +232,27 @@ public class CredentialOfferValidationService {
      * If the status list contains a configuration override with a non-empty issuer DID,
      * that value is returned. Otherwise, the provided default issuer ID is used.
      *
-     * @param statusList the status list to resolve the issuer DID from
+     * @param statusList      the status list to resolve the issuer DID from
      * @param defaultIssuerId the default issuer ID to use if no override is present
      * @return the resolved issuer DID
      */
     private static String determineIssuerDid(StatusList statusList, String defaultIssuerId) {
         var override = statusList.getConfigurationOverride();
-        if (override != null && StringUtils.isNotEmpty(override.issuerDid())) {
-            return override.issuerDid();
-        }
-        return defaultIssuerId;
+        return override.issuerDidOrDefault(defaultIssuerId);
     }
 
     /**
      * Determines the issuer DID from the request or default configuration.
      *
-     * @param requestDto the credential offer request
+     * @param requestDto      the credential offer request
      * @param defaultIssuerId the default issuer ID
      * @return the issuer DID to use
      */
     public String determineIssuerDid(CreateCredentialOfferRequestDto requestDto, String defaultIssuerId) {
         var override = requestDto.getConfigurationOverride();
-        if (override != null && StringUtils.isNotEmpty(override.issuerDid())) {
-            return override.issuerDid();
+        if (override != null) {
+            return StringUtils.getIfBlank(override.issuerDid(), () -> defaultIssuerId);
         }
-
         return defaultIssuerId;
     }
 }

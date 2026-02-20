@@ -25,6 +25,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -76,6 +77,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class RenewalFlowIT {
 
+    public static final String TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT = "/test/credential-renewal/endpoint";
     @Container
     static MockServerContainer mockServerContainer = new MockServerContainer(
             DockerImageName.parse("mockserver/mockserver:5.15.0")
@@ -96,26 +98,23 @@ class RenewalFlowIT {
     private StatusBusinessApiApi statusBusinessApi;
     @Mock
     private ApiClient mockApiClient;
-    private JsonObject credentialManagement;
     private StatusListTestHelper statusListTestHelper;
     private String payload;
     private OAuthTokenDto oauthTokenResponse;
     private ECKey dpopKey;
 
-    @DynamicPropertySource
-    static void overrideProperties(DynamicPropertyRegistry registry) {
+    @BeforeAll
+    static void initialization() {
         mockServerClient =
                 new MockServerClient(
                         mockServerContainer.getHost(),
                         mockServerContainer.getServerPort()
                 );
-        registry.add("application.business-issuer-renewal-api-endpoint", mockServerContainer::getEndpoint);
     }
 
     @BeforeEach
     void setUp() throws Exception {
         mockServerClient.reset();
-
         statusListTestHelper = new StatusListTestHelper(mockMvc, objectMapper);
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(Mono.just(statusListEntry));
@@ -140,9 +139,11 @@ class RenewalFlowIT {
         payload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"status_lists\": [\"%s\"]}"
                 .formatted(statusListUri);
 
-        credentialManagement = createCredential();
+        assertDoesNotThrow(this::createCredential);
 
         when(applicationProperties.isRenewalFlowEnabled()).thenReturn(true);
+        when(applicationProperties.getBusinessIssuerRenewalApiEndpoint())
+                .thenReturn(mockServerContainer.getEndpoint() + TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT);
     }
 
     @Test
@@ -152,7 +153,7 @@ class RenewalFlowIT {
                 .when(
                         new HttpRequest()
                                 .withMethod("POST")
-                                .withPath("")
+                                .withPath(TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT)
                 )
                 .respond(
                         HttpResponse.response()
@@ -232,18 +233,28 @@ class RenewalFlowIT {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * This test mocks the business issuer being not able to process the request due to various issues
+     *
+     * @param statusCode status the business issuer responds with
+     */
     @ParameterizedTest
     @ValueSource(strings = {
-            "500"
+            "420", // renewal quota exceeded
+            "451", // cannot renew due to legal reasons
+            "409", // SID detects a conflict
+            "404", // Management ID not found
+            "500", // Internal Error Business Issuer
+            "503" // Peripheral systems not available
     })
-    void testRenewalExternalFailures(String statusCode) throws Exception {
+    void testRenewalExternalFailures(String statusCode) {
 
         var expectedStatus = Integer.parseInt(statusCode);
         mockServerClient
                 .when(
                         new HttpRequest()
                                 .withMethod("POST")
-                                .withPath("")
+                                .withPath(TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT)
                 )
                 .respond(
                         HttpResponse.response()
@@ -252,7 +263,7 @@ class RenewalFlowIT {
                 );
 
         // renew token
-        var tokenResponse = refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey);
+        var tokenResponse = assertDoesNotThrow(() -> refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey));
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
@@ -260,13 +271,14 @@ class RenewalFlowIT {
                 .toList();
 
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = assertDoesNotThrow(() -> getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties));
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
+        var credentialResponse = assertDoesNotThrow(() -> requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
                 .andExpect(status().is(expectedStatus))
                 .andExpect(content().contentType("application/json"))
-                .andReturn();
+                .andReturn());
+
     }
 
     private JsonObject createCredential() throws Exception {

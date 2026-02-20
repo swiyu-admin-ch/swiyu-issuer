@@ -41,7 +41,7 @@ public class HolderBindingService {
      * Handles proof extraction, validation, nonce management, and batch issuance constraints.
      *
      * @param credentialRequest the credential request containing proofs
-     * @param credentialOffer the credential offer for which the request was sent
+     * @param credentialOffer   the credential offer for which the request was sent
      * @return a list of validated ProofJwt objects
      * @throws Oid4vcException if validation fails or proofs are invalid
      */
@@ -72,7 +72,7 @@ public class HolderBindingService {
      * Validate and process the credentialRequest to extract the holder's public key.
      *
      * @param credentialRequest the credential request containing the holder's public key
-     * @param credentialOffer the credential offer for which the request was sent
+     * @param credentialOffer   the credential offer for which the request was sent
      * @return an Optional containing the holder's public key if holder binding is required, otherwise empty
      * @throws Oid4vcException if the credential request is invalid in some form
      */
@@ -121,8 +121,8 @@ public class HolderBindingService {
         if (batchCredentialIssuanceMetadata == null && proofs.size() > 1) {
             throw new Oid4vcException(INVALID_PROOF, "Multiple proofs are not allowed for this credential request");
         }
-        if (batchCredentialIssuanceMetadata != null && batchCredentialIssuanceMetadata.batchSize() != proofs.size()) {
-            throw new Oid4vcException(INVALID_PROOF, "The number of proofs must match the batch size");
+        if (batchCredentialIssuanceMetadata != null && batchCredentialIssuanceMetadata.batchSize() < proofs.size()) {
+            throw new Oid4vcException(INVALID_PROOF, "The number of proofs must be at least the same as the batch size");
         }
     }
 
@@ -190,10 +190,10 @@ public class HolderBindingService {
     /**
      * Validates a single proof against the credential offer and supported proof types, applying the provided nonce handler.
      *
-     * @param requestProof the proof to validate
-     * @param credentialOffer the credential offer for which the request was sent
+     * @param requestProof        the proof to validate
+     * @param credentialOffer     the credential offer for which the request was sent
      * @param supportedProofTypes the supported proof types for the credential
-     * @param nonceHandler the handler to apply for nonce validation/registration
+     * @param nonceHandler        the handler to apply for nonce validation/registration
      * @return the validated ProofJwt
      * @throws Oid4vcException if validation fails or the proof is invalid
      */
@@ -209,15 +209,15 @@ public class HolderBindingService {
         return requestProof;
     }
 
-    @FunctionalInterface
-    private interface NonceHandler {
-        void apply(ProofJwt proof) throws Oid4vcException;
-    }
-
     private IssuerMetadata getIssuerMetadata(UUID tenantId) {
         if (applicationProperties.isSignedMetadataEnabled()) {
             return metadataService.getUnsignedIssuerMetadata(tenantId);
         }
         return metadataService.getUnsignedIssuerMetadata();
+    }
+
+    @FunctionalInterface
+    private interface NonceHandler {
+        void apply(ProofJwt proof) throws Oid4vcException;
     }
 }

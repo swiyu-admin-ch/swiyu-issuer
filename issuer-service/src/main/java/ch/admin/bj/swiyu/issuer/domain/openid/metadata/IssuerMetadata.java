@@ -14,7 +14,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -87,6 +86,7 @@ public class IssuerMetadata {
     private IssuerCredentialResponseEncryption responseEncryption;
 
     @JsonProperty("batch_credential_issuance")
+    @Valid
     @Nullable
     private BatchCredentialIssuance batchCredentialIssuance;
 
