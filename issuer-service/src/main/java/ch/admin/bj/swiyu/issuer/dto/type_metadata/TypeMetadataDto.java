@@ -2,10 +2,18 @@ package ch.admin.bj.swiyu.issuer.dto.type_metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 import java.util.List;
 
 public record TypeMetadataDto(
+
+        @NotNull(message = "'profile_version' must be set")
+        @JsonProperty("profile_version")
+        @Pattern(regexp = "^swiss-profile-vc:1.0.0$", message = "Profile version must be 'swiss-profile-vc:1.0.0'")
+        String profileVersion,
+
         String vct,
 
         // A human-readable name for the type, intended for developers reading the JSON document. This property is OPTIONAL.
