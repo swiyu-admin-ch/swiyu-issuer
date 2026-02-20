@@ -1,4 +1,5 @@
 {
+  "profile_version": "swiss-profile-vc:1.0.0",
   "capture_bases": [
     {
       "type": "spec/capture_base/1.0",
