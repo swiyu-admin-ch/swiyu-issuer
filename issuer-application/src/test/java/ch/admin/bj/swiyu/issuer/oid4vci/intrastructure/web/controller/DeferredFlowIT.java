@@ -1,19 +1,20 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
-import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
@@ -54,6 +55,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -101,11 +103,8 @@ class DeferredFlowIT {
     @Autowired
     private TransactionTemplate transactionTemplate;
     private Map<String, String> offerData;
-    private CredentialOffer deferredOffer;
     private UUID deferredOfferId;
-    private CredentialOffer validUnboundOffer;
     private UUID validUnboundOfferId;
-    private UUID notDeferredOfferId;
     private StatusList statusList;
     private CredentialManagement credentialManagement;
 
@@ -114,10 +113,10 @@ class DeferredFlowIT {
         statusList = saveStatusList(createStatusList());
         deferredOfferId = UUID.randomUUID();
         validUnboundOfferId = UUID.randomUUID();
-        notDeferredOfferId = UUID.randomUUID();
-        deferredOffer = createTestOffer(deferredPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
+        UUID notDeferredOfferId = UUID.randomUUID();
+        CredentialOffer deferredOffer = createTestOffer(deferredPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true));
         saveStatusListLinkedOffer(deferredOffer, statusList, 0, deferredOfferId);
-        validUnboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialOfferStatusType.OFFERED, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null, null);
+        CredentialOffer validUnboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialOfferStatusType.OFFERED, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null, null);
         saveStatusListLinkedOffer(validUnboundOffer, statusList, 1, validUnboundOfferId);
         var notDeferredOffer = createTestOffer(notDeferredPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(false));
         saveStatusListLinkedOffer(notDeferredOffer, statusList, 2, notDeferredOfferId);
@@ -542,11 +541,7 @@ class DeferredFlowIT {
         String deferredCredentialRequestString = String.format("{ \"transaction_id\": \"%s\"}}", transactionId);
 
         // change status to CANCELLED
-        mock.perform(patch("/management/api/credentials/" + deferredOfferId + "/status?credentialStatus=%s".formatted(CredentialOfferStatusType.CANCELLED.name()))
-                        .contentType(MediaType.APPLICATION_JSON_VALUE))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CANCELLED"))
-                .andReturn();
+        updateStatus(mock, deferredOfferId.toString(), UpdateCredentialStatusRequestTypeDto.CANCELLED);
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isBadRequest())
@@ -570,10 +565,7 @@ class DeferredFlowIT {
         DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
 
         // check status from business issuer perspective
-        mock.perform(patch("/management/api/credentials/%s/status?credentialStatus=%s".formatted(validUnboundOfferId, CredentialOfferStatusType.READY.name())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("READY"))
-                .andReturn();
+        updateStatus(mock, validUnboundOfferId.toString(), UpdateCredentialStatusRequestTypeDto.READY);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(deferredDataDto.transactionId().toString());
 

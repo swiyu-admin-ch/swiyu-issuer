@@ -1,11 +1,11 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
@@ -25,7 +25,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class CredentialRenewalServiceTest {
 
@@ -74,7 +75,7 @@ class CredentialRenewalServiceTest {
                 null);
         var updatedOffer = CredentialOffer.builder().id(UUID.randomUUID()).build();
         @SuppressWarnings("deprecation")
-		var request = new CredentialRequestClass();
+        var request = new CredentialRequestClass();
         var envelope = new CredentialEnvelopeDto("h", "b", HttpStatus.OK);
 
         when(credentialManagementService.createInitialCredentialOfferForRenewal(mgmt)).thenReturn(initialOffer);
@@ -90,14 +91,25 @@ class CredentialRenewalServiceTest {
     }
 
     @Test
-    void ensureManagementNotRevoked_rejectsRevoked() {
+    void ensureManagementNotRenewed_rejectsRevoked() {
         var mgmt = CredentialManagement.builder()
                 .credentialManagementStatus(CredentialStatusManagementType.REVOKED)
                 .build();
 
-        assertThatThrownBy(() -> service.ensureManagementNotRevoked(mgmt))
+        assertThatThrownBy(() -> service.ensureManagementNotRevokedOrSuspended(mgmt))
                 .isInstanceOf(RenewalException.class)
-                .hasMessageContaining("revoked");
+                .hasMessageContaining("REVOKED");
+    }
+
+    @Test
+    void ensureManagementNotRenewed_rejectsSuspended() {
+        var mgmt = CredentialManagement.builder()
+                .credentialManagementStatus(CredentialStatusManagementType.SUSPENDED)
+                .build();
+
+        assertThatThrownBy(() -> service.ensureManagementNotRevokedOrSuspended(mgmt))
+                .isInstanceOf(RenewalException.class)
+                .hasMessageContaining("SUSPENDED");
     }
 
     @Test
