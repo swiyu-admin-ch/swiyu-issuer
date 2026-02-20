@@ -6,22 +6,23 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.net.ssl.SSLEngineResult;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 public class CredentialOfferTestHelper {
 
@@ -83,10 +84,22 @@ public class CredentialOfferTestHelper {
         String payload = "{\"metadata_credential_supported_id\": [\"test\"],\"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\", \"lastName\": \"lastName\"}, \"status_lists\": [\"%s\"]}"
                 .formatted(statusRegistryUrl);
 
+        var result = mvc.perform(post(BASE_URL).contentType("application/json").content(payload))
+                //.andExpect(status().isOk())
+                .andReturn();
+        //var tmp = mvc .perform(post(BASE_URL).contentType("application/json").content(payload))
+        if (result.getResponse().getStatus() != HttpStatus.OK.value())  {
+            System.out.println("debug");
+            System.out.println(result.getResponse().getContentAsString());
+            throw new RuntimeException("AAAAAAAAAAAAAAAA" + result.getResponse().getContentAsString());
+        }
+
+        /*
         MvcResult result = mvc
                 .perform(post(BASE_URL).contentType("application/json").content(payload))
                 .andExpect(status().isOk())
                 .andReturn();
+         */
 
         try {
             return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
