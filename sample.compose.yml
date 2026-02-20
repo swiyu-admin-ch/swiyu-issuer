@@ -69,22 +69,15 @@ configs:
         "issuer": "${EXTERNAL_URL}",
         "token_endpoint": "${EXTERNAL_URL}/oid4vci/api/token"
       }
+  # Please check https://github.com/swiyu-admin-ch/swiyu-issuer/blob/main/issuer-application/src/main/resources/example_issuer_metadata.json to get additional examples of metadata content.
   issuer_metadata:
     content: |
       {
         "credential_issuer": "${EXTERNAL_URL}",
         "credential_endpoint": "${EXTERNAL_URL}/oid4vci/api/credential",
+        "deferred_credential_endpoint": "${EXTERNAL_URL}/oid4vci/api/deferred_credential",
         "nonce_endpoint": "${EXTERNAL_URL}/oid4vci/api/nonce",
         "version": "1.0",
-        "credential_response_encryption": {
-          "encryption_required": false,
-          "alg_values_supported": [
-            "ECDH-ES"
-          ],
-          "enc_values_supported": [
-            "A128GCM"
-          ]
-        },
         "display": [
           {
             "name": "Mein Test VC",
@@ -122,6 +115,18 @@ configs:
             }
           }
         ],
+        "batch_credential_issuance": {
+          "batch_size": 10
+        },
+        "credential_response_encryption": {
+          "encryption_required": false,
+          "alg_values_supported": [
+            "ECDH-ES"
+          ],
+          "enc_values_supported": [
+            "A128GCM"
+          ]
+        },
         "credential_configurations_supported": {
           "my-test-vc": {
             "format": "vc+sd-jwt",
