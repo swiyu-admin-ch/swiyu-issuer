@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -37,8 +38,8 @@ public class ProofJwt extends Proof implements AttestableProof {
         this.nonceLifetimeSeconds = nonceLifetimeSeconds;
     }
 
-    private static Oid4vcException proofException(String errorDescription) {
-        return new Oid4vcException(CredentialRequestError.INVALID_PROOF, errorDescription);
+    private static Oid4vcException proofException(String errorDescription, Map<String, Object> context) {
+        return new Oid4vcException(CredentialRequestError.INVALID_PROOF, errorDescription, context);
     }
 
     /**
@@ -57,13 +58,20 @@ public class ProofJwt extends Proof implements AttestableProof {
             JWSHeader header = signedJWT.getHeader();
 
             // check if typ header is present and equals "openid4vci-proof+jwt"
-            if (!header.getType().toString().equals(ProofType.JWT.getClaimTyp())) {
-                throw proofException(String.format("Proof Type is not supported. Must be 'openid4vci-proof+jwt' but was %s", header.getType()));
+            if (header.getType() == null || !header.getType().toString().equals(ProofType.JWT.getClaimTyp())) {
+                throw proofException(
+                        String.format("Proof Type is not supported. Must be 'openid4vci-proof+jwt' but was %s", header.getType()),
+                        Map.of("typ", header.getType() != null ? header.getType().toString() : "null"));
             }
 
             // check if alg header is present and is supported
             if (header.getAlgorithm() == null || !supportedSigningAlgorithms.contains(header.getAlgorithm().getName())) {
-                throw proofException("Proof Signing Algorithm is not supported");
+                throw proofException(
+                        "Proof Signing Algorithm is not supported",
+                        Map.of(
+                                "alg", header.getAlgorithm() != null ? header.getAlgorithm().getName() : "null",
+                                "supportedAlgs", supportedSigningAlgorithms
+                        ));
             }
 
             validateJwtClaims(issuerId);
@@ -71,21 +79,27 @@ public class ProofJwt extends Proof implements AttestableProof {
             ECKey holderKey = getNormalizedECKey(header);
             JWSVerifier verifier = new ECDSAVerifier(holderKey);
             if (!signedJWT.verify(verifier)) {
-                throw proofException("Proof JWT is not valid!");
+                throw proofException("Proof JWT is not valid!",
+                        Map.of("alg", header.getAlgorithm() != null ? header.getAlgorithm().getName() : "null"));
             }
 
             validateNonce(nonce);
 
             if (tokenExpirationTimestamp != null && Instant.now().isAfter(Instant.ofEpochSecond(tokenExpirationTimestamp))) {
-                throw proofException("Token is expired");
+                throw proofException("Token is expired",
+                        Map.of("tokenExpired", true));
             }
 
             this.holderKeyJson = holderKey.toJSONString();
 
         } catch (ParseException e) {
-            throw proofException("Provided Proof JWT is not parseable; " + e.getMessage());
+            throw proofException(
+                    "Provided Proof JWT is not parseable; " + e.getMessage(),
+                    Map.of("payloadLength", jwt != null ? jwt.length() : "null"));
         } catch (JOSEException e) {
-            throw proofException("Key is not usable; " + e.getMessage());
+            throw proofException(
+                    "Key is not usable; " + e.getMessage(),
+                    Map.of("alg", signedJWT != null ? signedJWT.getHeader().getAlgorithm().getName() : "null"));
         }
 
         return true;
@@ -101,7 +115,9 @@ public class ProofJwt extends Proof implements AttestableProof {
         try {
             return signedJWT.getJWTClaimsSet().getStringClaim("nonce");
         } catch (ParseException e) {
-            throw proofException("Provided Proof JWT is not parseable; " + e.getMessage());
+            throw proofException(
+                    "Provided Proof JWT is not parseable; " + e.getMessage(),
+                    Map.of("claim", "nonce"));
         }
     }
 
@@ -142,19 +158,29 @@ public class ProofJwt extends Proof implements AttestableProof {
 
         // aud: REQUIRED (string). The value of this claim MUST be the Credential Issuer Identifier.
         if (claimSet.getAudience().isEmpty() || !claimSet.getAudience().contains(issuerId)) {
-            throw proofException("Audience claim is missing or incorrect");
+            throw proofException("Audience claim is missing or incorrect",
+                    Map.of(
+                            "issuerId", issuerId,
+                            "audienceCount", claimSet.getAudience().size()
+                    ));
         }
 
         // iat: REQUIRED (integer or floating-point number). The value of this claim MUST be the time at which the key proof was issued
         // 12.5 Proof Replay protection with issued at
         if (claimSet.getIssueTime() == null) {
-            throw proofException("Issue Time claim is missing");
+            throw proofException("Issue Time claim is missing",
+                    Map.of("issuerId", issuerId));
         }
         var proofIssueTime = signedJWT.getJWTClaimsSet().getIssueTime().toInstant();
         var now = Instant.now();
         if (proofIssueTime.isBefore(now.minusSeconds(acceptableProofTimeWindowSeconds))
                 || proofIssueTime.isAfter(now.plusSeconds(acceptableProofTimeWindowSeconds))) {
-            throw proofException(String.format("Holder Binding proof was not issued at an acceptable time. Expected %d +/- %d seconds", now.getEpochSecond(), acceptableProofTimeWindowSeconds));
+            var skewSeconds = Math.abs(proofIssueTime.getEpochSecond() - now.getEpochSecond());
+            throw proofException(String.format("Holder Binding proof was not issued at an acceptable time. Expected %d +/- %d seconds", now.getEpochSecond(), acceptableProofTimeWindowSeconds),
+                    Map.of(
+                            "issueTimeSkewSeconds", skewSeconds,
+                            "windowSeconds", acceptableProofTimeWindowSeconds
+                    ));
         }
     }
 
@@ -166,7 +192,12 @@ public class ProofJwt extends Proof implements AttestableProof {
             // Self-contained nonce
             var selfContainedNonce = new SelfContainedNonce(presentedNonce);
             if (!selfContainedNonce.isValid(nonceLifetimeSeconds)) {
-                throw proofException("Nonce is expired");
+                throw proofException("Nonce is expired",
+                        Map.of(
+                                "noncePresent", true,
+                                "nonceType", "selfContained",
+                                "nonceLifetimeSeconds", nonceLifetimeSeconds
+                        ));
             }
 
         } else {
@@ -174,7 +205,11 @@ public class ProofJwt extends Proof implements AttestableProof {
             // Once ready to contract -> Remove fixed token based nonce (EIDOMNI-166)
             var nonceString = nonce.toString();
             if (nonceString != null && !nonceString.equals(presentedNonce)) {
-                throw proofException("Nonce claim does not match the server-provided c_nonce value");
+                throw proofException("Nonce claim does not match the server-provided c_nonce value",
+                        Map.of(
+                                "noncePresent", true,
+                                "nonceType", "fixed"
+                        ));
             }
         }
     }
@@ -191,13 +226,22 @@ public class ProofJwt extends Proof implements AttestableProof {
         if (kid != null && kid.startsWith("did:")) {
             var didMatcher = Pattern.compile("did:[a-z]+(?=:.+)").matcher(kid);
             if (didMatcher.find() && !didMatcher.group().equals("did:jwk")) {
-                throw proofException(String.format("Did method provided in kid attribute %s is not supported", didMatcher.group()));
+                throw proofException(String.format("Did method provided in kid attribute %s is not supported", didMatcher.group()),
+                        Map.of(
+                                "kidPresent", kid != null,
+                                "kidIsDid", true,
+                                "didMethod", didMatcher.group()
+                        ));
             }
             if (didMatcher.group().equals("did:jwk")) {
                 try {
                     return DidJwk.createFromDidJwk(kid).getJWK().toECKey();
                 } catch (ParseException e) {
-                    throw proofException(String.format("kid property %s could not be parsed to a JWK", kid));
+                    throw proofException(String.format("kid property %s could not be parsed to a JWK", kid),
+                            Map.of(
+                                    "kidPresent", kid != null,
+                                    "kidIsDid", true
+                            ));
                 }
             }
         }
@@ -208,6 +252,10 @@ public class ProofJwt extends Proof implements AttestableProof {
         }
 
         // No public key present which the current system supports
-        throw proofException(String.format("None of the supported binding method/s was found in the header %s", header));
+        throw proofException(String.format("None of the supported binding method/s was found in the header %s", header),
+                Map.of(
+                        "kidPresent", kid != null,
+                        "jwkPresent", header.getJWK() != null
+                ));
     }
 }

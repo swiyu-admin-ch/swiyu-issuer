@@ -54,7 +54,11 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Oid4vcException.class)
     public ResponseEntity<ApiErrorDto> handleOID4VCException(final Oid4vcException exception) {
-        log.debug("Oid4vcException: {}", exception.getMessage());
+        if (exception.getContext() == null || exception.getContext().isEmpty()) {
+            log.info("Oid4vcException: {}", exception.getMessage());
+        } else {
+            log.info("Oid4vcException: {}, context={}", exception.getMessage(), exception.getContext());
+        }
         var apiError = toCredentialRequestErrorResponseDto(exception);
 
         return new ResponseEntity<>(apiError, apiError.getStatus());

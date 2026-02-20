@@ -109,7 +109,11 @@ public class CredentialConfiguration {
     @PostConstruct
     public void postConstruct() {
         if (!proofTypesSupported.isEmpty() && cryptographicBindingMethodsSupported.isEmpty()) {
-            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "If proof types are supported, cryptographic binding methods must be specified as well");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
+                    "If proof types are supported, cryptographic binding methods must be specified as well",
+                    Map.of(
+                            "cryptographicBindingMethodsSupported", cryptographicBindingMethodsSupported
+                    ));
         }
     }
 }

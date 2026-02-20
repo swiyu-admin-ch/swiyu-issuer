@@ -17,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -62,7 +63,12 @@ public class DeferredCredentialService {
 
         // Just to be aligned old but wrong implementation! Must be removed when ending of support of V1
         if(!isOfferReady(credentialOffer)){
-            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued");
+            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued",
+                    Map.of(
+                            "offerId", credentialOffer.getId(),
+                            "transactionId", credentialOffer.getTransactionId(),
+                            "status", credentialOffer.getCredentialStatus()
+                    ));
         }
 
         markIssuanceCompleted(credentialOffer, mgmt);
@@ -147,7 +153,9 @@ public class DeferredCredentialService {
     String getMetadataCredentialSupportedId(CredentialOffer credentialOffer) {
         var metadataIds = credentialOffer.getMetadataCredentialSupportedId();
         if (metadataIds == null || metadataIds.isEmpty()) {
-            throw new Oid4vcException(CREDENTIAL_REQUEST_DENIED, "Missing metadata_credential_supported_id for deferred issuance");
+            throw new Oid4vcException(CREDENTIAL_REQUEST_DENIED,
+                    "Missing metadata_credential_supported_id for deferred issuance",
+                    Map.of("offerId", credentialOffer.getId()));
         }
         return metadataIds.getFirst();
     }
@@ -194,7 +202,12 @@ public class DeferredCredentialService {
     void validateOfferProcessable(CredentialOffer credentialOffer) {
         if (!credentialOffer.isProcessableOffer()) {
             throw new Oid4vcException(CREDENTIAL_REQUEST_DENIED,
-                    "The credential can not be issued anymore, the offer was either cancelled or expired");
+                    "The credential cannot be issued anymore, the offer was either cancelled or expired",
+                    Map.of(
+                            "offerId", credentialOffer.getId(),
+                            "transactionId", credentialOffer.getTransactionId(),
+                            "status", credentialOffer.getCredentialStatus()
+                    ));
         }
     }
 
@@ -245,6 +258,8 @@ public class DeferredCredentialService {
         return offers.stream().filter(o -> o.getTransactionId() != null
                         && o.getTransactionId().equals(transactionId))
                 .findFirst()
-                .orElseThrow(() -> new Oid4vcException(INVALID_TRANSACTION_ID, "Invalid transactional id"));
+                .orElseThrow(() -> new Oid4vcException(INVALID_TRANSACTION_ID,
+                        "Invalid transaction id",
+                        Map.of("transactionId", transactionId)));
     }
 }
