@@ -122,7 +122,7 @@ class CredentialRenewalServiceTest {
 
         assertThatThrownBy(() -> service.ensureRenewalFlowEnabled(mgmt))
                 .isInstanceOf(RenewalException.class)
-                .hasMessageContaining("No active offer");
+                .hasMessageContaining("Credential renewal is not allowed");
     }
 
     @Test
