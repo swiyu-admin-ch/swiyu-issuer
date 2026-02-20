@@ -7,8 +7,9 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryptio
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.jweutil.JweUtil;
+import ch.admin.bj.swiyu.jweutil.JweUtilException;
 import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.JWK;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,13 +64,11 @@ public class JweService {
             JWEObject encryptedJWT = JWEObject.parse(encryptedMessage);
             JWEHeader header = encryptedJWT.getHeader();
             validateJWEHeaders(header, issuerMetadata.getRequestEncryption());
-            JWEDecrypter decrypter = createDecrypter(header);
-            encryptedJWT.decrypt(decrypter);
-            return encryptedJWT.getPayload()
-                    .toString();
+            JWK key = resolveDecryptionKey(header);
+            return JweUtil.decrypt(encryptedMessage, key);
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Message is not a correct JWE object");
-        } catch (JOSEException e) {
+        } catch (JweUtilException e) {
             throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "JWE Object could not be decrypted");
         }
     }
@@ -87,9 +86,9 @@ public class JweService {
      * Decrypts the message if the content type indicates it is a JWE.
      * If the content type is not JWE and encryption is mandatory, an exception is thrown.
      * Otherwise, the original message is returned.
-     * 
+     *
      * @param requestMessage the message to be decrypted
-     * @param contentType the content type of the message
+     * @param contentType    the content type of the message
      * @return decrypted message or original message
      */
     public String decryptRequest(String requestMessage, String contentType) {
@@ -142,28 +141,21 @@ public class JweService {
     }
 
     /**
-     * Creates a nimbus JWEDecrypter using key information encoded in the JWE header
+     * Resolves a private key for the JWE header and validates the algorithm family.
      *
      * @param header JWEHeader holding key information
-     * @return a JWEDecrypter compatible to the JWEHeader provided
+     * @return the JWK to use for decryption
      * @throws Oid4vcException if an unknown key or unsupported algorithm was used in the JWEHeader
      */
-    private JWEDecrypter createDecrypter(JWEHeader header) {
+    private JWK resolveDecryptionKey(JWEHeader header) {
         JWK key = encryptionKeyService.getActivePrivateKeys().getKeyByKeyId(header.getKeyID());
         if (key == null) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unknown JWK Key Id: " + header.getKeyID());
         }
-        if (JWEAlgorithm.Family.ECDH_ES.contains(header.getAlgorithm())) {
-            try {
-                return new ECDHDecrypter(key.toECKey());
-            } catch (JOSEException e) {
-                throw new Oid4vcException(e,
-                        INVALID_ENCRYPTION_PARAMETERS,
-                        "Unsupported Key and Algorithm combination");
-            }
-        } else {
+        if (!JWEAlgorithm.Family.ECDH_ES.contains(header.getAlgorithm())) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported Encryption Algorithm");
         }
+        return key;
     }
 
 }

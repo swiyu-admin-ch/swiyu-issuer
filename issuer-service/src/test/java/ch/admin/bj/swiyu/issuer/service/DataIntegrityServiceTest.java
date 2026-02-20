@@ -72,7 +72,7 @@ class DataIntegrityServiceTest {
         }
         when(applicationProperties.isDataIntegrityEnforced()).thenReturn(true);
         var exception = Assertions.assertThrows(BadRequestException.class, () -> dataIntegrityService.getVerifiedOfferData(offerData, null));
-        Assertions.assertEquals("Invalid serialized unsecured/JWS/JWE object: Missing part delimiters", exception.getMessage());
+        Assertions.assertEquals("Failed to parse JWT", exception.getMessage());
     }
 
     @ParameterizedTest
