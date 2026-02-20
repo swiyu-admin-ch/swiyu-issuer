@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
 public record BatchCredentialIssuance(
         @JsonProperty("batch_size")
         @NotNull
-        @Min(value = 2, message = "Batch size must be at least 2")
+        @Min(value = 10, message = "Batch size must be at least 10")
         Integer batchSize
 ) {
 }
