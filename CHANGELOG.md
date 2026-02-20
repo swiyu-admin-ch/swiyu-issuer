@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Field is set to `CREDENTIAL_OFFER` on credential offer status change.
 - Allow setting the used Database Schema with environment variable `POSTGRES_DB_SCHEMA`. Default remains public as
   before.
+- Added health checks for:
+  - stale callbacks
+  - Registry token getting refreshed
+  - Status List availability
 
 ### Fixed
 
