@@ -126,7 +126,7 @@ public class StatusListPersistenceService {
      * @param statusListEntity the status list entity
      * @param token the token status list token containing the current status data
      */
-    private void publishToRegistry(StatusList statusListEntity, TokenStatusListToken token) {
+    public void publishToRegistry(StatusList statusListEntity, TokenStatusListToken token) {
         SignedJWT jwt = signingService.buildSignedStatusListJwt(statusListEntity, token);
         statusRegistryClient.updateStatusListEntry(statusListEntity, jwt.serialize());
     }
