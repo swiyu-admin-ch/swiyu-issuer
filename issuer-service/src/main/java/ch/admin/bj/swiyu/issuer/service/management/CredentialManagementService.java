@@ -18,6 +18,7 @@ import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -74,8 +75,11 @@ public class CredentialManagementService {
         var credentialOffers = mgmt.getCredentialOffers().stream()
                 .map(this::checkAndExpireOffer)
                 .collect(Collectors.toSet());
-
-        return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
+        try {
+            return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to parse management object with DPoP key", e);
+        }
     }
 
 

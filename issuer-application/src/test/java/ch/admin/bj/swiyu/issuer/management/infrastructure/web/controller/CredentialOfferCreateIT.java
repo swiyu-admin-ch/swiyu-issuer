@@ -300,8 +300,8 @@ class CredentialOfferCreateIT {
                 .andExpect(jsonPath("$.credential_offers[0].metadata_credential_supported_id").isArray())
                 .andExpect(jsonPath("$.credential_offers[0].credential_metadata").isMap())
                 .andExpect(jsonPath("$.credential_offers[0].credential_metadata").isEmpty())
-                .andExpect(jsonPath("$.credential_offers[0].holder_jwks").isEmpty())
-                .andExpect(jsonPath("$.credential_offers[0].client_agent_info").isEmpty())
+                .andExpect(jsonPath("$.credential_offers[0].holder_jwks").doesNotExist())
+                .andExpect(jsonPath("$.credential_offers[0].client_agent_info").doesNotExist())
                 .andExpect(jsonPath("$.credential_offers[0].offer_deeplink").isNotEmpty())
                 .andExpect(jsonPath("$.credential_offers[0].deferred_offer_expiration_seconds").value(37000));
     }

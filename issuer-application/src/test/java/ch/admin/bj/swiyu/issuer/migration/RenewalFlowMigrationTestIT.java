@@ -50,7 +50,22 @@ class RenewalFlowMigrationTestIT {
     );
 
     private static final String PRE_MIGRATION_TARGET = "1.3.0";
-    private static final String MIGRATION_TARGET = "1.4.1";
+    private static final String MIGRATION_TARGET = "1.4.2";
+
+    @Autowired
+    DataSource dataSource;
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    CredentialOfferRepository credentialOfferRepository;
+
+    @Autowired
+    CredentialManagementRepository credentialManagementRepository;
+
+    Map<UUID, CredentialOfferData> offers = new HashMap<>();
+
     final Map<String, CredentialOfferStatusType> offerStatusMapping = Map.of(
             "OFFERED", CredentialOfferStatusType.OFFERED,
             "CANCELLED", CredentialOfferStatusType.CANCELLED,
@@ -84,15 +99,6 @@ class RenewalFlowMigrationTestIT {
             CredentialOfferTestFactory.revoked(),
             CredentialOfferTestFactory.expired()
     );
-    @Autowired
-    DataSource dataSource;
-    @Autowired
-    JdbcTemplate jdbcTemplate;
-    @Autowired
-    CredentialOfferRepository credentialOfferRepository;
-    @Autowired
-    CredentialManagementRepository credentialManagementRepository;
-    Map<UUID, CredentialOfferData> offers = new HashMap<>();
     private List<CredentialOfferData> renewedCredentialOffers;
 
     private static @NonNull PGobject prepareCredentialSupportedId(String value) throws SQLException {
