@@ -100,6 +100,7 @@ public class CredentialOffer {
      * TenantId from the metadata where the credential offer was created
      * Used to sign the metadata with the correct key
      */
+    @Deprecated(since = "2026-02-05 - EIDOMNI-634 Moving tenant_id to credentialManagement")
     private UUID metadataTenantId;
 
     /**

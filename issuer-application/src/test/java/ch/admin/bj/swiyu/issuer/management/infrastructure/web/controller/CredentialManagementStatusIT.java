@@ -4,15 +4,15 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.ECKey;
@@ -33,7 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -89,8 +92,6 @@ class CredentialManagementStatusIT {
 
     @Mock
     private ApiClient mockApiClient;
-
-    private CredentialManagement issuedCredentialManagement;
 
     private CredentialWithDeeplinkResponseDto credentialManagementOffer;
 
@@ -219,7 +220,7 @@ class CredentialManagementStatusIT {
     void testUpdateOfferStatusWithRevokedWhenIssued_thenSuccess() throws Exception {
 
         assertThat(STATUS_LIST_MAX_LENGTH).as("This test requires more than 9 indexes").isGreaterThanOrEqualTo(9);
-        Set<Integer> unusedIndexes = new HashSet<>(IntStream.range(0, STATUS_LIST_MAX_LENGTH).boxed().collect(Collectors.toSet()));
+        Set<Integer> unusedIndexes = IntStream.range(0, STATUS_LIST_MAX_LENGTH).boxed().collect(Collectors.toSet());
         // Add Revoked VCS
         changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.REVOKED);
 
@@ -227,8 +228,8 @@ class CredentialManagementStatusIT {
 
         Set<CredentialOfferStatus> revokedOfferStatus = credentialOfferStatusRepository.findByOfferId(credentialManagementOffer.getOfferId());
         assertThat(revokedOfferStatus)
-                .as("Expecting test configuration to provide batch size of 3")
-                .hasSize(3);
+                .as("Expecting test configuration to provide batch size of 10")
+                .hasSize(10);
         var offerIds = revokedOfferStatus.stream()
                 .map(CredentialOfferStatus::getId)
                 .map(CredentialOfferStatusKey::getOfferId)

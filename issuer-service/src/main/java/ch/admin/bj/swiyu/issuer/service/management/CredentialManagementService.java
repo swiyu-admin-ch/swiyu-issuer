@@ -424,6 +424,7 @@ public class CredentialManagementService {
                         .credentialManagementStatus(CredentialStatusManagementType.INIT)
                         .renewalResponseCnt(0)
                         .renewalRequestCnt(0)
+                        .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
                         .build());
 
         CredentialOffer entity = persistenceService.saveCredentialOffer(
@@ -439,7 +440,6 @@ public class CredentialManagementService {
                         .credentialValidUntil(requestDto.getCredentialValidUntil())
                         .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
                         .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
-                        .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
                         .credentialManagement(credentialManagement)
                         .build());
 

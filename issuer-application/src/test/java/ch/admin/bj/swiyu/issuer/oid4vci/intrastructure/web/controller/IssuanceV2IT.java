@@ -57,7 +57,6 @@ class IssuanceV2IT {
     private final UUID validPreAuthCode = UUID.randomUUID();
     private final UUID validUnboundPreAuthCode = UUID.randomUUID();
     private StatusList testStatusList;
-    private CredentialManagement credentialManagement;
     private List<ECKey> holderKeys;
     @Autowired
     private MockMvc mock;
@@ -112,7 +111,7 @@ class IssuanceV2IT {
         assertEquals(issuerMetadata.getIssuanceBatchSize(), credentials.size());
         var credential = credentials.get(0).getAsJsonObject();
         var credentialString = credential.get("credential").getAsString();
-        testHolderBindingV2(credentialString, holderKeys.get(0));
+        testHolderBindingV2(credentialString, holderKeys.getFirst());
     }
 
     @Test
@@ -237,10 +236,9 @@ class IssuanceV2IT {
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
     }
 
-    @Test
-    void testSdJwtOffer_withMultipleProof_thenSuccess() throws Exception {
-
-        var numberOfProofs = 3;
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3, 10})
+    void testSdJwtOffer_withMultipleProof_thenSuccess(int numberOfProofs) throws Exception {
 
         List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
 
@@ -268,7 +266,7 @@ class IssuanceV2IT {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 4})
+    @ValueSource(ints = {0, 11})
     void testSdJwtOffer_invalidBatchSizes_thenBadRequest(int numberOfProofs) throws Exception {
 
         List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
@@ -301,7 +299,7 @@ class IssuanceV2IT {
     }
 
     private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
-        credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
+        CredentialManagement credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
                 .credentialManagementStatus(CredentialStatusManagementType.INIT)

@@ -157,11 +157,11 @@ public class CredentialOfferMapper {
 
     private static String getCredentialIssuer(ApplicationProperties props, CredentialOffer credential) {
 
-        if (!props.isSignedMetadataEnabled() || isNull(credential.getMetadataTenantId())) {
+        if (!props.isSignedMetadataEnabled() || isNull(credential.getCredentialManagement().getMetadataTenantId())) {
             return props.getExternalUrl();
         }
 
-        return "%s/%s".formatted(props.getExternalUrl(), credential.getMetadataTenantId());
+        return "%s/%s".formatted(props.getExternalUrl(), credential.getCredentialManagement().getMetadataTenantId());
     }
 
     private static String getOfferDeeplinkFromCredential(ApplicationProperties props,
@@ -228,7 +228,7 @@ public class CredentialOfferMapper {
         existingOffer.setCredentialValidUntil(newOffer.getCredentialValidUntil());
         existingOffer.setCredentialMetadata(toCredentialOfferMetadataDto(newOffer.getCredentialMetadata()));
         existingOffer.setConfigurationOverride(toConfigurationOverride(newOffer.getConfigurationOverride()));
-        existingOffer.setMetadataTenantId(applicationProperties.isSignedMetadataEnabled() ? java.util.UUID.randomUUID() : null);
+        existingOffer.getCredentialManagement().setMetadataTenantId(applicationProperties.isSignedMetadataEnabled() ? java.util.UUID.randomUUID() : null);
     }
 
 }

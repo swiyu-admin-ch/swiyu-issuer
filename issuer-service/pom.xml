@@ -173,6 +173,18 @@
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-did-resolver-adapter</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-jwe-util</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-jwt-util</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-dpop-util</artifactId>
+        </dependency>
 
     </dependencies>
 

@@ -617,6 +617,10 @@ class CredentialManagementServiceTest {
                 null
         );
 
+        CredentialManagement management = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .metadataTenantId(UUID.randomUUID())
+                .build();
         CredentialOffer existing = CredentialOffer.builder()
                 .id(UUID.randomUUID())
                 .credentialStatus(CredentialOfferStatusType.ISSUED)
@@ -624,6 +628,7 @@ class CredentialManagementServiceTest {
                 .offerData(Map.of("old", "data"))
                 .offerExpirationTimestamp(Instant.now().plusSeconds(10).getEpochSecond())
                 .deferredOfferValiditySeconds(0)
+                .credentialManagement(management)
                 .build();
 
         CredentialOffer updated = credentialService.updateOfferFromRenewalResponse(renewalResponse, existing);
