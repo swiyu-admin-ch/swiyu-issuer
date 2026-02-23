@@ -62,6 +62,13 @@ public class ApplicationProperties {
     private boolean enableJwtAuthentication;
 
     /**
+     * Flag to enable the storage of hashes of *each* VC signed by the generic issuer.
+     * This is the JWS of the SD-JWT VC
+     */
+    @NotNull
+    private boolean enableVcHashStorage;
+
+    /**
      * If enableJWTAuthentication is set,
      * the JWTs will be checked against the public keys
      * stored in this json web key set.

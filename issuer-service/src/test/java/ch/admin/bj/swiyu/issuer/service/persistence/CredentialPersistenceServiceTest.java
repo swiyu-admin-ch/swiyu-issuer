@@ -6,11 +6,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class CredentialPersistenceServiceTest {
@@ -98,8 +100,9 @@ class CredentialPersistenceServiceTest {
     @Test
     void findCredentialOfferByMetadataTenantId_shouldReturnWhenFound() {
         var tenantId = UUID.randomUUID();
-        var offer = CredentialOffer.builder().id(UUID.randomUUID()).metadataTenantId(tenantId).build();
-        when(credentialOfferRepository.findByMetadataTenantId(tenantId)).thenReturn(Optional.of(offer));
+        var management = CredentialManagement.builder().id(UUID.randomUUID()).metadataTenantId(tenantId).build();
+        var offer = CredentialOffer.builder().id(UUID.randomUUID()).credentialManagement(management).build();
+        when(credentialOfferRepository.findLatestOffersByMetadataTenantId(Mockito.eq(tenantId), Mockito.any())).thenReturn(List.of(offer));
 
         var result = persistenceService.findCredentialOfferByMetadataTenantId(tenantId);
 
