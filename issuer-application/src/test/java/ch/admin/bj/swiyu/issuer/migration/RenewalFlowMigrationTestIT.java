@@ -99,15 +99,6 @@ class RenewalFlowMigrationTestIT {
             CredentialOfferTestFactory.revoked(),
             CredentialOfferTestFactory.expired()
     );
-    @Autowired
-    DataSource dataSource;
-    @Autowired
-    JdbcTemplate jdbcTemplate;
-    @Autowired
-    CredentialOfferRepository credentialOfferRepository;
-    @Autowired
-    CredentialManagementRepository credentialManagementRepository;
-    Map<UUID, CredentialOfferData> offers = new HashMap<>();
     private List<CredentialOfferData> renewedCredentialOffers;
 
     private static @NonNull PGobject prepareCredentialSupportedId(String value) throws SQLException {

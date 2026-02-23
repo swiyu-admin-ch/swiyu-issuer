@@ -124,8 +124,6 @@ public class SdJwtCredential extends CredentialBuilder {
 
         final var override = getCredentialOffer().getConfigurationOverride();
         final var sdjwts = new ArrayList<String>(batchSize);
-
-        var sdjwts = new ArrayList<String>(batchSize);
         var vcHashes = new ArrayList<String>(batchSize);
         for (int i = 0; i < batchSize; i++) {
             final var builder = new SDObjectBuilder();
