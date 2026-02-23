@@ -127,26 +127,28 @@ public class OpenIdIssuerConfiguration {
 
         T metadata = objectMapper.readValue(metadataFileContent, clazz);
         Set<ConstraintViolation<T>> violations = validator.validate(metadata);
-        if (!violations.isEmpty()) {
-            // treat violations that reference 'profileVersion' as warnings only
-            Set<ConstraintViolation<T>> profileVersionViolations = violations.stream()
-                    .filter(v -> v.getPropertyPath() != null && v.getPropertyPath().toString().contains("profileVersion"))
-                    .collect(Collectors.toSet());
+        if (violations.isEmpty()) {
+            return;
+        }
 
-            Set<ConstraintViolation<T>> otherViolations = violations.stream()
-                    .filter(v -> !(v.getPropertyPath() != null && v.getPropertyPath().toString().contains("profileVersion")))
-                    .collect(Collectors.toSet());
+        // treat violations that reference 'profileVersion' as warnings only
+        Set<ConstraintViolation<T>> profileVersionViolations = violations.stream()
+                .filter(v -> v.getPropertyPath() != null && v.getPropertyPath().toString().contains("profileVersion"))
+                .collect(Collectors.toSet());
 
-            if (!profileVersionViolations.isEmpty()) {
-                log.warn("Validation warning (profileVersion) in {}: {}", entry.getValue(), profileVersionViolations.stream()
-                        .map(v -> String.format("- Invalid value for %s. Current value is %s with error %s", v.getPropertyPath().toString(), v.getInvalidValue(), v.getMessage()))
-                        .collect(Collectors.joining("\n")));
-            }
+        Set<ConstraintViolation<T>> otherViolations = violations.stream()
+                .filter(v -> !(v.getPropertyPath() != null && v.getPropertyPath().toString().contains("profileVersion")))
+                .collect(Collectors.toSet());
 
-            if (!otherViolations.isEmpty()) {
-                log.error("Validation error in {} with message: {}", entry.getValue(), otherViolations);
-                throw new ConstraintViolationException(otherViolations);
-            }
+        if (!profileVersionViolations.isEmpty()) {
+            log.warn("Validation warning (profileVersion) in {}: {}", entry.getValue(), profileVersionViolations.stream()
+                    .map(v -> String.format("- Invalid value for %s. Current value is %s with error %s", v.getPropertyPath().toString(), v.getInvalidValue(), v.getMessage()))
+                    .collect(Collectors.joining("\n")));
+        }
+
+        if (!otherViolations.isEmpty()) {
+            log.error("Validation error in {} with message: {}", entry.getValue(), otherViolations);
+            throw new ConstraintViolationException(otherViolations);
         }
     }
 
