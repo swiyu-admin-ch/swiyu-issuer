@@ -188,7 +188,7 @@ class DeferredFlowIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DEFERRED"))
                 .andExpect(jsonPath("$.credential_offers[0].holder_jwks[0]").value(SignedJWT.parse(proof).getHeader().getJWK().toJSONString()))
-                .andExpect(jsonPath("$.credential_offers[0].key_attestations").isEmpty())
+                .andExpect(jsonPath("$.credential_offers[0].key_attestations").doesNotExist())
                 .andReturn();
 
         mock.perform(patch("/management/api/credentials/" + credentialWithDeeplinkResponseDto.getManagementId())

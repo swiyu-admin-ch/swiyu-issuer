@@ -18,6 +18,7 @@ import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -74,8 +75,11 @@ public class CredentialManagementService {
         var credentialOffers = mgmt.getCredentialOffers().stream()
                 .map(this::checkAndExpireOffer)
                 .collect(Collectors.toSet());
-
-        return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
+        try {
+            return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to parse management object with DPoP key", e);
+        }
     }
 
 
@@ -87,7 +91,7 @@ public class CredentialManagementService {
      * of the offer and maps the result to a DTO suitable for clients.</p>
      *
      * @param managementId the id of the management object
-     * @param offerId the id of the offer object
+     * @param offerId      the id of the offer object
      * @return a {@link CredentialInfoResponseDto} containing credential offer information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
@@ -194,7 +198,7 @@ public class CredentialManagementService {
      * the offer has expired.</p>
      *
      * @param credentialManagementId the id of the credential offer
-     * @param offerId the id of the offer
+     * @param offerId                the id of the offer
      * @return the {@link StatusResponseDto} representing the credential's current status
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
@@ -420,6 +424,7 @@ public class CredentialManagementService {
                         .credentialManagementStatus(CredentialStatusManagementType.INIT)
                         .renewalResponseCnt(0)
                         .renewalRequestCnt(0)
+                        .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
                         .build());
 
         CredentialOffer entity = persistenceService.saveCredentialOffer(
@@ -435,7 +440,6 @@ public class CredentialManagementService {
                         .credentialValidUntil(requestDto.getCredentialValidUntil())
                         .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
                         .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
-                        .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
                         .credentialManagement(credentialManagement)
                         .build());
 

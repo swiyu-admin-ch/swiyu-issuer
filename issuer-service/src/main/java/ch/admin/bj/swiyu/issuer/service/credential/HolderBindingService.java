@@ -48,7 +48,7 @@ public class HolderBindingService {
     public List<ProofJwt> getValidateHolderPublicKeys(CredentialRequestClass credentialRequest,
                                                       CredentialOffer credentialOffer) throws Oid4vcException {
 
-        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getCredentialManagement().getMetadataTenantId());
         var supportedProofTypes = resolveSupportedProofTypes(credentialOffer);
         if (supportedProofTypes.isEmpty()) {
             return List.of();
@@ -92,7 +92,7 @@ public class HolderBindingService {
 
 
     private Map<String, SupportedProofType> resolveSupportedProofTypes(CredentialOffer credentialOffer) {
-        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getCredentialManagement().getMetadataTenantId());
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId()
                         .getFirst());
@@ -160,7 +160,7 @@ public class HolderBindingService {
     private void validateHolderBinding(ProofJwt requestProof, SupportedProofType bindingProofType,
                                        CredentialOffer credentialOffer) throws Oid4vcException {
         var mgmt = credentialOffer.getCredentialManagement();
-        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getCredentialManagement().getMetadataTenantId());
         if (!requestProof.isValidHolderBinding(
                 issuerMetadata.getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),

@@ -12,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 
 import java.net.URLEncoder;
@@ -49,16 +50,21 @@ public class CredentialOfferMapper {
                 toCredentialStatusTypeDto(credential.getCredentialStatus()),
                 credential.getMetadataCredentialSupportedId(),
                 toCredentialOfferMetadata(credential.getCredentialMetadata()),
-                !CollectionUtils.isEmpty(credential.getHolderJWKs()) ? credential.getHolderJWKs() : null,
-                !CollectionUtils.isEmpty(credential.getKeyAttestations()) ? credential.getKeyAttestations() : null,
+                nullIfEmptyList(credential.getHolderJWKs()),
+                nullIfEmptyList(credential.getKeyAttestations()),
                 toClientAgentInfoDto(credential.getClientAgentInfo()),
                 credential.getOfferExpirationTimestamp(),
                 credential.getDeferredOfferValiditySeconds(),
                 credential.getCredentialValidFrom(),
                 credential.getCredentialValidUntil(),
                 toCredentialRequest(credential.getCredentialRequest()),
-                getOfferDeeplinkFromCredential(props, credential)
+                getOfferDeeplinkFromCredential(props, credential),
+                nullIfEmptyList(credential.getVcHashes())
         );
+    }
+
+    private static @Nullable List<String> nullIfEmptyList(List<String> credential) {
+        return !CollectionUtils.isEmpty(credential) ? credential : null;
     }
 
     public static ClientAgentInfoDto toClientAgentInfoDto(ClientAgentInfo clientAgentInfo) {
@@ -151,11 +157,11 @@ public class CredentialOfferMapper {
 
     private static String getCredentialIssuer(ApplicationProperties props, CredentialOffer credential) {
 
-        if (!props.isSignedMetadataEnabled() || isNull(credential.getMetadataTenantId())) {
+        if (!props.isSignedMetadataEnabled() || isNull(credential.getCredentialManagement().getMetadataTenantId())) {
             return props.getExternalUrl();
         }
 
-        return "%s/%s".formatted(props.getExternalUrl(), credential.getMetadataTenantId());
+        return "%s/%s".formatted(props.getExternalUrl(), credential.getCredentialManagement().getMetadataTenantId());
     }
 
     private static String getOfferDeeplinkFromCredential(ApplicationProperties props,
@@ -206,9 +212,9 @@ public class CredentialOfferMapper {
     /**
      * Updates an existing CredentialOffer with data from a CreateCredentialOfferRequestDto and supporting parameters.
      *
-     * @param existingOffer the offer to update
-     * @param newOffer the DTO with new data
-     * @param offerData the parsed offer data
+     * @param existingOffer         the offer to update
+     * @param newOffer              the DTO with new data
+     * @param offerData             the parsed offer data
      * @param applicationProperties the application properties
      */
     public static void updateOfferFromDto(
@@ -222,7 +228,7 @@ public class CredentialOfferMapper {
         existingOffer.setCredentialValidUntil(newOffer.getCredentialValidUntil());
         existingOffer.setCredentialMetadata(toCredentialOfferMetadataDto(newOffer.getCredentialMetadata()));
         existingOffer.setConfigurationOverride(toConfigurationOverride(newOffer.getConfigurationOverride()));
-        existingOffer.setMetadataTenantId(applicationProperties.isSignedMetadataEnabled() ? java.util.UUID.randomUUID() : null);
+        existingOffer.getCredentialManagement().setMetadataTenantId(applicationProperties.isSignedMetadataEnabled() ? java.util.UUID.randomUUID() : null);
     }
 
 }

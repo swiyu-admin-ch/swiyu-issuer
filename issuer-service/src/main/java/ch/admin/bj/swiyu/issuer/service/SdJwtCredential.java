@@ -99,6 +99,10 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
+    private static String createSDJWT(List<Disclosure> disclosures, SignedJWT jwt) {
+        return new SDJWT(jwt.serialize(), disclosures).toString();
+    }
+
     /**
      * Issues one or a batch of SD-JWT credentials.
      * Batch size is determined by the number of holder public keys (if provided),
@@ -120,7 +124,7 @@ public class SdJwtCredential extends CredentialBuilder {
 
         final var override = getCredentialOffer().getConfigurationOverride();
         final var sdjwts = new ArrayList<String>(batchSize);
-
+        var vcHashes = new ArrayList<String>(batchSize);
         for (int i = 0; i < batchSize; i++) {
             final var builder = new SDObjectBuilder();
 
@@ -129,7 +133,14 @@ public class SdJwtCredential extends CredentialBuilder {
 
             addHolderBinding(holderPublicKeys, i, builder);
             addStatusReferences(statusReferences, i, builder);
-            sdjwts.add(createSignedSDJWT(override, builder, disclosures));
+            SignedJWT jwt = createSignedJWT(override, builder);
+            // Collect hashes of the VCs as way for issuer to be able to trace misused VCs
+            vcHashes.add(jwt.getSignature().toString());
+            sdjwts.add(createSDJWT(disclosures, jwt));
+        }
+        // Only save hashes
+        if (getApplicationProperties().isEnableVcHashStorage()) {
+            getCredentialOffer().setVcHashes(vcHashes);
         }
 
         return Collections.unmodifiableList(sdjwts);
@@ -233,9 +244,15 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
-    private String createSignedSDJWT(ConfigurationOverride override,
-                                     SDObjectBuilder builder,
-                                     List<Disclosure> disclosures) {
+    /**
+     * Create a SignedJWT
+     *
+     * @param override Override value for signing key
+     * @param builder  Selective Disclosure Objects (Hashes or always disclosed objects) to be included in the claims of the JWT
+     * @return JWT Signed with the key provided in the Configuration Override or by default key
+     */
+    private SignedJWT createSignedJWT(ConfigurationOverride override,
+                                      SDObjectBuilder builder) {
         try {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                     .type(new JOSEObjectType(SD_JWT_FORMAT))
@@ -244,10 +261,8 @@ public class SdJwtCredential extends CredentialBuilder {
                     .build();
             JWTClaimsSet claimsSet = JWTClaimsSet.parse(builder.build(true));
             SignedJWT jwt = new SignedJWT(header, claimsSet);
-
             jwt.sign(this.createSigner());
-
-            return new SDJWT(jwt.serialize(), disclosures).toString();
+            return jwt;
         } catch (ParseException | JOSEException e) {
             throw new CredentialException(e);
         }
