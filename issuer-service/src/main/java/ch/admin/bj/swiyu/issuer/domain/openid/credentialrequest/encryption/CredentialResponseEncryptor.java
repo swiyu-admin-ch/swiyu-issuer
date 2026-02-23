@@ -9,6 +9,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyType;
 import jakarta.annotation.Nullable;
 
+import java.util.Map;
 import java.text.ParseException;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
@@ -37,7 +38,12 @@ public class CredentialResponseEncryptor {
         }
         // No offered encryption, but requested
         else if (offeredEncryption == null) {
-            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Encryption was requested but is not offered.");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
+                    "Encryption was requested but is not offered.",
+                    Map.of(
+                            "requestedAlg", requestedEncryption.getAlg(),
+                            "requestedEnc", requestedEncryption.getEnc()
+                    ));
         }
         // Encryption optional and not requested
         else if (!offeredEncryption.isEncRequired() && requestedEncryption == null) {
@@ -45,14 +51,22 @@ public class CredentialResponseEncryptor {
         }
         // Encryption required but not requested
         else if (offeredEncryption.isEncRequired() && requestedEncryption == null) {
-            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Credential Response Encryption is mandatory.");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
+                    "Credential Response Encryption is mandatory.",
+                    Map.of("encRequired", true));
         }
         // Requested encryption method not offered
         else if (!offeredEncryption.contains(requestedEncryption)) {
             throw new Oid4vcException(
                     INVALID_ENCRYPTION_PARAMETERS,
                     String.format("Requested encryption is not offered. alg: %s , enc: %s",
-                            requestedEncryption.getAlg(), requestedEncryption.getEnc()));
+                            requestedEncryption.getAlg(), requestedEncryption.getEnc()),
+                    Map.of(
+                            "requestedAlg", requestedEncryption.getAlg(),
+                            "requestedEnc", requestedEncryption.getEnc(),
+                            "offeredAlgs", offeredEncryption.getAlgValuesSupported(),
+                            "offeredEncs", offeredEncryption.getEncValuesSupported()
+                    ));
         }
         // Encryption is to be done
         return true;
@@ -62,7 +76,12 @@ public class CredentialResponseEncryptor {
         try {
             return JWK.parse(requestedEncryption.getJwk());
         } catch (ParseException e) {
-            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Could not parse provided JWK.");
+            var jwk = requestedEncryption.getJwk();
+            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS,
+                    "Could not parse provided JWK.",
+                    Map.of(
+                            "jwkPresent", jwk != null
+                    ));
         }
     }
 
@@ -72,12 +91,18 @@ public class CredentialResponseEncryptor {
             if (keyType == KeyType.EC) {
                 return new ECDHEncrypter(key.toECKey().toECPublicKey());
             } else {
-                throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported kty " + keyType.getValue());
+                throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
+                        "Unsupported kty " + keyType.getValue(),
+                        Map.of("kty", keyType.getValue()));
             }
         } catch (JOSEException e) {
             throw new Oid4vcException(e,
                     INVALID_ENCRYPTION_PARAMETERS,
-                    "Mismatch between specified encryption algorithm, encryption & provided key - " + e.getMessage()
+                    "Mismatch between specified encryption algorithm, encryption & provided key - " + e.getMessage(),
+                    Map.of(
+                            "alg", requestedEncryption != null ? requestedEncryption.getAlg() : "null",
+                            "enc", requestedEncryption != null ? requestedEncryption.getEnc() : "null"
+                    )
             );
         }
     }
@@ -103,7 +128,11 @@ public class CredentialResponseEncryptor {
             return jwe.serialize();
         } catch (JOSEException e) {
             throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS,
-                    "Encryption was not possible with the provided parameters - " + e.getMessage()
+                    "Encryption was not possible with the provided parameters - " + e.getMessage(),
+                    Map.of(
+                            "alg", requestedEncryption != null ? requestedEncryption.getAlg() : "null",
+                            "enc", requestedEncryption != null ? requestedEncryption.getEnc() : "null"
+                    )
             );
         }
     }

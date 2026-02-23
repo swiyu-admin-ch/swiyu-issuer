@@ -93,7 +93,11 @@ public class SdJwtCredential extends CredentialBuilder {
                 throw new Oid4vcException(
                         e,
                         INVALID_PROOF,
-                        String.format("Failed expand holder binding %s to cnf", holderPublicKey.getDidJwk())
+                        "Failed to expand holder binding into cnf",
+                        Map.of(
+                                "holderKeyIndex", idx,
+                                "didJwk", holderPublicKey.getDidJwk()
+                        )
                 );
             }
         }
@@ -290,3 +294,4 @@ public class SdJwtCredential extends CredentialBuilder {
 
     }
 }
+
