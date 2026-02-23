@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachineEventResult;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
@@ -10,37 +10,30 @@ import org.springframework.statemachine.StateMachine;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class CredentialStateMachine {
     private final StateMachine<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> credentialManagementStateMachine;
     private final StateMachine<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> credentialOfferStateMachine;
 
-    @Autowired
-    public CredentialStateMachine(
-        StateMachine<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> credentialManagementStateMachine,
-        StateMachine<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> credentialOfferStateMachine
-    ) {
-        this.credentialManagementStateMachine = credentialManagementStateMachine;
-        this.credentialOfferStateMachine = credentialOfferStateMachine;
-    }
 
     /**
      * Send event to CredentialManagement state machine and update status.
      *
-     * @param entity The CredentialManagement entity
+     * @param credentialManagement The CredentialManagement entity
      * @param event The event to send
      * @return The result containing the new status and whether the state changed
      */
     public StateTransitionResult<CredentialStatusManagementType> sendEventAndUpdateStatus(
-            CredentialManagement entity,
+            CredentialManagement credentialManagement,
             CredentialStateMachineConfig.CredentialManagementEvent event) {
 
         if (event == null){
-            log.info("No transaction requested for {} in state {}", entity.getId(), entity.getCredentialManagementStatus());
-            return new StateTransitionResult<>(entity.getCredentialManagementStatus(), false);
+            log.info("No transaction requested for {} in state {}", credentialManagement.getId(), credentialManagement.getCredentialManagementStatus());
+            return new StateTransitionResult<>(credentialManagement.getCredentialManagementStatus(), false);
         }
 
-        var oldStatus = entity.getCredentialManagementStatus();
+        var oldStatus = credentialManagement.getCredentialManagementStatus();
 
         credentialManagementStateMachine.getStateMachineAccessor()
                 .doWithAllRegions(access ->
@@ -54,50 +47,50 @@ public class CredentialStateMachine {
                         ).block()
                 );
 
-        StateMachineEventResult<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> success = credentialManagementStateMachine
+        StateMachineEventResult<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> stateMachineResult = credentialManagementStateMachine
                 .sendEvent(
                         Mono.just(
                                 MessageBuilder
                                         .withPayload(event)
-                                        .setHeader("credentialId", entity.getId())
+                                        .setHeader("credentialId", credentialManagement.getId())
                                         .setHeader("oldStatus", oldStatus)
-                                        .setHeader(CredentialStateMachineConfig.CREDENTIAL_MANAGEMENT_HEADER, entity)
+                                        .setHeader(CredentialStateMachineConfig.CREDENTIAL_MANAGEMENT_HEADER, credentialManagement)
                                         .build()
                         )
                 )
                 .blockLast();
 
-        assert success != null;
-        if (success.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
+        assert stateMachineResult != null;
+        if (stateMachineResult.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
             var newStatus = credentialManagementStateMachine.getState().getId();
-            entity.setCredentialManagementStatus(newStatus);
+            credentialManagement.setCredentialManagementStatus(newStatus);
             boolean stateChanged = oldStatus != newStatus;
             log.info("Transaction accepted for: {}. New state = {} (changed: {})",
-                    success.getMessage(), newStatus, stateChanged);
+                    stateMachineResult.getMessage(), newStatus, stateChanged);
             return new StateTransitionResult<>(newStatus, stateChanged);
         } else {
-            log.error("Transaction failed for: {}.", success.getMessage());
-            throw new IllegalStateException("Transition failed for " + success.getMessage());
+            log.error("Transaction failed for: {}.", stateMachineResult.getMessage());
+            throw new IllegalStateException("Transition failed for " + stateMachineResult.getMessage());
         }
     }
 
     /**
      * Send event to CredentialOffer state machine and update status.
      *
-     * @param entity The CredentialOffer entity
+     * @param credentialOffer The CredentialOffer entity
      * @param event The event to send
      * @return The result containing the new status and whether the state changed
      */
     public StateTransitionResult<CredentialOfferStatusType> sendEventAndUpdateStatus(
-            CredentialOffer entity,
+            CredentialOffer credentialOffer,
             CredentialStateMachineConfig.CredentialOfferEvent event) {
 
         if (event == null){
-            log.info("No transaction requested for {} in state {}", entity.getId(), entity.getCredentialStatus());
-            return new StateTransitionResult<>(entity.getCredentialStatus(), false);
+            log.info("No transaction requested for {} in state {}", credentialOffer.getId(), credentialOffer.getCredentialStatus());
+            return new StateTransitionResult<>(credentialOffer.getCredentialStatus(), false);
         }
 
-        var oldStatus = entity.getCredentialStatus();
+        var oldStatus = credentialOffer.getCredentialStatus();
 
         credentialOfferStateMachine.getStateMachineAccessor()
                 .doWithAllRegions(access ->
@@ -111,30 +104,30 @@ public class CredentialStateMachine {
                         ).block()
                 );
 
-        StateMachineEventResult<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> success = credentialOfferStateMachine
+        StateMachineEventResult<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> stateMachineResult = credentialOfferStateMachine
                 .sendEvent(
                         Mono.just(
                                 MessageBuilder
                                         .withPayload(event)
-                                        .setHeader("credentialId", entity.getId())
+                                        .setHeader("credentialId", credentialOffer.getId())
                                         .setHeader("oldStatus", oldStatus)
-                                        .setHeader(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER, entity)
+                                        .setHeader(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER, credentialOffer)
                                         .build()
                         )
                 )
                 .blockLast();
 
-        assert success != null;
-        if (success.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
+        assert stateMachineResult != null;
+        if (stateMachineResult.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
             var newStatus = credentialOfferStateMachine.getState().getId();
-            entity.setCredentialOfferStatus(newStatus);
+            credentialOffer.setCredentialOfferStatus(newStatus);
             boolean stateChanged = oldStatus != newStatus;
             log.info("Transaction accepted for: {}. New state = {} (changed: {})",
-                    success.getMessage(), newStatus, stateChanged);
+                    stateMachineResult.getMessage(), newStatus, stateChanged);
             return new StateTransitionResult<>(newStatus, stateChanged);
         } else {
-            log.error("Transaction failed for: {}.", success.getMessage());
-            throw new IllegalStateException("Transition failed for " + success.getMessage());
+            log.error("Transaction failed for: {}.", stateMachineResult.getMessage());
+            throw new IllegalStateException("Transition failed for " + stateMachineResult.getMessage());
         }
     }
 

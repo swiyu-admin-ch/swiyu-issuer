@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig.CredentialManagementEvent;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper;
@@ -148,18 +149,11 @@ public class CredentialManagementService {
 
         var managementEvent = toCredentialManagementEvent(requestedNewStatus);
         var offerEvent = toCredentialOfferEvent(requestedNewStatus);
-
-        var credentialOfferForUpdate = mgmt.getCredentialOffers().stream()
-                .findFirst()
-                .orElseThrow(() -> new BadRequestException("Credential offer is not processable"));
-
-        if (mgmt.isPreIssuanceProcess()) {
-            return stateService.handleStatusChangeForPreIssuanceProcess(
-                    mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
+        if (managementEvent == CredentialManagementEvent.ISSUE && !mgmt.getCredentialManagementStatus().isIssued()) {
+            throw new IllegalStateException("Issuance process may not be skipped");
         }
-
-        return stateService.handleStatusChangeForPostIssuanceProcess(
-                mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
+        return stateService.handleStatusChange(
+                mgmt, managementEvent, offerEvent);
     }
 
     /**
