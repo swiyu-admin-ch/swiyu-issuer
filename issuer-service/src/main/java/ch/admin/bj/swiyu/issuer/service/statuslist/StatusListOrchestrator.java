@@ -1,18 +1,18 @@
 package ch.admin.bj.swiyu.issuer.service.statuslist;
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
-import com.nimbusds.jwt.SignedJWT;
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,8 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.mergeConfigurationOverride;
 import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toConfigurationOverride;
 import static ch.admin.bj.swiyu.issuer.service.statuslist.StatusListMapper.toStatusListDto;
 
@@ -65,11 +68,10 @@ import static ch.admin.bj.swiyu.issuer.service.statuslist.StatusListMapper.toSta
 public class StatusListOrchestrator {
 
     private static final String BITS_FIELD_NAME = "bits";
-    private final ApplicationProperties applicationProperties;
     private final StatusListProperties statusListProperties;
 
     private final StatusRegistryClient statusRegistryClient;
-    private final StatusListSigningService signingService;
+    private final StatusListPersistenceService statusListPersistenceService;
 
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
@@ -132,37 +134,56 @@ public class StatusListOrchestrator {
      * <p>The method enforces that automatic status list synchronization is enabled by default in the
      * application configuration.</p>
      *
+     * <p>If {@code overrideDto} is provided, it is merged into the existing stored configuration override
+     * (non-null fields take precedence) and then persisted on the status list. From that point onward,
+     * subsequent status list publications will use the updated override (e.g., for key material selection).</p>
+     *
      * @param statusListId the UUID of the status list to update
+     * @param overrideDto  optional configuration override to be stored on the status list
      * @return a {@link StatusListDto} representing the updated status list
      * @throws BadRequestException       if automatic status list synchronization is not disabled
      * @throws ResourceNotFoundException if no status list with the given id exists
      * @throws ConfigurationException    if the status payload cannot be loaded/decoded
      */
     @Transactional
-    public StatusListDto updateStatusList(UUID statusListId) {
-        if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
-            throw new BadRequestException("Automatic status list synchronization is not disabled");
-        }
+    public StatusListDto updateStatusList(UUID statusListId, @Nullable ConfigurationOverrideDto overrideDto) {
 
         StatusList statusList = statusListRepository.findByIdForUpdate(statusListId).orElseThrow(
                 () -> new ResourceNotFoundException(String.format("Status list %s not found", statusListId)));
 
-        TokenStatusListToken token;
-        try {
-            token = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get(BITS_FIELD_NAME),
-                    statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
-        } catch (IOException e) {
-            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
-        }
+        TokenStatusListToken token = loadTokenStatusListToken(statusList);
         statusList.setStatusZipped(token.getStatusListData());
 
-        publishToRegistry(statusList, token);
+        mergeAndPersistConfigurationOverrideIfPresent(overrideDto, statusList);
+
+        statusListPersistenceService.publishToRegistry(statusList, token);
 
         return toStatusListDto(statusList,
                 statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusList.getId()),
                 statusListProperties.getVersion());
     }
 
+    private void mergeAndPersistConfigurationOverrideIfPresent(@Nullable ConfigurationOverrideDto overrideDto, StatusList statusList) {
+        if (overrideDto != null) {
+            var mergedOverride = mergeConfigurationOverride(statusList.getConfigurationOverride(),
+                    toConfigurationOverride(overrideDto));
+            statusList.setConfigurationOverride(mergedOverride);
+            // Persist local changes (status + optional override) before publishing.
+            statusListRepository.save(statusList);
+        }
+    }
+
+    private TokenStatusListToken loadTokenStatusListToken(StatusList statusList) {
+        try {
+            return TokenStatusListToken.loadTokenStatusListToken(
+                    (Integer) statusList.getConfig().get(BITS_FIELD_NAME),
+                    statusList.getStatusZipped(),
+                    statusListProperties.getStatusListSizeLimit()
+            );
+        } catch (IOException e) {
+            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
+        }
+    }
 
     /**
      * Loads status lists by URI.
@@ -212,7 +233,8 @@ public class StatusListOrchestrator {
                 .configurationOverride(toConfigurationOverride(statusListCreateDto.getConfigurationOverride()))
                 .build();
         log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits() * statusList.getMaxLength());
-        publishToRegistry(statusList, token);
+
+        statusListPersistenceService.publishToRegistry(statusList, token);
         return statusList;
     }
 
@@ -228,8 +250,4 @@ public class StatusListOrchestrator {
         return statusRegistryClient.createStatusListEntry();
     }
 
-    private void publishToRegistry(StatusList statusListEntity, TokenStatusListToken token) {
-        SignedJWT jwt = signingService.buildSignedStatusListJwt(statusListEntity, token);
-        statusRegistryClient.updateStatusListEntry(statusListEntity, jwt.serialize());
-    }
 }
