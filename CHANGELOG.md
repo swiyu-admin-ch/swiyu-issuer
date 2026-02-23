@@ -31,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - stale callbacks
     - Registry token getting refreshed
     - Status List availability
+- Swiss Profile versioning support for future version detection via `profile_version`.
+    - Issuer metadata includes `profile_version` in unsigned JSON body and in signed JWT header.
+    - SD-JWT VC includes `profile_version` in JWT header.
+    - Status list tokens include `profile_version` in JWT header.
+    - New environment variable `APPLICATION_SWISS_PROFILE_VERSIONING_ENFORCEMENT` (default: false) to optionally enforce `profile_version` checks for incoming JWT-based artifacts (e.g. DPoP and key attestations).
 
 ### Fixed
 

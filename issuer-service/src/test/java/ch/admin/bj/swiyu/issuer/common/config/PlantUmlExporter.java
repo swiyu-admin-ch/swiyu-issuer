@@ -4,6 +4,10 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.state.State;
 import org.springframework.statemachine.transition.Transition;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Utility to export a Spring StateMachine to PlantUML format.
  *
@@ -34,10 +38,16 @@ public class PlantUmlExporter<S, E> {
      * @param stateMachine the state machine
      */
     private void appendStates(StringBuilder sb, StateMachine<S, E> stateMachine) {
+        List<String> states = new ArrayList<>();
         for (State<S, E> state : stateMachine.getStates()) {
             // Do not output INIT as a separate state
             if ("INIT".equals(String.valueOf(state.getId()))) continue;
-            sb.append("state ").append(state.getId()).append('\n');
+            states.add(String.valueOf(state.getId()));
+        }
+        // Sort the States for deterministic Output
+        Collections.sort(states);
+        for (String state : states) {
+            sb.append("state ").append(state).append("\n");
         }
     }
 

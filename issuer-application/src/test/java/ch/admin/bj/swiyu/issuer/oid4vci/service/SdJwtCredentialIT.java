@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
@@ -78,6 +79,7 @@ class SdJwtCredentialIT {
         // jwt headers
         assertEquals("vc+sd-jwt", JsonPath.read(header, "$.typ"));
         assertEquals("1.0", JsonPath.read(header, "$.ver"));
+        assertEquals(SwissProfileVersions.VC_PROFILE_VERSION, JsonPath.read(header, "$.profile_version"));
 
         // jwt payload - required fields iss-vct-iat
         assertEquals(applicationProperties.getIssuerId(), JsonPath.read(payload, "$.iss"));

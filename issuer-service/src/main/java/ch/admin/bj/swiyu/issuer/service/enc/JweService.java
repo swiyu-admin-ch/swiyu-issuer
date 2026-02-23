@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.service.enc;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.CacheConfig;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
@@ -47,6 +48,7 @@ public class JweService {
                 .encRequired(applicationProperties.isEncryptionEnforce())
                 .build();
         issuerMetadata.setRequestEncryption(requestEncryption);
+        issuerMetadata.setProfileVersion(SwissProfileVersions.ISSUANCE_PROFILE_VERSION);
         issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder()
                 .encRequired(applicationProperties.isEncryptionEnforce())
                 .build());

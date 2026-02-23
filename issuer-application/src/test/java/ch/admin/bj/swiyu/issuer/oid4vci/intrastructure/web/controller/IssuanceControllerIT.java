@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -174,6 +175,7 @@ class IssuanceControllerIT {
         assertEquals("ES256", headers.getAlgorithm().getName());
         assertEquals("openidvci-issuer-metadata+jwt", headers.getType().getType());
         assertEquals(sdjwtProperties.getVerificationMethod(), headers.getKeyID());
+        assertEquals(SwissProfileVersions.ISSUANCE_PROFILE_VERSION, headers.getCustomParam(SwissProfileVersions.PROFILE_VERSION_PARAM));
 
         /*
          * sub: Must be the credential issuer identifier (generally external url)
@@ -652,3 +654,4 @@ class IssuanceControllerIT {
         return new SelfContainedNonce(nonceDto.nonce());
     }
 }
+

@@ -118,6 +118,12 @@ public class ApplicationProperties {
     private boolean dataIntegrityEnforced;
     private boolean signedMetadataEnabled;
 
+    /**
+     * If set to true, Swiss Profile version indications (profile_version) will be enforced where applicable.
+     * Default is false to allow a transitional period.
+     */
+    private boolean swissProfileVersioningEnforcement = false;
+
     @PostConstruct
     public void init() {
         try {

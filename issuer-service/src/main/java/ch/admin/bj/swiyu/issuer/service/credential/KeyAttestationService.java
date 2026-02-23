@@ -52,7 +52,7 @@ public class KeyAttestationService {
         }
 
         try {
-            AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt);
+            AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt, applicationProperties.isSwissProfileVersioningEnforcement());
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
 
             // If trusted Attestation Services is empty, all attestation services are trusted for ease of trying out things.

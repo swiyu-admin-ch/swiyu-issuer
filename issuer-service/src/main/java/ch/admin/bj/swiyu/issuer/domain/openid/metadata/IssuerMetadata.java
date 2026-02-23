@@ -103,6 +103,10 @@ public class IssuerMetadata {
     @Schema(description = "Array of objects, where each object contains display properties of a Credential Issuer for a certain language")
     private List<MetadataIssuerDisplayInfo> display;
 
+    @JsonProperty("profile_version")
+    @Nullable
+    private String profileVersion;
+
     public @NotNull CredentialConfiguration getCredentialConfigurationById(String credentialConfigurationSupportedId) {
         CredentialConfiguration credentialConfiguration = credentialConfigurationSupported.get(credentialConfigurationSupportedId);
 
