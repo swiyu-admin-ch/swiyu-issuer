@@ -101,10 +101,12 @@ public final class AttestationJwt {
     }
 
     /**
-     * @param header The JWSHeader to be checked for Attestation JWT Required attributes
-     * @throws IllegalArgumentException if one of the checks fails
+     * Validates the JWT header for required Swiss Profile parameters.
+     *
+     * @param header the JWT header
+     * @param enforceSwissProfileVersioning whether to enforce Swiss Profile versioning
      */
-    private static void validateHeader(JWSHeader header, boolean enforceSwissProfileVersioning) throws IllegalArgumentException {
+    static void validateHeader(JWSHeader header, boolean enforceSwissProfileVersioning) {
 
         validateType(header);
 
