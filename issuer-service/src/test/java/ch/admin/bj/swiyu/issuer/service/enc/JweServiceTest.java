@@ -7,8 +7,9 @@ import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKey;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKeyRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.ECDHEncrypter;
+import ch.admin.bj.swiyu.jweutil.JweUtil;
+import com.nimbusds.jose.Algorithm;
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
@@ -75,7 +76,7 @@ class JweServiceTest {
         var activeKey = jwks.getKeys().getFirst();
 
         String plaintext = "Hello World";
-        String encrypted = assertDoesNotThrow(() -> createEncryptedMessage(plaintext, activeKey));
+        String encrypted = createEncryptedMessage(plaintext, activeKey);
         String decrypted = assertDoesNotThrow(() -> jweService.decrypt(encrypted));
         assertEquals(plaintext, decrypted);
     }
@@ -110,16 +111,7 @@ class JweServiceTest {
                 .thenReturn(encryptionKeyTestCache);
     }
 
-    private String createEncryptedMessage(String message, JWK key) throws JOSEException {
-        ECDHEncrypter encrypter = new ECDHEncrypter(key.toECKey());
-        JWEObject jweObject = new JWEObject(
-                new JWEHeader.Builder(JWEAlgorithm.ECDH_ES, EncryptionMethod.A128GCM)
-                        .compressionAlgorithm(CompressionAlgorithm.DEF)
-                        .keyID(key.getKeyID())
-                        .build(),
-                new Payload(message)
-        );
-        jweObject.encrypt(encrypter);
-        return jweObject.serialize();
+    private String createEncryptedMessage(String message, JWK key) {
+        return JweUtil.encrypt(message, key);
     }
 }

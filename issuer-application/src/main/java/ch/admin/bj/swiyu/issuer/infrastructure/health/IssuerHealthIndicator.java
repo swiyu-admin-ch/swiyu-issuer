@@ -24,7 +24,12 @@ public class IssuerHealthIndicator implements HealthIndicator {
     private final StatusListSigningKeyVerificationHealthChecker statusListSigningKeyVerificationHealthChecker;
     /** Cached SD-JWT signing key verification checks. */
     private final SdJwtSigningKeyVerificationHealthChecker sdJwtSigningKeyVerificationHealthChecker;
-
+    /** Cached stale callback event checks. */
+    private final CallbackHealthChecker callbackHealthChecker;
+    /** Cached check if the token was refreshed */
+    private final RegistryTokenHealthCheck registryTokenHealthCheck;
+    /** Cached check if registry is accessible */
+    private final StatusListAvailabilityHealthChecker registryHealthCheck;
 
     /**
      * Builds an aggregate {@link Health} from the latest cached results of the injected checkers.
@@ -38,7 +43,10 @@ public class IssuerHealthIndicator implements HealthIndicator {
                 "statusRegistryIssuer", statusRegistryIssuer.getHealthResult(),
                 "identifierRegistry", identifierRegistry.getHealthResult(),
                 "statusListSigningKey", statusListSigningKeyVerificationHealthChecker.getHealthResult(),
-                "sdJwtSigningKey", sdJwtSigningKeyVerificationHealthChecker.getHealthResult()
+                "sdJwtSigningKey", sdJwtSigningKeyVerificationHealthChecker.getHealthResult(),
+                "staleCallbacks", callbackHealthChecker.getHealthResult(),
+                "registryToken", registryTokenHealthCheck.getHealthResult(),
+                "statusListAvailability", registryHealthCheck.getHealthResult()
         );
 
         checks.forEach((name, health) -> {

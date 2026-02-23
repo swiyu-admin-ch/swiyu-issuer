@@ -1,25 +1,25 @@
 package ch.admin.bj.swiyu.issuer.service.dpop;
 
+import ch.admin.bj.swiyu.dpop.DpopConstants;
+import ch.admin.bj.swiyu.dpop.DpopHashUtil;
+import ch.admin.bj.swiyu.dpop.DpopJwtValidator;
+import ch.admin.bj.swiyu.dpop.DpopValidationException;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpRequest;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
-import java.time.Instant;
-import java.util.List;
+import java.time.Clock;
 import java.util.Map;
 
 /**
@@ -30,7 +30,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DemonstratingProofOfPossessionValidationService {
 
-    public static final String DPOP_JWT_HEADER_TYP = "dpop+jwt";
     private final ApplicationProperties applicationProperties;
     private final NonceService nonceService;
 
@@ -67,7 +66,7 @@ public class DemonstratingProofOfPossessionValidationService {
             // https://datatracker.ietf.org/doc/html/rfc9449#section-4.3
             // 12 - If presented to a protected resource in conjunction with an access token,
             // * ensure that the value of the ath claim equals the hash of that access token, and
-            DemonstratingProofOfPossessionUtils.validateAccessTokenHash(accessToken, dpopJwt.getJWTClaimsSet().getStringClaim("ath"));
+            DpopHashUtil.validateAccessTokenHash(accessToken, dpopJwt.getJWTClaimsSet().getStringClaim("ath"));
             // * confirm that the public key to which the access token is bound matches the public key from the DPoP proof.
             validateBoundPublicKey(dpopJwt, boundPublicKey);
         } catch (ParseException e) {
@@ -91,85 +90,34 @@ public class DemonstratingProofOfPossessionValidationService {
             // 3 - All required claims per Section 4.2 are contained in the JWT.
             var header = dpopJwt.getHeader();
             var jwtClaims = dpopJwt.getJWTClaimsSet();
-            containsAllMandatoryDpopClaims(header, jwtClaims);
+            DpopJwtValidator.validateMandatoryClaims(header, jwtClaims);
             // 4 - The typ JOSE Header Parameter has the value dpop+jwt.
-            hasDpopType(header);
+            DpopJwtValidator.validateTyp(header);
             // 5 - The alg JOSE Header Parameter indicates a registered asymmetric digital signature algorithm [IANA.JOSE.ALGS],
             // is not none, is supported by the application, and is acceptable per local policy.
-            matchesSupportedAlgorithms(header);
+            DpopJwtValidator.validateAlgorithm(header, DpopConstants.SUPPORTED_ALGORITHMS);
             // 6 - The JWT signature verifies with the public key contained in the jwk JOSE Header Parameter.
             var key = header.getJWK();
-            hasValidSignature(dpopJwt, key);
+            DpopJwtValidator.validateSignature(dpopJwt, key);
             // 7 - The jwk JOSE Header Parameter does not contain a private key.
-            if (key.isPrivate()) {
-                throw new DemonstratingProofOfPossessionException("Key provided in DPoP MUST NOT be private!", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-            }
-
+            DpopJwtValidator.validatePublicKeyNotPrivate(key);
             // 8 - The htm claim matches the HTTP method of the current request
-            hasMatchingHttpMethod(request, jwtClaims);
+            DpopJwtValidator.validateHtm(request.getMethod().name(), jwtClaims);
             // 9 - The htu claim matches the HTTP URI value for the HTTP request in which the JWT was received, ignoring any query and fragment parts.
-            hasMatchingHttpUri(request, jwtClaims);
-
+            DpopJwtValidator.validateHtu(request.getURI(), jwtClaims.getStringClaim("htu"),
+                    new URI(applicationProperties.getExternalUrl()));
             // 10 - If the server provided a nonce value to the client, the nonce claim matches the server-provided nonce value.
             // Note: We always expect a nonce to be contained in every case
             // 11 - The creation time of the JWT, as determined by either the iat claim or a server managed timestamp via the nonce claim, is within an acceptable window (see Section 11.1).
             // Note: While we achieve this by the fact that our self-contained nonces already contain this time window
-            hasValidCreationTime(jwtClaims);
+            DpopJwtValidator.validateIssuedAt(jwtClaims, applicationProperties.getAcceptableProofTimeWindowSeconds(), Clock.systemUTC());
             hasValidSelfContainedNonce(jwtClaims);
             // Step 12 is not done in every case
-
             return dpopJwt;
         } catch (ParseException | JOSEException | URISyntaxException | NullPointerException e) {
             throw new DemonstratingProofOfPossessionException("Malformed DPoP", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF, e);
-        }
-    }
-
-    private void hasValidCreationTime(JWTClaimsSet jwtClaims) {
-        int acceptableProofTimeWindowSeconds = applicationProperties.getAcceptableProofTimeWindowSeconds();
-        var upperBound = Instant.now().plusSeconds(acceptableProofTimeWindowSeconds);
-        var lowerBound = Instant.now().minusSeconds(acceptableProofTimeWindowSeconds);
-        var dpopIssuedAt = jwtClaims.getIssueTime().toInstant();
-        if (dpopIssuedAt.isBefore(lowerBound) || dpopIssuedAt.isAfter(upperBound)) {
-            throw new DemonstratingProofOfPossessionException("Issue time is not in an acceptable window; +/-%s".formatted(acceptableProofTimeWindowSeconds), DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void containsAllMandatoryDpopClaims(JWSHeader header, JWTClaimsSet jwtClaims) {
-        var mandatoryDpopHeaderClaims = List.of("typ", "alg", "jwk");
-        if (!header.toJSONObject().keySet().containsAll(mandatoryDpopHeaderClaims)) {
-            throw new DemonstratingProofOfPossessionException("Missing mandatory JWS header claims", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-        // Note: ath will be not always be relevant
-        var mandatoryDpopPayloadClaims = List.of("jti", "htm", "htu", "iat", "nonce");
-        if (!jwtClaims.getClaims().keySet().containsAll(mandatoryDpopPayloadClaims)) {
-            throw new DemonstratingProofOfPossessionException("Missing mandatory JWT payload claims", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void hasMatchingHttpMethod(HttpRequest request, JWTClaimsSet jwtClaims) throws ParseException {
-        if (!StringUtils.equalsIgnoreCase(request.getMethod().name(), jwtClaims.getStringClaim("htm"))) {
-            throw new DemonstratingProofOfPossessionException("HTTP method mismatch between DPoP and request", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void hasValidSignature(SignedJWT dpopJwt, JWK key) throws JOSEException {
-        if (!dpopJwt.verify(new ECDSAVerifier(key.toECKey()))) {
-            throw new DemonstratingProofOfPossessionException("DPoP signature is invalid", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void hasDpopType(JWSHeader header) {
-        if (!DPOP_JWT_HEADER_TYP.equals(header.getType().toString())) {
-            throw new DemonstratingProofOfPossessionException("DPoP typ MUST be %s".formatted(DPOP_JWT_HEADER_TYP), DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    private void matchesSupportedAlgorithms(JWSHeader header) {
-        var supportedAlgorithms = DemonstratingProofOfPossessionUtils.getSupportedAlgorithms();
-        if (!supportedAlgorithms.contains(header.getAlgorithm().getName())) {
-            throw new DemonstratingProofOfPossessionException("DPoP alg MUST be one of %s".formatted(
-                    String.join(",", supportedAlgorithms)),
-                    DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
+        } catch (DpopValidationException e) {
+            throw new DemonstratingProofOfPossessionException(e.getMessage(), DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF, e);
         }
     }
 
@@ -181,28 +129,5 @@ public class DemonstratingProofOfPossessionValidationService {
             throw new DemonstratingProofOfPossessionException("Must use valid server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
         }
     }
-
-    private void hasMatchingHttpUri(HttpRequest request, JWTClaimsSet jwtClaims) throws URISyntaxException, ParseException {
-        if (checkHtuClaim(request.getURI(), jwtClaims.getStringClaim("htu"))) {
-            throw new DemonstratingProofOfPossessionException("URL mismatch between DPoP and request", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
-        }
-    }
-
-    /**
-     * Check if the wallet created the DPoP of the URI we received the request on
-     */
-    private boolean checkHtuClaim(URI requestUri, String htu) throws URISyntaxException {
-        // Create new URI without Query & Fragment, taking in account the external URI
-        var externalUri = new URI(applicationProperties.getExternalUrl());
-        var baseUri = new URI(requestUri.getScheme(),
-                requestUri.getUserInfo(),
-                externalUri.getHost(),
-                externalUri.getPort(),
-                requestUri.getPath(),
-                null, null).normalize();
-        var htuUri = new URI(htu).normalize();
-        return !baseUri.equals(htuUri);
-    }
-
 
 }

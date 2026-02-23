@@ -24,7 +24,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.*;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 import static java.util.Objects.nonNull;
 
@@ -101,7 +101,8 @@ public class SdJwtCredential extends CredentialBuilder {
 
     /**
      * Issues one or a batch of SD-JWT credentials.
-     * Batch size as defined in issuer metadata.
+     * Batch size is determined by the number of holder public keys (if provided),
+     * otherwise by the issuer metadata configuration.
      * Validates alignment of holder keys and status references before issuing.
      *
      * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
@@ -110,26 +111,40 @@ public class SdJwtCredential extends CredentialBuilder {
     @Override
     public List<String> getCredential(@Nullable List<DidJwk> holderPublicKeys) {
         var statusReferences = getStatusReferences();
-        var batchSize = getIssuerMetadata().getIssuanceBatchSize();
+        var batchSize = calculateBatchSize(holderPublicKeys);
+
         if (!getStatusFactory().isCompatibleStatusReferencesToBatchSize(statusReferences, batchSize)) {
             throw new IllegalStateException(
                     "Batch size and status references do not match anymore. Cannot issue credential");
         }
 
-        var override = getCredentialOffer().getConfigurationOverride();
+        final var override = getCredentialOffer().getConfigurationOverride();
+        final var sdjwts = new ArrayList<String>(batchSize);
 
-        var sdjwts = new ArrayList<String>(batchSize);
         for (int i = 0; i < batchSize; i++) {
-            SDObjectBuilder builder = new SDObjectBuilder();
+            final var builder = new SDObjectBuilder();
 
             addTechnicalData(builder, override);
-            List<Disclosure> disclosures = prepareDisclosures(builder);
+            final var disclosures = prepareDisclosures(builder);
 
             addHolderBinding(holderPublicKeys, i, builder);
             addStatusReferences(statusReferences, i, builder);
             sdjwts.add(createSignedSDJWT(override, builder, disclosures));
         }
+
         return Collections.unmodifiableList(sdjwts);
+    }
+
+    /**
+     * Calculate batch size by the number of proofs provided by the holder or batch size defined in issuer metadata
+     *
+     * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
+     * @return batch size to issue
+     */
+    private int calculateBatchSize(@Nullable List<DidJwk> holderPublicKeys) {
+        return holderPublicKeys != null && !holderPublicKeys.isEmpty()
+                ? holderPublicKeys.size()
+                : getIssuerMetadata().getIssuanceBatchSize();
     }
 
     @Override

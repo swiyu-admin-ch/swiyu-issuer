@@ -19,10 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Send callback on every credential offer status change.
 - Send callback on every credential management status change.
 - Added field `event_trigger` to callback request
-  - Field is set to `CREDENTIAL_MANAGEMENT` on credential management status change.
-  - Field is set to `CREDENTIAL_OFFER` on credential offer status change.
+    - Field is set to `CREDENTIAL_MANAGEMENT` on credential management status change.
+    - Field is set to `CREDENTIAL_OFFER` on credential offer status change.
 - Allow setting the used Database Schema with environment variable `POSTGRES_DB_SCHEMA`. Default remains public as
   before.
+- Updated Batch Issuance logic:
+    - Min batch size must be 10 in metadata to improve privacy
+    - If wallet sends fewer proofs than requested, the issuer will return a vc for every proof provided and will not
+      throw an error.
+- Added health checks for:
+    - stale callbacks
+    - Registry token getting refreshed
+    - Status List availability
 
 ### Fixed
 
@@ -31,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed credential request errors ISSUANCE_PENDING to be aligned with the spec.
 - Fixed signed metadata using always the first key used, even when keys were rotated by issuers during renewals.- Deferred credential response when credential data is not ready is now 202 ACCEPTED
 - Deferred credential transaction_id will not change anymore during deferred flow
+- Added `deferred_credential_endpoint` and `batch_credential_issuance` with min batch size of 10 to sample.compose.yml
 
 ## 2.3.1
 
