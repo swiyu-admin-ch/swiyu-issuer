@@ -4,23 +4,16 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-<<<<<<< bugfix/EIDOMNI-718-prohibit-renewal-of-suspended-vcs
-=======
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
->>>>>>> main
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
-
 import com.authlete.sd.SDJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
@@ -31,7 +24,6 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -172,27 +164,27 @@ class RenewalFlowIT {
 
         // issue batches of VCs
         var credentials = new LinkedList<JWTClaimsSet>();
-        for (var i = 0 ; i < RENEWAL_FLOWS ; i++) {
-                var credentialRequestString = createCredentialRequestStringWithNewKeys();
-                var credentialResponseString = requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
-                        .andExpect(status().isOk())
-                        .andExpect(content().contentType("application/json"))
-                        .andReturn()
-                        .getResponse()
-                        .getContentAsString();
-                var credentialResponse = assertDoesNotThrow(() -> objectMapper.readValue(credentialResponseString, CredentialEndpointResponseDtoV2.class));
-                var credentialClaims = credentialResponse.credentials().stream()
-                        .map(this::getCredentialClaimsSet)
-                        .toList();
-                var statusIndexes = credentialClaims.stream()
-                        .map(this::getStatusIndex)
-                        .collect(Collectors.toSet());
-                assertThat(statusIndexes).hasSameSizeAs(credentialClaims);
-                credentials.addAll(credentialClaims);
+        for (var i = 0; i < RENEWAL_FLOWS; i++) {
+            var credentialRequestString = createCredentialRequestStringWithNewKeys();
+            var credentialResponseString = requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType("application/json"))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            var credentialResponse = assertDoesNotThrow(() -> objectMapper.readValue(credentialResponseString, CredentialEndpointResponseDtoV2.class));
+            var credentialClaims = credentialResponse.credentials().stream()
+                    .map(this::getCredentialClaimsSet)
+                    .toList();
+            var statusIndexes = credentialClaims.stream()
+                    .map(this::getStatusIndex)
+                    .collect(Collectors.toSet());
+            assertThat(statusIndexes).hasSameSizeAs(credentialClaims);
+            credentials.addAll(credentialClaims);
         }
         assertThat(credentials)
                 .as("Should have gotten issued the full batch of VCs for each renewal flow run")
-                .hasSize(RENEWAL_FLOWS*issuerMetadata.getIssuanceBatchSize());
+                .hasSize(RENEWAL_FLOWS * issuerMetadata.getIssuanceBatchSize());
         var allStatusIndexes = credentials.stream()
                 .map(this::getStatusIndex)
                 .collect(Collectors.toSet());
@@ -394,24 +386,24 @@ class RenewalFlowIT {
         return objectMapper.readValue(tokenResult.getResponse().getContentAsString(), OAuthTokenDto.class);
     }
 
-     private String createCredentialRequestStringWithNewKeys() throws Exception {
+    private String createCredentialRequestStringWithNewKeys() throws Exception {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
-        .boxed()
-        .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
-        .toList();
+                .boxed()
+                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                .toList();
         var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
         return credentialRequestString;
     }
 
     private JWTClaimsSet getCredentialClaimsSet(CredentialObjectDtoV2 issuedCredential) {
         var sdjwt = SDJWT.parse(issuedCredential.credential());
-         var jwt = assertDoesNotThrow(() -> SignedJWT.parse(sdjwt.getCredentialJwt()));
-        return assertDoesNotThrow(() ->  jwt.getJWTClaimsSet());
+        var jwt = assertDoesNotThrow(() -> SignedJWT.parse(sdjwt.getCredentialJwt()));
+        return assertDoesNotThrow(() -> jwt.getJWTClaimsSet());
     }
 
     private long getStatusIndex(JWTClaimsSet credentialClaimSet) {
         Map<String, Map<String, Object>> tokenStatusListMap = (Map<String, Map<String, Object>>) credentialClaimSet.getClaim("status");
         return (long) tokenStatusListMap.get("status_list").get("idx");
-        
+
     }
 }
