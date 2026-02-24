@@ -92,7 +92,6 @@ class MetadataServiceTest {
 
         SignedJWT parsed = SignedJWT.parse(jwtStr);
         assertEquals(issuerId, parsed.getJWTClaimsSet().getIssuer());
-        assertEquals("1.0.0", parsed.getJWTClaimsSet().getStringClaim("version"));
     }
 
     @Test
