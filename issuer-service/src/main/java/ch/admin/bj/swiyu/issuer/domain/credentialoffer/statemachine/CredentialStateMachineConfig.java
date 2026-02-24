@@ -1,6 +1,9 @@
-package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
+package ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine;
 
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,41 +25,28 @@ import java.util.EnumSet;
 @RequiredArgsConstructor
 @Slf4j
 public class CredentialStateMachineConfig {
-    private static final String INVALIDATE_OFFER_DATA = "invalidateOfferData()";
     public static final String CREDENTIAL_OFFER_HEADER = "credential_offer";
     public static final String CREDENTIAL_MANAGEMENT_HEADER = "credential_management";
-
-    private final CredentialStateMachineAction actions;
-
-    /**
-     * Events for credential management state machine.
-     */
-    public enum CredentialManagementEvent {
-        ISSUE,
-        SUSPEND,
-        REVOKE
-    }
+    private final EventProducerAction eventActions;
+    private final CredentialOfferAction offerActions;
+    private final CredentialManagementAction managementActions;
 
     /**
-     * Events for credential offer state machine.
+     * Guard to allow READY transition only for deferred offers.
+     *
+     * @return Guard for deferred offers
      */
-    @Getter
-    public enum CredentialOfferEvent {
-        CREATED("Created at start"),
-        OFFER("Offer"),
-        CLAIM("Claim"),
-        DEFER("Defer"),
-        READY("Ready"),
-        ISSUE("Issue"),
-        EXPIRE("Expire"),
-        CANCEL("Cancel"),
-        REQUEST("Request");
-
-        private final String displayName;
-
-        CredentialOfferEvent(String displayName) {
-            this.displayName = displayName;
-        }
+    private static Guard<CredentialOfferStatusType, CredentialOfferEvent> deferredOfferOnlyGuard() {
+        return context -> {
+            Message<CredentialOfferEvent> message = context.getMessage();
+            if (message != null && message.getHeaders().containsKey(CREDENTIAL_OFFER_HEADER)) {
+                Object offerObj = message.getHeaders().get(CREDENTIAL_OFFER_HEADER);
+                if (offerObj instanceof CredentialOffer offer) {
+                    return offer.isDeferredOffer();
+                }
+            }
+            return false;
+        };
     }
 
     /**
@@ -80,12 +70,13 @@ public class CredentialStateMachineConfig {
                     .withExternal()
                     .source(CredentialStatusManagementType.INIT).target(CredentialStatusManagementType.ISSUED)
                     .event(CredentialManagementEvent.ISSUE)
-                    .action(actions.managementStateChangeAction())
+                    .action(eventActions.managementStateChangeAction())
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.ISSUED).target(CredentialStatusManagementType.SUSPENDED)
                     .event(CredentialManagementEvent.SUSPEND)
-                    .action(actions.managementStateChangeAction())
+                    .action(eventActions.managementStateChangeAction())
+                    .action(managementActions.suspendAction())
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.ISSUED).target(CredentialStatusManagementType.ISSUED)
@@ -94,17 +85,20 @@ public class CredentialStateMachineConfig {
                     .withExternal()
                     .source(CredentialStatusManagementType.SUSPENDED).target(CredentialStatusManagementType.ISSUED)
                     .event(CredentialManagementEvent.ISSUE)
-                    .action(actions.managementStateChangeAction()) // maybe allow re-issue
+                    .action(eventActions.managementStateChangeAction())
+                    .action(managementActions.revalidateAction())
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.ISSUED).target(CredentialStatusManagementType.REVOKED)
                     .event(CredentialManagementEvent.REVOKE)
-                    .action(actions.managementStateChangeAction())
+                    .action(eventActions.managementStateChangeAction())
+                    .action(managementActions.revokeAction())
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.SUSPENDED).target(CredentialStatusManagementType.REVOKED)
                     .event(CredentialManagementEvent.REVOKE)
-                    .action(actions.managementStateChangeAction())
+                    .action(eventActions.managementStateChangeAction())
+                    .action(managementActions.revokeAction())
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.REVOKED).target(CredentialStatusManagementType.REVOKED)
@@ -128,24 +122,6 @@ public class CredentialStateMachineConfig {
     }
 
     /**
-     * Guard to allow READY transition only for deferred offers.
-     *
-     * @return Guard for deferred offers
-     */
-    private static Guard<CredentialOfferStatusType, CredentialOfferEvent> deferredOfferOnlyGuard() {
-        return context -> {
-            Message<CredentialOfferEvent> message = context.getMessage();
-            if (message != null && message.getHeaders().containsKey(CREDENTIAL_OFFER_HEADER)) {
-                Object offerObj = message.getHeaders().get(CREDENTIAL_OFFER_HEADER);
-                if (offerObj instanceof CredentialOffer offer) {
-                    return offer.isDeferredOffer();
-                }
-            }
-            return false;
-        };
-    }
-
-    /**
      * Creates the credential offer state machine bean.
      *
      * @return StateMachine for credential offers
@@ -161,21 +137,20 @@ public class CredentialStateMachineConfig {
                     .initial(CredentialOfferStatusType.INIT)
                     // non terminal states
                     .states(CredentialOfferStatusType.getProcessableStates());
-
-            CredentialOfferStatusType.getTerminalStates().forEach(state -> stateConfigurer.stateEntry(state, actions.invalidateOfferDataAction()));
+            CredentialOfferStatusType.getTerminalStates().forEach(state -> stateConfigurer.stateEntry(state, offerActions.invalidateOfferDataAction()));
 
             builder.configureTransitions()
                     // Initial transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.INIT).target(CredentialOfferStatusType.OFFERED)
                     .event(CredentialOfferEvent.CREATED)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .name(addNote("Only for initial\n requests\nnot renewal"))
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.INIT).target(CredentialOfferStatusType.REQUESTED)
                     .event(CredentialOfferEvent.CREATED)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .name(addNote("Only for renewal\n requests"))
                     .and()
 
@@ -183,94 +158,94 @@ public class CredentialStateMachineConfig {
                     .withExternal()
                     .source(CredentialOfferStatusType.REQUESTED).target(CredentialOfferStatusType.ISSUED)
                     .event(CredentialOfferEvent.ISSUE)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.REQUESTED).target(CredentialOfferStatusType.CANCELLED)
                     .event(CredentialOfferEvent.CANCEL)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.REQUESTED).target(CredentialOfferStatusType.EXPIRED)
                     .event(CredentialOfferEvent.EXPIRE)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
 
                     // OFFERED transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.OFFERED).target(CredentialOfferStatusType.CANCELLED)
                     .event(CredentialOfferEvent.CANCEL)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .name(addNote("Process can be\ncancelled as long\nas the vc is not ISSUED"))
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.OFFERED).target(CredentialOfferStatusType.EXPIRED)
                     .event(CredentialOfferEvent.EXPIRE)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.OFFERED).target(CredentialOfferStatusType.IN_PROGRESS)
                     .event(CredentialOfferEvent.CLAIM)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
 
                     // IN_PROGRESS transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.IN_PROGRESS).target(CredentialOfferStatusType.EXPIRED)
                     .event(CredentialOfferEvent.EXPIRE)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.IN_PROGRESS).target(CredentialOfferStatusType.DEFERRED)
                     .event(CredentialOfferEvent.DEFER)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.IN_PROGRESS).target(CredentialOfferStatusType.ISSUED)
                     .event(CredentialOfferEvent.ISSUE)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .name(addNote("only no deferred"))
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.IN_PROGRESS).target(CredentialOfferStatusType.CANCELLED)
                     .event(CredentialOfferEvent.CANCEL)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
 
                     // DEFERRED transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.DEFERRED).target(CredentialOfferStatusType.READY)
                     .event(CredentialOfferEvent.READY)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .guard(deferredOfferOnlyGuard())
                     .name("[isDeferredOffer]" + addNote("Guard to allow\nREADY transition\nonly for deferred offers"))
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.DEFERRED).target(CredentialOfferStatusType.EXPIRED)
                     .event(CredentialOfferEvent.EXPIRE)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.DEFERRED).target(CredentialOfferStatusType.CANCELLED)
                     .event(CredentialOfferEvent.CANCEL)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
 
                     // READY transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.READY).target(CredentialOfferStatusType.ISSUED)
                     .event(CredentialOfferEvent.ISSUE)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.READY).target(CredentialOfferStatusType.EXPIRED)
                     .event(CredentialOfferEvent.EXPIRE)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.READY).target(CredentialOfferStatusType.CANCELLED)
                     .event(CredentialOfferEvent.CANCEL)
-                    .action(actions.offerStateChange())
+                    .action(eventActions.offerStateChange())
                     .and()
                     .withExternal()
                     .source(CredentialOfferStatusType.READY).target(CredentialOfferStatusType.READY)
@@ -320,5 +295,36 @@ public class CredentialStateMachineConfig {
         return "\nnote on link\n" +
                 s + "\n" +
                 "end note\n";
+    }
+
+    /**
+     * Events for credential management state machine.
+     */
+    public enum CredentialManagementEvent {
+        ISSUE,
+        SUSPEND,
+        REVOKE
+    }
+
+    /**
+     * Events for credential offer state machine.
+     */
+    @Getter
+    public enum CredentialOfferEvent {
+        CREATED("Created at start"),
+        OFFER("Offer"),
+        CLAIM("Claim"),
+        DEFER("Defer"),
+        READY("Ready"),
+        ISSUE("Issue"),
+        EXPIRE("Expire"),
+        CANCEL("Cancel"),
+        REQUEST("Request");
+
+        private final String displayName;
+
+        CredentialOfferEvent(String displayName) {
+            this.displayName = displayName;
+        }
     }
 }

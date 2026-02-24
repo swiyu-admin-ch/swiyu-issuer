@@ -1,11 +1,11 @@
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
-import ch.admin.bj.swiyu.issuer.service.webhook.ManagementStateChangeEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,23 +24,17 @@ import static org.mockito.Mockito.*;
 
 class CredentialStateServiceTest {
 
+    private static final Random rand = new Random();
     @Mock
     private CredentialStateMachine credentialStateMachine;
-
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
-
     @Mock
     private CredentialPersistenceService persistenceService;
-
     @Mock
     private StatusListPersistenceService statusListPersistenceService;
-
     private CredentialStateService stateService;
-
     private AutoCloseable mocks;
-
-    private static final Random rand = new Random();
 
     @BeforeEach
     void setUp() {
@@ -110,7 +104,6 @@ class CredentialStateServiceTest {
     }
 
 
-
     /**
      * Happy path: post-issuance status change triggers status list update + management persistence.
      */
@@ -134,10 +127,10 @@ class CredentialStateServiceTest {
 
         var persistedStatuses = offers.stream().map(offer -> CredentialOfferStatus.builder()
                         .id(CredentialOfferStatusKey.builder()
-                        .offerId(offer.getId())
-                        .statusListId(UUID.randomUUID())
-                        .index(rand.nextInt(10000))
-                        .build()).build())
+                                .offerId(offer.getId())
+                                .statusListId(UUID.randomUUID())
+                                .index(rand.nextInt(10000))
+                                .build()).build())
                 .collect(Collectors.toSet());
 
         var offerIds = offers.stream().map(CredentialOffer::getId).toList();
@@ -156,7 +149,6 @@ class CredentialStateServiceTest {
                 CredentialStateMachineConfig.CredentialOfferEvent.CANCEL);
 
         assertNotNull(response);
-        verify(statusListPersistenceService).revoke(eq(persistedStatuses));
     }
 
 }
