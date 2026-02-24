@@ -79,7 +79,6 @@ class SdJwtCredentialIT {
 
         // jwt headers
         assertEquals("vc+sd-jwt", JsonPath.read(header, "$.typ"));
-        assertEquals("1.0", JsonPath.read(header, "$.ver"));
         assertEquals(SwissProfileVersions.VC_PROFILE_VERSION, JsonPath.read(header, "$.profile_version"));
 
         // jwt payload - required fields iss-vct-iat

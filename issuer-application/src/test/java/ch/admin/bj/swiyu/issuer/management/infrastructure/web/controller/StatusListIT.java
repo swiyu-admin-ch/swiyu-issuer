@@ -128,7 +128,6 @@ class StatusListIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
-                .andExpect(jsonPath("$.type").value(type))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
                 .andExpect(jsonPath("$.remainingListEntries").value(maxLength))
                 .andExpect(jsonPath("$.config.bits").value(bits))
@@ -148,7 +147,7 @@ class StatusListIT {
         final String keyId = "1052933";
         final String keyPin = "209323";
         final String payload = String.format(
-                "{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": %s,\"key_pin\": %s}}", maxLength, bits, issuerId, verificationMethod, keyId, keyPin);
+                "{\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": %s,\"key_pin\": %s}}", maxLength, bits, issuerId, verificationMethod, keyId, keyPin);
 
         MvcResult result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -227,7 +226,6 @@ class StatusListIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
-                .andExpect(jsonPath("$.type").value(type))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
                 .andExpect(jsonPath("$.remainingListEntries").value(maxLength - issuerMetadata.getIssuanceBatchSize()))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
@@ -252,18 +250,6 @@ class StatusListIT {
                 .andExpect(jsonPath("$.config.bits").value(bits))
                 .andExpect(jsonPath("$.config.purpose").value(purpose))
         ;
-    }
-
-    @Test
-    void createStatusList_invalidStatusListType_thenBadRequest() throws Exception {
-        var type = "NOT_TOKEN_STATUS_LIST";
-        var bits = 1;
-        var payload = getCreateStatusListPayload(type, statusListProperties.getStatusListSizeLimit(), bits);
-
-        mvc.perform(post(STATUS_LIST_BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload))
-                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -451,8 +437,8 @@ class StatusListIT {
         return String.format("{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", maxLength, bits);
     }
 
-    private String getCreateStatusListPayload(String type, int maxLength, int bits) {
-        return String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength, bits);
+    private String getCreateStatusListPayload(int maxLength, int bits) {
+        return String.format("{\"maxLength\": %d,\"config\": {\"bits\": %d}}", maxLength, bits);
     }
 
     private JsonObject createOffer(JsonObject statusList) throws Exception {

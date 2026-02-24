@@ -507,8 +507,6 @@ class IssuanceControllerIT {
         assertEquals(KeyType.EC, expandedJWK.getKeyType());
         assertEquals(jwk.toECKey().getX(), holderbindingJwk.toECKey().getX());
 
-        var statusListType = (String) ((Map<String, Object>) ((Map<String, Object>) claims.get("status")).get("status_list")).get("type");
-        assertEquals("SwissTokenStatusList-1.0", statusListType);
         requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest());
     }
