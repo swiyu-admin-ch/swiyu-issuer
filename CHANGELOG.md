@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deferred credential transaction_id will not change anymore during deferred flow
 - Added `deferred_credential_endpoint` and `batch_credential_issuance` with min batch size of 10 to sample.compose.yml
 - Reduce number of calls to status registry when setting states of renewed and batch issued VCs
+- Stop sending status update callbacks to Business Issuer when remaining in the same state
+- Return CREDENTIAL_REQUEST_DENIED again if the offer was cancelled or expired while being in deferred
 
 ## 2.3.1
 

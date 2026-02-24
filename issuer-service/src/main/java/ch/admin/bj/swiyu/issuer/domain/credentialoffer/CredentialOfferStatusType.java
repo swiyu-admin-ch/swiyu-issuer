@@ -1,8 +1,9 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
-import lombok.Getter;
-
 import java.util.List;
+import java.util.Set;
+
+import lombok.Getter;
 
 @Getter
 public enum CredentialOfferStatusType {
@@ -41,14 +42,25 @@ public enum CredentialOfferStatusType {
     }
 
     public boolean isProcessable() {
-        return this == OFFERED ||
-                this == IN_PROGRESS ||
-                this == DEFERRED ||
-                this == READY ||
-                this == REQUESTED;
+        return getProcessableStates().contains(this);
+    }
+
+    /**
+     * States that are not init and not terminal
+     * @return
+     */
+    public static Set<CredentialOfferStatusType> getProcessableStates() {
+            return Set.of(OFFERED,
+                IN_PROGRESS,
+                DEFERRED,
+                READY,
+                REQUESTED);
+    }
+    public static Set<CredentialOfferStatusType> getTerminalStates() {
+        return Set.of(EXPIRED, CANCELLED, ISSUED);
     }
 
     public boolean isTerminalState() {
-        return this == EXPIRED || this == CANCELLED || this == ISSUED;
+        return getTerminalStates().contains(this);
     }
 }

@@ -1,20 +1,17 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.statemachine.action.Action;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class CredentialStateMachineAction {
     private final EventProducerService eventProducer;
-
-    @Autowired
-    public CredentialStateMachineAction(EventProducerService eventProducer) {
-        this.eventProducer = eventProducer;
-    }
 
     Action<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> managementStateChangeAction() {
         return ctx -> {
@@ -39,6 +36,10 @@ public class CredentialStateMachineAction {
                 Object offerObj = message.getHeaders().get(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER);
                 if (offerObj instanceof CredentialOffer offer) {
                     offer.invalidateOfferData();
+                    if(context.getTarget().getId() == CredentialOfferStatusType.ISSUED) {
+                        // Also delete Transaction ID if the new state is issued. 
+                        offer.setTransactionId(null);
+                    }
                 }
             }
         };
