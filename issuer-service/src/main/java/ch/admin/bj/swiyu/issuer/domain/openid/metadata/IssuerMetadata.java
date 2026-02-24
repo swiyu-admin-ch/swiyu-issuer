@@ -90,14 +90,6 @@ public class IssuerMetadata {
     @Nullable
     private BatchCredentialIssuance batchCredentialIssuance;
 
-    /**
-     * swiyu Ecosystem version tag
-     */
-    @JsonProperty("version")
-    @NotNull
-    @Pattern(regexp = "^1\\.0$", message = "Only version 1.0 is supported")
-    private String version;
-
     @Nullable
     @JsonProperty("display")
     @Schema(description = "Array of objects, where each object contains display properties of a Credential Issuer for a certain language")

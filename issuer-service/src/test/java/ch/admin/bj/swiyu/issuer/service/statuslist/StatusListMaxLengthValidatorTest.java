@@ -2,7 +2,6 @@ package ch.admin.bj.swiyu.issuer.service.statuslist;
 
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.ValidStatusListMaxLengthValidator;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import jakarta.validation.ConstraintValidatorContext;
@@ -31,7 +30,6 @@ class StatusListMaxLengthValidatorTest {
         validator = new ValidStatusListMaxLengthValidator(statusListProperties);
         context = mock(ConstraintValidatorContext.class);
         when(context.buildConstraintViolationWithTemplate(any())).thenReturn(mock(ConstraintValidatorContext.ConstraintViolationBuilder.class));
-        dto.setType(StatusListTypeDto.TOKEN_STATUS_LIST);
         setConfigBits(8);
     }
 

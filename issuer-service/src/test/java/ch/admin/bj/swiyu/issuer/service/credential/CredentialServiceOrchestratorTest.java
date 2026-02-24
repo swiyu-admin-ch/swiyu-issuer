@@ -129,7 +129,7 @@ class CredentialServiceOrchestratorTest {
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
-        statusList = StatusList.builder().type(StatusListType.TOKEN_STATUS_LIST)
+        statusList = StatusList.builder()
                 .config(Map.of("bits", 2))
                 .uri("https://localhost:8080/status")
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())

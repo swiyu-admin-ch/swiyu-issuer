@@ -258,7 +258,6 @@ public class SdJwtCredential extends CredentialBuilder {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                     .type(new JOSEObjectType(SD_JWT_FORMAT))
                     .keyID(override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()))
-                    .customParam("ver", sdjwtProperties.getVersion())
                     .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.VC_PROFILE_VERSION)
                     .build();
             JWTClaimsSet claimsSet = JWTClaimsSet.parse(builder.build(true));

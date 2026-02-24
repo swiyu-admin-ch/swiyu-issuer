@@ -82,7 +82,6 @@ class DeferredCredentialServiceTest {
         mgmt.addCredentialOffer(offer);
 
         IssuerMetadata metadata = IssuerMetadata.builder()
-                .version("1.0.0")
                 .build();
 
         var request = new CredentialRequestClass();
@@ -126,7 +125,6 @@ class DeferredCredentialServiceTest {
         mgmt.addCredentialOffer(offer);
 
         IssuerMetadata metadata = IssuerMetadata.builder()
-                .version("1.0.0")
                 .build();
 
         var request = new CredentialRequestClass();

@@ -58,7 +58,6 @@ class MetadataServiceTest {
 
         defaultTestIssuerMetadata = IssuerMetadata.builder()
                 .credentialIssuer(externalUrl)
-                .version("1.0.0")
                 .profileVersion(SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build();
         when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(defaultTestIssuerMetadata);

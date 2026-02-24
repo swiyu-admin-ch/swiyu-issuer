@@ -51,9 +51,6 @@ public class ApplicationProperties {
     @NotNull
     private List<String> trustedAttestationProviders;
 
-    @NotNull
-    private String requestOfferVersion = "1.0";
-
     /**
      * If set to true the service expects all
      * writing message bodies to be encoded as JWT

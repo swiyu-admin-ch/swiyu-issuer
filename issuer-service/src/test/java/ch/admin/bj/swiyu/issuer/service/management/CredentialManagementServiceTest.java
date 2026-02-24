@@ -377,7 +377,6 @@ class CredentialManagementServiceTest {
         var statusLists = List.of(
                 StatusList.builder()
                         .uri(TEST_STATUS_LIST_URI)
-                        .type(StatusListType.TOKEN_STATUS_LIST)
                         .config(Map.of("bits", 2))
                         .maxLength(10000)
                         .build()
@@ -426,7 +425,6 @@ class CredentialManagementServiceTest {
         var statusLists = List.of(
                 StatusList.builder()
                         .uri(TEST_STATUS_LIST_URI)
-                        .type(StatusListType.TOKEN_STATUS_LIST)
                         .config(Map.of("bits", 2))
                         .maxLength(10000)
                         .build()
@@ -587,7 +585,6 @@ class CredentialManagementServiceTest {
         var statusLists = List.of(
                 StatusList.builder()
                         .uri(statusListUri)
-                        .type(StatusListType.TOKEN_STATUS_LIST)
                         .config(Map.of("bits", 2))
                         .maxLength(10000)
                         .build()

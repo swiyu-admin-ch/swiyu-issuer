@@ -5,7 +5,6 @@ import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
@@ -103,7 +102,6 @@ class StatusListOrchestratorTest {
         var expectedIssuer = StringUtils.getIfBlank(overrideDid, applicationProperties::getIssuerId);
         var expectedVerificationMethod = StringUtils.getIfBlank(overrideVerificationMethod, statusListProperties::getVerificationMethod);
         StatusListCreateDto request = StatusListCreateDto.builder()
-                .type(StatusListTypeDto.TOKEN_STATUS_LIST)
                 .maxLength(10)
                 .config(StatusListConfigDto.builder().bits(2).build())
                 .configurationOverride(new ConfigurationOverrideDto(overrideDid, overrideVerificationMethod, null, null))
@@ -128,12 +126,10 @@ class StatusListOrchestratorTest {
                 .uri("https://example.com/" + statusListId)
                 .config(Map.of("bits", 8))
                 .maxLength(10)
-                .type(StatusListType.TOKEN_STATUS_LIST)
                 .build();
 
         when(statusListRepository.findById(statusListId)).thenReturn(Optional.of(statusList));
         when(credentialOfferStatusRepository.countByStatusListId(statusListId)).thenReturn(3);
-        when(statusListProperties.getVersion()).thenReturn("v1");
 
         var dto = statusListOrchestrator.getStatusListInformation(statusListId);
 
