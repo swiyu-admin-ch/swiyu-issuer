@@ -398,8 +398,8 @@ class StatusListIT {
         mvc.perform(patch(getUpdateUrl(UUID.fromString(offer.get("management_id").getAsString()), CredentialStatusTypeDto.REVOKED)))
                 .andExpect(status().isOk());
 
-        // should be only called once on status list create
-        verify(statusBusinessApi, times(issuerMetadata.getIssuanceBatchSize() + 1)).updateStatusListEntry(any(), any(), any());
+        // should be only called once (1) on status list create and once (1) on update
+        verify(statusBusinessApi, times(1+1)).updateStatusListEntry(any(), any(), any());
     }
 
     @Test

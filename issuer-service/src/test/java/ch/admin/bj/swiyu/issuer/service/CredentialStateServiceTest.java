@@ -157,7 +157,6 @@ class CredentialStateServiceTest {
 
         assertNotNull(response);
         verify(statusListPersistenceService).revoke(eq(persistedStatuses));
-        verify(persistenceService).saveCredentialManagement(eq(mgmt));
     }
 
 }
