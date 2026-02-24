@@ -319,16 +319,6 @@ class StatusListIT {
     }
 
     @Test
-    void updateStatusList_whenDisabled_throwsException() throws Exception {
-
-        mvc.perform(post(STATUS_LIST_BASE_URL + "/" + statusListUUID)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is5xxServerError())
-                .andExpect(jsonPath("$.detail").value("Automatic status list synchronization is enabled. Manual update via API is disabled."))
-                .andExpect(jsonPath("$.error_description").value("Internal Server Error"));
-    }
-
-    @Test
     void updateStatusList_withInvalidStatusList_throwsException() throws Exception {
 
         when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true);

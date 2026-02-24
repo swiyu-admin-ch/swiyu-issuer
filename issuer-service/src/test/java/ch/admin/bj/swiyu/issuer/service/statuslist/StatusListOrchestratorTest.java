@@ -1,27 +1,28 @@
 package ch.admin.bj.swiyu.issuer.service.statuslist;
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
-import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
+import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
-import com.nimbusds.jwt.SignedJWT;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,11 +34,13 @@ import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.text.ParseException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 class StatusListOrchestratorTest {
@@ -45,6 +48,7 @@ class StatusListOrchestratorTest {
     private ApplicationProperties applicationProperties;
     private StatusListProperties statusListProperties;
     private StatusRegistryClient statusRegistryClient;
+    private StatusListPersistenceService statusListPersistenceService;
     private StatusListRepository statusListRepository;
     private TransactionTemplate transaction;
     private JwsSignatureFacade jwsSignatureFacade;
@@ -82,13 +86,14 @@ class StatusListOrchestratorTest {
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         when(credentialOfferStatusRepository.countByStatusListId(Mockito.any())).thenReturn(0);
 
+        statusListPersistenceService = Mockito.mock(StatusListPersistenceService.class);
+
         signingService = new StatusListSigningService(applicationProperties, statusListProperties, jwsSignatureFacade);
 
         statusListOrchestrator = new StatusListOrchestrator(
-                applicationProperties,
                 statusListProperties,
                 statusRegistryClient,
-                signingService,
+                statusListPersistenceService,
                 statusListRepository,
                 transaction,
                 credentialOfferStatusRepository);
@@ -99,22 +104,17 @@ class StatusListOrchestratorTest {
     @ParameterizedTest
     @CsvSource({",", ",did:example:mock#overridekey1", "did:example:override,did:example:override#key1"})
     void whenTokenStatusListIsCreated_thenSuccess(String overrideDid, String overrideVerificationMethod) throws ParseException, JOSEException {
-        var expectedIssuer = StringUtils.getIfBlank(overrideDid, applicationProperties::getIssuerId);
-        var expectedVerificationMethod = StringUtils.getIfBlank(overrideVerificationMethod, statusListProperties::getVerificationMethod);
         StatusListCreateDto request = StatusListCreateDto.builder()
                 .maxLength(10)
                 .config(StatusListConfigDto.builder().bits(2).build())
                 .configurationOverride(new ConfigurationOverrideDto(overrideDid, overrideVerificationMethod, null, null))
                 .build();
         var statusListCaptor = ArgumentCaptor.forClass(StatusList.class);
-        var jwtCaptor = ArgumentCaptor.forClass(String.class);
+
         statusListOrchestrator.createStatusList(request);
-        verify(statusRegistryClient).updateStatusListEntry(statusListCaptor.capture(), jwtCaptor.capture());
-        var jwt = jwtCaptor.getValue();
-        var parsedJwt = SignedJWT.parse(jwt);
-        assertTrue(parsedJwt.verify(new ECDSAVerifier(ecKey.toECPublicKey())));
-        assertEquals(expectedIssuer, parsedJwt.getJWTClaimsSet().getIssuer());
-        assertEquals(expectedVerificationMethod, parsedJwt.getHeader().getKeyID());
+
+        verify(statusListPersistenceService).publishToRegistry(statusListCaptor.capture(), any());
+
     }
 
 

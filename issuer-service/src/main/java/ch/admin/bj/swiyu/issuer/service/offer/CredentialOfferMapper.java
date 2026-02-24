@@ -134,6 +134,25 @@ public class CredentialOfferMapper {
         };
     }
 
+    /**
+     * Merges {@code override} into {@code base}. Non-null fields in {@code override} win.
+     * Does not mutate inputs.
+     */
+    public static ConfigurationOverride mergeConfigurationOverride(ConfigurationOverride base, ConfigurationOverride override) {
+        if (override == null) {
+            return base;
+        }
+        if (base == null) {
+            return override;
+        }
+        return new ConfigurationOverride(
+                override.issuerDid() != null ? override.issuerDid() : base.issuerDid(),
+                override.verificationMethod() != null ? override.verificationMethod() : base.verificationMethod(),
+                override.keyId() != null ? override.keyId() : base.keyId(),
+                override.keyPin() != null ? override.keyPin() : base.keyPin()
+        );
+    }
+
     public static ConfigurationOverride toConfigurationOverride(ConfigurationOverrideDto source) {
         if (source == null) {
             return null;

@@ -157,8 +157,13 @@ class DeferredCredentialServiceTest {
 
     @Test
     void validateOfferProcessable_rejectsNonProcessable() {
-        var offer = mock(CredentialOffer.class);
-        when(offer.isProcessableOffer()).thenReturn(false);
+        var realOffer = CredentialOffer.builder()
+                .id(UUID.randomUUID())
+                .transactionId(UUID.randomUUID())
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
+                .build();
+        var offer = spy(realOffer);
+        doReturn(false).when(offer).isProcessableOffer();
 
         assertThatThrownBy(() -> service.validateOfferProcessable(offer))
                 .isInstanceOf(Oid4vcException.class)
