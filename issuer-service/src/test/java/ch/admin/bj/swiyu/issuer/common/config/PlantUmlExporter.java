@@ -6,6 +6,8 @@ import org.springframework.statemachine.transition.Transition;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Utility to export a Spring StateMachine to PlantUML format.
@@ -37,9 +39,11 @@ public class PlantUmlExporter<S, E> {
      * @param stateMachine the state machine
      */
     private void appendStates(StringBuilder sb, StateMachine<S, E> stateMachine) {
-        for (State<S, E> state : stateMachine.getStates()) {
+        var stateMap = stateMachine.getStates().stream().collect(Collectors.toMap(s -> s.getId().toString(), Function.identity()));
+        var alphabeticallySortedStateIds = stateMap.keySet().stream().sorted().toList();
+        for (String stateId : alphabeticallySortedStateIds) {
             // Do not output INIT as a separate state
-            String stateId = String.valueOf(state.getId());
+            var state = stateMap.get(stateId);
             if ("INIT".equals(stateId)) {
                 continue;
             }
