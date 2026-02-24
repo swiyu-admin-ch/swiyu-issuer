@@ -1,8 +1,9 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
-import lombok.Getter;
-
 import java.util.List;
+import java.util.Set;
+
+import lombok.Getter;
 
 @Getter
 public enum CredentialOfferStatusType {
@@ -20,6 +21,18 @@ public enum CredentialOfferStatusType {
 
     private final String displayName;
 
+    private static final Set<CredentialOfferStatusType> PROCESSABLE_STATES =
+            Set.of(OFFERED, IN_PROGRESS, DEFERRED, READY, REQUESTED);
+
+    private static final Set<CredentialOfferStatusType> TERMINAL_STATES =
+            Set.of(EXPIRED, CANCELLED, ISSUED);
+
+    private static final List<CredentialOfferStatusType> EXPIRABLE_STATES = List.of(CredentialOfferStatusType.OFFERED,
+            CredentialOfferStatusType.IN_PROGRESS,
+            CredentialOfferStatusType.DEFERRED,
+            CredentialOfferStatusType.READY,
+            CredentialOfferStatusType.REQUESTED);
+
     CredentialOfferStatusType(String displayName) {
         this.displayName = displayName;
     }
@@ -28,11 +41,7 @@ public enum CredentialOfferStatusType {
      * @return List of CredentialStatusType which can lead to "expire"
      */
     public static List<CredentialOfferStatusType> getExpirableStates() {
-        return List.of(CredentialOfferStatusType.OFFERED,
-                CredentialOfferStatusType.IN_PROGRESS,
-                CredentialOfferStatusType.DEFERRED,
-                CredentialOfferStatusType.READY,
-                CredentialOfferStatusType.REQUESTED);
+        return EXPIRABLE_STATES;
     }
 
     @Override
@@ -41,14 +50,23 @@ public enum CredentialOfferStatusType {
     }
 
     public boolean isProcessable() {
-        return this == OFFERED ||
-                this == IN_PROGRESS ||
-                this == DEFERRED ||
-                this == READY ||
-                this == REQUESTED;
+        return getProcessableStates().contains(this);
+    }
+
+    /**
+     * States that are not init and not terminal
+     *
+     * @return
+     */
+    public static Set<CredentialOfferStatusType> getProcessableStates() {
+        return PROCESSABLE_STATES;
+    }
+
+    public static Set<CredentialOfferStatusType> getTerminalStates() {
+        return TERMINAL_STATES;
     }
 
     public boolean isTerminalState() {
-        return this == EXPIRED || this == CANCELLED || this == ISSUED;
+        return getTerminalStates().contains(this);
     }
 }
