@@ -13,11 +13,13 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class CredentialStateMachineAction {
+    private static final String CREDENTIAL_ID_HEADER = "credentialId";
+
     private final EventProducerService eventProducer;
 
     Action<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> managementStateChangeAction() {
         return ctx -> {
-            var managementId = (UUID) ctx.getMessageHeader("credentialId");
+            var managementId = (UUID) ctx.getMessageHeader(CREDENTIAL_ID_HEADER);
             var target = ctx.getTarget().getId();
             eventProducer.produceManagementStateChangeEvent(managementId, target);
         };
@@ -25,7 +27,7 @@ public class CredentialStateMachineAction {
 
     Action<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> offerStateChange() {
         return ctx -> {
-            var offerId = (UUID) ctx.getMessageHeader("credentialId");
+            var offerId = (UUID) ctx.getMessageHeader(CREDENTIAL_ID_HEADER);
             var target = ctx.getTarget().getId();
             eventProducer.produceOfferStateChangeEvent(offerId, target);
         };
@@ -37,19 +39,24 @@ public class CredentialStateMachineAction {
             CredentialOffer offer = extractCredentialOffer(message);
             offer.invalidateOfferData();
             if(context.getTarget().getId() == CredentialOfferStatusType.ISSUED) {
-                // Also delete Transaction ID if the new state is issued. 
+                // Also delete Transaction ID if the new state is issued.
                 offer.setTransactionId(null);
             }
         };
     }
 
     private CredentialOffer extractCredentialOffer(Message<CredentialOfferEvent> message) {
-        if (message != null && message.getHeaders().containsKey(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER)) {
-                Object offerObj = message.getHeaders().get(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER);
-            if (offerObj instanceof CredentialOffer offer) {
-                return offer;
-            }
+        if (message == null) {
+            throw new IllegalStateException("Missing state machine message; cannot read header '" + CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER + "'");
         }
-        throw new IllegalStateException("Received the wrong object in CREDENTIAL_OFFER_HEADER");
+
+        Object offerObj = message.getHeaders().get(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER);
+        if (offerObj instanceof CredentialOffer offer) {
+            return offer;
+        }
+
+        throw new IllegalStateException(
+                "Received unexpected object in header '" + CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER + "': "
+                        + (offerObj == null ? "null" : offerObj.getClass().getName()));
     }
 }

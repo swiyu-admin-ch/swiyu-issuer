@@ -8,11 +8,13 @@ public enum CredentialStatusManagementType {
     SUSPENDED,
     REVOKED;
 
+    private static final List<CredentialStatusManagementType> POST_ISSUANCE_STATES = List.of(ISSUED, SUSPENDED, REVOKED);
+
     public boolean isIssued() {
         return getPostIssuanceStates().contains(this);
     }
 
     public List<CredentialStatusManagementType> getPostIssuanceStates() {
-        return List.of(ISSUED, SUSPENDED, REVOKED);
+        return POST_ISSUANCE_STATES;
     }
 }

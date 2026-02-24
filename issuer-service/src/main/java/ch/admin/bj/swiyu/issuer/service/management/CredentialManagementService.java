@@ -149,11 +149,42 @@ public class CredentialManagementService {
 
         var managementEvent = toCredentialManagementEvent(requestedNewStatus);
         var offerEvent = toCredentialOfferEvent(requestedNewStatus);
+
+        validateIssuanceNotSkipped(managementEvent, mgmt);
+
+        validateReadyOnlyInInit(offerEvent, mgmt);
+
+        return stateService.handleStatusChange(
+                mgmt, managementEvent, offerEvent);
+    }
+
+    /**
+     * Validates that only READY event is allowed in INIT state of credential management.
+     * @param offerEvent
+     * @param mgmt
+     */
+    private static void validateReadyOnlyInInit(CredentialStateMachineConfig.CredentialOfferEvent offerEvent, CredentialManagement mgmt) {
+        if (offerEvent == CredentialStateMachineConfig.CredentialOfferEvent.READY
+                && mgmt.getCredentialManagementStatus() != CredentialStatusManagementType.INIT) {
+            throw new IllegalStateException("Only READY status is allowed in INIT state of credential management. Just " +
+                    "in deferred offer scenario. In this case, the management status should still be in INIT.");
+        }
+    }
+
+    /**
+     * Validates that the issuance process is not skipped during a credential management status transition.
+     * <p>
+     * Throws an {@link IllegalStateException} if an ISSUE event is requested while the management object is not yet in
+     * the ISSUED state. This ensures that the credential issuance process cannot be bypassed and enforces correct state transitions.
+     *
+     * @param managementEvent the management event to process (must not be null)
+     * @param mgmt the credential management object to check (must not be null)
+     * @throws IllegalStateException if an ISSUE event is attempted before the management object is in ISSUED state
+     */
+    private static void validateIssuanceNotSkipped(CredentialManagementEvent managementEvent, CredentialManagement mgmt) {
         if (managementEvent == CredentialManagementEvent.ISSUE && !mgmt.getCredentialManagementStatus().isIssued()) {
             throw new IllegalStateException("Issuance process may not be skipped");
         }
-        return stateService.handleStatusChange(
-                mgmt, managementEvent, offerEvent);
     }
 
     /**

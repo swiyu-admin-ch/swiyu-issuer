@@ -161,6 +161,7 @@ public class CredentialStateMachineConfig {
                     .initial(CredentialOfferStatusType.INIT)
                     // non terminal states
                     .states(CredentialOfferStatusType.getProcessableStates());
+
             CredentialOfferStatusType.getTerminalStates().forEach(state -> stateConfigurer.stateEntry(state, actions.invalidateOfferDataAction()));
 
             builder.configureTransitions()
@@ -281,10 +282,20 @@ public class CredentialStateMachineConfig {
                     .source(CredentialOfferStatusType.ISSUED).target(CredentialOfferStatusType.ISSUED)
                     .event(CredentialOfferEvent.ISSUE)
                     .and()
+                    .withExternal()
+                    .source(CredentialOfferStatusType.ISSUED).target(CredentialOfferStatusType.ISSUED)
+                    .event(CredentialOfferEvent.CANCEL)
+                    .and()
 
                     // CANCELLED transitions
                     .withExternal()
                     .source(CredentialOfferStatusType.CANCELLED).target(CredentialOfferStatusType.CANCELLED)
+                    .event(CredentialOfferEvent.CANCEL)
+                    .and()
+
+                    // EXPIRED transitions
+                    .withExternal()
+                    .source(CredentialOfferStatusType.EXPIRED).target(CredentialOfferStatusType.EXPIRED)
                     .event(CredentialOfferEvent.CANCEL)
                     .and();
 

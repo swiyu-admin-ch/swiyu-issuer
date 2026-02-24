@@ -69,7 +69,6 @@ public class CredentialStateService {
     /**
      * Publishes a state change event for a credential offer.
      *
-     * @param credentialManagementId the credential management ID
      * @param credentialOfferId      the credential offer ID
      * @param state                  the new state
      */
@@ -93,9 +92,11 @@ public class CredentialStateService {
             CredentialStateMachineConfig.CredentialManagementEvent managementEvent,
             CredentialStateMachineConfig.CredentialOfferEvent offerEvent) {
 
-        // Update states using state service
+        // Update states using state service. If event is null, state machine will not perform a transition, but we
+        // can still get the current status to determine if we need to update status lists.
         var managementResult = credentialStateMachine.sendEventAndUpdateStatus(mgmt, managementEvent);
-        mgmt.getCredentialOffers().stream().forEach(o -> credentialStateMachine.sendEventAndUpdateStatus(o, offerEvent));
+        mgmt.getCredentialOffers().forEach(
+                credentialOffer -> credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, offerEvent));
 
         // Only persist and handle status lists if management state actually changed
         if (!managementResult.changed()) {

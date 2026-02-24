@@ -4,6 +4,9 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.state.State;
 import org.springframework.statemachine.transition.Transition;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+
 /**
  * Utility to export a Spring StateMachine to PlantUML format.
  *
@@ -30,36 +33,47 @@ public class PlantUmlExporter<S, E> {
     /**
      * Appends all states to the PlantUML diagram.
      *
-     * @param sb StringBuilder for the diagram
+     * @param sb           StringBuilder for the diagram
      * @param stateMachine the state machine
      */
     private void appendStates(StringBuilder sb, StateMachine<S, E> stateMachine) {
         for (State<S, E> state : stateMachine.getStates()) {
             // Do not output INIT as a separate state
-            if ("INIT".equals(String.valueOf(state.getId()))) continue;
-            sb.append("state ").append(state.getId()).append('\n');
+            String stateId = String.valueOf(state.getId());
+            if ("INIT".equals(stateId)) {
+                continue;
+            }
+
+            sb.append("state ").append(stateId);
+
+            String entryActionLabel = getStateEntryActionLabel(state);
+            if (entryActionLabel != null && !entryActionLabel.isEmpty()) {
+                sb.append("  :entry / ").append(entryActionLabel);
+            }
+
+            sb.append('\n');
         }
     }
 
     /**
      * Appends all transitions to the PlantUML diagram.
      *
-     * @param sb StringBuilder for the diagram
+     * @param sb           StringBuilder for the diagram
      * @param stateMachine the state machine
      */
     private void appendTransitions(StringBuilder sb, StateMachine<S, E> stateMachine) {
         for (Transition<S, E> transition : stateMachine.getTransitions()) {
-            appendTransaction(sb, transition);
+            appendTransition(sb, transition);
         }
     }
 
     /**
      * Appends a single transition to the PlantUML diagram.
      *
-     * @param sb StringBuilder for the diagram
+     * @param sb         StringBuilder for the diagram
      * @param transition the transition
      */
-    private void appendTransaction(StringBuilder sb, Transition<S, E> transition) {
+    private void appendTransition(StringBuilder sb, Transition<S, E> transition) {
         if (transition.getSource() != null && transition.getTarget() != null) {
             String sourceId = String.valueOf(transition.getSource().getId());
             String targetId = String.valueOf(transition.getTarget().getId());
@@ -111,4 +125,28 @@ public class PlantUmlExporter<S, E> {
         }
         return "";
     }
+
+    /**
+     * Attempts to read the entry action(s) of a state and turn them into a human readable label.
+     * <p>
+     * Spring Statemachine doesn't expose entry actions uniformly on its public {@link State} API across all
+     * implementations/versions. Therefore we use reflection and fall back to an empty string.
+     *
+     * @param state the state
+     * @return a label for the entry action(s), or empty string if none / not accessible
+     */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private String getStateEntryActionLabel(State<S, E> state) {
+        try {
+            Object many = state.getClass().getMethod("getEntryActions").invoke(state);
+            if (many instanceof Collection<?> && !((Collection<?>) many).isEmpty()) {
+                // For our state machines, we know there is only this action, so we can just return a fixed label.
+                return "invalidateOfferDataAction()";
+            }
+        } catch (NoSuchMethodException  | InvocationTargetException | IllegalAccessException e) {
+            // ignore
+        }
+        return null;
+    }
+
 }

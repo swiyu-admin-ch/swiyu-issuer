@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -105,7 +104,7 @@ public class StatusListPersistenceService {
     private List<StatusList> updateTokenStatusList(Set<CredentialOfferStatus> offerStatus, TokenStatusListBit bit) {
 
         Map<UUID, List<Integer>> statusListIds = groupAffectedStatusListIndexes(offerStatus);
-        
+
         return statusListIds.entrySet()
             .stream()
             .map(statusListEntry -> updateStatusList(bit, statusListEntry.getKey(), statusListEntry.getValue()))
@@ -113,30 +112,28 @@ public class StatusListPersistenceService {
     }
 
     /**
+     * Groups the affected status list indexes by status list id.
+     *
      * @param offerStatus the offer statuses to be grouped
-     * @return A map with StatusList Ids as keys with all indexes affected indexes as value 
+     * @return a map with status list ids as keys and the affected indexes as values
      */
     private Map<UUID, List<Integer>> groupAffectedStatusListIndexes(Set<CredentialOfferStatus> offerStatus) {
-        List<CredentialOfferStatusKey> statusKeys = offerStatus.stream()
+        return offerStatus.stream()
             .map(CredentialOfferStatus::getId)
-            .toList();
-        Map<UUID, List<Integer>> statusListIds = statusKeys.stream()
-            .map(CredentialOfferStatusKey::getStatusListId)
-            .collect(Collectors.toSet()).stream() // Remove duplicate IDs to be used as keys for the map
-            .collect(Collectors.toMap(
-                Function.identity(), 
-                statusListId -> statusKeys.stream()
-                    .filter(statusListKey -> statusListKey.getStatusListId().equals(statusListId))
-                    .map(CredentialOfferStatusKey::getIndex).toList()));
-        return statusListIds;
+            .collect(Collectors.groupingBy(
+                CredentialOfferStatusKey::getStatusListId,
+                Collectors.collectingAndThen(
+                    Collectors.mapping(CredentialOfferStatusKey::getIndex, Collectors.toSet()),
+                    List::copyOf)));
     }
 
     /**
-     * 
-     * @param bit the target value of the bits
-     * @param statusListId the id of the status list to be updated
-     * @param affectedIndexes indexes to be set to the status bit
-     * @return the updated Status List
+     * Updates a single status list by applying {@code bit} to all {@code affectedIndexes}.
+     *
+     * @param bit the status bit to apply (VALID, REVOKE, or SUSPEND)
+     * @param statusListId the id of the status list to update
+     * @param affectedIndexes the indexes within the status list to update
+     * @return the updated {@link StatusList}
      */
     private StatusList updateStatusList(TokenStatusListBit bit, UUID statusListId, List<Integer> affectedIndexes) {
         StatusList statusList = statusListRepository.findByIdForUpdate(statusListId)
@@ -173,4 +170,3 @@ public class StatusListPersistenceService {
         statusRegistryClient.updateStatusListEntry(statusListEntity, jwt.serialize());
     }
 }
-
