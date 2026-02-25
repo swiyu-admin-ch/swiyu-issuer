@@ -17,7 +17,6 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRespon
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryTokenService;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
