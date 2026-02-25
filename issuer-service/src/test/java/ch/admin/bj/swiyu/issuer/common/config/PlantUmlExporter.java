@@ -48,21 +48,18 @@ public class PlantUmlExporter<S, E> {
             if ("INIT".equals(stateId)) {
                 continue;
             }
-            states.add(String.valueOf(state.getId()));
+
+            String entryActionLabel = getStateEntryActionLabel(state);
+            if (entryActionLabel != null && !entryActionLabel.isEmpty()) {
+                states.add(state.getId() + "  :entry / " + entryActionLabel);
+            } else {
+                states.add(String.valueOf(state.getId()));
+            }
         }
         // Sort the States for deterministic Output
         Collections.sort(states);
         for (String state : states) {
-
-            sb.append("state ").append(state);
-
-            String entryActionLabel = getStateEntryActionLabel(state);
-            if (entryActionLabel != null && !entryActionLabel.isEmpty()) {
-                sb.append("  :entry / ").append(entryActionLabel);
-            }
-
-            sb.append('\n');
-            }
+            sb.append("state ").append(state).append('\n');
         }
     }
 
@@ -154,7 +151,7 @@ public class PlantUmlExporter<S, E> {
                 // For our state machines, we know there is only this action, so we can just return a fixed label.
                 return "invalidateOfferDataAction()";
             }
-        } catch (NoSuchMethodException  | InvocationTargetException | IllegalAccessException e) {
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
             // ignore
         }
         return null;
