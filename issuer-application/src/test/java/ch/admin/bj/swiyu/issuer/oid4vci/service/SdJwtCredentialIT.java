@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
@@ -11,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
@@ -32,6 +34,7 @@ import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUni
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.JwtTestUtils.getJWTPayload;
 import static java.util.Objects.nonNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -40,15 +43,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class SdJwtCredentialIT {
 
+    final private static ObjectMapper mapper = new ObjectMapper();
     private final UUID preAuthCode = UUID.randomUUID();
-
     @Autowired
     private CredentialFormatFactory vcFormatFactory;
     @Autowired
     private ApplicationProperties applicationProperties;
     @Autowired
     private JweService jweService;
-
     @Autowired
     private IssuerMetadata issuerMetadata;
 
@@ -77,7 +79,7 @@ class SdJwtCredentialIT {
 
         // jwt headers
         assertEquals("vc+sd-jwt", JsonPath.read(header, "$.typ"));
-        assertEquals("1.0", JsonPath.read(header, "$.ver"));
+        assertEquals(SwissProfileVersions.VC_PROFILE_VERSION, JsonPath.read(header, "$.profile_version"));
 
         // jwt payload - required fields iss-vct-iat
         assertEquals(applicationProperties.getIssuerId(), JsonPath.read(payload, "$.iss"));
@@ -272,5 +274,36 @@ class SdJwtCredentialIT {
         var issuedJwt = SignedJWT.parse(credential.split("~")[0]);
         assertEquals(overrideVerificationMethod, issuedJwt.getHeader().getKeyID());
         assertEquals(overrideDid, issuedJwt.getJWTClaimsSet().getIssuer());
+    }
+
+    @Test
+    void getSdJwtCredentialV2TestTracing_thenSuccess() {
+
+        assertThat(applicationProperties.isEnableVcHashStorage())
+                .as("This Test requires VC Hash Storage to be active")
+                .isTrue();
+        Instant now = Instant.now();
+        Instant expiration = now.plus(30, ChronoUnit.DAYS);
+
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", now, expiration);
+
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
+        credentialRequest.setCredentialResponseEncryption(null);
+
+        CredentialEnvelopeDto vc = vcFormatFactory
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredentialEnvelopeV2();
+
+        assertThat(credentialOffer.getVcHashes())
+                .as("Should have created a finger print for each VC")
+                .hasSize(jweService.issuerMetadataWithEncryptionOptions().getIssuanceBatchSize());
+        for (var vcHash : credentialOffer.getVcHashes()) {
+            assertThat(vc.getOid4vciCredentialJson())
+                    .as("The VC hash should match to the ancillary data of one of the created VCs")
+                    .contains(vcHash);
+        }
     }
 }

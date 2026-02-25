@@ -14,8 +14,9 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
-import java.util.Set;
+import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -39,6 +40,8 @@ class CredentialStateServiceTest {
 
     private AutoCloseable mocks;
 
+    private static final Random rand = new Random();
+
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
@@ -54,157 +57,6 @@ class CredentialStateServiceTest {
         if (mocks != null) {
             mocks.close();
         }
-    }
-
-    /**
-     * Happy path: when the offer state changes, the service must publish an {@link OfferStateChangeEvent}.
-     */
-    @Test
-    void updateOfferStateAndPublish_shouldPublishEventWhenStateChanged() {
-        var offerId = UUID.randomUUID();
-        var offer = CredentialOffer.builder()
-                .id(offerId)
-                .credentialStatus(CredentialOfferStatusType.OFFERED)
-                .build();
-        var mgmtId = UUID.randomUUID();
-
-        var result = new CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType>(
-                CredentialOfferStatusType.READY,
-                true);
-
-        when(credentialStateMachine.sendEventAndUpdateStatus(eq(offer), eq(CredentialStateMachineConfig.CredentialOfferEvent.READY)))
-                .thenReturn(result);
-
-        var actual = stateService.updateOfferStateAndPublish(
-                offer, CredentialStateMachineConfig.CredentialOfferEvent.READY);
-
-        assertSame(result, actual);
-
-        var eventCaptor = org.mockito.ArgumentCaptor.forClass(Object.class);
-        verify(applicationEventPublisher, times(1)).publishEvent(eventCaptor.capture());
-        assertInstanceOf(OfferStateChangeEvent.class, eventCaptor.getValue());
-        var evt = (OfferStateChangeEvent) eventCaptor.getValue();
-        assertEquals(offerId, evt.credentialOfferId());
-        assertEquals(CredentialOfferStatusType.READY, evt.newState());
-    }
-
-    /**
-     * Edge case: when the state machine reports no state change, no event must be published.
-     */
-    @Test
-    void updateOfferStateAndPublish_shouldNotPublishEventWhenStateUnchanged() {
-        var offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(CredentialOfferStatusType.OFFERED)
-                .build();
-
-        when(credentialStateMachine.sendEventAndUpdateStatus(eq(offer), any()))
-                .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType>(CredentialOfferStatusType.OFFERED, false));
-
-        var result = stateService.updateOfferStateAndPublish(
-                offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
-
-        assertFalse(result.changed());
-        verifyNoInteractions(applicationEventPublisher);
-    }
-
-    /**
-     * Happy path: when the management state changes, the service must publish a {@link ManagementStateChangeEvent}.
-     */
-    @Test
-    void updateManagementStateAndPublish_shouldPublishEventWhenStateChanged() {
-        var mgmtId = UUID.randomUUID();
-        var mgmt = CredentialManagement.builder()
-                .id(mgmtId)
-                .credentialManagementStatus(CredentialStatusManagementType.INIT)
-                .build();
-
-        when(credentialStateMachine.sendEventAndUpdateStatus(eq(mgmt), eq(CredentialStateMachineConfig.CredentialManagementEvent.ISSUE)))
-                .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialStatusManagementType>(CredentialStatusManagementType.ISSUED, true));
-
-        var result = stateService.updateManagementStateAndPublish(
-                mgmt, CredentialStateMachineConfig.CredentialManagementEvent.ISSUE);
-
-        assertTrue(result.changed());
-
-        var eventCaptor = org.mockito.ArgumentCaptor.forClass(Object.class);
-        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
-        assertInstanceOf(ManagementStateChangeEvent.class, eventCaptor.getValue());
-        var evt = (ManagementStateChangeEvent) eventCaptor.getValue();
-        assertEquals(mgmtId, evt.credentialManagementId());
-        assertEquals(CredentialStatusManagementType.ISSUED, evt.newState());
-    }
-
-    /**
-     * Edge case: when the management state does not change, no event must be published.
-     */
-    @Test
-    void updateManagementStateAndPublish_shouldNotPublishEventWhenStateUnchanged() {
-        var mgmt = CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
-                .build();
-
-        when(credentialStateMachine.sendEventAndUpdateStatus(eq(mgmt), any()))
-                .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialStatusManagementType>(CredentialStatusManagementType.ISSUED, false));
-
-        var result = stateService.updateManagementStateAndPublish(
-                mgmt, CredentialStateMachineConfig.CredentialManagementEvent.SUSPEND);
-
-        assertFalse(result.changed());
-        verifyNoInteractions(applicationEventPublisher);
-    }
-
-    /**
-     * Happy path: pre-issuance must update the offer first (leading) and then the management.
-     */
-    @Test
-    void handlePreIssuanceStateTransition_shouldUpdateOfferFirstThenManagement() {
-        var mgmt = CredentialManagement.builder().id(UUID.randomUUID()).build();
-        var offer = CredentialOffer.builder().id(UUID.randomUUID()).credentialManagement(mgmt).build();
-
-        when(credentialStateMachine.sendEventAndUpdateStatus(eq(offer), eq(CredentialStateMachineConfig.CredentialOfferEvent.CLAIM)))
-                .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType>(CredentialOfferStatusType.IN_PROGRESS, true));
-
-        var inOrder = inOrder(credentialStateMachine);
-
-        var result = stateService.handlePreIssuanceStateTransition(
-                mgmt,
-                offer,
-                CredentialStateMachineConfig.CredentialManagementEvent.ISSUE,
-                CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
-
-        assertTrue(result.changed());
-        assertEquals(CredentialOfferStatusType.IN_PROGRESS, result.newStatus());
-
-        inOrder.verify(credentialStateMachine).sendEventAndUpdateStatus(eq(offer), eq(CredentialStateMachineConfig.CredentialOfferEvent.CLAIM));
-        inOrder.verify(credentialStateMachine).sendEventAndUpdateStatus(eq(mgmt), eq(CredentialStateMachineConfig.CredentialManagementEvent.ISSUE));
-    }
-
-    /**
-     * Happy path: post-issuance must update the management first (leading) and then the offer.
-     */
-    @Test
-    void handlePostIssuanceStateTransition_shouldUpdateManagementFirstThenOffer() {
-        var mgmt = CredentialManagement.builder().id(UUID.randomUUID()).build();
-        var offer = CredentialOffer.builder().id(UUID.randomUUID()).credentialManagement(mgmt).build();
-
-        when(credentialStateMachine.sendEventAndUpdateStatus(eq(mgmt), eq(CredentialStateMachineConfig.CredentialManagementEvent.SUSPEND)))
-                .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialStatusManagementType>(CredentialStatusManagementType.SUSPENDED, true));
-
-        var inOrder = inOrder(credentialStateMachine);
-
-        var result = stateService.handlePostIssuanceStateTransition(
-                mgmt,
-                offer,
-                CredentialStateMachineConfig.CredentialManagementEvent.SUSPEND,
-                CredentialStateMachineConfig.CredentialOfferEvent.CANCEL);
-
-        assertTrue(result.changed());
-        assertEquals(CredentialStatusManagementType.SUSPENDED, result.newStatus());
-
-        inOrder.verify(credentialStateMachine).sendEventAndUpdateStatus(eq(mgmt), eq(CredentialStateMachineConfig.CredentialManagementEvent.SUSPEND));
-        inOrder.verify(credentialStateMachine).sendEventAndUpdateStatus(eq(offer), eq(CredentialStateMachineConfig.CredentialOfferEvent.CANCEL));
     }
 
     /**
@@ -257,59 +109,20 @@ class CredentialStateServiceTest {
         verifyNoInteractions(applicationEventPublisher);
     }
 
-    /**
-     * Happy path: in pre-issuance, if the offer state changes, the updated offer must be persisted.
-     */
-    @Test
-    void handleStatusChangeForPreIssuanceProcess_shouldPersistOfferWhenOfferChanged() {
-        var mgmt = CredentialManagement.builder().id(UUID.randomUUID()).credentialManagementStatus(CredentialStatusManagementType.INIT).build();
-        var offer = CredentialOffer.builder().id(UUID.randomUUID()).credentialManagement(mgmt).build();
 
-        when(credentialStateMachine.sendEventAndUpdateStatus(eq(offer), any()))
-                .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType>(CredentialOfferStatusType.OFFERED, true));
-
-        var response = stateService.handleStatusChangeForPreIssuanceProcess(
-                mgmt,
-                offer,
-                CredentialStateMachineConfig.CredentialManagementEvent.ISSUE,
-                CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
-
-        assertNotNull(response);
-        verify(persistenceService).saveCredentialOffer(eq(offer));
-    }
-
-    /**
-     * Edge case: in pre-issuance, if the offer state does not change, the offer must not be persisted.
-     */
-    @Test
-    void handleStatusChangeForPreIssuanceProcess_shouldNotPersistOfferWhenOfferUnchanged() {
-        var mgmt = CredentialManagement.builder().id(UUID.randomUUID()).credentialManagementStatus(CredentialStatusManagementType.INIT).build();
-        var offer = CredentialOffer.builder().id(UUID.randomUUID()).credentialManagement(mgmt).build();
-
-        when(credentialStateMachine.sendEventAndUpdateStatus(eq(offer), any()))
-                .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType>(CredentialOfferStatusType.OFFERED, false));
-
-        var response = stateService.handleStatusChangeForPreIssuanceProcess(
-                mgmt,
-                offer,
-                CredentialStateMachineConfig.CredentialManagementEvent.ISSUE,
-                CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
-
-        assertNotNull(response);
-        verify(persistenceService, never()).saveCredentialOffer(any());
-    }
 
     /**
      * Happy path: post-issuance status change triggers status list update + management persistence.
      */
     @Test
     void handleStatusChangeForPostIssuanceProcess_shouldUpdateStatusListsAndPersistManagementWhenChanged() {
-        var offer1 = CredentialOffer.builder().id(UUID.randomUUID()).credentialStatus(CredentialOfferStatusType.ISSUED).build();
-        var offer2 = CredentialOffer.builder().id(UUID.randomUUID()).credentialStatus(CredentialOfferStatusType.REQUESTED).build();
+        var offers = List.of(CredentialOfferStatusType.ISSUED, CredentialOfferStatusType.ISSUED, CredentialOfferStatusType.EXPIRED, CredentialOfferStatusType.CANCELLED, CredentialOfferStatusType.REQUESTED)
+                .stream().map(state -> CredentialOffer.builder().id(UUID.randomUUID()).credentialStatus(state).build())
+                .collect(Collectors.toSet());
 
         var mgmt = CredentialManagement.builder()
                 .id(UUID.randomUUID())
-                .credentialOffers(Set.of(offer1, offer2))
+                .credentialOffers(offers)
                 .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .build();
 
@@ -319,16 +132,16 @@ class CredentialStateServiceTest {
         when(credentialStateMachine.sendEventAndUpdateStatus(any(CredentialOffer.class), any()))
                 .thenReturn(new CredentialStateMachine.StateTransitionResult<CredentialOfferStatusType>(CredentialOfferStatusType.OFFERED, true));
 
-        var persistedStatuses = Set.<CredentialOfferStatus>of(
-                CredentialOfferStatus.builder()
+        var persistedStatuses = offers.stream().map(offer -> CredentialOfferStatus.builder()
                         .id(CredentialOfferStatusKey.builder()
-                                .offerId(offer1.getId())
-                                .statusListId(UUID.randomUUID())
-                                .index(1)
-                                .build())
-                        .build());
+                        .offerId(offer.getId())
+                        .statusListId(UUID.randomUUID())
+                        .index(rand.nextInt(10000))
+                        .build()).build())
+                .collect(Collectors.toSet());
 
-        when(persistenceService.findCredentialOfferStatusesByOfferIds(eq(List.of(offer1.getId(), offer2.getId()))))
+        var offerIds = offers.stream().map(CredentialOffer::getId).toList();
+        when(persistenceService.findCredentialOfferStatusesByOfferIds(eq(offerIds)))
                 .thenReturn(persistedStatuses);
 
         var expectedStatusListIds = List.of(UUID.randomUUID());
@@ -337,16 +150,13 @@ class CredentialStateServiceTest {
 
         when(persistenceService.saveCredentialManagement(eq(mgmt))).thenReturn(mgmt);
 
-        UpdateStatusResponseDto response = stateService.handleStatusChangeForPostIssuanceProcess(
+        UpdateStatusResponseDto response = stateService.handleStatusChange(
                 mgmt,
-                offer1,
                 CredentialStateMachineConfig.CredentialManagementEvent.REVOKE,
                 CredentialStateMachineConfig.CredentialOfferEvent.CANCEL);
 
         assertNotNull(response);
-
-        verify(statusListPersistenceService).revoke(anySet());
-        verify(persistenceService).saveCredentialManagement(eq(mgmt));
+        verify(statusListPersistenceService).revoke(eq(persistedStatuses));
     }
 
 }

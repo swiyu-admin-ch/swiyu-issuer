@@ -21,11 +21,12 @@ import lombok.NoArgsConstructor;
 public class StatusListCreateDto {
 
     /**
-     * Type of the status list in camel case; eg TokenStatusList
+     * [DEPRECATED] Type of the status list in camel case; e.g., TokenStatusList. This parameter is deprecated and
+     * should not be sent in future requests.
      */
-    @NotNull
-    @Schema(description = "Technical type of the status list to be used. This influences the options available in config.")
-    private StatusListTypeDto type;
+    @Schema(description = "[DEPRECATED] This parameter is deprecated and should not be sent in future requests.")
+    private String type;
+
     /**
      * How many status entries can be part of the status list
      */

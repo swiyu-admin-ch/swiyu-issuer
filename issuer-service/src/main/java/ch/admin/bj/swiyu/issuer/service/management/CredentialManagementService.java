@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig.CredentialManagementEvent;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper;
@@ -18,6 +19,7 @@ import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -74,8 +76,11 @@ public class CredentialManagementService {
         var credentialOffers = mgmt.getCredentialOffers().stream()
                 .map(this::checkAndExpireOffer)
                 .collect(Collectors.toSet());
-
-        return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
+        try {
+            return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to parse management object with DPoP key", e);
+        }
     }
 
 
@@ -87,7 +92,7 @@ public class CredentialManagementService {
      * of the offer and maps the result to a DTO suitable for clients.</p>
      *
      * @param managementId the id of the management object
-     * @param offerId the id of the offer object
+     * @param offerId      the id of the offer object
      * @return a {@link CredentialInfoResponseDto} containing credential offer information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
@@ -145,17 +150,41 @@ public class CredentialManagementService {
         var managementEvent = toCredentialManagementEvent(requestedNewStatus);
         var offerEvent = toCredentialOfferEvent(requestedNewStatus);
 
-        var credentialOfferForUpdate = mgmt.getCredentialOffers().stream()
-                .findFirst()
-                .orElseThrow(() -> new BadRequestException("Credential offer is not processable"));
+        validateIssuanceNotSkipped(managementEvent, mgmt);
 
-        if (mgmt.isPreIssuanceProcess()) {
-            return stateService.handleStatusChangeForPreIssuanceProcess(
-                    mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
+        validateReadyOnlyInInit(offerEvent, mgmt);
+
+        return stateService.handleStatusChange(
+                mgmt, managementEvent, offerEvent);
+    }
+
+    /**
+     * Validates that only READY event is allowed in INIT state of credential management.
+     * @param offerEvent
+     * @param mgmt
+     */
+    private static void validateReadyOnlyInInit(CredentialStateMachineConfig.CredentialOfferEvent offerEvent, CredentialManagement mgmt) {
+        if (offerEvent == CredentialStateMachineConfig.CredentialOfferEvent.READY
+                && mgmt.getCredentialManagementStatus() != CredentialStatusManagementType.INIT) {
+            throw new IllegalStateException("Only READY status is allowed in INIT state of credential management. Just " +
+                    "in deferred offer scenario. In this case, the management status should still be in INIT.");
         }
+    }
 
-        return stateService.handleStatusChangeForPostIssuanceProcess(
-                mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
+    /**
+     * Validates that the issuance process is not skipped during a credential management status transition.
+     * <p>
+     * Throws an {@link IllegalStateException} if an ISSUE event is requested while the management object is not yet in
+     * the ISSUED state. This ensures that the credential issuance process cannot be bypassed and enforces correct state transitions.
+     *
+     * @param managementEvent the management event to process (must not be null)
+     * @param mgmt the credential management object to check (must not be null)
+     * @throws IllegalStateException if an ISSUE event is attempted before the management object is in ISSUED state
+     */
+    private static void validateIssuanceNotSkipped(CredentialManagementEvent managementEvent, CredentialManagement mgmt) {
+        if (managementEvent == CredentialManagementEvent.ISSUE && !mgmt.getCredentialManagementStatus().isIssued()) {
+            throw new IllegalStateException("Issuance process may not be skipped");
+        }
     }
 
     /**
@@ -194,7 +223,7 @@ public class CredentialManagementService {
      * the offer has expired.</p>
      *
      * @param credentialManagementId the id of the credential offer
-     * @param offerId the id of the offer
+     * @param offerId                the id of the offer
      * @return the {@link StatusResponseDto} representing the credential's current status
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
@@ -420,6 +449,7 @@ public class CredentialManagementService {
                         .credentialManagementStatus(CredentialStatusManagementType.INIT)
                         .renewalResponseCnt(0)
                         .renewalRequestCnt(0)
+                        .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
                         .build());
 
         CredentialOffer entity = persistenceService.saveCredentialOffer(
@@ -435,7 +465,6 @@ public class CredentialManagementService {
                         .credentialValidUntil(requestDto.getCredentialValidUntil())
                         .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
                         .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
-                        .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
                         .credentialManagement(credentialManagement)
                         .build());
 

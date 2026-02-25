@@ -12,7 +12,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.ECKey;
@@ -108,7 +107,6 @@ class CredentialManagementStatusIT {
         when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
 
         final StatusListDto statusListDto = assertDoesNotThrow(() -> statusListTestHelper.createStatusList(
-                StatusListTypeDto.TOKEN_STATUS_LIST,
                 1000,
                 null,
                 2,
@@ -142,7 +140,7 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"READY", "CANCELLED"})
+    @EnumSource(value = CredentialStatusTypeDto.class, names = {"READY"})
     void testUpdateWithPreIssuanceStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
 
         mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), value)))
@@ -159,19 +157,6 @@ class CredentialManagementStatusIT {
         changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
 
         mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.READY)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error_description").value("Bad Request"))
-                .andExpect(jsonPath("$.detail").exists());
-    }
-
-    @Transactional
-    @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
-    void testUpdateWithPreIssuanceCancelledStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
-
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
-
-        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.CANCELLED)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").exists());

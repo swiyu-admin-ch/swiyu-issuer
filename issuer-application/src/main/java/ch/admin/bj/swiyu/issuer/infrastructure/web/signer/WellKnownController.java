@@ -1,10 +1,10 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
+import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
-import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -31,8 +31,8 @@ import java.util.UUID;
 @RequestMapping
 public class WellKnownController {
 
-    private static final String CONTENT_TYPE_APPLICATION_JWT = "application/jwt";
     private final JweService jweService;
+    private static final String CONTENT_TYPE_APPLICATION_JWT = "application/jwt";
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final MetadataService metadataService;
 
@@ -54,7 +54,10 @@ public class WellKnownController {
                     "extensions for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP."
     )
     public OAuthAuthorizationServerMetadataDto getAuthorizationServerMetadata() {
-        return demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(metadataService.getUnsignedOAuthAuthorizationServerMetadata());
+        return demonstratingProofOfPossessionService
+                .addSigningAlgorithmsSupportedAndSwissprofileVersion(
+                        metadataService.getUnsignedOAuthAuthorizationServerMetadata()
+                );
     }
 
     /**

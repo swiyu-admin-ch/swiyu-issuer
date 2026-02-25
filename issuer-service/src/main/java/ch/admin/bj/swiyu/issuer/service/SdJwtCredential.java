@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
@@ -93,10 +94,18 @@ public class SdJwtCredential extends CredentialBuilder {
                 throw new Oid4vcException(
                         e,
                         INVALID_PROOF,
-                        String.format("Failed expand holder binding %s to cnf", holderPublicKey.getDidJwk())
+                        "Failed to expand holder binding into cnf",
+                        Map.of(
+                                "holderKeyIndex", idx,
+                                "didJwk", holderPublicKey.getDidJwk()
+                        )
                 );
             }
         }
+    }
+
+    private static String createSDJWT(List<Disclosure> disclosures, SignedJWT jwt) {
+        return new SDJWT(jwt.serialize(), disclosures).toString();
     }
 
     /**
@@ -120,7 +129,7 @@ public class SdJwtCredential extends CredentialBuilder {
 
         final var override = getCredentialOffer().getConfigurationOverride();
         final var sdjwts = new ArrayList<String>(batchSize);
-
+        var vcHashes = new ArrayList<String>(batchSize);
         for (int i = 0; i < batchSize; i++) {
             final var builder = new SDObjectBuilder();
 
@@ -129,7 +138,14 @@ public class SdJwtCredential extends CredentialBuilder {
 
             addHolderBinding(holderPublicKeys, i, builder);
             addStatusReferences(statusReferences, i, builder);
-            sdjwts.add(createSignedSDJWT(override, builder, disclosures));
+            SignedJWT jwt = createSignedJWT(override, builder);
+            // Collect hashes of the VCs as way for issuer to be able to trace misused VCs
+            vcHashes.add(jwt.getSignature().toString());
+            sdjwts.add(createSDJWT(disclosures, jwt));
+        }
+        // Only save hashes
+        if (getApplicationProperties().isEnableVcHashStorage()) {
+            getCredentialOffer().setVcHashes(vcHashes);
         }
 
         return Collections.unmodifiableList(sdjwts);
@@ -233,21 +249,25 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
-    private String createSignedSDJWT(ConfigurationOverride override,
-                                     SDObjectBuilder builder,
-                                     List<Disclosure> disclosures) {
+    /**
+     * Create a SignedJWT
+     *
+     * @param override Override value for signing key
+     * @param builder  Selective Disclosure Objects (Hashes or always disclosed objects) to be included in the claims of the JWT
+     * @return JWT Signed with the key provided in the Configuration Override or by default key
+     */
+    private SignedJWT createSignedJWT(ConfigurationOverride override,
+                                      SDObjectBuilder builder) {
         try {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                     .type(new JOSEObjectType(SD_JWT_FORMAT))
                     .keyID(override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()))
-                    .customParam("ver", sdjwtProperties.getVersion())
+                    .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.VC_PROFILE_VERSION)
                     .build();
             JWTClaimsSet claimsSet = JWTClaimsSet.parse(builder.build(true));
             SignedJWT jwt = new SignedJWT(header, claimsSet);
-
             jwt.sign(this.createSigner());
-
-            return new SDJWT(jwt.serialize(), disclosures).toString();
+            return jwt;
         } catch (ParseException | JOSEException e) {
             throw new CredentialException(e);
         }
@@ -275,3 +295,4 @@ public class SdJwtCredential extends CredentialBuilder {
 
     }
 }
+

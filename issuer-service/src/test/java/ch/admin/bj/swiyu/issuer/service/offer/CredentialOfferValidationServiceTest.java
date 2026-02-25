@@ -6,7 +6,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -235,7 +234,6 @@ class CredentialOfferValidationServiceTest {
         var statusLists = List.of(
                 StatusList.builder()
                         .uri("https://example.com/status")
-                        .type(StatusListType.TOKEN_STATUS_LIST)
                         .configurationOverride(new ConfigurationOverride(null, null, null, null))
                         .build()
         );
@@ -249,7 +247,6 @@ class CredentialOfferValidationServiceTest {
         var statusLists = List.of(
                 StatusList.builder()
                         .uri("https://example.com/status")
-                        .type(StatusListType.TOKEN_STATUS_LIST)
                         .configurationOverride(new ConfigurationOverride("did:example:OTHER", null, null, null))
                         .build()
         );

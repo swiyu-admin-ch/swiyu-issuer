@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
@@ -32,7 +33,6 @@ import java.util.*;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,7 +50,7 @@ public class TestInfrastructureUtils {
      * @param holderPublicKey (optional) used to build DPoP-Proof
      * @param externalUrl     (required if providing holderPublicKey) used to set DPoP checked http URI
      * @return OAuthToken response
-     * @throws Exception
+     * @throws Exception on request/signing/parsing errors
      */
     public static Map<String, Object> fetchOAuthTokenDpop(MockMvc mock, String preAuthCode, @Nullable JWK holderPublicKey, @Nullable String externalUrl) throws Exception {
         var requestBuilder = post("/oid4vci/api/token")
@@ -66,11 +66,12 @@ public class TestInfrastructureUtils {
                 .andExpect(content().string(containsString("access_token")))
                 .andExpect(content().string(containsString("BEARER")))
                 .andReturn();
-        return new ObjectMapper().readValue(response.getResponse().getContentAsString(), HashMap.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> tokenResponse = new ObjectMapper().readValue(response.getResponse().getContentAsString(), HashMap.class);
+        return tokenResponse;
     }
 
     /**
-     *
      * @param mock        MockMvc to perform call with
      * @param httpMethod  Method the call the dpop will be used for will be using
      * @param httpUri     absolute URI to the location the call the dpop will be used for will be going to
@@ -98,6 +99,7 @@ public class TestInfrastructureUtils {
         var signedJwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .jwk(dpopKey.toPublicJWK())
                 .type(new JOSEObjectType("dpop+jwt"))
+                .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build(),
                 claimSetBuilder.build());
         signedJwt.sign(new ECDSASigner(dpopKey.toECKey()));

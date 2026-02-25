@@ -189,7 +189,7 @@ class DeferredFlowIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DEFERRED"))
                 .andExpect(jsonPath("$.credential_offers[0].holder_jwks[0]").value(SignedJWT.parse(proof).getHeader().getJWK().toJSONString()))
-                .andExpect(jsonPath("$.credential_offers[0].key_attestations").isEmpty())
+                .andExpect(jsonPath("$.credential_offers[0].key_attestations").doesNotExist())
                 .andReturn();
 
         mock.perform(patch("/management/api/credentials/" + credentialWithDeeplinkResponseDto.getManagementId())
@@ -484,7 +484,7 @@ class DeferredFlowIT {
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
-                .andExpect(jsonPath("$.error_description").value("Invalid transactional id"))
+                .andExpect(jsonPath("$.error_description").value("Invalid transaction id"))
                 .andReturn();
     }
 
