@@ -50,6 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed signed metadata using always the first key used, even when keys were rotated by issuers during renewals.- Deferred credential response when credential data is not ready is now 202 ACCEPTED
 - Deferred credential transaction_id will not change anymore during deferred flow
 - Added `deferred_credential_endpoint` and `batch_credential_issuance` with min batch size of 10 to sample.compose.yml
+- Reduce number of calls to status registry when setting states of renewed and batch issued VCs
+- Stop sending status update callbacks to Business Issuer when remaining in the same state
+- Return CREDENTIAL_REQUEST_DENIED again if the offer was cancelled or expired while being in deferred
 
 ### Changed
 - Removed the obsolete "version" tag from SD-JWT payloads, Status List tokens, Credential Offer data, and Issuer Metadata to align with the current specification.

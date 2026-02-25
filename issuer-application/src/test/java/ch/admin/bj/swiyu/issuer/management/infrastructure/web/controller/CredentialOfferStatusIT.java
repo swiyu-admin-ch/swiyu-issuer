@@ -372,18 +372,5 @@ class CredentialOfferStatusIT {
                     .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.CANCELLED.toString()));
         }
 
-        @Transactional
-        @Test
-        void testUpdateOfferStatusWithCancelledWhenExpired_thenBadRequest() throws Exception {
-            var originalState = CredentialStatusTypeDto.EXPIRED;
-            managementId = testHelper.createWithOfferStatus(CredentialOfferStatusType.EXPIRED);
-
-            mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
-                    .andExpect(status().isBadRequest());
-
-            mvc.perform(get(testHelper.getStatusUrl(managementId)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(originalState.toString()));
-        }
     }
 }

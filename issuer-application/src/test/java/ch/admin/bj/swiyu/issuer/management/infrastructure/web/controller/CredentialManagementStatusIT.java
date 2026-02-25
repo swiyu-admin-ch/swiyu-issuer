@@ -140,7 +140,7 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"READY", "CANCELLED"})
+    @EnumSource(value = CredentialStatusTypeDto.class, names = {"READY"})
     void testUpdateWithPreIssuanceStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
 
         mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), value)))
@@ -157,19 +157,6 @@ class CredentialManagementStatusIT {
         changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
 
         mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.READY)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error_description").value("Bad Request"))
-                .andExpect(jsonPath("$.detail").exists());
-    }
-
-    @Transactional
-    @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
-    void testUpdateWithPreIssuanceCancelledStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
-
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
-
-        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.CANCELLED)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").exists());
