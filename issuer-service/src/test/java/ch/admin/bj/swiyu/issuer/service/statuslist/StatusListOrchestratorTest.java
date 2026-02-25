@@ -8,12 +8,10 @@ import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
@@ -105,7 +103,6 @@ class StatusListOrchestratorTest {
     @CsvSource({",", ",did:example:mock#overridekey1", "did:example:override,did:example:override#key1"})
     void whenTokenStatusListIsCreated_thenSuccess(String overrideDid, String overrideVerificationMethod) throws ParseException, JOSEException {
         StatusListCreateDto request = StatusListCreateDto.builder()
-                .type(StatusListTypeDto.TOKEN_STATUS_LIST)
                 .maxLength(10)
                 .config(StatusListConfigDto.builder().bits(2).build())
                 .configurationOverride(new ConfigurationOverrideDto(overrideDid, overrideVerificationMethod, null, null))
@@ -127,12 +124,10 @@ class StatusListOrchestratorTest {
                 .uri("https://example.com/" + statusListId)
                 .config(Map.of("bits", 8))
                 .maxLength(10)
-                .type(StatusListType.TOKEN_STATUS_LIST)
                 .build();
 
         when(statusListRepository.findById(statusListId)).thenReturn(Optional.of(statusList));
         when(credentialOfferStatusRepository.countByStatusListId(statusListId)).thenReturn(3);
-        when(statusListProperties.getVersion()).thenReturn("v1");
 
         var dto = statusListOrchestrator.getStatusListInformation(statusListId);
 

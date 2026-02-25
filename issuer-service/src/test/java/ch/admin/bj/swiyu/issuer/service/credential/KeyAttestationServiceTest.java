@@ -28,6 +28,8 @@ class KeyAttestationServiceTest {
         keyResolver = mock(KeyResolver.class);
         applicationProperties = mock(ApplicationProperties.class);
         keyAttestationService = new KeyAttestationService(keyResolver, applicationProperties);
+
+        when(applicationProperties.isSwissProfileVersioningEnforcement()).thenReturn(false);
     }
 
     @Test
@@ -84,7 +86,7 @@ class KeyAttestationServiceTest {
         when(proofJwt.getAttestationJwt()).thenReturn(jwt);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
-            staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
+            staticMock.when(() -> AttestationJwt.parseJwt(jwt, false)).thenReturn(attestationJwt);
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
             when(attestationJwt.isValidAttestation(keyResolver, List.of(AttackPotentialResistance.ISO_18045_HIGH))).thenReturn(true);
             assertDoesNotThrow(() -> keyAttestationService.getAndValidateKeyAttestation(requirement, proofJwt));
@@ -101,7 +103,7 @@ class KeyAttestationServiceTest {
         when(proofJwt.getAttestationJwt()).thenReturn(jwt);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
-            staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
+            staticMock.when(() -> AttestationJwt.parseJwt(jwt, false)).thenReturn(attestationJwt);
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(List.of("trusted"));
             doThrow(new IllegalArgumentException("untrusted")).when(attestationJwt).throwIfNotTrustedAttestationProvider(anyList());
 
@@ -121,7 +123,7 @@ class KeyAttestationServiceTest {
         when(proofJwt.getAttestationJwt()).thenReturn(jwt);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
-            staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
+            staticMock.when(() -> AttestationJwt.parseJwt(jwt, false)).thenReturn(attestationJwt);
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
             when(attestationJwt.isValidAttestation(keyResolver, List.of(AttackPotentialResistance.ISO_18045_HIGH))).thenReturn(false);
 
@@ -139,7 +141,7 @@ class KeyAttestationServiceTest {
         when(proofJwt.getAttestationJwt()).thenReturn(jwt);
 
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
-            staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenThrow(new ParseException("ParseException", 0));
+            staticMock.when(() -> AttestationJwt.parseJwt(jwt, false)).thenThrow(new ParseException("ParseException", 0));
 
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
 
@@ -157,7 +159,7 @@ class KeyAttestationServiceTest {
         when(proofJwt.getAttestationJwt()).thenReturn(jwt);
         AttestationJwt attestationJwt = mock(AttestationJwt.class);
         try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
-            staticMock.when(() -> AttestationJwt.parseJwt(jwt)).thenReturn(attestationJwt);
+            staticMock.when(() -> AttestationJwt.parseJwt(jwt, false)).thenReturn(attestationJwt);
             when(attestationJwt.isValidAttestation(any(), any())).thenThrow(new JOSEException("JOSEException"));
             when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
 
@@ -166,4 +168,5 @@ class KeyAttestationServiceTest {
             assertTrue(ex.getMessage().contains("not supported"));
         }
     }
+
 }

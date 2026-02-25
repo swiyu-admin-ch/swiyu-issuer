@@ -51,9 +51,6 @@ public class ApplicationProperties {
     @NotNull
     private List<String> trustedAttestationProviders;
 
-    @NotNull
-    private String requestOfferVersion = "1.0";
-
     /**
      * If set to true the service expects all
      * writing message bodies to be encoded as JWT
@@ -124,6 +121,12 @@ public class ApplicationProperties {
     private JWKSet dataIntegrityKeySet;
     private boolean dataIntegrityEnforced;
     private boolean signedMetadataEnabled;
+
+    /**
+     * If set to true, Swiss Profile version indications (profile_version) will be enforced where applicable.
+     * Default is false to allow a transitional period.
+     */
+    private boolean swissProfileVersioningEnforcement = false;
 
     @PostConstruct
     public void init() {

@@ -5,12 +5,14 @@ import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
@@ -91,8 +93,7 @@ public class StatusListOrchestrator {
                 .orElseThrow(() -> new ResourceNotFoundException(String.format("Status List %s not found", statusListId)));
 
         return toStatusListDto(statusList,
-                statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusListId),
-                statusListProperties.getVersion());
+                statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusListId));
     }
 
     /**
@@ -108,14 +109,13 @@ public class StatusListOrchestrator {
             // use explicit transaction, since we want to handle data integrity exceptions
             // after commit
             var newStatusList = transaction.execute(status -> {
-                var statusListType = request.getType();
-                var statusList = switch (statusListType) {
-                    case TOKEN_STATUS_LIST -> initTokenStatusListToken(request);
-                };
+
+                var statusList = initTokenStatusListToken(request);
+
                 return statusListRepository.save(statusList);
             });
 
-            return toStatusListDto(newStatusList, newStatusList.getMaxLength(), statusListProperties.getVersion());
+            return toStatusListDto(newStatusList, newStatusList.getMaxLength());
         } catch (DataIntegrityViolationException e) {
             var msg = e.getMessage();
             if (msg != null && msg.toLowerCase().contains("status_list_uri_key")) {
@@ -159,8 +159,7 @@ public class StatusListOrchestrator {
         statusListPersistenceService.publishToRegistry(statusList, token);
 
         return toStatusListDto(statusList,
-                statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusList.getId()),
-                statusListProperties.getVersion());
+                statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusList.getId()));
     }
 
     private void mergeAndPersistConfigurationOverrideIfPresent(@Nullable ConfigurationOverrideDto overrideDto, StatusList statusList) {
@@ -222,7 +221,6 @@ public class StatusListOrchestrator {
 
         // Build DB Entry
         StatusList statusList = StatusList.builder()
-                .type(getStatusListTypeFromDto(statusListCreateDto.getType()))
                 .config(Map.of(
                         BITS_FIELD_NAME, config.getBits(),
                         "purpose", config.getPurpose() != null ? config.getPurpose() : ""
@@ -236,14 +234,6 @@ public class StatusListOrchestrator {
 
         statusListPersistenceService.publishToRegistry(statusList, token);
         return statusList;
-    }
-
-    private StatusListType getStatusListTypeFromDto(StatusListTypeDto statusListTypeDto) {
-        if (statusListTypeDto == null) {
-            return null;
-        }
-
-        return StatusListType.TOKEN_STATUS_LIST;
     }
 
     private StatusListEntryCreationDto createEmptyRegistryEntry() {

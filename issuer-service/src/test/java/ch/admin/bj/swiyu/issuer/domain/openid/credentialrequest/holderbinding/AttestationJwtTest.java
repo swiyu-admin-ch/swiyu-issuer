@@ -13,6 +13,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Date;
@@ -32,6 +33,7 @@ class AttestationJwtTest {
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
                 .type(new JOSEObjectType("key-attestation+jwt"))
+                .customParam("profile_version", "swiss-profile-issuance:1.0.0")
                 .build(),
                 new JWTClaimsSet.Builder()
                         .issuer(issuerDid)
@@ -42,7 +44,7 @@ class AttestationJwtTest {
         attestation.sign(new ECDSASigner(signingKey));
         var parsedJwt = attestation.serialize();
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> AttestationJwt.parseJwt(parsedJwt));
+                () -> AttestationJwt.parseJwt(parsedJwt, true));
     }
 
     /**
@@ -58,6 +60,7 @@ class AttestationJwtTest {
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
                 .type(new JOSEObjectType("key-attestation+jwt"))
+                .customParam("profile_version", "swiss-profile-issuance:1.0.0")
                 .build(),
                 new JWTClaimsSet.Builder()
                         .issuer(issuerDid)
@@ -69,6 +72,28 @@ class AttestationJwtTest {
         attestation.sign(new ECDSASigner(signingKey));
         var parsedJwt = attestation.serialize();
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> AttestationJwt.parseJwt(parsedJwt));
+                () -> AttestationJwt.parseJwt(parsedJwt , true));
+    }
+
+    @Test
+    void whenMissingProfileVersionHeader_thenThrowIllegalArgumentException() throws JOSEException {
+        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .keyID(signingKey.getKeyID())
+                .type(new JOSEObjectType("key-attestation+jwt"))
+                // intentionally no profile_version
+                .build(),
+                new JWTClaimsSet.Builder()
+                        .issuer("did:example:issuer")
+                        .issueTime(new Date())
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5)))
+                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
+                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
+                        .build());
+        attestation.sign(new ECDSASigner(signingKey));
+        var parsedJwt = attestation.serialize();
+
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> AttestationJwt.parseJwt(parsedJwt, true));
     }
 }
