@@ -31,6 +31,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - stale callbacks
     - Registry token getting refreshed
     - Status List availability
+- Support `configuration_override` in `POST /management/api/status-list/{statusListId}` to control key material 
+  selection (e.g., HSM key) during status list publication.
+- Persist status list `configuration_override` updates via `POST /management/api/status-list/{statusListId}` 
+  so the updated override is used for subsequent publications (also usable when automatic status list synchronization 
+  is enabled).
+- Swiss Profile versioning support for future version detection via `profile_version`.
+    - Issuer metadata includes `profile_version` in unsigned JSON body and in signed JWT header.
+    - SD-JWT VC includes `profile_version` in JWT header.
+    - Status list tokens include `profile_version` in JWT header.
+    - New environment variable `APPLICATION_SWISS_PROFILE_VERSIONING_ENFORCEMENT` (default: false) to optionally enforce `profile_version` checks for incoming JWT-based artifacts (e.g. DPoP and key attestations).
 
 ### Fixed
 
@@ -40,6 +50,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed signed metadata using always the first key used, even when keys were rotated by issuers during renewals.- Deferred credential response when credential data is not ready is now 202 ACCEPTED
 - Deferred credential transaction_id will not change anymore during deferred flow
 - Added `deferred_credential_endpoint` and `batch_credential_issuance` with min batch size of 10 to sample.compose.yml
+- Reduce number of calls to status registry when setting states of renewed and batch issued VCs
+- Stop sending status update callbacks to Business Issuer when remaining in the same state
+- Return CREDENTIAL_REQUEST_DENIED again if the offer was cancelled or expired while being in deferred
+
+### Changed
+- Removed the obsolete "version" tag from SD-JWT payloads, Status List tokens, Credential Offer data, and Issuer Metadata to align with the current specification.
 
 ## 2.3.1
 

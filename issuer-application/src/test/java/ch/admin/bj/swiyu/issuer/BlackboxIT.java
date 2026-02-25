@@ -179,7 +179,6 @@ class BlackboxIT {
         // ---------------------
         // First we have to create a status list
         final StatusListDto statusListDto = assertDoesNotThrow(() -> statusListTestHelper.createStatusList(
-                StatusListTypeDto.TOKEN_STATUS_LIST,
                 1000,
                 // Space for 1000 entries; length / batch size is how many VCs we can store in the status list
                 null,

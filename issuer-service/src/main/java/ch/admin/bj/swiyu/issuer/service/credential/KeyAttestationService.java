@@ -13,6 +13,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.text.ParseException;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
@@ -43,16 +44,22 @@ public class KeyAttestationService {
 
         // Proof type cannot hold an attestation
         if (!(requestProof instanceof AttestableProof)) {
-            throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!");
+            throw new Oid4vcException(INVALID_PROOF, "Attestation was requested, but presented proof is not attestable!",
+                    Map.of(
+                            "proofType", requestProof.getProofType() != null ? requestProof.getProofType().toString() : "null"
+                    ));
         }
 
         var attestationJwt = ((AttestableProof) requestProof).getAttestationJwt();
         if (attestationJwt == null) {
-            throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!");
+            throw new Oid4vcException(INVALID_PROOF, "Attestation was not provided!",
+                    Map.of(
+                            "proofType", requestProof.getProofType() != null ? requestProof.getProofType().toString() : "null"
+                    ));
         }
 
         try {
-            AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt);
+            AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt, applicationProperties.isSwissProfileVersioningEnforcement());
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
 
             // If trusted Attestation Services is empty, all attestation services are trusted for ease of trying out things.

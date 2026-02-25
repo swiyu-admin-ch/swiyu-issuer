@@ -48,9 +48,6 @@ public class StatusList {
     @Builder.Default
     private UUID id = UUID.randomUUID(); // Generate the ID manually
 
-    @Enumerated(EnumType.STRING)
-    @NotNull
-    private StatusListType type;
     /**
      * The config of the status list, the exact content of which depend on the type
      */

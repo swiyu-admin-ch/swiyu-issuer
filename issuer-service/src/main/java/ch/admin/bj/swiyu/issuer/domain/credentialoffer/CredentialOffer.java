@@ -255,7 +255,6 @@ public class CredentialOffer {
 
     public void invalidateOfferData() {
         this.offerData = null;
-        this.transactionId = null;
         this.credentialRequest = null;
         this.holderJWKs = null;
         this.clientAgentInfo = null;

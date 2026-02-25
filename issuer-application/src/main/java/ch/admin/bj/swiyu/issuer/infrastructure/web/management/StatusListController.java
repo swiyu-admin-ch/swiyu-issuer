@@ -2,8 +2,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.management;
 
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListUpdateDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,11 +20,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @Tag(name = "Status List API", description = "Exposes API endpoints for managing status lists used in verifiable " +
         "credential status tracking. Supports creating and initializing new status lists and retrieving status list " +
-        "information by ID. Ensures status list configuration is immutable after initialization. (IF-113)")
+        "information by ID. Ensures status list configuration is immutable after initialization. " +
+        "Manual status list updates can optionally persist a configuration override used for signing. (IF-113)")
 public class StatusListController {
 
     private final StatusListOrchestrator statusListOrchestrator;
-    private final ApplicationProperties applicationProperties;
 
     @Timed
     @PostMapping("")
@@ -47,12 +46,12 @@ public class StatusListController {
     @Timed
     @PostMapping("/{statusListId}")
     @Operation(summary = "Update the status list registry entry manually.",
-            description = "Update the status list registry entry manually. This endpoint is only available when " +
-                    "automatic status list synchronization is disabled in the application configuration.")
-    public StatusListDto updateStatusListRegistryEntry(@PathVariable UUID statusListId) {
-        if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
-            throw new ConfigurationException("Automatic status list synchronization is enabled. Manual update via API is disabled.");
-        }
-        return this.statusListOrchestrator.updateStatusList(statusListId);
+            description = "Update the status list registry entry manually. Optionally accepts configuration overrides to control key material selection for this update. " +
+                    "If provided, the override will be persisted on the status list and used for subsequent publications. " +
+                    "This endpoint can also be used in automatic synchronization mode to update the configuration override.")
+    public StatusListDto updateStatusListRegistryEntry(@PathVariable UUID statusListId,
+                                                       @Valid @RequestBody(required = false) StatusListUpdateDto request) {
+        return this.statusListOrchestrator.updateStatusList(statusListId,
+                request != null ? request.getConfigurationOverride() : null);
     }
 }

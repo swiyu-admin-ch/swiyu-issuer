@@ -12,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig.CredentialManagementEvent;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
@@ -40,8 +41,10 @@ import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapp
 /**
  * Service responsible for coordinating credential management operations.
  *
- * <p>This service acts as a facade, orchestrating calls to specialized services
- * for validation, state management, persistence, and status list operations.</p>
+ * <p>
+ * This service acts as a facade, orchestrating calls to specialized services
+ * for validation, state management, persistence, and status list operations.
+ * </p>
  */
 @Service
 @Slf4j
@@ -61,12 +64,17 @@ public class CredentialManagementService {
     /**
      * Retrieve public information about a credential offer.
      *
-     * <p>This method will check the credential's expiration and update its state if necessary
-     * (hence the method is not read-only). It also constructs the deeplink representation
-     * of the offer and maps the result to a DTO suitable for clients.</p>
+     * <p>
+     * This method will check the credential's expiration and update its state if
+     * necessary
+     * (hence the method is not read-only). It also constructs the deeplink
+     * representation
+     * of the offer and maps the result to a DTO suitable for clients.
+     * </p>
      *
      * @param managementId the id of the management object
-     * @return a {@link CredentialInfoResponseDto} containing credential offer information and a deeplink
+     * @return a {@link CredentialInfoResponseDto} containing credential offer
+     *         information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
@@ -84,17 +92,21 @@ public class CredentialManagementService {
         }
     }
 
-
     /**
      * Retrieve public information about a specific credential offer.
      *
-     * <p>This method will check the credential's expiration and update its state if necessary
-     * (hence the method is not read-only). It also constructs the deeplink representation
-     * of the offer and maps the result to a DTO suitable for clients.</p>
+     * <p>
+     * This method will check the credential's expiration and update its state if
+     * necessary
+     * (hence the method is not read-only). It also constructs the deeplink
+     * representation
+     * of the offer and maps the result to a DTO suitable for clients.
+     * </p>
      *
      * @param managementId the id of the management object
      * @param offerId      the id of the offer object
-     * @return a {@link CredentialInfoResponseDto} containing credential offer information and a deeplink
+     * @return a {@link CredentialInfoResponseDto} containing credential offer
+     *         information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
@@ -124,22 +136,35 @@ public class CredentialManagementService {
     /**
      * Update the status of a credential offer.
      *
-     * <p>Loads the credential with a pessimistic write lock, converts the incoming
-     * {@code requestedNewStatus} DTO to the internal {@link CredentialOfferStatusType},
-     * performs the status transition and returns a DTO with the updated state.</p>
+     * <p>
+     * Loads the credential with a pessimistic write lock, converts the incoming
+     * {@code requestedNewStatus} DTO to the internal
+     * {@link CredentialOfferStatusType},
+     * performs the status transition and returns a DTO with the updated state.
+     * </p>
      *
-     * <p>In this request, a webhook is also triggered. Through this webhook, the state of the Offer or the
-     * Management Offer is sent back to the Business Issuer. This depends on the current state of the Offer.
-     * If the Management Offer is in a pre-issuance state (INIT), the webhook is first triggered with the status
+     * <p>
+     * In this request, a webhook is also triggered. Through this webhook, the state
+     * of the Offer or the
+     * Management Offer is sent back to the Business Issuer. This depends on the
+     * current state of the Offer.
+     * If the Management Offer is in a pre-issuance state (INIT), the webhook is
+     * first triggered with the status
      * change of the Offer (in this case, there can only be one).
-     * Afterwards, during the post-issuance process, a possible status change of the Management Offer is processed.
-     * If the status changes, the Management Offer status transition is then sent via webhook.</p>
+     * Afterwards, during the post-issuance process, a possible status change of the
+     * Management Offer is processed.
+     * If the status changes, the Management Offer status transition is then sent
+     * via webhook.
+     * </p>
      *
      * @param credentialManagementId the id of the credential offer to update
      * @param requestedNewStatus     the requested new status DTO
-     * @return an {@link UpdateStatusResponseDto} describing the updated credential status
-     * @throws ResourceNotFoundException if no credential offer with the given id exists
-     * @throws BadRequestException       if the requested transition is invalid or cannot be performed
+     * @return an {@link UpdateStatusResponseDto} describing the updated credential
+     *         status
+     * @throws ResourceNotFoundException if no credential offer with the given id
+     *                                   exists
+     * @throws BadRequestException       if the requested transition is invalid or
+     *                                   cannot be performed
      */
     @Transactional
     public UpdateStatusResponseDto updateCredentialStatus(
@@ -151,28 +176,67 @@ public class CredentialManagementService {
         var managementEvent = toCredentialManagementEvent(requestedNewStatus);
         var offerEvent = toCredentialOfferEvent(requestedNewStatus);
 
-        var credentialOfferForUpdate = mgmt.getCredentialOffers().stream()
-                .findFirst()
-                .orElseThrow(() -> new BadRequestException("Credential offer is not processable"));
+        validateIssuanceNotSkipped(managementEvent, mgmt);
 
-        if (mgmt.isPreIssuanceProcess()) {
-            return stateService.handleStatusChangeForPreIssuanceProcess(
-                    mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
+        validateReadyOnlyInInit(offerEvent, mgmt);
+
+        return stateService.handleStatusChange(
+                mgmt, managementEvent, offerEvent);
+    }
+
+    /**
+     * Validates that only READY event is allowed in INIT state of credential
+     * management.
+     * 
+     * @param offerEvent
+     * @param mgmt
+     */
+    private static void validateReadyOnlyInInit(CredentialStateMachineConfig.CredentialOfferEvent offerEvent,
+            CredentialManagement mgmt) {
+        if (offerEvent == CredentialStateMachineConfig.CredentialOfferEvent.READY
+                && mgmt.getCredentialManagementStatus() != CredentialStatusManagementType.INIT) {
+            throw new IllegalStateException(
+                    "Only READY status is allowed in INIT state of credential management. Just " +
+                            "in deferred offer scenario. In this case, the management status should still be in INIT.");
         }
+    }
 
-        return stateService.handleStatusChangeForPostIssuanceProcess(
-                mgmt, credentialOfferForUpdate, managementEvent, offerEvent);
+    /**
+     * Validates that the issuance process is not skipped during a credential
+     * management status transition.
+     * <p>
+     * Throws an {@link IllegalStateException} if an ISSUE event is requested while
+     * the management object is not yet in
+     * the ISSUED state. This ensures that the credential issuance process cannot be
+     * bypassed and enforces correct state transitions.
+     *
+     * @param managementEvent the management event to process (must not be null)
+     * @param mgmt            the credential management object to check (must not be
+     *                        null)
+     * @throws IllegalStateException if an ISSUE event is attempted before the
+     *                               management object is in ISSUED state
+     */
+    private static void validateIssuanceNotSkipped(CredentialManagementEvent managementEvent,
+            CredentialManagement mgmt) {
+        if (managementEvent == CredentialManagementEvent.ISSUE && !mgmt.getCredentialManagementStatus().isIssued()) {
+            throw new IllegalStateException("Issuance process may not be skipped");
+        }
     }
 
     /**
      * Retrieve the current status of a credential offer.
      *
-     * <p>Loads the credential and returns a mapped {@link StatusResponseDto}. This method is
-     * transactional and not read-only because loading the credential may update its state when
-     * the offer has expired.</p>
+     * <p>
+     * Loads the credential and returns a mapped {@link StatusResponseDto}. This
+     * method is
+     * transactional and not read-only because loading the credential may update its
+     * state when
+     * the offer has expired.
+     * </p>
      *
      * @param credentialManagementId the id of the credential offer
-     * @return the {@link StatusResponseDto} representing the credential's current status
+     * @return the {@link StatusResponseDto} representing the credential's current
+     *         status
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
@@ -195,13 +259,18 @@ public class CredentialManagementService {
     /**
      * Retrieve the current status of a specific credential offer.
      *
-     * <p>Loads the credential and returns a mapped {@link StatusResponseDto}. This method is
-     * transactional and not read-only because loading the credential may update its state when
-     * the offer has expired.</p>
+     * <p>
+     * Loads the credential and returns a mapped {@link StatusResponseDto}. This
+     * method is
+     * transactional and not read-only because loading the credential may update its
+     * state when
+     * the offer has expired.
+     * </p>
      *
      * @param credentialManagementId the id of the credential offer
      * @param offerId                the id of the offer
-     * @return the {@link StatusResponseDto} representing the credential's current status
+     * @return the {@link StatusResponseDto} representing the credential's current
+     *         status
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
@@ -217,14 +286,19 @@ public class CredentialManagementService {
     /**
      * Create a credential offer and return its deeplink.
      *
-     * <p>Validates the provided request, determines the issuance batch size from
+     * <p>
+     * Validates the provided request, determines the issuance batch size from
      * the issuer metadata, creates and persists a new credential offer and then
-     * builds the deeplink representation for the created offer.</p>
+     * builds the deeplink representation for the created offer.
+     * </p>
      *
      * @param request the create credential offer request
-     * @return a {@link CredentialWithDeeplinkResponseDto} containing the created credential offer and its deeplink
-     * @throws BadRequestException   if the request is invalid or referenced resources cannot be resolved
-     * @throws IllegalStateException if the credential configuration format is unsupported
+     * @return a {@link CredentialWithDeeplinkResponseDto} containing the created
+     *         credential offer and its deeplink
+     * @throws BadRequestException   if the request is invalid or referenced
+     *                               resources cannot be resolved
+     * @throws IllegalStateException if the credential configuration format is
+     *                               unsupported
      */
     @Transactional
     public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(
@@ -265,20 +339,31 @@ public class CredentialManagementService {
     }
 
     /**
-     * Updates an existing {@link CredentialOffer} using data from a renewal response.
+     * Updates an existing {@link CredentialOffer} using data from a renewal
+     * response.
      *
-     * <p>Constructs a temporary {@link CreateCredentialOfferRequestDto} from the provided
-     * {@code request}, validates the constructed request against issuer metadata and claim
-     * constraints, resolves the referenced status lists, applies the refreshed data to
-     * {@code existingOffer}, persists the updated offer and registers its status list indexes.</p>
+     * <p>
+     * Constructs a temporary {@link CreateCredentialOfferRequestDto} from the
+     * provided
+     * {@code request}, validates the constructed request against issuer metadata
+     * and claim
+     * constraints, resolves the referenced status lists, applies the refreshed data
+     * to
+     * {@code existingOffer}, persists the updated offer and registers its status
+     * list indexes.
+     * </p>
      *
-     * @param request       the renewal response containing new offer data (must be valid)
+     * @param request       the renewal response containing new offer data (must be
+     *                      valid)
      * @param existingOffer the persisted credential offer to update
      * @return the persisted {@link CredentialOffer} after applying the renewal data
-     * @throws BadRequestException   if validation fails or referenced status lists cannot be resolved
-     * @throws IllegalStateException if the credential configuration format is unsupported
+     * @throws BadRequestException   if validation fails or referenced status lists
+     *                               cannot be resolved
+     * @throws IllegalStateException if the credential configuration format is
+     *                               unsupported
      */
-    public CredentialOffer updateOfferFromRenewalResponse(@Valid RenewalResponseDto request, CredentialOffer existingOffer) {
+    public CredentialOffer updateOfferFromRenewalResponse(@Valid RenewalResponseDto request,
+            CredentialOffer existingOffer) {
 
         CreateCredentialOfferRequestDto newOffer = CredentialOfferMapper.toOfferFromRenewal(request);
         var offerData = readOfferData(newOffer.getCredentialSubjectData());
@@ -303,23 +388,34 @@ public class CredentialManagementService {
         return entity;
     }
 
-
     /**
      * Update the offer data for a deferred credential.
      *
-     * <p>Loads the credential offer with a pessimistic write lock and verifies that the
-     * offer is a deferred offer currently in the {@code DEFERRED} state. If the check
-     * fails a {@link BadRequestException} is thrown. Further processing (validation and
-     * persisting the updated offer data) continues after this method's initial checks.</p>
+     * <p>
+     * Loads the credential offer with a pessimistic write lock and verifies that
+     * the
+     * offer is a deferred offer currently in the {@code DEFERRED} state. If the
+     * check
+     * fails a {@link BadRequestException} is thrown. Further processing (validation
+     * and
+     * persisting the updated offer data) continues after this method's initial
+     * checks.
+     * </p>
      *
-     * @param credentialManagementId the id of the credential management offer to update
-     * @param offerDataMap           the credential subject data to apply to the deferred offer
-     * @return an {@link UpdateStatusResponseDto} describing the updated credential status
-     * @throws ResourceNotFoundException if no credential offer with the given id exists
-     * @throws BadRequestException       if the credential is not deferred or has an incorrect status
+     * @param credentialManagementId the id of the credential management offer to
+     *                               update
+     * @param offerDataMap           the credential subject data to apply to the
+     *                               deferred offer
+     * @return an {@link UpdateStatusResponseDto} describing the updated credential
+     *         status
+     * @throws ResourceNotFoundException if no credential offer with the given id
+     *                                   exists
+     * @throws BadRequestException       if the credential is not deferred or has an
+     *                                   incorrect status
      */
     @Transactional
-    public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialManagementId, Map<String, Object> offerDataMap) {
+    public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialManagementId,
+            Map<String, Object> offerDataMap) {
         var mgmt = getCredentialManagementWithExpirationCheck(credentialManagementId);
         var storedCredentialOffer = mgmt.getCredentialOffers().stream()
                 .filter(CredentialOffer::isDeferredOffer)
@@ -349,11 +445,14 @@ public class CredentialManagementService {
     }
 
     /**
-     * Retrieve the {@link ConfigurationOverride} for a credential offer identified by the given tenant id.
+     * Retrieve the {@link ConfigurationOverride} for a credential offer identified
+     * by the given tenant id.
      *
      * @param tenantId the tenant id associated with the credential offer
-     * @return the {@link ConfigurationOverride} of the found credential offer, or {@code null} if no override is set
-     * @throws ResourceNotFoundException if no credential offer exists for the provided tenant id
+     * @return the {@link ConfigurationOverride} of the found credential offer, or
+     *         {@code null} if no override is set
+     * @throws ResourceNotFoundException if no credential offer exists for the
+     *                                   provided tenant id
      */
     @Transactional
     public ConfigurationOverride getConfigurationOverrideByTenantId(UUID tenantId) {
@@ -362,7 +461,8 @@ public class CredentialManagementService {
     }
 
     /**
-     * Retrieves credential management and checks for expiration, expiring the affected offers.
+     * Retrieves credential management and checks for expiration, expiring the
+     * affected offers.
      *
      * @param managementId the management ID
      * @return the credential management with updated offer states
