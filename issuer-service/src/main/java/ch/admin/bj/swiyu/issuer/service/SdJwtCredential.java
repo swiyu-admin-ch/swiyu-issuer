@@ -117,7 +117,7 @@ public class SdJwtCredential extends CredentialBuilder {
         var statusReferences = getStatusReferences();
         var batchSize = calculateBatchSize(holderPublicKeys);
 
-        if (!getStatusFactory().isCompatibleStatusReferencesToBatchSize(statusReferences, batchSize)) {
+        if (!getStatusFactory().isCompatibleStatusReferencesToBatchSize(statusReferences, getIssuerMetadata(), batchSize)) {
             throw new IllegalStateException(
                     "Batch size and status references do not match anymore. Cannot issue credential");
         }
@@ -153,6 +153,9 @@ public class SdJwtCredential extends CredentialBuilder {
      * @return batch size to issue
      */
     private int calculateBatchSize(@Nullable List<DidJwk> holderPublicKeys) {
+        if (!getIssuerMetadata().isBatchIssuanceAllowed()) {
+            return 1;
+        }
         return holderPublicKeys != null && !holderPublicKeys.isEmpty()
                 ? holderPublicKeys.size()
                 : getIssuerMetadata().getIssuanceBatchSize();

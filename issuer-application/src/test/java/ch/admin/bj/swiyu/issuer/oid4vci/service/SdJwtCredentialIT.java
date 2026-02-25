@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
@@ -9,9 +8,9 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
@@ -31,6 +30,7 @@ import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.JwtTestUtils.getJWTPayload;
 import static java.util.Objects.nonNull;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 class SdJwtCredentialIT {
 
-    final private static ObjectMapper mapper = new ObjectMapper();
     private final UUID preAuthCode = UUID.randomUUID();
     @Autowired
     private CredentialFormatFactory vcFormatFactory;
@@ -116,7 +115,7 @@ class SdJwtCredentialIT {
         // TODO add status test
         // TODO add key id
         List<String> sd = JsonPath.read(payload, "$._sd");
-        assertEquals(3, sd.size());
+        assertEquals(getUniversityCredentialSubjectData().size(), sd.size());
 
         String alg = JsonPath.read(payload, "$._sd_alg");
         assertEquals("sha-256", alg);
@@ -157,7 +156,7 @@ class SdJwtCredentialIT {
             payloads.add(payload);
 
             List<String> sd = JsonPath.read(payload, "$._sd");
-            assertEquals(3, sd.size());
+            assertEquals(getUniversityCredentialSubjectData().size(), sd.size());
             sdHashes.addAll(sd);
 
             String alg = JsonPath.read(payload, "$._sd_alg");
@@ -171,7 +170,7 @@ class SdJwtCredentialIT {
         // test that payloads within the same batch are unique
         assertEquals(credentials.size(), payloads.size());
         // test that the sd hashes are all unique
-        assertEquals(credentials.size() * 3, sdHashes.size());
+        assertEquals(credentials.size() * getUniversityCredentialSubjectData().size(), sdHashes.size());
     }
 
     @Test
@@ -194,7 +193,7 @@ class SdJwtCredentialIT {
 
         // Jwt payload - optional fields
         List<String> sd = JsonPath.read(payload, "$._sd");
-        assertEquals(3
+        assertEquals(getUniversityCredentialSubjectData().size()
                 , sd.size());
     }
 

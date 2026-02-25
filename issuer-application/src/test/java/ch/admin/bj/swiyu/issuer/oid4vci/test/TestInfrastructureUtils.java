@@ -3,6 +3,9 @@ package ch.admin.bj.swiyu.issuer.oid4vci.test;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.authlete.sd.Disclosure;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.text.ParseException;
@@ -32,10 +36,8 @@ import java.util.*;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 public class TestInfrastructureUtils {
     public static Map<String, Object> fetchOAuthToken(MockMvc mock, String preAuthCode) throws Exception {
@@ -70,7 +72,6 @@ public class TestInfrastructureUtils {
     }
 
     /**
-     *
      * @param mock        MockMvc to perform call with
      * @param httpMethod  Method the call the dpop will be used for will be using
      * @param httpUri     absolute URI to the location the call the dpop will be used for will be going to
@@ -136,6 +137,33 @@ public class TestInfrastructureUtils {
                 .andReturn();
 
         return JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject();
+    }
+
+    public static CredentialWithDeeplinkResponseDto createInitialCredentialWithDeeplinkResponse(MockMvc mock, CreateCredentialOfferRequestDto offerRequest) throws Exception {
+
+        var objectMapper = new ObjectMapper();
+
+        var offerRequestString = objectMapper.writeValueAsString(offerRequest);
+
+        var response = mock.perform(post("/management/api/credentials")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(offerRequestString))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.management_id").isNotEmpty())
+                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andReturn();
+
+        return objectMapper.readValue(response.getResponse().getContentAsString(), CredentialWithDeeplinkResponseDto.class);
+    }
+
+    public static CredentialOfferDto extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(CredentialWithDeeplinkResponseDto credentialWithDeeplinkResponseDto) throws Exception {
+
+        var objectMapper = new ObjectMapper();
+        var decodedDeeplink = URLDecoder.decode(credentialWithDeeplinkResponseDto.getOfferDeeplink(), StandardCharsets.UTF_8);
+        var credentialOfferString = decodedDeeplink.replace("swiyu://?credential_offer=", "");
+
+        return objectMapper.readValue(credentialOfferString, CredentialOfferDto.class);
     }
 
     public static void verifyVC(SdjwtProperties sdjwtProperties, String vc, Map<String, String> credentialSubjectData) throws Exception {

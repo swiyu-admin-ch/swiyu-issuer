@@ -1,18 +1,18 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
-import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.*;
@@ -49,7 +49,7 @@ import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INV
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_REQUEST;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
@@ -71,9 +71,9 @@ class IssuanceControllerIT {
     private static ECKey jwk;
     private final UUID validPreAuthCode = UUID.randomUUID();
     private final UUID allValuesPreAuthCode = UUID.randomUUID();
-    private final UUID unboundPreAuthCode = UUID.randomUUID();
     private final Instant validFrom = Instant.now();
     private final Instant validUntil = Instant.now().plus(30, ChronoUnit.DAYS);
+    private UUID unboundPreAuthCode = UUID.randomUUID();
 
     @Autowired
     private MockMvc mock;
@@ -101,21 +101,23 @@ class IssuanceControllerIT {
         return credentialSubjectData;
     }
 
-    private static CredentialOffer createUnboundCredentialOffer(UUID preAuthCode, CredentialOfferStatusType status) {
-        var offerData = new HashMap<String, Object>();
-        offerData.put("data", new GsonBuilder().create().toJson(getUnboundCredentialSubjectData()));
-        return CredentialOffer.builder().credentialStatus(status)
+    private CredentialOffer createUnboundCredentialOffer() throws Exception {
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
-                .offerData(offerData)
-                .credentialMetadata(null)
-                .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
-                .nonce(UUID.randomUUID())
-                .preAuthorizedCode(preAuthCode)
+                .credentialSubjectData(Map.of("animal", "Tux"))
+                .statusLists(List.of(testStatusList.getUri()))
+                // .credentialMetadata(getCredentialMetadataDto())
                 .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+
+        unboundPreAuthCode = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer).getGrants().preAuthorizedCode().preAuthCode();
+
+        return credentialOfferRepository.findById(offer.getOfferId()).orElseThrow();
     }
 
     @BeforeEach
-    void setUp() throws JOSEException {
+    void setUp() throws Exception {
         testStatusList = saveStatusList(createStatusList());
         CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
         var offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", metadata);
@@ -123,7 +125,7 @@ class IssuanceControllerIT {
         offerId = offer.getId();
         var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", validFrom, validUntil, null);
         saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, testStatusList, 1);
-        var unboundOffer = createUnboundCredentialOffer(unboundPreAuthCode, CredentialOfferStatusType.OFFERED);
+        var unboundOffer = createUnboundCredentialOffer();
         saveStatusListLinkedOffer(unboundOffer, testStatusList, 2);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)

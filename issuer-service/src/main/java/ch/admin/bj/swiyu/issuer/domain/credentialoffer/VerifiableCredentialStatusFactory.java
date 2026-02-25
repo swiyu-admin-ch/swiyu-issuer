@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 
@@ -36,14 +37,19 @@ public class VerifiableCredentialStatusFactory {
      * A sane configuration has 1 entry (using the same for all instances) or one entry per instance (batch size)
      */
     public boolean isCompatibleStatusReferencesToBatchSize(@NotNull Map<String, List<VerifiableCredentialStatusReference>> accumulatedStatusReferences,
+                                                           @NotNull IssuerMetadata issuerMetadata,
                                                            @Nullable Integer batchSize) {
         int size = 1;
         if (batchSize != null && batchSize > 0) {
             size = batchSize;
         }
         for (List<VerifiableCredentialStatusReference> referenceList : accumulatedStatusReferences.values()) {
-            if (referenceList.size() != size && referenceList.size() != 1) {
-                // Not 1 per batch element or 1 (same reference used everywhere)
+
+            if (!issuerMetadata.isBatchIssuanceAllowed() && referenceList.size() != 1) {
+                return false;
+            }
+
+            if (referenceList.size() < size) {
                 return false;
             }
         }

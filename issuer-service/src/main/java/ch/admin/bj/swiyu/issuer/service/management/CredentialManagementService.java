@@ -1,5 +1,10 @@
 package ch.admin.bj.swiyu.issuer.service.management;
 
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
@@ -7,11 +12,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
@@ -27,11 +27,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.service.management.CredentialManagementMapper.*;
+import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toUpdateStatusResponseDto;
 import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.*;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
@@ -448,10 +450,12 @@ public class CredentialManagementService {
 
         log.debug("Created Credential offer {} valid until {}", entity.getId(), expiration.toEpochMilli());
 
+        var statusListEntries = issuerMetadata.isBatchIssuanceAllowed() ? issuerMetadata.getIssuanceBatchSize() : 1;
+
         persistenceService.saveStatusListEntries(
                 statusLists,
                 entity.getId(),
-                issuerMetadata.getIssuanceBatchSize());
+                statusListEntries);
 
         return newCredentialManagement;
     }

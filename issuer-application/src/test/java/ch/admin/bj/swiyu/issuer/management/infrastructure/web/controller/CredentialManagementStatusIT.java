@@ -34,12 +34,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -307,7 +307,7 @@ class CredentialManagementStatusIT {
     private CredentialWithDeeplinkResponseDto prepareIssuedCredential() throws Exception {
         var createRequestBody = objectMapper.writeValueAsString(CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
-                .credentialSubjectData(Map.of("type", "Bachelor", "name", "Bachelor of Science"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
                 .statusLists(List.of(statusListUri))
                 .build());
 

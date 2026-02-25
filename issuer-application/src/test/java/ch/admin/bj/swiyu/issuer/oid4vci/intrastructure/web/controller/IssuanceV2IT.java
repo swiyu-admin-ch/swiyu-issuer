@@ -4,8 +4,12 @@ import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
+import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -34,14 +38,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -54,8 +60,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class IssuanceV2IT {
 
-    private final UUID validPreAuthCode = UUID.randomUUID();
-    private final UUID validUnboundPreAuthCode = UUID.randomUUID();
     private StatusList testStatusList;
     private List<ECKey> holderKeys;
     @Autowired
@@ -76,29 +80,35 @@ class IssuanceV2IT {
     private IssuerMetadata issuerMetadata;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
+    @MockitoSpyBean
+    private CredentialPersistenceService persistenceService;
+
 
     @BeforeEach
     void setUp() {
         testStatusList = saveStatusList(createStatusList());
-        CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt");
-        saveStatusListLinkedOffer(offer, testStatusList, 0);
         holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
                 .toList();
-
-        var unboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialOfferStatusType.OFFERED, "unbound_example_sd_jwt");
-        saveStatusListLinkedOffer(unboundOffer, testStatusList, 1);
     }
 
     @Test
     void testSdJwtOffer_withProof_thenSuccess() throws Exception {
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
-        var token = tokenResponse.get("access_token");
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
+
         var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties);
 
-        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
+        var response = requestCredentialV2(mock, (String) tokenDto.get("access_token"), credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
@@ -117,19 +127,25 @@ class IssuanceV2IT {
     @Test
     void testSdJwtOffer_withMetadata_thenSuccess() throws Exception {
 
-        var validPreAuthCodeWithMetadata = UUID.randomUUID();
         var vctIntegrity = "vct#integrity";
         var vctMetadataUri = "vct_metadata_uri";
         var vctMetadataUriIntegrity = "vct_metadata_uri#integrity";
 
-        var metadata = new CredentialOfferMetadata(false, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
-        var getValidPreAuthCodeWithMetadataOffer = createTestOffer(validPreAuthCodeWithMetadata, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", metadata);
-        saveStatusListLinkedOffer(getValidPreAuthCodeWithMetadataOffer, testStatusList, 2);
+        var metadata = new CredentialOfferMetadataDto(false, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCodeWithMetadata.toString());
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .credentialMetadata(metadata)
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties);
 
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties);
         var response = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
@@ -147,9 +163,42 @@ class IssuanceV2IT {
     }
 
     @Test
-    void testSdJwtOffer_withoutProof_thenSuccess() throws Exception {
+    void testSdJwtOffer_noBatch_withoutProof_thenSuccess() throws Exception {
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validUnboundPreAuthCode.toString());
+        doReturn(null).when(issuerMetadata).getBatchCredentialIssuance();
+        doReturn(false).when(issuerMetadata).isBatchIssuanceAllowed();
+
+        var unboundOffer = createUnboundCredentialOffer();
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, unboundOffer.getPreAuthorizedCode().toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\"}",
+                "unbound_example_sd_jwt");
+
+        // assumption if no proofs provided then only 1 credential is issued
+        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.credentials").isNotEmpty())
+                .andExpect(jsonPath("$.transaction_id").doesNotExist())
+                .andExpect(jsonPath("$.interval").doesNotExist())
+                .andReturn();
+
+        var credentials = extractCredentialsV2(response);
+
+        // without proof also configured batch size credential is issued
+        assertEquals(1, credentials.size());
+    }
+
+    @Test
+    void testSdJwtOffer_batched_withoutProof_thenSuccess() throws Exception {
+
+        doReturn(new BatchCredentialIssuance(10)).when(issuerMetadata).getBatchCredentialIssuance();
+        doReturn(true).when(issuerMetadata).isBatchIssuanceAllowed();
+
+        var unboundOffer = createUnboundCredentialOffer();
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, unboundOffer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
         var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\"}",
                 "unbound_example_sd_jwt");
@@ -172,7 +221,16 @@ class IssuanceV2IT {
     @Test
     void testSdJwtOffer_withRequestAndResponseEncryption_thenSuccess() throws Exception {
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var offerData = getUniversityCredentialSubjectData();
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
 
         // Fetch issuer metadata for encryption info
@@ -233,7 +291,7 @@ class IssuanceV2IT {
         JsonObject credential = credentials.get(0).getAsJsonObject();
         var vc = credential.get("credential").getAsString();
 
-        TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
+        TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, offerData);
     }
 
     @ParameterizedTest
@@ -242,7 +300,15 @@ class IssuanceV2IT {
 
         List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
         var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
 
@@ -271,7 +337,15 @@ class IssuanceV2IT {
 
         List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
         var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
 
@@ -289,12 +363,82 @@ class IssuanceV2IT {
 
         List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
         var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
 
         requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
+                .andReturn();
+    }
+
+    @Test
+    void testSdJwtOffer_noBatchIssuanceAllowed_thenSuccess() throws Exception {
+
+        doReturn(null).when(issuerMetadata).getBatchCredentialIssuance();
+        doReturn(false).when(issuerMetadata).isBatchIssuanceAllowed();
+
+        var numberOfProofs = 1;
+
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                // .credentialMetadata(getCredentialMetadataDto())
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
+        var token = tokenDto.get("access_token");
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+
+        requestCredentialV2(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // verify that only 1 status list entry has been created beforehand (as batch issuance is not allowed)
+        verify(persistenceService, times(1)).saveStatusListEntries(anyList(), eq(offer.getOfferId()), eq(numberOfProofs));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    void testSdJwtOffer_batchIssuanceAllowed_proofAmountTooSmall_thenException(int numberOfProofs) throws Exception {
+
+        doReturn(new BatchCredentialIssuance(10)).when(issuerMetadata).getBatchCredentialIssuance();
+        doReturn(true).when(issuerMetadata).isBatchIssuanceAllowed();
+
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                // .credentialMetadata(getCredentialMetadataDto())
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+
+        // verify that only 1 status list entry has been created beforehand (as batch issuance is not allowed)
+        verify(persistenceService, times(1)).saveStatusListEntries(anyList(), eq(offer.getOfferId()), eq(10));
+
+        var tokenDto = fetchOAuthTokenDpop(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString(), null, null);
+        var token = tokenDto.get("access_token");
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+
+        requestCredentialV2(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
                 .andReturn();
     }
 
@@ -319,5 +463,17 @@ class IssuanceV2IT {
 
     private StatusList saveStatusList(StatusList statusList) {
         return statusListRepository.save(statusList);
+    }
+
+    private CredentialOffer createUnboundCredentialOffer() throws Exception {
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
+                .credentialSubjectData(Map.of("animal", "animal"))
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+
+        return credentialOfferRepository.findById(offer.getOfferId()).orElseThrow();
     }
 }
