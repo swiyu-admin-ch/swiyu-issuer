@@ -12,7 +12,6 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import com.authlete.sd.SDJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -76,8 +75,7 @@ class RenewalFlowIT {
     public static final String TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT = "/test/credential-renewal/endpoint";
     @Container
     static MockServerContainer mockServerContainer = new MockServerContainer(
-            DockerImageName.parse("mockserver/mockserver:5.15.0")
-    );
+            DockerImageName.parse("mockserver/mockserver:5.15.0"));
 
     static MockServerClient mockServerClient;
     @Autowired
@@ -102,11 +100,9 @@ class RenewalFlowIT {
 
     @BeforeAll
     static void initialization() {
-        mockServerClient =
-                new MockServerClient(
-                        mockServerContainer.getHost(),
-                        mockServerContainer.getServerPort()
-                );
+        mockServerClient = new MockServerClient(
+                mockServerContainer.getHost(),
+                mockServerContainer.getServerPort());
     }
 
     @BeforeEach
@@ -114,15 +110,16 @@ class RenewalFlowIT {
         mockServerClient.reset();
         statusListTestHelper = new StatusListTestHelper(mockMvc, objectMapper);
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(Mono.just(statusListEntry));
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
+                .thenReturn(Mono.just(statusListEntry));
         when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
 
         final StatusListDto statusListDto = assertDoesNotThrow(() -> statusListTestHelper.createStatusList(
-                StatusListTypeDto.TOKEN_STATUS_LIST,
                 1000,
-                // Space for 1000 entries; length / batch size is how many VCs we can store in the status list
+                // Space for 1000 entries; length / batch size is how many VCs we can store in
+                // the status list
                 null,
                 2,
                 // 2 Bits for having the states issue, revoke and suspend (and one unused state)
@@ -130,7 +127,8 @@ class RenewalFlowIT {
                 null,
                 null,
                 null));
-        // We will need the status list uri as identifier to indicate which status list will be used a VC we create
+        // We will need the status list uri as identifier to indicate which status list
+        // will be used a VC we create
         var statusListUri = statusListDto.getStatusRegistryUrl();
 
         payload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"status_lists\": [\"%s\"]}"
@@ -140,7 +138,8 @@ class RenewalFlowIT {
 
         when(applicationProperties.isRenewalFlowEnabled()).thenReturn(true);
         when(applicationProperties.getBusinessIssuerRenewalApiEndpoint())
-                .thenReturn(mockServerContainer.getEndpoint() + TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT);
+                .thenReturn(mockServerContainer.getEndpoint()
+                        + TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT);
     }
 
     @Test
@@ -150,14 +149,12 @@ class RenewalFlowIT {
                 .when(
                         new HttpRequest()
                                 .withMethod("POST")
-                                .withPath(TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT)
-                )
+                                .withPath(TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT))
                 .respond(
                         HttpResponse.response()
                                 .withStatusCode(200)
                                 .withHeader("Content-Type", "application/json")
-                                .withBody(payload)
-                );
+                                .withBody(payload));
 
         // renew token
         var tokenResponse = refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey);
@@ -166,13 +163,16 @@ class RenewalFlowIT {
         var credentials = new LinkedList<JWTClaimsSet>();
         for (var i = 0; i < RENEWAL_FLOWS; i++) {
             var credentialRequestString = createCredentialRequestStringWithNewKeys();
-            var credentialResponseString = requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
+            var credentialResponseString = requestCredentialV2WithDpop(mockMvc,
+                    tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata,
+                    dpopKey)
                     .andExpect(status().isOk())
                     .andExpect(content().contentType("application/json"))
                     .andReturn()
                     .getResponse()
                     .getContentAsString();
-            var credentialResponse = assertDoesNotThrow(() -> objectMapper.readValue(credentialResponseString, CredentialEndpointResponseDtoV2.class));
+            var credentialResponse = assertDoesNotThrow(() -> objectMapper
+                    .readValue(credentialResponseString, CredentialEndpointResponseDtoV2.class));
             var credentialClaims = credentialResponse.credentials().stream()
                     .map(this::getCredentialClaimsSet)
                     .toList();
@@ -204,13 +204,15 @@ class RenewalFlowIT {
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                .map(privindex -> assertDoesNotThrow(
+                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
                 .toList();
 
         var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
+        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
+                issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.error_description").value("Credential renewal is not allowed"))
@@ -219,25 +221,31 @@ class RenewalFlowIT {
 
     @ParameterizedTest
     @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "REVOKED"})
-    void givenRevoked_testRenewalInvalidAccessToken_thenException(UpdateCredentialStatusRequestTypeDto statusType) throws Exception {
+    void givenRevoked_testRenewalInvalidAccessToken_thenException(UpdateCredentialStatusRequestTypeDto statusType)
+            throws Exception {
 
         var tokenResponse = refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey);
 
-        // status update after token refresh => token is valid but credential is not in a state that allows renewal
+        // status update after token refresh => token is valid but credential is not in
+        // a state that allows renewal
         updateStatus(mockMvc, managementId, statusType);
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                .map(privindex -> assertDoesNotThrow(
+                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
                 .toList();
 
         var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
+        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
+                issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.error_description").value("Credential management is %s, no renewal possible".formatted(statusType.name())))
+                .andExpect(jsonPath("$.error_description")
+                        .value("Credential management is %s, no renewal possible"
+                                .formatted(statusType.name())))
                 .andReturn();
     }
 
@@ -245,7 +253,8 @@ class RenewalFlowIT {
     void testRenewalInvalidAccessToken_thenException() throws Exception {
         var credentialRequestString = createCredentialRequestStringWithNewKeys();
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, UUID.randomUUID().toString(), credentialRequestString, issuerMetadata, dpopKey)
+        requestCredentialV2WithDpop(mockMvc, UUID.randomUUID().toString(), credentialRequestString,
+                issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
@@ -261,8 +270,7 @@ class RenewalFlowIT {
                                 "POST",
                                 "http://localhost:8080/oid4vci/api/token",
                                 null,
-                                dpopKey
-                        ))
+                                dpopKey))
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                         .param("grant_type", "refresh_token")
                         .param("refresh_token", UUID.randomUUID().toString()))
@@ -270,7 +278,8 @@ class RenewalFlowIT {
     }
 
     /**
-     * This test mocks the business issuer being not able to process the request due to various issues
+     * This test mocks the business issuer being not able to process the request due
+     * to various issues
      *
      * @param statusCode status the business issuer responds with
      */
@@ -290,22 +299,21 @@ class RenewalFlowIT {
                 .when(
                         new HttpRequest()
                                 .withMethod("POST")
-                                .withPath(TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT)
-                )
+                                .withPath(TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT))
                 .respond(
                         HttpResponse.response()
                                 .withStatusCode(expectedStatus)
-                                .withHeader("Content-Type", "application/json")
-                );
+                                .withHeader("Content-Type", "application/json"));
 
         // renew token
-        var tokenResponse = assertDoesNotThrow(() -> refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey));
+        var tokenResponse = assertDoesNotThrow(
+                () -> refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey));
 
         var credentialRequestString = createCredentialRequestStringWithNewKeys();
 
-
         // set to issued
-        assertDoesNotThrow(() -> requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
+        assertDoesNotThrow(() -> requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(),
+                credentialRequestString, issuerMetadata, dpopKey)
                 .andExpect(status().is(expectedStatus))
                 .andExpect(content().contentType("application/json"))
                 .andReturn());
@@ -316,19 +324,23 @@ class RenewalFlowIT {
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                .map(privindex -> assertDoesNotThrow(
+                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
                 .toList();
 
         MvcResult result = mockMvc
-                .perform(post("/management/api/credentials").contentType("application/json").content(payload))
+                .perform(post("/management/api/credentials").contentType("application/json")
+                        .content(payload))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        var managementJsonObject = JsonParser.parseString(result.getResponse().getContentAsString()).getAsJsonObject();
+        var managementJsonObject = JsonParser.parseString(result.getResponse().getContentAsString())
+                .getAsJsonObject();
 
         managementId = managementJsonObject.get("management_id").getAsString();
 
-        var preAuthCode = IssuanceV2TestUtils.getPreAuthCodeFromDeeplink(managementJsonObject.get("offer_deeplink").getAsString());
+        var preAuthCode = IssuanceV2TestUtils
+                .getPreAuthCodeFromDeeplink(managementJsonObject.get("offer_deeplink").getAsString());
 
         dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
                 .keyID("HolderDPoPKey")
@@ -340,7 +352,8 @@ class RenewalFlowIT {
         var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, oauthTokenResponse.getAccessToken(), credentialRequestString, issuerMetadata, dpopKey)
+        requestCredentialV2WithDpop(mockMvc, oauthTokenResponse.getAccessToken(), credentialRequestString,
+                issuerMetadata, dpopKey)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
@@ -356,8 +369,7 @@ class RenewalFlowIT {
                                 "POST",
                                 "http://localhost:8080/oid4vci/api/token",
                                 null,
-                                dpopKey
-                        ))
+                                dpopKey))
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                         .param("pre-authorized_code", preAuthCode))
@@ -375,8 +387,7 @@ class RenewalFlowIT {
                                 "POST",
                                 "http://localhost:8080/oid4vci/api/token",
                                 null,
-                                dpopKey
-                        ))
+                                dpopKey))
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                         .param("grant_type", "refresh_token")
                         .param("refresh_token", refreshToken))
@@ -389,7 +400,8 @@ class RenewalFlowIT {
     private String createCredentialRequestStringWithNewKeys() throws Exception {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                .map(privindex -> assertDoesNotThrow(
+                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
                 .toList();
         var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
         return credentialRequestString;
@@ -402,7 +414,8 @@ class RenewalFlowIT {
     }
 
     private long getStatusIndex(JWTClaimsSet credentialClaimSet) {
-        Map<String, Map<String, Object>> tokenStatusListMap = (Map<String, Map<String, Object>>) credentialClaimSet.getClaim("status");
+        Map<String, Map<String, Object>> tokenStatusListMap = (Map<String, Map<String, Object>>) credentialClaimSet
+                .getClaim("status");
         return (long) tokenStatusListMap.get("status_list").get("idx");
 
     }

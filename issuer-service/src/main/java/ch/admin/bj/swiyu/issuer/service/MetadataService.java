@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
@@ -52,6 +53,7 @@ public class MetadataService {
      */
     public IssuerMetadata getUnsignedIssuerMetadata() {
         IssuerMetadata issuerMetadata = jweService.issuerMetadataWithEncryptionOptions();
+
         // If we have a Spring Cache managed singleton, it would get serialized with the AOP wrapper when used directly
         return issuerMetadata instanceof Advised ? (IssuerMetadata) AopProxyUtils.getSingletonTarget(issuerMetadata) : issuerMetadata;
     }
@@ -101,7 +103,7 @@ public class MetadataService {
      * @return the unsigned {@link OAuthAuthorizationServerMetadataDto} for this issuer
      */
     public OAuthAuthorizationServerMetadataDto getUnsignedOAuthAuthorizationServerMetadata() {
-        return demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(openIdIssuerConfiguration.getOpenIdConfiguration());
+        return openIdIssuerConfiguration.getOpenIdConfiguration();
     }
 
     /**
@@ -158,7 +160,6 @@ public class MetadataService {
 
             signer = jwsSignatureFacade.createSigner(sdjwtProperties, override.keyId(), override.keyPin());
 
-
             /*
              * alg: Must be ES256
              * typ: Must be openidvci-issuer-metadata+jwt
@@ -167,6 +168,7 @@ public class MetadataService {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                     .keyID(override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()))
                     .type(new JOSEObjectType("openidvci-issuer-metadata+jwt"))
+                    .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                     .build();
 
             JWTClaimsSet claimsSet = prepareJWTClaimsSet(override, metaDataJson, createTenantCredentialIssuerIdentifier(tenantId));

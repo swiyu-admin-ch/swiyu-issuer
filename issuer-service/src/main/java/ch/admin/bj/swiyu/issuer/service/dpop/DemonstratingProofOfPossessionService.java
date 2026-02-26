@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.dpop;
 
 import ch.admin.bj.swiyu.dpop.DpopConstants;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
@@ -92,11 +93,14 @@ public class DemonstratingProofOfPossessionService {
      * @param openIdConfiguration The configuration to be extended
      * @return the openidConfiguration with added dpop_signing_alg_values_supported
      */
-    public OAuthAuthorizationServerMetadataDto addSigningAlgorithmsSupported(OAuthAuthorizationServerMetadataDto openIdConfiguration) {
+    public OAuthAuthorizationServerMetadataDto addSigningAlgorithmsSupportedAndSwissprofileVersion(OAuthAuthorizationServerMetadataDto openIdConfiguration) {
         var builder = openIdConfiguration.toBuilder();
-        builder.dpop_signing_alg_values_supported(DpopConstants.SUPPORTED_ALGORITHMS);
+        builder.dpop_signing_alg_values_supported(DpopConstants.SUPPORTED_ALGORITHMS)
+                .profile_version(SwissProfileVersions.ISSUANCE_PROFILE_VERSION);
+
         return builder.build();
     }
+
 
     /**
      * Used to refresh the DPoP binding for more details see <a href="https://datatracker.ietf.org/doc/html/rfc9449#section-5">DPoP Access Token Request</a>

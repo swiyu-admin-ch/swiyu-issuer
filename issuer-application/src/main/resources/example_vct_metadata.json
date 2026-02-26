@@ -1,4 +1,5 @@
 {
+  "profile_version": "swiss-profile-vc:1.0.0",
   "vct": "${external-url}/oid4vci/vct/my-vct-v01",
   "name": "Example Education Credential - Preliminary Version",
   "description": "This is our development version of the education credential. Don't panic.",
@@ -15,5 +16,6 @@
         }
       }
     }
-  ]
+  ],
+  "profile_version": "swiss-profile-vc:1.0.0"
 }

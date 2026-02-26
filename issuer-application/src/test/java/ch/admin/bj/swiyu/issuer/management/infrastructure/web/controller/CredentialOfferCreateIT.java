@@ -9,7 +9,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -430,7 +429,7 @@ class CredentialOfferCreateIT {
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(firstStatusListEntry.getStatusRegistryUrl());
 
-        final StatusListDto firstStatusListDto = statusListTestHelper.createStatusList(StatusListTypeDto.TOKEN_STATUS_LIST, 127, "Test purpose", 4, firstIssuer, null, null, null);
+        final StatusListDto firstStatusListDto = statusListTestHelper.createStatusList(127, "Test purpose", 4, firstIssuer, null, null, null);
 
         final CreateCredentialOfferRequestDto firstCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
@@ -451,7 +450,7 @@ class CredentialOfferCreateIT {
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(secondStatusListEntry.getStatusRegistryUrl());
 
-        final StatusListDto secondStatusListDto = statusListTestHelper.createStatusList(StatusListTypeDto.TOKEN_STATUS_LIST, 255, "Test purpose 2", 2, secondIssuer, null, null, null);
+        final StatusListDto secondStatusListDto = statusListTestHelper.createStatusList(255, "Test purpose 2", 2, secondIssuer, null, null, null);
 
         final CreateCredentialOfferRequestDto secondCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))

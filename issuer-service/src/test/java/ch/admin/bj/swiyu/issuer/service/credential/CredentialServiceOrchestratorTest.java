@@ -129,7 +129,7 @@ class CredentialServiceOrchestratorTest {
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
-        statusList = StatusList.builder().type(StatusListType.TOKEN_STATUS_LIST)
+        statusList = StatusList.builder()
                 .config(Map.of("bits", 2))
                 .uri("https://localhost:8080/status")
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
@@ -426,7 +426,7 @@ class CredentialServiceOrchestratorTest {
                 credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
 
         assertEquals(CREDENTIAL_REQUEST_DENIED, exception.getError());
-        assertEquals("The credential can not be issued anymore, the offer was either cancelled or expired", exception.getMessage());
+        assertEquals("The credential cannot be issued anymore, the offer was either cancelled or expired", exception.getMessage());
     }
 
     @Test
@@ -724,7 +724,7 @@ class CredentialServiceOrchestratorTest {
         var exception = assertThrows(Oid4vcException.class, () -> credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
 
         assertEquals(CredentialRequestError.INVALID_TRANSACTION_ID, exception.getError());
-        assertEquals("Invalid transactional id", exception.getMessage());
+        assertEquals("Invalid transaction id", exception.getMessage());
     }
 
     @Test

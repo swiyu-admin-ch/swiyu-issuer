@@ -120,6 +120,10 @@ application:
   encryption-key-rotation-interval: "PT15M"
   encryption-enforce: false
 
+  # Enforce Swiss Profile version indications (profile_version) in incoming/outgoing artifacts where applicable.
+  # Default: false (transitional period).
+  swiss-profile-versioning-enforcement: false
+
   # Set dpop to be mandatory. Changing this default may break interoperability with the wallet and/or impact security.
   dpop-enforce: false
 

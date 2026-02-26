@@ -483,7 +483,7 @@ class DeferredFlowIT {
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
-                .andExpect(jsonPath("$.error_description").value("Invalid transactional id"))
+                .andExpect(jsonPath("$.error_description").value("Invalid transaction id"))
                 .andReturn();
     }
 

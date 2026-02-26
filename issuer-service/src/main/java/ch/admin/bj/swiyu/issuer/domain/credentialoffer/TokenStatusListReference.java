@@ -8,11 +8,10 @@ import java.util.Map;
  * Status List reference written into VC
  * Should be added as "status_list" to a status json object in the vc
  */
-public record TokenStatusListReference(int idx, String uri,
-                                       String type) implements VerifiableCredentialStatusReference {
+public record TokenStatusListReference(int idx, String uri) implements VerifiableCredentialStatusReference {
     @Override
     public Map<String, Object> createVCRepresentation() {
-        return Map.of("status", Map.of("status_list", Map.of("idx", idx, "uri", uri, "type", type)));
+        return Map.of("status", Map.of("status_list", Map.of("idx", idx, "uri", uri)));
     }
 
     @Override

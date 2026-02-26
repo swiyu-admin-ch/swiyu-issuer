@@ -18,17 +18,11 @@ public class StatusListDto {
     @Schema(description = "URI of the status list used by registry.")
     private String statusRegistryUrl;
 
-    @Schema(description = "Technical type of the status list to be used. This influences the options available in config.")
-    private StatusListTypeDto type;
-
     @Schema(description = "How many status entries can be part of the status list. The memory size of the status list is depending on the type and the config of the status list.", example = "100000")
     private Integer maxListEntries;
 
     @Schema(description = "How many status entries are not used in the  status list.", example = "12")
     private Integer remainingListEntries;
-
-    @Schema(description = "Version of the status list schema")
-    private String version;
 
     @Schema(description = """
                  Additional config parameters, depending on the status list type. For Example

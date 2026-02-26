@@ -50,6 +50,7 @@ public class CredentialStateMachineTestHelper {
                 case ISSUE -> {
                     entity.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.ISSUED);
                     entity.invalidateOfferData();
+                    entity.setTransactionId(null);
                     yield CredentialOfferStatusType.ISSUED;
                 }
                 case EXPIRE -> {

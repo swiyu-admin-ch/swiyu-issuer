@@ -61,7 +61,7 @@ class CredentialMetadataControllerIT {
         var content = mvcResult.getResponse().getContentAsString();
         // Expected value calculated by running a local instance and in terminal
         // echo "sha256-$(curl -X 'GET' 'http://localhost:8080/json-schema/my-schema-v01' 'accept: application/json' | openssl dgst -sha256 -binary | openssl base64 -A)"
-        assertEquals("sha256-4Gg/6RXWkLVMKD+TBSDCs2Zt7IhBGgGPJCGDU/dnvp4=", calculateSha256Hash(content));
+        assertEquals("sha256-0xHwlerZ+FwUtNv+3q0sw0HCQMx9YSEj6Ozq1ugk3Qs=", calculateSha256Hash(content));
         var vctMetadata = mapper.readValue(content, HashMap.class);
         var jsonSchemaResult = mock.perform(MockMvcRequestBuilders.get(vctMetadata.get("schema_uri").toString()))
                 .andExpect(status().isOk())

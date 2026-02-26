@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.dpop;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
@@ -36,8 +37,10 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -84,7 +87,7 @@ class DemonstratingProofOfPossessionServiceTest {
         demonstratingProofOfPossessionService.addDpopNonce(httpHeader);
         assertThat(httpHeader).isNotEmpty().containsKey(DPOP_NONCE_HEADER);
         assertThat(httpHeader.get(DPOP_NONCE_HEADER)).isNotEmpty().hasSize(1);
-        var dPopNonce = new SelfContainedNonce(httpHeader.get(DPOP_NONCE_HEADER).getFirst());
+        var dPopNonce = new SelfContainedNonce(requireNonNull(httpHeader.getFirst(DPOP_NONCE_HEADER)));
         assertThat(dPopNonce.isSelfContainedNonce()).isTrue();
         assertThat(dPopNonce.isValid(applicationProperties.getNonceLifetimeSeconds())).isTrue();
         Assertions.assertThat(nonceService.isUsedNonce(dPopNonce)).isFalse();
@@ -129,12 +132,45 @@ class DemonstratingProofOfPossessionServiceTest {
         assertDoesNotThrow(() -> demonstratingProofOfPossessionService.validateDpop(accessToken.toString(), signAndSerialize(dpop, dpopKey), request));
     }
 
+    @Test
+    void testValidateDpop_whenSwissProfileVersioningEnforced_thenProfileVersionRequired() {
+        when(applicationProperties.isSwissProfileVersioningEnforcement()).thenReturn(true);
+
+        var request = Mockito.mock(HttpRequest.class);
+        var requestUri = assertDoesNotThrow(() -> new URI("https://www.example.com/token?debug"));
+        when(request.getMethod()).thenReturn(HttpMethod.POST);
+        when(request.getURI()).thenReturn(requestUri);
+
+        var mgmt = Mockito.mock(CredentialManagement.class);
+        var offer = Mockito.mock(CredentialOffer.class);
+        when(offer.getCredentialManagement()).thenReturn(mgmt);
+        when(credentialOfferRepository.findByPreAuthorizedCode(any())).thenReturn(Optional.of(offer));
+
+        // Without profile_version -> should fail when enforcement enabled
+        var dpopWithoutProfileVersion = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/token", null, dpopKey, false);
+        var failingCall = (org.junit.jupiter.api.function.Executable) () -> demonstratingProofOfPossessionService.registerDpop(
+                UUID.randomUUID().toString(),
+                signAndSerialize(dpopWithoutProfileVersion, dpopKey),
+                request);
+        assertThrows(DemonstratingProofOfPossessionException.class, failingCall);
+
+        // With profile_version -> should pass
+        var dpopWithProfileVersion = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/token", null, dpopKey, true);
+        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(UUID.randomUUID().toString(),
+                signAndSerialize(dpopWithProfileVersion, dpopKey),
+                request));
+    }
 
     private SignedJWT createDpopJwt(String httpMethod, String httpUri, String accessToken, ECKey dpopKey) {
+        return createDpopJwt(httpMethod, httpUri, accessToken, dpopKey, true);
+    }
+
+    private SignedJWT createDpopJwt(String httpMethod, String httpUri, String accessToken, ECKey dpopKey, boolean includeProfileVersion) {
         // Fetch a fresh nonce
         var httpHeader = new HttpHeaders();
         demonstratingProofOfPossessionService.addDpopNonce(httpHeader);
-        var dpopNonce = assertDoesNotThrow(() -> httpHeader.get(DPOP_NONCE_HEADER).getFirst());
+        var dpopNonce = assertDoesNotThrow(() -> requireNonNull(httpHeader.getFirst(DPOP_NONCE_HEADER)));
+
         // Create a DPoP JWT
         var claimSetBuilder = new JWTClaimsSet.Builder()
                 .jwtID(UUID.randomUUID().toString())
@@ -145,11 +181,14 @@ class DemonstratingProofOfPossessionServiceTest {
         if (StringUtils.isNotEmpty(accessToken)) {
             claimSetBuilder.claim("ath", Base64.getUrlEncoder().encodeToString(assertDoesNotThrow(() -> MessageDigest.getInstance("SHA-256")).digest(accessToken.getBytes(StandardCharsets.UTF_8))));
         }
-        return new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+
+        var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .jwk(dpopKey.toPublicJWK())
-                .type(new JOSEObjectType("dpop+jwt"))
-                .build(),
-                claimSetBuilder.build());
+                .type(new JOSEObjectType("dpop+jwt"));
+        if (includeProfileVersion) {
+            headerBuilder.customParam("profile_version", "swiss-profile-issuance:1.0.0");
+        }
+        return new SignedJWT(headerBuilder.build(), claimSetBuilder.build());
     }
 
 
