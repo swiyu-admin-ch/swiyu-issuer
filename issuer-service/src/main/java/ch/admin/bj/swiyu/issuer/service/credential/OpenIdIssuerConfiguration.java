@@ -1,12 +1,12 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
-import ch.admin.bj.swiyu.issuer.dto.type_metadata.OcaDto;
-import ch.admin.bj.swiyu.issuer.dto.type_metadata.TypeMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
+import ch.admin.bj.swiyu.issuer.dto.type_metadata.OcaDto;
+import ch.admin.bj.swiyu.issuer.dto.type_metadata.TypeMetadataDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.*;
 import lombok.Data;
@@ -27,7 +27,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.*;
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.ISSUER_METADATA_CACHE;
+import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.OPEN_ID_CONFIGURATION_CACHE;
 
 @Configuration
 @Data
@@ -51,15 +52,16 @@ public class OpenIdIssuerConfiguration {
     @Bean
     public IssuerMetadata createIssuerMetadataBean() throws IOException {
         var mapped = resourceToMappedData(issuerMetadataResource, IssuerMetadata.class);
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        var validator = factory.getValidator();
-        var validationResult = validator.validate(mapped).stream()
-                .map(v -> String.format("- Invalid value for %s. Current is %s but the constraint is %s", v.getPropertyPath().toString(), v.getInvalidValue(), v.getMessage()))
-                .collect(Collectors.joining("\n"));
-        if (!validationResult.isEmpty()) {
-            throw new IllegalArgumentException(String.format("An invalid issuer metadata configuration was provided. Please adapt the following values:%n%s", validationResult));
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            var validator = factory.getValidator();
+            var validationResult = validator.validate(mapped).stream()
+                    .map(v -> String.format("- Invalid value for %s. Current is %s but the constraint is %s", v.getPropertyPath().toString(), v.getInvalidValue(), v.getMessage()))
+                    .collect(Collectors.joining("\n"));
+            if (!validationResult.isEmpty()) {
+                throw new IllegalArgumentException(String.format("An invalid issuer metadata configuration was provided. Please adapt the following values:%n%s", validationResult));
+            }
+            return mapped;
         }
-        return mapped;
     }
 
     @Bean
@@ -97,24 +99,6 @@ public class OpenIdIssuerConfiguration {
         }
     }
 
-    @Cacheable(ISSUER_METADATA_MAP_CACHE)
-    public Map<String, Object> getIssuerMetadataMap() {
-        try {
-            return resourceToMappedData(issuerMetadataResource, HashMap.class);
-        } catch (IOException e) {
-            throw new ConfigurationException("Cannot read issuer metadata config", e);
-        }
-    }
-
-    @Cacheable(OPEN_ID_CONFIGURATION_MAP_CACHE)
-    public Map<String, Object> getOpenIdConfigurationMap() {
-        try {
-            return resourceToMappedData(openIdResource, HashMap.class);
-        } catch (IOException e) {
-            throw new ConfigurationException("Cannot read issuer metadata config", e);
-        }
-    }
-
     public <T> Map<String, String> loadMetadataFiles(Map<String, String> metadataFiles, Validator validator, Class<T> clazz) throws IOException {
         var metadata = new HashMap<String, String>();
         if (metadataFiles == null) {
@@ -143,9 +127,28 @@ public class OpenIdIssuerConfiguration {
 
         T metadata = objectMapper.readValue(metadataFileContent, clazz);
         Set<ConstraintViolation<T>> violations = validator.validate(metadata);
-        if (!violations.isEmpty()) {
-            log.error("Validation error in {} with message: {}", entry.getValue(), violations);
-            throw new ConstraintViolationException(violations);
+        if (violations.isEmpty()) {
+            return;
+        }
+
+        // treat violations that reference 'profileVersion' as warnings only
+        Set<ConstraintViolation<T>> profileVersionViolations = violations.stream()
+                .filter(v -> v.getPropertyPath() != null && v.getPropertyPath().toString().contains("profileVersion"))
+                .collect(Collectors.toSet());
+
+        Set<ConstraintViolation<T>> otherViolations = violations.stream()
+                .filter(v -> !(v.getPropertyPath() != null && v.getPropertyPath().toString().contains("profileVersion")))
+                .collect(Collectors.toSet());
+
+        if (!profileVersionViolations.isEmpty()) {
+            log.warn("Validation warning (profileVersion) in {}: {}", entry.getValue(), profileVersionViolations.stream()
+                    .map(v -> String.format("- Invalid value for %s. Current value is %s with error %s", v.getPropertyPath().toString(), v.getInvalidValue(), v.getMessage()))
+                    .collect(Collectors.joining("\n")));
+        }
+
+        if (!otherViolations.isEmpty()) {
+            log.error("Validation error in {} with message: {}", entry.getValue(), otherViolations);
+            throw new ConstraintViolationException(otherViolations);
         }
     }
 
