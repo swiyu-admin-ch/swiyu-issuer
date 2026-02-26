@@ -72,7 +72,7 @@ public class CredentialRenewalService {
     void ensureRenewalFlowEnabled(CredentialManagement mgmt) {
         if (!applicationProperties.isRenewalFlowEnabled()) {
             log.info("Tried to renew credential for management id %s".formatted(mgmt.getId()));
-            throw new RenewalException(HttpStatus.BAD_REQUEST, "No active offer found for %s and no renewal possible");
+            throw new RenewalException(HttpStatus.BAD_REQUEST, "No active offer found for %s and no renewal possible".formatted(mgmt.getId()));
         }
     }
 

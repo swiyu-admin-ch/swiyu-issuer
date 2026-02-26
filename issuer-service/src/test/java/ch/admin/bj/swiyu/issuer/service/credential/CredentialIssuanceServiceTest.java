@@ -1,10 +1,8 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,12 +14,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class CredentialIssuanceServiceTest {
 
@@ -93,23 +87,6 @@ class CredentialIssuanceServiceTest {
         verify(credentialRenewalService).handleRenewalFlow(any(), eq(mgmt), isNull(), eq("dpop"));
     }
 
-    @Test
-    void createCredential_delegatesToEnvelopeService() {
-        var request = new CredentialEndpointRequestDto("vc+sd-jwt", null, null);
-        var offer = createOffer(CredentialOfferStatusType.IN_PROGRESS);
-        var mgmt = createManagementWithOffers(offer);
-        var envelope = new CredentialEnvelopeDto(null, null, null);
-
-        when(oAuthService.getCredentialManagementByAccessToken("token"))
-                .thenReturn(mgmt);
-        when(credentialEnvelopeService.createCredentialEnvelopeDto(eq(offer), any(), isNull()))
-                .thenReturn(envelope);
-
-        var result = service.createCredential(request, "token", null);
-
-        assertSame(envelope, result);
-        verify(credentialEnvelopeService).createCredentialEnvelopeDto(eq(offer), any(), isNull());
-    }
 
     private CredentialOffer createOffer(CredentialOfferStatusType status) {
         return CredentialOffer.builder()

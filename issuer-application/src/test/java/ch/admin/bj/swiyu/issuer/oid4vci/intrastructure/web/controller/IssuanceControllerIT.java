@@ -9,6 +9,8 @@ import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
@@ -37,9 +39,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -481,15 +485,16 @@ class IssuanceControllerIT {
         var response = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.credential").isNotEmpty())
-                .andExpect(jsonPath("$.format").value("vc+sd-jwt"))
+//                .andExpect(jsonPath("$.credential").isNotEmpty())
+//                .andExpect(jsonPath("$.format").value("vc+sd-jwt"))
                 .andReturn();
 
         assertNotNull(response);
         var credentialResponse = JsonParser.parseString(
                         response.getResponse().getContentAsString())
                 .getAsJsonObject();
-        var sdjwtVc = credentialResponse.get("credential").getAsString();
+
+        var sdjwtVc = getVcStringFromResponse(response);
         var jwt = SignedJWT.parse(sdjwtVc.split("~")[0]);
         var claims = jwt.getPayload().toJSONObject();
         assertTrue(claims.containsKey("cnf"));
@@ -601,9 +606,19 @@ class IssuanceControllerIT {
         return TestInfrastructureUtils.getCredential(mock, token, credentialRequestString);
     }
 
-    private String getCredentialRequestString(Map<String, Object> tokenResponse, String format) throws JOSEException {
+    private String getCredentialRequestString(Map<String, Object> tokenResponse, String format) throws Exception {
         String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
-        return String.format("{ \"format\": \"%s\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", format, proof);
+        return getCredentialRequestString(proof);
+    }
+
+    private String getCredentialRequestString(String proof) throws Exception {
+        // V2 Endpoint erwartet CredentialEndpointRequestDtoV2
+        var request = new CredentialEndpointRequestDtoV2(
+                "test",
+                new ProofsDto(List.of(proof)),
+                null
+        );
+        return objectMapper.writeValueAsString(request);
     }
 
     @NonNull
@@ -650,6 +665,13 @@ class IssuanceControllerIT {
         var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn();
         var nonceDto = objectMapper.readValue(nonceResponse.getResponse().getContentAsString(), NonceResponseDto.class);
         return new SelfContainedNonce(nonceDto.nonce());
+    }
+
+    private static String getVcStringFromResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
+        var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
+                .getAsJsonObject()
+                .getAsJsonArray("credentials");
+        return credentials.get(0).getAsJsonObject().get("credential").getAsString();
     }
 }
 

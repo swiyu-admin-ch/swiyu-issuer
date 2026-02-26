@@ -57,7 +57,6 @@ public class CredentialOfferMapper {
                 credential.getDeferredOfferValiditySeconds(),
                 credential.getCredentialValidFrom(),
                 credential.getCredentialValidUntil(),
-                toCredentialRequest(credential.getCredentialRequest()),
                 getOfferDeeplinkFromCredential(props, credential),
                 nullIfEmptyList(credential.getVcHashes())
         );

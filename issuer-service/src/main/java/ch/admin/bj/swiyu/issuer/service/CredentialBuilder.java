@@ -71,14 +71,14 @@ public abstract class CredentialBuilder {
         return this;
     }
 
-    @Deprecated(since = "OID4VCI 1.0")
-    public CredentialEnvelopeDto buildCredentialEnvelope() {
-        var credential = getCredential(this.holderBindings).getFirst();
-        var oid4vciCredential = new HashMap<String, String>();
-        oid4vciCredential.put("format", this.credentialConfiguration.getFormat());
-        oid4vciCredential.put("credential", credential);
-        return buildEnvelopeDto(oid4vciCredential);
-    }
+//    @Deprecated(since = "OID4VCI 1.0")
+//    public CredentialEnvelopeDto buildCredentialEnvelope() {
+//        var credential = getCredential(this.holderBindings).getFirst();
+//        var oid4vciCredential = new HashMap<String, String>();
+//        oid4vciCredential.put("format", this.credentialConfiguration.getFormat());
+//        oid4vciCredential.put("credential", credential);
+//        return buildEnvelopeDto(oid4vciCredential);
+//    }
 
     public CredentialEnvelopeDto buildCredentialEnvelopeV2() {
         // if no holder bindings are set, we only create 1 credential
@@ -96,11 +96,11 @@ public abstract class CredentialBuilder {
         return buildEnvelopeDto(credentialResponseDtoV2, HttpStatus.ACCEPTED);
     }
 
-    public CredentialEnvelopeDto buildDeferredCredential(UUID transactionId) {
-        var deferredResponse = new DeferredDataDto(transactionId);
-
-        return buildEnvelopeDto(deferredResponse, HttpStatus.ACCEPTED);
-    }
+//    public CredentialEnvelopeDto buildDeferredCredential(UUID transactionId) {
+//        var deferredResponse = new DeferredDataDto(transactionId);
+//
+//        return buildEnvelopeDto(deferredResponse, HttpStatus.ACCEPTED);
+//    }
 
     public CredentialEnvelopeDto buildEnvelopeDto(Object payload) {
 

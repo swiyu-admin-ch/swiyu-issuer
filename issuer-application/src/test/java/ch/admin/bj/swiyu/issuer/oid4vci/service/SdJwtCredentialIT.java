@@ -67,15 +67,14 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelope();
+                .buildCredentialEnvelopeV2();
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
 
-        String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
+        String credential = getReadFirstCredential(vc);
         String[] chunks = credential.split("\\.");
         String header = new String(decoder.decode(chunks[0]));
         String payload = new String(decoder.decode(chunks[1]));
-        assertEquals("vc+sd-jwt", JsonPath.read(vc.getOid4vciCredentialJson(), "$.format"));
 
         // jwt headers
         assertEquals("vc+sd-jwt", JsonPath.read(header, "$.typ"));
@@ -106,10 +105,10 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelope();
+                .buildCredentialEnvelopeV2();
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
-        String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
+        String credential = getReadFirstCredential(vc);
         String[] chunks = credential.split("\\.");
         String payload = new String(decoder.decode(chunks[1]));
 
@@ -188,15 +187,23 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelope();
+                .buildCredentialEnvelopeV2();
 
-        String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
+        String credential = getReadFirstCredential(vc);
         String payload = getJWTPayload(credential);
 
         // Jwt payload - optional fields
         List<String> sd = JsonPath.read(payload, "$._sd");
         assertEquals(3
                 , sd.size());
+    }
+
+    private static String getReadFirstCredential(CredentialEnvelopeDto vc) {
+        String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credentials[0].credential");
+        if (credential == null || credential.isBlank()) {
+            throw new IllegalStateException("Expected first credential at path $.credentials[0].credential");
+        }
+        return credential;
     }
 
     @Test
@@ -217,10 +224,9 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelope();
+                .buildCredentialEnvelopeV2();
 
-        JsonObject responseJson = JsonParser.parseString(vc.getOid4vciCredentialJson()).getAsJsonObject();
-        String credential = responseJson.get("credential").getAsString();
+        String credential = getReadFirstCredential(vc);
         JsonObject payload = JsonParser.parseString(getJWTPayload(credential)).getAsJsonObject();
 
         assertEquals(vctIntegrity, payload.get("vct#integrity").getAsString());
@@ -242,10 +248,9 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelope();
+                .buildCredentialEnvelopeV2();
 
-        JsonObject responseJson = JsonParser.parseString(vc.getOid4vciCredentialJson()).getAsJsonObject();
-        String credential = responseJson.get("credential").getAsString();
+        String credential = getReadFirstCredential(vc);
         JsonObject payload = JsonParser.parseString(getJWTPayload(credential)).getAsJsonObject();
 
         assertFalse(payload.has("vct#integrity"));
@@ -268,9 +273,9 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelope();
+                .buildCredentialEnvelopeV2();
 
-        String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
+        String credential = getReadFirstCredential(vc);
         var issuedJwt = SignedJWT.parse(credential.split("~")[0]);
         assertEquals(overrideVerificationMethod, issuedJwt.getHeader().getKeyID());
         assertEquals(overrideDid, issuedJwt.getJWTClaimsSet().getIssuer());
@@ -307,3 +312,4 @@ class SdJwtCredentialIT {
         }
     }
 }
+

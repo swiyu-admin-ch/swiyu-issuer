@@ -40,42 +40,42 @@ public class DeferredCredentialService {
     private final EventProducerService eventProducerService;
     private final CredentialStateMachine credentialStateMachine;
 
-    /**
-     * Issues a deferred credential using the OID4VCI 1.0 flow.
-     *
-     * @param deferredCredentialRequest request payload containing transaction and credential parameters
-     * @param accessToken access token authorizing issuance for the transaction
-     * @return envelope with the issued credential response
-     * @throws Oid4vcException when validation fails (expired, cancelled, or not ready)
-     * @throws OAuthException when the provided access token is invalid or expired
-     */
-    @Deprecated(since = "OID4VCI 1.0")
-    public CredentialEnvelopeDto createCredentialFromDeferredRequest(
-            DeferredCredentialEndpointRequestDto deferredCredentialRequest,
-            String accessToken) {
-
-        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest,
-                accessToken);
-
-        CredentialManagement mgmt = credentialOffer.getCredentialManagement();
-        var credentialRequest = credentialOffer.getCredentialRequest();
-        var credentialEnvelopeDto = buildEnvelopeV1(credentialOffer, credentialRequest);
-
-        // Just to be aligned old but wrong implementation! Must be removed when ending of support of V1
-        if(!isOfferReady(credentialOffer)){
-            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued",
-                    Map.of(
-                            "offerId", credentialOffer.getId(),
-                            "transactionId", credentialOffer.getTransactionId(),
-                            "status", credentialOffer.getCredentialStatus()
-                    ));
-        }
-
-        markIssuanceCompleted(credentialOffer, mgmt);
-
-
-        return credentialEnvelopeDto;
-    }
+//    /**
+//     * Issues a deferred credential using the OID4VCI 1.0 flow.
+//     *
+//     * @param deferredCredentialRequest request payload containing transaction and credential parameters
+//     * @param accessToken access token authorizing issuance for the transaction
+//     * @return envelope with the issued credential response
+//     * @throws Oid4vcException when validation fails (expired, cancelled, or not ready)
+//     * @throws OAuthException when the provided access token is invalid or expired
+//     */
+//    @Deprecated(since = "OID4VCI 1.0")
+//    public CredentialEnvelopeDto createCredentialFromDeferredRequest(
+//            DeferredCredentialEndpointRequestDto deferredCredentialRequest,
+//            String accessToken) {
+//
+//        CredentialOffer credentialOffer = getAndValidateCredentialOfferForDeferred(deferredCredentialRequest,
+//                accessToken);
+//
+//        CredentialManagement mgmt = credentialOffer.getCredentialManagement();
+//        var credentialRequest = credentialOffer.getCredentialRequest();
+//        var credentialEnvelopeDto = buildEnvelopeV1(credentialOffer, credentialRequest);
+//
+//        // Just to be aligned old but wrong implementation! Must be removed when ending of support of V1
+//        if(!isOfferReady(credentialOffer)){
+//            throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued",
+//                    Map.of(
+//                            "offerId", credentialOffer.getId(),
+//                            "transactionId", credentialOffer.getTransactionId(),
+//                            "status", credentialOffer.getCredentialStatus()
+//                    ));
+//        }
+//
+//        markIssuanceCompleted(credentialOffer, mgmt);
+//
+//
+//        return credentialEnvelopeDto;
+//    }
 
     /**
      * Issues a deferred credential using the OID4VCI 2.0 flow.
@@ -107,18 +107,18 @@ public class DeferredCredentialService {
         return credentialEnvelopeDto;
     }
 
-    // Helper methods are package-private to allow focused unit testing.
-    CredentialEnvelopeDto buildEnvelopeV1(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest) {
-        var credentialSupportedId = getMetadataCredentialSupportedId(credentialOffer);
-        return credentialFormatFactory
-                .getFormatBuilder(credentialSupportedId)
-                .credentialOffer(credentialOffer)
-                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions()
-                        .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
-                .holderBindings(credentialOffer.getHolderJWKs())
-                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelope();
-    }
+//    // Helper methods are package-private to allow focused unit testing.
+//    CredentialEnvelopeDto buildEnvelopeV1(CredentialOffer credentialOffer, CredentialRequestClass credentialRequest) {
+//        var credentialSupportedId = getMetadataCredentialSupportedId(credentialOffer);
+//        return credentialFormatFactory
+//                .getFormatBuilder(credentialSupportedId)
+//                .credentialOffer(credentialOffer)
+//                .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions()
+//                        .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
+//                .holderBindings(credentialOffer.getHolderJWKs())
+//                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+//                .buildCredentialEnvelope();
+//    }
 
     /**
      * Builds a credential envelope for OID4VCI 2.0 requests.

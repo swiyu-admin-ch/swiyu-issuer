@@ -47,22 +47,22 @@ public class CredentialEnvelopeService {
     private final CredentialManagementRepository credentialManagementRepository;
     private final ApplicationProperties applicationProperties;
 
-    /**
-     * Builds and returns a credential envelope (OID4VCI 1.0).
-     */
-    @Deprecated(since = "OID4VCI 1.0")
-    public CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
-                                                             CredentialRequestClass credentialRequest,
-                                                             ClientAgentInfo clientInfo) {
-        var context = buildContext(credentialOffer, credentialRequest, clientInfo, credentialOffer.getCredentialManagement());
-        var holderKeys = loadHolderKeysV1(context);
-        var vcBuilder = buildVcBuilder(context.offer(), context.request(), holderKeys.bindings());
-
-        return issueCredential(context,
-                holderKeys,
-                vcBuilder::buildCredentialEnvelope,
-                vcBuilder::buildDeferredCredential);
-    }
+//    /**
+//     * Builds and returns a credential envelope (OID4VCI 1.0).
+//     */
+//    @Deprecated(since = "OID4VCI 1.0")
+//    public CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
+//                                                             CredentialRequestClass credentialRequest,
+//                                                             ClientAgentInfo clientInfo) {
+//        var context = buildContext(credentialOffer, credentialRequest, clientInfo, credentialOffer.getCredentialManagement());
+//        var holderKeys = loadHolderKeysV1(context);
+//        var vcBuilder = buildVcBuilder(context.offer(), context.request(), holderKeys.bindings());
+//
+//        return issueCredential(context,
+//                holderKeys,
+//                vcBuilder::buildCredentialEnvelope,
+//                vcBuilder::buildDeferredCredential);
+//    }
 
     /**
      * Builds and returns a credential envelope (OID4VCI 2.0).
@@ -97,21 +97,6 @@ public class CredentialEnvelopeService {
                 issuerMetadata.getCredentialConfigurationById(credentialOffer.getMetadataCredentialSupportedId().getFirst()));
 
         return new EnvelopeContext(credentialOffer, mgmt, credentialRequest, clientInfo);
-    }
-
-    /**
-     * Load and validate holder binding keys for OID4VCI 1.0, publishing errors on failure.
-     */
-    private HolderKeys loadHolderKeysV1(EnvelopeContext context) {
-        List<ProofJwt> holderPublicKey;
-        try {
-            holderPublicKey = holderBindingService.getHolderPublicKey(context.request(), context.offer()).stream().toList();
-        } catch (Oid4vcException e) {
-            eventProducerService.produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, context.offer());
-            throw e;
-        }
-
-        return new HolderKeys(toBindings(holderPublicKey), toAttestations(holderPublicKey));
     }
 
     /**
