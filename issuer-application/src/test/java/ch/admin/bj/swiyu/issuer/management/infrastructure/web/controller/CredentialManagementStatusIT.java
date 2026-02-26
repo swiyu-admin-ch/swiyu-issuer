@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +40,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,7 +56,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-//@Transactional selecting indexes view does not work with transactional
+// @Transactional selecting indexes view does not work with transactional
 class CredentialManagementStatusIT {
 
     private static final int STATUS_LIST_MAX_LENGTH = 9;
@@ -101,7 +103,8 @@ class CredentialManagementStatusIT {
 
         statusListTestHelper = new StatusListTestHelper(mvc, objectMapper);
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId())).thenReturn(Mono.just(statusListEntry));
+        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
+                .thenReturn(Mono.just(statusListEntry));
         when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
@@ -122,20 +125,26 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
-    void testUpdateWithCorrectValues_thenOk(CredentialStatusTypeDto value) throws Exception {
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
+    void testUpdateWithCorrectValues_thenOk(UpdateCredentialStatusRequestTypeDto value) throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
     }
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
-    void testUpdateWithSameStatus_thenOk(CredentialStatusTypeDto value) throws Exception {
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
+    void testUpdateWithSameStatus_thenOk(UpdateCredentialStatusRequestTypeDto value) throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
     }
 
     @Transactional
@@ -143,7 +152,7 @@ class CredentialManagementStatusIT {
     @EnumSource(value = CredentialStatusTypeDto.class, names = {"READY"})
     void testUpdateWithPreIssuanceStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
 
-        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), value)))
+        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), value.name())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").exists());
@@ -151,12 +160,14 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
-    void testUpdateWithPreIssuanceReadyStatus_thenBadRequest(CredentialStatusTypeDto value) throws Exception {
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "REVOKED", "ISSUED"})
+    void testUpdateWithPreIssuanceReadyStatus_thenBadRequest(UpdateCredentialStatusRequestTypeDto value)
+            throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value);
 
-        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.READY)))
+        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(),
+                        CredentialStatusTypeDto.READY.name())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").exists());
@@ -164,20 +175,29 @@ class CredentialManagementStatusIT {
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"SUSPENDED", "ISSUED", "REVOKED"})
-    void testUpdateOfferRevocation_thenIsOk(CredentialStatusTypeDto value) throws Exception {
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"SUSPENDED", "ISSUED", "REVOKED"})
+    void testUpdateOfferRevocation_thenIsOk(UpdateCredentialStatusRequestTypeDto value) throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.REVOKED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
+
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.REVOKED)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status")
+                        .value(UpdateCredentialStatusRequestTypeDto.REVOKED.name()));
     }
 
     @Transactional
     @Test
     void testUpdateOfferIssuanceWhenRevoked_thenBadRequest() throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.REVOKED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.REVOKED);
 
-        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.ISSUED)))
+        mvc.perform(patch(getUpdateUrl(credentialManagementOffer.getManagementId(),
+                        CredentialStatusTypeDto.ISSUED.name())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").exists());
@@ -186,32 +206,53 @@ class CredentialManagementStatusIT {
     @Transactional
     @Test
     void testUpdateOfferStatusSuspendedWithRevoked_thenSuccess() throws Exception {
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.SUSPENDED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.SUSPENDED)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status")
+                        .value(UpdateCredentialStatusRequestTypeDto.SUSPENDED.name()));
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.REVOKED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.REVOKED)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status")
+                        .value(UpdateCredentialStatusRequestTypeDto.REVOKED.name()));
     }
 
     @Transactional
     @ParameterizedTest
-    @EnumSource(value = CredentialStatusTypeDto.class, names = {"ISSUED", "SUSPENDED"})
-    void testUpdateOfferStatusWhenSuspended_thenSuccess(CredentialStatusTypeDto value) throws Exception {
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"ISSUED", "SUSPENDED"})
+    void testUpdateOfferStatusWhenSuspended_thenSuccess(UpdateCredentialStatusRequestTypeDto value)
+            throws Exception {
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), value);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(), value)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(value.name()));
 
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.SUSPENDED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.SUSPENDED)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status")
+                        .value(UpdateCredentialStatusRequestTypeDto.SUSPENDED.name()));
     }
 
     @Test
     void testUpdateOfferStatusWithRevokedWhenIssued_thenSuccess() throws Exception {
 
-        assertThat(STATUS_LIST_MAX_LENGTH).as("This test requires more than 9 indexes").isGreaterThanOrEqualTo(9);
-        Set<Integer> unusedIndexes = IntStream.range(0, STATUS_LIST_MAX_LENGTH).boxed().collect(Collectors.toSet());
+        assertThat(STATUS_LIST_MAX_LENGTH).as("This test requires more than 9 indexes")
+                .isGreaterThanOrEqualTo(9);
+        Set<Integer> unusedIndexes = IntStream.range(0, STATUS_LIST_MAX_LENGTH).boxed()
+                .collect(Collectors.toSet());
         // Add Revoked VCS
-        changeCredentialManagementStatus(credentialManagementOffer.getManagementId(), CredentialStatusTypeDto.REVOKED);
+        updateStatus(mvc, credentialManagementOffer.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.REVOKED);
 
-        var offer = credentialOfferRepository.findById(UUID.fromString(String.valueOf(credentialManagementOffer.getOfferId()))).orElseThrow();
+        var offer = credentialOfferRepository
+                .findById(UUID.fromString(String.valueOf(credentialManagementOffer.getOfferId())))
+                .orElseThrow();
 
-        Set<CredentialOfferStatus> revokedOfferStatus = credentialOfferStatusRepository.findByOfferId(credentialManagementOffer.getOfferId());
+        Set<CredentialOfferStatus> revokedOfferStatus = credentialOfferStatusRepository
+                .findByOfferId(credentialManagementOffer.getOfferId());
         assertThat(revokedOfferStatus)
                 .as("Expecting test configuration to provide batch size of 10")
                 .hasSize(10);
@@ -223,24 +264,33 @@ class CredentialManagementStatusIT {
         assertThat(offerIds)
                 .as("All status entries should be of the same offer")
                 .hasSize(1);
-        unusedIndexes.removeAll(revokedOfferStatus.stream().map(CredentialOfferStatus::getId).map(CredentialOfferStatusKey::getIndex).collect(Collectors.toSet()));
-        assertEquals(CredentialStatusManagementType.REVOKED, offer.getCredentialManagement().getCredentialManagementStatus());
-        var statusListId = assertDoesNotThrow(() -> revokedOfferStatus.stream().findFirst().orElseThrow().getId().getStatusListId());
+        unusedIndexes.removeAll(revokedOfferStatus.stream().map(CredentialOfferStatus::getId)
+                .map(CredentialOfferStatusKey::getIndex).collect(Collectors.toSet()));
+        assertEquals(CredentialStatusManagementType.REVOKED,
+                offer.getCredentialManagement().getCredentialManagementStatus());
+        var statusListId = assertDoesNotThrow(
+                () -> revokedOfferStatus.stream().findFirst().orElseThrow().getId().getStatusListId());
         var statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
 
-        var tokenStatusList = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
+        var tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+                (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
         for (var offerStatus : revokedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been revoked").isEqualTo(1);
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been revoked")
+                    .isEqualTo(1);
         }
         for (Integer index : unusedIndexes) {
-            assertThat(tokenStatusList.getStatus(index)).as("Index has not been used and not revoked").isZero();
+            assertThat(tokenStatusList.getStatus(index)).as("Index has not been used and not revoked")
+                    .isZero();
         }
         var suspendedMgmt = prepareIssuedCredential();
 
-        changeCredentialManagementStatus(suspendedMgmt.getManagementId(), CredentialStatusTypeDto.SUSPENDED);
+        updateStatus(mvc, suspendedMgmt.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.SUSPENDED);
 
-        offer = credentialOfferRepository.findById(UUID.fromString(String.valueOf(suspendedMgmt.getOfferId()))).orElseThrow();
-        assertEquals(CredentialStatusManagementType.SUSPENDED, offer.getCredentialManagement().getCredentialManagementStatus());
+        offer = credentialOfferRepository.findById(UUID.fromString(String.valueOf(suspendedMgmt.getOfferId())))
+                .orElseThrow();
+        assertEquals(CredentialStatusManagementType.SUSPENDED,
+                offer.getCredentialManagement().getCredentialManagementStatus());
         var suspendedOfferStatus = credentialOfferStatusRepository.findByOfferId(offer.getId());
         var suspendedIndexes = suspendedOfferStatus.stream()
                 .map(CredentialOfferStatus::getId)
@@ -249,20 +299,23 @@ class CredentialManagementStatusIT {
         unusedIndexes.removeAll(suspendedIndexes);
 
         statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
-        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
+        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+                (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
 
         for (var offerStatus : suspendedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been suspended").isEqualTo(2);
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex()))
+                    .as("VC has been suspended").isEqualTo(2);
         }
         for (var offerStatus : revokedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been still revoked").isEqualTo(1);
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex()))
+                    .as("VC has been still revoked").isEqualTo(1);
         }
         for (Integer index : unusedIndexes) {
             assertThat(tokenStatusList.getStatus(index)).as("Index is still unused / valid").isZero();
         }
 
-        CredentialStatusTypeDto newStatus = CredentialStatusTypeDto.ISSUED;
-        changeCredentialManagementStatus(suspendedMgmt.getManagementId(), newStatus);
+        updateStatus(mvc, suspendedMgmt.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.ISSUED);
 
         var issuedOffer = credentialOfferRepository.findById(offer.getId()).orElseThrow();
         assertEquals(CredentialOfferStatusType.ISSUED, issuedOffer.getCredentialStatus());
@@ -275,14 +328,16 @@ class CredentialManagementStatusIT {
                 .as("Suspendend and unsuspended should be the same indexes")
                 .containsExactlyInAnyOrderElementsOf(unsuspendedIndexes);
 
-
         statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
-        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken((Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
+        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+                (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
         for (var offerStatus : issuedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been unsuspended").isZero();
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex()))
+                    .as("VC has been unsuspended").isZero();
         }
         for (var offerStatus : revokedOfferStatus) {
-            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been still revoked").isEqualTo(1);
+            assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex()))
+                    .as("VC has been still revoked").isEqualTo(1);
         }
         for (Integer index : unusedIndexes) {
             assertThat(tokenStatusList.getStatus(index)).as("Index is still unused / valid").isZero();
@@ -303,12 +358,17 @@ class CredentialManagementStatusIT {
                 .andReturn()
                 .getResponse();
 
-        var credentialWithDeeplinkResponseDto = objectMapper.readValue(createCredentialOfferResult.getContentAsString(), CredentialWithDeeplinkResponseDto.class);
+        var credentialWithDeeplinkResponseDto = objectMapper.readValue(
+                createCredentialOfferResult.getContentAsString(),
+                CredentialWithDeeplinkResponseDto.class);
 
-        List<ECKey> holderPrivateKeys = IssuanceV2TestUtils.createHolderPrivateKeysV2(issuerMetadata.getIssuanceBatchSize());
+        List<ECKey> holderPrivateKeys = IssuanceV2TestUtils
+                .createHolderPrivateKeysV2(issuerMetadata.getIssuanceBatchSize());
 
-        var token = IssuanceV2TestUtils.getAccessTokenFromDeeplink(mvc, credentialWithDeeplinkResponseDto.getOfferDeeplink());
-        var credentialRequestString = IssuanceV2TestUtils.getCredentialRequestStringV2(mvc, holderPrivateKeys, applicationProperties);
+        var token = IssuanceV2TestUtils.getAccessTokenFromDeeplink(mvc,
+                credentialWithDeeplinkResponseDto.getOfferDeeplink());
+        var credentialRequestString = IssuanceV2TestUtils.getCredentialRequestStringV2(mvc, holderPrivateKeys,
+                applicationProperties);
 
         IssuanceV2TestUtils.requestCredentialV2(mvc, token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -319,14 +379,7 @@ class CredentialManagementStatusIT {
         return credentialWithDeeplinkResponseDto;
     }
 
-    private void changeCredentialManagementStatus(UUID managementId, CredentialStatusTypeDto newStatus) throws Exception {
-        mvc.perform(patch(getUpdateUrl(managementId, newStatus)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(newStatus.toString()));
-    }
-
-    // todo fix
-    private String getUpdateUrl(UUID id, CredentialStatusTypeDto credentialStatus) {
+    private String getUpdateUrl(UUID id, String credentialStatus) {
         return String.format("%s/%s/status?credentialStatus=%s", CREDENTIAL_MANAGEMENT_BASE_URL, id, credentialStatus);
     }
 }
