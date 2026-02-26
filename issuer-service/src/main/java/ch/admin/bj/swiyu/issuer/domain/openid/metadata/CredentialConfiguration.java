@@ -12,7 +12,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -22,8 +26,11 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
+@SuperBuilder(toBuilder = true)
 @Validated
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@NoArgsConstructor
+@AllArgsConstructor
 public class CredentialConfiguration {
     // TODO EIDOMNI-284: allow only dc+sd-jwt and start throwing errors for vc+sd-jwt (after issuers had some time to migrate)
     @NotNull
@@ -52,6 +59,28 @@ public class CredentialConfiguration {
             """)
     @Nullable
     private String vctMetadataUriIntegrity;
+
+    @Nullable
+    @JsonProperty("vct_version")
+    @Schema(description = """
+                    The vct_version indicates the version of the vct. It is recommended to use semver-notation
+                    """)
+    private String vctVersion;
+
+    @Nullable
+    @JsonProperty("vct_subtype")
+    @Schema(description = """
+                    An optional value that can describe an adaption of the vct. 
+                    This value can then be used by verifiers who require the adoption of the vct standard.
+                    """)
+    private String vctSubtype;
+
+        @Nullable
+    @JsonProperty("vct_subtype_version")
+    @Schema(description = """
+                    The vct_subtype_version indicates the version of the vct_subtype. It is recommended to use semver-notation
+                    """)
+    private String vctSubtypeVersion;
 
     /**
      * SD-JWT specific field <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#appendix-A.3.2">see specs</a>

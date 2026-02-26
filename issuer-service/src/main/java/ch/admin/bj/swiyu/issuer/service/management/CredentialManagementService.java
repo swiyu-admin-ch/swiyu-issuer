@@ -384,6 +384,12 @@ public class CredentialManagementService {
         return offer.getConfigurationOverride();
     }
 
+    @Transactional
+    public CredentialOffer getCredentialOfferByTenantId(UUID tenantId) {
+        var offer = persistenceService.findCredentialOfferByMetadataTenantId(tenantId);
+        return offer;
+    }
+
     /**
      * Retrieves credential management and checks for expiration, expiring the affected offers.
      *
