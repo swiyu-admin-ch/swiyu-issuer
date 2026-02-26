@@ -13,11 +13,7 @@ public class VerifiableCredentialStatusFactory {
     }
 
     public VerifiableCredentialStatusReference createStatusListReference(Integer index, StatusList statusList) {
-        var statusListType = statusList.getType();
-        return switch (statusListType) {
-            case TOKEN_STATUS_LIST ->
-                    new TokenStatusListReference(index, statusList.getUri(), statusList.getType().displayName);
-        };
+        return new TokenStatusListReference(index, statusList.getUri());
     }
 
     public Map<String, List<VerifiableCredentialStatusReference>> mergeByIdentifier(Map<String, List<VerifiableCredentialStatusReference>> accumulator,

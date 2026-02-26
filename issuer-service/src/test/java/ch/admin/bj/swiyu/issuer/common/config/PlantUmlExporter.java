@@ -9,6 +9,10 @@ import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Utility to export a Spring StateMachine to PlantUML format.
  *
@@ -39,23 +43,25 @@ public class PlantUmlExporter<S, E> {
      * @param stateMachine the state machine
      */
     private void appendStates(StringBuilder sb, StateMachine<S, E> stateMachine) {
-        var stateMap = stateMachine.getStates().stream().collect(Collectors.toMap(s -> s.getId().toString(), Function.identity()));
-        var alphabeticallySortedStateIds = stateMap.keySet().stream().sorted().toList();
-        for (String stateId : alphabeticallySortedStateIds) {
+        List<String> states = new ArrayList<>();
+        for (State<S, E> state : stateMachine.getStates()) {
             // Do not output INIT as a separate state
-            var state = stateMap.get(stateId);
+            String stateId = String.valueOf(state.getId());
             if ("INIT".equals(stateId)) {
                 continue;
             }
 
-            sb.append("state ").append(stateId);
-
             String entryActionLabel = getStateEntryActionLabel(state);
             if (entryActionLabel != null && !entryActionLabel.isEmpty()) {
-                sb.append("  :entry / ").append(entryActionLabel);
+                states.add(state.getId() + "  :entry / " + entryActionLabel);
+            } else {
+                states.add(String.valueOf(state.getId()));
             }
-
-            sb.append('\n');
+        }
+        // Sort the States for deterministic Output
+        Collections.sort(states);
+        for (String state : states) {
+            sb.append("state ").append(state).append('\n');
         }
     }
 
@@ -147,7 +153,7 @@ public class PlantUmlExporter<S, E> {
                 // For our state machines, we know there is only this action, so we can just return a fixed label.
                 return "invalidateOfferDataAction()";
             }
-        } catch (NoSuchMethodException  | InvocationTargetException | IllegalAccessException e) {
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
             // ignore
         }
         return null;

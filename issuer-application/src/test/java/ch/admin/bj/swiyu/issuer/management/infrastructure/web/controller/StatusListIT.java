@@ -11,7 +11,6 @@ import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
@@ -129,7 +128,6 @@ class StatusListIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
-                .andExpect(jsonPath("$.type").value(type))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
                 .andExpect(jsonPath("$.remainingListEntries").value(maxLength))
                 .andExpect(jsonPath("$.config.bits").value(bits))
@@ -141,14 +139,15 @@ class StatusListIT {
 
     @Test
     void createNewStatusListOverrideConfiguration_thenSuccess() throws Exception {
-        final StatusListType type = StatusListType.TOKEN_STATUS_LIST;
+
         final int maxLength = 127;
         final int bits = 4;
         final String issuerId = "did:example:offer:override";
         final String verificationMethod = issuerId + "#key";
         final String keyId = "1052933";
         final String keyPin = "209323";
-        final String payload = String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": %s,\"key_pin\": %s}}", type, maxLength, bits, issuerId, verificationMethod, keyId, keyPin);
+        final String payload = String.format(
+                "{\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": %s,\"key_pin\": %s}}", maxLength, bits, issuerId, verificationMethod, keyId, keyPin);
 
         MvcResult result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -162,7 +161,6 @@ class StatusListIT {
         assertTrue(newStatusListOpt.isPresent());
         final StatusList newStatusList = newStatusListOpt.get();
         assertNotNull(newStatusList.getUri());
-        assertEquals(type, newStatusList.getType());
         assertEquals(maxLength, newStatusList.getMaxLength());
         assertEquals(bits, newStatusList.getConfig().get("bits"));
         assertEquals(issuerId, newStatusList.getConfigurationOverride().issuerDid());
@@ -228,7 +226,6 @@ class StatusListIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.statusRegistryUrl").isNotEmpty())
-                .andExpect(jsonPath("$.type").value(type))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
                 .andExpect(jsonPath("$.remainingListEntries").value(maxLength - issuerMetadata.getIssuanceBatchSize()))
                 .andExpect(jsonPath("$.maxListEntries").value(maxLength))
@@ -253,18 +250,6 @@ class StatusListIT {
                 .andExpect(jsonPath("$.config.bits").value(bits))
                 .andExpect(jsonPath("$.config.purpose").value(purpose))
         ;
-    }
-
-    @Test
-    void createStatusList_invalidStatusListType_thenBadRequest() throws Exception {
-        var type = "NOT_TOKEN_STATUS_LIST";
-        var bits = 1;
-        var payload = getCreateStatusListPayload(type, statusListProperties.getStatusListSizeLimit(), bits);
-
-        mvc.perform(post(STATUS_LIST_BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload))
-                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -442,8 +427,8 @@ class StatusListIT {
         return String.format("{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", maxLength, bits);
     }
 
-    private String getCreateStatusListPayload(String type, int maxLength, int bits) {
-        return String.format("{\"type\": \"%s\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", type, maxLength, bits);
+    private String getCreateStatusListPayload(int maxLength, int bits) {
+        return String.format("{\"maxLength\": %d,\"config\": {\"bits\": %d}}", maxLength, bits);
     }
 
     private JsonObject createOffer(JsonObject statusList) throws Exception {

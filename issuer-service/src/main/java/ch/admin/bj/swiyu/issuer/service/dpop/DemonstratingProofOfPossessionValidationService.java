@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -93,6 +94,9 @@ public class DemonstratingProofOfPossessionValidationService {
             DpopJwtValidator.validateMandatoryClaims(header, jwtClaims);
             // 4 - The typ JOSE Header Parameter has the value dpop+jwt.
             DpopJwtValidator.validateTyp(header);
+
+            validateSwissProfileVersion(header);
+
             // 5 - The alg JOSE Header Parameter indicates a registered asymmetric digital signature algorithm [IANA.JOSE.ALGS],
             // is not none, is supported by the application, and is acceptable per local policy.
             DpopJwtValidator.validateAlgorithm(header, DpopConstants.SUPPORTED_ALGORITHMS);
@@ -127,6 +131,25 @@ public class DemonstratingProofOfPossessionValidationService {
     private void hasValidSelfContainedNonce(JWTClaimsSet jwtClaims) throws ParseException {
         if (!nonceService.isValidSelfContainedNonce(jwtClaims.getStringClaim("nonce"))) {
             throw new DemonstratingProofOfPossessionException("Must use valid server provided nonce", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
+        }
+    }
+
+    private void validateSwissProfileVersion(com.nimbusds.jose.JWSHeader header) {
+        // Swiss Profile: require the profile_version to be present in the JWT header.
+        if (applicationProperties.isSwissProfileVersioningEnforcement()) {
+            var profileVersion = header.getCustomParam(SwissProfileVersions.PROFILE_VERSION_PARAM);
+            if (profileVersion == null) {
+                throw new DemonstratingProofOfPossessionException(
+                        "Missing 'profile_version' in DPoP header",
+                        DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF
+                );
+            }
+            if (!SwissProfileVersions.ISSUANCE_PROFILE_VERSION.equals(profileVersion.toString())) {
+                throw new DemonstratingProofOfPossessionException(
+                        "Invalid 'profile_version' in DPoP header",
+                        DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF
+                );
+            }
         }
     }
 

@@ -194,7 +194,6 @@ public class CredentialOfferMapper {
                 .credentialIssuer(credentialIssuer)
                 .credentials(credentialOffer.getMetadataCredentialSupportedId())
                 .grants(grants)
-                .version(props.getRequestOfferVersion())
                 .build();
 
         String credentialOfferString;

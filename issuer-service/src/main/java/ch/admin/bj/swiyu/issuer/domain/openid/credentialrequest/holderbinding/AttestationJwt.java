@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -36,18 +37,18 @@ public final class AttestationJwt {
         this.claims = signedJWT.getJWTClaimsSet();
     }
 
+
     /**
      * Creates an Attestation JWT from a base64 encoded JWT, performing basic validation.
      *
      * @param jwt base64 encoded JWT
-     * @return a AttestationJwt
-     * @throws ParseException if the JWT is malformed (not a valid JWT)
+     * @param enforceSwissProfileVersioning if true, requires profile_version in the JWT header
      */
-    public static AttestationJwt parseJwt(String jwt) throws ParseException {
+    public static AttestationJwt parseJwt(String jwt, boolean enforceSwissProfileVersioning) throws ParseException {
         var parsedJwt = SignedJWT.parse(jwt);
         var claims = parsedJwt.getJWTClaimsSet();
         // Check required Headers & Payload
-        validateHeader(parsedJwt.getHeader());
+        validateHeader(parsedJwt.getHeader(), enforceSwissProfileVersioning);
         validateBody(claims);
         // Validation between Header and body
         if (!parsedJwt.getHeader().getKeyID().split("#")[0].equals(claims.getIssuer())) {
@@ -100,16 +101,30 @@ public final class AttestationJwt {
     }
 
     /**
-     * @param header The JWSHeader to be checked for Attestation JWT Required attributes
-     * @throws IllegalArgumentException if one of the checks fails
+     * Validates the JWT header for required Swiss Profile parameters.
+     *
+     * @param header the JWT header
+     * @param enforceSwissProfileVersioning whether to enforce Swiss Profile versioning
      */
-    private static void validateHeader(JWSHeader header) throws IllegalArgumentException {
+    static void validateHeader(JWSHeader header, boolean enforceSwissProfileVersioning) {
 
+        validateType(header);
+
+        validateAltorithm(header);
+
+        if (enforceSwissProfileVersioning) {
+            validateSwissProfileVersion(header);
+        }
+    }
+
+    private static void validateType(JWSHeader header) {
         var type = header.getAlgorithm();
         if (type == null || !ALLOWED_TYPES.contains(header.getType().getType())) {
             throw new IllegalArgumentException("Typ must be one of " + String.join(", ", ALLOWED_TYPES));
         }
+    }
 
+    private static void validateAltorithm(JWSHeader header) {
         var algorithm = header.getAlgorithm();
         if (algorithm == null || !ALLOWED_ALGORITHMS.contains(algorithm)) {
             throw new IllegalArgumentException("Algorithm must be one of "
@@ -117,6 +132,16 @@ public final class AttestationJwt {
         }
         if (StringUtils.isEmpty((header.getKeyID()))) {
             throw new IllegalArgumentException("KeyID MUST be set");
+        }
+    }
+
+    private static void validateSwissProfileVersion(JWSHeader header) {
+        var profileVersion = header.getCustomParam(SwissProfileVersions.PROFILE_VERSION_PARAM);
+        if (profileVersion == null) {
+            throw new IllegalArgumentException("Missing 'profile_version' in key attestation header");
+        }
+        if (!SwissProfileVersions.ISSUANCE_PROFILE_VERSION.equals(profileVersion.toString())) {
+            throw new IllegalArgumentException("Invalid 'profile_version' in key attestation header");
         }
     }
 

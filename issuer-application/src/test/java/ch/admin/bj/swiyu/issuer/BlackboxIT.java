@@ -14,7 +14,6 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRespon
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -178,7 +177,6 @@ class BlackboxIT {
         // ---------------------
         // First we have to create a status list
         final StatusListDto statusListDto = assertDoesNotThrow(() -> statusListTestHelper.createStatusList(
-                StatusListTypeDto.TOKEN_STATUS_LIST,
                 1000,
                 // Space for 1000 entries; length / batch size is how many VCs we can store in the status list
                 null,
