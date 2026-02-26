@@ -43,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - SD-JWT VC includes `profile_version` in JWT header.
     - Status list tokens include `profile_version` in JWT header.
     - New environment variable `APPLICATION_SWISS_PROFILE_VERSIONING_ENFORCEMENT` (default: false) to optionally enforce `profile_version` checks for incoming JWT-based artifacts (e.g. DPoP and key attestations).
+- Add support for vct version and vct subtype in issuer metadata.
+- When override is available, provide vct_metadata_uri and its integrity in the issuer metadata.
 
 ### Fixed
 
