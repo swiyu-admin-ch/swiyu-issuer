@@ -6,6 +6,8 @@ import org.springframework.statemachine.transition.Transition;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import java.util.ArrayList;
 import java.util.Collections;
