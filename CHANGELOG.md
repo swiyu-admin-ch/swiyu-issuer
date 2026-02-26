@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - stale callbacks
     - Registry token getting refreshed
     - Status List availability
+- Added new validation for `profile_version` to oca and vct files. This will not lead to startup failures but to
+  warnings in console.
 - Support `configuration_override` in `POST /management/api/status-list/{statusListId}` to control key material 
   selection (e.g., HSM key) during status list publication.
 - Persist status list `configuration_override` updates via `POST /management/api/status-list/{statusListId}` 
