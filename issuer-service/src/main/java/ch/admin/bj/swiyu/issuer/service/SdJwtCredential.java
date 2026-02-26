@@ -1,5 +1,29 @@
 package ch.admin.bj.swiyu.issuer.service;
 
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
+import static java.util.Objects.nonNull;
+
+import java.text.ParseException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import com.authlete.sd.Disclosure;
+import com.authlete.sd.SDJWT;
+import com.authlete.sd.SDObjectBuilder;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
@@ -12,22 +36,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatu
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
-import com.authlete.sd.Disclosure;
-import com.authlete.sd.SDJWT;
-import com.authlete.sd.SDObjectBuilder;
-import com.nimbusds.jose.*;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-
-import java.text.ParseException;
-import java.time.Instant;
-import java.util.*;
-
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
-import static java.util.Objects.nonNull;
 
 @Slf4j
 public class SdJwtCredential extends CredentialBuilder {
@@ -182,10 +192,20 @@ public class SdJwtCredential extends CredentialBuilder {
         builder.putClaim("iss", override.issuerDidOrDefault(getApplicationProperties().getIssuerId()));
         // Get first entry because we expect the list to only contain one item
         var metadataId = getMetadataCredentialsSupportedIds().getFirst();
-        builder.putClaim("vct",
-                getIssuerMetadata().getCredentialConfigurationById(metadataId)
-                        .getVct());
-        // if we have a vct#integrity, add it
+        var credentailConfiguration = getIssuerMetadata().getCredentialConfigurationById(metadataId);
+        builder.putClaim("vct", credentailConfiguration.getVct());
+        // Optional vct addons
+        Optional.ofNullable(credentailConfiguration.getVctMetadataUri())
+            .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
+        Optional.ofNullable(credentailConfiguration.getVctMetadataUriIntegrity())
+            .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
+        Optional.ofNullable(credentailConfiguration.getVctVersion())
+            .ifPresent(o -> builder.putClaim("vct_version", o));
+        Optional.ofNullable(credentailConfiguration.getVctSubtype())
+            .ifPresent(o -> builder.putClaim("vct_subtype", o));
+        Optional.ofNullable(credentailConfiguration.getVctSubtypeVersion())
+            .ifPresent(o -> builder.putClaim("vct_subtype_version", o));
+        // if we have dynamically overriden vct#integrity or such, add it
         var credentialMetadata = getCredentialOffer().getCredentialMetadata();
         if (nonNull(credentialMetadata)) {
             Optional.ofNullable(credentialMetadata.vctIntegrity())
