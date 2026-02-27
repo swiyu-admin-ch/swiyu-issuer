@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
@@ -22,7 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.*;
-import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig.CredentialManagementEvent.ISSUE;
+import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig.CredentialManagementEvent.ISSUE;
 
 /**
  * Handles deferred credential issuance flows.
@@ -44,10 +45,10 @@ public class DeferredCredentialService {
      * Issues a deferred credential using the OID4VCI 1.0 flow.
      *
      * @param deferredCredentialRequest request payload containing transaction and credential parameters
-     * @param accessToken access token authorizing issuance for the transaction
+     * @param accessToken               access token authorizing issuance for the transaction
      * @return envelope with the issued credential response
      * @throws Oid4vcException when validation fails (expired, cancelled, or not ready)
-     * @throws OAuthException when the provided access token is invalid or expired
+     * @throws OAuthException  when the provided access token is invalid or expired
      */
     @Deprecated(since = "OID4VCI 1.0")
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(
@@ -62,7 +63,7 @@ public class DeferredCredentialService {
         var credentialEnvelopeDto = buildEnvelopeV1(credentialOffer, credentialRequest);
 
         // Just to be aligned old but wrong implementation! Must be removed when ending of support of V1
-        if(!isOfferReady(credentialOffer)){
+        if (!isOfferReady(credentialOffer)) {
             throw new Oid4vcException(ISSUANCE_PENDING, "The credential is not marked as ready to be issued",
                     Map.of(
                             "offerId", credentialOffer.getId(),
@@ -81,10 +82,10 @@ public class DeferredCredentialService {
      * Issues a deferred credential using the OID4VCI 2.0 flow.
      *
      * @param deferredCredentialRequest request payload containing transaction and credential parameters
-     * @param accessToken access token authorizing issuance for the transaction
+     * @param accessToken               access token authorizing issuance for the transaction
      * @return envelope with the issued credential response
      * @throws Oid4vcException when validation fails (expired, cancelled, or not ready)
-     * @throws OAuthException when the provided access token is invalid or expired
+     * @throws OAuthException  when the provided access token is invalid or expired
      */
     public CredentialEnvelopeDto createCredentialFromDeferredRequestV2(
             DeferredCredentialEndpointRequestDto deferredCredentialRequest,

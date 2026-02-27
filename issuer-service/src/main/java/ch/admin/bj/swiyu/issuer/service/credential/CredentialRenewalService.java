@@ -1,11 +1,11 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalRequestDto;
@@ -33,19 +33,19 @@ public class CredentialRenewalService {
      * Runs the end-to-end renewal flow for a credential management record.
      *
      * @param credentialRequest the credential request details provided by the client
-     * @param mgmt the credential management aggregate to validate and update
-     * @param clientInfo metadata about the calling client agent
-     * @param dpopKey the DPoP public key associated with the access token
+     * @param mgmt              the credential management aggregate to validate and update
+     * @param clientInfo        metadata about the calling client agent
+     * @param dpopKey           the DPoP public key associated with the access token
      * @return the envelope containing the renewed credential offer
      * @throws RenewalException when renewal is disallowed or already in progress
-     * @throws OAuthException when the DPoP key is missing or invalid for renewal
+     * @throws OAuthException   when the DPoP key is missing or invalid for renewal
      */
     public CredentialEnvelopeDto handleRenewalFlow(CredentialRequestClass credentialRequest,
                                                    CredentialManagement mgmt,
                                                    ClientAgentInfo clientInfo,
                                                    String dpopKey) {
 
-        ensureManagementNotRevoked(mgmt);
+        ensureManagementNotRevokedOrSuspended(mgmt);
         ensureRenewalFlowEnabled(mgmt);
         ensureDpopKeyPresent(dpopKey);
         ensureNoPendingRenewalRequest(mgmt);
@@ -63,16 +63,16 @@ public class CredentialRenewalService {
         return envelopeDto;
     }
 
-    void ensureManagementNotRevoked(CredentialManagement mgmt) {
-        if (mgmt.getCredentialManagementStatus() == CredentialStatusManagementType.REVOKED) {
-            throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential management is revoked, no renewal possible");
+    void ensureManagementNotRevokedOrSuspended(CredentialManagement mgmt) {
+        if (mgmt.getCredentialManagementStatus() == CredentialStatusManagementType.REVOKED || mgmt.getCredentialManagementStatus() == CredentialStatusManagementType.SUSPENDED) {
+            throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential management is %s, no renewal possible".formatted(mgmt.getCredentialManagementStatus().name()));
         }
     }
 
     void ensureRenewalFlowEnabled(CredentialManagement mgmt) {
         if (!applicationProperties.isRenewalFlowEnabled()) {
             log.info("Tried to renew credential for management id %s".formatted(mgmt.getId()));
-            throw new RenewalException(HttpStatus.BAD_REQUEST, "No active offer found for %s and no renewal possible");
+            throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential renewal is not allowed");
         }
     }
 

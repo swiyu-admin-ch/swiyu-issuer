@@ -6,7 +6,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatus;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachine;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementMapper;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
@@ -93,27 +93,11 @@ public class CredentialStateService {
             CredentialStateMachineConfig.CredentialOfferEvent offerEvent) {
 
         // Update states using state service. If event is null, state machine will not perform a transition, but we
-        // can still get the current status to determine if we need to update status lists.
-        var managementResult = credentialStateMachine.sendEventAndUpdateStatus(mgmt, managementEvent);
-        mgmt.getCredentialOffers().forEach(
-                credentialOffer -> credentialStateMachine.sendEventAndUpdateStatus(credentialOffer, offerEvent));
-
-        // Only persist and handle status lists if management state actually changed
-        if (!managementResult.changed()) {
-            return CredentialManagementMapper.toUpdateStatusResponseDto(mgmt, null);
-        }
-
-        // Handle status list updates for post-issuance
-        var affectedOffers = mgmt.getCredentialOffers().stream()
-                .map(CredentialOffer::getId)
-                .toList();
-
-        var offerStatusSet = persistenceService.findCredentialOfferStatusesByOfferIds(affectedOffers);
-
-        // Dispatch to the appropriate status list operation based on the new status
-        var statusList = updateStatusListBasedOnManagementStatus(offerStatusSet, managementResult.newStatus());
-
-        return CredentialManagementMapper.toUpdateStatusResponseDto(mgmt, statusList);
+        // can still get the current status to determine if we need to update status lists.        var managementResult = credentialStateMachine.sendEventAndUpdateStatus(mgmt, managementEvent);
+        credentialStateMachine.sendEventAndUpdateStatus(mgmt, managementEvent);
+        mgmt.getCredentialOffers().stream().forEach(o -> credentialStateMachine.sendEventAndUpdateStatus(o, offerEvent));
+        List<UUID> statusLists = null;
+        return CredentialManagementMapper.toUpdateStatusResponseDto(mgmt, statusLists);
     }
 
     /**
