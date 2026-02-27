@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -- Set credential mgmt id in offer table
 
-## Latest
+## 2.4.0
 
 ### Added
 - Added `nonce_endpoint`, `deferred_credential_endpoint`, and `batch_credential_issuance` (with min batch size of 10) to `sample.compose.yml` `(#737)`.
