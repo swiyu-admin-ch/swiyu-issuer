@@ -111,6 +111,11 @@ public class IssuerMetadata {
         return credentialConfiguration;
     }
 
+    @JsonIgnore
+    public boolean isBatchIssuanceAllowed() {
+        return batchCredentialIssuance != null;
+    }
+
     /**
      * Shortcut for batchCredentialIssuance.batchSize
      *
