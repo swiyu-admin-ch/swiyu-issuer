@@ -1,32 +1,41 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.credential.OpenIdIssuerConfiguration;
-import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
-import ch.admin.bj.swiyu.issuer.service.enc.JweService;
-import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
-import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.*;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.Map;
+import java.util.UUID;
+
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.stereotype.Service;
 
-import java.text.ParseException;
-import java.util.Date;
-import java.util.UUID;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
+import ch.admin.bj.swiyu.issuer.service.credential.OpenIdIssuerConfiguration;
+import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
+import ch.admin.bj.swiyu.issuer.service.enc.JweService;
+import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
+import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -69,9 +78,45 @@ public class MetadataService {
      * @return the unsigned {@link IssuerMetadata} instance for this issuer tenant
      */
     public IssuerMetadata getUnsignedIssuerMetadata(UUID tenantId) {
-        return getUnsignedIssuerMetadata().toBuilder()
+        var baseUnsignedMetadata = getUnsignedIssuerMetadata();
+        var issuerMetadataRebuilder = baseUnsignedMetadata.toBuilder();
+        
+        var supportedCredentialConfigurations = getUpdatedSupportedCredentialConfigurations(baseUnsignedMetadata, tenantId);
+        
+        return issuerMetadataRebuilder
                 .credentialIssuer(createTenantCredentialIssuerIdentifier(tenantId))
+                .credentialConfigurationSupported(supportedCredentialConfigurations)
                 .build();
+    }
+
+    /**
+     * Updates the supported credential configurations by merging metadata from the provided
+     * credential offer with the existing base metadata.
+     * If the credential offer contains metadata and a valid configuration ID, the corresponding
+     * credential configuration is updated with new metadata URI and integrity values.
+     * The method then returns the updated map of supported credential configurations.
+     *
+     * @param issuerMetadata the issuer metadata to be updated
+     * @param tenantId the tenant identifier for which to produce the updated credential configuration
+     * @return the map of updated supported {@link CredentialConfiguration}
+     */
+    private Map<String, CredentialConfiguration> getUpdatedSupportedCredentialConfigurations(
+            IssuerMetadata issuerMetadata, UUID tenantId) {
+        var credentialOffer = credentialManagementService.getCredentialOfferByTenantId(tenantId);
+        var supportedCredentialConfigurations = issuerMetadata.getCredentialConfigurationSupported();
+        if (credentialOffer == null) {
+            return supportedCredentialConfigurations;
+        }
+        var credentialMetadata = credentialOffer.getCredentialMetadata();
+        if (credentialMetadata != null) {
+            var configurationId = credentialOffer.getMetadataCredentialSupportedId().getFirst();
+            var baseCredentialConfiguration = issuerMetadata.getCredentialConfigurationById(configurationId);
+            supportedCredentialConfigurations.put(configurationId, baseCredentialConfiguration.toBuilder()
+                .vctMetadataUri(credentialMetadata.getVctMetadataUriOrDefault(baseCredentialConfiguration.getVctMetadataUri()))
+                .vctMetadataUriIntegrity(credentialMetadata.getVctMetadataUriIntegrityOrDefault(baseCredentialConfiguration.getVctMetadataUriIntegrity()))
+                .build());
+        }
+        return supportedCredentialConfigurations;
     }
 
     /**
