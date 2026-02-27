@@ -9,8 +9,8 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import com.authlete.sd.SDJWT;
@@ -172,7 +172,7 @@ class RenewalFlowIT {
                     .getResponse()
                     .getContentAsString();
             var credentialResponse = assertDoesNotThrow(() -> objectMapper
-                    .readValue(credentialResponseString, CredentialEndpointResponseDtoV2.class));
+                    .readValue(credentialResponseString, CredentialEndpointResponseDto.class));
             var credentialClaims = credentialResponse.credentials().stream()
                     .map(this::getCredentialClaimsSet)
                     .toList();
@@ -407,7 +407,7 @@ class RenewalFlowIT {
         return credentialRequestString;
     }
 
-    private JWTClaimsSet getCredentialClaimsSet(CredentialObjectDtoV2 issuedCredential) {
+    private JWTClaimsSet getCredentialClaimsSet(CredentialObjectDto issuedCredential) {
         var sdjwt = SDJWT.parse(issuedCredential.credential());
         var jwt = assertDoesNotThrow(() -> SignedJWT.parse(sdjwt.getCredentialJwt()));
         return assertDoesNotThrow(() -> jwt.getJWTClaimsSet());

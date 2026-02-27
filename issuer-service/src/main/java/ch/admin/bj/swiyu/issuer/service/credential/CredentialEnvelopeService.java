@@ -77,8 +77,8 @@ public class CredentialEnvelopeService {
 
         return issueCredential(context,
                 holderKeys,
-                vcBuilder::buildCredentialEnvelopeV2,
-                vcBuilder::buildDeferredCredentialV2);
+                vcBuilder::buildCredentialEnvelope,
+                vcBuilder::buildDeferredCredential);
     }
 
     /**

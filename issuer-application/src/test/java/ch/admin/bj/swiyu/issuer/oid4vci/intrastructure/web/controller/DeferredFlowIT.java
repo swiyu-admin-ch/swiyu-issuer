@@ -10,17 +10,10 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.DeferredDataDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
@@ -28,8 +21,6 @@ import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JOSEException;
@@ -187,7 +178,7 @@ class DeferredFlowIT {
                 .andReturn();
         verify(testEventListener, Mockito.times(1)).handleDeferredEvent(any(DeferredEvent.class));
 
-        DeferredDataDtoV2 deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDtoV2.class);
+        DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
 
         assertNotNull(deferredDataDto.transactionId());
 
@@ -282,7 +273,7 @@ class DeferredFlowIT {
                 .andExpect(status().isAccepted())
                 .andReturn();
 
-        DeferredDataDtoV2 deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDtoV2.class);
+        DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
 
         assertNotNull(deferredDataDto.transactionId());
 
@@ -544,7 +535,7 @@ class DeferredFlowIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validUnboundPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         // V2 Request ohne Proofs
-        var credentialRequestString = objectMapper.writeValueAsString(new CredentialEndpointRequestDtoV2(
+        var credentialRequestString = objectMapper.writeValueAsString(new CredentialEndpointRequestDto(
                 "unbound_example_sd_jwt",
                 null,
                 null
@@ -557,7 +548,7 @@ class DeferredFlowIT {
                 .andExpect(jsonPath("$.transaction_id").isNotEmpty())
                 .andReturn();
 
-        DeferredDataDtoV2 deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDtoV2.class);
+        DeferredDataDto deferredDataDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
 
         // check status from business issuer perspective
         updateStatus(mock, validUnboundOfferId.toString(), UpdateCredentialStatusRequestTypeDto.READY);
@@ -697,7 +688,7 @@ class DeferredFlowIT {
 
     private String getCredentialRequestString(String proof) throws Exception {
         // V2 Endpoint erwartet CredentialEndpointRequestDtoV2
-        var request = new CredentialEndpointRequestDtoV2(
+        var request = new CredentialEndpointRequestDto(
                 "test",
                 new ProofsDto(List.of(proof)),
                 null

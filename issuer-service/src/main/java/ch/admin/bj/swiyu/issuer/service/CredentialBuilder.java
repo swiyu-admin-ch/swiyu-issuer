@@ -1,9 +1,8 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
@@ -71,36 +70,21 @@ public abstract class CredentialBuilder {
         return this;
     }
 
-//    @Deprecated(since = "OID4VCI 1.0")
-//    public CredentialEnvelopeDto buildCredentialEnvelope() {
-//        var credential = getCredential(this.holderBindings).getFirst();
-//        var oid4vciCredential = new HashMap<String, String>();
-//        oid4vciCredential.put("format", this.credentialConfiguration.getFormat());
-//        oid4vciCredential.put("credential", credential);
-//        return buildEnvelopeDto(oid4vciCredential);
-//    }
-
-    public CredentialEnvelopeDto buildCredentialEnvelopeV2() {
+    public CredentialEnvelopeDto buildCredentialEnvelope() {
         // if no holder bindings are set, we only create 1 credential
-        List<CredentialObjectDtoV2> credentials = getCredential(holderBindings).stream()
-                .map(CredentialObjectDtoV2::new)
+        List<CredentialObjectDto> credentials = getCredential(holderBindings).stream()
+                .map(CredentialObjectDto::new)
                 .toList();
-        var credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(credentials, null, null);
-        return buildEnvelopeDto(credentialResponseDtoV2);
+        var credentialResponseDto = new CredentialEndpointResponseDto(credentials, null, null);
+        return buildEnvelopeDto(credentialResponseDto);
     }
 
-    public CredentialEnvelopeDto buildDeferredCredentialV2(UUID transactionId) {
-        var credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(null, transactionId.toString(),
+    public CredentialEnvelopeDto buildDeferredCredential(UUID transactionId) {
+        var credentialResponseDto = new CredentialEndpointResponseDto(null, transactionId.toString(),
                 applicationProperties.getMinDeferredOfferIntervalSeconds());
 
-        return buildEnvelopeDto(credentialResponseDtoV2, HttpStatus.ACCEPTED);
+        return buildEnvelopeDto(credentialResponseDto, HttpStatus.ACCEPTED);
     }
-
-//    public CredentialEnvelopeDto buildDeferredCredential(UUID transactionId) {
-//        var deferredResponse = new DeferredDataDto(transactionId);
-//
-//        return buildEnvelopeDto(deferredResponse, HttpStatus.ACCEPTED);
-//    }
 
     public CredentialEnvelopeDto buildEnvelopeDto(Object payload) {
 

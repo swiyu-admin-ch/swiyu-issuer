@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2;
+package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance;
 
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -12,8 +12,8 @@ import jakarta.validation.constraints.NotBlank;
  * @param proofs
  * @param credentialResponseEncryption spec: <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-request">...</a>
  */
-@Schema(name = "CredentialEndpointRequestV2", description = "Request to the Credential Endpoint as defined in OID4VCI 1.0 specification")
-public record CredentialEndpointRequestDtoV2(
+@Schema(name = "CredentialEndpointRequest", description = "Request to the Credential Endpoint as defined in OID4VCI 1.0 specification")
+public record CredentialEndpointRequestDto(
 
         // credential_identifier has been omitted on purpose, Authorization Details of type openid_credential are not used by this implementation
 

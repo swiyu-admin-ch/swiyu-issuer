@@ -1,9 +1,9 @@
-package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2;
+package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public record CredentialObjectDtoV2(
+public record CredentialObjectDto(
         @JsonProperty("credential")
         @Schema(description = """
                 One sdjwt credential as string, if multiple credentials are issued each is wrapped in 

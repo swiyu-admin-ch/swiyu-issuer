@@ -94,7 +94,7 @@ class DeferredCredentialServiceTest {
         when(builder.credentialResponseEncryption(any(), any())).thenReturn(builder);
         when(builder.holderBindings(any())).thenReturn(builder);
         when(builder.credentialType(any())).thenReturn(builder);
-        when(builder.buildCredentialEnvelopeV2()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
+        when(builder.buildCredentialEnvelope()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
 
         var result = service.createCredentialFromDeferredRequestV2(
                 new DeferredCredentialEndpointRequestDto(offer.getTransactionId(), null),
@@ -137,7 +137,7 @@ class DeferredCredentialServiceTest {
         when(builder.credentialResponseEncryption(any(), any())).thenReturn(builder);
         when(builder.holderBindings(any())).thenReturn(builder);
         when(builder.credentialType(any())).thenReturn(builder);
-        when(builder.buildCredentialEnvelopeV2()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
+        when(builder.buildCredentialEnvelope()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
 
         service.createCredentialFromDeferredRequestV2(
                 new DeferredCredentialEndpointRequestDto(offer.getTransactionId(), null),

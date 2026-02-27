@@ -3,9 +3,9 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.DeferredDataDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
@@ -157,7 +157,7 @@ public class IssuanceController {
                     content = {
                             @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = CredentialEndpointRequestDtoV2.class)
+                                    schema = @Schema(implementation = CredentialEndpointRequestDto.class)
                             ),
                             @Content(
                                     mediaType = "application/jwt", // See: OID4VCI 1.0 Chapter 10
@@ -173,7 +173,7 @@ public class IssuanceController {
                             description = "Credential issued successfully.",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = CredentialEndpointResponseDtoV2.class)
+                                    schema = @Schema(implementation = CredentialEndpointResponseDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -181,7 +181,7 @@ public class IssuanceController {
                             description = "Successful deferred credential. The credential will be issued later",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = DeferredDataDtoV2.class)
+                                    schema = @Schema(implementation = DeferredDataDto.class)
                             )
                     )
             }
@@ -202,7 +202,7 @@ public class IssuanceController {
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
 
 
-        var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDtoV2.class);
+        var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDto.class);
         validateRequestDtoOrThrow(dto, validator);
         credentialEnvelope = credentialServiceOrchestrator.createCredentialV2(dto, accessToken, clientInfo, dpop);
 //        } else {
@@ -254,7 +254,7 @@ public class IssuanceController {
                             description = "Credential issued successfully",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(oneOf = {CredentialEndpointResponseDto.class, CredentialEndpointResponseDtoV2.class})
+                                    schema = @Schema(implementation = CredentialEndpointResponseDto.class)
                             )
                     ),
                     @ApiResponse(

@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2;
+package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -7,8 +7,8 @@ import jakarta.validation.constraints.Positive;
 
 import java.util.UUID;
 
-@Schema(name = "DeferredDataV2")
-public record DeferredDataDtoV2(
+@Schema(name = "DeferredData")
+public record DeferredDataDto(
         /**
          * Mandatory String identifying a Deferred Issuance transaction. It MUST be present when the credential parameter is not returned.
          */

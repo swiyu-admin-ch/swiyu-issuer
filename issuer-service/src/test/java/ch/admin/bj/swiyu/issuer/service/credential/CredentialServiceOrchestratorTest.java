@@ -4,8 +4,8 @@ import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
@@ -31,7 +31,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
 import java.util.*;
@@ -568,7 +567,7 @@ class CredentialServiceOrchestratorTest {
     @Test
     void createCredentialV2_deferred_thenSuccess() throws JsonProcessingException {
         // Arrange
-        CredentialEndpointRequestDtoV2 requestDto = mock(CredentialEndpointRequestDtoV2.class);
+        CredentialEndpointRequestDto requestDto = mock(CredentialEndpointRequestDto.class);
         UUID accessToken = UUID.randomUUID();
 
         CredentialRequestClass credentialRequest = mock(CredentialRequestClass.class);
@@ -607,7 +606,7 @@ class CredentialServiceOrchestratorTest {
     @Test
     void createCredentialV2_nonDeferred_thenSuccess() {
         // Arrange
-        CredentialEndpointRequestDtoV2 requestDto = mock(CredentialEndpointRequestDtoV2.class);
+        CredentialEndpointRequestDto requestDto = mock(CredentialEndpointRequestDto.class);
         UUID accessToken = UUID.randomUUID();
         var proofs = List.of(mock(ProofJwt.class));
 
@@ -722,7 +721,7 @@ class CredentialServiceOrchestratorTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(100).getEpochSecond();
-        CredentialEndpointRequestDtoV2 credentialRequestDto = getCredentialRequestDtoV2("not-test", null);
+        CredentialEndpointRequestDto credentialRequestDto = getCredentialRequestDtoV2("not-test", null);
         var offer = getCredentialOffer(CredentialOfferStatusType.IN_PROGRESS, expirationTimeStamp, offerData, accessToken, UUID.randomUUID(), UUID.randomUUID(), null, transactionId);
         var config = mock(CredentialConfiguration.class);
         var mgmt = CredentialManagement.builder()
@@ -769,10 +768,10 @@ class CredentialServiceOrchestratorTest {
         when(vcBuilder.credentialType(anyList())).thenReturn(vcBuilder);
 
         CredentialEnvelopeDto deferredEnvelope = mock(CredentialEnvelopeDto.class);
-        when(vcBuilder.buildDeferredCredentialV2(any(UUID.class))).thenReturn(deferredEnvelope);
+        when(vcBuilder.buildDeferredCredential(any(UUID.class))).thenReturn(deferredEnvelope);
 
         CredentialEnvelopeDto issuedEnvelope = mock(CredentialEnvelopeDto.class);
-        when(vcBuilder.buildCredentialEnvelopeV2()).thenReturn(issuedEnvelope);
+        when(vcBuilder.buildCredentialEnvelope()).thenReturn(issuedEnvelope);
     }
 
     private CredentialOfferStatus getCredentialOfferStatus(UUID offerId, UUID statusId) {
@@ -781,8 +780,8 @@ class CredentialServiceOrchestratorTest {
                 .build();
     }
 
-    private @NotNull CredentialEndpointRequestDtoV2 getCredentialRequestDtoV2(String credentialConfigurationId, ProofsDto proofs) {
-        return new CredentialEndpointRequestDtoV2(
+    private @NotNull CredentialEndpointRequestDto getCredentialRequestDtoV2(String credentialConfigurationId, ProofsDto proofs) {
+        return new CredentialEndpointRequestDto(
                 credentialConfigurationId,
                 proofs,
                 null

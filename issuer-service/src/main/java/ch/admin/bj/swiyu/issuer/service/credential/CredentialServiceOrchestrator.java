@@ -3,7 +3,7 @@ package ch.admin.bj.swiyu.issuer.service.credential;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +33,7 @@ public class CredentialServiceOrchestrator {
      * Issues a credential (OID4VCI 2.0).
      */
     @Transactional
-    public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDtoV2 credentialRequestDto,
+    public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDto credentialRequestDto,
                                                     String accessToken,
                                                     ClientAgentInfo clientInfo,
                                                     String dpopKey) {

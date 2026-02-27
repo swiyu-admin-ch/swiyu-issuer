@@ -18,7 +18,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -94,7 +93,7 @@ class CredentialEnvelopeServiceTest {
         when(credentialBuilder.credentialResponseEncryption(any(), any())).thenReturn(credentialBuilder);
         when(credentialBuilder.holderBindings(any())).thenReturn(credentialBuilder);
         when(credentialBuilder.credentialType(any())).thenReturn(credentialBuilder);
-        when(credentialBuilder.buildCredentialEnvelopeV2()).thenReturn(new CredentialEnvelopeDto(null, null, null));
+        when(credentialBuilder.buildCredentialEnvelope()).thenReturn(new CredentialEnvelopeDto(null, null, null));
 
         service.createCredentialEnvelopeDtoV2(offer, request, null, mgmt);
 

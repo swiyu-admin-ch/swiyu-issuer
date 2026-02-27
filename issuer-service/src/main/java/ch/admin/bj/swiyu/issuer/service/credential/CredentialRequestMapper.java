@@ -4,7 +4,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
@@ -22,7 +22,7 @@ public class CredentialRequestMapper {
 //        );
 //    }
 
-    public static CredentialRequestClass toCredentialRequest(CredentialEndpointRequestDtoV2 dto) {
+    public static CredentialRequestClass toCredentialRequest(CredentialEndpointRequestDto dto) {
         return new CredentialRequestClass(
                 SD_JWT_FORMAT,
                 dto.proofs() == null ? null : Map.of(ProofType.JWT.toString(), dto.proofs().jwt()),

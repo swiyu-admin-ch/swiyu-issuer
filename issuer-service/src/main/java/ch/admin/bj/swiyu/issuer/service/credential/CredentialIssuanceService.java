@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -62,7 +62,7 @@ public class CredentialIssuanceService {
      * @param dpopKey the DPoP key for proof of possession
      * @return the issued credential envelope
      */
-    public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDtoV2 credentialRequestDto,
+    public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDto credentialRequestDto,
                                                     String accessToken,
                                                     ClientAgentInfo clientInfo,
                                                     String dpopKey) {

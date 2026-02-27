@@ -8,7 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
@@ -151,7 +151,7 @@ class DeferredIssuanceV2IT {
                 .andExpect(jsonPath("$.interval").isNotEmpty())
                 .andReturn();
 
-        var deferredResponseDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), CredentialEndpointResponseDtoV2.class);
+        var deferredResponseDto = objectMapper.readValue(deferredCredentialResponse.getResponse().getContentAsString(), CredentialEndpointResponseDto.class);
         // Wallet starts polling
         String transactionId = deferredResponseDto.transactionId();
         String deferredCredentialRequestString = getDeferredCredentialRequestString(

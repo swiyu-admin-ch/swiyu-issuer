@@ -6,7 +6,6 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
 import ch.admin.bj.swiyu.issuer.service.CredentialBuilder;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
@@ -137,11 +136,11 @@ public class DeferredCredentialService {
         // Depending on the offer status, build either a ready credential or a deferred one
         if (isOfferReady(credentialOffer)) {
             return credentialBuilder
-                    .buildCredentialEnvelopeV2();
+                    .buildCredentialEnvelope();
         } else {
             var transactionId = credentialOffer.getOrGenerateTransactionId();
             return credentialBuilder
-                    .buildDeferredCredentialV2(transactionId);
+                    .buildDeferredCredential(transactionId);
         }
     }
 

@@ -4,16 +4,15 @@ package ch.admin.bj.swiyu.issuer;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
@@ -348,7 +347,7 @@ class BlackboxIT {
                 .map(SignedJWT::serialize)
                 .toList();
 
-        var credentialRequestDto = new CredentialEndpointRequestDtoV2(
+        var credentialRequestDto = new CredentialEndpointRequestDto(
                 offeredCredentialIds.getFirst(),
                 new ProofsDto(holderBindingJwts),
                 new CredentialResponseEncryptionDto(
@@ -405,7 +404,7 @@ class BlackboxIT {
         assertDoesNotThrow(() -> credentialResponseJwt.decrypt(new ECDHDecrypter(holderEncryptionKeys.toECKey())));
         var credentialResponseDto = assertDoesNotThrow(() -> objectMapper.readValue(credentialResponseJwt.getJWTClaimsSet()
                         .toString(),
-                CredentialEndpointResponseDtoV2.class));
+                CredentialEndpointResponseDto.class));
         assertThat(credentialResponseDto.credentials()).as(
                         "The flow is not deferred, the credentials should be directly returned")
                 .hasSize(issuerMetadata.getIssuanceBatchSize());
@@ -413,7 +412,7 @@ class BlackboxIT {
         assertThat(credentialResponseDto.transactionId()).isNull();
         var verifiableCredentialClaims = credentialResponseDto.credentials()
                 .stream()
-                .map(CredentialObjectDtoV2::credential)
+                .map(CredentialObjectDto::credential)
                 .map(rawSdJwt -> rawSdJwt.split("~")[0])
                 .map(rawJwt -> assertDoesNotThrow(() -> SignedJWT.parse(rawJwt)))
                 .map(signedJwt -> assertDoesNotThrow(signedJwt::getJWTClaimsSet))

@@ -67,7 +67,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
 
@@ -105,7 +105,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
         String credential = getReadFirstCredential(vc);
@@ -143,7 +143,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
         List<HashMap<String, String>> credentialsMap = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credentials");
@@ -187,7 +187,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
         String credential = getReadFirstCredential(vc);
         String payload = getJWTPayload(credential);
@@ -224,7 +224,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
         String credential = getReadFirstCredential(vc);
         JsonObject payload = JsonParser.parseString(getJWTPayload(credential)).getAsJsonObject();
@@ -248,7 +248,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
         String credential = getReadFirstCredential(vc);
         JsonObject payload = JsonParser.parseString(getJWTPayload(credential)).getAsJsonObject();
@@ -273,7 +273,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
         String credential = getReadFirstCredential(vc);
         var issuedJwt = SignedJWT.parse(credential.split("~")[0]);
@@ -300,7 +300,7 @@ class SdJwtCredentialIT {
                 .credentialOffer(credentialOffer)
                 .credentialResponseEncryption(jweService.issuerMetadataWithEncryptionOptions().getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
         assertThat(credentialOffer.getVcHashes())
                 .as("Should have created a finger print for each VC")

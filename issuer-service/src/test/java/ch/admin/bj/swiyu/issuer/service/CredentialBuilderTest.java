@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
@@ -96,10 +96,10 @@ class CredentialBuilderTest {
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = {"credential"})
-    void credentialOffer_buildCredentialEnvelopeV2_thenSuccess(String input) throws IOException {
+    void credentialOffer_buildCredentialEnvelope_thenSuccess(String input) throws IOException {
 
-        List<CredentialObjectDtoV2> credentialObjectDtoV2 = List.of(new CredentialObjectDtoV2(input));
-        CredentialEndpointResponseDtoV2 credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(credentialObjectDtoV2, null, null);
+        List<CredentialObjectDto> credentialObjectDto = List.of(new CredentialObjectDto(input));
+        CredentialEndpointResponseDto credentialResponseDtoV2 = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
         var expectedCredentialWrapper = objectMapper.writeValueAsString(credentialResponseDtoV2);
 
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
@@ -108,7 +108,7 @@ class CredentialBuilderTest {
         inputList.add(input);
         doReturn(inputList).when(builder).getCredential(Mockito.anyList());
 
-        var result = builder.buildCredentialEnvelopeV2();
+        var result = builder.buildCredentialEnvelope();
 
         // check if getCredential has been called without a param
         verify(builder).getCredential(Mockito.anyList());
@@ -116,7 +116,7 @@ class CredentialBuilderTest {
         assertEquals("application/json", result.getContentType());
 
         // can only contain 1 credential
-        assertEquals(1, objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialEndpointResponseDtoV2.class).credentials().size());
+        assertEquals(1, objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialEndpointResponseDto.class).credentials().size());
         assertEquals(expectedCredentialWrapper, result.getOid4vciCredentialJson());
     }
 
@@ -144,7 +144,7 @@ class CredentialBuilderTest {
         doReturn(List.of("credential1")).when(builder).getCredential(List.of(didJwks.getFirst()));
         doReturn(List.of("credential2")).when(builder).getCredential(List.of(didJwks.get(1)));
 
-        var result = builder.buildCredentialEnvelopeV2();
+        var result = builder.buildCredentialEnvelope();
 
         verify(builder, Mockito.times(1)).getCredential(any());
 
@@ -152,23 +152,23 @@ class CredentialBuilderTest {
         assertEquals(HttpStatus.OK, result.getHttpStatus());
 
         // can only contain 1 credential
-        assertEquals(2, objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialEndpointResponseDtoV2.class).credentials().size());
+        assertEquals(2, objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialEndpointResponseDto.class).credentials().size());
     }
 
     @Test
-    void buildDeferredCredentialV2_thenSuccess() throws IOException {
+    void buildDeferredCredential_thenSuccess() throws IOException {
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
 
         var expectedInterval = 10L;
         when(applicationProperties.getMinDeferredOfferIntervalSeconds()).thenReturn(expectedInterval);
 
         var transactionId = UUID.randomUUID();
-        var result = builder.buildDeferredCredentialV2(transactionId);
+        var result = builder.buildDeferredCredential(transactionId);
 
         // status must be accepted
         assertEquals(HttpStatus.ACCEPTED, result.getHttpStatus());
         assertEquals("application/json", result.getContentType());
-        var payload = objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialEndpointResponseDtoV2.class);
+        var payload = objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialEndpointResponseDto.class);
         // transaction id and interval must be set
         assertEquals(transactionId.toString(), payload.transactionId());
         assertEquals(expectedInterval, payload.interval());
@@ -177,8 +177,8 @@ class CredentialBuilderTest {
     @Test
     void buildEnvelopeDto_thenSuccess() {
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
-        List<CredentialObjectDtoV2> credentialObjectDtoV2 = List.of(new CredentialObjectDtoV2("credential"));
-        CredentialEndpointResponseDtoV2 credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(credentialObjectDtoV2, null, null);
+        List<CredentialObjectDto> credentialObjectDto = List.of(new CredentialObjectDto("credential"));
+        CredentialEndpointResponseDto credentialResponseDtoV2 = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
         var response = builder.buildEnvelopeDto(credentialResponseDtoV2);
 
         assertEquals("application/json", response.getContentType());
@@ -202,8 +202,8 @@ class CredentialBuilderTest {
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
 
-        List<CredentialObjectDtoV2> credentialObjectDtoV2 = List.of(new CredentialObjectDtoV2("credential"));
-        CredentialEndpointResponseDtoV2 credentialResponseDtoV2 = new CredentialEndpointResponseDtoV2(credentialObjectDtoV2, null, null);
+        List<CredentialObjectDto> credentialObjectDto = List.of(new CredentialObjectDto("credential"));
+        CredentialEndpointResponseDto credentialResponseDtoV2 = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
         var response = builder.buildEnvelopeDto(credentialResponseDtoV2);
 
         assertEquals("application/jwt", response.getContentType());
