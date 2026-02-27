@@ -506,7 +506,6 @@ class CredentialManagementServiceTest {
 
         assertNotNull(created);
         assertEquals(CredentialOfferStatusType.REQUESTED, created.getCredentialStatus());
-        assertNotNull(created.getNonce());
         assertSame(mgmt, created.getCredentialManagement());
 
         assertEquals(1, mgmt.getRenewalRequestCnt());
@@ -594,7 +593,7 @@ class CredentialManagementServiceTest {
         verify(validationService, times(1)).validateCredentialOfferCreateRequest(any(CreateCredentialOfferRequestDto.class), anyMap());
         verify(statusListOrchestrator, times(1)).resolveAndValidateStatusLists(any(CreateCredentialOfferRequestDto.class));
         verify(persistenceService, times(1)).saveCredentialOffer(existing);
-        verify(persistenceService, times(1)).saveStatusListEntries(eq(statusLists), eq(existing.getId()), eq(batchSize));
+        verify(persistenceService, times(1)).saveStatusListEntries(statusLists, existing.getId(), batchSize);
     }
 
     /**
@@ -666,7 +665,6 @@ class CredentialManagementServiceTest {
                 .preAuthorizedCode(UUID.randomUUID())
                 .offerData(offerData)
                 .offerExpirationTimestamp(offerExpirationTimestamp)
-                .nonce(UUID.randomUUID())
                 .credentialValidFrom(null)
                 .deferredOfferValiditySeconds(0)
                 .credentialValidUntil(null)

@@ -1019,9 +1019,6 @@ components:
       properties:
         token_type:
           type: string
-        cnonce:
-          type: string
-          deprecated: true
         scope:
           type: string
         access_token:
@@ -1031,9 +1028,6 @@ components:
         expires_in:
           type: integer
           format: int64
-        c_nonce:
-          type: string
-          deprecated: true
       required:
       - access_token
     NonceResponse:

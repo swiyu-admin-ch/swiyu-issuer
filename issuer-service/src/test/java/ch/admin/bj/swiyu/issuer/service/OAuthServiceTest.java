@@ -55,7 +55,6 @@ class OAuthServiceTest {
     void refreshOAuthToken_whenRotation_thenSuccess() {
         Mockito.when(applicationProperties.isAllowRefreshTokenRotation()).thenReturn(true);
         var credentialOffer = Mockito.mock(CredentialOffer.class);
-        Mockito.when(credentialOffer.getNonce()).thenReturn(UUID.randomUUID());
         Mockito.when(credentialOffer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.ISSUED);
         var refreshToken = UUID.randomUUID();
         var mockMgmt = Mockito.mock(CredentialManagement.class);
@@ -81,7 +80,6 @@ class OAuthServiceTest {
     void refreshOAuthToken_whenNoRotation_thenSuccess() {
         Mockito.when(applicationProperties.isAllowRefreshTokenRotation()).thenReturn(false);
         var credentialOffer = Mockito.mock(CredentialOffer.class);
-        Mockito.when(credentialOffer.getNonce()).thenReturn(UUID.randomUUID());
         Mockito.when(credentialOffer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.ISSUED);
         var refreshToken = UUID.randomUUID();
         var mockMgmt = Mockito.mock(CredentialManagement.class);

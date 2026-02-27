@@ -8,17 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## latest (3.0.0)
 
 ### Added
+
 - tbd
 
 ### Changed
-- tbd
+
+- Breaking Contract change -> Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
+    - The nonce column from credential_offer table is also removed.
 
 ### Fixed
+
 - tbd
 
 ## 2.4.0
 
 ### Added
+
 - Added `nonce_endpoint`, `deferred_credential_endpoint`, and `batch_credential_issuance` (with min batch size of 10) to `sample.compose.yml` `(#737)`.
 - New endpoint `/actuator/env` to retrieve configuration details.
 - New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}` to retrieve offer-specific information `(#577)`.
@@ -42,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Provide `vct_metadata_uri` and its integrity in the issuer metadata when an override is available `(#749)`.
 
 ### Fixed
+
 - Fixed state machine bugs and simplified Pre-Issuance handling so renewed VCs are correctly considered `(#744)`.
 - Fixed credential issuer identifier when using signed metadata `(#520)`.
 - Return `400 Bad Request` when encryption is required but an unencrypted request is received `(#664)`.
@@ -58,10 +64,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Return `CREDENTIAL_REQUEST_DENIED` again if the offer was cancelled or expired while being in deferred status.
 
 ### Changed
+
 - Optimized Status List updates by bulk loading and reducing repository calls `(#744`, `#746)`.
 - Enhanced JWT verification to be included during the initialization of credential requests for better security `(#368)`.
 - Updated deferred credential handling to better align with the OID4VCI specification `(#665)`.
 - Removed the obsolete "version" tag from SD-JWT payloads, Status List tokens, Credential Offer data, and Issuer Metadata to align with the current specification `(#694)`.
+
+### Removed
+
+- Breaking Contract change -> Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
+    - The nonce column from credential_offer table is also removed.
 
 ## 2.3.1
 

@@ -79,7 +79,6 @@ class DemonstratingProofOfPossessionIT {
                 .id(UUID.randomUUID())
                 .preAuthorizedCode(UUID.randomUUID())
                 .credentialStatus(CredentialOfferStatusType.OFFERED)
-                .nonce(UUID.randomUUID())
                 .build();
 
         credentialManagement = CredentialManagement.builder()

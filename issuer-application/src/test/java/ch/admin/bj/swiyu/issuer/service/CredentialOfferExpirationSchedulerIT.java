@@ -99,7 +99,6 @@ class CredentialOfferExpirationSchedulerIT {
                 .metadataCredentialSupportedId(List.of("metadata"))
                 .offerData(Map.of())
                 .offerExpirationTimestamp(expirationEpoch)
-                .nonce(UUID.randomUUID())
                 .preAuthorizedCode(UUID.randomUUID())
                 .credentialManagement(credentialManagement)
                 .build());
