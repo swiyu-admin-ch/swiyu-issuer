@@ -14,7 +14,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -87,21 +86,18 @@ public class IssuerMetadata {
     private IssuerCredentialResponseEncryption responseEncryption;
 
     @JsonProperty("batch_credential_issuance")
+    @Valid
     @Nullable
     private BatchCredentialIssuance batchCredentialIssuance;
-
-    /**
-     * swiyu Ecosystem version tag
-     */
-    @JsonProperty("version")
-    @NotNull
-    @Pattern(regexp = "^1\\.0$", message = "Only version 1.0 is supported")
-    private String version;
 
     @Nullable
     @JsonProperty("display")
     @Schema(description = "Array of objects, where each object contains display properties of a Credential Issuer for a certain language")
     private List<MetadataIssuerDisplayInfo> display;
+
+    @JsonProperty("profile_version")
+    @Nullable
+    private String profileVersion;
 
     public @NotNull CredentialConfiguration getCredentialConfigurationById(String credentialConfigurationSupportedId) {
         CredentialConfiguration credentialConfiguration = credentialConfigurationSupported.get(credentialConfigurationSupportedId);
@@ -113,6 +109,11 @@ public class IssuerMetadata {
         }
 
         return credentialConfiguration;
+    }
+
+    @JsonIgnore
+    public boolean isBatchIssuanceAllowed() {
+        return batchCredentialIssuance != null;
     }
 
     /**

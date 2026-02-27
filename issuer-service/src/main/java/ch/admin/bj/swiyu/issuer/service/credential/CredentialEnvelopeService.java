@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -23,7 +24,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachineConfig.CredentialManagementEvent.ISSUE;
+import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig.CredentialManagementEvent.ISSUE;
 
 /**
  * Builds credential envelopes and drives the surrounding state transitions and events for both OID4VCI versions.
@@ -88,9 +89,9 @@ public class CredentialEnvelopeService {
                                          CredentialRequestClass credentialRequest,
                                          ClientAgentInfo clientInfo,
                                          CredentialManagement mgmt) {
-         if (mgmt.hasTokenExpirationPassed()) {
-             handleExpiredToken(credentialOffer);
-         }
+        if (mgmt.hasTokenExpirationPassed()) {
+            handleExpiredToken(credentialOffer);
+        }
 
         CredentialRequestValidator.validateCredentialRequest(credentialOffer,
                 credentialRequest,
@@ -192,15 +193,6 @@ public class CredentialEnvelopeService {
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId());
     }
 
-    private record EnvelopeContext(CredentialOffer offer,
-                                   CredentialManagement mgmt,
-                                   CredentialRequestClass request,
-                                   ClientAgentInfo clientInfo) {
-    }
-
-    private record HolderKeys(List<String> bindings, List<String> attestations) {
-    }
-
     private void handleExpiredToken(CredentialOffer credentialOffer) {
         log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
         eventProducerService.produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS",
@@ -208,5 +200,14 @@ public class CredentialEnvelopeService {
                 credentialOffer);
 
         throw OAuthException.invalidRequest("AccessToken expired.");
+    }
+
+    private record EnvelopeContext(CredentialOffer offer,
+                                   CredentialManagement mgmt,
+                                   CredentialRequestClass request,
+                                   ClientAgentInfo clientInfo) {
+    }
+
+    private record HolderKeys(List<String> bindings, List<String> attestations) {
     }
 }

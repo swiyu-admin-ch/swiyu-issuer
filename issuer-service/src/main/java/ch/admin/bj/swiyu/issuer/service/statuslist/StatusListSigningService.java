@@ -1,5 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.statuslist;
 
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
+
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
@@ -57,6 +59,7 @@ public class StatusListSigningService {
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(override.verificationMethodOrDefault(statusListProperties.getVerificationMethod()))
                 .type(new JOSEObjectType("statuslist+jwt"))
+                .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.VC_PROFILE_VERSION)
                 .build();
 
         JWTClaimsSet claimSet = new JWTClaimsSet.Builder()

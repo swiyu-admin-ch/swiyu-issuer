@@ -50,7 +50,7 @@ public class HolderBindingService {
     public List<ProofJwt> getValidateHolderPublicKeys(CredentialRequestClass credentialRequest,
                                                       CredentialOffer credentialOffer) throws Oid4vcException {
 
-        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getCredentialManagement().getMetadataTenantId());
         var supportedProofTypes = resolveSupportedProofTypes(credentialOffer);
         if (supportedProofTypes.isEmpty()) {
             return List.of();
@@ -94,7 +94,7 @@ public class HolderBindingService {
 
 
     private Map<String, SupportedProofType> resolveSupportedProofTypes(CredentialOffer credentialOffer) {
-        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getCredentialManagement().getMetadataTenantId());
         var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(
                 credentialOffer.getMetadataCredentialSupportedId()
                         .getFirst());
@@ -108,23 +108,30 @@ public class HolderBindingService {
                     applicationProperties.getAcceptableProofTimeWindowSeconds(),
                     applicationProperties.getAcceptableProofTimeWindowSeconds());
         } catch (IllegalArgumentException e) {
-            throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof");
+            throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof",
+                    Map.of("proofType", credentialRequest.getProof() != null ? credentialRequest.getProof().toString() : "null"));
         }
     }
 
     private void validateProofsPresence(List<ProofJwt> proofs) throws Oid4vcException {
         if (CollectionUtils.isEmpty(proofs)) {
-            throw new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential");
+            throw new Oid4vcException(INVALID_PROOF, "Proof must be provided for the requested credential",
+                    Map.of("proofCount", proofs != null ? proofs.size() : 0));
         }
     }
 
     private void validateBatchIssuanceConstraints(List<ProofJwt> proofs, IssuerMetadata issuerMetadata) throws Oid4vcException {
         var batchCredentialIssuanceMetadata = issuerMetadata.getBatchCredentialIssuance();
         if (batchCredentialIssuanceMetadata == null && proofs.size() > 1) {
-            throw new Oid4vcException(INVALID_PROOF, "Multiple proofs are not allowed for this credential request");
+            throw new Oid4vcException(INVALID_PROOF, "Multiple proofs are not allowed for this credential request",
+                    Map.of("proofCount", proofs.size()));
         }
-        if (batchCredentialIssuanceMetadata != null && batchCredentialIssuanceMetadata.batchSize() != proofs.size()) {
-            throw new Oid4vcException(INVALID_PROOF, "The number of proofs must match the batch size");
+        if (batchCredentialIssuanceMetadata != null && batchCredentialIssuanceMetadata.batchSize() < proofs.size()) {
+            throw new Oid4vcException(INVALID_PROOF, "The number of proofs must be at least the same as the batch size",
+                    Map.of(
+                            "proofCount", proofs.size(),
+                            "batchSize", batchCredentialIssuanceMetadata.batchSize()
+                    ));
         }
     }
 
@@ -133,7 +140,8 @@ public class HolderBindingService {
                 .map(ProofJwt::getBinding)
                 .distinct()
                 .count() != proofs.size()) {
-            throw new Oid4vcException(INVALID_PROOF, "Proofs should not be duplicated for the same credential request");
+            throw new Oid4vcException(INVALID_PROOF, "Proofs should not be duplicated for the same credential request",
+                    Map.of("proofCount", proofs.size()));
         }
     }
 
@@ -154,19 +162,27 @@ public class HolderBindingService {
             Oid4vcException {
         return Optional.ofNullable(supportedProofTypes.get(requestProof.getProofType().toString()))
                 .orElseThrow(() -> new Oid4vcException(INVALID_PROOF,
-                        "Provided proof is not supported for the credential requested."));
+                        "Provided proof is not supported for the credential requested.",
+                        Map.of(
+                                "proofType", requestProof.getProofType().toString(),
+                                "supportedProofTypes", supportedProofTypes.keySet()
+                        )));
     }
 
 
     private void validateHolderBinding(ProofJwt requestProof, SupportedProofType bindingProofType,
                                        CredentialOffer credentialOffer) throws Oid4vcException {
         var mgmt = credentialOffer.getCredentialManagement();
-        var issuerMetadata = getIssuerMetadata(credentialOffer.getMetadataTenantId());
+        var issuerMetadata = getIssuerMetadata(credentialOffer.getCredentialManagement().getMetadataTenantId());
         if (!requestProof.isValidHolderBinding(
                 issuerMetadata.getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),
                 mgmt.getAccessTokenExpirationTimestamp())) {
-            throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!");
+            throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!",
+                    Map.of(
+                            "offerId", credentialOffer.getId(),
+                            "proofType", requestProof.getProofType().toString()
+                    ));
         }
     }
 
@@ -229,3 +245,4 @@ public class HolderBindingService {
         void apply(ProofJwt proof) throws Oid4vcException;
     }
 }
+

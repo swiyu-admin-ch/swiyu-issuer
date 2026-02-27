@@ -1,5 +1,12 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
@@ -130,7 +137,7 @@ class CredentialServiceOrchestratorTest {
         );
 
         var statusListToken = new TokenStatusListToken(2, 10000);
-        statusList = StatusList.builder().type(StatusListType.TOKEN_STATUS_LIST)
+        statusList = StatusList.builder()
                 .config(Map.of("bits", 2))
                 .uri("https://localhost:8080/status")
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
@@ -414,7 +421,7 @@ class CredentialServiceOrchestratorTest {
                 credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
 
         assertEquals(CREDENTIAL_REQUEST_DENIED, exception.getError());
-        assertEquals("The credential can not be issued anymore, the offer was either cancelled or expired", exception.getMessage());
+        assertEquals("The credential cannot be issued anymore, the offer was either cancelled or expired", exception.getMessage());
     }
 
     @Test
@@ -700,7 +707,7 @@ class CredentialServiceOrchestratorTest {
         var exception = assertThrows(Oid4vcException.class, () -> credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
 
         assertEquals(CredentialRequestError.INVALID_TRANSACTION_ID, exception.getError());
-        assertEquals("Invalid transactional id", exception.getMessage());
+        assertEquals("Invalid transaction id", exception.getMessage());
     }
 
     @Test

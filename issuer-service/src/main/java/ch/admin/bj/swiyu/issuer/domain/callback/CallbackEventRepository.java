@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.lang.NonNull;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,4 +21,12 @@ public interface CallbackEventRepository extends JpaRepository<CallbackEvent, UU
     @QueryHints(value = { @QueryHint(name="jakarta.persistence.lock.timeout", value = "-2")})
     @NonNull
     List<CallbackEvent> findAll();
+
+    /**
+     * Fetch all records with a timestamp before the provided instant.
+     * @param timestamp
+     * @return
+     */
+    @NonNull
+    List<CallbackEvent> findAllByTimestampBefore(Instant timestamp);
 }

@@ -40,6 +40,9 @@ class HolderBindingServiceTest {
     private NonceService nonceService;
     private HolderBindingService holderBindingService;
     private List<ECKey> holderKeys;
+    private CredentialOffer offer;
+    private CredentialConfiguration config;
+    private CredentialManagement management;
 
     @BeforeEach
     void setUp() {
@@ -54,6 +57,13 @@ class HolderBindingServiceTest {
         when(metadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
         when(applicationProperties.getAcceptableProofTimeWindowSeconds()).thenReturn(60);
         when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(60);
+
+        offer = mock(CredentialOffer.class);
+        management = mock(CredentialManagement.class);
+        when(management.getMetadataTenantId()).thenReturn(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+        when(offer.getCredentialManagement()).thenReturn(management);
+        config = mock(CredentialConfiguration.class);
+        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
 
         holderBindingService = new HolderBindingService(
                 metadataService, nonceService, keyAttestationService, applicationProperties
@@ -71,11 +81,7 @@ class HolderBindingServiceTest {
     void returnsEmptyListIfNoProofTypesSupported() {
         SupportedProofType proofType = new SupportedProofType();
         proofType.setSupportedSigningAlgorithms(List.of("ES256"));
-        CredentialOffer offer = mock(CredentialOffer.class);
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
-
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(null);
         List<String> proofs = List.of("Proof1", "Proof2");
 
@@ -94,11 +100,7 @@ class HolderBindingServiceTest {
         SupportedProofType proofType = new SupportedProofType();
         proofType.setSupportedSigningAlgorithms(List.of("ES256"));
         Map<String, SupportedProofType> proofTypesSupported = Map.of("jwt", proofType);
-        CredentialOffer offer = mock(CredentialOffer.class);
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
-
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(proofTypesSupported);
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(
@@ -115,10 +117,7 @@ class HolderBindingServiceTest {
 
     @Test
     void throwsIfMultipleProofsAndNoBatchIssuance() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
         when(issuerMetadata.getBatchCredentialIssuance()).thenReturn(null);
 
@@ -137,10 +136,7 @@ class HolderBindingServiceTest {
 
     @Test
     void validateHolderPublicKeys_reusedProof_throwsOID4VCIException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
         mockBatchCredentialIssuance(2);
 
@@ -167,10 +163,7 @@ class HolderBindingServiceTest {
 
     @Test
     void validateHolderPublicKeys_invalidProof_throwsOID4VCIException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
 
         var credentialRequest = new CredentialRequestClass(
@@ -190,10 +183,7 @@ class HolderBindingServiceTest {
 
     @Test
     void validateHolderPublicKeys_proofNotSupported_throwsOID4VCIException() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
 
         var credentialRequest = new CredentialRequestClass(
@@ -214,10 +204,7 @@ class HolderBindingServiceTest {
 
     @Test
     void throwsIfProofsExceedBatchSize() {
-        CredentialOffer offer = mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
-        CredentialConfiguration config = mock(CredentialConfiguration.class);
-        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
         mockBatchCredentialIssuance(1);
 
@@ -231,7 +218,7 @@ class HolderBindingServiceTest {
 
         var e = assertThrows(Oid4vcException.class, () ->
                 holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer));
-        assertEquals("The number of proofs must match the batch size", e.getMessage());
+        assertEquals("The number of proofs must be at least the same as the batch size", e.getMessage());
     }
 
     @Test

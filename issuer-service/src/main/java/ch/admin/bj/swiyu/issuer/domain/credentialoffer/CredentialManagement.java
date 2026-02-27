@@ -64,6 +64,11 @@ public class CredentialManagement {
     private Integer renewalResponseCnt;
 
     /**
+     * TenantId from the metadata where the initial credential offer was created
+     * Used by the wallet to fetch the metadata
+     */
+    private UUID metadataTenantId;
+    /**
      * Wallet Public Key used for DPoP header JWT
      */
     @JdbcTypeCode(SqlTypes.JSON)

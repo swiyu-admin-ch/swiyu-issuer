@@ -100,6 +100,7 @@ public class CredentialOffer {
      * TenantId from the metadata where the credential offer was created
      * Used to sign the metadata with the correct key
      */
+    @Deprecated(since = "2026-02-05 - EIDOMNI-634 Moving tenant_id to credentialManagement")
     private UUID metadataTenantId;
 
     /**
@@ -156,6 +157,12 @@ public class CredentialOffer {
     @ManyToOne
     @JoinColumn(name = "credential_management_id", nullable = false)
     private CredentialManagement credentialManagement;
+
+    /**
+     * List of Hashes / Json Web Signatures, allowing a minimal tracing possibility in case of VC misuse
+     */
+    @Column(name = "vc_hashes")
+    private List<String> vcHashes;
 
     /**
      * Read the offer data depending on input type and add it to offer
@@ -242,7 +249,6 @@ public class CredentialOffer {
 
     public void invalidateOfferData() {
         this.offerData = null;
-        this.transactionId = null;
         this.credentialRequest = null;
         this.holderJWKs = null;
         this.clientAgentInfo = null;

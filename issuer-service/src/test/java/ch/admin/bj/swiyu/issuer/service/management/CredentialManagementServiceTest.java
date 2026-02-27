@@ -218,30 +218,6 @@ class CredentialManagementServiceTest {
 
     /**
      * Ensures that {@link CredentialManagementService#updateCredentialStatus(UUID, UpdateCredentialStatusRequestTypeDto)}
-     * routes to the <em>pre-issuance</em> handler when the management is in a pre-issuance process.
-     */
-    @Test
-    void updateCredentialStatus_shouldRouteToPreIssuanceHandler_whenMgmtIsPreIssuance() {
-        var mgmt = CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .credentialManagementStatus(CredentialStatusManagementType.INIT)
-                .credentialOffers(Set.of(valid))
-                .build();
-        valid.setCredentialManagement(mgmt);
-
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
-
-        when(stateService.handleStatusChangeForPreIssuanceProcess(any(), any(), any(), any()))
-                .thenReturn(new UpdateStatusResponseDto(mgmt.getId(), CredentialStatusTypeDto.OFFERED, null));
-
-        credentialService.updateCredentialStatus(mgmt.getId(), UpdateCredentialStatusRequestTypeDto.CANCELLED);
-
-        verify(stateService, times(1)).handleStatusChangeForPreIssuanceProcess(any(), any(), any(), any());
-        verify(stateService, never()).handleStatusChangeForPostIssuanceProcess(any(), any(), any(), any());
-    }
-
-    /**
-     * Ensures that {@link CredentialManagementService#updateCredentialStatus(UUID, UpdateCredentialStatusRequestTypeDto)}
      * routes to the <em>post-issuance</em> handler when the management is in a post-issuance process.
      */
     @Test
@@ -249,35 +225,12 @@ class CredentialManagementServiceTest {
         var mgmt = issued.getCredentialManagement();
 
         when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
-        when(stateService.handleStatusChangeForPostIssuanceProcess(any(), any(), any(), any()))
+        when(stateService.handleStatusChange(any(), any(), any()))
                 .thenReturn(new UpdateStatusResponseDto(mgmt.getId(), CredentialStatusTypeDto.SUSPENDED, null));
 
         credentialService.updateCredentialStatus(mgmt.getId(), UpdateCredentialStatusRequestTypeDto.SUSPENDED);
 
-        verify(stateService, times(1)).handleStatusChangeForPostIssuanceProcess(any(), any(), any(), any());
-        verify(stateService, never()).handleStatusChangeForPreIssuanceProcess(any(), any(), any(), any());
-    }
-
-    /**
-     * Documents the guard condition: status updates require at least one credential offer.
-     *
-     * <p>Expectation: if an empty offer set is returned from persistence, the service rejects the request
-     * with {@link BadRequestException} and does not call the state service.</p>
-     */
-    @Test
-    void updateCredentialStatus_shouldThrow_whenNoOfferPresent() {
-        var mgmt = CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .credentialManagementStatus(CredentialStatusManagementType.INIT)
-                .credentialOffers(Collections.emptySet())
-                .build();
-
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
-
-        assertThrows(BadRequestException.class, () ->
-                credentialService.updateCredentialStatus(mgmt.getId(), UpdateCredentialStatusRequestTypeDto.CANCELLED));
-
-        verifyNoInteractions(stateService);
+        verify(stateService, times(1)).handleStatusChange(any(), any(), any());
     }
 
     /**
@@ -377,7 +330,6 @@ class CredentialManagementServiceTest {
         var statusLists = List.of(
                 StatusList.builder()
                         .uri(TEST_STATUS_LIST_URI)
-                        .type(StatusListType.TOKEN_STATUS_LIST)
                         .config(Map.of("bits", 2))
                         .maxLength(10000)
                         .build()
@@ -400,6 +352,7 @@ class CredentialManagementServiceTest {
         // make verification clearer and avoid calling a mock method inside eq(...).
         int batchSize = 100;
         when(issuerMetadata.getIssuanceBatchSize()).thenReturn(batchSize);
+        when(issuerMetadata.isBatchIssuanceAllowed()).thenReturn(true);
 
         // Act
         CredentialWithDeeplinkResponseDto response = credentialService.createCredentialOfferAndGetDeeplink(createCredentialOfferRequestDto);
@@ -426,7 +379,6 @@ class CredentialManagementServiceTest {
         var statusLists = List.of(
                 StatusList.builder()
                         .uri(TEST_STATUS_LIST_URI)
-                        .type(StatusListType.TOKEN_STATUS_LIST)
                         .config(Map.of("bits", 2))
                         .maxLength(10000)
                         .build()
@@ -586,7 +538,6 @@ class CredentialManagementServiceTest {
         var statusLists = List.of(
                 StatusList.builder()
                         .uri(statusListUri)
-                        .type(StatusListType.TOKEN_STATUS_LIST)
                         .config(Map.of("bits", 2))
                         .maxLength(10000)
                         .build()
@@ -616,6 +567,10 @@ class CredentialManagementServiceTest {
                 null
         );
 
+        CredentialManagement management = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .metadataTenantId(UUID.randomUUID())
+                .build();
         CredentialOffer existing = CredentialOffer.builder()
                 .id(UUID.randomUUID())
                 .credentialStatus(CredentialOfferStatusType.ISSUED)
@@ -623,6 +578,7 @@ class CredentialManagementServiceTest {
                 .offerData(Map.of("old", "data"))
                 .offerExpirationTimestamp(Instant.now().plusSeconds(10).getEpochSecond())
                 .deferredOfferValiditySeconds(0)
+                .credentialManagement(management)
                 .build();
 
         CredentialOffer updated = credentialService.updateOfferFromRenewalResponse(renewalResponse, existing);

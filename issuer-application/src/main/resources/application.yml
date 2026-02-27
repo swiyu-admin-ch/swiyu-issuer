@@ -79,6 +79,10 @@ application:
   # List of DID of Attestation providers we trust in
   trusted-attestation-providers: ${TRUSTED_ATTESTATION_PROVIDERS:}
   enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
+  # Flag to enable the storage of hashes of *each* VC signed by the generic issuer. This is the JWS of the SD-JWT VC.
+  # This is more reliable than using the already present key_attestations,
+  # for which reused key could lead to false positives
+  enable-vc-hash-storage: ${ENABLE_VC_HASH_STORAGE:false}
   authentication-jwks: ${JWKS_ALLOWLIST:}
   status-list:
     # private key for singing status list VCs
@@ -115,6 +119,10 @@ application:
   offer-expiration-interval: "${CREDENTIAL_OFFER_EXPIRATION_INTERVAL:PT15M}"
   encryption-key-rotation-interval: "PT15M"
   encryption-enforce: false
+
+  # Enforce Swiss Profile version indications (profile_version) in incoming/outgoing artifacts where applicable.
+  # Default: false (transitional period).
+  swiss-profile-versioning-enforcement: false
 
   # Set dpop to be mandatory. Changing this default may break interoperability with the wallet and/or impact security.
   dpop-enforce: false

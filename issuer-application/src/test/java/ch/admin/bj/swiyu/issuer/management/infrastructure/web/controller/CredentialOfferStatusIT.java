@@ -4,11 +4,11 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -54,7 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 //@Transactional selecting indexes view does not work with transactional
 class CredentialOfferStatusIT {
 
-    private static final int STATUS_LIST_MAX_LENGTH = 9;
+    private static final int STATUS_LIST_MAX_LENGTH = 30;
     @Autowired
     protected SwiyuProperties swiyuProperties;
     @Autowired
@@ -372,18 +372,5 @@ class CredentialOfferStatusIT {
                     .andExpect(jsonPath("$.status").value(CredentialStatusTypeDto.CANCELLED.toString()));
         }
 
-        @Transactional
-        @Test
-        void testUpdateOfferStatusWithCancelledWhenExpired_thenBadRequest() throws Exception {
-            var originalState = CredentialStatusTypeDto.EXPIRED;
-            managementId = testHelper.createWithOfferStatus(CredentialOfferStatusType.EXPIRED);
-
-            mvc.perform(patch(testHelper.getUpdateUrl(managementId, newStatus)))
-                    .andExpect(status().isBadRequest());
-
-            mvc.perform(get(testHelper.getStatusUrl(managementId)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(originalState.toString()));
-        }
     }
 }

@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.test;
 
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
@@ -95,6 +96,7 @@ public class TestServiceUtils {
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType("key-attestation+jwt"))
                 .keyID(attestationIssuerDid + "#key-1")
+                .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build();
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .issuer(attestationIssuerDid)

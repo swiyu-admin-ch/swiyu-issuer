@@ -9,6 +9,8 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
+
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNSUPPORTED_CREDENTIAL_FORMAT;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNSUPPORTED_CREDENTIAL_TYPE;
 
@@ -49,7 +51,12 @@ public class CredentialRequestValidator {
     private void validateFormat(CredentialRequestClass credentialRequest,
                                 CredentialConfiguration credentialConfiguration) {
         if (!credentialConfiguration.getFormat().equals(credentialRequest.getFormat())) {
-            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT, "Mismatch between requested and offered format.");
+            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT,
+                    "Mismatch between requested and offered format.",
+                    Map.of(
+                            "requestedFormat", credentialRequest.getFormat(),
+                            "offeredFormat", credentialConfiguration.getFormat()
+                    ));
         }
     }
 
@@ -60,7 +67,12 @@ public class CredentialRequestValidator {
                 .getFirst()
                 .equals(credentialRequest.getCredentialConfigurationId())) {
             throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_TYPE,
-                    "Mismatch between requested and offered credential configuration id.");
+                    "Mismatch between requested and offered credential configuration id.",
+                    Map.of(
+                            "requestedConfigurationId", credentialRequest.getCredentialConfigurationId(),
+                            "offeredConfigurationId", credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                            "offerId", credentialOffer.getId()
+                    ));
         }
     }
 }

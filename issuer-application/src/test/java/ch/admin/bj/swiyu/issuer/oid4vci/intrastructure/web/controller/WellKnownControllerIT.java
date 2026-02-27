@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialOfferTestHelper;
@@ -27,6 +28,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -84,6 +86,7 @@ class WellKnownControllerIT {
     void testGetIssuerMetadata_thenSuccess() throws Exception {
         mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profile_version").value(SwissProfileVersions.ISSUANCE_PROFILE_VERSION))
                 .andExpect(content().string(not(containsString("${external-url}"))))
                 .andExpect(content().string(containsString("credential_endpoint")))
                 .andExpect(content().string(not(containsString("${stage}")))) // stage placeholder should be replace
@@ -95,7 +98,38 @@ class WellKnownControllerIT {
     }
 
     @Test
-    void testWellknownJwksComplete() throws Exception {
+    void testGetIssuerMetadataByTenantIdSigned_thenSuccess() throws Exception {
+        var url = testHelper.createBasicOfferJsonAndGetTenantID();
+
+        var response = assertDoesNotThrow(() -> mock.perform(get(
+                        "%s/.well-known/openid-credential-issuer".formatted(url))
+                        .accept("application/jwt"))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        var issuerMetadataJwt = assertDoesNotThrow(() -> SignedJWT.parse(response.getResponse()
+                .getContentAsString()), "Well Known data should be a parsable JWT");
+        var header = issuerMetadataJwt.getHeader();
+
+        assertEquals("openidvci-issuer-metadata+jwt", header.getType().getType());
+        assertEquals("ES256", header.getAlgorithm().getName());
+        assertEquals(SwissProfileVersions.ISSUANCE_PROFILE_VERSION, header.getCustomParam(SwissProfileVersions.PROFILE_VERSION_PARAM));
+    }
+
+    @Test
+    void testGetIssuerMetadataByTenantIdUnsigned_thenSuccess() throws Exception {
+        var url = testHelper.createBasicOfferJsonAndGetTenantID();
+
+        mock.perform(get("%s/.well-known/openid-credential-issuer".formatted(url))
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profile_version").value(SwissProfileVersions.ISSUANCE_PROFILE_VERSION))
+                .andExpect(content().string(not(containsString("${external-url}"))))
+                .andExpect(content().string(containsString("credential_endpoint")));
+    }
+
+    @Test
+    void testWellknownJwksComplete() {
         assertDoesNotThrow(() -> mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].kty").value("EC"))
@@ -103,6 +137,7 @@ class WellKnownControllerIT {
                 .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].alg").value("ECDH-ES")));
     }
 
+    @Test
     void testGetIssuerSignedMetadataSubject_thenSuccess() throws Exception {
         var url = testHelper.createBasicOfferJsonAndGetTenantID();
         var issuerPublicKey = assertDoesNotThrow(() -> JWK.parseFromPEMEncodedObjects(sdjwtProperties.getPrivateKey()).toECKey().toECPublicKey());
@@ -138,7 +173,7 @@ class WellKnownControllerIT {
         assertDoesNotThrow(() -> metadataJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
 
         sub = metadataJwt.getPayload().toJSONObject().get("sub").toString();
-        assertEquals("http://localhost:8080", sub);
+        assertTrue(sub.contains("http://localhost:8080"));
     }
 
     @Test
@@ -168,4 +203,5 @@ class WellKnownControllerIT {
                 .getContentAsString()), "Well Known data should be a parsable JWT");
         assertDoesNotThrow(() -> metadataJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
     }
+
 }

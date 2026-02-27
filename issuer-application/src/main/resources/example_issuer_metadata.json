@@ -3,7 +3,6 @@
   "credential_endpoint": "${external-url}/oid4vci/api/credential",
   "deferred_credential_endpoint": "${external-url}/oid4vci/api/deferred_credential",
   "nonce_endpoint": "${external-url}/oid4vci/api/nonce",
-  "version": "1.0",
   "display": [
     {
       "name": "Mein Test Aussteller",
@@ -21,7 +20,7 @@
     }
   ],
   "batch_credential_issuance": {
-    "batch_size": 3
+    "batch_size": 10
   },
   "credential_configurations_supported": {
     "${stage}university_example_sd_jwt": {

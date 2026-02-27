@@ -3,10 +3,13 @@ package ch.admin.bj.swiyu.issuer.service.enc;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.CacheConfig;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.jweutil.JweUtil;
+import ch.admin.bj.swiyu.jweutil.JweUtilException;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.JWK;
@@ -18,6 +21,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.text.ParseException;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
@@ -46,6 +50,7 @@ public class JweService {
                 .encRequired(applicationProperties.isEncryptionEnforce())
                 .build();
         issuerMetadata.setRequestEncryption(requestEncryption);
+        issuerMetadata.setProfileVersion(SwissProfileVersions.ISSUANCE_PROFILE_VERSION);
         issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder()
                 .encRequired(applicationProperties.isEncryptionEnforce())
                 .build());
@@ -63,14 +68,14 @@ public class JweService {
             JWEObject encryptedJWT = JWEObject.parse(encryptedMessage);
             JWEHeader header = encryptedJWT.getHeader();
             validateJWEHeaders(header, issuerMetadata.getRequestEncryption());
-            JWEDecrypter decrypter = createDecrypter(header);
-            encryptedJWT.decrypt(decrypter);
-            return encryptedJWT.getPayload()
-                    .toString();
+            JWK key = resolveDecryptionKey(header);
+            return JweUtil.decrypt(encryptedMessage, key);
         } catch (ParseException e) {
-            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Message is not a correct JWE object");
-        } catch (JOSEException e) {
-            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "JWE Object could not be decrypted");
+            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Message is not a correct JWE object",
+                    Map.of("payloadLength", encryptedMessage != null ? encryptedMessage.length() : 0));
+        } catch (JweUtilException e) {
+            throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "JWE Object could not be decrypted",
+                    Map.of("payloadLength", encryptedMessage != null ? encryptedMessage.length() : 0));
         }
     }
 
@@ -87,9 +92,9 @@ public class JweService {
      * Decrypts the message if the content type indicates it is a JWE.
      * If the content type is not JWE and encryption is mandatory, an exception is thrown.
      * Otherwise, the original message is returned.
-     * 
+     *
      * @param requestMessage the message to be decrypted
-     * @param contentType the content type of the message
+     * @param contentType    the content type of the message
      * @return decrypted message or original message
      */
     public String decryptRequest(String requestMessage, String contentType) {
@@ -97,7 +102,9 @@ public class JweService {
         if (StringUtils.equalsIgnoreCase("application/jwt", contentType)) {
             return decrypt(requestMessage);
         } else if (isRequestEncryptionMandatory()) {
-            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Request encryption is mandatory with content type set to application/jwt");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
+                    "Request encryption is mandatory with content type set to application/jwt",
+                    Map.of("contentType", contentType != null ? contentType : "null"));
         }
         return requestMessage;
     }
@@ -110,7 +117,9 @@ public class JweService {
      */
     private void validateJWEHeaders(JWEHeader header, IssuerCredentialEncryption encryptionSpec) {
         if (encryptionSpec == null) {
-            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Encryption not supported by issuer metadata");
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Encryption not supported by issuer metadata",
+                    Map.of("headerAlg", header.getAlgorithm() != null ? header.getAlgorithm().getName() : "null",
+                            "headerEnc", header.getEncryptionMethod() != null ? header.getEncryptionMethod().toString() : "null"));
         }
         checkEncryptionMethodSupported(header, encryptionSpec);
         checkCompressionMethodSupported(header, encryptionSpec);
@@ -124,7 +133,11 @@ public class JweService {
         if (header.getEncryptionMethod() == null || !encryptionSpec.getEncValuesSupported().contains(header.getEncryptionMethod().toString())) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
                     "Unsupported encryption method. Must be one of %s but was %s".formatted(encryptionSpec.getEncValuesSupported(),
-                            header.getEncryptionMethod()));
+                            header.getEncryptionMethod()),
+                    Map.of(
+                            "supportedEncs", encryptionSpec.getEncValuesSupported(),
+                            "headerEnc", header.getEncryptionMethod() != null ? header.getEncryptionMethod().toString() : "null"
+                    ));
         }
     }
 
@@ -137,33 +150,36 @@ public class JweService {
         var headerZip = header.getCompressionAlgorithm();
         if (supportedZips != null && (headerZip == null || !supportedZips.contains(headerZip.toString()))) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
-                    "Unsupported compression (zip) method. Must be one of %s but was %s".formatted(supportedZips, headerZip));
+                    "Unsupported compression (zip) method. Must be one of %s but was %s".formatted(supportedZips, headerZip),
+                    Map.of(
+                            "supportedZips", supportedZips,
+                            "headerZip", headerZip != null ? headerZip.toString() : "null"
+                    ));
         }
     }
 
     /**
-     * Creates a nimbus JWEDecrypter using key information encoded in the JWE header
+     * Resolves a private key for the JWE header and validates the algorithm family.
      *
      * @param header JWEHeader holding key information
-     * @return a JWEDecrypter compatible to the JWEHeader provided
+     * @return the JWK to use for decryption
      * @throws Oid4vcException if an unknown key or unsupported algorithm was used in the JWEHeader
      */
-    private JWEDecrypter createDecrypter(JWEHeader header) {
+    private JWK resolveDecryptionKey(JWEHeader header) {
         JWK key = encryptionKeyService.getActivePrivateKeys().getKeyByKeyId(header.getKeyID());
         if (key == null) {
-            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unknown JWK Key Id: " + header.getKeyID());
+            var kid = header.getKeyID();
+            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unknown JWK Key Id: " + header.getKeyID(),
+                    Map.of(
+                            "kidPresent", kid != null,
+                            "kidLength", kid != null ? kid.length() : 0
+                    ));
         }
-        if (JWEAlgorithm.Family.ECDH_ES.contains(header.getAlgorithm())) {
-            try {
-                return new ECDHDecrypter(key.toECKey());
-            } catch (JOSEException e) {
-                throw new Oid4vcException(e,
-                        INVALID_ENCRYPTION_PARAMETERS,
-                        "Unsupported Key and Algorithm combination");
-            }
-        } else {
+        if (!JWEAlgorithm.Family.ECDH_ES.contains(header.getAlgorithm())) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS, "Unsupported Encryption Algorithm");
         }
+
+        return key;
     }
 
 }

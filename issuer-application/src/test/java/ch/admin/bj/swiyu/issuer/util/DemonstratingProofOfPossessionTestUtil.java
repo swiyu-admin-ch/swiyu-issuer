@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.util;
 
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -33,6 +34,7 @@ public class DemonstratingProofOfPossessionTestUtil {
         var signedJwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .jwk(dpopKey.toPublicJWK())
                 .type(new JOSEObjectType("dpop+jwt"))
+                .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build(),
                 claimSetBuilder.build());
         assertDoesNotThrow(() -> signedJwt.sign(new ECDSASigner(dpopKey)));

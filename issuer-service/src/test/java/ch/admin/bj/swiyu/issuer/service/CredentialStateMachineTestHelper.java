@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import org.mockito.Mockito;
 
 /**
@@ -50,6 +51,7 @@ public class CredentialStateMachineTestHelper {
                 case ISSUE -> {
                     entity.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.ISSUED);
                     entity.invalidateOfferData();
+                    entity.setTransactionId(null);
                     yield CredentialOfferStatusType.ISSUED;
                 }
                 case EXPIRE -> {

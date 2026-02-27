@@ -16,4 +16,9 @@ public interface CredentialManagementRepository extends JpaRepository<Credential
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CredentialManagement> findByRefreshToken(UUID refreshToken);
+
+    /**
+     * Not thread safe
+     */
+    Optional<CredentialManagement> findByMetadataTenantId(UUID tenantId);
 }

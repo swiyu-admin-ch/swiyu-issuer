@@ -1,9 +1,34 @@
 package ch.admin.bj.swiyu.issuer.service;
 
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
+import static java.util.Objects.nonNull;
+
+import java.text.ParseException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import com.authlete.sd.Disclosure;
+import com.authlete.sd.SDJWT;
+import com.authlete.sd.SDObjectBuilder;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
@@ -11,22 +36,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatu
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
-import com.authlete.sd.Disclosure;
-import com.authlete.sd.SDJWT;
-import com.authlete.sd.SDObjectBuilder;
-import com.nimbusds.jose.*;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-
-import java.text.ParseException;
-import java.time.Instant;
-import java.util.*;
-
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.*;
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
-import static java.util.Objects.nonNull;
 
 @Slf4j
 public class SdJwtCredential extends CredentialBuilder {
@@ -93,15 +104,24 @@ public class SdJwtCredential extends CredentialBuilder {
                 throw new Oid4vcException(
                         e,
                         INVALID_PROOF,
-                        String.format("Failed expand holder binding %s to cnf", holderPublicKey.getDidJwk())
+                        "Failed to expand holder binding into cnf",
+                        Map.of(
+                                "holderKeyIndex", idx,
+                                "didJwk", holderPublicKey.getDidJwk()
+                        )
                 );
             }
         }
     }
 
+    private static String createSDJWT(List<Disclosure> disclosures, SignedJWT jwt) {
+        return new SDJWT(jwt.serialize(), disclosures).toString();
+    }
+
     /**
      * Issues one or a batch of SD-JWT credentials.
-     * Batch size as defined in issuer metadata.
+     * Batch size is determined by the number of holder public keys (if provided),
+     * otherwise by the issuer metadata configuration.
      * Validates alignment of holder keys and status references before issuing.
      *
      * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
@@ -110,26 +130,50 @@ public class SdJwtCredential extends CredentialBuilder {
     @Override
     public List<String> getCredential(@Nullable List<DidJwk> holderPublicKeys) {
         var statusReferences = getStatusReferences();
-        var batchSize = getIssuerMetadata().getIssuanceBatchSize();
-        if (!getStatusFactory().isCompatibleStatusReferencesToBatchSize(statusReferences, batchSize)) {
+        var batchSize = calculateBatchSize(holderPublicKeys);
+
+        if (!getStatusFactory().isCompatibleStatusReferencesToBatchSize(statusReferences, getIssuerMetadata(), batchSize)) {
             throw new IllegalStateException(
                     "Batch size and status references do not match anymore. Cannot issue credential");
         }
 
-        var override = getCredentialOffer().getConfigurationOverride();
-
-        var sdjwts = new ArrayList<String>(batchSize);
+        final var override = getCredentialOffer().getConfigurationOverride();
+        final var sdjwts = new ArrayList<String>(batchSize);
+        var vcHashes = new ArrayList<String>(batchSize);
         for (int i = 0; i < batchSize; i++) {
-            SDObjectBuilder builder = new SDObjectBuilder();
+            final var builder = new SDObjectBuilder();
 
             addTechnicalData(builder, override);
-            List<Disclosure> disclosures = prepareDisclosures(builder);
+            final var disclosures = prepareDisclosures(builder);
 
             addHolderBinding(holderPublicKeys, i, builder);
             addStatusReferences(statusReferences, i, builder);
-            sdjwts.add(createSignedSDJWT(override, builder, disclosures));
+            SignedJWT jwt = createSignedJWT(override, builder);
+            // Collect hashes of the VCs as way for issuer to be able to trace misused VCs
+            vcHashes.add(jwt.getSignature().toString());
+            sdjwts.add(createSDJWT(disclosures, jwt));
         }
+        // Only save hashes
+        if (getApplicationProperties().isEnableVcHashStorage()) {
+            getCredentialOffer().setVcHashes(vcHashes);
+        }
+
         return Collections.unmodifiableList(sdjwts);
+    }
+
+    /**
+     * Calculate batch size by the number of proofs provided by the holder or batch size defined in issuer metadata
+     *
+     * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
+     * @return batch size to issue
+     */
+    private int calculateBatchSize(@Nullable List<DidJwk> holderPublicKeys) {
+        if (!getIssuerMetadata().isBatchIssuanceAllowed()) {
+            return 1;
+        }
+        return holderPublicKeys != null && !holderPublicKeys.isEmpty()
+                ? holderPublicKeys.size()
+                : getIssuerMetadata().getIssuanceBatchSize();
     }
 
     @Override
@@ -151,10 +195,20 @@ public class SdJwtCredential extends CredentialBuilder {
         builder.putClaim("iss", override.issuerDidOrDefault(getApplicationProperties().getIssuerId()));
         // Get first entry because we expect the list to only contain one item
         var metadataId = getMetadataCredentialsSupportedIds().getFirst();
-        builder.putClaim("vct",
-                getIssuerMetadata().getCredentialConfigurationById(metadataId)
-                        .getVct());
-        // if we have a vct#integrity, add it
+        var credentailConfiguration = getIssuerMetadata().getCredentialConfigurationById(metadataId);
+        builder.putClaim("vct", credentailConfiguration.getVct());
+        // Optional vct addons
+        Optional.ofNullable(credentailConfiguration.getVctMetadataUri())
+            .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
+        Optional.ofNullable(credentailConfiguration.getVctMetadataUriIntegrity())
+            .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
+        Optional.ofNullable(credentailConfiguration.getVctVersion())
+            .ifPresent(o -> builder.putClaim("vct_version", o));
+        Optional.ofNullable(credentailConfiguration.getVctSubtype())
+            .ifPresent(o -> builder.putClaim("vct_subtype", o));
+        Optional.ofNullable(credentailConfiguration.getVctSubtypeVersion())
+            .ifPresent(o -> builder.putClaim("vct_subtype_version", o));
+        // if we have dynamically overriden vct#integrity or such, add it
         var credentialMetadata = getCredentialOffer().getCredentialMetadata();
         if (nonNull(credentialMetadata)) {
             Optional.ofNullable(credentialMetadata.vctIntegrity())
@@ -218,21 +272,25 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
-    private String createSignedSDJWT(ConfigurationOverride override,
-                                     SDObjectBuilder builder,
-                                     List<Disclosure> disclosures) {
+    /**
+     * Create a SignedJWT
+     *
+     * @param override Override value for signing key
+     * @param builder  Selective Disclosure Objects (Hashes or always disclosed objects) to be included in the claims of the JWT
+     * @return JWT Signed with the key provided in the Configuration Override or by default key
+     */
+    private SignedJWT createSignedJWT(ConfigurationOverride override,
+                                      SDObjectBuilder builder) {
         try {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                     .type(new JOSEObjectType(SD_JWT_FORMAT))
                     .keyID(override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()))
-                    .customParam("ver", sdjwtProperties.getVersion())
+                    .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.VC_PROFILE_VERSION)
                     .build();
             JWTClaimsSet claimsSet = JWTClaimsSet.parse(builder.build(true));
             SignedJWT jwt = new SignedJWT(header, claimsSet);
-
             jwt.sign(this.createSigner());
-
-            return new SDJWT(jwt.serialize(), disclosures).toString();
+            return jwt;
         } catch (ParseException | JOSEException e) {
             throw new CredentialException(e);
         }
@@ -260,3 +318,4 @@ public class SdJwtCredential extends CredentialBuilder {
 
     }
 }
+

@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
@@ -57,7 +58,7 @@ class MetadataServiceTest {
 
         defaultTestIssuerMetadata = IssuerMetadata.builder()
                 .credentialIssuer(externalUrl)
-                .version("1.0.0")
+                .profileVersion(SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build();
         when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(defaultTestIssuerMetadata);
 
@@ -91,7 +92,6 @@ class MetadataServiceTest {
 
         SignedJWT parsed = SignedJWT.parse(jwtStr);
         assertEquals(issuerId, parsed.getJWTClaimsSet().getIssuer());
-        assertEquals("1.0.0", parsed.getJWTClaimsSet().getStringClaim("version"));
     }
 
     @Test
@@ -120,8 +120,10 @@ class MetadataServiceTest {
     @Test
     void getSignedOAuthAuthorizationServerMetadata_successfulSigning_returnsJwt() throws Exception {
         UUID tenantId = UUID.randomUUID();
-        var oidConfig = new OAuthAuthorizationServerMetadataDto(externalUrl, "token_endpoint", null);
-        when(demonstratingProofOfPossessionService.addSigningAlgorithmsSupported(Mockito.any())).thenReturn(oidConfig);
+        var oidConfig = new OAuthAuthorizationServerMetadataDto(externalUrl, "token_endpoint", null, null);
+        when(demonstratingProofOfPossessionService.addSigningAlgorithmsSupportedAndSwissprofileVersion(Mockito.any())).thenReturn(oidConfig);
+        when(metadataService.getUnsignedOAuthAuthorizationServerMetadata()).thenReturn(oidConfig);
+
 
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 

@@ -35,7 +35,7 @@ public class CredentialOfferTestData {
 
     public static StatusList createStatusList() {
         var statusListToken = new TokenStatusListToken(2, 10000);
-        return StatusList.builder().type(StatusListType.TOKEN_STATUS_LIST)
+        return StatusList.builder()
                 .config(Map.of("bits", 2))
                 .uri("https://localhost:8080/status")
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
@@ -92,9 +92,8 @@ public class CredentialOfferTestData {
 
     public static Map<String, String> getUniversityCredentialSubjectData() {
         Map<String, String> credentialSubjectData = new HashMap<>();
-        credentialSubjectData.put("degree", "Bachelor of Science");
+        credentialSubjectData.put("type", "Bachelor of Science");
         credentialSubjectData.put("name", "Data Science");
-        credentialSubjectData.put("average_grade", "5.33");
         return credentialSubjectData;
     }
 

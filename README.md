@@ -266,6 +266,7 @@ The Generic Issuer service is configured using environment variables.
 | MIN_DEFERRED_OFFER_WAITING_SECONDS   | For the deferred flow. Polling interval for the deferred flow. Defines how long a wallet should wait after receiving the transaction_id until it tries to fetch the actual credential. This value will be shown as `interval` in the deferred response.                                  |
 | DEFERRED_OFFER_VALIDITY_SECONDS      | For the deferred flow. Defines how long (in seconds) an offer can be in the deferred / ready state until it is expired.                                                                                                                                                                  |
 | URL_REWRITE_MAPPING                  | Json object for url replacements during rest client call. Key represents the original url and value the one which should be used instead (e.g. {"https://mysample1.ch":"https://somethingdiffeerent1.ch"})                                                                               |
+| APPLICATION_SWISS_PROFILE_VERSIONING_ENFORCEMENT | Feature flag for Swiss Profile versioning enforcement. If set to `true`, the service rejects incoming artifacts where applicable if the JWT header is missing `profile_version` or has an unexpected value (e.g. DPoP / key attestation). Default: `false`. |
 
 #### Status List
 
@@ -298,7 +299,7 @@ The Generic Issuer service is configured using environment variables.
 #### Monitoring
 
 | Variable                   | Description                                                       | Type | Default      |
-|----------------------------|-------------------------------------------------------------------|------|--------------| 
+|----------------------------|-------------------------------------------------------------------|------|--------------|
 | PUBLIC_KEY_CACHE_TTL_MILLI | TTL in milliseconds how long a public key result should be cached | int  | 3600000 (1h) |
 
 #### Security
@@ -314,13 +315,13 @@ set.
 ##### Fixed single asymmetric key
 
 | Variable                                                    | Description                                                                                                                                                                                        | Type                             |
-|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------| 
+|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_PUBLICKEYLOCATION | URI path to a single public key in pem format. [See Details](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#oauth2resourceserver-jwt-decoder-public-key) | URI eg: file:/app/public-key.pem |
 
 ##### Authorization Server
 
 | Variable                                                | Description                                                                                                                                                                                                                                                                        | Type         |
-|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------| 
+|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI     | URI to the issuer including path component. Will be resolved to <issuer-uri>/.well-known/openid-configuration to fetch the public key [See Details](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#_specifying_the_authorization_server) | URI / String |
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI     | URI directly to fetch directly the jwk-set instead of fetching the openid connect first.                                                                                                                                                                                           | URI / String |
 | SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWSALGORITHMS | List of algorithms supported for the key of the jkw-set. Defaults to only RS256.                                                                                                                                                                                                   | String       |
@@ -528,7 +529,7 @@ Failed deliveries will create error logs and be retried in the next interval.
 | WEBHOOK_CALLBACK_URI   | Full URI of the REST endpoint where webhooks shall be sent to. No Callback events will be created if not set.                                                                           |
 | WEBHOOK_API_KEY_HEADER | (Optional) API key header, if the callback uri has a api key for protection. Will be used as HTTP header key.                                                                           |
 | WEBHOOK_API_KEY_VALUE  | (Optional, Required if WEBHOOK_API_KEY_HEADER is set) The API key used.                                                                                                                 |
-| WEBHOOK_INTERVAL       | How often the collected events are sent. Value interpreted as milliseconds if given a plain integer or an [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). | 
+| WEBHOOK_INTERVAL       | How often the collected events are sent. Value interpreted as milliseconds if given a plain integer or an [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). |
 
 Callbacks will be sent on change of VC state, such as when the VC is issued to a holder or is deferred.
 Errors which concern the issuing process also create callbacks.
@@ -549,6 +550,7 @@ Callback Object Structure
 erDiagram
     CREDENTIAL_MANAGEMENT {
         UUID id PK
+        UUID metadata_tenant_id
         UUID access_token
         UUID refresh_token
         JSONB dpop_key
@@ -580,7 +582,6 @@ erDiagram
         JSONB configuration_override
         TEXT[] key_attestations
         INTEGER deferred_offer_validity_seconds
-        UUID metadata_tenant_id
         UUID credential_management_id FK
     }
 
@@ -622,7 +623,7 @@ revoke the credential later on.
 
 ```mermaid
 sequenceDiagram
-    actor BUSINESS as Business Issuer 
+    actor BUSINESS as Business Issuer
 
     participant ISS as Issuer Service
     participant DB as Issuer DB
@@ -633,9 +634,9 @@ sequenceDiagram
     # Create offer
     BUSINESS->>+ISS: Create offer
     ISS->>+STATUS: Create status list entry
-    STATUS->>-ISS: 
+    STATUS->>-ISS:
     ISS->>+DB : Store offer
-    DB-->>-ISS : 
+    DB-->>-ISS :
     ISS-->>-BUSINESS : Return offer details (incl. deeplink)
 
     # Pass deeplink to WALLET
@@ -644,15 +645,15 @@ sequenceDiagram
 
     loop Status check
         BUSINESS->>+ISS: Get status
-        ISS-->>-BUSINESS : 
+        ISS-->>-BUSINESS :
     end
 
     # Get credential
     WALLET->>+ISS : Get openid metadata
-    ISS-->>-WALLET : 
+    ISS-->>-WALLET :
 
     WALLET->>+ISS : Get issuer metadata
-    ISS-->>-WALLET : 
+    ISS-->>-WALLET :
 
     WALLET->>+ISS : Get oauth token
     ISS-->>-WALLET : Oauth token
@@ -660,9 +661,9 @@ sequenceDiagram
     alt Deferred = true
         WALLET->>+ISS : Redeem offer
         ISS->>+DB : Get offer data and status list INFO
-        DB-->-ISS : 
+        DB-->-ISS :
         ISS->>+DB : Set STATUS = Deferred
-        DB-->-ISS : 
+        DB-->-ISS :
         ISS-->>-WALLET : Transaction id
 
         loop get status
@@ -677,7 +678,7 @@ sequenceDiagram
                     BUSINESS->>+ISS : Set offer data (STATUS is set to READY)
                 end
                 ISS->>DB : Store offer
-                ISS-->>-BUSINESS : 
+                ISS-->>-BUSINESS :
             end
         end
 
@@ -685,16 +686,16 @@ sequenceDiagram
             alt STATUS is not READY
                 WALLET->>+ISS: Get credential from deferred_credential
                 ISS->>+DB : Get offer data and status list INF
-                DB-->-ISS : 
+                DB-->-ISS :
                 ISS-->>-WALLET : issuance_pending
             else
                 WALLET->>+ISS: Get credential from deferred_credential
                 ISS->>+DB : Get offer data and status list INFO
-                DB-->-ISS : 
+                DB-->-ISS :
                 ISS-->>-WALLET : VC
             end
         end
-    else 
+    else
         WALLET->>+ISS: Get credential
         ISS->>+DB : Get offer data and status list INFO
         ISS-->>-WALLET : VC
@@ -788,12 +789,12 @@ To get the appropriate credentials please visit the swiyu portal application on 
 For access to the swiyu api you need a refresh token along with your other credentials, please see the `SWIYU_*`
 environment variables for further details.
 
-The refresh token can only be used one time, but don't worry: the application does manage the refresh tokens itself.  
+The refresh token can only be used one time, but don't worry: the application does manage the refresh tokens itself.
 But if your issuer service does not run for over a week it might be possible that the refresh token
-saved in the database is no longer valid and cannot be used to start the api auth flow.  
+saved in the database is no longer valid and cannot be used to start the api auth flow.
 If this is the case you need to manually create a new refresh token in the api self-service portal and bootstrap your
-issuer service with this token.  
-The application does log an appropriate error if it detects such an issue but will still start up.  
+issuer service with this token.
+The application does log an appropriate error if it detects such an issue but will still start up.
 Updates to the status registry will fail as long as the auth flow is not restarted with a valid bootstrap token.
 
 ### Latest development

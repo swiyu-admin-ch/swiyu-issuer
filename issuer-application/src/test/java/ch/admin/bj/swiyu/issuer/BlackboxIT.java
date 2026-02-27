@@ -2,21 +2,21 @@ package ch.admin.bj.swiyu.issuer;
 
 
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
+import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListTypeDto;
-import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryTokenService;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.when;
@@ -120,7 +121,8 @@ class BlackboxIT {
     }
 
     /**
-     * Test for when everything goes well, from initializing the status list and creating offers up to receiving the VC
+     * Test for when everything goes well, from initializing the status list and creating offers up to receiving the VC.
+     * This flow does not use deferred issuance.
      * For details see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-pre-authorized-code-flow">OID4VCI 1.0 Spec</a>
      */
     @Test
@@ -176,7 +178,6 @@ class BlackboxIT {
         // ---------------------
         // First we have to create a status list
         final StatusListDto statusListDto = assertDoesNotThrow(() -> statusListTestHelper.createStatusList(
-                StatusListTypeDto.TOKEN_STATUS_LIST,
                 1000,
                 // Space for 1000 entries; length / batch size is how many VCs we can store in the status list
                 null,
@@ -194,7 +195,7 @@ class BlackboxIT {
                 // Select the entry from issuer metadata (in this test case the example_issuer_metadata.json)
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
                 // The credential subject data must be matching the claims we publicize that we will issue
-                .credentialSubjectData(Map.of("type", "Bachelor", "name", "Bachelor of Science"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
                 .statusLists(List.of(statusListUri))
                 .build()));
 
@@ -432,6 +433,23 @@ class BlackboxIT {
                 .distinct()
                 .toList();
         assertThat(holderBindings).hasSize(issuerMetadata.getIssuanceBatchSize());
+
+
+        // As Business Issuer we should be able to get some information from management endpoints
+        MvcResult managementInfoResponse = assertDoesNotThrow(() -> mvc.perform(get(CREDENTIAL_MANAGEMENT_BASE_URL + "/" + vcManagementId).contentType(
+                                MediaType.APPLICATION_JSON)
+                        .content(createRequestBody))
+                .andExpect(status().isOk())
+                .andReturn());
+        var managementInfo = assertDoesNotThrow(() -> objectMapper.readValue(managementInfoResponse.getResponse().getContentAsString(), CredentialManagementDto.class));
+        assertThat(managementInfo.dpopKey())
+                .as("DPoP was used and the public key should be present")
+                .isNotEmpty();
+        for (var offerInfo : managementInfo.credentialOffers()) {
+            assertThat(offerInfo.vcHashes())
+                    .as("VC Hashes should be present in response, to be able to trace misuses")
+                    .isNotEmpty();
+        }
     }
 
     private String createDpop(String nonceEndpoint, String httpMethod, String httpUri, String accessToken, ECKey dpopKey) {

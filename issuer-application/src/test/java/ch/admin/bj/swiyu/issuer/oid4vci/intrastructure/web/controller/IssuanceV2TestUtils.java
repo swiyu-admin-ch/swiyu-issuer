@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
 import com.google.gson.JsonArray;
@@ -29,6 +30,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,6 +59,11 @@ public class IssuanceV2TestUtils {
                 ))
                 .content(credentialRequestString)
         );
+    }
+
+    public static ResultActions updateStatus(MockMvc mock, String managementId, UpdateCredentialStatusRequestTypeDto statusType) throws Exception {
+        return mock.perform(patch("/management/api/credentials/" + managementId + "/status?credentialStatus=%s".formatted(statusType.name()))
+                .contentType(MediaType.APPLICATION_JSON_VALUE));
     }
 
     public static JsonArray extractCredentialsV2(MvcResult response) throws UnsupportedEncodingException {
