@@ -1,29 +1,5 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
-import static java.util.Objects.nonNull;
-
-import java.text.ParseException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import com.authlete.sd.Disclosure;
-import com.authlete.sd.SDJWT;
-import com.authlete.sd.SDObjectBuilder;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
@@ -36,8 +12,22 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatu
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
+import com.authlete.sd.Disclosure;
+import com.authlete.sd.SDJWT;
+import com.authlete.sd.SDObjectBuilder;
+import com.nimbusds.jose.*;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+
+import java.text.ParseException;
+import java.time.Instant;
+import java.util.*;
+
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
+import static java.util.Objects.nonNull;
 
 @Slf4j
 public class SdJwtCredential extends CredentialBuilder {
@@ -140,6 +130,8 @@ public class SdJwtCredential extends CredentialBuilder {
         final var override = getCredentialOffer().getConfigurationOverride();
         final var sdjwts = new ArrayList<String>(batchSize);
         var vcHashes = new ArrayList<String>(batchSize);
+
+        List<VerifiableCredentialStatusReference> usedCredentialStatusReferences = new ArrayList<>(batchSize);
         for (int i = 0; i < batchSize; i++) {
             final var builder = new SDObjectBuilder();
 
@@ -147,7 +139,7 @@ public class SdJwtCredential extends CredentialBuilder {
             final var disclosures = prepareDisclosures(builder);
 
             addHolderBinding(holderPublicKeys, i, builder);
-            addStatusReferences(statusReferences, i, builder);
+            usedCredentialStatusReferences.addAll(addStatusReferences(statusReferences, i, builder));
             SignedJWT jwt = createSignedJWT(override, builder);
             // Collect hashes of the VCs as way for issuer to be able to trace misused VCs
             vcHashes.add(jwt.getSignature().toString());
@@ -157,6 +149,8 @@ public class SdJwtCredential extends CredentialBuilder {
         if (getApplicationProperties().isEnableVcHashStorage()) {
             getCredentialOffer().setVcHashes(vcHashes);
         }
+
+        freeUnusedStatusReferences(usedCredentialStatusReferences);
 
         return Collections.unmodifiableList(sdjwts);
     }
@@ -199,15 +193,15 @@ public class SdJwtCredential extends CredentialBuilder {
         builder.putClaim("vct", credentailConfiguration.getVct());
         // Optional vct addons
         Optional.ofNullable(credentailConfiguration.getVctMetadataUri())
-            .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
+                .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
         Optional.ofNullable(credentailConfiguration.getVctMetadataUriIntegrity())
-            .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
+                .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
         Optional.ofNullable(credentailConfiguration.getVctVersion())
-            .ifPresent(o -> builder.putClaim("vct_version", o));
+                .ifPresent(o -> builder.putClaim("vct_version", o));
         Optional.ofNullable(credentailConfiguration.getVctSubtype())
-            .ifPresent(o -> builder.putClaim("vct_subtype", o));
+                .ifPresent(o -> builder.putClaim("vct_subtype", o));
         Optional.ofNullable(credentailConfiguration.getVctSubtypeVersion())
-            .ifPresent(o -> builder.putClaim("vct_subtype_version", o));
+                .ifPresent(o -> builder.putClaim("vct_subtype_version", o));
         // if we have dynamically overriden vct#integrity or such, add it
         var credentialMetadata = getCredentialOffer().getCredentialMetadata();
         if (nonNull(credentialMetadata)) {
@@ -263,13 +257,24 @@ public class SdJwtCredential extends CredentialBuilder {
         return disclosures;
     }
 
-    private void addStatusReferences(Map<String, List<VerifiableCredentialStatusReference>> statusReferences,
-                                     int i,
-                                     SDObjectBuilder builder) {
-        //Add all status entries (if any)
-        for (Map.Entry<String, Object> statusEntry : getStatusReferenceSlice(statusReferences, i).entrySet()) {
-            builder.putClaim(statusEntry.getKey(), statusEntry.getValue());
-        }
+    private List<VerifiableCredentialStatusReference> addStatusReferences(Map<String, List<VerifiableCredentialStatusReference>> statusReferences,
+                                                                          int index,
+                                                                          SDObjectBuilder builder) {
+
+        var status = statusReferences.values()
+                .stream()
+                // Get batch element
+                .map(references -> {
+                    if (references.size() == SINGLE_ELEMENT) {
+                        return references.getFirst();
+                    }
+                    return references.get(index);
+                }).toList();
+
+        getStatusReferenceSlice(status)
+                .forEach(builder::putClaim);
+
+        return status;
     }
 
     /**
@@ -299,18 +304,10 @@ public class SdJwtCredential extends CredentialBuilder {
     /**
      * Build status JSON for a single slice
      */
-    private Map<String, Object> getStatusReferenceSlice(Map<String, List<VerifiableCredentialStatusReference>> statusReferences,
-                                                        int index) {
-        return statusReferences.values()
+    private Map<String, Object> getStatusReferenceSlice(List<VerifiableCredentialStatusReference> statusReferences) {
+        return statusReferences
                 .stream()
                 // Get batch element
-                .map(references -> {
-                    if (references.size() == SINGLE_ELEMENT) {
-                        return references.getFirst();
-                    }
-                    return references.get(index);
-                })
-                // create JSON
                 .map(VerifiableCredentialStatusReference::createVCRepresentation)
                 // Merge JSONs into one
                 .reduce((acc, elem) -> getStatusFactory().mergeStatus(acc, elem))
@@ -318,4 +315,3 @@ public class SdJwtCredential extends CredentialBuilder {
 
     }
 }
-
