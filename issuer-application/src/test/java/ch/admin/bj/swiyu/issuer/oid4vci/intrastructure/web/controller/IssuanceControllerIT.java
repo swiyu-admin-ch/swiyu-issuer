@@ -201,7 +201,7 @@ class IssuanceControllerIT {
     @Test
     void testGetNonce_thenSuccess() throws Exception {
         var selfContainedNonce = fetchSelfContainedNonce();
-        assertTrue(selfContainedNonce.isValid(10));
+        assertTrue(SelfContainedNonce.isValid(selfContainedNonce.getNonce(), 10));
         assertDoesNotThrow(selfContainedNonce::getNonceId);
     }
 
@@ -253,7 +253,7 @@ class IssuanceControllerIT {
         var outdatedNonce = new SelfContainedNonce(UUID.randomUUID() + "::"
                 + Instant.now().minus(applicationProperties.getNonceLifetimeSeconds() + 1, ChronoUnit.SECONDS));
         // Outdated Nonce not valid
-        assertFalse(outdatedNonce.isValid(applicationProperties.getNonceLifetimeSeconds()));
+        assertFalse(SelfContainedNonce.isValid(outdatedNonce.getNonce(), applicationProperties.getNonceLifetimeSeconds()));
         // Create Credential Request with Proof using outdated nonce
         var nonce = outdatedNonce.getNonce();
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());

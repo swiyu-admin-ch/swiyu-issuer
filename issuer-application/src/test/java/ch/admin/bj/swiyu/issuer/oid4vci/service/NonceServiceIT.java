@@ -35,13 +35,13 @@ class NonceServiceIT {
         var lifetime = applicationProperties.getNonceLifetimeSeconds();
         var nonceDto = service.createNonce();
         var nonce = new SelfContainedNonce(nonceDto.nonce());
-        assertTrue(nonce.isValid((lifetime)));
+        assertTrue(SelfContainedNonce.isValid(nonce.getNonce(), lifetime));
         assertFalse(service.isUsedNonce(nonce));
         service.registerNonce(nonce);
         assertTrue(service.isUsedNonce(nonce));
 
         var expiredNonce = new SelfContainedNonce(UUID.randomUUID() + "::" + Instant.now().minus(lifetime + 5, ChronoUnit.SECONDS));
-        assertFalse(expiredNonce.isValid(lifetime));
+        assertFalse(SelfContainedNonce.isValid(expiredNonce.getNonce(), lifetime));
         assertFalse(service.isUsedNonce(expiredNonce));
         service.registerNonce(expiredNonce);
         assertTrue(service.isUsedNonce(expiredNonce));
