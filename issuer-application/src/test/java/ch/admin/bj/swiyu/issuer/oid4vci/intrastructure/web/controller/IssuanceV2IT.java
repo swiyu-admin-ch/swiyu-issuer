@@ -351,7 +351,7 @@ class IssuanceV2IT {
                 // check if reference can be found in repository with correct offer id, status list id and index
                 assertTrue(storedOfferStatusReferences.stream().anyMatch(ref ->
                         ref.getId().getOfferId().equals(offer.getOfferId())
-                                && ref.getId().getIndex() == ((int) statusListClaim.get("idx"))
+                                && ref.getId().getIndex() == ((long) statusListClaim.get("idx"))
                                 && ref.getId().getStatusListId().equals(testStatusList.getId()))
                 );
             } catch (ParseException e) {
