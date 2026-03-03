@@ -204,9 +204,12 @@ public abstract class CredentialBuilder {
     }
 
     protected void freeUnusedStatusReferences(List<VerifiableCredentialStatusReference> usedStatusReferences) {
+
+        // get all status references for the offer
         Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository
                 .findByOfferId(this.credentialOffer.getId());
 
+        // filter out the ones that are still used in the credential to be issued, the rest can be deleted to free up capacity for future credentials
         var superfluousStatusReferences = byOfferStatusId.stream()
                 .filter(credentialOfferStatus -> {
                     var statusList = getStatusList(credentialOfferStatus);
@@ -219,6 +222,7 @@ public abstract class CredentialBuilder {
         log.info("Freeing up {} superfluous status references for offer id {}", superfluousStatusReferences.size(),
                 this.credentialOffer.getId());
 
+        // delete the rest to free up capacity for future credentials
         credentialOfferStatusRepository.deleteAll(superfluousStatusReferences);
     }
 
