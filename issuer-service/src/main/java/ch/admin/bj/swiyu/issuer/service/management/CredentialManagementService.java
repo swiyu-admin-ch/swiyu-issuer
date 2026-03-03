@@ -331,7 +331,6 @@ public class CredentialManagementService {
     public CredentialOffer createInitialCredentialOfferForRenewal(CredentialManagement credentialManagement) {
         var offer = persistenceService.saveCredentialOffer(
                 CredentialOffer.builder()
-                        .nonce(UUID.randomUUID())
                         .credentialManagement(credentialManagement)
                         .credentialStatus(CredentialOfferStatusType.REQUESTED)
                         .build());
@@ -548,7 +547,6 @@ public class CredentialManagementService {
                         .preAuthorizedCode(UUID.randomUUID())
                         .offerData(offerData)
                         .offerExpirationTimestamp(expiration.getEpochSecond())
-                        .nonce(UUID.randomUUID())
                         .credentialValidFrom(requestDto.getCredentialValidFrom())
                         .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
                         .credentialValidUntil(requestDto.getCredentialValidUntil())

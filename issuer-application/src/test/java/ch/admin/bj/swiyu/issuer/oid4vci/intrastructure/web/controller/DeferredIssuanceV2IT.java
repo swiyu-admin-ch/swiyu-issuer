@@ -152,10 +152,11 @@ class DeferredIssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
                 credentialWithDeeplinkResponseDto);
 
+        var nonce = requestNonce(mock);
         var tokenResponse = fetchOAuthToken(mock,
                 credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -215,9 +216,10 @@ class DeferredIssuanceV2IT {
                 .generate());
 
         var offer = createCredentialOffer();
+        var nonce = requestNonce(mock);
         var tokenResponse = fetchOAuthToken(mock, offer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -266,9 +268,10 @@ class DeferredIssuanceV2IT {
     @Test
     void testDeferredOffer_notReady_thenAccepted() throws Exception {
 
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -307,6 +310,7 @@ class DeferredIssuanceV2IT {
         var offer = createCredentialOffer();
         var tokenResponse = fetchOAuthToken(mock, offer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
+        var nonce = TestInfrastructureUtils.requestNonceDPopHeader(mock);
 
         ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
                 .keyID("transportEncKeyEC")
@@ -315,8 +319,7 @@ class DeferredIssuanceV2IT {
         var responseEncryptionJson = createResponseEncryptionJson(ecJWK);
 
         // credential_response_encryption
-        var credentialRequestString = getCredentialRequestString(tokenResponse.get("c_nonce").toString(),
-                "university_example_sd_jwt", responseEncryptionJson);
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt", responseEncryptionJson);
 
         var requestEncryptionSpec = encryptionService.issuerMetadataWithEncryptionOptions()
                 .getRequestEncryption();
@@ -426,10 +429,10 @@ class DeferredIssuanceV2IT {
 
     @Test
     void testDeferredOffer_alreadyCancelled_thenSuccess() throws Exception {
-
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -467,10 +470,11 @@ class DeferredIssuanceV2IT {
     void testDeferredOffer_withoutProof_thenSuccess() throws Exception {
 
         var offer = createUnboundCredentialOffer();
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock,
                 offer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "unbound_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "unbound_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -504,10 +508,11 @@ class DeferredIssuanceV2IT {
         doReturn(false).when(issuerMetadata).isBatchIssuanceAllowed();
 
         var offer = createUnboundCredentialOffer();
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock,
                 offer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "unbound_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "unbound_example_sd_jwt");
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -538,10 +543,11 @@ class DeferredIssuanceV2IT {
     void testDeferredOffer_withDefaultDeferredExpiration_thenSuccess() throws Exception {
 
         var offer = createUnboundCredentialOffer();
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock,
                 offer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "unbound_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "unbound_example_sd_jwt");
 
         Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
 
@@ -578,9 +584,10 @@ class DeferredIssuanceV2IT {
             mockedStatic.when(Instant::now)
                     .thenReturn(instant);
 
+            var nonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
+
             var credentialRequestString = getCredentialRequestString(
-                    offerWithDynamicExpiration.getNonce()
-                            .toString(),
+                    nonce,
                     offerWithDynamicExpiration.getMetadataCredentialSupportedId()
                             .getFirst());
 
@@ -598,11 +605,6 @@ class DeferredIssuanceV2IT {
                             .getEpochSecond(),
                     result.getOfferExpirationTimestamp());
         }
-    }
-
-    private String getCredentialRequestString(Map<String, Object> tokenResponse, String configurationId) {
-        return getCredentialRequestString(tokenResponse.get("c_nonce")
-                .toString(), configurationId);
     }
 
     private String getCredentialRequestString(String cNonce, String configurationId) {

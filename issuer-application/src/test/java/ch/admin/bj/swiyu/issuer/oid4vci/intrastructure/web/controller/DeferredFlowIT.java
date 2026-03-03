@@ -118,17 +118,15 @@ class DeferredFlowIT {
         var tokenDto = fetchOAuthToken(mock,
                 credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
 
-        var token = tokenDto.get("access_token");
+        String token = (String) tokenDto.get("access_token");
 
         verify(testEventListener, Mockito.times(1))
                 .handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
+        var nonce = requestNonce(mock);
 
-        String proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"),
-                (String) tokenDto.get("c_nonce"), ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), false);
 
-        var deferredCredentialResponse = requestCredential(mock, (String) token,
-                getCredentialRequestString(proof))
+        var deferredCredentialResponse = requestCredential(mock, token, getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
                 .andReturn();
         verify(testEventListener, Mockito.times(1)).handleDeferredEvent(any(DeferredEvent.class));
@@ -199,13 +197,13 @@ class DeferredFlowIT {
 
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
                 credentialWithDeeplinkResponseDto);
-
+        var nonce = requestNonce(mock);
         var tokenDto = fetchOAuthToken(mock,
                 credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                (String) tokenDto.get("c_nonce"), ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp(), false);
 
         var deferredCredentialResponse = requestCredential(mock, (String) tokenDto.get("access_token"),
                 getCredentialRequestString(proof))
@@ -247,12 +245,13 @@ class DeferredFlowIT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
                 credentialWithDeeplinkResponseDto);
 
+        var nonce = requestNonce(mock);
         var tokenDto = fetchOAuthToken(mock,
                 credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                (String) tokenDto.get("c_nonce"), ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp(), false);
 
         var deferredCredentialResponse = requestCredential(mock, (String) tokenDto.get("access_token"),
                 getCredentialRequestString(proof))
@@ -297,10 +296,12 @@ class DeferredFlowIT {
 
         var tokenDto = objectMapper.readValue(tokenResponse.getResponse().getContentAsString(), Map.class);
 
+        var nonce = requestNonce(mock);
+
         String proof = TestServiceUtils.createAttestedHolderProof(
                 jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                (String) tokenDto.get("c_nonce"),
+                nonce,
                 ProofType.JWT.getClaimTyp(),
                 false,
                 AttackPotentialResistance.ISO_18045_HIGH,
@@ -435,12 +436,13 @@ class DeferredFlowIT {
         var offer = getCredentialWithDeeplinkResponseDto();
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
                 offer);
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         String token = (String) tokenResponse.get("access_token");
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -485,11 +487,12 @@ class DeferredFlowIT {
         var offer = getCredentialWithDeeplinkResponseDto();
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
                 offer);
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         String token = (String) tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -522,11 +525,12 @@ class DeferredFlowIT {
                 offer);
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
                 offer2);
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         String token = (String) tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         // wrong token
@@ -561,12 +565,13 @@ class DeferredFlowIT {
         var offer = getCredentialWithDeeplinkResponseDto();
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
                 offer);
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         String token = (String) tokenResponse.get("access_token");
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -600,12 +605,13 @@ class DeferredFlowIT {
         var offer = getCredentialWithDeeplinkResponseDto();
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
                 offer);
+        var nonce = requestNonce(mock);
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         String token = (String) tokenResponse.get("access_token");
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                tokenResponse.get("c_nonce").toString(), ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp(), false);
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = requestCredential(mock, token, credentialRequestString)
@@ -718,7 +724,9 @@ class DeferredFlowIT {
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
-            var credentialRequestString = getCredentialRequestString(unboundOffer.getNonce());
+            var nonce = requestNonce(mock);
+
+            var credentialRequestString = getCredentialRequestString(nonce);
 
             requestCredential(mock, token.toString(),
                     credentialRequestString)
@@ -740,7 +748,7 @@ class DeferredFlowIT {
         var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null), expirationInSeconds);
 
         var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
-                .id(offerWithDynamicExpiration.getId())
+                .id(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
                 .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
@@ -748,30 +756,29 @@ class DeferredFlowIT {
                 .renewalResponseCnt(0)
                 .build());
 
-
         offerWithDynamicExpiration.setCredentialManagement(credentialManagement);
         var storedOffer = credentialOfferRepository.save(offerWithDynamicExpiration);
         credentialOfferStatusRepository.save(linkStatusList(offerWithDynamicExpiration, statusList, 6));
 
         credentialManagement.addCredentialOffer(storedOffer);
-        credentialManagementRepository.save(credentialManagement);
+        credentialManagement = credentialManagementRepository.save(credentialManagement);
 
         Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
 
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
-            var credentialRequestString = getCredentialRequestString(offerWithDynamicExpiration.getNonce());
+            var nonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
 
-            requestCredential(mock, offerWithDynamicExpiration.getCredentialManagement().getAccessToken().toString(), credentialRequestString)
+            var credentialRequestString = getCredentialRequestStringByNonce(nonce);
+
+            requestCredential(mock, credentialManagement.getAccessToken().toString(), credentialRequestString)
                     .andExpect(status().isAccepted())
                     .andReturn();
 
-            var result = credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId())
-                    .orElseThrow();
+            var result = credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId()).orElseThrow();
 
-            assertEquals(instant.plusSeconds(expirationInSeconds).getEpochSecond(),
-                    result.getOfferExpirationTimestamp());
+            assertEquals(instant.plusSeconds(expirationInSeconds).getEpochSecond(), result.getOfferExpirationTimestamp());
         }
     }
 
@@ -801,21 +808,15 @@ class DeferredFlowIT {
                 proof);
     }
 
-    private String getCredentialRequestString(UUID nonce) throws JOSEException {
+    private String getCredentialRequestStringByNonce(String nonce) throws JOSEException {
         String proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"), nonce.toString(),
+                applicationProperties.getTemplateReplacement().get("external-url"), nonce,
                 ProofType.JWT.getClaimTyp(), false);
         return getCredentialRequestString(proof);
     }
 
     private String getDeferredCredentialRequestString(String transactionId) {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
-    }
-
-    private CredentialOfferMetadata getCredentialMetadata(Boolean deferred) {
-
-        return new CredentialOfferMetadata(deferred, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=",
-                null, null);
     }
 
     private CredentialOfferMetadataDto getCredentialMetadataDto() {
@@ -836,16 +837,6 @@ class DeferredFlowIT {
         var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
 
         return credentialOfferRepository.findById(offer.getOfferId()).orElseThrow();
-    }
-
-    private void markAsReady(CredentialWithDeeplinkResponseDto credentialWithDeeplinkResponseDto) throws Exception {
-        mock.perform(patch("/management/api/credentials/" + credentialWithDeeplinkResponseDto.getManagementId())
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(objectMapper.writeValueAsString(getUniversityCredentialSubjectData())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNotEmpty())
-                .andExpect(jsonPath("$.status").value("READY"))
-                .andReturn();
     }
 
     private CredentialWithDeeplinkResponseDto getCredentialWithDeeplinkResponseDto() throws Exception {

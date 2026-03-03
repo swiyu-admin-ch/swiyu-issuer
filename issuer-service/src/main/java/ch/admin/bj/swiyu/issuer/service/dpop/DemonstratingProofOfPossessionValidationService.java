@@ -7,6 +7,8 @@ import ch.admin.bj.swiyu.dpop.DpopValidationException;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
+import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import com.nimbusds.jose.JOSEException;
@@ -118,7 +120,8 @@ public class DemonstratingProofOfPossessionValidationService {
             hasValidSelfContainedNonce(jwtClaims);
             // Step 12 is not done in every case
             return dpopJwt;
-        } catch (ParseException | JOSEException | URISyntaxException | NullPointerException e) {
+        } catch (ParseException | JOSEException | URISyntaxException | NullPointerException | ExpiredNonceException |
+                 InvalidNonceException e) {
             throw new DemonstratingProofOfPossessionException("Malformed DPoP", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF, e);
         } catch (DpopValidationException e) {
             throw new DemonstratingProofOfPossessionException(e.getMessage(), DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF, e);

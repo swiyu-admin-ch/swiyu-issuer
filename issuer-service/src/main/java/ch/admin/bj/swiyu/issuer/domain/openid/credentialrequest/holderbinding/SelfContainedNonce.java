@@ -1,20 +1,37 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
-import lombok.AllArgsConstructor;
+import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import lombok.Getter;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
-@AllArgsConstructor
 @Getter
 public class SelfContainedNonce {
 
-    private String nonce;
+    private final String nonce;
 
     public SelfContainedNonce() {
         nonce = UUID.randomUUID() + "::" + Instant.now().toString();
+    }
+
+    public SelfContainedNonce(String nonce) {
+        this.nonce = nonce;
+
+        if (!isSelfContainedNonce(nonce)) {
+            throw new InvalidNonceException("Invalid nonce. Nonce must consist of 2 parts being split by double colon '::'");
+        }
+    }
+
+    public SelfContainedNonce(String nonce, int nonceLifetimeSeconds) throws ExpiredNonceException, InvalidNonceException {
+
+        this(nonce);
+
+        if (!isValid(nonce, nonceLifetimeSeconds)) {
+            throw new ExpiredNonceException("Invalid nonce. Nonce is expired.");
+        }
     }
 
     /**
@@ -22,17 +39,22 @@ public class SelfContainedNonce {
      *
      * @return True if the nonce consists out of 2 parts being split by double colon '::'
      */
-    public boolean isSelfContainedNonce() {
+    public static boolean isSelfContainedNonce(String nonce) {
         return nonce.contains("::") && nonce.split("::").length == 2;
     }
 
     /**
      * Validates if the nonce has not yet expired
      */
-    public boolean isValid(int lifetimeSeconds) {
+    public static boolean isValid(String nonce, int lifetimeSeconds) {
         var now = Instant.now();
         var oldestAcceptableInstant = now.minus(lifetimeSeconds, ChronoUnit.SECONDS);
-        var nonceInstant = getNonceInstant();
+
+        if (!isSelfContainedNonce(nonce)) {
+            throw new IllegalArgumentException("Malformed nonce");
+        }
+
+        var nonceInstant = Instant.parse(nonce.split("::")[1]);
         return oldestAcceptableInstant.isBefore(nonceInstant) && now.isAfter(nonceInstant);
     }
 
@@ -51,5 +73,4 @@ public class SelfContainedNonce {
         }
         return components;
     }
-
 }

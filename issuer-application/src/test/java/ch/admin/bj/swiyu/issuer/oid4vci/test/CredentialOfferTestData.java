@@ -68,7 +68,6 @@ public class CredentialOfferTestData {
                 .offerData(offerData)
                 .credentialMetadata(credentialMetadata)
                 .deferredOfferValiditySeconds(deferredExpirationInSeconds)
-                .nonce(UUID.randomUUID())
                 .preAuthorizedCode(preAuthCode)
                 .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
                 .credentialValidFrom(validFrom)
