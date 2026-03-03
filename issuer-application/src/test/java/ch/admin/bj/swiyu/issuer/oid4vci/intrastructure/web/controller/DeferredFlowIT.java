@@ -105,15 +105,6 @@ class DeferredFlowIT {
     @BeforeEach
     void setUp() throws JOSEException {
         statusList = saveStatusList(createStatusList());
-        deferredOfferId = UUID.randomUUID();
-        validUnboundOfferId = UUID.randomUUID();
-        UUID notDeferredOfferId = UUID.randomUUID();
-        CredentialOffer deferredOffer = createTestOffer(deferredPreAuthCode, CredentialOfferStatusType.OFFERED, "test", validFrom, validUntil, getCredentialMetadata(true));
-        saveStatusListLinkedOffer(deferredOffer, statusList, 0, deferredOfferId);
-        CredentialOffer validUnboundOffer = createTestOffer(validUnboundPreAuthCode, CredentialOfferStatusType.OFFERED, "unbound_example_sd_jwt", validFrom, validUntil, getCredentialMetadata(true), null, null);
-        saveStatusListLinkedOffer(validUnboundOffer, statusList, 1, validUnboundOfferId);
-        var notDeferredOffer = createTestOffer(notDeferredPreAuthCode, CredentialOfferStatusType.OFFERED, "test", validFrom, validUntil, getCredentialMetadata(false));
-        saveStatusListLinkedOffer(notDeferredOffer, statusList, 2, notDeferredOfferId);
 
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
@@ -192,6 +183,14 @@ class DeferredFlowIT {
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
     }
 
+    public static Map<String, String> getUniversityCredentialSubjectData() {
+        Map<String, String> credentialSubjectData = new HashMap<>();
+        credentialSubjectData.put("type", "Bachelor of Science");
+        credentialSubjectData.put("name", "Data Science");
+        credentialSubjectData.put("average_grade", "Data Science");
+        return credentialSubjectData;
+    }
+
     @Test
     void testCompleteFlow_batched_thenSuccess() throws Exception {
 
@@ -199,8 +198,8 @@ class DeferredFlowIT {
         doReturn(true).when(issuerMetadata).isBatchIssuanceAllowed();
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of("lastName", "lastName"))
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
                 .credentialMetadata(getCredentialMetadataDto())
                 .build();
 
@@ -246,8 +245,8 @@ class DeferredFlowIT {
         doReturn(false).when(issuerMetadata).isBatchIssuanceAllowed();
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of("lastName", "lastName"))
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
                 .credentialMetadata(getCredentialMetadataDto())
                 .build();
 
@@ -699,22 +698,7 @@ class DeferredFlowIT {
     @Test
     void testDeferredOffer_withDefaultDeferredExpiration_thenSuccess() throws Exception {
 
-        var unboundOffer = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS, "test", validFrom, validUntil, getCredentialMetadata(true), null, null);
-        unboundOffer = saveStatusListLinkedOffer(unboundOffer, statusList, 4, UUID.randomUUID());
-
-        credentialManagement = CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .accessToken(UUID.randomUUID())
-                .credentialManagementStatus(CredentialStatusManagementType.INIT)
-                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
-                .renewalRequestCnt(0)
-                .renewalResponseCnt(0).credentialOffers(Set.of(unboundOffer))
-                .build();
-
-        unboundOffer.setCredentialManagement(credentialManagement);
-
-        credentialManagementRepository.save(credentialManagement);
-        credentialOfferRepository.save(unboundOffer);
+        var unboundOffer = createUnboundCredentialOffer();
 
         Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
 
@@ -746,7 +730,7 @@ class DeferredFlowIT {
 
         var expirationInSeconds = 1728000; // 20 days
 
-        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS, "test", new CredentialOfferMetadata(true, null, null, null), expirationInSeconds);
+        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null), expirationInSeconds);
 
         var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
                 .id(UUID.randomUUID())
@@ -806,7 +790,7 @@ class DeferredFlowIT {
     private String getCredentialRequestString(String proof) throws Exception {
         // V2 Endpoint erwartet CredentialEndpointRequestDtoV2
         var request = new CredentialEndpointRequestDto(
-                "test",
+                "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),
                 null
         );

@@ -204,7 +204,7 @@ public class IssuanceController {
 
         var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDto.class);
         validateRequestDtoOrThrow(dto, validator);
-        credentialEnvelope = credentialServiceOrchestrator.createCredentialV2(dto, accessToken, clientInfo, dpop);
+        credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 //        } else {
 //            var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDto.class);
 //            validateRequestDtoOrThrow(dto, validator);
@@ -281,7 +281,7 @@ public class IssuanceController {
         String accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
 //        if (API_VERSION_OID4VCI_1_0.equals(version)) {
-        credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, accessToken);
+        credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
 //        } else {
 //            credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
 //        }

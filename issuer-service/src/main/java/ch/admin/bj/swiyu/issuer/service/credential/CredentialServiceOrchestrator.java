@@ -33,10 +33,10 @@ public class CredentialServiceOrchestrator {
      * Issues a credential (OID4VCI 2.0).
      */
     @Transactional
-    public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDto credentialRequestDto,
-                                                    String accessToken,
-                                                    ClientAgentInfo clientInfo,
-                                                    String dpopKey) {
+    public CredentialEnvelopeDto createCredential(CredentialEndpointRequestDto credentialRequestDto,
+                                                  String accessToken,
+                                                  ClientAgentInfo clientInfo,
+                                                  String dpopKey) {
         return credentialIssuanceService.createCredentialV2(credentialRequestDto, accessToken, clientInfo, dpopKey);
     }
 
@@ -55,7 +55,7 @@ public class CredentialServiceOrchestrator {
      * Issues a deferred credential (OID4VCI 2.0).
      */
     @Transactional
-    public CredentialEnvelopeDto createCredentialFromDeferredRequestV2(
+    public CredentialEnvelopeDto createCredentialFromDeferredRequest(
             DeferredCredentialEndpointRequestDto deferredCredentialRequest,
             String accessToken) {
         return deferredCredentialService.createCredentialFromDeferredRequestV2(deferredCredentialRequest, accessToken);
