@@ -122,12 +122,6 @@ public class CredentialOffer {
     private ClientAgentInfo clientAgentInfo;
 
     /**
-     * Value used in the holder binding process to prevent replay attacks
-     */
-    @Deprecated(since = "OID4VCI 1.0")
-    private UUID nonce;
-
-    /**
      * Value used to get the token for grant-type:pre-authorized_code
      */
     private UUID preAuthorizedCode;

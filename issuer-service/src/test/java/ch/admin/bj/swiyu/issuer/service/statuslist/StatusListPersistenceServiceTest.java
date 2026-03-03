@@ -10,13 +10,14 @@ import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.anyList;
 
 /**
  * Unit tests for {@link StatusListPersistenceService}.
@@ -48,11 +49,11 @@ class StatusListPersistenceServiceTest {
         when(statusListProperties.getStatusListSizeLimit()).thenReturn(100 * 1024 * 1024); // 100 MB
         when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true); // Disable registry sync in tests
         persistenceService = new StatusListPersistenceService(
-                applicationProperties,
-                statusListProperties,
-                statusListRepository,
-                statusRegistryClient,
-                signingService
+            applicationProperties,
+            statusListProperties,
+            statusListRepository,
+            statusRegistryClient,
+            signingService
         );
     }
 
@@ -65,22 +66,25 @@ class StatusListPersistenceServiceTest {
         var token = new TokenStatusListToken(8, 10);
         token.setStatus(1, TokenStatusListBit.REVOKE.getValue());
         StatusList statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .configurationOverride(null)
-                .build();
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
+            .id(statusListId)
+            .uri("https://example.com/" + statusListId)
+            .config(Map.of("bits", 8))
+            .statusZipped(token.getStatusListData())
+            .maxLength(10)
+            .configurationOverride(null)
+            .build();
+        when(statusListRepository.findAllByIdInForUpdate(List.of(statusListId))).thenReturn(List.of(statusList));
+
         CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
         CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
         when(offerStatus.getId()).thenReturn(id);
         when(id.getStatusListId()).thenReturn(statusListId);
         when(id.getIndex()).thenReturn(1);
+
         List<UUID> result = persistenceService.revoke(Set.of(offerStatus));
         assertEquals(1, result.size());
         assertEquals(statusListId, result.get(0));
+        verify(statusListRepository).saveAll(anyList());
     }
 
     /**
@@ -92,22 +96,25 @@ class StatusListPersistenceServiceTest {
         TokenStatusListToken token = new TokenStatusListToken(8, 10);
         token.setStatus(2, TokenStatusListBit.SUSPEND.getValue());
         StatusList statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .configurationOverride(null)
-                .build();
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
+            .id(statusListId)
+            .uri("https://example.com/" + statusListId)
+            .config(Map.of("bits", 8))
+            .statusZipped(token.getStatusListData())
+            .maxLength(10)
+            .configurationOverride(null)
+            .build();
+        when(statusListRepository.findAllByIdInForUpdate(List.of(statusListId))).thenReturn(List.of(statusList));
+
         CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
         CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
         when(offerStatus.getId()).thenReturn(id);
         when(id.getStatusListId()).thenReturn(statusListId);
         when(id.getIndex()).thenReturn(2);
+
         List<UUID> result = persistenceService.suspend(Set.of(offerStatus));
         assertEquals(1, result.size());
         assertEquals(statusListId, result.get(0));
+        verify(statusListRepository).saveAll(anyList());
     }
 
     /**
@@ -119,21 +126,24 @@ class StatusListPersistenceServiceTest {
         TokenStatusListToken token = new TokenStatusListToken(8, 10);
         token.setStatus(3, TokenStatusListBit.VALID.getValue());
         StatusList statusList = StatusList.builder()
-                .id(statusListId)
-                .uri("https://example.com/" + statusListId)
-                .config(Map.of("bits", 8))
-                .statusZipped(token.getStatusListData())
-                .maxLength(10)
-                .configurationOverride(null)
-                .build();
-        when(statusListRepository.findByIdForUpdate(statusListId)).thenReturn(Optional.of(statusList));
+            .id(statusListId)
+            .uri("https://example.com/" + statusListId)
+            .config(Map.of("bits", 8))
+            .statusZipped(token.getStatusListData())
+            .maxLength(10)
+            .configurationOverride(null)
+            .build();
+        when(statusListRepository.findAllByIdInForUpdate(List.of(statusListId))).thenReturn(List.of(statusList));
+
         CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
         CredentialOfferStatusKey id = Mockito.mock(CredentialOfferStatusKey.class);
         when(offerStatus.getId()).thenReturn(id);
         when(id.getStatusListId()).thenReturn(statusListId);
         when(id.getIndex()).thenReturn(3);
+
         List<UUID> result = persistenceService.revalidate(Set.of(offerStatus));
         assertEquals(1, result.size());
         assertEquals(statusListId, result.get(0));
+        verify(statusListRepository).saveAll(anyList());
     }
 }

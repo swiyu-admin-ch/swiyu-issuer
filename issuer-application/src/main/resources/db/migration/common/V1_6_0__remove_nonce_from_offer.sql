@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS credential_offer
+    DROP COLUMN IF EXISTS nonce;

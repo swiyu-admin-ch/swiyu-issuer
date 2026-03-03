@@ -9,4 +9,6 @@ public interface VerifiableCredentialStatusReference {
     Map<String, Object> createVCRepresentation();
 
     String getIdentifier();
+
+    int getIndex();
 }

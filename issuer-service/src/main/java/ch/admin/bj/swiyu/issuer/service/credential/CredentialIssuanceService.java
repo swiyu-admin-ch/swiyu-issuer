@@ -57,9 +57,9 @@ public class CredentialIssuanceService {
      * Issues a credential for OID4VCI 2.0 requests, including renewal flow if no offer is in progress.
      *
      * @param credentialRequestDto the credential request DTO (OID4VCI 2.0)
-     * @param accessToken the access token for the credential management session
-     * @param clientInfo information about the client agent
-     * @param dpopKey the DPoP key for proof of possession
+     * @param accessToken          the access token for the credential management session
+     * @param clientInfo           information about the client agent
+     * @param dpopKey              the DPoP key for proof of possession
      * @return the issued credential envelope
      */
     public CredentialEnvelopeDto createCredentialV2(CredentialEndpointRequestDto credentialRequestDto,

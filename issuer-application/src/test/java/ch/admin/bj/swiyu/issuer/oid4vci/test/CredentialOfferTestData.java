@@ -68,7 +68,6 @@ public class CredentialOfferTestData {
                 .offerData(offerData)
                 .credentialMetadata(credentialMetadata)
                 .deferredOfferValiditySeconds(deferredExpirationInSeconds)
-                .nonce(UUID.randomUUID())
                 .preAuthorizedCode(preAuthCode)
                 .offerExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
                 .credentialValidFrom(validFrom)
@@ -93,9 +92,8 @@ public class CredentialOfferTestData {
 
     public static Map<String, String> getUniversityCredentialSubjectData() {
         Map<String, String> credentialSubjectData = new HashMap<>();
-        credentialSubjectData.put("degree", "Bachelor of Science");
+        credentialSubjectData.put("type", "Bachelor of Science");
         credentialSubjectData.put("name", "Data Science");
-        credentialSubjectData.put("average_grade", "5.33");
         return credentialSubjectData;
     }
 

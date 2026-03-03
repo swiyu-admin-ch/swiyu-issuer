@@ -1,5 +1,11 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialManagementAction;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialOfferAction;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.EventProducerAction;
+import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,8 +21,12 @@ class CredentialOfferStateMachineTest {
     @BeforeEach
     void setUp() throws Exception {
         var eventProducerService = mock(EventProducerService.class);
-        CredentialStateMachineAction actions = new CredentialStateMachineAction(eventProducerService);
-        CredentialStateMachineConfig config = new CredentialStateMachineConfig(actions);
+        EventProducerAction eventActions = new EventProducerAction(eventProducerService);
+        CredentialPersistenceService credentialPersistenceService = mock(CredentialPersistenceService.class);
+        StatusListPersistenceService statusListPersistanceService = mock(StatusListPersistenceService.class);
+        CredentialManagementAction managementActions = new CredentialManagementAction(credentialPersistenceService, statusListPersistanceService);
+        CredentialOfferAction offerActions = new CredentialOfferAction();
+        CredentialStateMachineConfig config = new CredentialStateMachineConfig(eventActions, offerActions, managementActions);
         this.stateMachine = new CredentialStateMachine(config.credentialManagementStateMachine(), config.credentialOfferStateMachine());
     }
 

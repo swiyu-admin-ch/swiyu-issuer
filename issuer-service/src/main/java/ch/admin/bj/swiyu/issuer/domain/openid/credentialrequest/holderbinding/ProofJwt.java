@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
+import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
@@ -45,10 +47,8 @@ public class ProofJwt extends Proof implements AttestableProof {
     /**
      * Validates the Proof JWT according to <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#section-7.2.1.1">OID4VCI 7.2.1.1</a>
      */
-    @Override
     public boolean isValidHolderBinding(String issuerId,
                                         List<String> supportedSigningAlgorithms,
-                                        UUID nonce,
                                         Long tokenExpirationTimestamp) {
 
         try {
@@ -83,7 +83,7 @@ public class ProofJwt extends Proof implements AttestableProof {
                         Map.of("alg", header.getAlgorithm() != null ? header.getAlgorithm().getName() : "null"));
             }
 
-            validateNonce(nonce);
+            validateNonce();
 
             if (tokenExpirationTimestamp != null && Instant.now().isAfter(Instant.ofEpochSecond(tokenExpirationTimestamp))) {
                 throw proofException("Token is expired",
@@ -184,33 +184,22 @@ public class ProofJwt extends Proof implements AttestableProof {
         }
     }
 
-    private void validateNonce(UUID nonce) {
-        // the nonce claim matches the server-provided c_nonce value, if the server had previously provided a c_nonce,
-        var presentedNonce = getNonce();
-
-        if (presentedNonce.contains("::")) {
-            // Self-contained nonce
-            var selfContainedNonce = new SelfContainedNonce(presentedNonce);
-            if (!selfContainedNonce.isValid(nonceLifetimeSeconds)) {
-                throw proofException("Nonce is expired",
+    private void validateNonce() {
+        try {
+            new SelfContainedNonce(getNonce(), nonceLifetimeSeconds);
+        } catch (InvalidNonceException e) {
+            throw proofException("Invalid nonce claim in proof JWT",
+                        Map.of(
+                                "noncePresent", true,
+                                "nonceType", "selfContained"
+                        ));
+        } catch (ExpiredNonceException e) {
+            throw proofException("Nonce is expired",
                         Map.of(
                                 "noncePresent", true,
                                 "nonceType", "selfContained",
                                 "nonceLifetimeSeconds", nonceLifetimeSeconds
                         ));
-            }
-
-        } else {
-            // fixed nonce (provided via c_nonce)
-            // Once ready to contract -> Remove fixed token based nonce (EIDOMNI-166)
-            var nonceString = nonce.toString();
-            if (nonceString != null && !nonceString.equals(presentedNonce)) {
-                throw proofException("Nonce claim does not match the server-provided c_nonce value",
-                        Map.of(
-                                "noncePresent", true,
-                                "nonceType", "fixed"
-                        ));
-            }
         }
     }
 

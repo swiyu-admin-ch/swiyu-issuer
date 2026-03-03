@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
@@ -63,7 +65,7 @@ public class HolderBindingService {
                 .toList();
 
         ensureUniqueProofBindings(proofs);
-        handleProofNonces(proofs, credentialOffer);
+        handleProofNonces(proofs);
 
         return proofJwts;
     }
@@ -143,12 +145,11 @@ public class HolderBindingService {
         }
     }
 
-    private void handleProofNonces(List<ProofJwt> proofs, CredentialOffer credentialOffer) {
+    private void handleProofNonces(List<ProofJwt> proofs) {
         List<String> nonces = proofs.stream()
                 .map(ProofJwt::getNonce)
                 .toList();
         nonceService.invalidateSelfContainedNonce(nonces);
-        credentialOffer.setNonce(UUID.randomUUID()); // Change c_nonce value
     }
 
     private ProofJwt selectFirstProof(List<ProofJwt> proofs) throws Oid4vcException {
@@ -176,7 +177,6 @@ public class HolderBindingService {
         if (!requestProof.isValidHolderBinding(
                 issuerMetadata.getCredentialIssuer(),
                 bindingProofType.getSupportedSigningAlgorithms(),
-                credentialOffer.getNonce(),
                 mgmt.getAccessTokenExpirationTimestamp())) {
             throw new Oid4vcException(INVALID_PROOF, "Presented proof was invalid!",
                     Map.of(
@@ -186,20 +186,28 @@ public class HolderBindingService {
         }
     }
 
-    private void ensureNonceNotReused(ProofJwt requestProof) throws Oid4vcException {
-        var nonce = new SelfContainedNonce(requestProof.getNonce());
-        if (nonce.isSelfContainedNonce() && nonceService.isUsedNonce(nonce)) {
-            throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
+    private SelfContainedNonce ensureNonceNotReused(ProofJwt requestProof) throws Oid4vcException {
+        try {
+            var nonce = new SelfContainedNonce(requestProof.getNonce(), applicationProperties.getNonceLifetimeSeconds());
+
+            if (nonceService.isUsedNonce(nonce)) {
+                throw new InvalidNonceException("Presented nonce was reused!");
+            }
+            return nonce;
+        } catch (ExpiredNonceException e) {
+            throw new Oid4vcException(INVALID_PROOF, e.getMessage());
+        } catch (InvalidNonceException e) {
+            throw new Oid4vcException(INVALID_PROOF, e.getMessage());
         }
     }
 
     private void registerNonceIfNeeded(ProofJwt requestProof) throws Oid4vcException {
-        var nonce = new SelfContainedNonce(requestProof.getNonce());
-        if (nonce.isSelfContainedNonce()) {
-            if (nonceService.isUsedNonce(nonce)) {
-                throw new Oid4vcException(INVALID_PROOF, "Presented proof was reused!");
-            }
+        try {
+            var nonce = ensureNonceNotReused(requestProof);
+
             nonceService.registerNonce(nonce);
+        } catch (InvalidNonceException | Oid4vcException e) {
+            throw new Oid4vcException(INVALID_PROOF, e.getMessage());
         }
     }
 

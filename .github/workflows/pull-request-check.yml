@@ -1,7 +1,7 @@
 # Inspired by https://thomasthornton.cloud/2025/03/18/setting-up-trivy-in-your-github-actions/
 name: Pull Request Check
 run-name: ${{ github.repository }} is evaluating pull request
-on: [pull_request]
+on: [ pull_request ]
 
 permissions:
   actions: read
@@ -56,6 +56,7 @@ jobs:
         id: pmd
         with:
           rulesets: '.github/rulesets/java/pmd_omni_ruleset.xml'
+          cache: true
 
       - name: Upload PMD SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -105,10 +106,26 @@ public class StatusListPersistenceService {
 
         Map<UUID, List<Integer>> statusListIds = groupAffectedStatusListIndexes(offerStatus);
 
-        return statusListIds.entrySet()
+        // Bulk load + lock to avoid one SELECT ... FOR UPDATE per statusListId
+        List<UUID> ids = List.copyOf(statusListIds.keySet());
+        Map<UUID, StatusList> statusListsById = statusListRepository.findAllByIdInForUpdate(ids).stream()
+            .collect(Collectors.toMap(StatusList::getId, Function.identity()));
+
+        // ensure all are present
+        for (UUID id : ids) {
+            if (!statusListsById.containsKey(id)) {
+                throw new ResourceNotFoundException(String.format("Status list %s not found", id));
+            }
+        }
+
+        List<StatusList> updated = statusListIds.entrySet()
             .stream()
-            .map(statusListEntry -> updateStatusList(bit, statusListEntry.getKey(), statusListEntry.getValue()))
+            .map(statusListEntry -> updateStatusList(bit, statusListsById.get(statusListEntry.getKey()), statusListEntry.getValue()))
             .toList();
+
+        // One repository call instead of save() per status list
+        statusListRepository.saveAll(updated);
+        return updated;
     }
 
     /**
@@ -128,30 +145,26 @@ public class StatusListPersistenceService {
     }
 
     /**
-     * Updates a single status list by applying {@code bit} to all {@code affectedIndexes}.
+     * Updates a single already-loaded status list by applying {@code bit} to all {@code affectedIndexes}.
      *
      * @param bit the status bit to apply (VALID, REVOKE, or SUSPEND)
-     * @param statusListId the id of the status list to update
      * @param affectedIndexes the indexes within the status list to update
      * @return the updated {@link StatusList}
      */
-    private StatusList updateStatusList(TokenStatusListBit bit, UUID statusListId, List<Integer> affectedIndexes) {
-        StatusList statusList = statusListRepository.findByIdForUpdate(statusListId)
-            .orElseThrow(() -> new ResourceNotFoundException(String.format("Status list %s not found", statusListId)));
+    private StatusList updateStatusList(TokenStatusListBit bit, StatusList statusList, List<Integer> affectedIndexes) {
         var statusListBits = (Integer) statusList.getConfig().get(BITS_FIELD_NAME);
         StatusListValidator.requireBitSupported(statusListBits, bit, statusList.getUri());
 
         try {
             var token = TokenStatusListToken.loadTokenStatusListToken(statusListBits,
-                    statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
-            for(int index : affectedIndexes) {
+                statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
+            for (int index : affectedIndexes) {
                 token.setStatus(index, bit.getValue());
             }
             statusList.setStatusZipped(token.getStatusListData());
             if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
                 publishToRegistry(statusList, token);
             }
-            statusListRepository.save(statusList);
             return statusList;
         } catch (IOException e) {
             log.error("Failed to load status list {}", statusList.getId(), e);

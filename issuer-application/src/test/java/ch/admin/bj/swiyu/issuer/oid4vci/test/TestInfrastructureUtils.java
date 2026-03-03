@@ -4,6 +4,10 @@ import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.authlete.sd.Disclosure;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,9 +27,11 @@ import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.text.ParseException;
@@ -34,8 +40,7 @@ import java.util.*;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 public class TestInfrastructureUtils {
     public static Map<String, Object> fetchOAuthToken(MockMvc mock, String preAuthCode) throws Exception {
@@ -82,10 +87,7 @@ public class TestInfrastructureUtils {
      */
     public static String createDPoP(MockMvc mock, String httpMethod, String httpUri, String accessToken, JWK dpopKey) throws Exception {
         // Fetch fresh nonce
-        var nonce = mock.perform(post("/oid4vci/api/nonce"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse()
-                .getHeader("DPoP-Nonce");
+        var nonce = requestNonceDPopHeader(mock);
         assertNotNull(nonce);
         var claimSetBuilder = new JWTClaimsSet.Builder()
                 .jwtID(UUID.randomUUID().toString())
@@ -121,6 +123,24 @@ public class TestInfrastructureUtils {
         );
     }
 
+    private static MockHttpServletResponse requestNonceResponse(MockMvc mock) throws Exception {
+        return mock.perform(post("/oid4vci/api/nonce"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse();
+    }
+
+    public static String requestNonceDPopHeader(MockMvc mock) throws Exception {
+        return requestNonceResponse(mock)
+                .getHeader("DPoP-Nonce");
+    }
+
+    public static String requestNonce(MockMvc mock) throws Exception {
+        var objectMapper = new ObjectMapper();
+        var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn();
+        var nonceDto = objectMapper.readValue(nonceResponse.getResponse().getContentAsString(), NonceResponseDto.class);
+        return nonceDto.nonce();
+    }
+
     public static String getCredential(MockMvc mock, Object token, String credentialRequestString) throws Exception {
         var response = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -138,6 +158,33 @@ public class TestInfrastructureUtils {
                 .andReturn();
 
         return JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject();
+    }
+
+    public static CredentialWithDeeplinkResponseDto createInitialCredentialWithDeeplinkResponse(MockMvc mock, CreateCredentialOfferRequestDto offerRequest) throws Exception {
+
+        var objectMapper = new ObjectMapper();
+
+        var offerRequestString = objectMapper.writeValueAsString(offerRequest);
+
+        var response = mock.perform(post("/management/api/credentials")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(offerRequestString))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.management_id").isNotEmpty())
+                .andExpect(jsonPath("$.offer_deeplink").isNotEmpty())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andReturn();
+
+        return objectMapper.readValue(response.getResponse().getContentAsString(), CredentialWithDeeplinkResponseDto.class);
+    }
+
+    public static CredentialOfferDto extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(CredentialWithDeeplinkResponseDto credentialWithDeeplinkResponseDto) throws Exception {
+
+        var objectMapper = new ObjectMapper();
+        var decodedDeeplink = URLDecoder.decode(credentialWithDeeplinkResponseDto.getOfferDeeplink(), StandardCharsets.UTF_8);
+        var credentialOfferString = decodedDeeplink.replace("swiyu://?credential_offer=", "");
+
+        return objectMapper.readValue(credentialOfferString, CredentialOfferDto.class);
     }
 
     public static void verifyVC(SdjwtProperties sdjwtProperties, String vc, Map<String, String> credentialSubjectData) throws Exception {
@@ -180,15 +227,14 @@ public class TestInfrastructureUtils {
         }
     }
 
-    public static CredentialFetchData prepareAttestedVC(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance, String attestationIssuerDid, ECKey jwk, String issuerId) throws Exception {
+    public static CredentialFetchData prepareAttestedVC(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance, String attestationIssuerDid, ECKey jwk, String issuerId, String nonce) throws Exception {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, preAuthCode.toString());
         var token = tokenResponse.get("access_token");
         Assertions.assertThat(token).isNotNull();
-        Assertions.assertThat(tokenResponse).containsKey("c_nonce");
         String proof = TestServiceUtils.createAttestedHolderProof(
                 jwk,
                 issuerId,
-                tokenResponse.get("c_nonce").toString(),
+                nonce,
                 ProofType.JWT.getClaimTyp(),
                 false,
                 resistance,

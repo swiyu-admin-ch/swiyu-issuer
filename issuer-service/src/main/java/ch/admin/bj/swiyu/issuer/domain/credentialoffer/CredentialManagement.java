@@ -103,21 +103,6 @@ public class CredentialManagement {
         offer.setCredentialManagement(this);
     }
 
-
-    public UUID getLastValidLegacyNonce() {
-        return this.isPreIssuanceProcess()
-                // is normal issuance process -> get offer in progress and use this nonce
-                ? this.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
-                .map(o -> o.getNonce())
-                .findFirst()
-                .orElseThrow()
-                // is refresh
-                : this.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.ISSUED)
-                .map(o -> o.getNonce())
-                .findFirst()
-                .orElseThrow();
-    }
-
     /**
      * Sets the status of this credential management entity.
      * <p>

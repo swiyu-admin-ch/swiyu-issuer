@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.support.MessageBuilder;
@@ -21,14 +22,14 @@ public class CredentialStateMachine {
      * Send event to CredentialManagement state machine and update status.
      *
      * @param credentialManagement The CredentialManagement entity
-     * @param event The event to send
+     * @param event                The event to send
      * @return The result containing the new status and whether the state changed
      */
     public StateTransitionResult<CredentialStatusManagementType> sendEventAndUpdateStatus(
             CredentialManagement credentialManagement,
             CredentialStateMachineConfig.CredentialManagementEvent event) {
 
-        if (event == null){
+        if (event == null) {
             log.info("No transaction requested for {} in state {}", credentialManagement.getId(), credentialManagement.getCredentialManagementStatus());
             return new StateTransitionResult<>(credentialManagement.getCredentialManagementStatus(), false);
         }
@@ -78,14 +79,14 @@ public class CredentialStateMachine {
      * Send event to CredentialOffer state machine and update status.
      *
      * @param credentialOffer The CredentialOffer entity
-     * @param event The event to send
+     * @param event           The event to send
      * @return The result containing the new status and whether the state changed
      */
     public StateTransitionResult<CredentialOfferStatusType> sendEventAndUpdateStatus(
             CredentialOffer credentialOffer,
             CredentialStateMachineConfig.CredentialOfferEvent event) {
 
-        if (event == null){
+        if (event == null) {
             log.info("No transaction requested for {} in state {}", credentialOffer.getId(), credentialOffer.getCredentialStatus());
             return new StateTransitionResult<>(credentialOffer.getCredentialStatus(), false);
         }
@@ -134,5 +135,6 @@ public class CredentialStateMachine {
     /**
      * Result of a state transition containing the new status and whether it changed.
      */
-    public record StateTransitionResult<T>(T newStatus, boolean changed) {}
+    public record StateTransitionResult<T>(T newStatus, boolean changed) {
+    }
 }
