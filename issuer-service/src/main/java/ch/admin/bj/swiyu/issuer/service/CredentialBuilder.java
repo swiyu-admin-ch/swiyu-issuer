@@ -1,9 +1,5 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
@@ -14,11 +10,16 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Di
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JWSSigner;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -27,6 +28,7 @@ import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_CREDENTIAL_REQUEST;
 
+@Slf4j
 @Getter
 public abstract class CredentialBuilder {
     private final ApplicationProperties applicationProperties;
@@ -199,6 +201,29 @@ public abstract class CredentialBuilder {
                                 .getIndex(), getStatusList(credentialOfferStatus)))
                 .forEach(status -> statusFactory.mergeByIdentifier(statuses, status));
         return statuses;
+    }
+
+    protected void freeUnusedStatusReferences(List<VerifiableCredentialStatusReference> usedStatusReferences) {
+
+        // get all status references for the offer
+        Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository
+                .findByOfferId(this.credentialOffer.getId());
+
+        // filter out the ones that are still used in the credential to be issued, the rest can be deleted to free up capacity for future credentials
+        var superfluousStatusReferences = byOfferStatusId.stream()
+                .filter(credentialOfferStatus -> {
+                    var statusList = getStatusList(credentialOfferStatus);
+
+                    return usedStatusReferences.stream().noneMatch(ref -> ref.getIdentifier().equals(statusList.getUri())
+                            && ref.getIndex() == credentialOfferStatus.getId().getIndex());
+                })
+                .toList();
+
+        log.info("Freeing up {} superfluous status references for offer id {}", superfluousStatusReferences.size(),
+                this.credentialOffer.getId());
+
+        // delete the rest to free up capacity for future credentials
+        credentialOfferStatusRepository.deleteAll(superfluousStatusReferences);
     }
 
     abstract JWSSigner createSigner();

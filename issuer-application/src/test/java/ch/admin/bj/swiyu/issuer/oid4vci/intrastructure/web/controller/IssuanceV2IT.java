@@ -22,6 +22,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,6 +37,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.text.ParseException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -329,6 +331,33 @@ class IssuanceV2IT {
             var credentialString = credential.get("credential").getAsString();
             testHolderBindingV2(credentialString, holderPrivateKeys.get(j));
         }
+
+        // check if only correct number of status references exist and correct value have not been overwritten
+        var storedOfferStatusReferences = credentialOfferStatusRepository.findByOfferId(offer.getOfferId());
+        assertEquals(numberOfProofs, storedOfferStatusReferences.size());
+
+        credentials.forEach(cred -> {
+            var vc = cred.getAsJsonObject().get("credential").getAsString();
+
+            // get vc claims to extract status list index and verify that correct status list reference has been linked to the offer
+            var sdJwtTokenParts = vc.split("~");
+            var jwt = sdJwtTokenParts[0];
+
+            try {
+                SignedJWT signedJWT = SignedJWT.parse(jwt);
+                Map<String, Object> statusClaim = (Map<String, Object>) signedJWT.getJWTClaimsSet().getClaims().get("status");
+                Map<String, Object> statusListClaim = (Map<String, Object>) statusClaim.get("status_list");
+
+                // check if reference can be found in repository with correct offer id, status list id and index
+                assertTrue(storedOfferStatusReferences.stream().anyMatch(ref ->
+                        ref.getId().getOfferId().equals(offer.getOfferId())
+                                && ref.getId().getIndex() == ((long) statusListClaim.get("idx"))
+                                && ref.getId().getStatusListId().equals(testStatusList.getId()))
+                );
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @ParameterizedTest
