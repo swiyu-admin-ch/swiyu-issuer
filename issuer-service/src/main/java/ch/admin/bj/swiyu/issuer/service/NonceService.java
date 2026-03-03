@@ -33,7 +33,7 @@ public class NonceService {
      * @return True if the nonce is valid and has not been used.
      */
     @Transactional
-    public boolean isValidSelfContainedNonce(String nonce) throws IllegalArgumentException {
+    public boolean isValidSelfContainedNonce(String nonce) {
         SelfContainedNonce selfContainedNonce;
         try {
             selfContainedNonce = new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds());
