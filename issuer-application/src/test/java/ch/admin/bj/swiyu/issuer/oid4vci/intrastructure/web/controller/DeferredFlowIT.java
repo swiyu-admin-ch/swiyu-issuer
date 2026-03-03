@@ -100,6 +100,21 @@ class DeferredFlowIT {
     private TransactionTemplate transactionTemplate;
     private StatusList statusList;
 
+    public static Map<String, String> getUniversityCredentialSubjectData() {
+        Map<String, String> credentialSubjectData = new HashMap<>();
+        credentialSubjectData.put("type", "Bachelor of Science");
+        credentialSubjectData.put("name", "Data Science");
+        credentialSubjectData.put("average_grade", "Data Science");
+        return credentialSubjectData;
+    }
+
+    private static String getVcStringFromResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
+        var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
+                .getAsJsonObject()
+                .getAsJsonArray("credentials");
+        return credentials.get(0).getAsJsonObject().get("credential").getAsString();
+    }
+
     @BeforeEach
     void setUp() throws JOSEException {
         statusList = saveStatusList(createStatusList());
@@ -179,14 +194,6 @@ class DeferredFlowIT {
 
         var vc = getVcStringFromResponse(credentialResponse);
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
-    }
-
-    public static Map<String, String> getUniversityCredentialSubjectData() {
-        Map<String, String> credentialSubjectData = new HashMap<>();
-        credentialSubjectData.put("type", "Bachelor of Science");
-        credentialSubjectData.put("name", "Data Science");
-        credentialSubjectData.put("average_grade", "Data Science");
-        return credentialSubjectData;
     }
 
     @Test
@@ -570,13 +577,6 @@ class DeferredFlowIT {
                 .andReturn();
     }
 
-    private static String getVcStringFromResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
-        var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
-                .getAsJsonObject()
-                .getAsJsonArray("credentials");
-        return credentials.get(0).getAsJsonObject().get("credential").getAsString();
-    }
-
     @Test
     void testBoundDeferredFlowWithAlreadyIssuedCredential_thenRequestDeniedException() throws Exception {
 
@@ -659,7 +659,7 @@ class DeferredFlowIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock,
                 unboundOffer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = " { \"format\": \"vc+sd-jwt\"}";
+        var credentialRequestString = "{\"credential_configuration_id\": \"unbound_example_sd_jwt\"}";
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -706,9 +706,7 @@ class DeferredFlowIT {
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
-            var nonce = requestNonce(mock);
-
-            var credentialRequestString = getCredentialRequestString(nonce);
+            var credentialRequestString = "{\"credential_configuration_id\": \"unbound_example_sd_jwt\"}";
 
             requestCredential(mock, token.toString(),
                     credentialRequestString)
