@@ -14,7 +14,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class TestServiceUtils {
 
@@ -113,7 +116,7 @@ public class TestServiceUtils {
                 .build();
     }
 
-    public static CredentialOffer getCredentialOffer(CredentialOfferStatusType status, long offerExpirationTimestamp, Map<String, Object> offerData, UUID accessToken, UUID preAuthorizedCode, UUID nonce, CredentialOfferMetadata offerMetadata, UUID transactionId) {
+    public static CredentialOffer getCredentialOffer(CredentialOfferStatusType status, long offerExpirationTimestamp, Map<String, Object> offerData, UUID preAuthorizedCode, CredentialOfferMetadata offerMetadata, UUID transactionId) {
         return CredentialOffer.builder()
                 .id(UUID.randomUUID())
                 .credentialStatus(status)
@@ -121,7 +124,6 @@ public class TestServiceUtils {
                 .offerData(offerData)
                 .credentialMetadata(offerMetadata)
                 .transactionId(transactionId)
-                .nonce(nonce)
                 .preAuthorizedCode(preAuthorizedCode)
                 .offerExpirationTimestamp(offerExpirationTimestamp)
                 .deferredOfferValiditySeconds(120)

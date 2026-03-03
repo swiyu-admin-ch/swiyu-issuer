@@ -1,10 +1,10 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,8 +49,7 @@ public class OAuthService {
         log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {}, offer ID is {} and new status is {}",
                 mgmt.getAccessToken(), mgmt.getId(), offer.getId(), offer.getCredentialStatus());
         credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
-        OAuthTokenDto oauthTokenResponse = updateOAuthTokens(mgmt);
-        return oauthTokenResponse;
+        return updateOAuthTokens(mgmt);
     }
 
     /**
@@ -117,11 +116,8 @@ public class OAuthService {
         UUID newAccessToken = UUID.randomUUID();
         mgmt.setAccessToken(newAccessToken);
 
-        var nonce = mgmt.getLastValidLegacyNonce();
-
         OAuthTokenDto.OAuthTokenDtoBuilder oauthTokenResponseBuilder = OAuthTokenDto.builder()
                 .accessToken(newAccessToken.toString())
-                .cNonce(String.valueOf(nonce))
                 .expiresIn(applicationProperties.getTokenTTL());
 
 
