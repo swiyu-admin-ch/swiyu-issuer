@@ -96,7 +96,7 @@ class CredentialEnvelopeServiceTest {
         when(credentialBuilder.credentialType(any())).thenReturn(credentialBuilder);
         when(credentialBuilder.buildCredentialEnvelope()).thenReturn(new CredentialEnvelopeDto(null, null, null));
 
-        service.createCredentialEnvelopeDtoV2(offer, request, null, mgmt);
+        service.createCredentialEnvelopeDto(offer, request, null, mgmt);
 
         verify(credentialStateMachine).sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
         verify(credentialStateMachine).sendEventAndUpdateStatus(mgmt, CredentialStateMachineConfig.CredentialManagementEvent.ISSUE);

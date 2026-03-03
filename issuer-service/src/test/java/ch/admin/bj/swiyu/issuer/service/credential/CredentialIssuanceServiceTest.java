@@ -50,7 +50,7 @@ class CredentialIssuanceServiceTest {
     }
 
     @Test
-    void createCredentialV2_withOffer_inProgressDelegatesToEnvelopeService() {
+    void createCredential_withOffer_inProgressDelegatesToEnvelopeService() {
         var request = new CredentialEndpointRequestDto("config-id", null, null);
         var offer = createOffer(CredentialOfferStatusType.IN_PROGRESS);
         var mgmt = createManagementWithOffers(offer);
@@ -58,18 +58,18 @@ class CredentialIssuanceServiceTest {
 
         when(oAuthService.getCredentialManagementByAccessToken("token"))
                 .thenReturn(mgmt);
-        when(credentialEnvelopeService.createCredentialEnvelopeDtoV2(eq(offer), any(), isNull(), eq(mgmt)))
+        when(credentialEnvelopeService.createCredentialEnvelopeDto(eq(offer), any(), isNull(), eq(mgmt)))
                 .thenReturn(envelope);
 
-        var result = service.createCredentialV2(request, "token", null, "dpop");
+        var result = service.createCredential(request, "token", null, "dpop");
 
         assertSame(envelope, result);
-        verify(credentialEnvelopeService).createCredentialEnvelopeDtoV2(eq(offer), any(), isNull(), eq(mgmt));
+        verify(credentialEnvelopeService).createCredentialEnvelopeDto(eq(offer), any(), isNull(), eq(mgmt));
         verify(credentialRenewalService, never()).handleRenewalFlow(any(), any(), any(), any());
     }
 
     @Test
-    void createCredentialV2_withoutOffer_invokesRenewalFlow() {
+    void createCredential_withoutOffer_invokesRenewalFlow() {
         var request = new CredentialEndpointRequestDto("config-id", null, null);
         var mgmt = createManagementWithOffers(
                 createOffer(CredentialOfferStatusType.ISSUED));
@@ -80,10 +80,10 @@ class CredentialIssuanceServiceTest {
         when(credentialRenewalService.handleRenewalFlow(any(), eq(mgmt), isNull(), eq("dpop")))
                 .thenReturn(envelope);
 
-        var result = service.createCredentialV2(request, "token", null, "dpop");
+        var result = service.createCredential(request, "token", null, "dpop");
 
         assertSame(envelope, result);
-        verify(credentialEnvelopeService, never()).createCredentialEnvelopeDtoV2(any(), any(), any(), any());
+        verify(credentialEnvelopeService, never()).createCredentialEnvelopeDto(any(), any(), any(), any());
         verify(credentialRenewalService).handleRenewalFlow(any(), eq(mgmt), isNull(), eq("dpop"));
     }
 

@@ -18,17 +18,6 @@ public class CredentialServiceOrchestrator {
     private final CredentialIssuanceService credentialIssuanceService;
     private final DeferredCredentialService deferredCredentialService;
 
-//    /**
-//     * Issues a credential (OID4VCI 1.0).
-//     */
-//    @Deprecated(since = "OID4VCI 1.0")
-//    @Transactional
-//    public CredentialEnvelopeDto createCredential(CredentialEndpointRequestDto credentialRequestDto,
-//                                                  String accessToken,
-//                                                  ClientAgentInfo clientInfo) {
-//        return credentialIssuanceService.createCredential(credentialRequestDto, accessToken, clientInfo);
-//    }
-
     /**
      * Issues a credential (OID4VCI 2.0).
      */
@@ -37,19 +26,8 @@ public class CredentialServiceOrchestrator {
                                                   String accessToken,
                                                   ClientAgentInfo clientInfo,
                                                   String dpopKey) {
-        return credentialIssuanceService.createCredentialV2(credentialRequestDto, accessToken, clientInfo, dpopKey);
+        return credentialIssuanceService.createCredential(credentialRequestDto, accessToken, clientInfo, dpopKey);
     }
-
-//    /**
-//     * Issues a deferred credential (OID4VCI 1.0).
-//     */
-//    @Deprecated(since = "OID4VCI 1.0")
-//    @Transactional
-//    public CredentialEnvelopeDto createCredentialFromDeferredRequest(
-//            DeferredCredentialEndpointRequestDto deferredCredentialRequest,
-//            String accessToken) {
-//        return deferredCredentialService.createCredentialFromDeferredRequest(deferredCredentialRequest, accessToken);
-//    }
 
     /**
      * Issues a deferred credential (OID4VCI 2.0).
@@ -58,7 +36,7 @@ public class CredentialServiceOrchestrator {
     public CredentialEnvelopeDto createCredentialFromDeferredRequest(
             DeferredCredentialEndpointRequestDto deferredCredentialRequest,
             String accessToken) {
-        return deferredCredentialService.createCredentialFromDeferredRequestV2(deferredCredentialRequest, accessToken);
+        return deferredCredentialService.createCredentialFromDeferredRequest(deferredCredentialRequest, accessToken);
     }
 }
 

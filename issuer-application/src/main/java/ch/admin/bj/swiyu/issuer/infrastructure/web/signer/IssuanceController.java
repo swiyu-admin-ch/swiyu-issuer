@@ -58,7 +58,6 @@ import java.util.regex.Pattern;
 @RequestMapping(value = {"/oid4vci/api"})
 public class IssuanceController {
     public static final String DPOP_HTTP_HEADER = "DPoP";
-//    public static final String SWIYU_API_VERSION_HTTP_HEADER = "SWIYU-API-Version";
 
     private final CredentialServiceOrchestrator credentialServiceOrchestrator;
     private final NonceService nonceService;
@@ -205,12 +204,6 @@ public class IssuanceController {
         var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDto.class);
         validateRequestDtoOrThrow(dto, validator);
         credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
-//        } else {
-//            var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDto.class);
-//            validateRequestDtoOrThrow(dto, validator);
-//
-//            credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo);
-//        }
 
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
@@ -280,12 +273,7 @@ public class IssuanceController {
 
         String accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
-//        if (API_VERSION_OID4VCI_1_0.equals(version)) {
         credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
-//        } else {
-//            credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
-//        }
-
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())

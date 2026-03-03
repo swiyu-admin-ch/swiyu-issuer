@@ -55,7 +55,7 @@ public class CredentialRenewalService {
         var renewedDataResponse = renewalApiClient.getRenewalData(renewalData);
 
         var offer = credentialManagementService.updateOfferFromRenewalResponse(renewedDataResponse, initialCredentialOfferForRenewal);
-        var envelopeDto = credentialEnvelopeService.createCredentialEnvelopeDtoV2(offer, credentialRequest, clientInfo, mgmt);
+        var envelopeDto = credentialEnvelopeService.createCredentialEnvelopeDto(offer, credentialRequest, clientInfo, mgmt);
 
         incrementRenewalResponseCount(mgmt);
         credentialManagementRepository.save(mgmt);

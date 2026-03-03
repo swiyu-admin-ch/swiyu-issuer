@@ -31,8 +31,6 @@ public record CredentialInfoResponseDto(
         Instant credentialValidFrom,
         @JsonProperty("credential_valid_until")
         Instant credentialValidUntil,
-//        @JsonProperty("credential_request")
-//        CredentialEndpointRequestDto credentialRequest,
         @JsonProperty(value = "offer_deeplink")
         String offerDeeplink,
         @JsonProperty(value = "vc_hash")

@@ -50,8 +50,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -623,7 +621,6 @@ class DeferredFlowIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock,
                 unboundOffer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
-        // V2 Request ohne Proofs
         var credentialRequestString = objectMapper.writeValueAsString(new CredentialEndpointRequestDto(
                 "unbound_example_sd_jwt",
                 null,
@@ -788,7 +785,6 @@ class DeferredFlowIT {
     }
 
     private String getCredentialRequestString(String proof) throws Exception {
-        // V2 Endpoint erwartet CredentialEndpointRequestDtoV2
         var request = new CredentialEndpointRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),

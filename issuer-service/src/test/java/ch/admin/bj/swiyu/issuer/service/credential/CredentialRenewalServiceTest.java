@@ -81,7 +81,7 @@ class CredentialRenewalServiceTest {
         when(credentialManagementService.createInitialCredentialOfferForRenewal(mgmt)).thenReturn(initialOffer);
         when(renewalApiClient.getRenewalData(any())).thenReturn(renewalResponse);
         when(credentialManagementService.updateOfferFromRenewalResponse(renewalResponse, initialOffer)).thenReturn(updatedOffer);
-        when(credentialEnvelopeService.createCredentialEnvelopeDtoV2(updatedOffer, request, null, mgmt)).thenReturn(envelope);
+        when(credentialEnvelopeService.createCredentialEnvelopeDto(updatedOffer, request, null, mgmt)).thenReturn(envelope);
 
         var result = service.handleRenewalFlow(request, mgmt, null, "dpop-key");
 

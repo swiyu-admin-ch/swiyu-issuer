@@ -330,7 +330,6 @@ class IssuanceControllerIT {
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce, "wrong type", true);
-        // V2 Payload
         String credentialRequestString = objectMapper.writeValueAsString(new CredentialEndpointRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),
