@@ -35,12 +35,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @UtilityClass
-public class IssuanceV2TestUtils {
+public class IssuanceTestUtils {
 
     public static ResultActions requestCredentialV2(MockMvc mock, String token, String credentialRequestString) throws Exception {
         return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
-                .header("SWIYU-API-Version", "2")
+                .contentType("application/json")
                 .content(credentialRequestString)
         );
     }

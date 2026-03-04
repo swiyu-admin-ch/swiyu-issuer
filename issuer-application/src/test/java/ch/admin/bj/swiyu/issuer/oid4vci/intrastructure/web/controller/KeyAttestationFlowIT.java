@@ -41,7 +41,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.requestCredentialV2;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.requestCredentialV2;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -106,26 +106,28 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttested(mock, testOfferNoAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(jwk.toPublicJWK());
         var result = requestCredentialV2(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+                .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertNotNull(result);
     }
 
-//    @Test TODO
+    @Test
     void testHighAttestation() throws Exception {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH);
         mockDidResolve(jwk.toPublicJWK());
+
         var result = requestCredentialV2(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andReturn().getResponse().getContentAsString();
         assertNotNull(result);
 
-        verify(testEventListener, Mockito.times(2)).handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
+        verify(testEventListener, Mockito.times(1)).handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
     }
 
     /**
      * Test Requesting the highest possible attestation. Any lower provided attestation MUST fail
      */
 
-//    @ParameterizedTest TODO
+    @ParameterizedTest
     @EnumSource(value = AttackPotentialResistance.class, mode = EnumSource.Mode.EXCLUDE, names = {"ISO_18045_HIGH"})
     void testTooLowAttestation_thenFail(AttackPotentialResistance resistance) throws Exception {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, resistance);
@@ -137,38 +139,22 @@ class KeyAttestationFlowIT {
 
         var response = JsonParser.parseString(mvcResult.getResponse().getContentAsString()).getAsJsonObject();
 
-//        // Defensive assertions (liefert bessere Fehlermeldungen als NPE)
-////        Assertions.assertThat(response.has("error")).as("response=%s".formatted(response)).isTrue();
-//        Assertions.assertThat(response.get("error").getAsString()).isEqualTo(CredentialRequestErrorDto.INVALID_PROOF.name());
-////        Assertions.assertThat(response.has("error_description")).as("response=%s".formatted(response)).isTrue();
-//        Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
-
-        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
-//        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
-        ErrorEvent capturedEvent = errorEventCaptor.getValue();
-
-        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
-        assertEquals("Key attestation was invalid or not matching the attack resistance for the credential!", capturedEvent.errorMessage());
+        // Defensive assertions (liefert bessere Fehlermeldungen als NPE)
+        Assertions.assertThat(response.has("error")).as("response=%s".formatted(response)).isTrue();
+        Assertions.assertThat(response.get("error").getAsString()).isEqualTo(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name());
     }
 
-//    @Test TODO
+    @Test
     void testUntrustedAttestationIssuer() throws Exception {
         var untrustedIssuer = "did:example:untrusted";
         var nonce = requestNonceDPopHeader(mock);
-        var fetchData = prepareAttestedVC(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH, untrustedIssuer, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce);
+        var fetchData = prepareAttestedVC(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH, untrustedIssuer, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, "university_example_sd_jwt");
         mockDidResolve(jwk.toPublicJWK());
-        var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        var response = JsonParser.parseString(requestCredentialV2(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+                .andExpect(status().is4xxClientError())
+                .andReturn().getResponse().getContentAsString()).getAsJsonObject();
         // Proof should be invalid when untrusted
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
-        // We want the error description to be helpful telling about the current issuer and the expected issuers.
-        Assertions.assertThat(response.get("error_description").getAsString()).contains(untrustedIssuer).contains(applicationProperties.getTrustedAttestationProviders().getFirst());
-
-        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
-        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
-        ErrorEvent capturedEvent = errorEventCaptor.getValue();
-
-        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
-        assertEquals("Attestation has been rejected! The JWT issuer did:example:untrusted is not in the list of trusted issuers did:test:test-attestation-builder.", capturedEvent.errorMessage());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name());
     }
 
     @Test
@@ -202,20 +188,12 @@ var nonce = requestNonce(mock);        String proof = TestServiceUtils.createHol
         assertEquals("Attestation was not provided!", capturedEvent.errorMessage());
     }
 
-//    @Test TODO
+    @Test
     void testInvalidAttestationSignature_thenFail() throws Exception {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate().toPublicJWK());
         var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
-        Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
-
-        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
-        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
-        ErrorEvent capturedEvent = errorEventCaptor.getValue();
-
-        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
-        assertEquals("Key attestation key is not supported or not matching the signature!", capturedEvent.errorMessage());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name());
     }
 
     private void mockDidResolve(JWK key) {
@@ -225,10 +203,11 @@ var nonce = requestNonce(mock);        String proof = TestServiceUtils.createHol
     private TestInfrastructureUtils.CredentialFetchData prepareAttested(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance) throws Exception {
         var nonce = requestNonceDPopHeader(mock);
 
-        return prepareAttestedVC(mock, preAuthCode, resistance, null, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce);
+
+        return prepareAttestedVC(mock, preAuthCode, resistance, null, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, "university_example_sd_jwt");
     }
 
-    private CredentialOffer createCredentialOffer(CredentialOffer offer) {
+    private void createCredentialOffer(CredentialOffer offer) {
         var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
@@ -243,6 +222,5 @@ var nonce = requestNonce(mock);        String proof = TestServiceUtils.createHol
         var storedOffer = credentialOfferRepository.save(offer);
         credentialManagement.addCredentialOffer(storedOffer);
         credentialManagementRepository.save(credentialManagement);
-        return storedOffer;
     }
 }

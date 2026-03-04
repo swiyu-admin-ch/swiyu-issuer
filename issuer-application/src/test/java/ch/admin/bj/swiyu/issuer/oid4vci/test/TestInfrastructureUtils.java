@@ -37,6 +37,7 @@ import java.security.MessageDigest;
 import java.text.ParseException;
 import java.util.*;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.getCredentialRequestStringV2;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -227,7 +228,9 @@ public class TestInfrastructureUtils {
         }
     }
 
-    public static CredentialFetchData prepareAttestedVC(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance, String attestationIssuerDid, ECKey jwk, String issuerId, String nonce) throws Exception {
+    public static CredentialFetchData prepareAttestedVC(MockMvc mock, UUID preAuthCode,
+                                                        AttackPotentialResistance resistance, String attestationIssuerDid,
+                                                        ECKey jwk, String issuerId, String nonce, String credentialConfigId) throws Exception {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, preAuthCode.toString());
         var token = tokenResponse.get("access_token");
         Assertions.assertThat(token).isNotNull();
@@ -239,7 +242,13 @@ public class TestInfrastructureUtils {
                 false,
                 resistance,
                 attestationIssuerDid);
-        String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
+//        String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
+        String credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}",
+                credentialConfigId, proof);
+
+
+
+
 
         return new CredentialFetchData(token, credentialRequestString);
     }

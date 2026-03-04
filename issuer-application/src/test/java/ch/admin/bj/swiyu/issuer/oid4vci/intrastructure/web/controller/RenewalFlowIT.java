@@ -56,7 +56,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -339,7 +339,7 @@ class RenewalFlowIT {
 
         managementId = managementJsonObject.get("management_id").getAsString();
 
-        var preAuthCode = IssuanceV2TestUtils
+        var preAuthCode = IssuanceTestUtils
                 .getPreAuthCodeFromDeeplink(managementJsonObject.get("offer_deeplink").getAsString());
 
         dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)

@@ -9,7 +9,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils;
+import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.hamcrest.Matchers;
@@ -38,7 +38,7 @@ import java.util.HashSet;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -189,7 +189,7 @@ class CredentialOfferStatusIT {
 
         var managementJsonObject = JsonParser.parseString(result.getResponse().getContentAsString()).getAsJsonObject();
 
-        var token = IssuanceV2TestUtils.getAccessTokenFromDeeplink(mvc, managementJsonObject.get("offer_deeplink").getAsString());
+        var token = IssuanceTestUtils.getAccessTokenFromDeeplink(mvc, managementJsonObject.get("offer_deeplink").getAsString());
 
         var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
 

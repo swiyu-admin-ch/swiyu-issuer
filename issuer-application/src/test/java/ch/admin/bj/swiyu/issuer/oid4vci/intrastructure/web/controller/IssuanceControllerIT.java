@@ -49,7 +49,7 @@ import java.util.*;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_REQUEST;
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.requestCredentialV2;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.requestCredentialV2;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.hamcrest.Matchers.containsString;

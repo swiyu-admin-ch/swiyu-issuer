@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -60,7 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class IssuanceV2IT {
+class IssuanceIT {
 
     private StatusList testStatusList;
     private List<ECKey> holderKeys;
