@@ -88,9 +88,8 @@ class DemonstratingProofOfPossessionServiceTest {
         assertThat(httpHeader).isNotEmpty().containsKey(DPOP_NONCE_HEADER);
         assertThat(httpHeader.get(DPOP_NONCE_HEADER)).isNotEmpty().hasSize(1);
         var nonce = requireNonNull(httpHeader.getFirst(DPOP_NONCE_HEADER));
-        var dPopNonce = new SelfContainedNonce(nonce);
+        var dPopNonce = assertDoesNotThrow(() -> new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds()));
         assertThat(SelfContainedNonce.isSelfContainedNonce(nonce)).isTrue();
-        assertThat(SelfContainedNonce.isValid(nonce, applicationProperties.getNonceLifetimeSeconds())).isTrue();
         Assertions.assertThat(nonceService.isUsedNonce(dPopNonce)).isFalse();
     }
 

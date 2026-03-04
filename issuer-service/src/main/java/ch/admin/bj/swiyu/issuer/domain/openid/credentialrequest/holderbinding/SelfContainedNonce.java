@@ -12,26 +12,19 @@ import java.util.UUID;
 public class SelfContainedNonce {
 
     private final String nonce;
+    private final int nonceLifetimeSeconds;
 
-    public SelfContainedNonce() {
-        nonce = UUID.randomUUID() + "::" + Instant.now().toString();
-    }
-
-    public SelfContainedNonce(String nonce) {
-        this.nonce = nonce;
-
-        if (!isSelfContainedNonce(nonce)) {
-            throw new InvalidNonceException("Invalid nonce. Nonce must consist of 2 parts being split by double colon '::'");
-        }
+    public SelfContainedNonce(int nonceLifetimeSeconds) {
+        this.nonceLifetimeSeconds = nonceLifetimeSeconds;
+        this.nonce = UUID.randomUUID() + "::" + Instant.now().toString();
     }
 
     public SelfContainedNonce(String nonce, int nonceLifetimeSeconds) throws ExpiredNonceException, InvalidNonceException {
 
-        this(nonce);
+        this.nonceLifetimeSeconds = nonceLifetimeSeconds;
+        this.nonce = nonce;
 
-        if (!isValid(nonce, nonceLifetimeSeconds)) {
-            throw new ExpiredNonceException("Invalid nonce. Nonce is expired.");
-        }
+        validateNonce();
     }
 
     /**
@@ -40,22 +33,29 @@ public class SelfContainedNonce {
      * @return True if the nonce consists out of 2 parts being split by double colon '::'
      */
     public static boolean isSelfContainedNonce(String nonce) {
-        return nonce.contains("::") && nonce.split("::").length == 2;
+        return nonce != null && nonce.contains("::") && nonce.split("::").length == 2;
+    }
+
+    private static boolean isValid(String nonce, int lifetimeSeconds) {
+        var now = Instant.now();
+        var oldestAcceptableInstant = now.minus(lifetimeSeconds, ChronoUnit.SECONDS);
+
+        var nonceInstant = Instant.parse(nonce.split("::")[1]);
+        return oldestAcceptableInstant.isBefore(nonceInstant) && now.isAfter(nonceInstant);
     }
 
     /**
      * Validates if the nonce has not yet expired
      */
-    public static boolean isValid(String nonce, int lifetimeSeconds) {
-        var now = Instant.now();
-        var oldestAcceptableInstant = now.minus(lifetimeSeconds, ChronoUnit.SECONDS);
+    public void validateNonce() {
 
-        if (!isSelfContainedNonce(nonce)) {
-            throw new IllegalArgumentException("Malformed nonce");
+        if (!isSelfContainedNonce(this.getNonce())) {
+            throw new InvalidNonceException("Invalid nonce. Nonce must consist of 2 parts being split by double colon '::'");
         }
 
-        var nonceInstant = Instant.parse(nonce.split("::")[1]);
-        return oldestAcceptableInstant.isBefore(nonceInstant) && now.isAfter(nonceInstant);
+        if (!isValid(nonce, this.nonceLifetimeSeconds)) {
+            throw new ExpiredNonceException("Invalid nonce. Nonce is expired.");
+        }
     }
 
     public UUID getNonceId() {

@@ -16,7 +16,6 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class ProofJwt extends Proof implements AttestableProof {
@@ -106,14 +105,15 @@ public class ProofJwt extends Proof implements AttestableProof {
     }
 
     @Override
-    public String getNonce() {
+    public SelfContainedNonce getNonce() {
 
         if (signedJWT == null) {
             throw new IllegalStateException("Must first call isValidHolderBinding");
         }
 
         try {
-            return signedJWT.getJWTClaimsSet().getStringClaim("nonce");
+            var nonceString = signedJWT.getJWTClaimsSet().getStringClaim("nonce");
+            return new SelfContainedNonce(nonceString, nonceLifetimeSeconds);
         } catch (ParseException e) {
             throw proofException(
                     "Provided Proof JWT is not parseable; " + e.getMessage(),
@@ -186,20 +186,21 @@ public class ProofJwt extends Proof implements AttestableProof {
 
     private void validateNonce() {
         try {
-            new SelfContainedNonce(getNonce(), nonceLifetimeSeconds);
+            var nonce = getNonce();
+            nonce.validateNonce();
         } catch (InvalidNonceException e) {
             throw proofException("Invalid nonce claim in proof JWT",
-                        Map.of(
-                                "noncePresent", true,
-                                "nonceType", "selfContained"
-                        ));
+                    Map.of(
+                            "noncePresent", true,
+                            "nonceType", "selfContained"
+                    ));
         } catch (ExpiredNonceException e) {
             throw proofException("Nonce is expired",
-                        Map.of(
-                                "noncePresent", true,
-                                "nonceType", "selfContained",
-                                "nonceLifetimeSeconds", nonceLifetimeSeconds
-                        ));
+                    Map.of(
+                            "noncePresent", true,
+                            "nonceType", "selfContained",
+                            "nonceLifetimeSeconds", nonceLifetimeSeconds
+                    ));
         }
     }
 

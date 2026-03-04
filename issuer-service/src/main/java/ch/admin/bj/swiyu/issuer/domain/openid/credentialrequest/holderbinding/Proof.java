@@ -12,7 +12,7 @@ public abstract class Proof {
 
     public abstract boolean isValidHolderBinding(String issuerId, List<String> supportedSigningAlgorithms, Long tokenExpirationTimestamp);
 
-    public abstract String getNonce();
+    public abstract SelfContainedNonce getNonce();
 
     public abstract String getBinding();
 
