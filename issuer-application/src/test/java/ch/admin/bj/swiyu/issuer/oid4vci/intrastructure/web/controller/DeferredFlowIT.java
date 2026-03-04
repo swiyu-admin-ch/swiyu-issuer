@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
@@ -621,7 +621,7 @@ class DeferredFlowIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock,
                 unboundOffer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = objectMapper.writeValueAsString(new CredentialEndpointRequestDto(
+        var credentialRequestString = objectMapper.writeValueAsString(new CreateCredentialRequestDto(
                 "unbound_example_sd_jwt",
                 null,
                 null
@@ -783,7 +783,7 @@ class DeferredFlowIT {
     }
 
     private String getCredentialRequestString(String proof) throws Exception {
-        var request = new CredentialEndpointRequestDto(
+        var request = new CreateCredentialRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),
                 null

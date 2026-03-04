@@ -8,7 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
@@ -330,7 +330,7 @@ class IssuanceControllerIT {
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce, "wrong type", true);
-        String credentialRequestString = objectMapper.writeValueAsString(new CredentialEndpointRequestDto(
+        String credentialRequestString = objectMapper.writeValueAsString(new CreateCredentialRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),
                 null
@@ -375,7 +375,7 @@ class IssuanceControllerIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
 
-        String credentialRequestString = objectMapper.writeValueAsString(new CredentialEndpointRequestDto(
+        String credentialRequestString = objectMapper.writeValueAsString(new CreateCredentialRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of()),
                 null
@@ -391,7 +391,7 @@ class IssuanceControllerIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
 
-        String credentialRequestString = objectMapper.writeValueAsString(new CredentialEndpointRequestDto(
+        String credentialRequestString = objectMapper.writeValueAsString(new CreateCredentialRequestDto(
                 "university_example_sd_jwt",
                 null,
                 null
@@ -406,20 +406,6 @@ class IssuanceControllerIT {
     void testUnboundCredentialFlow_thenSuccess() throws Exception {
         var vc = getUnboundVc();
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUnboundCredentialSubjectData());
-    }
-
-    @Test
-    void testDeprecatedTokenEndpoint_thenSuccess() throws Exception {
-        mock.perform(post("/oid4vci/api/token")
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
-                        .param("pre-authorized_code", validPreAuthCode.toString()))
-                .andExpect(status().isOk())
-                // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
-                // specified at https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
-                .andExpect(jsonPath("$.access_token").isNotEmpty()) // REQUIRED
-                .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
-                .andExpect(jsonPath("$.token_type").value("BEARER"));
     }
 
     @Test
@@ -442,6 +428,7 @@ class IssuanceControllerIT {
         var grantType = "urn:ietf:params:oauth:grant-type:pre-authorized_code";
 
         mock.perform(post("/oid4vci/api/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
@@ -449,6 +436,7 @@ class IssuanceControllerIT {
 
         // check that correct preauthcode is used
         mock.perform(post("/oid4vci/api/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
@@ -473,6 +461,7 @@ class IssuanceControllerIT {
     void testInvalidGrantType_thenBadRequest() throws Exception {
         // With Valid preauth code
         mock.perform(post("/oid4vci/api/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "deadbeef-dead-dead-dead-deaddeafbeef"))
                 .andExpect(status().isBadRequest())
@@ -480,6 +469,7 @@ class IssuanceControllerIT {
 
         // With Invalid preauth code
         mock.perform(post("/oid4vci/api/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
@@ -533,7 +523,7 @@ class IssuanceControllerIT {
     }
 
     private String getCredentialRequestString(String proof) throws Exception {
-        var request = new CredentialEndpointRequestDto(
+        var request = new CreateCredentialRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),
                 null

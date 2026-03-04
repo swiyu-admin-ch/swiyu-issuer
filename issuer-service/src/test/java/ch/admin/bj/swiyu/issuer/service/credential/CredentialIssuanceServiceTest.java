@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +51,7 @@ class CredentialIssuanceServiceTest {
 
     @Test
     void createCredential_withOffer_inProgressDelegatesToEnvelopeService() {
-        var request = new CredentialEndpointRequestDto("config-id", null, null);
+        var request = new CreateCredentialRequestDto("config-id", null, null);
         var offer = createOffer(CredentialOfferStatusType.IN_PROGRESS);
         var mgmt = createManagementWithOffers(offer);
         var envelope = new CredentialEnvelopeDto(null, null, null);
@@ -70,7 +70,7 @@ class CredentialIssuanceServiceTest {
 
     @Test
     void createCredential_withoutOffer_invokesRenewalFlow() {
-        var request = new CredentialEndpointRequestDto("config-id", null, null);
+        var request = new CreateCredentialRequestDto("config-id", null, null);
         var mgmt = createManagementWithOffers(
                 createOffer(CredentialOfferStatusType.ISSUED));
         var envelope = new CredentialEnvelopeDto(null, null, null);

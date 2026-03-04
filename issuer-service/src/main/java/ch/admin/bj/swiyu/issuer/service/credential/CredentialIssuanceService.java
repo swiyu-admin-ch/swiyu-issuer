@@ -3,7 +3,7 @@ package ch.admin.bj.swiyu.issuer.service.credential;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,7 +35,7 @@ public class CredentialIssuanceService {
      * @param dpopKey              the DPoP key for proof of possession
      * @return the issued credential envelope
      */
-    public CredentialEnvelopeDto createCredential(CredentialEndpointRequestDto credentialRequestDto,
+    public CredentialEnvelopeDto createCredential(CreateCredentialRequestDto credentialRequestDto,
                                                   String accessToken,
                                                   ClientAgentInfo clientInfo,
                                                   String dpopKey) {

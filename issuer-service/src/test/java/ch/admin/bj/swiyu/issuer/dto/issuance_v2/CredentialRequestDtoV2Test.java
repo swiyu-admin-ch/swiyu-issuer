@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.dto.issuance_v2;
 
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -19,7 +19,7 @@ class CredentialRequestDtoV2Test {
     void shouldCreateDtoWithAllFields() {
         ProofsDto proofs = new ProofsDto(List.of("jwt"));
 
-        CredentialEndpointRequestDto dto = new CredentialEndpointRequestDto("config-id", proofs, null);
+        CreateCredentialRequestDto dto = new CreateCredentialRequestDto("config-id", proofs, null);
 
         assertEquals("config-id", dto.credentialConfigurationId());
         assertSame(proofs, dto.proofs());
@@ -30,7 +30,7 @@ class CredentialRequestDtoV2Test {
     void shouldFailValidationIfCredentialConfigurationIdBlank() {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();
-            var credentialRequestDtoV2 = new CredentialEndpointRequestDto(" ", null, null);
+            var credentialRequestDtoV2 = new CreateCredentialRequestDto(" ", null, null);
             var violations = validator.validate(credentialRequestDtoV2);
 
             assertThat(violations).isNotEmpty();

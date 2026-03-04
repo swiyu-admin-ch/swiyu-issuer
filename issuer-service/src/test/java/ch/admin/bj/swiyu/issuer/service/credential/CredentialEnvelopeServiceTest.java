@@ -80,7 +80,6 @@ class CredentialEnvelopeServiceTest {
         offer.setCredentialManagement(mgmt);
 
         var request = new CredentialRequestClass();
-        request.setFormat("dc+sd-jwt");
 
         var credentialConfiguration = new CredentialConfiguration();
         credentialConfiguration.setFormat("dc+sd-jwt");

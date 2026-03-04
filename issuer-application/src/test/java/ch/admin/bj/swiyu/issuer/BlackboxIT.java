@@ -12,7 +12,7 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
@@ -348,7 +348,7 @@ class BlackboxIT {
                 .map(SignedJWT::serialize)
                 .toList();
 
-        var credentialRequestDto = new CredentialEndpointRequestDto(
+        var credentialRequestDto = new CreateCredentialRequestDto(
                 offeredCredentialIds.getFirst(),
                 new ProofsDto(holderBindingJwts),
                 new CredentialResponseEncryptionDto(

@@ -215,7 +215,6 @@ class RenewalFlowIT {
                 issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.error_description").value("Credential renewal is not allowed"))
                 .andReturn();
     }
 

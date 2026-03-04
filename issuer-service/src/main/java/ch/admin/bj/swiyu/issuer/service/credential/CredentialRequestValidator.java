@@ -32,7 +32,6 @@ public class CredentialRequestValidator {
                                           CredentialRequestClass credentialRequest,
                                           CredentialConfiguration credentialConfiguration) {
         validateOfferState(credentialOffer);
-        validateFormat(credentialRequest, credentialConfiguration);
         validateConfigurationId(credentialOffer, credentialRequest);
     }
 
@@ -48,17 +47,6 @@ public class CredentialRequestValidator {
         }
     }
 
-    private void validateFormat(CredentialRequestClass credentialRequest,
-                                CredentialConfiguration credentialConfiguration) {
-        if (!credentialConfiguration.getFormat().equals(credentialRequest.getFormat())) {
-            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_FORMAT,
-                    "Mismatch between requested and offered format.",
-                    Map.of(
-                            "requestedFormat", credentialRequest.getFormat(),
-                            "offeredFormat", credentialConfiguration.getFormat()
-                    ));
-        }
-    }
 
     private void validateConfigurationId(CredentialOffer credentialOffer,
                                          CredentialRequestClass credentialRequest) {

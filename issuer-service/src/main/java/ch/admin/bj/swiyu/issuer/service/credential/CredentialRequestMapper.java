@@ -4,7 +4,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
@@ -14,9 +14,8 @@ import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SD_JWT_FORMAT;
 @UtilityClass
 public class CredentialRequestMapper {
 
-    public static CredentialRequestClass toCredentialRequest(CredentialEndpointRequestDto dto) {
+    public static CredentialRequestClass toCredentialRequest(CreateCredentialRequestDto dto) {
         return new CredentialRequestClass(
-                SD_JWT_FORMAT,
                 dto.proofs() == null ? null : Map.of(ProofType.JWT.toString(), dto.proofs().jwt()),
                 toCredentialResponseEncryption(dto.credentialResponseEncryption()),
                 dto.credentialConfigurationId()

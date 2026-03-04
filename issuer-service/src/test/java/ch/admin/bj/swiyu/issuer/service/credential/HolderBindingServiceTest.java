@@ -86,7 +86,6 @@ class HolderBindingServiceTest {
         List<String> proofs = List.of("Proof1", "Proof2");
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(
-                SD_JWT_FORMAT,
                 Map.of(ProofType.JWT.toString(), proofs),
                 null,
                 supportedCredentialId);
@@ -104,7 +103,6 @@ class HolderBindingServiceTest {
         when(config.getProofTypesSupported()).thenReturn(proofTypesSupported);
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(
-                SD_JWT_FORMAT,
                 Map.of(ProofType.JWT.toString(), List.of()),
                 null,
                 supportedCredentialId);
@@ -124,7 +122,6 @@ class HolderBindingServiceTest {
         List<String> proofs = List.of("Proof1", "Proof2");
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(
-                SD_JWT_FORMAT,
                 Map.of(ProofType.JWT.toString(), proofs),
                 null,
                 supportedCredentialId);
@@ -150,7 +147,6 @@ class HolderBindingServiceTest {
 
 
         CredentialRequestClass credentialRequestSpy = spy(new CredentialRequestClass(
-                SD_JWT_FORMAT,
                 Map.of(ProofType.JWT.toString(), proofs),
                 null,
                 supportedCredentialId));
@@ -166,13 +162,10 @@ class HolderBindingServiceTest {
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
 
+        List<String> proofs = List.of("Proof1", "Proof2");
+
         var credentialRequest = new CredentialRequestClass(
-                SD_JWT_FORMAT,
-                Map.of(
-                        // CAUTION Triggers the deprecated "OpenID for Verifiable Credential Issuance - draft 15" flow
-                        //         (https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html#section-8.2)
-                        "proof_type", ProofType.JWT.toString()
-                ),
+                Map.of("bad_proof_type", proofs),
                 null,
                 supportedCredentialId);
 
@@ -186,14 +179,10 @@ class HolderBindingServiceTest {
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
 
+        List<String> proofs = List.of("shit_proof");
+
         var credentialRequest = new CredentialRequestClass(
-                SD_JWT_FORMAT,
-                Map.of(
-                        // CAUTION Triggers the deprecated "OpenID for Verifiable Credential Issuance - draft 15" flow
-                        //         (https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html#section-8.2)
-                        "proof_type", ProofType.JWT.toString(),
-                        ProofType.JWT.toString(), ProofType.JWT.toString()
-                ),
+                Map.of(ProofType.JWT.toString(), proofs),
                 null,
                 supportedCredentialId);
 
@@ -211,7 +200,6 @@ class HolderBindingServiceTest {
         List<String> proofs = List.of("Proof1", "Proof2");
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(
-                SD_JWT_FORMAT,
                 Map.of(ProofType.JWT.toString(), proofs),
                 null,
                 supportedCredentialId);
@@ -240,7 +228,6 @@ class HolderBindingServiceTest {
                 ProofType.JWT.getClaimTyp(), false))).toList();
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(
-                SD_JWT_FORMAT,
                 Map.of(ProofType.JWT.toString(), proofs),
                 null,
                 supportedCredentialId);
