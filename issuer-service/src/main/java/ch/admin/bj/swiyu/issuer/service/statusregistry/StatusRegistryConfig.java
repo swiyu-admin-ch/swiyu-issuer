@@ -19,6 +19,7 @@ import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -72,6 +73,7 @@ public class StatusRegistryConfig {
         };
     }
 
+    // TODO here?
     @Bean
     public ApiClient statusRegistryApiClient(StatusRegistryTokenService statusRegistryTokenService) {
 
@@ -82,7 +84,8 @@ public class StatusRegistryConfig {
                                 .flatMap(response -> {
                                     if (response.statusCode() == HttpStatusCode.valueOf(401)) {
                                         log.debug("Token expired - retrying after refresh");
-                                        return Mono.justOrEmpty(statusRegistryTokenService.forceRefreshAccessToken())
+                                        return Mono.fromCallable(statusRegistryTokenService::forceRefreshAccessToken)
+                                                .subscribeOn(Schedulers.boundedElastic())
                                                 .flatMap(newToken -> next.exchange(withBearer(request, newToken)));
                                     }
                                     return Mono.just(response);
