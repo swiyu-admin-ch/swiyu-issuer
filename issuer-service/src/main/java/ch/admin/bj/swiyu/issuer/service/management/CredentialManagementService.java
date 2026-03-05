@@ -4,6 +4,8 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig.CredentialManagementEvent;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
@@ -12,13 +14,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
-import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig.CredentialManagementEvent;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
@@ -68,6 +63,61 @@ public class CredentialManagementService {
     private final StatusListOrchestrator statusListOrchestrator;
 
     /**
+     * Validates that only READY event is allowed in INIT state of credential
+     * management.
+     *
+     * @param offerEvent
+     * @param mgmt
+     */
+    private static void validateReadyOnlyInInit(CredentialStateMachineConfig.CredentialOfferEvent offerEvent,
+                                                CredentialManagement mgmt) {
+        if (offerEvent == CredentialStateMachineConfig.CredentialOfferEvent.READY
+                && mgmt.getCredentialManagementStatus() != CredentialStatusManagementType.INIT) {
+            throw new IllegalStateException(
+                    "Only READY status is allowed in INIT state of credential management. Just " +
+                            "in deferred offer scenario. In this case, the management status should still be in INIT.");
+        }
+    }
+
+    /**
+     * Validates that the issuance process is not skipped during a credential
+     * management status transition.
+     * <p>
+     * Throws an {@link IllegalStateException} if an ISSUE event is requested while
+     * the management object is not yet in
+     * the ISSUED state. This ensures that the credential issuance process cannot be
+     * bypassed and enforces correct state transitions.
+     *
+     * @param managementEvent the management event to process (must not be null)
+     * @param mgmt            the credential management object to check (must not be
+     *                        null)
+     * @throws IllegalStateException if an ISSUE event is attempted before the
+     *                               management object is in ISSUED state
+     */
+    private static void validateIssuanceNotSkipped(CredentialManagementEvent managementEvent,
+                                                   CredentialManagement mgmt) {
+        if (managementEvent == CredentialManagementEvent.ISSUE && !mgmt.getCredentialManagementStatus().isIssued()) {
+            throw new IllegalStateException("Issuance process may not be skipped");
+        }
+    }
+
+    private static void validateSubjectDataSet(CredentialManagement mgmt,
+                                               UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
+        if (requestedNewStatus.equals(UpdateCredentialStatusRequestTypeDto.READY)) {
+
+            var offer = mgmt.getCredentialOffers().stream()
+                    .filter(o -> o.getCredentialStatus() == CredentialOfferStatusType.DEFERRED || o.getCredentialStatus() == CredentialOfferStatusType.READY)
+                    .findFirst()
+                    .orElseThrow(() -> new BadRequestException(
+                            "At least one offer must be set to deferred to set the credential management to ready"));
+
+            if (offer.getOfferData().isEmpty()) {
+                throw new IllegalStateException("Offer cannot be set to ready without offer data");
+            }
+        }
+    }
+
+    /**
      * Retrieve public information about a credential offer.
      *
      * <p>
@@ -80,7 +130,7 @@ public class CredentialManagementService {
      *
      * @param managementId the id of the management object
      * @return a {@link CredentialInfoResponseDto} containing credential offer
-     *         information and a deeplink
+     * information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
@@ -112,7 +162,7 @@ public class CredentialManagementService {
      * @param managementId the id of the management object
      * @param offerId      the id of the offer object
      * @return a {@link CredentialInfoResponseDto} containing credential offer
-     *         information and a deeplink
+     * information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
@@ -166,7 +216,7 @@ public class CredentialManagementService {
      * @param credentialManagementId the id of the credential offer to update
      * @param requestedNewStatus     the requested new status DTO
      * @return an {@link UpdateStatusResponseDto} describing the updated credential
-     *         status
+     * status
      * @throws ResourceNotFoundException if no credential offer with the given id
      *                                   exists
      * @throws BadRequestException       if the requested transition is invalid or
@@ -184,49 +234,13 @@ public class CredentialManagementService {
 
         validateIssuanceNotSkipped(managementEvent, mgmt);
 
+        validateSubjectDataSet(mgmt, requestedNewStatus);
+
         validateReadyOnlyInInit(offerEvent, mgmt);
+
 
         return stateService.handleStatusChange(
                 mgmt, managementEvent, offerEvent);
-    }
-
-    /**
-     * Validates that only READY event is allowed in INIT state of credential
-     * management.
-     * 
-     * @param offerEvent
-     * @param mgmt
-     */
-    private static void validateReadyOnlyInInit(CredentialStateMachineConfig.CredentialOfferEvent offerEvent,
-            CredentialManagement mgmt) {
-        if (offerEvent == CredentialStateMachineConfig.CredentialOfferEvent.READY
-                && mgmt.getCredentialManagementStatus() != CredentialStatusManagementType.INIT) {
-            throw new IllegalStateException(
-                    "Only READY status is allowed in INIT state of credential management. Just " +
-                            "in deferred offer scenario. In this case, the management status should still be in INIT.");
-        }
-    }
-
-    /**
-     * Validates that the issuance process is not skipped during a credential
-     * management status transition.
-     * <p>
-     * Throws an {@link IllegalStateException} if an ISSUE event is requested while
-     * the management object is not yet in
-     * the ISSUED state. This ensures that the credential issuance process cannot be
-     * bypassed and enforces correct state transitions.
-     *
-     * @param managementEvent the management event to process (must not be null)
-     * @param mgmt            the credential management object to check (must not be
-     *                        null)
-     * @throws IllegalStateException if an ISSUE event is attempted before the
-     *                               management object is in ISSUED state
-     */
-    private static void validateIssuanceNotSkipped(CredentialManagementEvent managementEvent,
-            CredentialManagement mgmt) {
-        if (managementEvent == CredentialManagementEvent.ISSUE && !mgmt.getCredentialManagementStatus().isIssued()) {
-            throw new IllegalStateException("Issuance process may not be skipped");
-        }
     }
 
     /**
@@ -242,7 +256,7 @@ public class CredentialManagementService {
      *
      * @param credentialManagementId the id of the credential offer
      * @return the {@link StatusResponseDto} representing the credential's current
-     *         status
+     * status
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
@@ -276,7 +290,7 @@ public class CredentialManagementService {
      * @param credentialManagementId the id of the credential offer
      * @param offerId                the id of the offer
      * @return the {@link StatusResponseDto} representing the credential's current
-     *         status
+     * status
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
@@ -300,7 +314,7 @@ public class CredentialManagementService {
      *
      * @param request the create credential offer request
      * @return a {@link CredentialWithDeeplinkResponseDto} containing the created
-     *         credential offer and its deeplink
+     * credential offer and its deeplink
      * @throws BadRequestException   if the request is invalid or referenced
      *                               resources cannot be resolved
      * @throws IllegalStateException if the credential configuration format is
@@ -310,7 +324,8 @@ public class CredentialManagementService {
     public CredentialWithDeeplinkResponseDto createCredentialOfferAndGetDeeplink(
             @Valid CreateCredentialOfferRequestDto request) {
 
-        var offerData = readOfferData(request.getCredentialSubjectData());
+        var isDeferred = request.getCredentialMetadata() != null && Boolean.TRUE.equals(request.getCredentialMetadata().deferred());
+        var offerData = readOfferData(request.getCredentialSubjectData(), isDeferred);
         validationService.validateCredentialOfferCreateRequest(request, offerData);
 
         var credentialMgmt = createCredentialOffer(request, offerData);
@@ -369,10 +384,10 @@ public class CredentialManagementService {
      *                               unsupported
      */
     public CredentialOffer updateOfferFromRenewalResponse(@Valid RenewalResponseDto request,
-            CredentialOffer existingOffer) {
+                                                          CredentialOffer existingOffer) {
 
         CreateCredentialOfferRequestDto newOffer = CredentialOfferMapper.toOfferFromRenewal(request);
-        var offerData = readOfferData(newOffer.getCredentialSubjectData());
+        var offerData = readOfferData(newOffer.getCredentialSubjectData(), false);
 
         validationService.validateCredentialOfferCreateRequest(newOffer, offerData);
 
@@ -413,7 +428,7 @@ public class CredentialManagementService {
      * @param offerDataMap           the credential subject data to apply to the
      *                               deferred offer
      * @return an {@link UpdateStatusResponseDto} describing the updated credential
-     *         status
+     * status
      * @throws ResourceNotFoundException if no credential offer with the given id
      *                                   exists
      * @throws BadRequestException       if the credential is not deferred or has an
@@ -421,7 +436,7 @@ public class CredentialManagementService {
      */
     @Transactional
     public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialManagementId,
-            Map<String, Object> offerDataMap) {
+                                                              Map<String, Object> offerDataMap) {
         var mgmt = getCredentialManagementWithExpirationCheck(credentialManagementId);
         var storedCredentialOffer = mgmt.getCredentialOffers().stream()
                 .filter(CredentialOffer::isDeferredOffer)
@@ -436,7 +451,7 @@ public class CredentialManagementService {
         }
 
         // check if offerData matches the expected metadata claims
-        var offerData = readOfferData(offerDataMap);
+        var offerData = readOfferData(offerDataMap, false);
         var credentialOfferMetadata = storedCredentialOffer.getMetadataCredentialSupportedId().getFirst();
         var credentialConfig = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
 
@@ -456,7 +471,7 @@ public class CredentialManagementService {
      *
      * @param tenantId the tenant id associated with the credential offer
      * @return the {@link ConfigurationOverride} of the found credential offer, or
-     *         {@code null} if no override is set
+     * {@code null} if no override is set
      * @throws ResourceNotFoundException if no credential offer exists for the
      *                                   provided tenant id
      */
