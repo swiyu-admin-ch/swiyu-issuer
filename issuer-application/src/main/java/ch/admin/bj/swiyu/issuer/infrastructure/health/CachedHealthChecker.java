@@ -32,7 +32,7 @@ public abstract class CachedHealthChecker {
      */
     @Scheduled(fixedRate = 60000, initialDelay = 5000)
     public void scheduledCheck() {
-        log.info("Running health check: {}", this.getClass().getSimpleName());
+        log.debug("Running health check: {}", this.getClass().getSimpleName());
         Health.Builder builder = Health.up().withDetail("lastExecution", LocalDateTime.now());
         try {
             performCheck(builder);
@@ -42,7 +42,7 @@ public abstract class CachedHealthChecker {
         }
         var built = builder.build();
         healthResultRef.set(built);
-        log.info("Health status for {}: {}", this.getClass().getSimpleName(), built.getStatus());
+        log.debug("Health status for {}: {}", this.getClass().getSimpleName(), built.getStatus());
     }
 
     /**

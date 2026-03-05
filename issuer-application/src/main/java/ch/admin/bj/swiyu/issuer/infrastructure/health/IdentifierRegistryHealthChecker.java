@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 import ch.admin.bj.swiyu.didresolveradapter.DidResolverAdapter;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
 import ch.admin.eid.did_sidekicks.DidDoc;
 import ch.admin.eid.didresolver.Did;
@@ -22,9 +23,8 @@ import java.util.List;
 public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
 
     private final DidResolverAdapter didResolverAdapter;
-
-
     private final ApplicationProperties applicationProperties;
+    private final UrlRewriteProperties urlRewriteProperties;
 
 
     /**
@@ -75,7 +75,7 @@ public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
         }
         try (Did resolved = new Did(did)) {
             final String url = resolved.getUrl();
-            DidDoc didDoc = didResolverAdapter.resolveDid(url, null);
+            DidDoc didDoc = didResolverAdapter.resolveDid(url, urlRewriteProperties.getUrlMappings());
 
             return didDoc != null;
         } catch (Exception e) {
