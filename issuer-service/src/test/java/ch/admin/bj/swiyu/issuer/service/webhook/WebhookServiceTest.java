@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType
 import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -19,6 +20,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 /**
@@ -74,7 +77,15 @@ class WebhookServiceTest {
     void produceErrorEvent_savesEvent() {
         UUID id = UUID.randomUUID();
         webhookEventProducer.produceErrorEvent(id, CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, "error", CallbackEventTrigger.CREDENTIAL_OFFER);
-        verify(callbackEventRepository).save(any(CallbackEvent.class));
+
+        ArgumentCaptor<CallbackEvent> captor = ArgumentCaptor.forClass(CallbackEvent.class);
+        verify(callbackEventRepository).save(captor.capture());
+        CallbackEvent saved = captor.getValue();
+        assertNotNull(saved);
+        assertEquals(id, saved.getSubjectId());
+        assertEquals(CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED.name(), saved.getEvent());
+        assertEquals(CallbackEventTrigger.CREDENTIAL_OFFER, saved.getEventTrigger());
+        assertEquals("error", saved.getEventDescription());
     }
 
     /**
