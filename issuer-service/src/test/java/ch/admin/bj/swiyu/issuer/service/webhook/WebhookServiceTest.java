@@ -1,11 +1,12 @@
 package ch.admin.bj.swiyu.issuer.service.webhook;
 
-import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.WebhookProperties;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
+import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventTrigger;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -72,7 +73,7 @@ class WebhookServiceTest {
     @Test
     void produceErrorEvent_savesEvent() {
         UUID id = UUID.randomUUID();
-        webhookEventProducer.produceErrorEvent(id, CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, "error");
+        webhookEventProducer.produceErrorEvent(id, CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED, "error", CallbackEventTrigger.CREDENTIAL_OFFER);
         verify(callbackEventRepository).save(any(CallbackEvent.class));
     }
 
