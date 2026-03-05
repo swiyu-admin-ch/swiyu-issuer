@@ -73,7 +73,6 @@ public class StatusRegistryConfig {
         };
     }
 
-    // TODO here?
     @Bean
     public ApiClient statusRegistryApiClient(StatusRegistryTokenService statusRegistryTokenService) {
 
