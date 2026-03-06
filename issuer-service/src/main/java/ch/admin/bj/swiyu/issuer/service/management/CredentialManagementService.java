@@ -101,16 +101,32 @@ public class CredentialManagementService {
         }
     }
 
+    /**
+     * Validate that when the requested new management status is READY:
+     * - There is at least one credential offer in the associated management object
+     * that is either DEFERRED or already READY.
+     * - The selected offer contains non-empty offer data (credential subject data).
+     * This prevents transitioning the management object to READY when no deferred
+     * offer exists or when the deferred offer has not been populated with required
+     * subject data.
+     *
+     * @param mgmt               the credential management containing offers to validate
+     * @param requestedNewStatus the requested management status transition
+     * @throws BadRequestException   if no DEFERRED or READY offer exists
+     * @throws IllegalStateException if the found offer has empty offer data
+     */
     private static void validateSubjectDataSet(CredentialManagement mgmt,
                                                UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
         if (requestedNewStatus.equals(UpdateCredentialStatusRequestTypeDto.READY)) {
 
+            // Find at least one offer that is appropriate for readiness (deferred or already ready)
             var offer = mgmt.getCredentialOffers().stream()
                     .filter(o -> o.getCredentialStatus() == CredentialOfferStatusType.DEFERRED || o.getCredentialStatus() == CredentialOfferStatusType.READY)
                     .findFirst()
                     .orElseThrow(() -> new BadRequestException(
                             "At least one offer must be set to deferred to set the credential management to ready"));
 
+            // Ensure the offer actually contains subject data before allowing READY transition
             if (offer.getOfferData().isEmpty()) {
                 throw new IllegalStateException("Offer cannot be set to ready without offer data");
             }
