@@ -50,4 +50,13 @@ public class OAuthTokenDto implements SpringDocOAuth2Token, Serializable {
     public String getScope() {
         return null;
     }
+
+    // Explicit getter annotated with the JSON property name so OpenAPI generation
+    // uses the correct snake_case property and doesn't add an additional camelCase entry.
+    @Deprecated(since = "OID4VCI 1.0")
+    @JsonProperty("c_nonce")
+    @Schema(name = "c_nonce", deprecated = true)
+    public String getCNonce() {
+        return this.cNonce;
+    }
 }
