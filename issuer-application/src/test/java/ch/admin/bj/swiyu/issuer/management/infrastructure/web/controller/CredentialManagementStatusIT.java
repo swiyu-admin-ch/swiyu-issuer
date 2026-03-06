@@ -363,14 +363,14 @@ class CredentialManagementStatusIT {
                                 CredentialWithDeeplinkResponseDto.class);
 
                 List<ECKey> holderPrivateKeys = IssuanceTestUtils
-                                .createHolderPrivateKeysV2(issuerMetadata.getIssuanceBatchSize());
+                                .createHolderPrivateKeys(issuerMetadata.getIssuanceBatchSize());
 
                 var token = IssuanceTestUtils.getAccessTokenFromDeeplink(mvc,
                                 credentialWithDeeplinkResponseDto.getOfferDeeplink());
-                var credentialRequestString = IssuanceTestUtils.getCredentialRequestStringV2(mvc, holderPrivateKeys,
+                var credentialRequestString = IssuanceTestUtils.getCredentialRequestString(mvc, holderPrivateKeys,
                                 applicationProperties);
 
-                IssuanceTestUtils.requestCredentialV2(mvc, token, credentialRequestString)
+                IssuanceTestUtils.requestCredential(mvc, token, credentialRequestString)
                                 .andExpect(status().isOk())
                                 .andReturn()
                                 .getResponse()

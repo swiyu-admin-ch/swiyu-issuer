@@ -147,7 +147,7 @@ class CredentialOfferStatusMultiThreadedIT {
 
                 var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                         .boxed()
-                        .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        .map(privindex -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                         .toList();
                 String payload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"status_lists\": [\"%s\"]}"
                         .formatted(statusRegistryUrl);
@@ -165,10 +165,10 @@ class CredentialOfferStatusMultiThreadedIT {
 
                 var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mvc, preAuthCode);
                 var token = tokenResponse.get("access_token");
-                var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+                var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
 
                 // set to issued
-                requestCredentialV2(mvc, (String) token, credentialRequestString)
+                requestCredential(mvc, (String) token, credentialRequestString)
                         .andExpect(status().isOk())
                         .andExpect(content().contentType("application/json"))
                         .andReturn();

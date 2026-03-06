@@ -176,7 +176,7 @@ class CredentialOfferStatusIT {
     private JsonObject createCredential() throws Exception {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                .map(privindex -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
         String payload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"status_lists\": [\"%s\"]}"
@@ -191,10 +191,10 @@ class CredentialOfferStatusIT {
 
         var token = IssuanceTestUtils.getAccessTokenFromDeeplink(mvc, managementJsonObject.get("offer_deeplink").getAsString());
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
 
         // set to issued
-        requestCredentialV2(mvc, token, credentialRequestString)
+        requestCredential(mvc, token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();

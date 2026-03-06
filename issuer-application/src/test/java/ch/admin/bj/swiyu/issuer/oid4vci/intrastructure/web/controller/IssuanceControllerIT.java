@@ -49,7 +49,6 @@ import java.util.*;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_REQUEST;
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.requestCredentialV2;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.hamcrest.Matchers.containsString;
@@ -221,7 +220,7 @@ class IssuanceControllerIT {
                 true);
         String credentialRequestString = getCredentialRequestString(proof);
         // First time OK
-        requestCredentialV2(mock, (String) token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk());
 
         // Nonce now used
@@ -239,7 +238,7 @@ class IssuanceControllerIT {
                 true);
         credentialRequestString = getCredentialRequestString(proof);
         // Should BadRequest with some error hinting that proof was reused
-        requestCredentialV2(mock, (String) token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("nonce")))
                 .andExpect(content().string(containsString("reused")))
@@ -263,7 +262,7 @@ class IssuanceControllerIT {
                 true);
         var credentialRequestString = getCredentialRequestString(proof);
 
-        requestCredentialV2(mock, (String) token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("Nonce is expired")))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
@@ -313,7 +312,7 @@ class IssuanceControllerIT {
                 ProofType.JWT.getClaimTyp(), true);
         String credentialRequestString = getCredentialRequestString(proof);
 
-        requestCredentialV2(mock, (String) token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value(INVALID_PROOF.name()))
                 .andExpect(jsonPath("$.error_description")
@@ -397,7 +396,7 @@ class IssuanceControllerIT {
                 null
         ));
 
-        requestCredentialV2(mock, (String) token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value(INVALID_PROOF.name()));
     }
@@ -500,7 +499,7 @@ class IssuanceControllerIT {
 
         String credentialRequestString = getCredentialRequestString(proof);
         return extractVcFromV2CredentialResponse(
-                requestCredentialV2(mock, (String) token, credentialRequestString)
+                IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                         .andExpect(status().isOk())
                         .andReturn()
         );
@@ -516,7 +515,7 @@ class IssuanceControllerIT {
         );
 
         return extractVcFromV2CredentialResponse(
-                requestCredentialV2(mock, (String) token, credentialRequestString)
+                IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                         .andExpect(status().isOk())
                         .andReturn()
         );

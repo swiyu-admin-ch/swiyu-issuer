@@ -670,7 +670,7 @@ class CredentialServiceOrchestratorTest {
                 .build();
     }
 
-    private @NotNull CreateCredentialRequestDto getCredentialRequestDtoV2(String credentialConfigurationId, ProofsDto proofs) {
+    private @NotNull CreateCredentialRequestDto getCredentialRequestDto(String credentialConfigurationId, ProofsDto proofs) {
         return new CreateCredentialRequestDto(
                 credentialConfigurationId,
                 proofs,

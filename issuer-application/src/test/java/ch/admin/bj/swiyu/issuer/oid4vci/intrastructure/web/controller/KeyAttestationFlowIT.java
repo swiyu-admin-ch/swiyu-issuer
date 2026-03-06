@@ -13,7 +13,6 @@ import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
-import com.google.gson.JsonParser;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -41,13 +40,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.requestCredentialV2;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -96,7 +95,7 @@ class KeyAttestationFlowIT {
     void testAnyKeyAttestationFlow(AttackPotentialResistance resistance) throws Exception {
         var fetchData = prepareAttested(mock, testOfferAnyAttestationId, resistance);
         mockDidResolve(jwk.toPublicJWK());
-        var result = requestCredentialV2(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+        var result = IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andReturn().getResponse().getContentAsString();
         assertNotNull(result);
     }
@@ -105,7 +104,7 @@ class KeyAttestationFlowIT {
     void testSuperfluousAttestation() throws Exception {
         var fetchData = prepareAttested(mock, testOfferNoAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(jwk.toPublicJWK());
-        var result = requestCredentialV2(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+        var result = IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertNotNull(result);
@@ -116,7 +115,7 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH);
         mockDidResolve(jwk.toPublicJWK());
 
-        var result = requestCredentialV2(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+        var result = IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andReturn().getResponse().getContentAsString();
         assertNotNull(result);
 
@@ -133,15 +132,9 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, resistance);
         mockDidResolve(jwk.toPublicJWK());
 
-        var mvcResult = requestCredentialV2(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+        IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andExpect(status().is4xxClientError())
-                .andReturn();
-
-        var response = JsonParser.parseString(mvcResult.getResponse().getContentAsString()).getAsJsonObject();
-
-        // Defensive assertions (liefert bessere Fehlermeldungen als NPE)
-        Assertions.assertThat(response.has("error")).as("response=%s".formatted(response)).isTrue();
-        Assertions.assertThat(response.get("error").getAsString()).isEqualTo(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name());
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
     }
 
     @Test
@@ -150,11 +143,9 @@ class KeyAttestationFlowIT {
         var nonce = requestNonceDPopHeader(mock);
         var fetchData = prepareAttestedVC(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH, untrustedIssuer, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, "university_example_sd_jwt");
         mockDidResolve(jwk.toPublicJWK());
-        var response = JsonParser.parseString(requestCredentialV2(mock, (String) fetchData.token(), fetchData.credentialRequestString())
-                .andExpect(status().is4xxClientError())
-                .andReturn().getResponse().getContentAsString()).getAsJsonObject();
-        // Proof should be invalid when untrusted
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name());
+        IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+            .andExpect(status().is4xxClientError())
+            .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
     }
 
     @Test

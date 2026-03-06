@@ -163,7 +163,7 @@ class RenewalFlowIT {
         var credentials = new LinkedList<JWTClaimsSet>();
         for (var i = 0; i < RENEWAL_FLOWS; i++) {
             var credentialRequestString = createCredentialRequestStringWithNewKeys();
-            var credentialResponseString = requestCredentialV2WithDpop(mockMvc,
+            var credentialResponseString = requestCredentialWithDpop(mockMvc,
                     tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata,
                     dpopKey)
                     .andExpect(status().isOk())
@@ -205,13 +205,13 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties);
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
+        requestCredentialWithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
                 issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
@@ -232,13 +232,13 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties);
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
+        requestCredentialWithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
                 issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
@@ -252,7 +252,7 @@ class RenewalFlowIT {
     void testRenewalInvalidAccessToken_thenException() throws Exception {
         var credentialRequestString = createCredentialRequestStringWithNewKeys();
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, UUID.randomUUID().toString(), credentialRequestString,
+        requestCredentialWithDpop(mockMvc, UUID.randomUUID().toString(), credentialRequestString,
                 issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
@@ -311,7 +311,7 @@ class RenewalFlowIT {
         var credentialRequestString = createCredentialRequestStringWithNewKeys();
 
         // set to issued
-        assertDoesNotThrow(() -> requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(),
+        assertDoesNotThrow(() -> requestCredentialWithDpop(mockMvc, tokenResponse.getAccessToken(),
                 credentialRequestString, issuerMetadata, dpopKey)
                 .andExpect(status().is(expectedStatus))
                 .andExpect(content().contentType("application/json"))
@@ -324,7 +324,7 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
         MvcResult result = mockMvc
@@ -348,10 +348,10 @@ class RenewalFlowIT {
 
         oauthTokenResponse = requestTokenWithDpop(preAuthCode, dpopKey);
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties);
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, oauthTokenResponse.getAccessToken(), credentialRequestString,
+        requestCredentialWithDpop(mockMvc, oauthTokenResponse.getAccessToken(), credentialRequestString,
                 issuerMetadata, dpopKey)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
@@ -400,9 +400,9 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties);
         return credentialRequestString;
     }
 

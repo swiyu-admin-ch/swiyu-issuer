@@ -342,12 +342,12 @@ class StatusListIT {
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
 
-        requestCredentialV2(mvc, accessToken, credentialRequestString)
+        requestCredential(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -370,12 +370,12 @@ class StatusListIT {
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
 
-        requestCredentialV2(mvc, accessToken, credentialRequestString)
+        requestCredential(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -400,12 +400,12 @@ class StatusListIT {
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
 
-        requestCredentialV2(mvc, accessToken, credentialRequestString)
+        requestCredential(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 

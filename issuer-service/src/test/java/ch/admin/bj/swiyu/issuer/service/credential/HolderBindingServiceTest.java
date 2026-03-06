@@ -179,7 +179,7 @@ class HolderBindingServiceTest {
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("this-is-a-supported-credential-id"));
         when(config.getProofTypesSupported()).thenReturn(Map.of("type", mock(SupportedProofType.class)));
 
-        List<String> proofs = List.of("shit_proof");
+        List<String> proofs = List.of("bad_proof");
 
         var credentialRequest = new CredentialRequestClass(
                 Map.of(ProofType.JWT.toString(), proofs),
