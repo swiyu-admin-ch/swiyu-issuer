@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.dto.oid4vci;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 import lombok.Builder;
@@ -14,7 +15,9 @@ public record OAuthAuthorizationServerMetadataDto(
         String issuer,
         String token_endpoint,
         @Nullable List<String> dpop_signing_alg_values_supported,
-        @Nullable String profile_version
+        @Nullable String profile_version,
+        @JsonProperty("pre-authorized_grant_anonymous_access_supported")
+        @Nullable Boolean preauthorized_grant_anonymous_access_supported
 ) {
 
 }
