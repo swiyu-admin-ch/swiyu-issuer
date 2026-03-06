@@ -166,7 +166,7 @@ class CredentialServiceOrchestratorTest {
         when(credentialOfferRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // WHEN credential is created for offer with expired timestamp
-        var credentialRequestDto = getCredentialRequestDtoV2("test", null);
+        var credentialRequestDto = getCredentialRequestDto("test", null);
         var uuidString = uuid.toString();
         assertThrows(RenewalException.class, () ->
                 credentialServiceOrchestrator.createCredential(credentialRequestDto, uuidString, null, null));
@@ -202,7 +202,7 @@ class CredentialServiceOrchestratorTest {
     @Test
     void testCreateCredential_deferred() throws JsonProcessingException {
 
-        var credentialRequestDto = getCredentialRequestDtoV2("test", null);
+        var credentialRequestDto = getCredentialRequestDto("test", null);
         var clientInfo = getClientInfo();
 
         CredentialOffer credentialOffer = getCredentialOffer(
@@ -593,7 +593,7 @@ class CredentialServiceOrchestratorTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(100).getEpochSecond();
-        var credentialRequestDto = getCredentialRequestDtoV2("test", null);
+        var credentialRequestDto = getCredentialRequestDto("test", null);
         var offer = getCredentialOffer(status, expirationTimeStamp, offerData, UUID.randomUUID(), null, transactionId);
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
@@ -612,7 +612,7 @@ class CredentialServiceOrchestratorTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(100).getEpochSecond();
-        CreateCredentialRequestDto credentialRequestDto = getCredentialRequestDtoV2("not-test", null);
+        CreateCredentialRequestDto credentialRequestDto = getCredentialRequestDto("not-test", null);
         var offer = getCredentialOffer(CredentialOfferStatusType.IN_PROGRESS, expirationTimeStamp, offerData, UUID.randomUUID(), null, transactionId);
         var config = mock(CredentialConfiguration.class);
         var mgmt = CredentialManagement.builder()
