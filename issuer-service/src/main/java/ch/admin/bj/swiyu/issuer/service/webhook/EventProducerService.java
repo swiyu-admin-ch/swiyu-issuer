@@ -1,15 +1,15 @@
 package ch.admin.bj.swiyu.issuer.service.webhook;
 
-import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
+import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventTrigger;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -30,13 +30,15 @@ public class EventProducerService {
         var errorEvent = new ErrorEvent(
                 errorMessage,
                 oauthTokenExpired,
-                credentialOffer.getId()
+                credentialOffer.getId(),
+                CallbackEventTrigger.CREDENTIAL_OFFER
         );
         applicationEventPublisher.publishEvent(errorEvent);
     }
 
     /**
      * Only used for Credential Management State Changes from CredentialStateMachineAction
+     *
      * @param credentialManagementId
      * @param state
      */
@@ -50,6 +52,7 @@ public class EventProducerService {
 
     /**
      * Only used for Credential Offer State Changes from CredentialStateMachineAction
+     *
      * @param credentialOfferId
      * @param state
      */
