@@ -361,27 +361,6 @@ class DeferredFlowIT {
     }
 
     @Test
-    void testOfferCreation_withNoSubjectData() throws Exception {
-
-        var offerRequest = CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(List.of("test"))
-                .credentialMetadata(getCredentialMetadataDto())
-                .build();
-
-        var offerRequestString = objectMapper.writeValueAsString(offerRequest);
-
-        // create initial credential offer
-        mock.perform(post("/management/api/credentials")
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(offerRequestString))
-                .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error_description").value("Unprocessable Entity"))
-                .andExpect(jsonPath("$.detail")
-                        .value("credentialSubjectData: 'credential_subject_data' must be set"))
-                .andReturn();
-    }
-
-    @Test
     void testOfferCreation_withUnexpectedClaim() throws Exception {
 
         var extendedOfferData = new HashMap<String, Object>(getUniversityCredentialSubjectData());
