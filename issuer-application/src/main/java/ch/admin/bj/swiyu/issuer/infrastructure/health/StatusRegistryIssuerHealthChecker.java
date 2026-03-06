@@ -36,7 +36,7 @@ public class StatusRegistryIssuerHealthChecker extends CachedHealthChecker {
      */
     @Override
     protected void performCheck(Health.Builder builder) {
-        log.info("Checking Status Registry Issuer endpoints");
+        log.debug("Checking Status Registry Issuer endpoints");
 
         String tokenUrl = swiyuProperties.statusRegistry().tokenUrl().toExternalForm();
         String apiUrl = swiyuProperties.statusRegistry().apiUrl().toExternalForm();
@@ -73,7 +73,7 @@ public class StatusRegistryIssuerHealthChecker extends CachedHealthChecker {
         try {
             final ResponseEntity<Void> response = restTemplate.exchange(
                     url,
-                    HttpMethod.HEAD,
+                    HttpMethod.GET,
                     null,
                     Void.class
             );
