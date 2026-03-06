@@ -60,6 +60,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatusAndSubjectDataForDeferred;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -200,6 +201,92 @@ class DeferredIssuanceV2IT {
                 .andExpect(jsonPath("$.transaction_id").doesNotExist())
                 .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
+    }
+
+    @Test
+    void testDeferredOffer_withoutInitialSubjectData_thenSuccess() throws Exception {
+
+        // create offer request without initial subject data, so that offer data needs to be provided in deferred flow
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialMetadata(getCredentialMetadataDto())
+                .build();
+
+        // create initial credential offer
+        var credentialWithDeeplinkResponseDto = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
+                credentialWithDeeplinkResponseDto);
+
+        // offer is not yet set to deferred (as there was no previous interaction with the holder), so setting status to ready should not work
+        updateStatus(mock, credentialWithDeeplinkResponseDto.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.READY)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error_description").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("At least one offer must be set to deferred to set the credential management to ready"));
+
+        var tokenResponse = fetchOAuthToken(mock,
+                credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
+        var token = tokenResponse.get("access_token");
+        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+
+        // holder requests credential and receives deferred response
+        var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        // business issuer tries to set status to ready without offer data being provided in deferred flow, should not work
+        updateStatus(mock, credentialWithDeeplinkResponseDto.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.READY)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error_description").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Offer cannot be set to ready without offer data"));
+
+        var deferredResponseDto = objectMapper.readValue(
+                deferredCredentialResponse.getResponse().getContentAsString(),
+                CredentialEndpointResponseDtoV2.class);
+        // Wallet starts polling
+        String transactionId = deferredResponseDto.transactionId();
+        String deferredCredentialRequestString = getDeferredCredentialRequestString(transactionId);
+
+        performCredentialRequestWithString(token.toString(), deferredCredentialRequestString)
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        // business issuer tries to set status to ready without offer data being provided in deferred flow, should not work
+        updateStatus(mock, credentialWithDeeplinkResponseDto.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.READY)
+                .andExpect(status().isBadRequest());
+
+        var incorrectSubjectData = getUniversityCredentialSubjectData();
+        var missingClaimName = "name";
+        incorrectSubjectData.remove(missingClaimName);
+
+        // use incorrect subject data for update, should not work
+        updateStatusAndSubjectDataForDeferred(mock, credentialWithDeeplinkResponseDto.getManagementId().toString(),
+                incorrectSubjectData)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error_description").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Mandatory credential claims are missing! " + missingClaimName));
+
+        // wallet checks is still pending
+        performCredentialRequestWithString(token.toString(), deferredCredentialRequestString)
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        // use correct subject data for update, should work
+        updateStatusAndSubjectDataForDeferred(mock, credentialWithDeeplinkResponseDto.getManagementId().toString(),
+                getUniversityCredentialSubjectData())
+                .andExpect(status().isOk());
+
+        // wallet checks is ok
+        performCredentialRequestWithString(token.toString(), deferredCredentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // business issuer tries to update status again, should not work as already in issued state
+        updateStatus(mock, credentialWithDeeplinkResponseDto.getManagementId().toString(),
+                UpdateCredentialStatusRequestTypeDto.READY)
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -718,5 +805,13 @@ class DeferredIssuanceV2IT {
         var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
 
         return credentialOfferRepository.findById(offer.getOfferId()).orElseThrow();
+    }
+
+    private ResultActions performCredentialRequestWithString(String token, String deferredCredentialRequestString) throws Exception {
+        return mock.perform(post("/oid4vci/api/deferred_credential")
+                .header("Authorization", String.format("BEARER %s", token))
+                .contentType("application/json")
+                .header("SWIYU-API-Version", "2")
+                .content(deferredCredentialRequestString));
     }
 }
