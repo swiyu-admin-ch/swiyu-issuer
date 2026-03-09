@@ -9,6 +9,7 @@ import ch.admin.eid.did_sidekicks.DidDoc;
 import ch.admin.eid.didresolver.Did;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.List;
  * Health checker that validates the reachability / resolvability of DID (or DID key) identifiers
  * configured for the issuer itself as well as the trusted attestation providers.
  */
+@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
 @Component
 @RequiredArgsConstructor
 public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
