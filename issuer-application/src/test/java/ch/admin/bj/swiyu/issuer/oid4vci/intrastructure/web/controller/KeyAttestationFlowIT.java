@@ -144,8 +144,8 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttestedVC(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH, untrustedIssuer, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, "university_example_sd_jwt");
         mockDidResolve(jwk.toPublicJWK());
         IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
-            .andExpect(status().is4xxClientError())
-            .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
     }
 
     @Test
@@ -153,7 +153,8 @@ class KeyAttestationFlowIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, testOfferAnyAttestationId.toString());
         var token = tokenResponse.get("access_token");
 
-var nonce = requestNonce(mock);        String proof = TestServiceUtils.createHolderProof(
+        var nonce = requestNonce(mock);
+        String proof = TestServiceUtils.createHolderProof(
                 jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce,

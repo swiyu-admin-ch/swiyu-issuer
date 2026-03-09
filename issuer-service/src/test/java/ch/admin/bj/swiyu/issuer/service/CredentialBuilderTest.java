@@ -99,8 +99,8 @@ class CredentialBuilderTest {
     void credentialOffer_buildCredentialEnvelope_thenSuccess(String input) throws IOException {
 
         List<CredentialObjectDto> credentialObjectDto = List.of(new CredentialObjectDto(input));
-        CredentialEndpointResponseDto credentialResponseDtoV2 = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
-        var expectedCredentialWrapper = objectMapper.writeValueAsString(credentialResponseDtoV2);
+        CredentialEndpointResponseDto credentialResponseDto = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
+        var expectedCredentialWrapper = objectMapper.writeValueAsString(credentialResponseDto);
 
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
         builder.holderBindings(List.of());
@@ -178,13 +178,13 @@ class CredentialBuilderTest {
     void buildEnvelopeDto_thenSuccess() {
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
         List<CredentialObjectDto> credentialObjectDto = List.of(new CredentialObjectDto("credential"));
-        CredentialEndpointResponseDto credentialResponseDtoV2 = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
-        var response = builder.buildEnvelopeDto(credentialResponseDtoV2);
+        CredentialEndpointResponseDto credentialResponseDto = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
+        var response = builder.buildEnvelopeDto(credentialResponseDto);
 
         assertEquals("application/json", response.getContentType());
         assertEquals(HttpStatus.OK, response.getHttpStatus());
 
-        verify(builder).buildEnvelopeDto(credentialResponseDtoV2, HttpStatus.OK);
+        verify(builder).buildEnvelopeDto(credentialResponseDto, HttpStatus.OK);
     }
 
     @Test
@@ -203,8 +203,8 @@ class CredentialBuilderTest {
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
 
         List<CredentialObjectDto> credentialObjectDto = List.of(new CredentialObjectDto("credential"));
-        CredentialEndpointResponseDto credentialResponseDtoV2 = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
-        var response = builder.buildEnvelopeDto(credentialResponseDtoV2);
+        CredentialEndpointResponseDto credentialResponseDto = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
+        var response = builder.buildEnvelopeDto(credentialResponseDto);
 
         assertEquals("application/jwt", response.getContentType());
     }

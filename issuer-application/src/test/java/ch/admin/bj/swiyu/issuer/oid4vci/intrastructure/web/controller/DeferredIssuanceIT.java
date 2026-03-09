@@ -75,7 +75,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class DeferredIssuanceV2IT {
+class DeferredIssuanceIT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
     private List<ECKey> holderKeys;

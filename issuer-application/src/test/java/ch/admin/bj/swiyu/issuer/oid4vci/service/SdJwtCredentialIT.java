@@ -10,7 +10,6 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import com.google.gson.JsonObject;
@@ -96,51 +95,6 @@ class SdJwtCredentialIT {
 
         @Test
         void getSdJwtCredentialTestClaims_thenSuccess() {
-
-                Instant now = Instant.now();
-                Instant expiration = now.plus(30, ChronoUnit.DAYS);
-
-                var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED,
-                                "university_example_sd_jwt", now, expiration);
-
-                CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
-                credentialRequest.setCredentialResponseEncryption(null);
-
-                CredentialEnvelopeDto vc = vcFormatFactory
-                                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
-                                .credentialOffer(credentialOffer)
-                                .credentialResponseEncryption(
-                                                jweService.issuerMetadataWithEncryptionOptions()
-                                                                .getResponseEncryption(),
-                                                credentialRequest.getCredentialResponseEncryption())
-                                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                                .buildCredentialEnvelope();
-
-                Base64.Decoder decoder = Base64.getUrlDecoder();
-        String credential = getReadFirstCredential(vc);
-                String[] chunks = credential.split("\\.");
-                String payload = new String(decoder.decode(chunks[1]));
-
-                // jwt payload - optional fields
-                // TODO add status test
-                // TODO add key id
-                List<String> sd = JsonPath.read(payload, "$._sd");
-                assertEquals(getUniversityCredentialSubjectData().size(), sd.size());
-
-                String alg = JsonPath.read(payload, "$._sd_alg");
-                assertEquals("sha-256", alg);
-
-                // timestamps are rounded down to the day, hence the less than
-                assertEquals(instantToRoundedUnixTimestamp(Instant.now()),
-                                ((Integer) JsonPath.read(payload, "$.nbf")).longValue());
-                assertEquals(instantToRoundedUnixTimestamp(Instant.now()),
-                                ((Integer) JsonPath.read(payload, "$.iat")).longValue());
-                assertEquals(instantToRoundedUnixTimestamp(expiration),
-                                ((Integer) JsonPath.read(payload, "$.exp")).longValue());
-        }
-
-        @Test
-        void getSdJwtCredentialV2TestClaims_thenSuccess() {
 
                 Instant now = Instant.now();
                 Instant expiration = now.plus(30, ChronoUnit.DAYS);
@@ -320,7 +274,7 @@ class SdJwtCredentialIT {
         }
 
         @Test
-        void getSdJwtCredentialV2TestTracing_thenSuccess() {
+        void getSdJwtCredentialTestTracing_thenSuccess() {
 
                 assertThat(applicationProperties.isEnableVcHashStorage())
                                 .as("This Test requires VC Hash Storage to be active")

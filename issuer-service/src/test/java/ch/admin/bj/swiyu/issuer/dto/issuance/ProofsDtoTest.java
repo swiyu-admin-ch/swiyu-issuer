@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.dto.issuance_v2;
+package ch.admin.bj.swiyu.issuer.dto.issuance;
 
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import jakarta.validation.Validation;

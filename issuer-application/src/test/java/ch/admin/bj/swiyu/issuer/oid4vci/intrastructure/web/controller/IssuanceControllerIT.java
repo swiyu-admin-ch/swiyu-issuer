@@ -498,7 +498,7 @@ class IssuanceControllerIT {
         );
 
         String credentialRequestString = getCredentialRequestString(proof);
-        return extractVcFromV2CredentialResponse(
+        return extractVcFromCredentialResponse(
                 IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                         .andExpect(status().isOk())
                         .andReturn()
@@ -514,7 +514,7 @@ class IssuanceControllerIT {
                 "unbound_example_sd_jwt"
         );
 
-        return extractVcFromV2CredentialResponse(
+        return extractVcFromCredentialResponse(
                 IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                         .andExpect(status().isOk())
                         .andReturn()
@@ -530,7 +530,7 @@ class IssuanceControllerIT {
         return objectMapper.writeValueAsString(request);
     }
 
-    private static String extractVcFromV2CredentialResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
+    private static String extractVcFromCredentialResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
         var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
                 .getAsJsonObject()
                 .getAsJsonArray("credentials");

@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.dto.issuance_v2;
+package ch.admin.bj.swiyu.issuer.dto.issuance;
 
 
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
@@ -13,7 +13,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-class CredentialRequestDtoV2Test {
+class CredentialRequestDtoTest {
 
     @Test
     void shouldCreateDtoWithAllFields() {
@@ -30,8 +30,8 @@ class CredentialRequestDtoV2Test {
     void shouldFailValidationIfCredentialConfigurationIdBlank() {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();
-            var credentialRequestDtoV2 = new CreateCredentialRequestDto(" ", null, null);
-            var violations = validator.validate(credentialRequestDtoV2);
+            var credentialRequestDto = new CreateCredentialRequestDto(" ", null, null);
+            var violations = validator.validate(credentialRequestDto);
 
             assertThat(violations).isNotEmpty();
             assertThat(violations.stream().map(v -> v.getPropertyPath().toString()).toList()).contains("credentialConfigurationId");

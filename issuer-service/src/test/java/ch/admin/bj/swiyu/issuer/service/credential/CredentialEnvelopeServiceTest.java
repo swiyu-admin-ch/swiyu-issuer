@@ -71,7 +71,7 @@ class CredentialEnvelopeServiceTest {
 
 
     @Test
-    void issueCredentialV2_immediateBranch_executesIssueEventsAndPersists() {
+    void issueCredential_immediateBranch_executesIssueEventsAndPersists() {
         var offer = CredentialOffer.builder().build();
         offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.IN_PROGRESS);
         offer.setMetadataCredentialSupportedId(List.of("config-id"));
