@@ -225,10 +225,11 @@ class DeferredIssuanceV2IT {
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
                 .andExpect(jsonPath("$.detail").value("At least one offer must be set to deferred to set the credential management to ready"));
 
+        var nonce = requestNonce(mock);
         var tokenResponse = fetchOAuthToken(mock,
                 credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(tokenResponse, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(nonce, "university_example_sd_jwt");
 
         // holder requests credential and receives deferred response
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
