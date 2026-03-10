@@ -24,6 +24,10 @@ import java.util.UUID;
  */
 @Getter
 public class SelfContainedNonce {
+    /**
+     * The number of individual parts of a self contained nonce concatenated by double colons (::)
+     */
+    private static final int SELF_CONTAINED_NONCE_PARTS = 3;
     private final String nonce;
 
     /**
@@ -54,25 +58,44 @@ public class SelfContainedNonce {
                     "Invalid nonce. Nonce must consist of 3 parts being split by double colon '::'");
         }
 
-        if (!isValid(nonceLifetimeSeconds, secret)) {
+        if (!isValid(nonce, nonceLifetimeSeconds, secret)) {
             throw new ExpiredNonceException("Invalid nonce. Nonce is expired or has invalid hash.");
         }
     }
 
     /**
+     * Validates if the nonce has not yet expired and has a valid hash
+     */
+    public boolean isValid(int lifetimeSeconds, NonceSecret secret) {
+        return isValid(nonce, lifetimeSeconds, secret);
+    }
+
+    /**
      * Checks if the self-contained nonce has the correct format
      *
-     * @return True if the nonce consists out of 2 parts being split by double colon
+     * @return True if the nonce consists out of 3 parts being split by double colon
      *         '::'
      */
     public static boolean isSelfContainedNonce(String nonce) {
         return nonce.contains("::") && nonce.split("::").length == 3;
     }
 
+
     /**
-     * Validates if the nonce has not yet expired
+     * Validates if the nonce has the correct format and has not expired,
+     * as well as has a valid hash.
+     *
+     * It validates that the timestamp is within an acceptable range
+     * based on the provided lifetime in seconds, and checks if the received hash
+     * matches the calculated hash with the given secret.
+     *
+     * @param nonce the nonce string to be validated
+     * @param lifetimeSeconds the maximum number of seconds a nonce is considered valid from its creation
+     * @param secret the secret used to create the nonce hash
+     * @return true if the nonce is valid
+     * @throws InvalidNonceException if the nonce is malformed or the timestamp is invalid
      */
-    public boolean isValid(int lifetimeSeconds, NonceSecret secret) {
+    public static boolean isValid(String nonce, int lifetimeSeconds, NonceSecret secret) {
         var now = Instant.now();
         var oldestAcceptableInstant = now.minus(lifetimeSeconds, ChronoUnit.SECONDS);
 
@@ -80,7 +103,7 @@ public class SelfContainedNonce {
             throw new InvalidNonceException("Malformed nonce");
         }
         try {
-        var components = getComponents();
+        var components = getComponents(nonce);
         var preNonce = components[0] + "::" + components[1];
         var nonceInstant = Instant.parse(components[1]);
         var calculatedHash = createHash(preNonce, secret);
@@ -93,21 +116,28 @@ public class SelfContainedNonce {
     }
 
     public UUID getNonceId() {
-        return UUID.fromString(getComponents()[0]);
+        return UUID.fromString(getComponents(nonce)[0]);
     }
 
     public Instant getNonceInstant() {
-        return Instant.parse(getComponents()[1]);
+        return Instant.parse(getComponents(nonce)[1]);
     }
 
-    private String[] getComponents() {
+    private static String[] getComponents(String nonce) {
         var components = nonce.split("::");
-        if (components.length != 3) {
+        if (components.length != SELF_CONTAINED_NONCE_PARTS) {
             throw new IllegalArgumentException("Malformed nonce");
         }
         return components;
     }
 
+    /**
+     * Creates a SHA-256 hash of a pre-nonce concatenated with a nonce secret ID.
+     *
+     * @param preNonce The pre-nonce used to create the hash.
+     * @param secret The NonceSecret containing the secret ID.
+     * @return A SHA-256 hash as a hexadecimal string.
+     */
     public static String createHash(String preNonce, NonceSecret secret) {
         return DpopHashUtil.sha256(secret.getId().toString() + "," + preNonce);
     }

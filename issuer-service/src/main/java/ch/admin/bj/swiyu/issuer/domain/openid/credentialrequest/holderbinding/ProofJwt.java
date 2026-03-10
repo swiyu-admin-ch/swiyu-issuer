@@ -29,9 +29,9 @@ public class ProofJwt extends Proof implements AttestableProof {
      */
     private final int acceptableProofTimeWindowSeconds;
     private final int nonceLifetimeSeconds;
+    private final NonceSecret nonceSecret;
     private String holderKeyJson;
     private SignedJWT signedJWT;
-    private NonceSecret nonceSecret;
 
     public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds, NonceSecret nonceSecret) {
         super(proofType);
