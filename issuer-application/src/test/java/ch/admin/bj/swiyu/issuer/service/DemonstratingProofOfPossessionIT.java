@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
@@ -57,17 +58,22 @@ class DemonstratingProofOfPossessionIT {
     private UUID accessToken;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
-
+    
     public static Stream<String> faultyNonceSource() {
+        var nonceSecret = NonceSecret.builder().id(UUID.randomUUID()).build();
         return Stream.of(
                 // Only UUID; No timestamp
                 UUID.randomUUID().toString(), // EIDSEC-633
+                // Missing Hash
+                UUID.randomUUID().toString() + "::" + Instant.now().toString(),
                 // Attempt ot inject some other data
-                new SelfContainedNonce().getNonce() + "::" + "SomeOtherData",
+                new SelfContainedNonce(nonceSecret).getNonce() + "::" + "SomeOtherData",
                 // Deprecated Nonce
-                UUID.randomUUID() + "::" + Instant.now().minusSeconds(120).toString(),
+                UUID.randomUUID() + "::" + Instant.now().minusSeconds(120).toString() + "::f9c495ac5b0eb8acabf9af5e309c1e86dc74512b94742f2140c6ce5d704a4d5f",
                 // Nonce from the future
-                UUID.randomUUID() + "::" + Instant.now().plusSeconds(120).toString()
+                UUID.randomUUID() + "::" + Instant.now().plusSeconds(120).toString() + "::f9c495ac5b0eb8acabf9af5e309c1e86dc74512b94742f2140c6ce5d704a4d5f",
+                // Wrong hash / Client Side generated Nonce
+                new SelfContainedNonce(nonceSecret).getNonce()
         );
     }
 

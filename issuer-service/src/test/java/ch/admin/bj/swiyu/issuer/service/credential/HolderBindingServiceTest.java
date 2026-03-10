@@ -5,8 +5,10 @@ import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -75,6 +77,9 @@ class HolderBindingServiceTest {
                 .issueTime(new Date())
                 .generate())
         ).toList();
+
+        var secret = NonceSecret.builder().id(UUID.randomUUID()).build();
+        when(nonceService.getNonceSecret()).thenReturn(secret);
     }
 
     @Test
@@ -154,7 +159,7 @@ class HolderBindingServiceTest {
                 Map.of(ProofType.JWT.toString(), proofs),
                 null,
                 supportedCredentialId));
-        when(credentialRequestSpy.getProofs(anyInt(), anyInt())).thenReturn(List.of(proofJwt, proofJwt));
+        when(credentialRequestSpy.getProofs(anyInt(), anyInt(), any())).thenReturn(List.of(proofJwt, proofJwt));
 
         var e = assertThrows(Oid4vcException.class, () ->
                 holderBindingService.getValidateHolderPublicKeys(credentialRequestSpy, offer));
@@ -236,7 +241,7 @@ class HolderBindingServiceTest {
         mockBatchCredentialIssuance(3);
 
         List<String> proofs = holderKeys.stream().map(holderKey -> assertDoesNotThrow(() -> TestServiceUtils.createHolderProof(holderKey,
-                "did:example:issuer", UUID.randomUUID() + "::" + Instant.now().minusSeconds(1).toString(),
+                "did:example:issuer", new SelfContainedNonce(nonceService.getNonceSecret()).getNonce(),
                 ProofType.JWT.getClaimTyp(), false))).toList();
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(

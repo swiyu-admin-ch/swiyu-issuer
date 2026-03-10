@@ -16,7 +16,6 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class ProofJwt extends Proof implements AttestableProof {
@@ -32,12 +31,14 @@ public class ProofJwt extends Proof implements AttestableProof {
     private final int nonceLifetimeSeconds;
     private String holderKeyJson;
     private SignedJWT signedJWT;
+    private NonceSecret nonceSecret;
 
-    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds) {
+    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds, NonceSecret nonceSecret) {
         super(proofType);
         this.jwt = jwt;
         this.acceptableProofTimeWindowSeconds = acceptableProofTimeWindowSeconds;
         this.nonceLifetimeSeconds = nonceLifetimeSeconds;
+        this.nonceSecret = nonceSecret;
     }
 
     private static Oid4vcException proofException(String errorDescription, Map<String, Object> context) {
@@ -186,7 +187,7 @@ public class ProofJwt extends Proof implements AttestableProof {
 
     private void validateNonce() {
         try {
-            new SelfContainedNonce(getNonce(), nonceLifetimeSeconds);
+            new SelfContainedNonce(getNonce(), nonceLifetimeSeconds, nonceSecret);
         } catch (InvalidNonceException e) {
             throw proofException("Invalid nonce claim in proof JWT",
                         Map.of(

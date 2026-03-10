@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest;
 
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import jakarta.annotation.Nullable;
@@ -55,7 +56,7 @@ public class CredentialRequestClass {
         this.credentialResponseEncryption = credentialResponseEncryption;
     }
 
-    public List<ProofJwt> getProofs(int acceptableProofTimeWindow, int nonceLifetimeSeconds) {
+    public List<ProofJwt> getProofs(int acceptableProofTimeWindow, int nonceLifetimeSeconds, NonceSecret nonceSecret) {
 
         if (proof == null || proof.isEmpty()) {
             return List.of();
@@ -66,11 +67,11 @@ public class CredentialRequestClass {
         // new v2 case
         if (jwts instanceof List<?>) {
             return ((List<?>) jwts).stream().map(proofJwt -> new ProofJwt(ProofType.JWT,
-                            (String) proofJwt, acceptableProofTimeWindow, nonceLifetimeSeconds))
+                            (String) proofJwt, acceptableProofTimeWindow, nonceLifetimeSeconds, nonceSecret))
                     .toList();
         }
 
-        return getProof(acceptableProofTimeWindow, nonceLifetimeSeconds)
+        return getProof(acceptableProofTimeWindow, nonceLifetimeSeconds, nonceSecret)
                 .map(List::of)
                 .orElseGet(List::of);
     }
@@ -95,7 +96,7 @@ public class CredentialRequestClass {
      * @return a "proof" JWT
      */
     @Deprecated(since = "OID4VCI 1.0")
-    public Optional<ProofJwt> getProof(int acceptableProofTimeWindow, int nonceLifetimeSeconds) {
+    public Optional<ProofJwt> getProof(int acceptableProofTimeWindow, int nonceLifetimeSeconds, NonceSecret nonceSecret) {
         final var PROOF_TYPE_KEY = "proof_type";
         // No Proof provided by Holder
         if (proof == null) {
@@ -107,7 +108,7 @@ public class CredentialRequestClass {
                     .filter(String.class::isInstance)
                     .map(String.class::cast)
                     .orElseThrow(() -> new IllegalArgumentException("jwt property needs to be present when proof_type is jwt"));
-            return Optional.of(new ProofJwt(ProofType.JWT, proofJwt, acceptableProofTimeWindow, nonceLifetimeSeconds));
+            return Optional.of(new ProofJwt(ProofType.JWT, proofJwt, acceptableProofTimeWindow, nonceLifetimeSeconds, nonceSecret));
         } else {
             throw new IllegalArgumentException("Any other proof type than jwt is not supported");
         }

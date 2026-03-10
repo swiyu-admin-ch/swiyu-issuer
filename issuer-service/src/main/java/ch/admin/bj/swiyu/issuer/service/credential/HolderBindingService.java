@@ -106,7 +106,9 @@ public class HolderBindingService {
         try {
             return credentialRequest.getProofs(
                     applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                    applicationProperties.getAcceptableProofTimeWindowSeconds());
+                    applicationProperties.getAcceptableProofTimeWindowSeconds(),
+                    nonceService.getNonceSecret()
+                );
         } catch (IllegalArgumentException e) {
             throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof",
                     Map.of("proofType", credentialRequest.getProof() != null ? credentialRequest.getProof().toString() : "null"));
@@ -188,7 +190,8 @@ public class HolderBindingService {
 
     private SelfContainedNonce ensureNonceNotReused(ProofJwt requestProof) throws Oid4vcException {
         try {
-            var nonce = new SelfContainedNonce(requestProof.getNonce(), applicationProperties.getNonceLifetimeSeconds());
+            var nonce = new SelfContainedNonce(requestProof.getNonce(), applicationProperties.getNonceLifetimeSeconds(),
+                    nonceService.getNonceSecret());
 
             if (nonceService.isUsedNonce(nonce)) {
                 throw new InvalidNonceException("Presented nonce was reused!");

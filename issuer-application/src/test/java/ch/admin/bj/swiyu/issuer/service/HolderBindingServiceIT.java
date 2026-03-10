@@ -7,6 +7,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecretRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -55,9 +57,12 @@ class HolderBindingServiceIT {
     private IssuerMetadata issuerMetadata;
     @Autowired
     private HolderBindingService holderBindingService;
+    @Autowired
+    private NonceSecretRepository nonceSecretRepository;
     @MockitoBean
     private DidKeyResolverFacade didKeyResolver;
 
+    private NonceSecret nonceSecret;
     private ECKey attestationKey;
 
     private static CredentialOffer createHolderBindingTestOffer() {
@@ -84,6 +89,7 @@ class HolderBindingServiceIT {
     void setUp() throws JOSEException {
         attestationKey = new ECKeyGenerator(Curve.P_256).keyID("did:test:test-attestation-builder#key-1").keyUse(KeyUse.SIGNATURE).generate();
         Mockito.when(didKeyResolver.resolveKey(Mockito.any())).thenReturn(attestationKey);
+        nonceSecret = nonceSecretRepository.findAll().getFirst();
     }
 
     @Test
@@ -93,7 +99,7 @@ class HolderBindingServiceIT {
         assertThat(issuerMetadata.getIssuanceBatchSize()).as("Test Configuration must have batch issuance for this test").isGreaterThan(1);
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
-            String nonce = new SelfContainedNonce().getNonce();
+            String nonce = new SelfContainedNonce(nonceSecret).getNonce();
             String proof = TestServiceUtils.createAttestedHolderProof(
                     proofKey,
                     applicationProperties.getTemplateReplacement().get("external-url"),
@@ -120,7 +126,7 @@ class HolderBindingServiceIT {
     void correctHolderBindings_sameNonce_whenReplayed_thenOid4vciException() throws JOSEException {
         var credentialOffer = createHolderBindingTestOffer();
         List<String> proofs = new LinkedList<>();
-        String nonce = new SelfContainedNonce().getNonce();
+        String nonce = new SelfContainedNonce(nonceSecret).getNonce();
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
             String proof = TestServiceUtils.createAttestedHolderProof(
@@ -163,7 +169,7 @@ class HolderBindingServiceIT {
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             String nonce;
             if (i % 2 == 0) {
-                nonce = new SelfContainedNonce().getNonce();
+                nonce = new SelfContainedNonce(nonceSecret).getNonce();
             } else {
                 nonce = UUID.randomUUID().toString();
             }
@@ -197,7 +203,7 @@ class HolderBindingServiceIT {
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             String nonce = null;
             if (i == 0) {
-                nonce = new SelfContainedNonce().getNonce();
+                nonce = new SelfContainedNonce(nonceSecret).getNonce();
             } else {
                 nonce = "";
             }
@@ -257,7 +263,7 @@ class HolderBindingServiceIT {
     @Test
     void whenRegisteredNonce_thenSuccess_whenReplayed_thenOid4vciException() throws JOSEException {
         var credentialOffer = createHolderBindingTestOffer();
-        String nonce = new SelfContainedNonce().getNonce();
+        String nonce = new SelfContainedNonce(nonceSecret).getNonce();
         List<String> proofs = new LinkedList<>();
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();

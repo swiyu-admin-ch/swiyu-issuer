@@ -22,6 +22,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -133,11 +134,12 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<DpopErrorDto> handleDpopException(final DemonstratingProofOfPossessionException ex) {
+        final String secret = UUID.randomUUID().toString();
         HttpStatus responseStatus = UNAUTHORIZED;
         MultiValueMap<String, String> responseHeaders = new HttpHeaders();
         if (DemonstratingProofOfPossessionError.USE_DPOP_NONCE.equals(ex.getDpopError())) {
             responseStatus = BAD_REQUEST;
-            responseHeaders.put("DPoP-Nonce", List.of(new SelfContainedNonce().getNonce()));
+            responseHeaders.put("DPoP-Nonce", List.of(new SelfContainedNonce(secret).getNonce()));
         } else {
             log.debug("DPoP faulty user input intercepted", ex);
         }

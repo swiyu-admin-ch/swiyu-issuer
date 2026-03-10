@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
@@ -14,6 +15,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
@@ -94,6 +96,8 @@ class DeferredFlowIT {
     private ApplicationProperties applicationProperties;
     @Autowired
     private TransactionTemplate transactionTemplate;
+    @Autowired
+    private NonceService nonceService;
     private StatusList statusList;
 
     @BeforeEach
@@ -768,7 +772,8 @@ class DeferredFlowIT {
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
-            var nonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
+            var preNonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
+            var nonce = preNonce + "::" + SelfContainedNonce.createHash(preNonce, nonceService.getNonceSecret());
 
             var credentialRequestString = getCredentialRequestStringByNonce(nonce);
 

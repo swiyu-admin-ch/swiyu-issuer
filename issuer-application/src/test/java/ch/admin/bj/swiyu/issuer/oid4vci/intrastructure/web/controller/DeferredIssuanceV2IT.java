@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
@@ -12,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatus
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -99,6 +101,8 @@ class DeferredIssuanceV2IT {
     private IssuerMetadata issuerMetadata;
     @Autowired
     private JweService encryptionService;
+    @Autowired
+    private NonceService nonceService;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
 
@@ -581,29 +585,30 @@ class DeferredIssuanceV2IT {
         Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
 
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
-            mockedStatic.when(Instant::now)
-                    .thenReturn(instant);
+                mockedStatic.when(Instant::now)
+                                .thenReturn(instant);
 
-            var nonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
+                var preNonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
+                var nonce = preNonce + "::" + SelfContainedNonce.createHash(preNonce, nonceService.getNonceSecret());
 
-            var credentialRequestString = getCredentialRequestString(
-                    nonce,
-                    offerWithDynamicExpiration.getMetadataCredentialSupportedId()
-                            .getFirst());
+                var credentialRequestString = getCredentialRequestString(
+                                nonce,
+                                offerWithDynamicExpiration.getMetadataCredentialSupportedId()
+                                                .getFirst());
 
-            requestCredential(mock,
-                    offerWithDynamicExpiration.getCredentialManagement().getAccessToken()
-                            .toString(),
-                    credentialRequestString)
-                    .andExpect(status().isAccepted())
-                    .andReturn();
+                requestCredential(mock,
+                                offerWithDynamicExpiration.getCredentialManagement().getAccessToken()
+                                                .toString(),
+                                credentialRequestString)
+                                .andExpect(status().isAccepted())
+                                .andReturn();
 
-            var result = credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId())
-                    .orElseThrow();
+                var result = credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId())
+                                .orElseThrow();
 
-            assertEquals(instant.plusSeconds(expirationInSeconds)
-                            .getEpochSecond(),
-                    result.getOfferExpirationTimestamp());
+                assertEquals(instant.plusSeconds(expirationInSeconds)
+                                .getEpochSecond(),
+                                result.getOfferExpirationTimestamp());
         }
     }
 
