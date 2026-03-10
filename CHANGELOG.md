@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- tbd
+- Nonces are now validated to originate from this service, preventing client side generated nonces
 
 ## 2.4.0
 
