@@ -93,7 +93,7 @@ class HolderBindingServiceIT {
         assertThat(issuerMetadata.getIssuanceBatchSize()).as("Test Configuration must have batch issuance for this test").isGreaterThan(1);
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
-            String nonce = new SelfContainedNonce().getNonce();
+            String nonce = new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce();
             String proof = TestServiceUtils.createAttestedHolderProof(
                     proofKey,
                     applicationProperties.getTemplateReplacement().get("external-url"),
@@ -120,7 +120,7 @@ class HolderBindingServiceIT {
     void correctHolderBindings_sameNonce_whenReplayed_thenOid4vciException() throws JOSEException {
         var credentialOffer = createHolderBindingTestOffer();
         List<String> proofs = new LinkedList<>();
-        String nonce = new SelfContainedNonce().getNonce();
+        String nonce = new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce();
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
             String proof = TestServiceUtils.createAttestedHolderProof(
@@ -163,7 +163,7 @@ class HolderBindingServiceIT {
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             String nonce;
             if (i % 2 == 0) {
-                nonce = new SelfContainedNonce().getNonce();
+                nonce = new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce();
             } else {
                 nonce = UUID.randomUUID().toString();
             }
@@ -197,7 +197,7 @@ class HolderBindingServiceIT {
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             String nonce = null;
             if (i == 0) {
-                nonce = new SelfContainedNonce().getNonce();
+                nonce = new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce();
             } else {
                 nonce = "";
             }
@@ -257,7 +257,7 @@ class HolderBindingServiceIT {
     @Test
     void whenRegisteredNonce_thenSuccess_whenReplayed_thenOid4vciException() throws JOSEException {
         var credentialOffer = createHolderBindingTestOffer();
-        String nonce = new SelfContainedNonce().getNonce();
+        String nonce = new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce();
         List<String> proofs = new LinkedList<>();
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();

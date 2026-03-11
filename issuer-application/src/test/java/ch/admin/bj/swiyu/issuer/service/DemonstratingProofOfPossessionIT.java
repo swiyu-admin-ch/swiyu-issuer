@@ -63,7 +63,7 @@ class DemonstratingProofOfPossessionIT {
                 // Only UUID; No timestamp
                 UUID.randomUUID().toString(), // EIDSEC-633
                 // Attempt ot inject some other data
-                new SelfContainedNonce().getNonce() + "::" + "SomeOtherData",
+                new SelfContainedNonce(300).getNonce() + "::" + "SomeOtherData",
                 // Deprecated Nonce
                 UUID.randomUUID() + "::" + Instant.now().minusSeconds(120).toString(),
                 // Nonce from the future

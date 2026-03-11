@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -201,7 +202,7 @@ class IssuanceControllerIT {
     @Test
     void testGetNonce_thenSuccess() throws Exception {
         var selfContainedNonce = fetchSelfContainedNonce();
-        assertTrue(SelfContainedNonce.isValid(selfContainedNonce.getNonce(), 10));
+        assertDoesNotThrow(()-> SelfContainedNonce.validateNonce(selfContainedNonce));
         assertDoesNotThrow(selfContainedNonce::getNonceId);
     }
 
@@ -250,12 +251,10 @@ class IssuanceControllerIT {
 
     @Test
     void testNonceOutdated_thenBadRequest() throws Exception {
-        var outdatedNonce = new SelfContainedNonce(UUID.randomUUID() + "::"
-                + Instant.now().minus(applicationProperties.getNonceLifetimeSeconds() + 1, ChronoUnit.SECONDS));
-        // Outdated Nonce not valid
-        assertFalse(SelfContainedNonce.isValid(outdatedNonce.getNonce(), applicationProperties.getNonceLifetimeSeconds()));
+        var nonce = UUID.randomUUID() + "::"
+                + Instant.now().minus(applicationProperties.getNonceLifetimeSeconds() + 1, ChronoUnit.SECONDS).toString();
+        assertThrows(ExpiredNonceException.class, () -> new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds()));
         // Create Credential Request with Proof using outdated nonce
-        var nonce = outdatedNonce.getNonce();
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         var proof = TestServiceUtils.createHolderProof(jwk,
@@ -268,8 +267,7 @@ class IssuanceControllerIT {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("Nonce is expired")))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
-        // Should not have been cached
-        assertFalse(nonceService.isUsedNonce(outdatedNonce));
+
     }
 
     @ParameterizedTest
@@ -708,6 +706,6 @@ class IssuanceControllerIT {
     @NotNull
     private SelfContainedNonce fetchSelfContainedNonce() throws Exception {
         var nonce = requestNonce(mock);
-        return new SelfContainedNonce(nonce);
+        return new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds());
     }
 }
