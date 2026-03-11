@@ -29,15 +29,28 @@ public class SelfContainedNonce {
      */
     private static final int SELF_CONTAINED_NONCE_PARTS = 3;
     private final String nonce;
+    private final int nonceLifetimeSeconds;
+
+    /**
+     * Creates a new self contained nonce with current timestamp and random uuid
+     * The Object created in this manner can <em>NOT</em> be validated!
+     * 
+     * @param secret the authorization server's secret to be used in the hash.
+     */
+    public SelfContainedNonce(NonceSecret secret) {
+        this(secret, 0);
+    }
 
     /**
      * Creates a new self contained nonce with current timestamp and random uuid
      * 
      * @param secret the authorization server's secret to be used in the hash.
+     * @param nonceLifetimeSeconds lifetime of the nonce for future validation
      */
-    public SelfContainedNonce(NonceSecret secret) {
+    public SelfContainedNonce(NonceSecret secret, int nonceLifetimeSeconds) {
         var preNonce = UUID.randomUUID() + "::" + Instant.now().toString();
         nonce = preNonce + "::" + createHash(preNonce, secret);
+        this.nonceLifetimeSeconds = nonceLifetimeSeconds;
     }
 
     /**
@@ -46,12 +59,14 @@ public class SelfContainedNonce {
      */
     public SelfContainedNonce(String nonce) {
         this.nonce = nonce;
+        this.nonceLifetimeSeconds = 0;
     }
 
     public SelfContainedNonce(String nonce, int nonceLifetimeSeconds, NonceSecret secret)
             throws ExpiredNonceException, InvalidNonceException {
 
         this.nonce = nonce;
+        this.nonceLifetimeSeconds = nonceLifetimeSeconds;
 
         if (!isSelfContainedNonce(nonce)) {
             throw new InvalidNonceException(
@@ -77,8 +92,9 @@ public class SelfContainedNonce {
      *         '::'
      */
     public static boolean isSelfContainedNonce(String nonce) {
-        return nonce.contains("::") && nonce.split("::").length == 3;
+        return nonce != null && nonce.contains("::") && nonce.split("::").length == 3;
     }
+
 
 
     /**
@@ -112,6 +128,20 @@ public class SelfContainedNonce {
                 && calculatedHash.equals(receivedHash);
         } catch(DateTimeParseException e) {
             throw new InvalidNonceException("Malformed Date");
+        }
+    }
+
+    /**
+     * Validates if the nonce has a valid format and is not yet expired
+     */
+    public static void validateNonce(SelfContainedNonce nonce, NonceSecret secret) {
+
+        if (!isSelfContainedNonce(nonce.getNonce())) {
+            throw new InvalidNonceException("Invalid nonce. Nonce must consist of 2 parts being split by double colon '::'");
+        }
+
+        if (!isValid(nonce.getNonce(), nonce.nonceLifetimeSeconds, secret)) {
+            throw new ExpiredNonceException("Invalid nonce. Nonce is expired.");
         }
     }
 

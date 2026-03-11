@@ -1,12 +1,12 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecretRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -69,7 +69,7 @@ class NonceServiceTest {
 
     @Test
     void testInvalidateSelfContainedNonce() {
-        var nonceStr = new SelfContainedNonce(nonceSecret).getNonce();
+        var nonceStr = new SelfContainedNonce(nonceSecret);
         nonceService.invalidateSelfContainedNonce(List.of(nonceStr));
         verify(cachedNonceRepository).saveAll(anyList());
     }

@@ -4,18 +4,20 @@ import ch.admin.bj.swiyu.issuer.domain.ecosystem.EcosystemApiType;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenSetRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
 
 @Component
+@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
 public class RegistryTokenHealthCheck extends CachedHealthChecker {
 
     private final TokenSetRepository tokenSetRepository;
     private final Duration tokenRefreshInterval;
 
-    public RegistryTokenHealthCheck(TokenSetRepository tokenSetRepository, @Value( "${swiyu.status-registry.token-refresh-interval}" ) Duration tokenRefreshInterval) {
+    public RegistryTokenHealthCheck(TokenSetRepository tokenSetRepository, @Value("${swiyu.status-registry.token-refresh-interval}") Duration tokenRefreshInterval) {
         this.tokenSetRepository = tokenSetRepository;
         this.tokenRefreshInterval = tokenRefreshInterval;
     }

@@ -43,18 +43,18 @@ class CredentialOfferTest {
     @Test
     void testReadOfferDataStringAndMap() {
         String jwt = "jwt-data";
-        Map<String, Object> result = CredentialOffer.readOfferData(jwt);
+        Map<String, Object> result = CredentialOffer.readOfferData(jwt, false);
         assertEquals("jwt-data", result.get("data"));
         assertEquals("jwt", result.get("data_integrity"));
 
         Map<String, Object> inputMap = Map.of("key", "value");
-        Map<String, Object> resultMap = CredentialOffer.readOfferData(inputMap);
+        Map<String, Object> resultMap = CredentialOffer.readOfferData(inputMap, false);
         assertTrue(resultMap.get("data").toString().contains("key"));
     }
 
     @Test
     void testReadOfferDataUnsupportedType() {
-        assertThrows(BadRequestException.class, () -> CredentialOffer.readOfferData(123));
+        assertThrows(BadRequestException.class, () -> CredentialOffer.readOfferData(123, false));
     }
 
 

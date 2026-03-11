@@ -47,7 +47,7 @@ public class StatusRegistryClient {
         } catch (WebClientResponseException e) {
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new ConfigurationException(
-                        "Failed to update status list - Please check your Swiyu Status API access configuration.",
+                        "Failed to create status list - Please check your Swiyu Status API access configuration.",
                         e);
             } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
                 throw new ConfigurationException(
@@ -65,8 +65,6 @@ public class StatusRegistryClient {
     }
 
     public void updateStatusListEntry(StatusList target, String statusListJWT) {
-
-        statusBusinessApi.getApiClient().setBearerToken(statusRegistryTokenService.getAccessToken());
 
         try {
             log.debug("Updating status list entry {} for business partner id {} on {}", target.getUri(), swiyuProperties.businessPartnerId(), statusBusinessApi.getApiClient().getBasePath());

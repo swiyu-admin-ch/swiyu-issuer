@@ -32,6 +32,10 @@ public class ProofJwt extends Proof implements AttestableProof {
     private final NonceSecret nonceSecret;
     private String holderKeyJson;
     private SignedJWT signedJWT;
+    /**
+     * The nonce used in the holder binding (if any)
+     */
+    private SelfContainedNonce nonce;
 
     public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds, NonceSecret nonceSecret) {
         super(proofType);
@@ -107,14 +111,19 @@ public class ProofJwt extends Proof implements AttestableProof {
     }
 
     @Override
-    public String getNonce() {
+    public SelfContainedNonce getNonce() {
 
         if (signedJWT == null) {
             throw new IllegalStateException("Must first call isValidHolderBinding");
         }
+        if (nonce != null) {
+            return nonce;
+        }
 
         try {
-            return signedJWT.getJWTClaimsSet().getStringClaim("nonce");
+            var nonceString = signedJWT.getJWTClaimsSet().getStringClaim("nonce");
+            nonce = new SelfContainedNonce(nonceString, nonceLifetimeSeconds, nonceSecret);
+            return nonce;
         } catch (ParseException e) {
             throw proofException(
                     "Provided Proof JWT is not parseable; " + e.getMessage(),
@@ -187,20 +196,20 @@ public class ProofJwt extends Proof implements AttestableProof {
 
     private void validateNonce() {
         try {
-            new SelfContainedNonce(getNonce(), nonceLifetimeSeconds, nonceSecret);
+            getNonce();
         } catch (InvalidNonceException e) {
             throw proofException("Invalid nonce claim in proof JWT",
-                        Map.of(
-                                "noncePresent", true,
-                                "nonceType", "selfContained"
-                        ));
+                    Map.of(
+                            "noncePresent", true,
+                            "nonceType", "selfContained"
+                    ));
         } catch (ExpiredNonceException e) {
             throw proofException("Nonce is expired",
-                        Map.of(
-                                "noncePresent", true,
-                                "nonceType", "selfContained",
-                                "nonceLifetimeSeconds", nonceLifetimeSeconds
-                        ));
+                    Map.of(
+                            "noncePresent", true,
+                            "nonceType", "selfContained",
+                            "nonceLifetimeSeconds", nonceLifetimeSeconds
+                    ));
         }
     }
 

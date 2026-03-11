@@ -1,9 +1,10 @@
 package ch.admin.bj.swiyu.issuer;
 
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto;
-import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.DefaultExceptionHandler;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.Mock;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpStatus;
@@ -28,9 +30,12 @@ class DefaultExceptionHandlerTest {
 
     private DefaultExceptionHandler handler;
 
+    @Mock
+    private ApplicationProperties applicationProperties;
+
     @BeforeEach
     void setUp() {
-        handler = new DefaultExceptionHandler();
+        handler = new DefaultExceptionHandler(applicationProperties);
     }
 
     @ParameterizedTest
@@ -115,7 +120,7 @@ class DefaultExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(body);
-      
+
         // test if error is logged
         assertThat(output.getAll()).contains("Status List Exception intercepted");
         assertEquals(expectedErrorMessage, body.getErrorDetails());

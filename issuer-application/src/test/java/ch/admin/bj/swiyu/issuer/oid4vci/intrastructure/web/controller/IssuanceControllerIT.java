@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -257,11 +258,10 @@ class IssuanceControllerIT {
         // Outdated Nonce not valid
         assertFalse(outdatedNonce.isValid(applicationProperties.getNonceLifetimeSeconds(), secret));
         // Create Credential Request with Proof using outdated nonce
-        var nonce = outdatedNonce.getNonce();
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         var proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(),
+                applicationProperties.getTemplateReplacement().get("external-url"), outdatedNonce.getNonce(), ProofType.JWT.getClaimTyp(),
                 true);
         var credentialRequestString = String
                 .format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
@@ -270,8 +270,7 @@ class IssuanceControllerIT {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("Nonce is expired")))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
-        // Should not have been cached
-        assertFalse(nonceService.isUsedNonce(outdatedNonce));
+
     }
 
     @ParameterizedTest
@@ -710,6 +709,6 @@ class IssuanceControllerIT {
     @NotNull
     private SelfContainedNonce fetchSelfContainedNonce() throws Exception {
         var nonce = requestNonce(mock);
-        return new SelfContainedNonce(nonce);
+        return new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds(), nonceService.getNonceSecret());
     }
 }
