@@ -191,7 +191,7 @@ class CredentialOfferStatusIT {
 
         var token = IssuanceV2TestUtils.getAccessTokenFromDeeplink(mvc, managementJsonObject.get("offer_deeplink").getAsString());
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
         requestCredentialV2(mvc, token, credentialRequestString)

@@ -108,7 +108,7 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
 
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         var response = requestCredentialV2(mock, (String) tokenDto.get("access_token"), credentialRequestString)
                 .andExpect(status().isOk())
@@ -147,7 +147,7 @@ class IssuanceV2IT {
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
 
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties, "university_example_sd_jwt");
         var response = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
@@ -256,7 +256,7 @@ class IssuanceV2IT {
                         }
                         """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
                 encryptionKey.toPublicJWK().toJSONString());
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties, responseEncryptionJson);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties, responseEncryptionJson, "university_example_sd_jwt");
 
         // Request encryption
         var requestEncryption = metadata.getRequestEncryption();
@@ -312,7 +312,7 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         var response = requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -376,7 +376,7 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
@@ -402,7 +402,7 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
@@ -430,7 +430,7 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenDto.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -464,7 +464,7 @@ class IssuanceV2IT {
 
         var tokenDto = fetchOAuthTokenDpop(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString(), null, null);
         var token = tokenDto.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredentialV2(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())

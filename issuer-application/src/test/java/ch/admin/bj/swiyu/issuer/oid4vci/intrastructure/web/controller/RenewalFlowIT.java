@@ -208,7 +208,7 @@ class RenewalFlowIT {
                         () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
         requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
@@ -236,7 +236,7 @@ class RenewalFlowIT {
                         () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
         requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
@@ -349,7 +349,7 @@ class RenewalFlowIT {
 
         oauthTokenResponse = requestTokenWithDpop(preAuthCode, dpopKey);
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
         requestCredentialV2WithDpop(mockMvc, oauthTokenResponse.getAccessToken(), credentialRequestString,
@@ -403,14 +403,13 @@ class RenewalFlowIT {
                 .map(privindex -> assertDoesNotThrow(
                         () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
                 .toList();
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties);
-        return credentialRequestString;
+        return getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
     }
 
     private JWTClaimsSet getCredentialClaimsSet(CredentialObjectDtoV2 issuedCredential) {
         var sdjwt = SDJWT.parse(issuedCredential.credential());
         var jwt = assertDoesNotThrow(() -> SignedJWT.parse(sdjwt.getCredentialJwt()));
-        return assertDoesNotThrow(() -> jwt.getJWTClaimsSet());
+        return assertDoesNotThrow(jwt::getJWTClaimsSet);
     }
 
     private long getStatusIndex(JWTClaimsSet credentialClaimSet) {

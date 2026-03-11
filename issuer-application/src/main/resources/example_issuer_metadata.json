@@ -143,6 +143,45 @@
         }
       }
     },
+    "university_example_sd_jwt_list": {
+      "format": "vc+sd-jwt",
+      "credential_signing_alg_values_supported": [
+        "ES256"
+      ],
+      "cryptographic_binding_methods_supported": [
+        "did:jwk"
+      ],
+      "proof_types_supported": {
+        "jwt": {
+          "proof_signing_alg_values_supported": [
+            "ES256"
+          ]
+        }
+      },
+      "vct": "${external-url}/oid4vci/vct/my-vct-v01",
+      "claims": {
+        "type": {
+          "mandatory": true,
+          "value_type": "array",
+          "display": [
+            {
+              "locale": "de-CH",
+              "name": "Abschluss Typen"
+            }
+          ]
+        },
+        "name": {
+          "mandatory": true,
+          "value_type": "string",
+          "display": [
+            {
+              "locale": "de-CH",
+              "name": "Universitätsname"
+            }
+          ]
+        }
+      }
+    },
     "unbound_example_sd_jwt": {
       "format": "vc+sd-jwt",
       "credential_signing_alg_values_supported": [

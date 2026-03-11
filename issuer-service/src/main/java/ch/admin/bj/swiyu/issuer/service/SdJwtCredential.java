@@ -108,6 +108,25 @@ public class SdJwtCredential extends CredentialBuilder {
         return new SDJWT(jwt.serialize(), disclosures).toString();
     }
 
+    // Todo check naming & recusrion
+    private void buildListDisclosures(SDObjectBuilder builder, Map.Entry<String, Object> entry, Collection<?> collectionValue, List<Disclosure> disclosures) {
+        var disc = collectionValue.stream().map(item -> {
+            var dis = new Disclosure(item);
+            disclosures.add(dis);
+            return dis.toArrayElement();
+        }).toList();
+
+        if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
+
+            // for strings
+            var recDisclosure = new Disclosure(entry.getKey(), disc);
+            disclosures.add(recDisclosure);
+            builder.putSDClaim(recDisclosure);
+        } else {
+            builder.putClaim(entry.getKey(), disc);
+        }
+    }
+
     /**
      * Issues one or a batch of SD-JWT credentials.
      * Batch size is determined by the number of holder public keys (if provided),
@@ -247,10 +266,14 @@ public class SdJwtCredential extends CredentialBuilder {
             }
             // Only process entries that are not protected claims and not null
             else if (entry.getValue() != null) {
-                // TODO: EID-1782; Handle mandatory subject fields using issuer metadata
-                Disclosure dis = new Disclosure(entry.getKey(), entry.getValue());
-                disclosures.add(dis);
-                builder.putSDClaim(dis);
+                if (entry.getValue() instanceof Collection<?> collectionValue) {
+                    buildListDisclosures(builder, entry, collectionValue, disclosures);
+                } else {
+                    // TODO: EID-1782; Handle mandatory subject fields using issuer metadata
+                    Disclosure dis = new Disclosure(entry.getKey(), entry.getValue());
+                    disclosures.add(dis);
+                    builder.putSDClaim(dis);
+                }
             }
             // Skip null values without any action
         }
@@ -312,6 +335,5 @@ public class SdJwtCredential extends CredentialBuilder {
                 // Merge JSONs into one
                 .reduce((acc, elem) -> getStatusFactory().mergeStatus(acc, elem))
                 .orElse(new HashMap<>());
-
     }
 }

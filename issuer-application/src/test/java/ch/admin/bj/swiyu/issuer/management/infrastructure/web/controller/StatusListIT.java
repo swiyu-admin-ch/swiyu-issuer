@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
@@ -12,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.google.gson.JsonObject;
@@ -345,7 +345,7 @@ class StatusListIT {
                 .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredentialV2(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
@@ -373,7 +373,7 @@ class StatusListIT {
                 .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredentialV2(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
@@ -384,7 +384,7 @@ class StatusListIT {
                 .andExpect(status().isOk());
 
         // should be only called once (1) on status list create and once (1) on update
-        verify(statusBusinessApi, times(1+1)).updateStatusListEntry(any(), any(), any());
+        verify(statusBusinessApi, times(1 + 1)).updateStatusListEntry(any(), any(), any());
     }
 
     @Test
@@ -403,7 +403,7 @@ class StatusListIT {
                 .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredentialV2(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
