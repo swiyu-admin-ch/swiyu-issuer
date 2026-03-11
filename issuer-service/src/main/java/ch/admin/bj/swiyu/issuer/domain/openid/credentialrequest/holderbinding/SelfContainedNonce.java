@@ -24,7 +24,7 @@ public class SelfContainedNonce {
         this.nonceLifetimeSeconds = nonceLifetimeSeconds;
         this.nonce = nonce;
 
-        validateNonce();
+        validateNonce(this);
     }
 
     /**
@@ -45,15 +45,15 @@ public class SelfContainedNonce {
     }
 
     /**
-     * Validates if the nonce has not yet expired
+     * Validates if the nonce has a valid format and is not yet expired
      */
-    public void validateNonce() {
+    public static void validateNonce(SelfContainedNonce nonce) {
 
-        if (!isSelfContainedNonce(this.getNonce())) {
+        if (!isSelfContainedNonce(nonce.getNonce())) {
             throw new InvalidNonceException("Invalid nonce. Nonce must consist of 2 parts being split by double colon '::'");
         }
 
-        if (!isValid(nonce, this.nonceLifetimeSeconds)) {
+        if (!isValid(nonce.getNonce(), nonce.nonceLifetimeSeconds)) {
             throw new ExpiredNonceException("Invalid nonce. Nonce is expired.");
         }
     }

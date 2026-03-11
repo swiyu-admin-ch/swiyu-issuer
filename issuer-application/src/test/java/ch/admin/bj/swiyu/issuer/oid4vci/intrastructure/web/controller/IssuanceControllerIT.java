@@ -202,7 +202,7 @@ class IssuanceControllerIT {
     @Test
     void testGetNonce_thenSuccess() throws Exception {
         var selfContainedNonce = fetchSelfContainedNonce();
-        assertDoesNotThrow(selfContainedNonce::validateNonce);
+        assertDoesNotThrow(()-> SelfContainedNonce.validateNonce(selfContainedNonce));
         assertDoesNotThrow(selfContainedNonce::getNonceId);
     }
 

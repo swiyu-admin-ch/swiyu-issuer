@@ -187,7 +187,7 @@ public class ProofJwt extends Proof implements AttestableProof {
     private void validateNonce() {
         try {
             var nonce = getNonce();
-            nonce.validateNonce();
+            SelfContainedNonce.validateNonce(nonce);
         } catch (InvalidNonceException e) {
             throw proofException("Invalid nonce claim in proof JWT",
                     Map.of(
