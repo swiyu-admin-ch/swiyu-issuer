@@ -37,7 +37,7 @@ public class SelfContainedNonce {
      * 
      * @param secret the authorization server's secret to be used in the hash.
      */
-    public SelfContainedNonce(NonceSecret secret) {
+    public SelfContainedNonce(IssuerSecret secret) {
         this(secret, 0);
     }
 
@@ -47,7 +47,7 @@ public class SelfContainedNonce {
      * @param secret the authorization server's secret to be used in the hash.
      * @param nonceLifetimeSeconds lifetime of the nonce for future validation
      */
-    public SelfContainedNonce(NonceSecret secret, int nonceLifetimeSeconds) {
+    public SelfContainedNonce(IssuerSecret secret, int nonceLifetimeSeconds) {
         var preNonce = UUID.randomUUID() + "::" + Instant.now().toString();
         nonce = preNonce + "::" + createHash(preNonce, secret);
         this.nonceLifetimeSeconds = nonceLifetimeSeconds;
@@ -62,7 +62,7 @@ public class SelfContainedNonce {
         this.nonceLifetimeSeconds = 0;
     }
 
-    public SelfContainedNonce(String nonce, int nonceLifetimeSeconds, NonceSecret secret)
+    public SelfContainedNonce(String nonce, int nonceLifetimeSeconds, IssuerSecret secret)
             throws ExpiredNonceException, InvalidNonceException {
 
         this.nonce = nonce;
@@ -81,7 +81,7 @@ public class SelfContainedNonce {
     /**
      * Validates if the nonce has not yet expired and has a valid hash
      */
-    public boolean isValid(int lifetimeSeconds, NonceSecret secret) {
+    public boolean isValid(int lifetimeSeconds, IssuerSecret secret) {
         return isValid(nonce, lifetimeSeconds, secret);
     }
 
@@ -111,7 +111,7 @@ public class SelfContainedNonce {
      * @return true if the nonce is valid
      * @throws InvalidNonceException if the nonce is malformed or the timestamp is invalid
      */
-    public static boolean isValid(String nonce, int lifetimeSeconds, NonceSecret secret) {
+    public static boolean isValid(String nonce, int lifetimeSeconds, IssuerSecret secret) {
         var now = Instant.now();
         var oldestAcceptableInstant = now.minus(lifetimeSeconds, ChronoUnit.SECONDS);
 
@@ -134,7 +134,7 @@ public class SelfContainedNonce {
     /**
      * Validates if the nonce has a valid format and is not yet expired
      */
-    public static void validateNonce(SelfContainedNonce nonce, NonceSecret secret) {
+    public static void validateNonce(SelfContainedNonce nonce, IssuerSecret secret) {
 
         if (!isSelfContainedNonce(nonce.getNonce())) {
             throw new InvalidNonceException("Invalid nonce. Nonce must consist of 2 parts being split by double colon '::'");
@@ -168,7 +168,7 @@ public class SelfContainedNonce {
      * @param secret The NonceSecret containing the secret ID.
      * @return A SHA-256 hash as a hexadecimal string.
      */
-    public static String createHash(String preNonce, NonceSecret secret) {
+    public static String createHash(String preNonce, IssuerSecret secret) {
         return DpopHashUtil.sha256(secret.getId().toString() + "," + preNonce);
     }
 }

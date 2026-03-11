@@ -5,7 +5,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
@@ -78,7 +78,7 @@ class HolderBindingServiceTest {
                 .generate())
         ).toList();
 
-        var secret = NonceSecret.builder().id(UUID.randomUUID()).build();
+        var secret = IssuerSecret.builder().id(UUID.randomUUID()).build();
         when(nonceService.getNonceSecret()).thenReturn(secret);
     }
 

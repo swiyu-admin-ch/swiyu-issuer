@@ -17,7 +17,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA
 @AllArgsConstructor
-public class NonceSecret {
+public class IssuerSecret {
     
     @Id
     private UUID id; // Doubles as the secret

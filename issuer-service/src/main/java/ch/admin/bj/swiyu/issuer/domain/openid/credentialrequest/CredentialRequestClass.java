@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest;
 
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import jakarta.annotation.Nullable;
@@ -56,7 +56,7 @@ public class CredentialRequestClass {
         this.credentialResponseEncryption = credentialResponseEncryption;
     }
 
-    public List<ProofJwt> getProofs(int acceptableProofTimeWindow, int nonceLifetimeSeconds, NonceSecret nonceSecret) {
+    public List<ProofJwt> getProofs(int acceptableProofTimeWindow, int nonceLifetimeSeconds, IssuerSecret nonceSecret) {
 
         if (proof == null || proof.isEmpty()) {
             return List.of();
@@ -96,7 +96,7 @@ public class CredentialRequestClass {
      * @return a "proof" JWT
      */
     @Deprecated(since = "OID4VCI 1.0")
-    public Optional<ProofJwt> getProof(int acceptableProofTimeWindow, int nonceLifetimeSeconds, NonceSecret nonceSecret) {
+    public Optional<ProofJwt> getProof(int acceptableProofTimeWindow, int nonceLifetimeSeconds, IssuerSecret nonceSecret) {
         final var PROOF_TYPE_KEY = "proof_type";
         // No Proof provided by Holder
         if (proof == null) {

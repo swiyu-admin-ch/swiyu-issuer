@@ -4,7 +4,7 @@ import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
@@ -60,7 +60,7 @@ class DemonstratingProofOfPossessionIT {
     private CredentialManagementRepository credentialManagementRepository;
     
     public static Stream<String> faultyNonceSource() {
-        var nonceSecret = NonceSecret.builder().id(UUID.randomUUID()).build();
+        var nonceSecret = IssuerSecret.builder().id(UUID.randomUUID()).build();
         return Stream.of(
                 // Only UUID; No timestamp
                 UUID.randomUUID().toString(), // EIDSEC-633

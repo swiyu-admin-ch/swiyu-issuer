@@ -7,8 +7,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecretRepository;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecretRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -58,11 +58,11 @@ class HolderBindingServiceIT {
     @Autowired
     private HolderBindingService holderBindingService;
     @Autowired
-    private NonceSecretRepository nonceSecretRepository;
+    private IssuerSecretRepository nonceSecretRepository;
     @MockitoBean
     private DidKeyResolverFacade didKeyResolver;
 
-    private NonceSecret nonceSecret;
+    private IssuerSecret nonceSecret;
     private ECKey attestationKey;
 
     private static CredentialOffer createHolderBindingTestOffer() {

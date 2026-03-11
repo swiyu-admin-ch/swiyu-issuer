@@ -3,8 +3,8 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecretRepository;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecretRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,17 +25,17 @@ class NonceServiceTest {
     private ApplicationProperties applicationProperties;
     private CachedNonceRepository cachedNonceRepository;
     private NonceService nonceService;
-    private NonceSecret nonceSecret;
+    private IssuerSecret nonceSecret;
 
     @BeforeEach
     void setUp() {
         
         applicationProperties = mock(ApplicationProperties.class);
         cachedNonceRepository = mock(CachedNonceRepository.class);
-        var nonceSecretRepository = mock(NonceSecretRepository.class);
+        var nonceSecretRepository = mock(IssuerSecretRepository.class);
         nonceService = new NonceService(applicationProperties, cachedNonceRepository, nonceSecretRepository);
 
-        nonceSecret = NonceSecret.builder().id(UUID.randomUUID()).build();
+        nonceSecret = IssuerSecret.builder().id(UUID.randomUUID()).build();
         when(nonceSecretRepository.findAll()).thenReturn(List.of(nonceSecret));
     }
 

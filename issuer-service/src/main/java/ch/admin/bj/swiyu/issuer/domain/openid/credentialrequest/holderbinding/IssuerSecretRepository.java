@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional(readOnly = true)
-public interface NonceSecretRepository extends JpaRepository<NonceSecret, UUID>{
+public interface IssuerSecretRepository extends JpaRepository<IssuerSecret, UUID>{
     
 }

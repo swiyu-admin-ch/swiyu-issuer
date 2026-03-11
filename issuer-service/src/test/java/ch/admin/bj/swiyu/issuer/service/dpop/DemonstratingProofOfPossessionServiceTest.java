@@ -7,8 +7,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepos
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecretRepository;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecretRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
@@ -56,7 +56,7 @@ class DemonstratingProofOfPossessionServiceTest {
     private CredentialOfferRepository credentialOfferRepository;
     private CredentialManagementRepository credentialManagementRepository;
     private ECKey dpopKey;
-    private NonceSecret nonceSecret;
+    private IssuerSecret nonceSecret;
 
     @BeforeEach
     void setUp() {
@@ -64,7 +64,7 @@ class DemonstratingProofOfPossessionServiceTest {
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
         CachedNonceRepository cachedNonceRepository = Mockito.mock(CachedNonceRepository.class);
-        NonceSecretRepository nonceSecretRepository = Mockito.mock(NonceSecretRepository.class);
+        IssuerSecretRepository nonceSecretRepository = Mockito.mock(IssuerSecretRepository.class);
         nonceService = new NonceService(applicationProperties, cachedNonceRepository, nonceSecretRepository);
         oAuthService = Mockito.mock(OAuthService.class);
         demonstratingProofOfPossessionService = new DemonstratingProofOfPossessionService(
@@ -83,7 +83,7 @@ class DemonstratingProofOfPossessionServiceTest {
         when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(10);
         when(applicationProperties.getAcceptableProofTimeWindowSeconds()).thenReturn(10);
         when(applicationProperties.getExternalUrl()).thenReturn("https://www.example.com");
-        nonceSecret = NonceSecret.builder().id(UUID.randomUUID()).build();
+        nonceSecret = IssuerSecret.builder().id(UUID.randomUUID()).build();
         when(nonceSecretRepository.findAll()).thenReturn(List.of(nonceSecret));
     }
 

@@ -6,8 +6,8 @@ import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecret;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.NonceSecretRepository;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecretRepository;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import lombok.AllArgsConstructor;
 
@@ -25,7 +25,7 @@ import java.util.List;
 public class NonceService {
     private final ApplicationProperties applicationProperties;
     private final CachedNonceRepository cachedNonceRepository;
-    private final NonceSecretRepository nonceSecretRepository;
+    private final IssuerSecretRepository issuerSecretRepository;
 
     public NonceResponseDto createNonce() {
         return new NonceResponseDto(new SelfContainedNonce(getNonceSecret()).getNonce());
@@ -82,9 +82,9 @@ public class NonceService {
                 Instant.now().minus(applicationProperties.getNonceLifetimeSeconds(), ChronoUnit.SECONDS));
     }
 
-    @Cacheable(CacheConfig.NONCE_SECRET_CACHE)
-    public NonceSecret getNonceSecret() {
-        return nonceSecretRepository.findAll().getFirst();
+    @Cacheable(CacheConfig.ISSUER_SECRET_CACHE)
+    public IssuerSecret getNonceSecret() {
+        return issuerSecretRepository.findAll().getFirst();
     }
 
     private void saveNonceInCache(SelfContainedNonce nonce) {

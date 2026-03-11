@@ -2,9 +2,9 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.exception.DpopErrorDto;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
 import jakarta.validation.ConstraintViolationException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +37,7 @@ import static org.springframework.http.HttpStatus.*;
 public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final ApplicationProperties applicationProperties;
+    private final NonceService nonceService;
 
     @ExceptionHandler(OAuthException.class)
     public ResponseEntity<ApiErrorDto> handleOAuthException(final OAuthException exception) {
@@ -137,12 +138,11 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<DpopErrorDto> handleDpopException(final DemonstratingProofOfPossessionException ex) {
-        final String secret = UUID.randomUUID().toString();
         HttpStatus responseStatus = UNAUTHORIZED;
         MultiValueMap<String, String> responseHeaders = new HttpHeaders();
         if (DemonstratingProofOfPossessionError.USE_DPOP_NONCE.equals(ex.getDpopError())) {
             responseStatus = BAD_REQUEST;
-            responseHeaders.put("DPoP-Nonce", List.of(new SelfContainedNonce(secret).getNonce()));
+            responseHeaders.put("DPoP-Nonce", List.of(nonceService.createNonce().nonce()));
         } else {
             log.debug("DPoP faulty user input intercepted", ex);
         }

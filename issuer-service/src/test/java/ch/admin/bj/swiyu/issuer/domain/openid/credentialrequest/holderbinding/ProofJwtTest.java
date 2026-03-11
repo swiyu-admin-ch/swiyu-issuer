@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ProofJwtTest {
 
     private static ECKey jwk;
-    private static NonceSecret nonceSecret = NonceSecret.builder().id(UUID.randomUUID()).build();
+    private static IssuerSecret nonceSecret = IssuerSecret.builder().id(UUID.randomUUID()).build();
 
     @BeforeEach
     void setUp() throws JOSEException {
