@@ -167,14 +167,17 @@ public class CredentialOffer {
     /**
      * Read the offer data depending on input type and add it to offer
      *
-     * @param offerData can be string or map -> other will throw exception
+     * @param offerData  can be string or map -> other will throw exception
+     * @param isDeferred indicates if the offer is for deferred flow, which allows empty offer data
      * @return offerdata map
      */
-    public static Map<String, Object> readOfferData(Object offerData) {
+    public static Map<String, Object> readOfferData(Object offerData, Boolean isDeferred) {
         if (offerData instanceof String string) {
             return readOfferDataString(string);
         } else if (offerData instanceof Map<?, ?>) {
             return readOfferDataMap((Map<?, ?>) offerData);
+        } else if (Boolean.TRUE.equals(isDeferred)) {
+            return Map.of(); // Deferred flow does not require offer data in an initial stage
         } else {
             throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
         }
