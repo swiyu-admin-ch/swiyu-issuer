@@ -31,12 +31,17 @@ public class ProofJwt extends Proof implements AttestableProof {
     private final int nonceLifetimeSeconds;
     private String holderKeyJson;
     private SignedJWT signedJWT;
+    /**
+     * The nonce used in the holder binding (if any)
+     */
+    private SelfContainedNonce nonce;
 
     public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds) {
         super(proofType);
         this.jwt = jwt;
         this.acceptableProofTimeWindowSeconds = acceptableProofTimeWindowSeconds;
         this.nonceLifetimeSeconds = nonceLifetimeSeconds;
+        this.nonce = null;
     }
 
     private static Oid4vcException proofException(String errorDescription, Map<String, Object> context) {
@@ -110,10 +115,14 @@ public class ProofJwt extends Proof implements AttestableProof {
         if (signedJWT == null) {
             throw new IllegalStateException("Must first call isValidHolderBinding");
         }
+        if (nonce != null) {
+            return nonce;
+        }
 
         try {
             var nonceString = signedJWT.getJWTClaimsSet().getStringClaim("nonce");
-            return new SelfContainedNonce(nonceString, nonceLifetimeSeconds);
+            nonce = new SelfContainedNonce(nonceString, nonceLifetimeSeconds);
+            return nonce;
         } catch (ParseException e) {
             throw proofException(
                     "Provided Proof JWT is not parseable; " + e.getMessage(),
