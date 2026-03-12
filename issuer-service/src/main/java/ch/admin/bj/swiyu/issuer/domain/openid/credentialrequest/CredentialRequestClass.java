@@ -47,13 +47,13 @@ public class CredentialRequestClass {
 
         var jwts = proof.get(ProofType.JWT.toString());
 
-        try {
-            return ((List<?>) jwts).stream().map(proofJwt -> new ProofJwt(ProofType.JWT,
-                            (String) proofJwt, acceptableProofTimeWindow, nonceLifetimeSeconds))
-                    .toList();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("could not parse proof jwt(s) from credential request", e);
+        if (!(jwts instanceof List<?> jwtList)) {
+            throw new IllegalArgumentException("could not parse proof jwt(s) from credential request");
         }
+
+        return jwtList.stream()
+                .map(proofJwt -> new ProofJwt(ProofType.JWT, proofJwt.toString(), acceptableProofTimeWindow, nonceLifetimeSeconds))
+                .toList();
 
     }
 }

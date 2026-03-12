@@ -19,20 +19,18 @@ class CredentialRequestValidatorTest {
     @Test
     void validateCredentialRequest_happyPath() {
         CredentialOffer offer = offer(CredentialOfferStatusType.IN_PROGRESS);
-        CredentialConfiguration configuration = configuration("dc+sd-jwt");
         CredentialRequestClass request = request(offer.getMetadataCredentialSupportedId().getFirst());
 
-        assertDoesNotThrow(() -> CredentialRequestValidator.validateCredentialRequest(offer, request, configuration));
+        assertDoesNotThrow(() -> CredentialRequestValidator.validateCredentialRequest(offer, request));
     }
 
     @Test
     void validateCredentialRequest_rejectsInvalidState() {
         CredentialOffer offer = offer(CredentialOfferStatusType.DEFERRED);
-        CredentialConfiguration configuration = configuration("dc+sd-jwt");
         CredentialRequestClass request = request(offer.getMetadataCredentialSupportedId().getFirst());
 
         OAuthException ex = assertThrows(OAuthException.class,
-                () -> CredentialRequestValidator.validateCredentialRequest(offer, request, configuration));
+                () -> CredentialRequestValidator.validateCredentialRequest(offer, request));
         assertEquals(INVALID_GRANT, ex.getError());
     }
 
@@ -40,11 +38,10 @@ class CredentialRequestValidatorTest {
     @Test
     void validateCredentialRequest_rejectsConfigurationIdMismatch() {
         CredentialOffer offer = offer(CredentialOfferStatusType.IN_PROGRESS);
-        CredentialConfiguration configuration = configuration("dc+sd-jwt");
         CredentialRequestClass request = request("other-config-id");
 
         Oid4vcException ex = assertThrows(Oid4vcException.class,
-                () -> CredentialRequestValidator.validateCredentialRequest(offer, request, configuration));
+                () -> CredentialRequestValidator.validateCredentialRequest(offer, request));
         assertEquals(UNSUPPORTED_CREDENTIAL_TYPE, ex.getError());
     }
 

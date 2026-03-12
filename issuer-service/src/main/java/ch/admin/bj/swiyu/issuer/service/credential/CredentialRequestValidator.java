@@ -26,11 +26,9 @@ public class CredentialRequestValidator {
      *
      * @param credentialOffer     the offer against which the request is validated
      * @param credentialRequest   the incoming credential request
-     * @param credentialConfiguration configuration referenced by the offer
      */
     public void validateCredentialRequest(CredentialOffer credentialOffer,
-                                          CredentialRequestClass credentialRequest,
-                                          CredentialConfiguration credentialConfiguration) {
+                                          CredentialRequestClass credentialRequest) {
         validateOfferState(credentialOffer);
         validateConfigurationId(credentialOffer, credentialRequest);
     }

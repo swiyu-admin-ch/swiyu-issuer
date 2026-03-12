@@ -78,8 +78,7 @@ public class CredentialEnvelopeService {
         }
 
         CredentialRequestValidator.validateCredentialRequest(credentialOffer,
-                credentialRequest,
-                issuerMetadata.getCredentialConfigurationById(credentialOffer.getMetadataCredentialSupportedId().getFirst()));
+                credentialRequest);
 
         return new EnvelopeContext(credentialOffer, mgmt, credentialRequest, clientInfo);
     }
