@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
@@ -12,8 +14,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Is
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.service.credential.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
@@ -111,7 +111,7 @@ class HolderBindingServiceIT {
                     attestationKey);
             proofs.add(proof);
         }
-        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+        CreateCredentialRequestDto request = new CreateCredentialRequestDto(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst(),
                 new ProofsDto(proofs),
                 null
@@ -140,7 +140,7 @@ class HolderBindingServiceIT {
                     attestationKey);
             proofs.add(proof);
         }
-        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+        CreateCredentialRequestDto request = new CreateCredentialRequestDto(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst(),
                 new ProofsDto(proofs),
                 null
@@ -161,7 +161,6 @@ class HolderBindingServiceIT {
      * is accepted (without any errors) but not added to the database.
      * This effectively removes the whole replay protection of both DPoP and holder binding.
      */
-    @Deprecated(since = "OID4VCI 1.0")
     @Test
     void mixedNonces_whenInvalidNoncePresent_thenOid4vciException() throws JOSEException {
         var credentialOffer = createHolderBindingTestOffer();
@@ -186,7 +185,7 @@ class HolderBindingServiceIT {
                     attestationKey);
             proofs.add(proof);
         }
-        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+        CreateCredentialRequestDto request = new CreateCredentialRequestDto(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst(),
                 new ProofsDto(proofs),
                 null
@@ -219,7 +218,7 @@ class HolderBindingServiceIT {
                     attestationKey);
             proofs.add(proof);
         }
-        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+        CreateCredentialRequestDto request = new CreateCredentialRequestDto(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst(),
                 new ProofsDto(proofs),
                 null
@@ -246,7 +245,7 @@ class HolderBindingServiceIT {
                     attestationKey);
             proofs.add(proof);
         }
-        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+        CreateCredentialRequestDto request = new CreateCredentialRequestDto(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst(),
                 new ProofsDto(proofs),
                 null
@@ -259,7 +258,6 @@ class HolderBindingServiceIT {
     /**
      * EIDSEC-632
      */
-    @Deprecated(since = "OID4VCI 1.0")
     @Test
     void whenRegisteredNonce_thenSuccess_whenReplayed_thenOid4vciException() throws JOSEException {
         var credentialOffer = createHolderBindingTestOffer();
@@ -278,7 +276,7 @@ class HolderBindingServiceIT {
                     attestationKey);
             proofs.add(proof);
         }
-        CredentialEndpointRequestDtoV2 request = new CredentialEndpointRequestDtoV2(
+        CreateCredentialRequestDto request = new CreateCredentialRequestDto(
                 credentialOffer.getMetadataCredentialSupportedId().getFirst(),
                 new ProofsDto(proofs),
                 null

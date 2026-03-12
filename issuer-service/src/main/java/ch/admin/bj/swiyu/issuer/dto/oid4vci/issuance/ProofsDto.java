@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2;
+package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;

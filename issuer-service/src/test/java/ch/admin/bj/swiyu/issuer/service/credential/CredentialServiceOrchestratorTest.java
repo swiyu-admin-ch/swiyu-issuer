@@ -1,29 +1,19 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEndpointRequestDto;
+import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
-import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
-import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
-import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEndpointRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.ProofsDto;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.SdJwtCredential;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
@@ -176,17 +166,14 @@ class CredentialServiceOrchestratorTest {
         when(credentialOfferRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // WHEN credential is created for offer with expired timestamp
-        var credentialRequestDto = getCredentialRequestDto();
+        var credentialRequestDto = getCredentialRequestDto("test", null);
         var uuidString = uuid.toString();
-        var ex = assertThrows(OAuthException.class, () ->
-                credentialServiceOrchestrator.createCredential(credentialRequestDto, uuidString, null));
+        assertThrows(RenewalException.class, () ->
+                credentialServiceOrchestrator.createCredential(credentialRequestDto, uuidString, null, null));
 
         // THEN Status is changed and offer data is cleared
         assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
         assertNull(offer.getOfferData());
-        // todo check invalid_grant  vs. invalid access token
-        assertEquals("INVALID_GRANT", ex.getError().toString());
-        assertEquals("Invalid accessToken", ex.getMessage());
     }
 
     @Test
@@ -211,54 +198,11 @@ class CredentialServiceOrchestratorTest {
         assertEquals("Invalid preAuthCode", ex.getMessage());
     }
 
-    @Test
-    void testCreateCredentialOffer_invalidFormat_thenBadRequest() {
-
-        var credentialRequestDto = getCredentialRequestDto();
-        var clientInfo = getClientInfo();
-        var claim = new CredentialClaim();
-        claim.setMandatory(true);
-        claim.setValueType("string");
-        var credConfig = mock(CredentialConfiguration.class);
-        when(credConfig.getCredentialDefinition()).thenReturn(null);
-        when(credConfig.getClaims()).thenReturn(Map.of("hello", claim));
-        when(credConfig.getFormat()).thenReturn("not-vc+sd-jwt");
-        when(credConfig.getVct()).thenReturn("test-vct");
-
-        var offer = getCredentialOffer(
-                CredentialOfferStatusType.IN_PROGRESS,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                offerData,
-                UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null, null, null),
-                null);
-        var mgmt = CredentialManagement.builder()
-                .accessToken(UUID.randomUUID())
-                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
-                .credentialOffers(Set.of(offer))
-                .build();
-
-        offer.setCredentialManagement(mgmt);
-
-        when(statusListOrchestrator.findByUriIn(any())).thenReturn(List.of(statusList));
-        when(credentialOfferStatusRepository.save(any())).thenReturn(getCredentialOfferStatus(UUID.randomUUID(), UUID.randomUUID()));
-        when(credentialOfferRepository.findByIdForUpdate(any(UUID.class))).thenReturn(Optional.empty());
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("different-test-metadata", mock(CredentialConfiguration.class)));
-        when(credentialManagementRepository.findByAccessToken(mgmt.getAccessToken())).thenReturn(Optional.of(mgmt));
-        when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
-        when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credConfig);
-
-        var accessToken = mgmt.getAccessToken().toString();
-        var exception = assertThrows(Oid4vcException.class, () ->
-                credentialServiceOrchestrator.createCredential(credentialRequestDto, accessToken, clientInfo));
-
-        assertTrue(exception.getMessage().contains("Mismatch between requested and offered format."));
-    }
 
     @Test
     void testCreateCredential_deferred() throws JsonProcessingException {
 
-        var credentialRequestDto = getCredentialRequestDto();
+        var credentialRequestDto = getCredentialRequestDto("test", null);
         var clientInfo = getClientInfo();
 
         CredentialOffer credentialOffer = getCredentialOffer(
@@ -301,7 +245,7 @@ class CredentialServiceOrchestratorTest {
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test", credConfig));
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(credConfig);
 
-        credentialServiceOrchestrator.createCredential(credentialRequestDto, mgmt.getAccessToken().toString(), clientInfo);
+        credentialServiceOrchestrator.createCredential(credentialRequestDto, mgmt.getAccessToken().toString(), clientInfo, null);
 
         // check if is issued && data removed
         assertEquals(CredentialOfferStatusType.DEFERRED, credentialOffer.getCredentialStatus());
@@ -312,7 +256,7 @@ class CredentialServiceOrchestratorTest {
 
     // only for V2!
     @Test
-    void testCreateCredentialFromDeferredRequestV2_notReady_noException() {
+    void testCreateCredentialFromDeferredRequest_notReady_noException() {
 
         UUID accessToken = UUID.randomUUID();
 
@@ -346,49 +290,8 @@ class CredentialServiceOrchestratorTest {
 
         // Act
         var accessTokenString = accessToken.toString();
-        assertDoesNotThrow(() -> credentialServiceOrchestrator.createCredentialFromDeferredRequestV2(deferredRequest, accessTokenString));
-    }
 
-    // only for V1!
-    @Test
-    void testCreateCredentialFromDeferredRequest_notReady_thenException() {
-
-        UUID accessToken = UUID.randomUUID();
-
-        CredentialOffer credentialOffer = getCredentialOffer(
-                CredentialOfferStatusType.DEFERRED,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                Map.of(),
-                UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null, null, null),
-                UUID.randomUUID());
-        var mgmt = CredentialManagement.builder()
-                .accessToken(accessToken)
-                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
-                .credentialOffers(Set.of(credentialOffer))
-                .build();
-
-        credentialOffer.setCredentialManagement(mgmt);
-
-        // Mock the factory to return the builder
-        var sdJwtCredential = mock(SdJwtCredential.class);
-        when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
-
-        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(credentialOffer.getTransactionId(), null);
-
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
-        when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
-
-        // Act
-        var accessTokenString = accessToken.toString();
-        var exception = assertThrows(Oid4vcException.class, () ->
-                credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredRequest, accessTokenString));
-
-        assertEquals("The credential is not marked as ready to be issued", exception.getMessage());
+        credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredRequest, accessTokenString);
     }
 
     @ParameterizedTest
@@ -475,6 +378,7 @@ class CredentialServiceOrchestratorTest {
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .credentialOffers(Set.of(credentialOffer))
                 .build();
+
         credentialOffer.setCredentialManagement(mgmt);
 
         when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
@@ -490,54 +394,6 @@ class CredentialServiceOrchestratorTest {
 
         // Act
         credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredRequest, accessToken.toString());
-
-        // check if is issued && data removed
-        assertEquals(CredentialOfferStatusType.ISSUED, credentialOffer.getCredentialStatus());
-        assertNull(credentialOffer.getOfferData());
-        assertNull(credentialOffer.getTransactionId());
-        assertNull(credentialOffer.getHolderJWKs());
-        assertNull(credentialOffer.getClientAgentInfo());
-
-        verify(credentialOfferRepository).save(credentialOffer);
-        verify(credentialStateMachine).sendEventAndUpdateStatus(credentialOffer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
-    }
-
-    @Test
-    void testCreateCredentialFromDeferredRequestV2_success() {
-
-        UUID transactionId = UUID.randomUUID();
-        UUID accessToken = UUID.randomUUID();
-
-        DeferredCredentialEndpointRequestDto deferredRequest = new DeferredCredentialEndpointRequestDto(transactionId, null);
-
-        CredentialOffer credentialOffer = spy(getCredentialOffer(
-                CredentialOfferStatusType.READY,
-                Instant.now().plusSeconds(600).getEpochSecond(),
-                offerData,
-                UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null, null, null),
-                transactionId));
-        var mgmt = CredentialManagement.builder()
-                .accessToken(accessToken)
-                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
-                .credentialOffers(Set.of(credentialOffer))
-                .build();
-
-        credentialOffer.setCredentialManagement(mgmt);
-
-        when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
-        when(credentialOfferRepository.findByPreAuthorizedCode(any(UUID.class))).thenReturn(Optional.empty());
-
-        // Mock the factory to return the builder
-        var sdJwtCredential = mock(SdJwtCredential.class);
-        when(credentialFormatFactory.getFormatBuilder(anyString())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialOffer(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.holderBindings(any())).thenReturn(sdJwtCredential);
-        when(sdJwtCredential.credentialType(any())).thenReturn(sdJwtCredential);
-
-        // Act
-        credentialServiceOrchestrator.createCredentialFromDeferredRequestV2(deferredRequest, accessToken.toString());
 
         // check if is issued && data removed
         assertEquals(CredentialOfferStatusType.ISSUED, credentialOffer.getCredentialStatus());
@@ -601,9 +457,9 @@ class CredentialServiceOrchestratorTest {
     }
 
     @Test
-    void createCredentialV2_deferred_thenSuccess() throws JsonProcessingException {
+    void createCredential_deferred_thenSuccess() throws JsonProcessingException {
         // Arrange
-        CredentialEndpointRequestDtoV2 requestDto = mock(CredentialEndpointRequestDtoV2.class);
+        CreateCredentialRequestDto requestDto = mock(CreateCredentialRequestDto.class);
         UUID accessToken = UUID.randomUUID();
 
         CredentialRequestClass credentialRequest = mock(CredentialRequestClass.class);
@@ -631,7 +487,7 @@ class CredentialServiceOrchestratorTest {
         mockVCBuilder(offer);
         when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
 
-        credentialServiceOrchestrator.createCredentialV2(requestDto, accessToken.toString(), clientInfo, null);
+        credentialServiceOrchestrator.createCredential(requestDto, accessToken.toString(), clientInfo, null);
 
         verify(offer).initializeDeferredState(any(), any(), anyList(), anyList(), any(), any());
         verify(credentialOfferRepository).save(offer);
@@ -640,15 +496,14 @@ class CredentialServiceOrchestratorTest {
     }
 
     @Test
-    void createCredentialV2_nonDeferred_thenSuccess() {
+    void createCredential_nonDeferred_thenSuccess() {
         // Arrange
-        CredentialEndpointRequestDtoV2 requestDto = mock(CredentialEndpointRequestDtoV2.class);
+        CreateCredentialRequestDto requestDto = mock(CreateCredentialRequestDto.class);
         UUID accessToken = UUID.randomUUID();
         var proofs = List.of(mock(ProofJwt.class));
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder()
                 .credentialConfigurationId("test")
-                .format("vc+sd-jwt")
                 .proof(Map.of("proofs", proofs))
                 .build();
         ClientAgentInfo clientInfo = mock(ClientAgentInfo.class);
@@ -672,7 +527,7 @@ class CredentialServiceOrchestratorTest {
         mockVCBuilder(offer);
         when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credentialConfiguration);
 
-        credentialServiceOrchestrator.createCredentialV2(requestDto, accessToken.toString(), clientInfo, null);
+        credentialServiceOrchestrator.createCredential(requestDto, accessToken.toString(), clientInfo, null);
 
         verify(credentialOfferRepository, atLeastOnce()).save(offer);
         verify(credentialStateMachine).sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
@@ -738,7 +593,7 @@ class CredentialServiceOrchestratorTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(100).getEpochSecond();
-        var credentialRequestDto = getCredentialRequestDto();
+        var credentialRequestDto = getCredentialRequestDto("test", null);
         var offer = getCredentialOffer(status, expirationTimeStamp, offerData, UUID.randomUUID(), null, transactionId);
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
@@ -749,9 +604,7 @@ class CredentialServiceOrchestratorTest {
 
         when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         var accessTokenString = accessToken.toString();
-        var exception = assertThrows(OAuthException.class, () -> credentialServiceOrchestrator.createCredential(credentialRequestDto, accessTokenString, null));
-
-        assertEquals(OAuthError.INVALID_GRANT, exception.getError());
+        assertThrows(RenewalException.class, () -> credentialServiceOrchestrator.createCredential(credentialRequestDto, accessTokenString, null, null));
     }
 
     @Test
@@ -759,7 +612,7 @@ class CredentialServiceOrchestratorTest {
         UUID accessToken = UUID.randomUUID();
         UUID transactionId = UUID.randomUUID();
         var expirationTimeStamp = now().plusSeconds(100).getEpochSecond();
-        CredentialEndpointRequestDtoV2 credentialRequestDto = getCredentialRequestDtoV2("not-test", null);
+        CreateCredentialRequestDto credentialRequestDto = getCredentialRequestDto("not-test", null);
         var offer = getCredentialOffer(CredentialOfferStatusType.IN_PROGRESS, expirationTimeStamp, offerData, UUID.randomUUID(), null, transactionId);
         var config = mock(CredentialConfiguration.class);
         var mgmt = CredentialManagement.builder()
@@ -773,7 +626,7 @@ class CredentialServiceOrchestratorTest {
         when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
         var accessTokenString = accessToken.toString();
-        var exception = assertThrows(Oid4vcException.class, () -> credentialServiceOrchestrator.createCredentialV2(credentialRequestDto, accessTokenString, null, null));
+        var exception = assertThrows(Oid4vcException.class, () -> credentialServiceOrchestrator.createCredential(credentialRequestDto, accessTokenString, null, null));
 
         assertEquals(CredentialRequestError.UNSUPPORTED_CREDENTIAL_TYPE, exception.getError());
         assertEquals("Mismatch between requested and offered credential configuration id.", exception.getMessage());
@@ -805,10 +658,10 @@ class CredentialServiceOrchestratorTest {
         when(vcBuilder.credentialType(anyList())).thenReturn(vcBuilder);
 
         CredentialEnvelopeDto deferredEnvelope = mock(CredentialEnvelopeDto.class);
-        when(vcBuilder.buildDeferredCredentialV2(any(UUID.class))).thenReturn(deferredEnvelope);
+        when(vcBuilder.buildDeferredCredential(any(UUID.class))).thenReturn(deferredEnvelope);
 
         CredentialEnvelopeDto issuedEnvelope = mock(CredentialEnvelopeDto.class);
-        when(vcBuilder.buildCredentialEnvelopeV2()).thenReturn(issuedEnvelope);
+        when(vcBuilder.buildCredentialEnvelope()).thenReturn(issuedEnvelope);
     }
 
     private CredentialOfferStatus getCredentialOfferStatus(UUID offerId, UUID statusId) {
@@ -817,16 +670,8 @@ class CredentialServiceOrchestratorTest {
                 .build();
     }
 
-    private @NotNull CredentialEndpointRequestDto getCredentialRequestDto() {
-        return new CredentialEndpointRequestDto(
-                "vc+sd-jwt",
-                new HashMap<>(),
-                null
-        );
-    }
-
-    private @NotNull CredentialEndpointRequestDtoV2 getCredentialRequestDtoV2(String credentialConfigurationId, ProofsDto proofs) {
-        return new CredentialEndpointRequestDtoV2(
+    private @NotNull CreateCredentialRequestDto getCredentialRequestDto(String credentialConfigurationId, ProofsDto proofs) {
+        return new CreateCredentialRequestDto(
                 credentialConfigurationId,
                 proofs,
                 null

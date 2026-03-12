@@ -106,7 +106,7 @@ public class HolderBindingService {
         try {
             return credentialRequest.getProofs(
                     applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                    applicationProperties.getAcceptableProofTimeWindowSeconds(),
+                    applicationProperties.getNonceLifetimeSeconds(),
                     nonceService.getNonceSecret()
                 );
         } catch (IllegalArgumentException e) {

@@ -9,9 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNSUPPORTED_CREDENTIAL_FORMAT;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNSUPPORTED_CREDENTIAL_TYPE;
 import static ch.admin.bj.swiyu.issuer.common.exception.OAuthError.INVALID_GRANT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,42 +19,29 @@ class CredentialRequestValidatorTest {
     @Test
     void validateCredentialRequest_happyPath() {
         CredentialOffer offer = offer(CredentialOfferStatusType.IN_PROGRESS);
-        CredentialConfiguration configuration = configuration("dc+sd-jwt");
-        CredentialRequestClass request = request("dc+sd-jwt", offer.getMetadataCredentialSupportedId().getFirst());
+        CredentialRequestClass request = request(offer.getMetadataCredentialSupportedId().getFirst());
 
-        assertDoesNotThrow(() -> CredentialRequestValidator.validateCredentialRequest(offer, request, configuration));
+        assertDoesNotThrow(() -> CredentialRequestValidator.validateCredentialRequest(offer, request));
     }
 
     @Test
     void validateCredentialRequest_rejectsInvalidState() {
         CredentialOffer offer = offer(CredentialOfferStatusType.DEFERRED);
-        CredentialConfiguration configuration = configuration("dc+sd-jwt");
-        CredentialRequestClass request = request("dc+sd-jwt", offer.getMetadataCredentialSupportedId().getFirst());
+        CredentialRequestClass request = request(offer.getMetadataCredentialSupportedId().getFirst());
 
         OAuthException ex = assertThrows(OAuthException.class,
-                () -> CredentialRequestValidator.validateCredentialRequest(offer, request, configuration));
+                () -> CredentialRequestValidator.validateCredentialRequest(offer, request));
         assertEquals(INVALID_GRANT, ex.getError());
     }
 
-    @Test
-    void validateCredentialRequest_rejectsFormatMismatch() {
-        CredentialOffer offer = offer(CredentialOfferStatusType.IN_PROGRESS);
-        CredentialConfiguration configuration = configuration("vc+sd-jwt");
-        CredentialRequestClass request = request("dc+sd-jwt", offer.getMetadataCredentialSupportedId().getFirst());
-
-        Oid4vcException ex = assertThrows(Oid4vcException.class,
-                () -> CredentialRequestValidator.validateCredentialRequest(offer, request, configuration));
-        assertEquals(UNSUPPORTED_CREDENTIAL_FORMAT, ex.getError());
-    }
 
     @Test
     void validateCredentialRequest_rejectsConfigurationIdMismatch() {
         CredentialOffer offer = offer(CredentialOfferStatusType.IN_PROGRESS);
-        CredentialConfiguration configuration = configuration("dc+sd-jwt");
-        CredentialRequestClass request = request("dc+sd-jwt", "other-config-id");
+        CredentialRequestClass request = request("other-config-id");
 
         Oid4vcException ex = assertThrows(Oid4vcException.class,
-                () -> CredentialRequestValidator.validateCredentialRequest(offer, request, configuration));
+                () -> CredentialRequestValidator.validateCredentialRequest(offer, request));
         assertEquals(UNSUPPORTED_CREDENTIAL_TYPE, ex.getError());
     }
 
@@ -73,9 +58,8 @@ class CredentialRequestValidatorTest {
         return configuration;
     }
 
-    private CredentialRequestClass request(String format, String credentialConfigurationId) {
+    private CredentialRequestClass request(String credentialConfigurationId) {
         CredentialRequestClass request = new CredentialRequestClass();
-        request.setFormat(format);
         request.setCredentialConfigurationId(credentialConfigurationId);
         return request;
     }
