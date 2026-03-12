@@ -62,7 +62,6 @@ public class SelfContainedNonce {
      * Note: Neither signature nor validity has been validated for this nonce
      * 
      * @param nonce
-     * @param nonceLifetimeSeconds
      */
     public SelfContainedNonce(String nonce) {
         this.nonce = nonce;
@@ -92,14 +91,14 @@ public class SelfContainedNonce {
      * Validates if the nonce has not yet expired and has a valid hash
      */
     public boolean isValid(int lifetimeSeconds, IssuerSecret secret) {
-        return !hasExpired(this, lifetimeSeconds, secret) && !hasInvalidSignature(this, secret);
+        return !hasExpired(this, lifetimeSeconds) && !hasInvalidSignature(this, secret);
     }
 
     /**
      * Validates if the nonce has a valid format and is not yet expired
      */
     private static void validateNonce(SelfContainedNonce nonce, int nonceLifetimeSeconds, IssuerSecret secret) {
-        if (hasExpired(nonce, nonceLifetimeSeconds, secret)) {
+        if (hasExpired(nonce, nonceLifetimeSeconds)) {
             throw new ExpiredNonceException("Invalid nonce. Nonce is expired.");
         }
         if (hasInvalidSignature(nonce, secret)) {
@@ -116,10 +115,9 @@ public class SelfContainedNonce {
      * @param nonce           the nonce string to be validated
      * @param lifetimeSeconds the maximum number of seconds a nonce is considered
      *                        valid from its creation
-     * @param secret          the secret used to create the nonce hash
      * @return true if the nonce is valid
      */
-    private static boolean hasExpired(SelfContainedNonce nonce, int lifetimeSeconds, IssuerSecret secret) {
+    private static boolean hasExpired(SelfContainedNonce nonce, int lifetimeSeconds) {
         var now = Instant.now();
         var oldestAcceptableInstant = now.minus(lifetimeSeconds, ChronoUnit.SECONDS);
         return !(oldestAcceptableInstant.isBefore(nonce.nonceInstant) && now.isAfter(nonce.nonceInstant));

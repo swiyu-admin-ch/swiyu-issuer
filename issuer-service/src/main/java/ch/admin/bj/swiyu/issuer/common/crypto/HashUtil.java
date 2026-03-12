@@ -1,12 +1,17 @@
 package ch.admin.bj.swiyu.issuer.common.crypto;
 
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class HashUtil {
 
     /**
@@ -21,7 +26,7 @@ public class HashUtil {
         // We use bouncy castle as it is more performant than JCE
         HMac hmac = new HMac(SHA256Digest.newInstance());
         hmac.init(key);
-        byte[] messageBytes = message.getBytes();
+        byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
         hmac.update(messageBytes, 0, messageBytes.length);
         byte[] hmacOut = new byte[hmac.getMacSize()];
         hmac.doFinal(hmacOut, 0);
