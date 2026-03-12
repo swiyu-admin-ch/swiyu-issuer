@@ -140,6 +140,7 @@ class RenewalFlowIT {
         when(applicationProperties.getBusinessIssuerRenewalApiEndpoint())
                 .thenReturn(mockServerContainer.getEndpoint()
                         + TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT);
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(120);
     }
 
     @Test

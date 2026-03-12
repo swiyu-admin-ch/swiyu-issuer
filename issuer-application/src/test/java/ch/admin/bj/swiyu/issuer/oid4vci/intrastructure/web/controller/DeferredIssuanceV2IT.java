@@ -677,7 +677,7 @@ class DeferredIssuanceV2IT {
                                 .thenReturn(instant);
 
                 var preNonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
-                var nonce = preNonce + "::" + SelfContainedNonce.createHash(preNonce, nonceService.getNonceSecret());
+                var nonce = preNonce + "::" + SelfContainedNonce.createSignature(preNonce, nonceService.getNonceSecret());
 
                 var credentialRequestString = getCredentialRequestString(
                                 nonce,

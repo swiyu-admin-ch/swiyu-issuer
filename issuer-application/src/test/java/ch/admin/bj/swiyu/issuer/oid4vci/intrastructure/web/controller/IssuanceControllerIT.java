@@ -254,7 +254,7 @@ class IssuanceControllerIT {
         var secret = nonceService.getNonceSecret();
         var outdatedPreNonce = UUID.randomUUID() + "::"
                 + Instant.now().minus(applicationProperties.getNonceLifetimeSeconds() + 1, ChronoUnit.SECONDS);
-        var outdatedNonce = new SelfContainedNonce(outdatedPreNonce + "::" + SelfContainedNonce.createHash(outdatedPreNonce, secret));
+        var outdatedNonce = new SelfContainedNonce(outdatedPreNonce + "::" + SelfContainedNonce.createSignature(outdatedPreNonce, secret));
         // Outdated Nonce not valid
         assertFalse(outdatedNonce.isValid(applicationProperties.getNonceLifetimeSeconds(), secret));
         // Create Credential Request with Proof using outdated nonce
