@@ -3,7 +3,10 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialOfferTestHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,9 +29,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -39,15 +40,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
 class WellKnownControllerIT {
+    protected CredentialOfferTestHelper testHelper;
     @Autowired
     private MockMvc mock;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
     private SdjwtProperties sdjwtProperties;
-
-    protected CredentialOfferTestHelper testHelper;
-
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired
@@ -71,6 +70,7 @@ class WellKnownControllerIT {
         mock.perform(get("/oid4vci/.well-known/openid-configuration"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("token_endpoint")))
+                .andExpect(content().string(containsString("\"pre-authorized_grant_anonymous_access_supported\":true")))
                 .andExpect(content().string(not(containsString("${external-url}"))));
     }
 
@@ -79,6 +79,7 @@ class WellKnownControllerIT {
         mock.perform(get("/oid4vci/.well-known/oauth-authorization-server"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("token_endpoint")))
+                .andExpect(content().string(containsString("\"pre-authorized_grant_anonymous_access_supported\":true")))
                 .andExpect(content().string(not(containsString("${external-url}"))));
     }
 

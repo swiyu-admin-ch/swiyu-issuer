@@ -1,13 +1,13 @@
 package ch.admin.bj.swiyu.issuer.service.dpop;
 
 import ch.admin.bj.swiyu.dpop.DpopConstants;
-import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import jakarta.annotation.Nullable;
@@ -96,7 +96,8 @@ public class DemonstratingProofOfPossessionService {
     public OAuthAuthorizationServerMetadataDto addSigningAlgorithmsSupportedAndSwissprofileVersion(OAuthAuthorizationServerMetadataDto openIdConfiguration) {
         var builder = openIdConfiguration.toBuilder();
         builder.dpop_signing_alg_values_supported(DpopConstants.SUPPORTED_ALGORITHMS)
-                .profile_version(SwissProfileVersions.ISSUANCE_PROFILE_VERSION);
+                .profile_version(SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                .preauthorized_grant_anonymous_access_supported(true);
 
         return builder.build();
     }

@@ -224,7 +224,7 @@ class HolderBindingServiceTest {
         mockBatchCredentialIssuance(3);
 
         List<String> proofs = holderKeys.stream().map(holderKey -> assertDoesNotThrow(() -> TestServiceUtils.createHolderProof(holderKey,
-                "did:example:issuer", UUID.randomUUID() + "::" + Instant.now().minusSeconds(1).toString(),
+                "did:example:issuer", UUID.randomUUID() + "::" + Instant.now().minusSeconds(2).toString(),
                 ProofType.JWT.getClaimTyp(), false))).toList();
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(

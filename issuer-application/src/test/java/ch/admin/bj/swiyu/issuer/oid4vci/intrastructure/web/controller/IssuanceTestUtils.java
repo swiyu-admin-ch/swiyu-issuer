@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -28,6 +29,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -64,6 +66,15 @@ public class IssuanceTestUtils {
     public static ResultActions updateStatus(MockMvc mock, String managementId, UpdateCredentialStatusRequestTypeDto statusType) throws Exception {
         return mock.perform(patch("/management/api/credentials/" + managementId + "/status?credentialStatus=%s".formatted(statusType.name()))
                 .contentType(MediaType.APPLICATION_JSON_VALUE));
+    }
+
+    public static ResultActions updateStatusAndSubjectDataForDeferred(MockMvc mock, String managementId, Map<String, String> subjectData) throws Exception {
+
+        var objectMapper = new ObjectMapper();
+
+        return mock.perform(patch("/management/api/credentials/" + managementId)
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(subjectData)));
     }
 
     public static JsonArray extractCredentials(MvcResult response) throws UnsupportedEncodingException {

@@ -244,7 +244,6 @@ public class CredentialOfferMapper {
         existingOffer.setCredentialValidUntil(newOffer.getCredentialValidUntil());
         existingOffer.setCredentialMetadata(toCredentialOfferMetadataDto(newOffer.getCredentialMetadata()));
         existingOffer.setConfigurationOverride(toConfigurationOverride(newOffer.getConfigurationOverride()));
-        existingOffer.getCredentialManagement().setMetadataTenantId(applicationProperties.isSignedMetadataEnabled() ? java.util.UUID.randomUUID() : null);
     }
 
 }

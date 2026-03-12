@@ -4,6 +4,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.health;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -13,22 +14,37 @@ import java.util.Map;
  * <p>Propagates DOWN if any underlying checker is not UP and exposes each checkers details.</p>
  */
 @Component
+@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class IssuerHealthIndicator implements HealthIndicator {
 
-    /** Cached status registry endpoint checks. */
+    /**
+     * Cached status registry endpoint checks.
+     */
     private final StatusRegistryIssuerHealthChecker statusRegistryIssuer;
-    /** Cached DID / identifier resolution checks. */
+    /**
+     * Cached DID / identifier resolution checks.
+     */
     private final IdentifierRegistryHealthChecker identifierRegistry;
-    /** Cached status list signing key verification checks. */
+    /**
+     * Cached status list signing key verification checks.
+     */
     private final StatusListSigningKeyVerificationHealthChecker statusListSigningKeyVerificationHealthChecker;
-    /** Cached SD-JWT signing key verification checks. */
+    /**
+     * Cached SD-JWT signing key verification checks.
+     */
     private final SdJwtSigningKeyVerificationHealthChecker sdJwtSigningKeyVerificationHealthChecker;
-    /** Cached stale callback event checks. */
+    /**
+     * Cached stale callback event checks.
+     */
     private final CallbackHealthChecker callbackHealthChecker;
-    /** Cached check if the token was refreshed */
+    /**
+     * Cached check if the token was refreshed
+     */
     private final RegistryTokenHealthCheck registryTokenHealthCheck;
-    /** Cached check if registry is accessible */
+    /**
+     * Cached check if registry is accessible
+     */
     private final StatusListAvailabilityHealthChecker registryHealthCheck;
 
     /**

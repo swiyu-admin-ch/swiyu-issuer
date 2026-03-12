@@ -146,7 +146,7 @@ public class HolderBindingService {
     }
 
     private void handleProofNonces(List<ProofJwt> proofs) {
-        List<String> nonces = proofs.stream()
+        List<SelfContainedNonce> nonces = proofs.stream()
                 .map(ProofJwt::getNonce)
                 .toList();
         nonceService.invalidateSelfContainedNonce(nonces);
@@ -188,15 +188,13 @@ public class HolderBindingService {
 
     private SelfContainedNonce ensureNonceNotReused(ProofJwt requestProof) throws Oid4vcException {
         try {
-            var nonce = new SelfContainedNonce(requestProof.getNonce(), applicationProperties.getNonceLifetimeSeconds());
+            var nonce = requestProof.getNonce();
 
             if (nonceService.isUsedNonce(nonce)) {
                 throw new InvalidNonceException("Presented nonce was reused!");
             }
             return nonce;
-        } catch (ExpiredNonceException e) {
-            throw new Oid4vcException(INVALID_PROOF, e.getMessage());
-        } catch (InvalidNonceException e) {
+        } catch (ExpiredNonceException | InvalidNonceException e) {
             throw new Oid4vcException(INVALID_PROOF, e.getMessage());
         }
     }
@@ -245,4 +243,3 @@ public class HolderBindingService {
         void apply(ProofJwt proof) throws Oid4vcException;
     }
 }
-

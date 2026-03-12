@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.service.webhook;
 
-import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.WebhookProperties;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEvent;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
@@ -8,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventTrigger;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.util.StringUtils;
@@ -50,8 +50,8 @@ public class WebhookEventProducer {
      * Produces an error event when an error occurs during credential processing.
      */
     @Transactional
-    public void produceErrorEvent(UUID credentialOfferId, CallbackErrorEventTypeDto errorCode, String errorMessage) {
-        createEvent(credentialOfferId, CallbackEventType.ERROR, errorCode.name(), errorMessage, null);
+    public void produceErrorEvent(UUID credentialOfferId, CallbackErrorEventTypeDto errorCode, String errorMessage, CallbackEventTrigger trigger) {
+        createEvent(credentialOfferId, CallbackEventType.ERROR, errorCode.name(), errorMessage, trigger);
     }
 
     /**

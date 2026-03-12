@@ -4,14 +4,14 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
@@ -236,12 +236,14 @@ class CredentialOfferCreateIT {
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(emptyMetadataId))
                 .andExpect(status().isBadRequest());
 
-        String noCredentialSubject = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": null}",
-                "");
+        String emptyCredentialSubject = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"], \"credential_subject_data\": {}}";
+        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(emptyCredentialSubject))
+                .andExpect(status().isBadRequest());
+
+        String noCredentialSubject = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"], \"credential_subject_data\": null}";
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(noCredentialSubject))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isBadRequest());
 
         String invalidValidUntilPattern = String.format(
                 "{\"metadata_credential_supported_id\": \"%s\", \"credential_subject_data\": {}, \"credential_valid_until\" : \"2010-01-01T19:23:24.111\"}",

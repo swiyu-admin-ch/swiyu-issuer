@@ -1,12 +1,12 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.credential.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
@@ -120,7 +120,7 @@ class MetadataServiceTest {
     @Test
     void getSignedOAuthAuthorizationServerMetadata_successfulSigning_returnsJwt() throws Exception {
         UUID tenantId = UUID.randomUUID();
-        var oidConfig = new OAuthAuthorizationServerMetadataDto(externalUrl, "token_endpoint", null, null);
+        var oidConfig = new OAuthAuthorizationServerMetadataDto(externalUrl, "token_endpoint", null, null, null);
         when(demonstratingProofOfPossessionService.addSigningAlgorithmsSupportedAndSwissprofileVersion(Mockito.any())).thenReturn(oidConfig);
         when(metadataService.getUnsignedOAuthAuthorizationServerMetadata()).thenReturn(oidConfig);
 
