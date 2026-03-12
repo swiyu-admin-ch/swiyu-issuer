@@ -9,6 +9,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecretRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -55,9 +57,12 @@ class HolderBindingServiceIT {
     private IssuerMetadata issuerMetadata;
     @Autowired
     private HolderBindingService holderBindingService;
+    @Autowired
+    private IssuerSecretRepository nonceSecretRepository;
     @MockitoBean
     private DidKeyResolverFacade didKeyResolver;
 
+    private IssuerSecret nonceSecret;
     private ECKey attestationKey;
 
     private static CredentialOffer createHolderBindingTestOffer() {
@@ -84,6 +89,7 @@ class HolderBindingServiceIT {
     void setUp() throws JOSEException {
         attestationKey = new ECKeyGenerator(Curve.P_256).keyID("did:test:test-attestation-builder#key-1").keyUse(KeyUse.SIGNATURE).generate();
         Mockito.when(didKeyResolver.resolveKey(Mockito.any())).thenReturn(attestationKey);
+        nonceSecret = nonceSecretRepository.findAll().getFirst();
     }
 
     @Test
@@ -93,7 +99,7 @@ class HolderBindingServiceIT {
         assertThat(issuerMetadata.getIssuanceBatchSize()).as("Test Configuration must have batch issuance for this test").isGreaterThan(1);
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
-            String nonce = new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce();
+            String nonce = new SelfContainedNonce(nonceSecret).getNonce();
             String proof = TestServiceUtils.createAttestedHolderProof(
                     proofKey,
                     applicationProperties.getTemplateReplacement().get("external-url"),
@@ -120,7 +126,7 @@ class HolderBindingServiceIT {
     void correctHolderBindings_sameNonce_whenReplayed_thenOid4vciException() throws JOSEException {
         var credentialOffer = createHolderBindingTestOffer();
         List<String> proofs = new LinkedList<>();
-        String nonce = new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce();
+        String nonce = new SelfContainedNonce(nonceSecret).getNonce();
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
             String proof = TestServiceUtils.createAttestedHolderProof(
@@ -145,6 +151,49 @@ class HolderBindingServiceIT {
         Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Second Validation must fail, as nonces were reused");
     }
 
+    /**
+     * EIDSEC-633
+     * An invalid nonce passes all checks but then is not registered to the server for future replay attack checks.
+     * This can lead to a complete bypass of replay prevention, which is the entire point of nonces.
+     * </br>
+     * <em>Problem</em>: During validation of the nonce for holder binding,
+     * as well as DPoP there is an issue where a invalid nonce (one that does not contain "::")
+     * is accepted (without any errors) but not added to the database.
+     * This effectively removes the whole replay protection of both DPoP and holder binding.
+     */
+    @Test
+    void mixedNonces_whenInvalidNoncePresent_thenOid4vciException() throws JOSEException {
+        var credentialOffer = createHolderBindingTestOffer();
+        List<String> proofs = new LinkedList<>();
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            String nonce;
+            if (i % 2 == 0) {
+                nonce = new SelfContainedNonce(nonceSecret).getNonce();
+            } else {
+                nonce = UUID.randomUUID().toString();
+            }
+
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    nonce,
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        CreateCredentialRequestDto request = new CreateCredentialRequestDto(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequest = toCredentialRequest(request);
+
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Should not be accepted");
+    }
 
     @Test
     void whenMissingHolderBinding_thenOid4vcException() throws JOSEException {
@@ -153,7 +202,7 @@ class HolderBindingServiceIT {
         for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
             String nonce = null;
             if (i == 0) {
-                nonce = new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce();
+                nonce = new SelfContainedNonce(nonceSecret).getNonce();
             } else {
                 nonce = "";
             }
@@ -206,5 +255,36 @@ class HolderBindingServiceIT {
         Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Unknown non-self-contained nonces should be refused");
     }
 
+    /**
+     * EIDSEC-632
+     */
+    @Test
+    void whenRegisteredNonce_thenSuccess_whenReplayed_thenOid4vciException() throws JOSEException {
+        var credentialOffer = createHolderBindingTestOffer();
+        String nonce = new SelfContainedNonce(nonceSecret).getNonce();
+        List<String> proofs = new LinkedList<>();
+        for (int i = 0; i < issuerMetadata.getIssuanceBatchSize(); i++) {
+            ECKey proofKey = new ECKeyGenerator(Curve.P_256).keyID("Test-Key-%s".formatted(i)).keyUse(KeyUse.SIGNATURE).generate();
+            String proof = TestServiceUtils.createAttestedHolderProof(
+                    proofKey,
+                    applicationProperties.getTemplateReplacement().get("external-url"),
+                    nonce,
+                    ProofType.JWT.getClaimTyp(),
+                    true,
+                    AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
+                    applicationProperties.getTrustedAttestationProviders().getFirst(),
+                    attestationKey);
+            proofs.add(proof);
+        }
+        CreateCredentialRequestDto request = new CreateCredentialRequestDto(
+                credentialOffer.getMetadataCredentialSupportedId().getFirst(),
+                new ProofsDto(proofs),
+                null
+        );
+        CredentialRequestClass credentialRequest = toCredentialRequest(request);
+
+        Assertions.assertDoesNotThrow(() -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Initial validation must succeed");
+        Assertions.assertThrows(Oid4vcException.class, () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, credentialOffer), "Second Validation must fail, as nonces were reused");
+    }
 
 }

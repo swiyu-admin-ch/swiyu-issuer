@@ -202,7 +202,7 @@ class IssuanceControllerIT {
     @Test
     void testGetNonce_thenSuccess() throws Exception {
         var selfContainedNonce = fetchSelfContainedNonce();
-        assertDoesNotThrow(()-> SelfContainedNonce.validateNonce(selfContainedNonce));
+        assertTrue(selfContainedNonce.isValid(10, nonceService.getNonceSecret()));
         assertDoesNotThrow(selfContainedNonce::getNonceId);
     }
 
@@ -250,14 +250,17 @@ class IssuanceControllerIT {
 
     @Test
     void testNonceOutdated_thenBadRequest() throws Exception {
-        var nonce = UUID.randomUUID() + "::"
-                + Instant.now().minus(applicationProperties.getNonceLifetimeSeconds() + 1, ChronoUnit.SECONDS).toString();
-        assertThrows(ExpiredNonceException.class, () -> new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds()));
+        var secret = nonceService.getNonceSecret();
+        var outdatedPreNonce = UUID.randomUUID() + "::"
+                + Instant.now().minus(applicationProperties.getNonceLifetimeSeconds() + 1, ChronoUnit.SECONDS);
+        var outdatedNonce = new SelfContainedNonce(outdatedPreNonce + "::" + SelfContainedNonce.createSignature(outdatedPreNonce, secret));
+        // Outdated Nonce not valid
+        assertFalse(outdatedNonce.isValid(applicationProperties.getNonceLifetimeSeconds(), secret));
         // Create Credential Request with Proof using outdated nonce
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         var proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(),
+                applicationProperties.getTemplateReplacement().get("external-url"), outdatedNonce.getNonce(), ProofType.JWT.getClaimTyp(),
                 true);
         var credentialRequestString = getCredentialRequestString(proof);
 
@@ -561,6 +564,6 @@ class IssuanceControllerIT {
     @NotNull
     private SelfContainedNonce fetchSelfContainedNonce() throws Exception {
         var nonce = requestNonce(mock);
-        return new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds());
+        return new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds(), nonceService.getNonceSecret());
     }
 }
