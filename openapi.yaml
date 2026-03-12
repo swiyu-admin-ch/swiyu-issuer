@@ -1263,6 +1263,9 @@ components:
             type: string
           minItems: 1
         credential_subject_data:
+          type: object
+          additionalProperties: true
+          nullable: true
           description: |2
                 The user data to be written in the verifiable credential. Can be a json object or a JWT.
                 credentialSubjectData": {"lastName": "Example","firstName": "Edward"}
