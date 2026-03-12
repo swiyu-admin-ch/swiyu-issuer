@@ -87,7 +87,7 @@ public class CredentialConfiguration {
      * Optional
      */
     @JsonProperty("claims")
-    @Deprecated(since = "OID4VCI 1.0") // Replaced by credential_metadata.claims
+    @Deprecated(since = "OID4VCI 1.0") // Replaced by credential_metadata.claims Contract later
     private Map<String, CredentialClaim> claims;
 
     /**

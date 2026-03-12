@@ -100,12 +100,6 @@ paths:
         required: true
         schema:
           type: string
-      - name: SWIYU-API-Version
-        in: header
-        description: "Optional API version, set to '2' for v2 requests"
-        required: false
-        schema:
-          type: string
       - name: DPoP
         in: header
         required: false
@@ -130,9 +124,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                - $ref: "#/components/schemas/CredentialEndpointResponse"
-                - $ref: "#/components/schemas/CredentialEndpointResponseV2"
+                $ref: "#/components/schemas/CredentialEndpointResponse"
         "400":
           description: Invalid request or validation error
           content:
@@ -170,12 +162,6 @@ paths:
         required: true
         schema:
           type: string
-      - name: SWIYU-API-Version
-        in: header
-        description: "Optional API version, set to '2' for v2 requests"
-        required: false
-        schema:
-          type: string
       - name: DPoP
         in: header
         required: false
@@ -185,9 +171,7 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-              - $ref: "#/components/schemas/CredentialEndpointRequest"
-              - $ref: "#/components/schemas/CredentialEndpointRequestV2"
+              $ref: "#/components/schemas/CreateCredentialRequest"
           application/jwt:
             schema:
               type: string
@@ -202,18 +186,14 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                - $ref: "#/components/schemas/CredentialEndpointResponse"
-                - $ref: "#/components/schemas/CredentialEndpointResponseV2"
+                $ref: "#/components/schemas/CredentialEndpointResponse"
         "202":
           description: Successful deferred credential. The credential will be issued
             later
           content:
             application/json:
               schema:
-                oneOf:
-                - $ref: "#/components/schemas/DeferredData"
-                - $ref: "#/components/schemas/DeferredDataV2"
+                $ref: "#/components/schemas/DeferredData"
       security:
       - bearer-jwt: []
   /management/api/status-list:
@@ -1080,50 +1060,24 @@ components:
     CredentialEndpointResponse:
       type: object
       properties:
-        format:
-          type: string
-        credential:
-          type: string
-        transaction_id:
-          type: string
-          format: uuid
-    CredentialEndpointResponseV2:
-      type: object
-      properties:
         credentials:
           type: array
           items:
-            $ref: "#/components/schemas/CredentialObjectDtoV2"
+            $ref: "#/components/schemas/CredentialObjectDto"
         transaction_id:
           type: string
         interval:
           type: integer
           format: int64
-    CredentialObjectDtoV2:
+    CredentialObjectDto:
       type: object
       properties:
         credential:
           type: string
           description: |
             One sdjwt credential as string, if multiple credentials are issued each is wrapped in
-            a separate CredentialObjectDtoV2 object.
-    CredentialEndpointRequest:
-      type: object
-      description: Request to the Credential Endpoint as defined in OID4VCI draft
-        13 specification
-      properties:
-        format:
-          type: string
-          pattern: ^vc\+sd-jwt$
-        proof:
-          type: object
-          additionalProperties: {}
-          description: Proof for holder binding. Can be in key:did or cnf format.
-        credential_response_encryption:
-          $ref: "#/components/schemas/CredentialResponseEncryption"
-      required:
-      - format
-    CredentialEndpointRequestV2:
+            a separate CredentialObjectDto object.
+    CreateCredentialRequest:
       type: object
       description: Request to the Credential Endpoint as defined in OID4VCI 1.0 specification
       properties:
@@ -1170,14 +1124,6 @@ components:
       required:
       - jwt
     DeferredData:
-      type: object
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
-      required:
-      - transaction_id
-    DeferredDataV2:
       type: object
       properties:
         transaction_id:
@@ -1368,7 +1314,6 @@ components:
           description: "Optional Parameter to override configured parameters, such\
             \ as the DID used or the HSM key used in singing the request object"
       required:
-      - credential_subject_data
       - metadata_credential_supported_id
     CredentialOfferMetadataDto:
       type: object
@@ -1804,6 +1749,8 @@ components:
             type: string
         profile_version:
           type: string
+        pre-authorized_grant_anonymous_access_supported:
+          type: boolean
     ClientAgentInfoDto:
       type: object
       properties:
@@ -1848,8 +1795,6 @@ components:
         credential_valid_until:
           type: string
           format: date-time
-        credential_request:
-          $ref: "#/components/schemas/CredentialEndpointRequest"
         offer_deeplink:
           type: string
         vc_hash:

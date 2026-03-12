@@ -1,12 +1,13 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRequestDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.DeferredDataDtoV2;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
-import ch.admin.bj.swiyu.issuer.service.*;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
+import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
@@ -20,12 +21,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -56,9 +55,7 @@ import java.util.regex.Pattern;
         "and supporting deferred credential issuance (IF-111)")
 @RequestMapping(value = {"/oid4vci/api"})
 public class IssuanceController {
-    public static final String API_VERSION_OID4VCI_1_0 = "2";
     public static final String DPOP_HTTP_HEADER = "DPoP";
-    public static final String SWIYU_API_VERSION_HTTP_HEADER = "SWIYU-API-Version";
 
     private final CredentialServiceOrchestrator credentialServiceOrchestrator;
     private final NonceService nonceService;
@@ -69,27 +66,6 @@ public class IssuanceController {
     private final Validator validator;
     private final ObjectMapper objectMapper;
 
-
-    @Deprecated(forRemoval = true)
-    @Timed
-    @PostMapping(value = {"/token"},
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Create a Bearer token with pre-authorized code", hidden = true)
-    public OAuthTokenDto oauthTokenEndpoint(
-            @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
-            @RequestParam(name = "grant_type") @NotEmpty String grantType,
-            @RequestParam(name = "pre-authorized_code") @Nullable String preAuthCode,
-            @RequestParam(name = "refresh_token") @Nullable String refreshToken,
-            HttpServletRequest request) {
-
-        if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(grantType)) {
-            return oauthTokenPreAuthorized(dpop, request, preAuthCode);
-        } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(grantType)) {
-            return oauthRefreshToken(dpop, request, refreshToken);
-        } else {
-            throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
-        }
-    }
 
     @Timed
     @PostMapping(value = {"/token"}, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -150,11 +126,6 @@ public class IssuanceController {
                             description = "Bearer token for authentication. Format: 'Bearer ...",
                             required = true,
                             in = ParameterIn.HEADER
-                    ),
-                    @Parameter(
-                            name = SWIYU_API_VERSION_HTTP_HEADER,
-                            description = "Optional API version, set to '2' for v2 requests",
-                            in = ParameterIn.HEADER
                     )
             },
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -162,7 +133,7 @@ public class IssuanceController {
                     content = {
                             @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(oneOf = {CredentialEndpointRequestDto.class, CredentialEndpointRequestDtoV2.class})
+                                    schema = @Schema(implementation = CreateCredentialRequestDto.class)
                             ),
                             @Content(
                                     mediaType = "application/jwt", // See: OID4VCI 1.0 Chapter 10
@@ -178,7 +149,7 @@ public class IssuanceController {
                             description = "Credential issued successfully.",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(oneOf = {CredentialEndpointResponseDto.class, CredentialEndpointResponseDtoV2.class})
+                                    schema = @Schema(implementation = CredentialEndpointResponseDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -186,14 +157,13 @@ public class IssuanceController {
                             description = "Successful deferred credential. The credential will be issued later",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(oneOf = {DeferredDataDto.class, DeferredDataDtoV2.class})
+                                    schema = @Schema(implementation = DeferredDataDto.class)
                             )
                     )
             }
     )
     @SecurityRequirement(name = "bearer-jwt")
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
-                                                   @RequestHeader(name = SWIYU_API_VERSION_HTTP_HEADER, required = false) String version,
                                                    @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
                                                    @NotNull @RequestBody String requestMessage,
                                                    HttpServletRequest request) throws IOException {
@@ -207,16 +177,10 @@ public class IssuanceController {
         String accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
 
-        if (API_VERSION_OID4VCI_1_0.equals(version)) {
-            var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDtoV2.class);
-            validateRequestDtoOrThrow(dto, validator);
-            credentialEnvelope = credentialServiceOrchestrator.createCredentialV2(dto, accessToken, clientInfo, dpop);
-        } else {
-            var dto = objectMapper.readValue(unparsedRequestDto, CredentialEndpointRequestDto.class);
-            validateRequestDtoOrThrow(dto, validator);
 
-            credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo);
-        }
+        var dto = objectMapper.readValue(unparsedRequestDto, CreateCredentialRequestDto.class);
+        validateRequestDtoOrThrow(dto, validator);
+        credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
@@ -236,11 +200,6 @@ public class IssuanceController {
                             name = "Authorization",
                             description = "Bearer token for authentication",
                             required = true,
-                            in = ParameterIn.HEADER
-                    ),
-                    @Parameter(
-                            name = SWIYU_API_VERSION_HTTP_HEADER,
-                            description = "Optional API version, set to '2' for v2 requests",
                             in = ParameterIn.HEADER
                     )
             },
@@ -265,7 +224,7 @@ public class IssuanceController {
                             description = "Credential issued successfully",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(oneOf = {CredentialEndpointResponseDto.class, CredentialEndpointResponseDtoV2.class})
+                                    schema = @Schema(implementation = CredentialEndpointResponseDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -280,7 +239,6 @@ public class IssuanceController {
     )
     @SecurityRequirement(name = "bearer-jwt")
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
-                                                           @RequestHeader(name = SWIYU_API_VERSION_HTTP_HEADER, required = false) String version,
                                                            @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
                                                            @NotNull @RequestBody String requestMessage,
                                                            HttpServletRequest request) throws IOException {
@@ -292,12 +250,7 @@ public class IssuanceController {
 
         String accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
-        if (API_VERSION_OID4VCI_1_0.equals(version)) {
-            credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequestV2(deferredCredentialRequestDto, accessToken);
-        } else {
-            credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
-        }
-
+        credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())
