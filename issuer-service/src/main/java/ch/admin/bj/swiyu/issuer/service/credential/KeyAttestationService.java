@@ -94,19 +94,30 @@ public class KeyAttestationService {
      * @throws Oid4vcException if the proof key is not listed in the attested keys or if key parsing fails
      */
     private void verifyProofKeyInAttestedKeys(@NotNull Proof requestProof, @NotNull AttestationJwt attestation) {
+        var bindingJson = requestProof.getBinding();
+        if (bindingJson == null) {
+            throw new Oid4vcException(INVALID_PROOF, "Proof has no binding key – cannot verify against attested_keys");
+        }
+
+        ECKey proofKey = parseProofKey(bindingJson);
+        verifyKeyPresentInAttestation(proofKey, attestation);
+    }
+
+    private ECKey parseProofKey(String bindingJson) {
         try {
-            var bindingJson = requestProof.getBinding();
-            if (bindingJson == null) {
-                throw new Oid4vcException(INVALID_PROOF, "Proof has no binding key – cannot verify against attested_keys");
-            }
-            var proofKey = ECKey.parse(bindingJson);
+            return ECKey.parse(bindingJson);
+        } catch (ParseException e) {
+            throw new Oid4vcException(e, INVALID_PROOF, "Proof binding key could not be parsed for attested_keys verification!");
+        }
+    }
+
+    private void verifyKeyPresentInAttestation(ECKey proofKey, AttestationJwt attestation) {
+        try {
             if (!attestation.containsKey(proofKey)) {
                 throw new Oid4vcException(INVALID_PROOF,
                         "Proof key does not match any key listed in the attestation's attested_keys",
                         Map.of("proofKeyThumbprint", computeThumbprintSafe(proofKey)));
             }
-        } catch (ParseException e) {
-            throw new Oid4vcException(e, INVALID_PROOF, "Proof binding key could not be parsed for attested_keys verification!");
         } catch (JOSEException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Proof key thumbprint computation failed during attested_keys verification!");
         }
