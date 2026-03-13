@@ -113,7 +113,7 @@ public final class AttestationJwt {
 
         validateType(header);
 
-        validateAltorithm(header);
+        validateAlgorithm(header);
 
         if (enforceSwissProfileVersioning) {
             validateSwissProfileVersion(header);
@@ -127,7 +127,7 @@ public final class AttestationJwt {
         }
     }
 
-    private static void validateAltorithm(JWSHeader header) {
+    private static void validateAlgorithm(JWSHeader header) {
         var algorithm = header.getAlgorithm();
         if (algorithm == null || !ALLOWED_ALGORITHMS.contains(algorithm)) {
             throw new IllegalArgumentException("Algorithm must be one of "
