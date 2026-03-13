@@ -5,6 +5,8 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +17,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -174,6 +177,39 @@ public final class AttestationJwt {
         providedResistanceSet.retainAll(resistance);
         // We only care IF we have a matching resistance spec
         return !providedResistanceSet.isEmpty();
+    }
+
+    /**
+     * Checks whether the given proof key is contained in the {@code attested_keys} claim of this attestation.
+     * Comparison is performed using JWK thumbprints as defined in
+     * <a href="https://www.rfc-editor.org/rfc/rfc7638">RFC 7638</a> to ensure canonical key comparison
+     * independent of field ordering.
+     *
+     * @param proofKey the EC key extracted from the holder proof JWT
+     * @return {@code true} if the proof key matches one of the attested keys, {@code false} otherwise
+     * @throws JOSEException if a thumbprint cannot be computed
+     */
+    public boolean containsKey(@NotNull ECKey proofKey) throws JOSEException {
+        var proofThumbprint = proofKey.toPublicJWK().computeThumbprint().toString();
+
+        @SuppressWarnings("unchecked")
+        var rawAttestedKeys = (List<Map<String, Object>>) claims.getClaim("attested_keys");
+        if (rawAttestedKeys == null || rawAttestedKeys.isEmpty()) {
+            return false;
+        }
+
+        for (var rawKey : rawAttestedKeys) {
+            try {
+                var attestedJwk = JWK.parse(rawKey);
+                var attestedThumbprint = attestedJwk.computeThumbprint().toString();
+                if (proofThumbprint.equals(attestedThumbprint)) {
+                    return true;
+                }
+            } catch (ParseException e) {
+                throw new JOSEException("Failed to parse attested key entry: " + e.getMessage(), e);
+            }
+        }
+        return false;
     }
 
     public String toJsonString() throws ParseException {
