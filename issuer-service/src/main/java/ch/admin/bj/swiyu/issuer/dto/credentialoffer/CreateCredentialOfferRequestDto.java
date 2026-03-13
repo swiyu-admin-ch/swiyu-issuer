@@ -33,12 +33,15 @@ public class CreateCredentialOfferRequestDto {
      * Data to be used in VC
      **/
     @JsonProperty(value = "credential_subject_data")
-    @Schema(description = """
+    @Schema(
+            additionalProperties = Schema.AdditionalPropertiesValue.TRUE,
+            description = """
                 The user data to be written in the verifiable credential. Can be a json object or a JWT.
                 credentialSubjectData": {"lastName": "Example","firstName": "Edward"}
                 When using data integrity JWT the value are as claims inside the JWT.
                 "credentialSubjectData": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsYXN0TmFtZSI6IkV4YW1wbGUiLCJmaXJzdE5hbWUiOiJFZHdhcmQiLCJkYXRlT2ZCaXJ0aCI6IjEuMS4xOTcwIn0.2VMjj1RpJ7jUjn1SJHDwwzqx3kygn88UxSsG5j1uXG8"
-            """, example = """
+            """,
+            example = """
             {
                 "lastName": "Example",
                 "firstName": "Edward"
