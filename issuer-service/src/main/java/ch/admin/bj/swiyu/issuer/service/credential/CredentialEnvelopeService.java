@@ -48,38 +48,22 @@ public class CredentialEnvelopeService {
     private final CredentialManagementRepository credentialManagementRepository;
     private final ApplicationProperties applicationProperties;
 
+
     /**
-     * Builds and returns a credential envelope (OID4VCI 1.0).
+     * Builds and returns a credential envelope (OID4VCI 2.0).
      */
-    @Deprecated(since = "OID4VCI 1.0")
     public CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
                                                              CredentialRequestClass credentialRequest,
-                                                             ClientAgentInfo clientInfo) {
-        var context = buildContext(credentialOffer, credentialRequest, clientInfo, credentialOffer.getCredentialManagement());
-        var holderKeys = loadHolderKeysV1(context);
+                                                             ClientAgentInfo clientInfo,
+                                                             CredentialManagement mgmt) {
+        var context = buildContext(credentialOffer, credentialRequest, clientInfo, mgmt);
+        var holderKeys = loadHolderKeys(context);
         var vcBuilder = buildVcBuilder(context.offer(), context.request(), holderKeys.bindings());
 
         return issueCredential(context,
                 holderKeys,
                 vcBuilder::buildCredentialEnvelope,
                 vcBuilder::buildDeferredCredential);
-    }
-
-    /**
-     * Builds and returns a credential envelope (OID4VCI 2.0).
-     */
-    public CredentialEnvelopeDto createCredentialEnvelopeDtoV2(CredentialOffer credentialOffer,
-                                                               CredentialRequestClass credentialRequest,
-                                                               ClientAgentInfo clientInfo,
-                                                               CredentialManagement mgmt) {
-        var context = buildContext(credentialOffer, credentialRequest, clientInfo, mgmt);
-        var holderKeys = loadHolderKeysV2(context);
-        var vcBuilder = buildVcBuilder(context.offer(), context.request(), holderKeys.bindings());
-
-        return issueCredential(context,
-                holderKeys,
-                vcBuilder::buildCredentialEnvelopeV2,
-                vcBuilder::buildDeferredCredentialV2);
     }
 
     /**
@@ -94,31 +78,15 @@ public class CredentialEnvelopeService {
         }
 
         CredentialRequestValidator.validateCredentialRequest(credentialOffer,
-                credentialRequest,
-                issuerMetadata.getCredentialConfigurationById(credentialOffer.getMetadataCredentialSupportedId().getFirst()));
+                credentialRequest);
 
         return new EnvelopeContext(credentialOffer, mgmt, credentialRequest, clientInfo);
     }
 
     /**
-     * Load and validate holder binding keys for OID4VCI 1.0, publishing errors on failure.
-     */
-    private HolderKeys loadHolderKeysV1(EnvelopeContext context) {
-        List<ProofJwt> holderPublicKey;
-        try {
-            holderPublicKey = holderBindingService.getHolderPublicKey(context.request(), context.offer()).stream().toList();
-        } catch (Oid4vcException e) {
-            eventProducerService.produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, context.offer());
-            throw e;
-        }
-
-        return new HolderKeys(toBindings(holderPublicKey), toAttestations(holderPublicKey));
-    }
-
-    /**
      * Load and validate holder binding keys for OID4VCI 2.0, publishing errors on failure.
      */
-    private HolderKeys loadHolderKeysV2(EnvelopeContext context) {
+    private HolderKeys loadHolderKeys(EnvelopeContext context) {
         List<ProofJwt> holderJwkList;
         try {
             holderJwkList = holderBindingService.getValidateHolderPublicKeys(context.request(), context.offer());

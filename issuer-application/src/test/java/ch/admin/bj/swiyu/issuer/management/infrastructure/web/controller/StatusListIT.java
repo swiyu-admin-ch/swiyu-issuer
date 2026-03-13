@@ -44,7 +44,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -342,12 +342,12 @@ class StatusListIT {
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
-        requestCredentialV2(mvc, accessToken, credentialRequestString)
+        requestCredential(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -370,12 +370,12 @@ class StatusListIT {
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
-        requestCredentialV2(mvc, accessToken, credentialRequestString)
+        requestCredential(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -400,12 +400,12 @@ class StatusListIT {
 
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
-        requestCredentialV2(mvc, accessToken, credentialRequestString)
+        requestCredential(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 

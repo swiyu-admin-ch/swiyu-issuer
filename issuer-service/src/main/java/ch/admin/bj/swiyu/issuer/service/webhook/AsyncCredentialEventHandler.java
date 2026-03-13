@@ -16,7 +16,7 @@ public class AsyncCredentialEventHandler {
     @EventListener
     @Async
     public void handleErrorEvent(ErrorEvent errorEvent) {
-        webhookEventProducer.produceErrorEvent(errorEvent.credentialOfferId(), errorEvent.errorCode(), errorEvent.errorMessage());
+        webhookEventProducer.produceErrorEvent(errorEvent.credentialOfferId(), errorEvent.errorCode(), errorEvent.errorMessage(), errorEvent.trigger());
         log.info("Processed ErrorEvent for CredentialOfferId: {}", errorEvent.credentialOfferId());
     }
 

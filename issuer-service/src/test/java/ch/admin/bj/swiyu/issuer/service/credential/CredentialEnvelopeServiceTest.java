@@ -19,7 +19,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -70,6 +69,7 @@ class CredentialEnvelopeServiceTest {
         closeable.close();
     }
 
+
     @Test
     void issueCredential_immediateBranch_executesIssueEventsAndPersists() {
         var offer = CredentialOffer.builder().build();
@@ -80,41 +80,6 @@ class CredentialEnvelopeServiceTest {
         offer.setCredentialManagement(mgmt);
 
         var request = new CredentialRequestClass();
-        request.setFormat("dc+sd-jwt");
-
-        var credentialConfiguration = new CredentialConfiguration();
-        credentialConfiguration.setFormat("dc+sd-jwt");
-
-        when(issuerMetadata.getCredentialConfigurationById("config-id"))
-                .thenReturn(credentialConfiguration);
-        when(holderBindingService.getHolderPublicKey(any(), any())).thenReturn(Optional.empty());
-        when(credentialFormatFactory.getFormatBuilder("config-id")).thenReturn(credentialBuilder);
-        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(issuerMetadata);
-        when(credentialBuilder.credentialOffer(offer)).thenReturn(credentialBuilder);
-        when(credentialBuilder.credentialResponseEncryption(any(), any())).thenReturn(credentialBuilder);
-        when(credentialBuilder.holderBindings(any())).thenReturn(credentialBuilder);
-        when(credentialBuilder.credentialType(any())).thenReturn(credentialBuilder);
-        when(credentialBuilder.buildCredentialEnvelope()).thenReturn(new CredentialEnvelopeDto(null, null, null));
-
-        service.createCredentialEnvelopeDto(offer, request, null);
-
-        verify(credentialStateMachine).sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
-        verify(credentialStateMachine).sendEventAndUpdateStatus(mgmt, CredentialStateMachineConfig.CredentialManagementEvent.ISSUE);
-        verify(credentialOfferRepository).save(offer);
-        verify(credentialManagementRepository).save(mgmt);
-    }
-
-    @Test
-    void issueCredentialV2_immediateBranch_executesIssueEventsAndPersists() {
-        var offer = CredentialOffer.builder().build();
-        offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.IN_PROGRESS);
-        offer.setMetadataCredentialSupportedId(List.of("config-id"));
-        var mgmt = CredentialManagement.builder().build();
-        mgmt.setAccessTokenExpirationTimestamp(Instant.now().plusSeconds(60).getEpochSecond());
-        offer.setCredentialManagement(mgmt);
-
-        var request = new CredentialRequestClass();
-        request.setFormat("dc+sd-jwt");
 
         var credentialConfiguration = new CredentialConfiguration();
         credentialConfiguration.setFormat("dc+sd-jwt");
@@ -128,9 +93,9 @@ class CredentialEnvelopeServiceTest {
         when(credentialBuilder.credentialResponseEncryption(any(), any())).thenReturn(credentialBuilder);
         when(credentialBuilder.holderBindings(any())).thenReturn(credentialBuilder);
         when(credentialBuilder.credentialType(any())).thenReturn(credentialBuilder);
-        when(credentialBuilder.buildCredentialEnvelopeV2()).thenReturn(new CredentialEnvelopeDto(null, null, null));
+        when(credentialBuilder.buildCredentialEnvelope()).thenReturn(new CredentialEnvelopeDto(null, null, null));
 
-        service.createCredentialEnvelopeDtoV2(offer, request, null, mgmt);
+        service.createCredentialEnvelopeDto(offer, request, null, mgmt);
 
         verify(credentialStateMachine).sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
         verify(credentialStateMachine).sendEventAndUpdateStatus(mgmt, CredentialStateMachineConfig.CredentialManagementEvent.ISSUE);

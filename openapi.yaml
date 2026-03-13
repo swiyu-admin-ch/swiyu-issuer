@@ -13,16 +13,17 @@ tags:
   description: "Public OpenID for Verifiable Credential Issuance (OID4VCI) API endpoints,\
     \ including issuing OAuth tokens for credential requests, issuing verifiable credentials,\
     \ and supporting deferred credential issuance (IF-111)"
-- name: Status List API
-  description: Exposes API endpoints for managing status lists used in verifiable
-    credential status tracking. Supports creating and initializing new status lists
-    and retrieving status list information by ID. Ensures status list configuration
-    is immutable after initialization. (IF-113)
 - name: Credential API
   description: "Exposes API endpoints for managing credential offers and their statuses.\
     \ Supports creating new credential offers, retrieving offer data and deeplinks,\
     \ and updating or querying the status of offers and issued verifiable credentials.\
     \ (IF-114)"
+- name: Status List API
+  description: Exposes API endpoints for managing status lists used in verifiable
+    credential status tracking. Supports creating and initializing new status lists
+    and retrieving status list information by ID. Ensures status list configuration
+    is immutable after initialization. Manual status list updates can optionally persist
+    a configuration override used for signing. (IF-113)
 - name: Well-known endpoints API
   description: "Exposes OpenID .well-known endpoints for issuer configuration and\
     \ credential metadata as required by the OID4VCI specification. Provides endpoints\
@@ -99,12 +100,6 @@ paths:
         required: true
         schema:
           type: string
-      - name: SWIYU-API-Version
-        in: header
-        description: "Optional API version, set to '2' for v2 requests"
-        required: false
-        schema:
-          type: string
       - name: DPoP
         in: header
         required: false
@@ -129,9 +124,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                - $ref: "#/components/schemas/CredentialEndpointResponse"
-                - $ref: "#/components/schemas/CredentialEndpointResponseV2"
+                $ref: "#/components/schemas/CredentialEndpointResponse"
         "400":
           description: Invalid request or validation error
           content:
@@ -169,12 +162,6 @@ paths:
         required: true
         schema:
           type: string
-      - name: SWIYU-API-Version
-        in: header
-        description: "Optional API version, set to '2' for v2 requests"
-        required: false
-        schema:
-          type: string
       - name: DPoP
         in: header
         required: false
@@ -184,9 +171,7 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-              - $ref: "#/components/schemas/CredentialEndpointRequest"
-              - $ref: "#/components/schemas/CredentialEndpointRequestV2"
+              $ref: "#/components/schemas/CreateCredentialRequest"
           application/jwt:
             schema:
               type: string
@@ -201,18 +186,14 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                - $ref: "#/components/schemas/CredentialEndpointResponse"
-                - $ref: "#/components/schemas/CredentialEndpointResponseV2"
+                $ref: "#/components/schemas/CredentialEndpointResponse"
         "202":
           description: Successful deferred credential. The credential will be issued
             later
           content:
             application/json:
               schema:
-                oneOf:
-                - $ref: "#/components/schemas/DeferredData"
-                - $ref: "#/components/schemas/DeferredDataV2"
+                $ref: "#/components/schemas/DeferredData"
       security:
       - bearer-jwt: []
   /management/api/status-list:
@@ -265,9 +246,11 @@ paths:
       tags:
       - Status List API
       summary: Update the status list registry entry manually.
-      description: Update the status list registry entry manually. This endpoint is
-        only available when automatic status list synchronization is disabled in the
-        application configuration.
+      description: "Update the status list registry entry manually. Optionally accepts\
+        \ configuration overrides to control key material selection for this update.\
+        \ If provided, the override will be persisted on the status list and used\
+        \ for subsequent publications. This endpoint can also be used in automatic\
+        \ synchronization mode to update the configuration override."
       operationId: updateStatusListRegistryEntry
       parameters:
       - name: statusListId
@@ -276,6 +259,11 @@ paths:
         schema:
           type: string
           format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusListUpdate"
       responses:
         "404":
           description: Not Found
@@ -1072,50 +1060,24 @@ components:
     CredentialEndpointResponse:
       type: object
       properties:
-        format:
-          type: string
-        credential:
-          type: string
-        transaction_id:
-          type: string
-          format: uuid
-    CredentialEndpointResponseV2:
-      type: object
-      properties:
         credentials:
           type: array
           items:
-            $ref: "#/components/schemas/CredentialObjectDtoV2"
+            $ref: "#/components/schemas/CredentialObjectDto"
         transaction_id:
           type: string
         interval:
           type: integer
           format: int64
-    CredentialObjectDtoV2:
+    CredentialObjectDto:
       type: object
       properties:
         credential:
           type: string
           description: |
             One sdjwt credential as string, if multiple credentials are issued each is wrapped in
-            a separate CredentialObjectDtoV2 object.
-    CredentialEndpointRequest:
-      type: object
-      description: Request to the Credential Endpoint as defined in OID4VCI draft
-        13 specification
-      properties:
-        format:
-          type: string
-          pattern: ^vc\+sd-jwt$
-        proof:
-          type: object
-          additionalProperties: {}
-          description: Proof for holder binding. Can be in key:did or cnf format.
-        credential_response_encryption:
-          $ref: "#/components/schemas/CredentialResponseEncryption"
-      required:
-      - format
-    CredentialEndpointRequestV2:
+            a separate CredentialObjectDto object.
+    CreateCredentialRequest:
       type: object
       description: Request to the Credential Endpoint as defined in OID4VCI 1.0 specification
       properties:
@@ -1167,14 +1129,6 @@ components:
         transaction_id:
           type: string
           format: uuid
-      required:
-      - transaction_id
-    DeferredDataV2:
-      type: object
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
         interval:
           type: integer
           format: int32
@@ -1205,10 +1159,8 @@ components:
       properties:
         type:
           type: string
-          description: Technical type of the status list to be used. This influences
-            the options available in config.
-          enum:
-          - TOKEN_STATUS_LIST
+          description: "[DEPRECATED] This parameter is deprecated and should not be\
+            \ sent in future requests."
         maxLength:
           type: integer
           format: int32
@@ -1234,7 +1186,6 @@ components:
       required:
       - config
       - maxLength
-      - type
     StatusListCreateConfig:
       type: object
       properties:
@@ -1259,12 +1210,6 @@ components:
         statusRegistryUrl:
           type: string
           description: URI of the status list used by registry.
-        type:
-          type: string
-          description: Technical type of the status list to be used. This influences
-            the options available in config.
-          enum:
-          - TOKEN_STATUS_LIST
         maxListEntries:
           type: integer
           format: int32
@@ -1277,9 +1222,6 @@ components:
           format: int32
           description: How many status entries are not used in the  status list.
           example: 12
-        version:
-          type: string
-          description: Version of the status list schema
         config:
           type: object
           additionalProperties: {}
@@ -1291,6 +1233,14 @@ components:
                  for a bit string status list for suspension
           example:
             bits: 2
+    StatusListUpdate:
+      type: object
+      description: Optional overrides for status list updates.
+      properties:
+        configuration_override:
+          $ref: "#/components/schemas/ConfigurationOverride"
+          description: "Optional Parameter to override configured parameters, such\
+            \ as the DID used or the HSM key used in signing the status list"
     CredentialWithDeeplinkResponse:
       type: object
       properties:
@@ -1364,7 +1314,6 @@ components:
           description: "Optional Parameter to override configured parameters, such\
             \ as the DID used or the HSM key used in singing the request object"
       required:
-      - credential_subject_data
       - metadata_credential_supported_id
     CredentialOfferMetadataDto:
       type: object
@@ -1443,7 +1392,7 @@ components:
         batch_size:
           type: integer
           format: int32
-          minimum: 2
+          minimum: 10
       required:
       - batch_size
     CredentialClaim:
@@ -1475,6 +1424,19 @@ components:
           type: string
           description: |
             Allowing for validating content received from vct_metadata_uri as defined in W3C SRI (Subresource Integrity)
+        vct_version:
+          type: string
+          description: |
+            The vct_version indicates the version of the vct. It is recommended to use semver-notation
+        vct_subtype:
+          type: string
+          description: |
+            An optional value that can describe an adaption of the vct.
+            This value can then be used by verifiers who require the adoption of the vct standard.
+        vct_subtype_version:
+          type: string
+          description: |
+            The vct_subtype_version indicates the version of the vct_subtype. It is recommended to use semver-notation
         claims:
           type: object
           additionalProperties:
@@ -1649,20 +1611,18 @@ components:
             Issuer supports encryption of the Credential Response on top of TLS.
         batch_credential_issuance:
           $ref: "#/components/schemas/BatchCredentialIssuance"
-        version:
-          type: string
-          pattern: ^1\.0$
         display:
           type: array
           description: "Array of objects, where each object contains display properties\
             \ of a Credential Issuer for a certain language"
           items:
             $ref: "#/components/schemas/MetadataIssuerDisplayInfo"
+        profile_version:
+          type: string
       required:
       - credential_configurations_supported
       - credential_endpoint
       - credential_issuer
-      - version
     KeyAttestationRequirement:
       type: object
       properties:
@@ -1787,6 +1747,10 @@ components:
           type: array
           items:
             type: string
+        profile_version:
+          type: string
+        pre-authorized_grant_anonymous_access_supported:
+          type: boolean
     ClientAgentInfoDto:
       type: object
       properties:
@@ -1831,10 +1795,12 @@ components:
         credential_valid_until:
           type: string
           format: date-time
-        credential_request:
-          $ref: "#/components/schemas/CredentialEndpointRequest"
         offer_deeplink:
           type: string
+        vc_hash:
+          type: array
+          items:
+            type: string
     CredentialManagementDto:
       type: object
       properties:
@@ -1853,6 +1819,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CredentialInfoResponse"
+        dpop_key:
+          type: string
     StatusResponse:
       type: object
       properties:
@@ -1865,17 +1833,6 @@ components:
           type: string
         templated:
           type: boolean
-    ApiError:
-      description: Error response object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-        detail:
-          type: string
-        trace_id:
-          type: string
     WebhookCallback:
       description: Callback transmitting information about an event which occurred.
       properties:
@@ -1900,6 +1857,17 @@ components:
         timestamp:
           type: string
           format: date-time
+    ApiError:
+      description: Error response object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        detail:
+          type: string
+        trace_id:
+          type: string
   securitySchemes:
     bearer-jwt:
       type: http

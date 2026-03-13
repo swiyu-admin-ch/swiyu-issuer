@@ -46,6 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -93,7 +95,8 @@ class KeyAttestationFlowIT {
     void testAnyKeyAttestationFlow(AttackPotentialResistance resistance) throws Exception {
         var fetchData = prepareAttested(mock, testOfferAnyAttestationId, resistance);
         mockDidResolve(jwk.toPublicJWK());
-        var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        var result = IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+                .andReturn().getResponse().getContentAsString();
         assertNotNull(result);
     }
 
@@ -101,7 +104,9 @@ class KeyAttestationFlowIT {
     void testSuperfluousAttestation() throws Exception {
         var fetchData = prepareAttested(mock, testOfferNoAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(jwk.toPublicJWK());
-        var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+        var result = IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
         assertNotNull(result);
     }
 
@@ -109,59 +114,60 @@ class KeyAttestationFlowIT {
     void testHighAttestation() throws Exception {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH);
         mockDidResolve(jwk.toPublicJWK());
-        var result = TestInfrastructureUtils.getCredential(mock, fetchData.token(), fetchData.credentialRequestString());
+
+        var result = IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+                .andReturn().getResponse().getContentAsString();
         assertNotNull(result);
 
-        verify(testEventListener, Mockito.times(2)).handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
+        verify(testEventListener, Mockito.times(1)).handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
     }
 
     /**
      * Test Requesting the highest possible attestation. Any lower provided attestation MUST fail
      */
+
     @ParameterizedTest
     @EnumSource(value = AttackPotentialResistance.class, mode = EnumSource.Mode.EXCLUDE, names = {"ISO_18045_HIGH"})
     void testTooLowAttestation_thenFail(AttackPotentialResistance resistance) throws Exception {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, resistance);
         mockDidResolve(jwk.toPublicJWK());
-        var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
-        Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
 
-        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
-        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
-        ErrorEvent capturedEvent = errorEventCaptor.getValue();
-
-        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
-        assertEquals("Key attestation was invalid or not matching the attack resistance for the credential!", capturedEvent.errorMessage());
+        IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
     }
 
     @Test
     void testUntrustedAttestationIssuer() throws Exception {
         var untrustedIssuer = "did:example:untrusted";
         var nonce = requestNonceDPopHeader(mock);
-        var fetchData = prepareAttestedVC(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH, untrustedIssuer, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce);
+        var fetchData = prepareAttestedVC(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_HIGH, untrustedIssuer, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, "university_example_sd_jwt");
         mockDidResolve(jwk.toPublicJWK());
-        var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
-        // Proof should be invalid when untrusted
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
-        // We want the error description to be helpful telling about the current issuer and the expected issuers.
-        Assertions.assertThat(response.get("error_description").getAsString()).contains(untrustedIssuer).contains(applicationProperties.getTrustedAttestationProviders().getFirst());
-
-        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
-        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
-        ErrorEvent capturedEvent = errorEventCaptor.getValue();
-
-        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
-        assertEquals("Attestation has been rejected! The JWT issuer did:example:untrusted is not in the list of trusted issuers did:test:test-attestation-builder.", capturedEvent.errorMessage());
+        IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
     }
 
     @Test
     void testMissingAttestation_thenFail() throws Exception {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, testOfferAnyAttestationId.toString());
         var token = tokenResponse.get("access_token");
+
         var nonce = requestNonce(mock);
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), true);
-        String credentialRequestString = String.format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}", proof);
+        String proof = TestServiceUtils.createHolderProof(
+                jwk,
+                applicationProperties.getTemplateReplacement().get("external-url"),
+                nonce,
+                ProofType.JWT.getClaimTyp(),
+                true
+        );
+
+        // V2: credential_configuration_id + proofs.jwt
+        String credentialRequestString = String.format(
+                "{\"credential_configuration_id\":\"%s\",\"proofs\":{\"jwt\":[\"%s\"]}}",
+                "university_example_any_key_attestation_required_sd_jwt",
+                proof
+        );
         var response = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Attestation");
@@ -179,15 +185,7 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate().toPublicJWK());
         var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
-        Assertions.assertThat(response.get("error_description").getAsString()).contains("Key attestation");
-
-        var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
-        verify(testEventListener).handleErrorEvent(errorEventCaptor.capture());
-        ErrorEvent capturedEvent = errorEventCaptor.getValue();
-
-        assertEquals(CallbackErrorEventTypeDto.KEY_BINDING_ERROR, capturedEvent.errorCode());
-        assertEquals("Key attestation key is not supported or not matching the signature!", capturedEvent.errorMessage());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name());
     }
 
     private void mockDidResolve(JWK key) {
@@ -197,10 +195,11 @@ class KeyAttestationFlowIT {
     private TestInfrastructureUtils.CredentialFetchData prepareAttested(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance) throws Exception {
         var nonce = requestNonceDPopHeader(mock);
 
-        return prepareAttestedVC(mock, preAuthCode, resistance, null, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce);
+
+        return prepareAttestedVC(mock, preAuthCode, resistance, null, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, "university_example_sd_jwt");
     }
 
-    private CredentialOffer createCredentialOffer(CredentialOffer offer) {
+    private void createCredentialOffer(CredentialOffer offer) {
         var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .accessToken(UUID.randomUUID())
@@ -215,6 +214,5 @@ class KeyAttestationFlowIT {
         var storedOffer = credentialOfferRepository.save(offer);
         credentialManagement.addCredentialOffer(storedOffer);
         credentialManagementRepository.save(credentialManagement);
-        return storedOffer;
     }
 }

@@ -22,7 +22,7 @@ public class NonceService {
     private final CachedNonceRepository cachedNonceRepository;
 
     public NonceResponseDto createNonce() {
-        return new NonceResponseDto(new SelfContainedNonce().getNonce());
+        return new NonceResponseDto(new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce());
     }
 
     /**
@@ -59,14 +59,10 @@ public class NonceService {
     }
 
     @Transactional
-    public void invalidateSelfContainedNonce(List<String> nonces) {
+    public void invalidateSelfContainedNonce(List<SelfContainedNonce> nonces) {
 
-        var selfContainedNonces = nonces.stream()
-                .map(SelfContainedNonce::new)
-                .toList();
-
-        if (!selfContainedNonces.isEmpty()) {
-            List<CachedNonce> cachedNonces = selfContainedNonces.stream()
+        if (!nonces.isEmpty()) {
+            List<CachedNonce> cachedNonces = nonces.stream()
                     .map(nonce -> new CachedNonce(nonce.getNonceId(), nonce.getNonceInstant()))
                     .toList();
             cachedNonceRepository.saveAll(cachedNonces);

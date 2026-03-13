@@ -12,7 +12,9 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
@@ -41,17 +43,19 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.UnsupportedEncodingException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -95,6 +99,21 @@ class DeferredFlowIT {
     @Autowired
     private TransactionTemplate transactionTemplate;
     private StatusList statusList;
+
+    public static Map<String, String> getUniversityCredentialSubjectData() {
+        Map<String, String> credentialSubjectData = new HashMap<>();
+        credentialSubjectData.put("type", "Bachelor of Science");
+        credentialSubjectData.put("name", "Data Science");
+        credentialSubjectData.put("average_grade", "Data Science");
+        return credentialSubjectData;
+    }
+
+    private static String getVcStringFromResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
+        var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
+                .getAsJsonObject()
+                .getAsJsonArray("credentials");
+        return credentials.get(0).getAsJsonObject().get("credential").getAsString();
+    }
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -168,15 +187,12 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.credential").isNotEmpty())
-                .andExpect(jsonPath("$.format").value("vc+sd-jwt"))
                 .andReturn();
         // -> Claming_in_Progress -> Deferred -> Ready -> Issued
         verify(testEventListener, Mockito.times(4))
                 .handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
 
-        var vc = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject()
-                .get("credential").getAsString();
+        var vc = getVcStringFromResponse(credentialResponse);
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
     }
 
@@ -187,8 +203,8 @@ class DeferredFlowIT {
         doReturn(true).when(issuerMetadata).isBatchIssuanceAllowed();
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of("lastName", "lastName"))
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
                 .credentialMetadata(getCredentialMetadataDto())
                 .build();
 
@@ -234,8 +250,8 @@ class DeferredFlowIT {
         doReturn(false).when(issuerMetadata).isBatchIssuanceAllowed();
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of("lastName", "lastName"))
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
                 .credentialMetadata(getCredentialMetadataDto())
                 .build();
 
@@ -307,9 +323,7 @@ class DeferredFlowIT {
                 AttackPotentialResistance.ISO_18045_HIGH,
                 null);
 
-        var deferredCredentialResponse = requestCredential(mock, (String) tokenDto.get("access_token"), String
-                .format("{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}",
-                        proof))
+        var deferredCredentialResponse = requestCredential(mock, (String) tokenDto.get("access_token"), getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
                 .andReturn();
 
@@ -351,34 +365,10 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.credential").isNotEmpty())
-                .andExpect(jsonPath("$.format").value("vc+sd-jwt"))
                 .andReturn();
 
-        var vc = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject()
-                .get("credential").getAsString();
+        var vc = getVcStringFromResponse(credentialResponse);
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
-    }
-
-    @Test
-    void testOfferCreation_withNoSubjectData() throws Exception {
-
-        var offerRequest = CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(List.of("test"))
-                .credentialMetadata(getCredentialMetadataDto())
-                .build();
-
-        var offerRequestString = objectMapper.writeValueAsString(offerRequest);
-
-        // create initial credential offer
-        mock.perform(post("/management/api/credentials")
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(offerRequestString))
-                .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error_description").value("Unprocessable Entity"))
-                .andExpect(jsonPath("$.detail")
-                        .value("credentialSubjectData: 'credential_subject_data' must be set"))
-                .andReturn();
     }
 
     @Test
@@ -426,38 +416,6 @@ class DeferredFlowIT {
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.detail")
                         .value("Mandatory credential claims are missing! lastName"))
-                .andReturn();
-    }
-
-    // only for V1, we return 400 when Issuance pending!
-    @Test
-    void testBoundDeferredFlow_thenIssuancePendingException() throws Exception {
-
-        var offer = getCredentialWithDeeplinkResponseDto();
-        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(
-                offer);
-        var nonce = requestNonce(mock);
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
-        String token = (String) tokenResponse.get("access_token");
-
-        String proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
-        String credentialRequestString = getCredentialRequestString(proof);
-
-        var response = requestCredential(mock, token, credentialRequestString)
-                .andExpect(status().isAccepted())
-                .andReturn();
-
-        // to get token now should end up in a bad request
-        String transactionId = JsonPath.read(response.getResponse().getContentAsString(), "$.transaction_id");
-        String deferredCredentialRequestString = getDeferredCredentialRequestString(transactionId);
-        mock.perform(post(deferredCredentialEndpoint)
-                        .header("Authorization", String.format("BEARER %s", token))
-                        .contentType("application/json")
-                        .content(deferredCredentialRequestString))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ISSUANCE_PENDING"))
                 .andReturn();
     }
 
@@ -589,8 +547,7 @@ class DeferredFlowIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        var vc = JsonParser.parseString(credentialResponse.getResponse().getContentAsString()).getAsJsonObject()
-                .get("credential").getAsString();
+        var vc = getVcStringFromResponse(credentialResponse);
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
@@ -643,7 +600,11 @@ class DeferredFlowIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock,
                 unboundOffer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = " { \"format\": \"vc+sd-jwt\"}";
+        var credentialRequestString = objectMapper.writeValueAsString(new CreateCredentialRequestDto(
+                "unbound_example_sd_jwt",
+                null,
+                null
+        ));
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -677,7 +638,7 @@ class DeferredFlowIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock,
                 unboundOffer.getPreAuthorizedCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = " { \"format\": \"vc+sd-jwt\"}";
+        var credentialRequestString = "{\"credential_configuration_id\": \"unbound_example_sd_jwt\"}";
 
         var deferredCredentialResponse = requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isAccepted())
@@ -724,9 +685,7 @@ class DeferredFlowIT {
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(Instant::now).thenReturn(instant);
 
-            var nonce = requestNonce(mock);
-
-            var credentialRequestString = getCredentialRequestString(nonce);
+            var credentialRequestString = "{\"credential_configuration_id\": \"unbound_example_sd_jwt\"}";
 
             requestCredential(mock, token.toString(),
                     credentialRequestString)
@@ -802,13 +761,16 @@ class DeferredFlowIT {
         return testOfferData;
     }
 
-    private String getCredentialRequestString(String proof) {
-        return String.format(
-                "{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}",
-                proof);
+    private String getCredentialRequestString(String proof) throws Exception {
+        var request = new CreateCredentialRequestDto(
+                "university_example_sd_jwt",
+                new ProofsDto(List.of(proof)),
+                null
+        );
+        return objectMapper.writeValueAsString(request);
     }
 
-    private String getCredentialRequestStringByNonce(String nonce) throws JOSEException {
+    private String getCredentialRequestStringByNonce(String nonce) throws Exception {
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"), nonce,
                 ProofType.JWT.getClaimTyp(), false);

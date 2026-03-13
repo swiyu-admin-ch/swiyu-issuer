@@ -5,12 +5,14 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientException;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
 public class StatusListAvailabilityHealthChecker extends CachedHealthChecker {
 
     private final StatusBusinessApiApi statusBusinessApi;

@@ -13,7 +13,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils;
+import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.ECKey;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +39,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -362,15 +362,15 @@ class CredentialManagementStatusIT {
                 createCredentialOfferResult.getContentAsString(),
                 CredentialWithDeeplinkResponseDto.class);
 
-        List<ECKey> holderPrivateKeys = IssuanceV2TestUtils
-                .createHolderPrivateKeysV2(issuerMetadata.getIssuanceBatchSize());
+        List<ECKey> holderPrivateKeys = IssuanceTestUtils
+                .createHolderPrivateKeys(issuerMetadata.getIssuanceBatchSize());
 
-        var token = IssuanceV2TestUtils.getAccessTokenFromDeeplink(mvc,
+        var token = IssuanceTestUtils.getAccessTokenFromDeeplink(mvc,
                 credentialWithDeeplinkResponseDto.getOfferDeeplink());
-        var credentialRequestString = IssuanceV2TestUtils.getCredentialRequestStringV2(mvc, holderPrivateKeys,
+        var credentialRequestString = IssuanceTestUtils.getCredentialRequestString(mvc, holderPrivateKeys,
                 applicationProperties, "university_example_sd_jwt");
 
-        IssuanceV2TestUtils.requestCredentialV2(mvc, token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mvc, token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()

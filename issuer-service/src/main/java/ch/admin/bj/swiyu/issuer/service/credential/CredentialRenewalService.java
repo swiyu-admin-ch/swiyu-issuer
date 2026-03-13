@@ -55,7 +55,7 @@ public class CredentialRenewalService {
         var renewedDataResponse = renewalApiClient.getRenewalData(renewalData);
 
         var offer = credentialManagementService.updateOfferFromRenewalResponse(renewedDataResponse, initialCredentialOfferForRenewal);
-        var envelopeDto = credentialEnvelopeService.createCredentialEnvelopeDtoV2(offer, credentialRequest, clientInfo, mgmt);
+        var envelopeDto = credentialEnvelopeService.createCredentialEnvelopeDto(offer, credentialRequest, clientInfo, mgmt);
 
         incrementRenewalResponseCount(mgmt);
         credentialManagementRepository.save(mgmt);
@@ -72,7 +72,7 @@ public class CredentialRenewalService {
     void ensureRenewalFlowEnabled(CredentialManagement mgmt) {
         if (!applicationProperties.isRenewalFlowEnabled()) {
             log.info("Tried to renew credential for management id %s".formatted(mgmt.getId()));
-            throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential renewal is not allowed");
+            throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential renewal is not allowed for management id %s".formatted(mgmt.getId()));
         }
     }
 

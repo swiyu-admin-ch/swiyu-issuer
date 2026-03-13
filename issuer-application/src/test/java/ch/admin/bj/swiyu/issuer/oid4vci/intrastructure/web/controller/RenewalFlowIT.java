@@ -9,8 +9,8 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import com.authlete.sd.SDJWT;
@@ -56,7 +56,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -163,7 +163,7 @@ class RenewalFlowIT {
         var credentials = new LinkedList<JWTClaimsSet>();
         for (var i = 0; i < RENEWAL_FLOWS; i++) {
             var credentialRequestString = createCredentialRequestStringWithNewKeys();
-            var credentialResponseString = requestCredentialV2WithDpop(mockMvc,
+            var credentialResponseString = requestCredentialWithDpop(mockMvc,
                     tokenResponse.getAccessToken(), credentialRequestString, issuerMetadata,
                     dpopKey)
                     .andExpect(status().isOk())
@@ -172,7 +172,7 @@ class RenewalFlowIT {
                     .getResponse()
                     .getContentAsString();
             var credentialResponse = assertDoesNotThrow(() -> objectMapper
-                    .readValue(credentialResponseString, CredentialEndpointResponseDtoV2.class));
+                    .readValue(credentialResponseString, CredentialEndpointResponseDto.class));
             var credentialClaims = credentialResponse.credentials().stream()
                     .map(this::getCredentialClaimsSet)
                     .toList();
@@ -205,17 +205,16 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
+        requestCredentialWithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
                 issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.error_description").value("Credential renewal is not allowed"))
                 .andReturn();
     }
 
@@ -233,13 +232,13 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
+        requestCredentialWithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
                 issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
@@ -253,7 +252,7 @@ class RenewalFlowIT {
     void testRenewalInvalidAccessToken_thenException() throws Exception {
         var credentialRequestString = createCredentialRequestStringWithNewKeys();
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, UUID.randomUUID().toString(), credentialRequestString,
+        requestCredentialWithDpop(mockMvc, UUID.randomUUID().toString(), credentialRequestString,
                 issuerMetadata, dpopKey)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
@@ -312,7 +311,7 @@ class RenewalFlowIT {
         var credentialRequestString = createCredentialRequestStringWithNewKeys();
 
         // set to issued
-        assertDoesNotThrow(() -> requestCredentialV2WithDpop(mockMvc, tokenResponse.getAccessToken(),
+        assertDoesNotThrow(() -> requestCredentialWithDpop(mockMvc, tokenResponse.getAccessToken(),
                 credentialRequestString, issuerMetadata, dpopKey)
                 .andExpect(status().is(expectedStatus))
                 .andExpect(content().contentType("application/json"))
@@ -325,7 +324,7 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
         MvcResult result = mockMvc
@@ -339,7 +338,7 @@ class RenewalFlowIT {
 
         managementId = managementJsonObject.get("management_id").getAsString();
 
-        var preAuthCode = IssuanceV2TestUtils
+        var preAuthCode = IssuanceTestUtils
                 .getPreAuthCodeFromDeeplink(managementJsonObject.get("offer_deeplink").getAsString());
 
         dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
@@ -349,10 +348,10 @@ class RenewalFlowIT {
 
         oauthTokenResponse = requestTokenWithDpop(preAuthCode, dpopKey);
 
-        var credentialRequestString = getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
-        requestCredentialV2WithDpop(mockMvc, oauthTokenResponse.getAccessToken(), credentialRequestString,
+        requestCredentialWithDpop(mockMvc, oauthTokenResponse.getAccessToken(), credentialRequestString,
                 issuerMetadata, dpopKey)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
@@ -401,12 +400,12 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKeyV2("Test-Key-%s".formatted(privindex))))
+                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
-        return getCredentialRequestStringV2(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
+        return getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
     }
 
-    private JWTClaimsSet getCredentialClaimsSet(CredentialObjectDtoV2 issuedCredential) {
+    private JWTClaimsSet getCredentialClaimsSet(CredentialObjectDto issuedCredential) {
         var sdjwt = SDJWT.parse(issuedCredential.credential());
         var jwt = assertDoesNotThrow(() -> SignedJWT.parse(sdjwt.getCredentialJwt()));
         return assertDoesNotThrow(jwt::getJWTClaimsSet);

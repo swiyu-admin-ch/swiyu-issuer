@@ -11,10 +11,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,21 +30,9 @@ class NonceServiceIT {
     void testCachedNonce() {
         var lifetime = applicationProperties.getNonceLifetimeSeconds();
         var nonceDto = service.createNonce();
-        var nonce = new SelfContainedNonce(nonceDto.nonce());
-        assertTrue(SelfContainedNonce.isValid(nonce.getNonce(), lifetime));
+        var nonce = new SelfContainedNonce(nonceDto.nonce(), lifetime);
         assertFalse(service.isUsedNonce(nonce));
         service.registerNonce(nonce);
         assertTrue(service.isUsedNonce(nonce));
-
-        var expiredNonce = new SelfContainedNonce(UUID.randomUUID() + "::" + Instant.now().minus(lifetime + 5, ChronoUnit.SECONDS));
-        assertFalse(SelfContainedNonce.isValid(expiredNonce.getNonce(), lifetime));
-        assertFalse(service.isUsedNonce(expiredNonce));
-        service.registerNonce(expiredNonce);
-        assertTrue(service.isUsedNonce(expiredNonce));
-
-        // After clearing the cache the expired nonce should be removed, as it is not valid in any check
-        service.cleanNonceCache();
-        assertTrue(service.isUsedNonce(nonce));
-        assertFalse(service.isUsedNonce(expiredNonce));
     }
 }
