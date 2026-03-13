@@ -108,7 +108,6 @@ public class SdJwtCredential extends CredentialBuilder {
         return new SDJWT(jwt.serialize(), disclosures).toString();
     }
 
-    // Todo check naming & recusrion
     private void buildListDisclosures(SDObjectBuilder builder, Map.Entry<String, Object> entry, Collection<?> collectionValue, List<Disclosure> disclosures) {
         var disc = collectionValue.stream().map(item -> {
             var dis = new Disclosure(item);

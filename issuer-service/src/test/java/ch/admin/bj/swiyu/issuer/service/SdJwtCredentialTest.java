@@ -282,14 +282,12 @@ class SdJwtCredentialTest {
         sdJwtCredential.credentialOffer(offer);
         sdJwtCredential.credentialType(List.of(configurationId));
 
-        List<String> credentials = sdJwtCredential.getCredential(null);
-
         // vcHashes should not be set when storage disabled
         assertNull(offer.getVcHashes());
     }
 
     @Test
-    void whenList() throws Exception {
+    void whenArrayDisclosure_withRecursionDisabled_thenSuccess() throws Exception {
         var configurationId = "metadata-supported";
         CredentialConfiguration config = CredentialConfiguration.builder()
                 .format(SdJwtCredential.SD_JWT_FORMAT)
@@ -321,7 +319,7 @@ class SdJwtCredentialTest {
         List<String> credentials = sdJwtCredential.getCredential(null);
 
         // should contain 2 disclosures (for every list element) + jwt (no binding)
-        var sdJwtComponents = credentials.getFirst().split("~");
+        var sdJwtComponents = getVcSdJwtPars(credentials.getFirst());
         assertEquals(3, sdJwtComponents.length);
 
         // check if disclosures contain the list values
@@ -332,8 +330,9 @@ class SdJwtCredentialTest {
 
         // should contain a foo claim with the list values in the disclosures
         SignedJWT signedJWT = SignedJWT.parse(sdJwtComponents[0]);
-        assertEquals(2, ((List<Map<String, String>>) signedJWT.getJWTClaimsSet().getClaim("foo")).size());
-        assertTrue(((List<Map<String, String>>) signedJWT.getJWTClaimsSet().getClaim("foo")).stream().allMatch(entry -> entry.containsKey("...")));
+        List<Map<String, String>> fooClaim = (List<Map<String, String>>) signedJWT.getJWTClaimsSet().getClaim("foo");
+        assertEquals(2, fooClaim.size());
+        assertTrue(fooClaim.stream().allMatch(entry -> entry.containsKey("...")));
     }
 
     @Test
@@ -369,7 +368,7 @@ class SdJwtCredentialTest {
         List<String> credentials = sdJwtCredential.getCredential(null);
 
         // should contain 2 disclosures (for every list element) + jwt (no binding)
-        var sdJwtComponents = credentials.getFirst().split("~");
+        var sdJwtComponents = getVcSdJwtPars(credentials.getFirst());
         assertEquals(4, sdJwtComponents.length);
 
         // check if disclosures contain the list values
@@ -383,5 +382,114 @@ class SdJwtCredentialTest {
 
         // check that only 1 sd claim is set
         assertEquals(1, ((List<String>) signedJWT.getJWTClaimsSet().getClaims().get("_sd")).size());
+    }
+
+    @Test
+    void whenListRecursive_withObject_shouldBeFlattened_thenSuccess() throws Exception {
+        var configurationId = "metadata-supported";
+        CredentialConfiguration config = CredentialConfiguration.builder()
+                .format(SdJwtCredential.SD_JWT_FORMAT)
+                .vct("urn:vct:test:1")
+                .build();
+
+        when(applicationProperties.isRecursiveDisclosureEnabled()).thenReturn(true);
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
+        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(Map.of("foo", List.of("bar1", "bar2")));
+
+        Map<String, Object> nestedObject1 = Map.of("nestedKey1", "nestedValue1");
+        Map<String, Object> nestedObject2 = Map.of("nestedKey2", "nestedValue2");
+
+        CredentialOffer offer = CredentialOffer.builder()
+                .id(UUID.randomUUID())
+                .credentialStatus(null)
+                .metadataCredentialSupportedId(List.of(configurationId))
+                .offerData(Map.of("foo", List.of(nestedObject1, nestedObject2)))
+                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
+                .build();
+
+        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+
+        var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
+
+        JWSSigner signer = createTestSigner();
+        doReturn(signer).when(sdJwtCredential).createSigner();
+        sdJwtCredential.credentialOffer(offer);
+        sdJwtCredential.credentialType(List.of(configurationId));
+
+        List<String> credentials = sdJwtCredential.getCredential(null);
+
+        // should contain 2 disclosures (for every list element) + jwt (no binding)
+        var sdJwtComponents = getVcSdJwtPars(credentials.getFirst());
+        assertEquals(4, sdJwtComponents.length);
+
+        // check if disclosures contain the list values
+        var disclosures = Stream.of(sdJwtComponents[1], sdJwtComponents[2]).map(Disclosure::new).toList();
+
+        // claim name should not be set in here
+        disclosures.forEach(d -> assertNull(d.getClaimName()));
+
+        // should contain a foo claim with the list values in the disclosures
+        SignedJWT signedJWT = SignedJWT.parse(sdJwtComponents[0]);
+
+        // check that only 1 sd claim is set
+        assertEquals(1, ((List<String>) signedJWT.getJWTClaimsSet().getClaims().get("_sd")).size());
+    }
+
+    @Test
+    void whenList_withObject_shouldBeFlattened_thenSuccess() throws Exception {
+        var configurationId = "metadata-supported";
+        CredentialConfiguration config = CredentialConfiguration.builder()
+                .format(SdJwtCredential.SD_JWT_FORMAT)
+                .vct("urn:vct:test:1")
+                .build();
+
+        when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
+        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(Map.of("foo", List.of("bar1", "bar2")));
+
+        Map<String, Object> nestedObject1 = Map.of("nestedKey1", "nestedValue1");
+        Map<String, Object> nestedObject2 = Map.of("nestedKey2", "nestedValue2");
+
+        CredentialOffer offer = CredentialOffer.builder()
+                .id(UUID.randomUUID())
+                .credentialStatus(null)
+                .metadataCredentialSupportedId(List.of(configurationId))
+                .offerData(Map.of("foo", List.of(nestedObject1, nestedObject2)))
+                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
+                .build();
+
+        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+
+        var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
+
+        JWSSigner signer = createTestSigner();
+        doReturn(signer).when(sdJwtCredential).createSigner();
+        sdJwtCredential.credentialOffer(offer);
+        sdJwtCredential.credentialType(List.of(configurationId));
+
+        List<String> credentials = sdJwtCredential.getCredential(null);
+
+        // should contain 2 disclosures (for every list element) + jwt (no binding)
+        var sdJwtComponents = getVcSdJwtPars(credentials.getFirst());
+        assertEquals(3, sdJwtComponents.length);
+
+        // check if disclosures contain the list values
+        var disclosures = Stream.of(sdJwtComponents[1], sdJwtComponents[2]).map(Disclosure::new).toList();
+
+        // claim name should not be set in here -> as it is an array element, the claim name is not set in the disclosure but only the path with "..."
+        disclosures.forEach(d -> assertNull(d.getClaimName()));
+
+        // should contain a foo claim with the list values in the disclosures
+        SignedJWT signedJWT = SignedJWT.parse(sdJwtComponents[0]);
+
+        var fooClaim = (List<Map<String, String>>) signedJWT.getJWTClaimsSet().getClaim("foo");
+        assertEquals(2, fooClaim.size());
+        assertTrue(fooClaim.stream().allMatch(entry -> entry.containsKey("...")));
+    }
+
+    private String[] getVcSdJwtPars(String vc) {
+        return vc.split("~");
     }
 }
