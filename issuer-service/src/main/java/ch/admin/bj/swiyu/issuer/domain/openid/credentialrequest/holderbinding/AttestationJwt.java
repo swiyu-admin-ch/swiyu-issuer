@@ -191,17 +191,18 @@ public final class AttestationJwt {
      */
     public boolean containsKey(@NotNull ECKey proofKey) throws JOSEException {
         var proofThumbprint = proofKey.toPublicJWK().computeThumbprint().toString();
+        var rawAttestedKeys = claims.getClaim("attested_keys");
 
-        @SuppressWarnings("unchecked")
-        var rawAttestedKeys = (List<Map<String, Object>>) claims.getClaim("attested_keys");
-        if (rawAttestedKeys == null || rawAttestedKeys.isEmpty()) {
+        if (!(rawAttestedKeys instanceof List<?> attestedKeyList) || attestedKeyList.isEmpty()) {
             return false;
         }
 
-        for (var rawKey : rawAttestedKeys) {
+        for (var entry : attestedKeyList) {
+            if (!(entry instanceof Map<?, ?> rawKey)) {
+                throw new JOSEException("attested_keys entry is not a JSON object");
+            }
             try {
-                var attestedJwk = JWK.parse(rawKey);
-                var attestedThumbprint = attestedJwk.computeThumbprint().toString();
+                var attestedThumbprint = JWK.parse(toStringKeyMap(rawKey)).computeThumbprint().toString();
                 if (proofThumbprint.equals(attestedThumbprint)) {
                     return true;
                 }
@@ -210,6 +211,12 @@ public final class AttestationJwt {
             }
         }
         return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> toStringKeyMap(Map<?, ?> rawKey) {
+        // Safe: JWTClaimsSet always deserialises JSON object keys as String
+        return (Map<String, Object>) rawKey;
     }
 
     public String toJsonString() throws ParseException {
