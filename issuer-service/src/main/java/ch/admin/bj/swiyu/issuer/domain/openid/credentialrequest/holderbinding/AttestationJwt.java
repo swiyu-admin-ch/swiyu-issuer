@@ -203,9 +203,7 @@ public final class AttestationJwt {
             }
             try {
                 var attestedThumbprint = JWK.parse(toStringKeyMap(rawKey)).computeThumbprint().toString();
-                return proofThumbprint.equals(attestedThumbprint;
-                    return true;
-                }
+                return proofThumbprint.equals(attestedThumbprint);
             } catch (ParseException e) {
                 throw new JOSEException("Failed to parse attested key entry: " + e.getMessage(), e);
             }
