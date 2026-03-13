@@ -203,7 +203,7 @@ public final class AttestationJwt {
             }
             try {
                 var attestedThumbprint = JWK.parse(toStringKeyMap(rawKey)).computeThumbprint().toString();
-                if (proofThumbprint.equals(attestedThumbprint)) {
+                return proofThumbprint.equals(attestedThumbprint;
                     return true;
                 }
             } catch (ParseException e) {
