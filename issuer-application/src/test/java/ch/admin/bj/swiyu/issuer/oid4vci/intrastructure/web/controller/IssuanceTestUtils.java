@@ -37,17 +37,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @UtilityClass
-public class IssuanceV2TestUtils {
+public class IssuanceTestUtils {
 
-    public static ResultActions requestCredentialV2(MockMvc mock, String token, String credentialRequestString) throws Exception {
+    public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
         return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
-                .header("SWIYU-API-Version", "2")
+                .contentType("application/json")
                 .content(credentialRequestString)
         );
     }
 
-    public static ResultActions requestCredentialV2WithDpop(MockMvc mock, String token, String credentialRequestString, IssuerMetadata issuerMetadata, ECKey dpopKey) throws Exception {
+    public static ResultActions requestCredentialWithDpop(MockMvc mock, String token, String credentialRequestString, IssuerMetadata issuerMetadata, ECKey dpopKey) throws Exception {
         return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
                 .header("SWIYU-API-Version", "2")
@@ -77,13 +77,13 @@ public class IssuanceV2TestUtils {
                 .content(objectMapper.writeValueAsString(subjectData)));
     }
 
-    public static JsonArray extractCredentialsV2(MvcResult response) throws UnsupportedEncodingException {
+    public static JsonArray extractCredentials(MvcResult response) throws UnsupportedEncodingException {
         var responseJson = JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject();
 
         return responseJson.get("credentials").getAsJsonArray();
     }
 
-    public void testHolderBindingV2(String vc, ECKey holderPrivateKey) throws ParseException {
+    public void testHolderBinding(String vc, ECKey holderPrivateKey) throws ParseException {
         JsonObject claims = getVcClaims(vc);
         assertNotNull(claims.get("cnf"));
         JsonObject legacyCnf = claims.get("cnf").getAsJsonObject();
@@ -107,7 +107,7 @@ public class IssuanceV2TestUtils {
         return JsonParser.parseString(jwt.getPayload().toString()).getAsJsonObject();
     }
 
-    public static String getCredentialRequestStringV2(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties, String encryption) throws Exception {
+    public static String getCredentialRequestString(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties, String encryption) throws Exception {
 
         var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         JsonObject nonceResponseJson = JsonParser.parseString(nonceResponse).getAsJsonObject();
@@ -130,19 +130,19 @@ public class IssuanceV2TestUtils {
         }
     }
 
-    public static String getCredentialRequestStringV2(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties) throws Exception {
-        return getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties, null);
+    public static String getCredentialRequestString(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties) throws Exception {
+        return getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, null);
     }
 
-    public static List<ECKey> createHolderPrivateKeysV2(int numberOfKeys) throws JOSEException {
+    public static List<ECKey> createHolderPrivateKeys(int numberOfKeys) throws JOSEException {
         List<ECKey> holderPrivateKeys = new ArrayList<>(numberOfKeys);
         for (int i = 0; i < numberOfKeys; i++) {
-            holderPrivateKeys.add(createPrivateKeyV2("Test-Key-" + i));
+            holderPrivateKeys.add(createPrivateKey("Test-Key-" + i));
         }
         return holderPrivateKeys;
     }
 
-    public static ECKey createPrivateKeyV2(String keyName) throws JOSEException {
+    public static ECKey createPrivateKey(String keyName) throws JOSEException {
         return new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID(keyName)

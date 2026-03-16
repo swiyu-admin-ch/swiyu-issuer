@@ -9,8 +9,8 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredDataDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointResponseDtoV2;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
@@ -59,8 +59,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatus;
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.updateStatusAndSubjectDataForDeferred;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatusAndSubjectDataForDeferred;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,7 +76,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class DeferredIssuanceV2IT {
+class DeferredIssuanceIT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
     private List<ECKey> holderKeys;
@@ -169,7 +169,7 @@ class DeferredIssuanceV2IT {
 
         var deferredResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(),
-                CredentialEndpointResponseDtoV2.class);
+                CredentialEndpointResponseDto.class);
         // Wallet starts polling
         String transactionId = deferredResponseDto.transactionId();
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
@@ -245,7 +245,7 @@ class DeferredIssuanceV2IT {
 
         var deferredResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(),
-                CredentialEndpointResponseDtoV2.class);
+                CredentialEndpointResponseDto.class);
         // Wallet starts polling
         String transactionId = deferredResponseDto.transactionId();
         String deferredCredentialRequestString = getDeferredCredentialRequestString(transactionId);
@@ -319,7 +319,7 @@ class DeferredIssuanceV2IT {
 
         var deferredResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(),
-                CredentialEndpointResponseDtoV2.class);
+                CredentialEndpointResponseDto.class);
         // Wallet starts polling
         String transactionId = deferredResponseDto.transactionId();
         String deferredCredentialRequestString = getDeferredCredentialRequestString(

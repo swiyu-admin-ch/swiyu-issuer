@@ -10,7 +10,6 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import com.google.gson.JsonObject;
@@ -75,11 +74,10 @@ class SdJwtCredentialIT {
 
                 Base64.Decoder decoder = Base64.getUrlDecoder();
 
-                String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
+        String credential = getReadFirstCredential(vc);
                 String[] chunks = credential.split("\\.");
                 String header = new String(decoder.decode(chunks[0]));
                 String payload = new String(decoder.decode(chunks[1]));
-                assertEquals("vc+sd-jwt", JsonPath.read(vc.getOid4vciCredentialJson(), "$.format"));
 
                 // jwt headers
                 assertEquals("vc+sd-jwt", JsonPath.read(header, "$.typ"));
@@ -115,52 +113,7 @@ class SdJwtCredentialIT {
                                                                 .getResponseEncryption(),
                                                 credentialRequest.getCredentialResponseEncryption())
                                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                                .buildCredentialEnvelope();
-
-                Base64.Decoder decoder = Base64.getUrlDecoder();
-                String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
-                String[] chunks = credential.split("\\.");
-                String payload = new String(decoder.decode(chunks[1]));
-
-                // jwt payload - optional fields
-                // TODO add status test
-                // TODO add key id
-                List<String> sd = JsonPath.read(payload, "$._sd");
-                assertEquals(getUniversityCredentialSubjectData().size(), sd.size());
-
-                String alg = JsonPath.read(payload, "$._sd_alg");
-                assertEquals("sha-256", alg);
-
-                // timestamps are rounded down to the day, hence the less than
-                assertEquals(instantToRoundedUnixTimestamp(Instant.now()),
-                                ((Integer) JsonPath.read(payload, "$.nbf")).longValue());
-                assertEquals(instantToRoundedUnixTimestamp(Instant.now()),
-                                ((Integer) JsonPath.read(payload, "$.iat")).longValue());
-                assertEquals(instantToRoundedUnixTimestamp(expiration),
-                                ((Integer) JsonPath.read(payload, "$.exp")).longValue());
-        }
-
-        @Test
-        void getSdJwtCredentialV2TestClaims_thenSuccess() {
-
-                Instant now = Instant.now();
-                Instant expiration = now.plus(30, ChronoUnit.DAYS);
-
-                var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED,
-                                "university_example_sd_jwt", now, expiration);
-
-                CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
-                credentialRequest.setCredentialResponseEncryption(null);
-
-                CredentialEnvelopeDto vc = vcFormatFactory
-                                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
-                                .credentialOffer(credentialOffer)
-                                .credentialResponseEncryption(
-                                                jweService.issuerMetadataWithEncryptionOptions()
-                                                                .getResponseEncryption(),
-                                                credentialRequest.getCredentialResponseEncryption())
-                                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
                 Base64.Decoder decoder = Base64.getUrlDecoder();
                 List<HashMap<String, String>> credentialsMap = JsonPath.read(vc.getOid4vciCredentialJson(),
@@ -215,13 +168,21 @@ class SdJwtCredentialIT {
                                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                                 .buildCredentialEnvelope();
 
-                String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
+        String credential = getReadFirstCredential(vc);
                 String payload = getJWTPayload(credential);
 
                 // Jwt payload - optional fields
                 List<String> sd = JsonPath.read(payload, "$._sd");
                 assertEquals(getUniversityCredentialSubjectData().size(), sd.size());
         }
+
+    private static String getReadFirstCredential(CredentialEnvelopeDto vc) {
+        String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credentials[0].credential");
+        if (credential == null || credential.isBlank()) {
+            throw new IllegalStateException("Expected first credential at path $.credentials[0].credential");
+        }
+        return credential;
+    }
 
         @Test
         void getSdJwtCredential_withVctMetadataUri_thenSuccess() {
@@ -248,8 +209,7 @@ class SdJwtCredentialIT {
                                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                                 .buildCredentialEnvelope();
 
-                JsonObject responseJson = JsonParser.parseString(vc.getOid4vciCredentialJson()).getAsJsonObject();
-                String credential = responseJson.get("credential").getAsString();
+        String credential = getReadFirstCredential(vc);
                 JsonObject payload = JsonParser.parseString(getJWTPayload(credential)).getAsJsonObject();
 
                 assertEquals(vctIntegrity, payload.get("vct#integrity").getAsString());
@@ -277,8 +237,7 @@ class SdJwtCredentialIT {
                                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                                 .buildCredentialEnvelope();
 
-                JsonObject responseJson = JsonParser.parseString(vc.getOid4vciCredentialJson()).getAsJsonObject();
-                String credential = responseJson.get("credential").getAsString();
+        String credential = getReadFirstCredential(vc);
                 JsonObject payload = JsonParser.parseString(getJWTPayload(credential)).getAsJsonObject();
 
                 assertFalse(payload.has("vct#integrity"));
@@ -308,14 +267,14 @@ class SdJwtCredentialIT {
                                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
                                 .buildCredentialEnvelope();
 
-                String credential = JsonPath.read(vc.getOid4vciCredentialJson(), "$.credential");
+        String credential = getReadFirstCredential(vc);
                 var issuedJwt = SignedJWT.parse(credential.split("~")[0]);
                 assertEquals(overrideVerificationMethod, issuedJwt.getHeader().getKeyID());
                 assertEquals(overrideDid, issuedJwt.getJWTClaimsSet().getIssuer());
         }
 
         @Test
-        void getSdJwtCredentialV2TestTracing_thenSuccess() {
+        void getSdJwtCredentialTestTracing_thenSuccess() {
 
                 assertThat(applicationProperties.isEnableVcHashStorage())
                                 .as("This Test requires VC Hash Storage to be active")
@@ -337,7 +296,7 @@ class SdJwtCredentialIT {
                                                                 .getResponseEncryption(),
                                                 credentialRequest.getCredentialResponseEncryption())
                                 .credentialType(credentialOffer.getMetadataCredentialSupportedId())
-                                .buildCredentialEnvelopeV2();
+                .buildCredentialEnvelope();
 
                 assertThat(credentialOffer.getVcHashes())
                                 .as("Should have created a finger print for each VC")

@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceV2TestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -60,7 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class IssuanceV2IT {
+class IssuanceIT {
 
     private StatusList testStatusList;
     private List<ECKey> holderKeys;
@@ -91,7 +91,7 @@ class IssuanceV2IT {
         testStatusList = saveStatusList(createStatusList());
         holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> createPrivateKeyV2("Test-Key-%s".formatted(i))))
+                .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
     }
 
@@ -108,9 +108,9 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
 
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties);
 
-        var response = requestCredentialV2(mock, (String) tokenDto.get("access_token"), credentialRequestString)
+        var response = IssuanceTestUtils.requestCredential(mock, (String) tokenDto.get("access_token"), credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
@@ -118,12 +118,12 @@ class IssuanceV2IT {
                 .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
 
-        var credentials = extractCredentialsV2(response);
+        var credentials = extractCredentials(response);
 
         assertEquals(issuerMetadata.getIssuanceBatchSize(), credentials.size());
         var credential = credentials.get(0).getAsJsonObject();
         var credentialString = credential.get("credential").getAsString();
-        testHolderBindingV2(credentialString, holderKeys.getFirst());
+        testHolderBinding(credentialString, holderKeys.getFirst());
     }
 
     @Test
@@ -147,12 +147,12 @@ class IssuanceV2IT {
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
 
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties);
-        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties);
+        var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 
-        var credentials = extractCredentialsV2(response);
+        var credentials = extractCredentials(response);
 
         assertEquals(issuerMetadata.getIssuanceBatchSize(), credentials.size());
         var credential = credentials.get(0).getAsJsonObject();
@@ -178,7 +178,7 @@ class IssuanceV2IT {
                 "unbound_example_sd_jwt");
 
         // assumption if no proofs provided then only 1 credential is issued
-        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
+        var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
@@ -186,7 +186,7 @@ class IssuanceV2IT {
                 .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
 
-        var credentials = extractCredentialsV2(response);
+        var credentials = extractCredentials(response);
 
         // without proof also configured batch size credential is issued
         assertEquals(1, credentials.size());
@@ -206,7 +206,7 @@ class IssuanceV2IT {
                 "unbound_example_sd_jwt");
 
         // assumption if no proofs provided then only 1 credential is issued
-        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
+        var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
@@ -214,7 +214,7 @@ class IssuanceV2IT {
                 .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
 
-        var credentials = extractCredentialsV2(response);
+        var credentials = extractCredentials(response);
 
         // without proof also configured batch size credential is issued
         assertEquals(issuerMetadata.getIssuanceBatchSize(), credentials.size());
@@ -256,7 +256,7 @@ class IssuanceV2IT {
                         }
                         """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
                 encryptionKey.toPublicJWK().toJSONString());
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderKeys, applicationProperties, responseEncryptionJson);
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, responseEncryptionJson);
 
         // Request encryption
         var requestEncryption = metadata.getRequestEncryption();
@@ -300,7 +300,7 @@ class IssuanceV2IT {
     @ValueSource(ints = {1, 3, 10})
     void testSdJwtOffer_withMultipleProof_thenSuccess(int numberOfProofs) throws Exception {
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -312,9 +312,9 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
 
-        var response = requestCredentialV2(mock, (String) token, credentialRequestString)
+        var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
@@ -322,14 +322,14 @@ class IssuanceV2IT {
                 .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
 
-        var credentials = extractCredentialsV2(response);
+        var credentials = extractCredentials(response);
 
         assertEquals(numberOfProofs, credentials.size());
 
         for (int j = 0; j < numberOfProofs; j++) {
             var credential = credentials.get(j).getAsJsonObject();
             var credentialString = credential.get("credential").getAsString();
-            testHolderBindingV2(credentialString, holderPrivateKeys.get(j));
+            testHolderBinding(credentialString, holderPrivateKeys.get(j));
         }
 
         // check if only correct number of status references exist and correct value have not been overwritten
@@ -364,7 +364,7 @@ class IssuanceV2IT {
     @ValueSource(ints = {0, 11})
     void testSdJwtOffer_invalidBatchSizes_thenBadRequest(int numberOfProofs) throws Exception {
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -376,9 +376,9 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
 
-        requestCredentialV2(mock, (String) token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
                 .andReturn();
     }
@@ -390,7 +390,7 @@ class IssuanceV2IT {
 
         var numberOfProofs = 2;
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -402,9 +402,9 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
 
-        requestCredentialV2(mock, (String) token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
                 .andReturn();
     }
@@ -417,7 +417,7 @@ class IssuanceV2IT {
 
         var numberOfProofs = 1;
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -430,9 +430,9 @@ class IssuanceV2IT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenDto.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
 
-        requestCredentialV2(mock, (String) token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -447,7 +447,7 @@ class IssuanceV2IT {
         doReturn(new BatchCredentialIssuance(10)).when(issuerMetadata).getBatchCredentialIssuance();
         doReturn(true).when(issuerMetadata).isBatchIssuanceAllowed();
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeysV2(numberOfProofs);
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -464,9 +464,9 @@ class IssuanceV2IT {
 
         var tokenDto = fetchOAuthTokenDpop(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString(), null, null);
         var token = tokenDto.get("access_token");
-        var credentialRequestString = getCredentialRequestStringV2(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
 
-        requestCredentialV2(mock, (String) token, credentialRequestString)
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
     }

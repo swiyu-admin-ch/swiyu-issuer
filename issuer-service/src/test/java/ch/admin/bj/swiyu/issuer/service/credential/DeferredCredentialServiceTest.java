@@ -66,7 +66,7 @@ class DeferredCredentialServiceTest {
     }
 
     @Test
-    void createCredentialFromDeferredRequestV2_happyPath_buildsEnvelopeAndPersists() {
+    void createCredentialFromDeferredRequest_happyPath_buildsEnvelopeAndPersists() {
         var mgmt = CredentialManagement.builder()
                 .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .id(UUID.randomUUID())
@@ -95,9 +95,9 @@ class DeferredCredentialServiceTest {
         when(builder.credentialResponseEncryption(any(), any())).thenReturn(builder);
         when(builder.holderBindings(any())).thenReturn(builder);
         when(builder.credentialType(any())).thenReturn(builder);
-        when(builder.buildCredentialEnvelopeV2()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
+        when(builder.buildCredentialEnvelope()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
 
-        var result = service.createCredentialFromDeferredRequestV2(
+        var result = service.createCredentialFromDeferredRequest(
                 new DeferredCredentialEndpointRequestDto(offer.getTransactionId(), null),
                 "token");
 
@@ -109,7 +109,7 @@ class DeferredCredentialServiceTest {
     }
 
     @Test
-    void createCredentialFromDeferredRequestV2_not_Ready() {
+    void createCredentialFromDeferredRequest_not_Ready() {
         var mgmt = CredentialManagement.builder()
                 .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .id(UUID.randomUUID())
@@ -138,9 +138,9 @@ class DeferredCredentialServiceTest {
         when(builder.credentialResponseEncryption(any(), any())).thenReturn(builder);
         when(builder.holderBindings(any())).thenReturn(builder);
         when(builder.credentialType(any())).thenReturn(builder);
-        when(builder.buildCredentialEnvelopeV2()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
+        when(builder.buildCredentialEnvelope()).thenReturn(new CredentialEnvelopeDto("h", "b", null));
 
-        service.createCredentialFromDeferredRequestV2(
+        service.createCredentialFromDeferredRequest(
                 new DeferredCredentialEndpointRequestDto(offer.getTransactionId(), null),
                 "token");
 
