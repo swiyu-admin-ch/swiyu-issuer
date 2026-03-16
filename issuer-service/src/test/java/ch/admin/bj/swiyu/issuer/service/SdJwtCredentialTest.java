@@ -5,10 +5,10 @@ import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.authlete.sd.Disclosure;
+import com.authlete.sd.SDObjectBuilder;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -18,6 +18,8 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -53,6 +55,8 @@ class SdJwtCredentialTest {
                 .build();
 
         when(applicationProperties.getIssuerId()).thenReturn("did:example:issuer");
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(metadataCredentialSupportedId, credentialConfiguration));
+        when(issuerMetadata.getCredentialConfigurationById(metadataCredentialSupportedId)).thenReturn(credentialConfiguration);
     }
 
     private JWSSigner createTestSigner() throws JOSEException {
@@ -65,32 +69,16 @@ class SdJwtCredentialTest {
     @Test
     void shouldIssueSingleSdJwtAndStoreVcHash_whenVcHashStorageEnabled() throws Exception {
 
-        var configurationId = "metadata-supported";
-        CredentialConfiguration config = CredentialConfiguration.builder()
-                .format(SdJwtCredential.SD_JWT_FORMAT)
-                .vct("urn:vct:test:1")
-                .build();
-
         when(applicationProperties.isEnableVcHashStorage()).thenReturn(true);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
-        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
 
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(configurationId))
-                .offerData(Map.of("foo", "bar"))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getSubjectData());
 
         var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
 
         JWSSigner signer = createTestSigner();
         doReturn(signer).when(sdJwtCredential).createSigner();
         sdJwtCredential.credentialOffer(offer);
-        sdJwtCredential.credentialType(List.of(configurationId));
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
         List<String> credentials = sdJwtCredential.getCredential(null);
 
@@ -107,13 +95,7 @@ class SdJwtCredentialTest {
         when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(metadataCredentialSupportedId, credentialConfiguration));
 
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(metadataCredentialSupportedId))
-                .offerData(Map.of())
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, Map.of());
 
         // prepare 1 status references
         var statusListId = UUID.randomUUID();
@@ -126,8 +108,7 @@ class SdJwtCredentialTest {
         when(statusListRepository.findById(statusListId)).thenReturn(Optional.of(sl));
 
         // issuer metadata allows batch issuance
-        when(issuerMetadata.isBatchIssuanceAllowed()).thenReturn(true);
-        when(issuerMetadata.getIssuanceBatchSize()).thenReturn(10);
+        mockBatchIssuanceAllowed(10);
 
         var subject = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
         JWSSigner signer = createTestSigner();
@@ -142,7 +123,8 @@ class SdJwtCredentialTest {
         DidJwk didJwk2 = DidJwk.createFromJsonString(ecJWK2.toPublicJWK().toJSONString());
 
         // Act & Assert
-        assertThrows(IllegalStateException.class, () -> subject.getCredential(List.of(didJwk1, didJwk2)));
+        var holderKeys = List.of(didJwk1, didJwk2);
+        assertThrows(IllegalStateException.class, () -> subject.getCredential(holderKeys));
     }
 
     @Test
@@ -151,15 +133,7 @@ class SdJwtCredentialTest {
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(metadataCredentialSupportedId, credentialConfiguration));
         when(issuerMetadata.getCredentialConfigurationById(metadataCredentialSupportedId)).thenReturn(credentialConfiguration);
 
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(metadataCredentialSupportedId))
-                .offerData(Map.of("vct", "malicious", "name", "Alice"))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, Map.of("vct", "malicious", "name", "Alice"));
 
         var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
         JWSSigner signer = createTestSigner();
@@ -180,34 +154,18 @@ class SdJwtCredentialTest {
 
     @Test
     void shouldIssueBatchSdJwtAndStoreVcHash_whenMultipleHolderKeys() throws Exception {
-        var configurationId = "metadata-supported";
-        CredentialConfiguration config = CredentialConfiguration.builder()
-                .format(SdJwtCredential.SD_JWT_FORMAT)
-                .vct("urn:vct:test:1")
-                .build();
 
         when(applicationProperties.isEnableVcHashStorage()).thenReturn(true);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
-        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
-        when(issuerMetadata.isBatchIssuanceAllowed()).thenReturn(true);
-        doReturn(new BatchCredentialIssuance(10)).when(issuerMetadata).getBatchCredentialIssuance();
-
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(configurationId))
-                .offerData(Map.of("foo", "bar"))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+        mockBatchIssuanceAllowed(10);
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(metadataCredentialSupportedId, credentialConfiguration));
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getSubjectData());
 
         var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
 
         JWSSigner signer = createTestSigner();
         doReturn(signer).when(sdJwtCredential).createSigner();
         sdJwtCredential.credentialOffer(offer);
-        sdJwtCredential.credentialType(List.of(configurationId));
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
         // create two holder public keys
         ECKey ecJWK1 = new ECKeyGenerator(Curve.P_256).keyID("k1").generate();
@@ -225,28 +183,44 @@ class SdJwtCredentialTest {
         assertEquals(2, offer.getVcHashes().size());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"iss",
+            "nbf",
+            "exp",
+            "iat",
+            "cnf",
+            "vct",
+            "status",
+            "_sd",
+            "_sd_alg",
+            "sd_hash",
+            "..."})
+    void whenGetCredential_withReservedKey_doesNotAddValue_thenSuccess(String value) throws Exception {
+
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, Map.of(value, "bar"));
+
+        var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(Map.of(value, "bar"));
+        JWSSigner signer = createTestSigner();
+        doReturn(signer).when(sdJwtCredential).createSigner();
+        sdJwtCredential.credentialOffer(offer);
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
+
+        List<String> credentials = sdJwtCredential.getCredential(null);
+
+        assertEquals(1, credentials.getFirst().split("~").length); // No claim / no disclosure should be added
+    }
+
     @Test
     void returnedCredentialListIsUnmodifiable() throws Exception {
-        var configurationId = "metadata-supported";
-        when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, credentialConfiguration));
-        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(credentialConfiguration);
 
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(configurationId))
-                .offerData(Map.of("foo", "bar"))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getSubjectData());
 
         var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
         JWSSigner signer = createTestSigner();
         doReturn(signer).when(sdJwtCredential).createSigner();
         sdJwtCredential.credentialOffer(offer);
-        sdJwtCredential.credentialType(List.of(configurationId));
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
         List<String> credentials = sdJwtCredential.getCredential(null);
 
@@ -255,32 +229,17 @@ class SdJwtCredentialTest {
 
     @Test
     void whenVcHashStorageDisabled_thenVcHashesNotStored() throws Exception {
-        var configurationId = "metadata-supported";
-        CredentialConfiguration config = CredentialConfiguration.builder()
-                .format(SdJwtCredential.SD_JWT_FORMAT)
-                .vct("urn:vct:test:1")
-                .build();
 
         when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
-        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
 
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(configurationId))
-                .offerData(Map.of("foo", "bar"))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getSubjectData());
 
         var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
 
         JWSSigner signer = createTestSigner();
         doReturn(signer).when(sdJwtCredential).createSigner();
         sdJwtCredential.credentialOffer(offer);
-        sdJwtCredential.credentialType(List.of(configurationId));
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
         // vcHashes should not be set when storage disabled
         assertNull(offer.getVcHashes());
@@ -288,33 +247,18 @@ class SdJwtCredentialTest {
 
     @Test
     void whenArrayDisclosure_withRecursionDisabled_thenSuccess() throws Exception {
-        var configurationId = "metadata-supported";
-        CredentialConfiguration config = CredentialConfiguration.builder()
-                .format(SdJwtCredential.SD_JWT_FORMAT)
-                .vct("urn:vct:test:1")
-                .build();
 
         when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
-        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
-        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(Map.of("foo", List.of("bar1", "bar2")));
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getOfferDataList());
 
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(configurationId))
-                .offerData(Map.of("foo", List.of("bar1", "bar2")))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getOfferDataList());
 
         var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
 
         JWSSigner signer = createTestSigner();
         doReturn(signer).when(sdJwtCredential).createSigner();
         sdJwtCredential.credentialOffer(offer);
-        sdJwtCredential.credentialType(List.of(configurationId));
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
         List<String> credentials = sdJwtCredential.getCredential(null);
 
@@ -337,33 +281,18 @@ class SdJwtCredentialTest {
 
     @Test
     void whenListRecursive() throws Exception {
-        var configurationId = "metadata-supported";
-        CredentialConfiguration config = CredentialConfiguration.builder()
-                .format(SdJwtCredential.SD_JWT_FORMAT)
-                .vct("urn:vct:test:1")
-                .build();
 
         when(applicationProperties.isRecursiveDisclosureEnabled()).thenReturn(true);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
-        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
-        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(Map.of("foo", List.of("bar1", "bar2")));
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getOfferDataList());
 
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(configurationId))
-                .offerData(Map.of("foo", List.of("bar1", "bar2")))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getOfferDataList());
 
         var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
 
         JWSSigner signer = createTestSigner();
         doReturn(signer).when(sdJwtCredential).createSigner();
         sdJwtCredential.credentialOffer(offer);
-        sdJwtCredential.credentialType(List.of(configurationId));
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
         List<String> credentials = sdJwtCredential.getCredential(null);
 
@@ -385,37 +314,79 @@ class SdJwtCredentialTest {
     }
 
     @Test
-    void whenListRecursive_withObject_shouldBeFlattened_thenSuccess() throws Exception {
-        var configurationId = "metadata-supported";
-        CredentialConfiguration config = CredentialConfiguration.builder()
-                .format(SdJwtCredential.SD_JWT_FORMAT)
-                .vct("urn:vct:test:1")
-                .build();
+    void whenObjectRecursive() throws Exception {
 
         when(applicationProperties.isRecursiveDisclosureEnabled()).thenReturn(true);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
-        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
-        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(Map.of("foo", List.of("bar1", "bar2")));
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getNestedSubjectData());
 
-        Map<String, Object> nestedObject1 = Map.of("nestedKey1", "nestedValue1");
-        Map<String, Object> nestedObject2 = Map.of("nestedKey2", "nestedValue2");
-
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(configurationId))
-                .offerData(Map.of("foo", List.of(nestedObject1, nestedObject2)))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getNestedSubjectData());
 
         var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
 
         JWSSigner signer = createTestSigner();
         doReturn(signer).when(sdJwtCredential).createSigner();
         sdJwtCredential.credentialOffer(offer);
-        sdJwtCredential.credentialType(List.of(configurationId));
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
+
+        SDObjectBuilder sdJwtBuilder = new SDObjectBuilder();
+        List<Disclosure> disclosures = new ArrayList<>();
+        List<Disclosure> embeddedElements = new ArrayList<>();
+        List<Disclosure> discs = sdJwtCredential.handleClaimsRecursive(sdJwtBuilder, disclosures, getNestedSubjectData(), embeddedElements);
+
+        // test + address claim should be present
+        assertEquals(2, discs.size());
+
+        // test + address + all address claims should be present in the disclosures = 6 disclosures in total
+        assertEquals(6, disclosures.size());
+    }
+
+    @Test
+    void whenGetCredential_withRecursivelyNested_thenSuccess() throws Exception {
+
+        when(applicationProperties.isRecursiveDisclosureEnabled()).thenReturn(true);
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getNestedSubjectData());
+
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getNestedSubjectData());
+
+        var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
+
+        JWSSigner signer = createTestSigner();
+        doReturn(signer).when(sdJwtCredential).createSigner();
+        sdJwtCredential.credentialOffer(offer);
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
+
+        var sdJwtComponents = getVcSdJwtPars(sdJwtCredential.getCredential(null).getFirst());
+
+        // should contain 1 jwt + 5 address-disclosures + other disclosure (no key binding) for the test claim = 7 disclosures in total
+        assertEquals(7, sdJwtComponents.length);
+
+        // check if disclosures contain the list values
+        var disclosures = Stream.of(sdJwtComponents[1], sdJwtComponents[2]).map(Disclosure::new).toList();
+
+        // claim name should not be set in here
+        disclosures.forEach(d -> assertNull(d.getClaimName()));
+
+        // should contain a foo claim with the list values in the disclosures
+        SignedJWT signedJWT = SignedJWT.parse(sdJwtComponents[0]);
+
+        // should contain 2 _sd elements (address and test claim)
+        assertEquals(2, ((List<String>) signedJWT.getJWTClaimsSet().getClaims().get("_sd")).size());
+    }
+
+    @Test
+    void whenListRecursive_withObject_shouldBeFlattened_thenSuccess() throws Exception {
+
+        when(applicationProperties.isRecursiveDisclosureEnabled()).thenReturn(true);
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getOfferDataList());
+
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getNestedOfferDataList());
+
+        var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
+
+        JWSSigner signer = createTestSigner();
+        doReturn(signer).when(sdJwtCredential).createSigner();
+        sdJwtCredential.credentialOffer(offer);
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
         List<String> credentials = sdJwtCredential.getCredential(null);
 
@@ -438,36 +409,18 @@ class SdJwtCredentialTest {
 
     @Test
     void whenList_withObject_shouldBeFlattened_thenSuccess() throws Exception {
-        var configurationId = "metadata-supported";
-        CredentialConfiguration config = CredentialConfiguration.builder()
-                .format(SdJwtCredential.SD_JWT_FORMAT)
-                .vct("urn:vct:test:1")
-                .build();
 
         when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
-        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
-        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(Map.of("foo", List.of("bar1", "bar2")));
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getOfferDataList());
 
-        Map<String, Object> nestedObject1 = Map.of("nestedKey1", "nestedValue1");
-        Map<String, Object> nestedObject2 = Map.of("nestedKey2", "nestedValue2");
-
-        CredentialOffer offer = CredentialOffer.builder()
-                .id(UUID.randomUUID())
-                .credentialStatus(null)
-                .metadataCredentialSupportedId(List.of(configurationId))
-                .offerData(Map.of("foo", List.of(nestedObject1, nestedObject2)))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
-                .build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getNestedOfferDataList());
 
         var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
 
         JWSSigner signer = createTestSigner();
         doReturn(signer).when(sdJwtCredential).createSigner();
         sdJwtCredential.credentialOffer(offer);
-        sdJwtCredential.credentialType(List.of(configurationId));
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
         List<String> credentials = sdJwtCredential.getCredential(null);
 
@@ -491,5 +444,89 @@ class SdJwtCredentialTest {
 
     private String[] getVcSdJwtPars(String vc) {
         return vc.split("~");
+    }
+
+    private Map<String, Object> getSubjectData() {
+        return Map.of("foo", "bar");
+    }
+
+    private Map<String, Object> getNestedSubjectData() {
+        var offerAddressData = Map.of("street_address", "123 Main St", "locality", "Anytown", "region", "Anystate", "country", "US");
+        return Map.of("test", "test", "address", offerAddressData);
+    }
+
+    private Map<String, Object> getOfferDataList() {
+        return Map.of("foo", List.of("bar1", "bar2"));
+    }
+
+    private Map<String, Object> getNestedOfferDataList() {
+        Map<String, Object> nestedObject1 = Map.of("nestedKey1", "nestedValue1");
+        Map<String, Object> nestedObject2 = Map.of("nestedKey2", "nestedValue2");
+
+        return Map.of("foo", List.of(nestedObject1, nestedObject2));
+    }
+
+    private CredentialOffer createCredentialOffer(String configurationId, Map<String, Object> offerData) {
+        var offer = CredentialOffer.builder()
+                .id(UUID.randomUUID())
+                .credentialStatus(null)
+                .metadataCredentialSupportedId(List.of(configurationId))
+                .offerData(offerData)
+                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
+                .build();
+
+        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+
+        return offer;
+    }
+
+    private CredentialConfiguration mockCredentialConfiguration(String configurationId) {
+        CredentialConfiguration config = CredentialConfiguration.builder()
+                .format(SdJwtCredential.SD_JWT_FORMAT)
+                .vct("urn:vct:test:1")
+                .build();
+
+        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(configurationId, config));
+        when(issuerMetadata.getCredentialConfigurationById(configurationId)).thenReturn(config);
+
+        return config;
+    }
+
+    private void mockBatchIssuanceAllowed(int batchSize) {
+        when(issuerMetadata.isBatchIssuanceAllowed()).thenReturn(true);
+        when(issuerMetadata.getIssuanceBatchSize()).thenReturn(batchSize);
+    }
+
+    @Test
+    void shouldAddCredentialMetadataAndNbfExpClaims() throws Exception {
+        when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
+
+        var vctIntegrity = "vct-int";
+        var vctMetadataUri = "https://example/vct.json";
+        var vctMetadataUriIntegrity = "vct-uri-int";
+
+        var credentialMetadata = new CredentialOfferMetadata(null, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
+
+        CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getSubjectData());
+        offer.setCredentialMetadata(credentialMetadata);
+
+        when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
+
+        var sdJwtCredential = spy(new SdJwtCredential(applicationProperties, issuerMetadata, dataIntegrityService, sdjwtProperties, jwsSignatureFacade, statusListRepository, credentialOfferStatusRepository));
+
+        JWSSigner signer = createTestSigner();
+        doReturn(signer).when(sdJwtCredential).createSigner();
+        sdJwtCredential.credentialOffer(offer);
+        sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
+
+        String sdjwt = sdJwtCredential.getCredential(null).getFirst();
+        String signedPart = sdjwt.contains("~") ? sdjwt.split("~")[0] : sdjwt;
+        SignedJWT parsed = SignedJWT.parse(signedPart);
+
+        assertEquals(vctIntegrity, parsed.getJWTClaimsSet().getStringClaim("vct#integrity"));
+        assertEquals(vctMetadataUri, parsed.getJWTClaimsSet().getStringClaim("vct_metadata_uri"));
+        assertEquals(vctMetadataUriIntegrity, parsed.getJWTClaimsSet().getStringClaim("vct_metadata_uri#integrity"));
+
+        assertNotNull(parsed.getJWTClaimsSet().getClaim("iat"));
     }
 }

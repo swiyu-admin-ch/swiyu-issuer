@@ -160,25 +160,27 @@
       },
       "vct": "${external-url}/oid4vci/vct/my-vct-v01",
       "claims": {
-        "type": {
-          "mandatory": true,
-          "value_type": "array",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Abschluss Typen"
-            }
-          ]
-        },
-        "name": {
-          "mandatory": true,
-          "value_type": "string",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Universitätsname"
-            }
-          ]
+        "nested": {
+          "name": {
+            "mandatory": true,
+            "value_type": "string",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Universitätsname"
+              }
+            ]
+          },
+          "type": {
+            "mandatory": true,
+            "value_type": "array",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typen"
+              }
+            ]
+          }
         }
       }
     },

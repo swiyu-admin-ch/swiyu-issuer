@@ -108,24 +108,6 @@ public class SdJwtCredential extends CredentialBuilder {
         return new SDJWT(jwt.serialize(), disclosures).toString();
     }
 
-    private void buildListDisclosures(SDObjectBuilder builder, Map.Entry<String, Object> entry, Collection<?> collectionValue, List<Disclosure> disclosures) {
-        var disc = collectionValue.stream().map(item -> {
-            var dis = new Disclosure(item);
-            disclosures.add(dis);
-            return dis.toArrayElement();
-        }).toList();
-
-        if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
-
-            // for strings
-            var recDisclosure = new Disclosure(entry.getKey(), disc);
-            disclosures.add(recDisclosure);
-            builder.putSDClaim(recDisclosure);
-        } else {
-            builder.putClaim(entry.getKey(), disc);
-        }
-    }
-
     /**
      * Issues one or a batch of SD-JWT credentials.
      * Batch size is determined by the number of holder public keys (if provided),
@@ -248,34 +230,16 @@ public class SdJwtCredential extends CredentialBuilder {
      *
      * @return list of the disclosures possible
      */
-    private List<Disclosure> prepareDisclosures(SDObjectBuilder builder) {
+    protected List<Disclosure> prepareDisclosures(SDObjectBuilder builder) {
         // Optional claims as disclosures
         // Code below follows example from https://github.com/authlete/sd-jwt?tab=readme-ov-file#credential-jwt
         List<Disclosure> disclosures = new ArrayList<>();
+        List<Disclosure> embedded = new ArrayList<>();
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
-        for (var entry : getOfferData().entrySet()) {
-            // Check if it's a protected claim
-            if (SDJWT_PROTECTED_CLAIMS.contains(entry.getKey())) {
-                // We only log the issue and do not add the claim.
-                log.warn(
-                        "Upstream application tried to override protected claim {} in credential offer {}. Original value has been retained",
-                        entry.getKey(),
-                        getCredentialOffer().getId());
-            }
-            // Only process entries that are not protected claims and not null
-            else if (entry.getValue() != null) {
-                if (entry.getValue() instanceof Collection<?> collectionValue) {
-                    buildListDisclosures(builder, entry, collectionValue, disclosures);
-                } else {
-                    // TODO: EID-1782; Handle mandatory subject fields using issuer metadata
-                    Disclosure dis = new Disclosure(entry.getKey(), entry.getValue());
-                    disclosures.add(dis);
-                    builder.putSDClaim(dis);
-                }
-            }
-            // Skip null values without any action
-        }
+        var disclosableClaims = handleClaimsRecursive(builder, disclosures, getOfferData(), embedded);
+        disclosableClaims.forEach(builder::putSDClaim);
+
         return disclosures;
     }
 
@@ -334,5 +298,90 @@ public class SdJwtCredential extends CredentialBuilder {
                 // Merge JSONs into one
                 .reduce((acc, elem) -> getStatusFactory().mergeStatus(acc, elem))
                 .orElse(new HashMap<>());
+    }
+
+    private void handleLeafClaim(Map.Entry<String, Object> entry, List<Disclosure> disclosures, List<Disclosure> disclosuresForVCObjectProperties, SDObjectBuilder builder) {
+        var disclosure = new Disclosure(entry.getKey(), entry.getValue());
+        disclosures.add(disclosure);
+        builder.putSDClaim(disclosure);
+        disclosuresForVCObjectProperties.add(disclosure);
+    }
+
+    protected List<Disclosure> handleClaimsRecursive(SDObjectBuilder builder,
+                                                     List<Disclosure> disclosures,
+                                                     Map<String, Object> offerData,
+                                                     List<Disclosure> disclosuresForVCObjectProperties) {
+
+        offerData.forEach((entryKey, entryValue) -> {
+
+            if (SDJWT_PROTECTED_CLAIMS.contains(entryKey)) {
+                // We only log the issue and do not add the claim.
+                log.warn(
+                        "Upstream application tried to override protected claim {} in credential offer {}. Original value has been retained",
+                        entryKey,
+                        getCredentialOffer().getId());
+                return;
+            }
+
+            if (entryValue == null) {
+                log.warn(
+                        "Null value for claim {} in credential offer {} has been ignored and will not be included in the credential",
+                        entryKey,
+                        getCredentialOffer().getId());
+                return;
+            }
+
+            switch (entryValue) {
+                case Map<?, ?> mapValue -> {
+
+                    if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
+
+                        // Create a new builder for the nested map to build its disclosures
+                        var nestedBuilder = new SDObjectBuilder();
+                        // throw away list for recursive calls, we only need the disclosuresForVCObjectPropertie of the top level in recursive case (as these cases should not be added as sd claims)
+                        var ignoredDisclosuresForVCObjectProperties = new ArrayList<Disclosure>();
+
+                        // Recursive call for nested maps
+                        handleClaimsRecursive(nestedBuilder, disclosures, (Map<String, Object>) mapValue, ignoredDisclosuresForVCObjectProperties);
+
+                        // Create new Disclosure for the nested map and add it to the disclosures list and the parent builder
+                        var nestedDigest = new Disclosure(entryKey, nestedBuilder.build());
+
+                        disclosures.add(nestedDigest);
+                        disclosuresForVCObjectProperties.add(nestedDigest);
+                    } else {
+                        // If recursive disclosures are not enabled, we treat the entire map as a leaf claim
+                        handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties, builder);
+                    }
+                }
+                case Collection<?> collectionValue ->
+                        buildListDisclosures(builder, Map.entry(entryKey, entryValue), collectionValue, disclosures);
+                default ->
+                        handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties, builder);
+            }
+        });
+
+        return disclosuresForVCObjectProperties;
+    }
+
+    private void buildListDisclosures(SDObjectBuilder builder,
+                                      Map.Entry<String, Object> entry,
+                                      Collection<?> collectionValue,
+                                      List<Disclosure> disclosures) {
+        var disc = collectionValue.stream().map(item -> {
+            var dis = new Disclosure(item);
+            disclosures.add(dis);
+            return dis.toArrayElement();
+        }).toList();
+
+        if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
+
+            // for strings
+            var recDisclosure = new Disclosure(entry.getKey(), disc);
+            disclosures.add(recDisclosure);
+            builder.putSDClaim(recDisclosure);
+        } else {
+            builder.putClaim(entry.getKey(), disc);
+        }
     }
 }

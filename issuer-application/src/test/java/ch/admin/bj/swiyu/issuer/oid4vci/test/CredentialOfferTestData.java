@@ -99,8 +99,10 @@ public class CredentialOfferTestData {
 
     public static Map<String, Object> getUniversityCredentialListSubjectData() {
         Map<String, Object> credentialSubjectData = new HashMap<>();
-        credentialSubjectData.put("type", List.of("Bachelor of Science", "Master of Science"));
-        credentialSubjectData.put("name", "Data Science");
+        Map<String, Object> nestedSubjectData = new HashMap<>();
+        nestedSubjectData.put("type", List.of("Bachelor of Science", "Master of Science"));
+        nestedSubjectData.put("name", "University of Bern");
+        credentialSubjectData.put("nested", nestedSubjectData);
         return credentialSubjectData;
     }
 
