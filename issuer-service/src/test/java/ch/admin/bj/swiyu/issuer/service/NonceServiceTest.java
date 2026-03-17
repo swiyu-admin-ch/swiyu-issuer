@@ -80,4 +80,33 @@ class NonceServiceTest {
         nonceService.cleanNonceCache();
         verify(cachedNonceRepository).deleteAllOlderThan(any(Instant.class));
     }
+
+    @Test
+    void isValid_shouldReturnTrue_whenNonceIsValid() {
+        var nonce = new SelfContainedNonce(nonceSecret);
+        assertTrue(nonce.isValid(60, nonceSecret));
+    }
+
+    @Test
+    void isValid_shouldReturnFalse_whenNonceIsExpired() {
+        var nonce = new SelfContainedNonce(nonceSecret);
+
+        var expiredInstant = Instant.now().minusSeconds(120);
+        var preNonce = nonce.getNonceId() + "::" + expiredInstant;
+        var signature = SelfContainedNonce.createSignature(preNonce, nonceSecret);
+        var expiredNonce = new SelfContainedNonce(preNonce + "::" + signature);
+
+        assertFalse(expiredNonce.isValid(60, nonceSecret));
+    }
+
+    @Test
+    void isValid_shouldReturnFalse_whenSignatureIsInvalid() {
+        var nonce = new SelfContainedNonce(nonceSecret);
+
+        var invalidNonce = new SelfContainedNonce(
+                nonce.getPreNonce() + "::invalid-signature"
+        );
+
+        assertFalse(invalidNonce.isValid(60, nonceSecret));
+    }
 }
