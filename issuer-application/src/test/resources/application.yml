@@ -76,6 +76,7 @@ webhook:
 
 caching:
   publicKeyCacheTTL: 5000
+  encryptionMetadataCacheTTL: 5000
 
 management:
   endpoint:
