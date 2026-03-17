@@ -148,7 +148,10 @@ public class MetadataService {
      * @return the unsigned {@link OAuthAuthorizationServerMetadataDto} for this issuer
      */
     public OAuthAuthorizationServerMetadataDto getUnsignedOAuthAuthorizationServerMetadata() {
-        return openIdIssuerConfiguration.getOpenIdConfiguration();
+        return demonstratingProofOfPossessionService
+                .addSigningAlgorithmsSupportedAndSwissprofileVersion(
+                    openIdIssuerConfiguration.getOpenIdConfiguration()
+                );
     }
 
     /**

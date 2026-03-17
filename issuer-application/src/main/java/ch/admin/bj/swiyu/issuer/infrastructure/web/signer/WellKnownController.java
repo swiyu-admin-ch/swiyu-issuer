@@ -54,10 +54,7 @@ public class WellKnownController {
                     "extensions for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP."
     )
     public OAuthAuthorizationServerMetadataDto getAuthorizationServerMetadata() {
-        return demonstratingProofOfPossessionService
-                .addSigningAlgorithmsSupportedAndSwissprofileVersion(
-                        metadataService.getUnsignedOAuthAuthorizationServerMetadata()
-                );
+        return metadataService.getUnsignedOAuthAuthorizationServerMetadata();
     }
 
     /**
