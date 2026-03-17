@@ -227,6 +227,7 @@ monitoring:
 
 caching:
   publicKeyCacheTTL: ${PUBLIC_KEY_CACHE_TTL_MILLI:3600000} # 1 hour
+  encryptionMetadataCacheTTL: ${ENCRYPTION_METADATA_CACHE_TTL_MILLI:300000} # 5 minutes – must be less than 2× encryption-key-rotation-interval (grace period = 30min); recommended ~1/3 of rotation interval
 
 database-migration:
   init-container: ${IS_INIT_CONTAINER_EXECUTION:false}

@@ -301,6 +301,7 @@ The Generic Issuer service is configured using environment variables.
 | Variable                   | Description                                                       | Type | Default      |
 |----------------------------|-------------------------------------------------------------------|------|--------------|
 | PUBLIC_KEY_CACHE_TTL_MILLI | TTL in milliseconds how long a public key result should be cached | int  | 3600000 (1h) |
+| ENCRYPTION_METADATA_CACHE_TTL_MILLI | TTL in milliseconds how long the issuer metadata encryption cache is valid before being evicted on every pod. Rotated keys are kept in the database for a grace period of `2 × encryption-key-rotation-interval` before deletion, so the cache TTL must be strictly less than that grace period. Recommended: roughly one third of the rotation interval. | int | 300000 (5min) |
 
 #### Security
 

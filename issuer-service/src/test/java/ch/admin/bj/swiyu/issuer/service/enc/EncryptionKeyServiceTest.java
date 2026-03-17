@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.enc;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.CacheCustomizer;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKey;
@@ -37,7 +36,7 @@ class EncryptionKeyServiceTest {
     void setUp() {
         setupMockRepository();
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
-        encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository, new CacheCustomizer());
+        encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository);
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())
                 .thenReturn(KEY_ROTATION_INTERVAL);
         encryptionKeyService.rotateEncryptionKeys();
