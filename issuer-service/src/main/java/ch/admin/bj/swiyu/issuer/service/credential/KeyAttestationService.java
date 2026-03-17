@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.ECKey;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -71,6 +72,8 @@ public class KeyAttestationService {
                 throw new Oid4vcException(INVALID_PROOF, "Key attestation was invalid or not matching the attack resistance for the credential!");
             }
 
+            verifyProofKeyInAttestedKeys(requestProof, attestation);
+
             return attestation.toJsonString();
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Key attestation is malformed!");
@@ -78,6 +81,53 @@ public class KeyAttestationService {
             throw new Oid4vcException(e, INVALID_PROOF, String.format("Attestation has been rejected! %s", e.getMessage()));
         } catch (JOSEException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Key attestation key is not supported or not matching the signature!");
+        }
+    }
+
+    /**
+     * Verifies that the proof binding key is included in the {@code attested_keys} of the given attestation.
+     * This check closes the key-mismatch attack vector where a valid attestation for Key A is combined with
+     * a proof signed by an unattested Key B.
+     *
+     * @param requestProof the validated proof whose binding key must appear in the attestation
+     * @param attestation  the validated key attestation containing the attested key set
+     * @throws Oid4vcException if the proof key is not listed in the attested keys or if key parsing fails
+     */
+    private void verifyProofKeyInAttestedKeys(@NotNull Proof requestProof, @NotNull AttestationJwt attestation) {
+        var bindingJson = requestProof.getBinding();
+        if (bindingJson == null) {
+            throw new Oid4vcException(INVALID_PROOF, "Proof has no binding key – cannot verify against attested_keys");
+        }
+
+        ECKey proofKey = parseProofKey(bindingJson);
+        verifyKeyPresentInAttestation(proofKey, attestation);
+    }
+
+    private ECKey parseProofKey(String bindingJson) {
+        try {
+            return ECKey.parse(bindingJson);
+        } catch (ParseException e) {
+            throw new Oid4vcException(e, INVALID_PROOF, "Proof binding key could not be parsed for attested_keys verification!");
+        }
+    }
+
+    private void verifyKeyPresentInAttestation(ECKey proofKey, AttestationJwt attestation) {
+        try {
+            if (!attestation.containsKey(proofKey)) {
+                throw new Oid4vcException(INVALID_PROOF,
+                        "Proof key does not match any key listed in the attestation's attested_keys",
+                        Map.of("proofKeyThumbprint", computeThumbprintSafe(proofKey)));
+            }
+        } catch (JOSEException e) {
+            throw new Oid4vcException(e, INVALID_PROOF, "Proof key thumbprint computation failed during attested_keys verification!");
+        }
+    }
+
+    private String computeThumbprintSafe(ECKey key) {
+        try {
+            return key.toPublicJWK().computeThumbprint().toString();
+        } catch (JOSEException e) {
+            return "unavailable";
         }
     }
 }
