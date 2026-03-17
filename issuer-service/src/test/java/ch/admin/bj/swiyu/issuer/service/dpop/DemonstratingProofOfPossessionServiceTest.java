@@ -7,6 +7,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepos
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecretRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
@@ -34,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -53,6 +56,7 @@ class DemonstratingProofOfPossessionServiceTest {
     private CredentialOfferRepository credentialOfferRepository;
     private CredentialManagementRepository credentialManagementRepository;
     private ECKey dpopKey;
+    private IssuerSecret nonceSecret;
 
     @BeforeEach
     void setUp() {
@@ -60,7 +64,8 @@ class DemonstratingProofOfPossessionServiceTest {
         credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
         credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
         CachedNonceRepository cachedNonceRepository = Mockito.mock(CachedNonceRepository.class);
-        nonceService = new NonceService(applicationProperties, cachedNonceRepository);
+        IssuerSecretRepository nonceSecretRepository = Mockito.mock(IssuerSecretRepository.class);
+        nonceService = new NonceService(applicationProperties, cachedNonceRepository, nonceSecretRepository);
         oAuthService = Mockito.mock(OAuthService.class);
         demonstratingProofOfPossessionService = new DemonstratingProofOfPossessionService(
                 applicationProperties,
@@ -78,6 +83,8 @@ class DemonstratingProofOfPossessionServiceTest {
         when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(10);
         when(applicationProperties.getAcceptableProofTimeWindowSeconds()).thenReturn(10);
         when(applicationProperties.getExternalUrl()).thenReturn("https://www.example.com");
+        nonceSecret = IssuerSecret.builder().id(UUID.randomUUID()).build();
+        when(nonceSecretRepository.findAll()).thenReturn(List.of(nonceSecret));
     }
 
     @Test
@@ -88,8 +95,7 @@ class DemonstratingProofOfPossessionServiceTest {
         assertThat(httpHeader).isNotEmpty().containsKey(DPOP_NONCE_HEADER);
         assertThat(httpHeader.get(DPOP_NONCE_HEADER)).isNotEmpty().hasSize(1);
         var nonce = requireNonNull(httpHeader.getFirst(DPOP_NONCE_HEADER));
-        var dPopNonce = assertDoesNotThrow(() -> new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds()));
-        assertThat(SelfContainedNonce.isSelfContainedNonce(nonce)).isTrue();
+        var dPopNonce = assertDoesNotThrow(() -> new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds(), nonceSecret));
         Assertions.assertThat(nonceService.isUsedNonce(dPopNonce)).isFalse();
     }
 

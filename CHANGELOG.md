@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- tbd
+- Nonces are now validated to originate from this service, preventing client side generated nonces
 
 - Added `nonce_endpoint`, `deferred_credential_endpoint`, and `batch_credential_issuance` (with min batch size of 10)
   to `sample.compose.yml` `(#737)`.

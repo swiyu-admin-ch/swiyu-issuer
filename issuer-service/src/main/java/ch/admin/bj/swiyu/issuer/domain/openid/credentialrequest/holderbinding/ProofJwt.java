@@ -29,6 +29,7 @@ public class ProofJwt extends Proof implements AttestableProof {
      */
     private final int acceptableProofTimeWindowSeconds;
     private final int nonceLifetimeSeconds;
+    private final IssuerSecret nonceSecret;
     private String holderKeyJson;
     private SignedJWT signedJWT;
     /**
@@ -36,12 +37,12 @@ public class ProofJwt extends Proof implements AttestableProof {
      */
     private SelfContainedNonce nonce;
 
-    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds) {
+    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds, IssuerSecret nonceSecret) {
         super(proofType);
         this.jwt = jwt;
         this.acceptableProofTimeWindowSeconds = acceptableProofTimeWindowSeconds;
         this.nonceLifetimeSeconds = nonceLifetimeSeconds;
-        this.nonce = null;
+        this.nonceSecret = nonceSecret;
     }
 
     private static Oid4vcException proofException(String errorDescription, Map<String, Object> context) {
@@ -121,7 +122,7 @@ public class ProofJwt extends Proof implements AttestableProof {
 
         try {
             var nonceString = signedJWT.getJWTClaimsSet().getStringClaim("nonce");
-            nonce = new SelfContainedNonce(nonceString, nonceLifetimeSeconds);
+            nonce = new SelfContainedNonce(nonceString, nonceLifetimeSeconds, nonceSecret);
             return nonce;
         } catch (ParseException e) {
             throw proofException(
@@ -195,8 +196,7 @@ public class ProofJwt extends Proof implements AttestableProof {
 
     private void validateNonce() {
         try {
-            var nonce = getNonce();
-            SelfContainedNonce.validateNonce(nonce);
+            getNonce();
         } catch (InvalidNonceException e) {
             throw proofException("Invalid nonce claim in proof JWT",
                     Map.of(

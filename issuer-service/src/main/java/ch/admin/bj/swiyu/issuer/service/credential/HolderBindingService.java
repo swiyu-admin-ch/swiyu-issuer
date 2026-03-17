@@ -106,7 +106,9 @@ public class HolderBindingService {
         try {
             return credentialRequest.getProofs(
                     applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                    applicationProperties.getNonceLifetimeSeconds());
+                    applicationProperties.getNonceLifetimeSeconds(),
+                    nonceService.getNonceSecret()
+                );
         } catch (IllegalArgumentException e) {
             throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof",
                     Map.of("proofType", credentialRequest.getProof() != null ? credentialRequest.getProof().toString() : "null"));

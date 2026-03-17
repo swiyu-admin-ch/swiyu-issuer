@@ -481,7 +481,7 @@ class CredentialServiceOrchestratorTest {
         when(applicationProperties.getMinDeferredOfferIntervalSeconds()).thenReturn(600L);
 
         List<ProofJwt> proofs = List.of(mock(ProofJwt.class));
-        when(credentialRequest.getProofs(anyInt(), anyInt())).thenReturn(proofs);
+        when(credentialRequest.getProofs(anyInt(), anyInt(), any())).thenReturn(proofs);
         when(holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer)).thenReturn(proofs);
 
         mockVCBuilder(offer);

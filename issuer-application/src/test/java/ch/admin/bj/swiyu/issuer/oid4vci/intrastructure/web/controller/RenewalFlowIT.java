@@ -135,7 +135,8 @@ class RenewalFlowIT {
                 .formatted(statusListUri);
 
         assertDoesNotThrow(this::createCredential);
-
+        
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(120);
         when(applicationProperties.isRenewalFlowEnabled()).thenReturn(true);
         when(applicationProperties.getBusinessIssuerRenewalApiEndpoint())
                 .thenReturn(mockServerContainer.getEndpoint()

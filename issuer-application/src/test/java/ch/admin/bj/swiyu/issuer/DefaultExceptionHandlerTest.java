@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.DefaultExceptionHandler;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,10 +33,12 @@ class DefaultExceptionHandlerTest {
 
     @Mock
     private ApplicationProperties applicationProperties;
+    @Mock
+    private NonceService nonceService;
 
     @BeforeEach
     void setUp() {
-        handler = new DefaultExceptionHandler(applicationProperties);
+        handler = new DefaultExceptionHandler(applicationProperties, nonceService);
     }
 
     @ParameterizedTest
