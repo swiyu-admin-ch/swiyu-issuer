@@ -20,7 +20,7 @@ import java.util.List;
 public class MetadataClaimDescriptor {
     @JsonProperty(value = "path")
     @NotNull
-    private String path;
+    private List<String> path;
 
     @JsonProperty(value = "mandatory", defaultValue = "false")
     private boolean mandatory;
