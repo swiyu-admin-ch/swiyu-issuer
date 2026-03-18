@@ -82,31 +82,44 @@ class NonceServiceTest {
     }
 
     @Test
-    void isValid_shouldReturnTrue_whenNonceIsValid() {
+    void isValidSelfContainedNonce_shouldReturnTrue_andStoreNonce_whenValid() {
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(60);
+
         var nonce = new SelfContainedNonce(nonceSecret);
-        assertTrue(nonce.isValid(60, nonceSecret));
+
+        when(cachedNonceRepository.findById(nonce.getNonceId()))
+                .thenReturn(Optional.empty());
+
+        boolean result = nonceService.isValidSelfContainedNonce(nonce.getNonce());
+
+        assertTrue(result);
+        verify(cachedNonceRepository).save(any(CachedNonce.class));
     }
 
     @Test
-    void isValid_shouldReturnFalse_whenNonceIsExpired() {
+    void isValidSelfContainedNonce_shouldReturnFalse_whenNonceAlreadyUsed() {
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(60);
+
         var nonce = new SelfContainedNonce(nonceSecret);
 
-        var expiredInstant = Instant.now().minusSeconds(120);
-        var preNonce = nonce.getNonceId() + "::" + expiredInstant;
-        var signature = SelfContainedNonce.createSignature(preNonce, nonceSecret);
-        var expiredNonce = new SelfContainedNonce(preNonce + "::" + signature);
+        when(cachedNonceRepository.findById(nonce.getNonceId()))
+                .thenReturn(Optional.of(new CachedNonce(nonce.getNonceId(), nonce.getNonceInstant())));
 
-        assertFalse(expiredNonce.isValid(60, nonceSecret));
+        boolean result = nonceService.isValidSelfContainedNonce(nonce.getNonce());
+
+        assertFalse(result);
+        verify(cachedNonceRepository, never()).save(any());
     }
 
     @Test
-    void isValid_shouldReturnFalse_whenSignatureIsInvalid() {
-        var nonce = new SelfContainedNonce(nonceSecret);
+    void isValidSelfContainedNonce_shouldReturnFalse_whenNonceInvalid() {
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(60);
 
-        var invalidNonce = new SelfContainedNonce(
-                nonce.getPreNonce() + "::invalid-signature"
-        );
+        String invalidNonce = "invalid::nonce::format";
 
-        assertFalse(invalidNonce.isValid(60, nonceSecret));
+        boolean result = nonceService.isValidSelfContainedNonce(invalidNonce);
+
+        assertFalse(result);
+        verify(cachedNonceRepository, never()).save(any());
     }
 }
