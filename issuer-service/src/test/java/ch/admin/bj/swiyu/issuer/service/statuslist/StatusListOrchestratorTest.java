@@ -152,7 +152,7 @@ class StatusListOrchestratorTest {
      * Happy path: all requested status list URIs can be resolved and are returned.
      */
     @Test
-    void resolveAndValidateStatusLists_shouldReturnListsWhenAllResolved() {
+    void resolveAndLockAndValidateStatusLists_shouldReturnListsWhenAllResolved() {
         var uri1 = "https://example.com/status1";
         var uri2 = "https://example.com/status2";
         var statusList1 = StatusList.builder().uri(uri1).build();
@@ -165,7 +165,7 @@ class StatusListOrchestratorTest {
         when(statusListRepository.findByUriIn(List.of(uri1, uri2)))
                 .thenReturn(List.of(statusList1, statusList2));
 
-        var result = statusListOrchestrator.resolveAndValidateStatusLists(request);
+        var result = statusListOrchestrator.resolveAndLockAndValidateStatusLists(request);
 
         assertEquals(List.of(statusList1, statusList2), result);
         verify(statusListRepository).findByUriIn(List.of(uri1, uri2));
@@ -177,7 +177,7 @@ class StatusListOrchestratorTest {
      * the resolved URIs in the error message.
      */
     @Test
-    void resolveAndValidateStatusLists_shouldThrowWhenNotAllResolved() {
+    void resolveAndLockAndValidateStatusLists_shouldThrowWhenNotAllResolved() {
         var uri1 = "https://example.com/status1";
         var uri2 = "https://example.com/status2";
         var statusList1 = StatusList.builder().uri(uri1).build();
@@ -190,7 +190,7 @@ class StatusListOrchestratorTest {
                 .thenReturn(List.of(statusList1)); // Only one resolved
 
         var ex = Assertions.assertThrows(BadRequestException.class,
-                () -> statusListOrchestrator.resolveAndValidateStatusLists(request));
+                () -> statusListOrchestrator.resolveAndLockAndValidateStatusLists(request));
 
         assertTrue(ex.getMessage().contains(uri1));
         assertFalse(ex.getMessage().contains(uri2));
@@ -200,14 +200,14 @@ class StatusListOrchestratorTest {
      * Edge case: an empty list of status lists should be considered valid and results in an empty resolution.
      */
     @Test
-    void resolveAndValidateStatusLists_shouldReturnEmptyWhenRequestIsEmpty() {
+    void resolveAndLockAndValidateStatusLists_shouldReturnEmptyWhenRequestIsEmpty() {
         var request = CreateCredentialOfferRequestDto.builder()
                 .statusLists(List.of())
                 .build();
 
         when(statusListRepository.findByUriIn(List.of())).thenReturn(List.of());
 
-        var result = statusListOrchestrator.resolveAndValidateStatusLists(request);
+        var result = statusListOrchestrator.resolveAndLockAndValidateStatusLists(request);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());

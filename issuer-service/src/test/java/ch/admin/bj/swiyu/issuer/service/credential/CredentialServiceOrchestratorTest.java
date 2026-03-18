@@ -230,7 +230,7 @@ class CredentialServiceOrchestratorTest {
         when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.holderBindings(anyList())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialType(anyList())).thenReturn(sdJwtCredential);
-        when(statusListOrchestrator.findByUriIn(any())).thenReturn(List.of(statusList));
+        when(statusListOrchestrator.resolveAndLockAndValidateStatusLists(any())).thenReturn(List.of(statusList));
 
         var claim = new CredentialClaim();
         claim.setMandatory(true);
