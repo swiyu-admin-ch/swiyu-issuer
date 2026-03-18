@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service;
 
+import ch.admin.bj.swiyu.dpop.DpopConstants;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
@@ -123,8 +124,6 @@ class MetadataServiceTest {
         var oidConfig = new OAuthAuthorizationServerMetadataDto(externalUrl, "token_endpoint", null, null, null);
         when(demonstratingProofOfPossessionService.addSigningAlgorithmsSupportedAndSwissprofileVersion(Mockito.any())).thenReturn(oidConfig);
         when(metadataService.getUnsignedOAuthAuthorizationServerMetadata()).thenReturn(oidConfig);
-
-
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, jwsSignatureFacade, jweService, demonstratingProofOfPossessionService, sdjwtProperties, applicationProperties, new ObjectMapper());
@@ -140,6 +139,40 @@ class MetadataServiceTest {
         assertEquals(credentialIssuerIdentifier, parsed.getJWTClaimsSet().getSubject(), "Subject claim must be the credential issuer identifier");
         assertEquals(credentialIssuerIdentifier, parsed.getJWTClaimsSet().getStringClaim("issuer"), "Issuer claim must be the credential issuer identifier");
         assertEquals("token_endpoint", parsed.getJWTClaimsSet().getStringClaim("token_endpoint"));
+    }
+
+    @Test
+    void getUnsignedOAuthAuthorizationServerMetadata_shouldReturnEnrichedConfiguration() {
+        var baseConfig = new OAuthAuthorizationServerMetadataDto(
+                externalUrl,
+                "token_endpoint",
+                null, null, null
+        );
+
+        when(openIdIssuerConfiguration.getOpenIdConfiguration()).thenReturn(baseConfig);
+
+        var realDpopService = new DemonstratingProofOfPossessionService(
+                applicationProperties,
+                null, null, null, null, null
+        );
+
+        var svc = new MetadataService(
+                openIdIssuerConfiguration,
+                credentialManagementService,
+                jwsSignatureFacade,
+                jweService,
+                realDpopService,
+                sdjwtProperties,
+                applicationProperties,
+                new ObjectMapper()
+        );
+
+        var result = svc.getUnsignedOAuthAuthorizationServerMetadata();
+
+        assertNotNull(result);
+        assertEquals(SwissProfileVersions.ISSUANCE_PROFILE_VERSION, result.profile_version());
+        assertEquals(DpopConstants.SUPPORTED_ALGORITHMS, result.dpop_signing_alg_values_supported());
+        assertTrue(result.preauthorized_grant_anonymous_access_supported());
     }
 
     private JWSSigner createDummySigner() throws JOSEException {
