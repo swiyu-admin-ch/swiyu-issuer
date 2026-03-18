@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.enc;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.CacheCustomizer;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKey;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKeyRepository;
@@ -47,7 +46,7 @@ class JweServiceTest {
                 .encRequired(true)
                 .build())
             .build();
-        encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository, new CacheCustomizer());
+        encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository);
         jweService = new JweService(applicationProperties, issuerMetadata, encryptionKeyService);
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())
                 .thenReturn(KEY_ROTATION_INTERVAL);
