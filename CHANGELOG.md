@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 2.4.3
+## 2.4.3 - 2026-03-19
 
 ### Fixed
 
@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Security Fix: Enforced mandatory validation of the proof_binding_key against attested_keys using canonical JWK
   thumbprints (RFC 7638). This prevents an exploit where an attacker could submit a valid attestation for Key A while
   signing the proof with a non-attested Key B. `(#794)`
+- Updated credential metadata structure and corrected claims paths to align with the latest specification. `(#798)`
+- Fixed null `tenantId` handling in issuer metadata retrieval to prevent NullPointerExceptions and formatting
+  issues. `(#803)`
 
 ## 2.4.2
 
