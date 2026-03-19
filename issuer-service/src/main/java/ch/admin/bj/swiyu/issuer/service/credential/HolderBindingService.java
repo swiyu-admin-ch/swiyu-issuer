@@ -226,7 +226,7 @@ public class HolderBindingService {
     }
 
     private IssuerMetadata getIssuerMetadata(UUID tenantId) {
-        if (applicationProperties.isSignedMetadataEnabled()) {
+        if (applicationProperties.isSignedMetadataEnabled() && tenantId != null) {
             return metadataService.getUnsignedIssuerMetadata(tenantId);
         }
         return metadataService.getUnsignedIssuerMetadata();
