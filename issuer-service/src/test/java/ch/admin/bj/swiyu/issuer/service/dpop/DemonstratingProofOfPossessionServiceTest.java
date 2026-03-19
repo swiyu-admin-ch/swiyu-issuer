@@ -30,6 +30,7 @@ import org.mockito.Mockito;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.server.ServletServerHttpRequest;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -166,6 +167,44 @@ class DemonstratingProofOfPossessionServiceTest {
                 signAndSerialize(dpopWithProfileVersion, dpopKey),
                 request));
     }
+
+    
+    /**
+     * Downgrading would be when no DPoP is provided but previously DPoP was used.
+     * This is not allowed.
+     */
+    @Test
+    void testValidateDpop_whenDowngrading_throwsException() {
+        var request = Mockito.mock(HttpRequest.class);
+        var accessToken = UUID.randomUUID().toString();
+        var mockManagement = Mockito.mock(CredentialManagement.class);
+        // DPoP enforcement is disabled (optional) – the exception is still expected because a key was previously registered
+        when(applicationProperties.isDpopEnforce()).thenReturn(false);
+        // Simulate that a DPoP key has already been registered for this credential management
+        when(mockManagement.hasDPoPKey()).thenReturn(true);
+        when(oAuthService.getCredentialManagementByAccessToken(accessToken)).thenReturn(mockManagement);
+        
+        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.validateDpop(accessToken, null, request));
+    }
+
+ @Test
+    void testRefreshDpop_whenDowngrading_throwsException() {
+        var request = Mockito.mock(ServletServerHttpRequest.class);
+        var refreshToken = UUID.randomUUID().toString();
+
+        var mockManagement = Mockito.mock(CredentialManagement.class);
+        // Simulate that a DPoP key has already been registered for this credential management
+        when(mockManagement.hasDPoPKey()).thenReturn(true);
+
+        // DPoP enforcement is disabled (optional) – the exception is still expected because a key was previously registered
+        when(applicationProperties.isDpopEnforce()).thenReturn(false);
+        when(oAuthService.getUnrevokedCredentialOfferByRefreshToken(refreshToken))
+                .thenReturn(mockManagement);
+
+        assertThrows(DemonstratingProofOfPossessionException.class,
+                () -> demonstratingProofOfPossessionService.refreshDpop(refreshToken, null, request));
+    }
+
 
     private SignedJWT createDpopJwt(String httpMethod, String httpUri, String accessToken, ECKey dpopKey) {
         return createDpopJwt(httpMethod, httpUri, accessToken, dpopKey, true);
