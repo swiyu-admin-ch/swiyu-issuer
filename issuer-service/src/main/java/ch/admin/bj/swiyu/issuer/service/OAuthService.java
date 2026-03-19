@@ -5,11 +5,13 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenTypeDto;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -130,6 +132,14 @@ public class OAuthService {
                 oauthTokenResponseBuilder.refreshToken(mgmt.getRefreshToken().toString());
             }
         }
+        
+        if(CollectionUtils.isEmpty(mgmt.getDpopKey())) {
+            // If we have a DPoP Key registered we use DPoP tokens
+            oauthTokenResponseBuilder.tokenType(OAuthTokenTypeDto.BEARER.toString());
+        } else {
+            oauthTokenResponseBuilder.tokenType(OAuthTokenTypeDto.DPoP.toString());
+        }
+
         credentialManagementRepository.save(mgmt);
         return oauthTokenResponseBuilder.build();
     }
