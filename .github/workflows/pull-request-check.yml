@@ -75,7 +75,7 @@ jobs:
           file: Dockerfile
 
       - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           image-ref: pull_request_check:latest
           severity: 'CRITICAL,HIGH'
