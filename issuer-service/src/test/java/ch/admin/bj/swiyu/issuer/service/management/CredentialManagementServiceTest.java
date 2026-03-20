@@ -311,7 +311,7 @@ class CredentialManagementServiceTest {
      */
     @Test
     void createCredentialOfferAndGetDeeplink_shouldPropagateStatusListResolutionFailure() {
-        when(statusListOrchestrator.resolveAndValidateStatusLists(any()))
+        when(statusListOrchestrator.resolveAndLockAndValidateStatusLists(any()))
                 .thenThrow(new BadRequestException("Could not resolve all provided status lists"));
 
         var exception = assertThrows(BadRequestException.class, () ->
@@ -334,7 +334,7 @@ class CredentialManagementServiceTest {
                         .maxLength(10000)
                         .build()
         );
-        when(statusListOrchestrator.resolveAndValidateStatusLists(any())).thenReturn(statusLists);
+        when(statusListOrchestrator.resolveAndLockAndValidateStatusLists(any())).thenReturn(statusLists);
 
         doNothing().when(validationService).validateCredentialOfferCreateRequest(any(), any());
         when(validationService.determineIssuerDid(any(), anyString())).thenReturn("did:example:123456789");
@@ -361,7 +361,7 @@ class CredentialManagementServiceTest {
         assertNotNull(response);
         assertNotNull(response.getOfferDeeplink());
 
-        verify(statusListOrchestrator, times(1)).resolveAndValidateStatusLists(any());
+        verify(statusListOrchestrator, times(1)).resolveAndLockAndValidateStatusLists(any());
         verify(persistenceService, times(1)).saveStatusListEntries(eq(statusLists), any(UUID.class), eq(batchSize));
     }
 
@@ -383,7 +383,7 @@ class CredentialManagementServiceTest {
                         .maxLength(10000)
                         .build()
         );
-        when(statusListOrchestrator.resolveAndValidateStatusLists(any())).thenReturn(statusLists);
+        when(statusListOrchestrator.resolveAndLockAndValidateStatusLists(any())).thenReturn(statusLists);
 
         doNothing().when(validationService).validateCredentialOfferCreateRequest(any(), any());
         when(validationService.determineIssuerDid(any(), anyString())).thenReturn("did:example:123456789");
@@ -542,7 +542,7 @@ class CredentialManagementServiceTest {
                         .maxLength(10000)
                         .build()
         );
-        when(statusListOrchestrator.resolveAndValidateStatusLists(any(CreateCredentialOfferRequestDto.class)))
+        when(statusListOrchestrator.resolveAndLockAndValidateStatusLists(any(CreateCredentialOfferRequestDto.class)))
                 .thenReturn(statusLists);
 
         doNothing().when(validationService).validateCredentialOfferCreateRequest(any(), any());
@@ -591,7 +591,7 @@ class CredentialManagementServiceTest {
         assertNotNull(updated.getOfferData());
 
         verify(validationService, times(1)).validateCredentialOfferCreateRequest(any(CreateCredentialOfferRequestDto.class), anyMap());
-        verify(statusListOrchestrator, times(1)).resolveAndValidateStatusLists(any(CreateCredentialOfferRequestDto.class));
+        verify(statusListOrchestrator, times(1)).resolveAndLockAndValidateStatusLists(any(CreateCredentialOfferRequestDto.class));
         verify(persistenceService, times(1)).saveCredentialOffer(existing);
         verify(persistenceService, times(1)).saveStatusListEntries(statusLists, existing.getId(), batchSize);
     }
