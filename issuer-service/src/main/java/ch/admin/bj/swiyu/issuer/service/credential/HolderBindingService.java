@@ -108,7 +108,7 @@ public class HolderBindingService {
                     applicationProperties.getAcceptableProofTimeWindowSeconds(),
                     applicationProperties.getNonceLifetimeSeconds(),
                     nonceService.getNonceSecret()
-                );
+            );
         } catch (IllegalArgumentException e) {
             throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof",
                     Map.of("proofType", credentialRequest.getProof() != null ? credentialRequest.getProof().toString() : "null"));
@@ -234,7 +234,7 @@ public class HolderBindingService {
     }
 
     private IssuerMetadata getIssuerMetadata(UUID tenantId) {
-        if (applicationProperties.isSignedMetadataEnabled()) {
+        if (applicationProperties.isSignedMetadataEnabled() && tenantId != null) {
             return metadataService.getUnsignedIssuerMetadata(tenantId);
         }
         return metadataService.getUnsignedIssuerMetadata();
