@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialEndpointRespon
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance_v2.CredentialObjectDtoV2;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
+import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import com.authlete.sd.SDJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
@@ -50,9 +51,7 @@ import org.testcontainers.mockserver.MockServerContainer;
 import org.testcontainers.utility.DockerImageName;
 import reactor.core.publisher.Mono;
 
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -192,6 +191,40 @@ class RenewalFlowIT {
                 .as("Every VC accross all batches should have a disinct state to prevent linking through states")
                 .hasSameSizeAs(credentials);
 
+    }
+
+    @Test
+    void renewAccessToken_deferred_thenSuccess() throws Exception {
+
+        var jwk = new ECKeyGenerator(Curve.P_256)
+                .keyUse(KeyUse.SIGNATURE)
+                .keyID("Test-Key")
+                .issueTime(new Date())
+                .generate();
+
+        var deferredPayload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"credential_metadata\": {\"deferred\": true}}";
+
+        // Arrange: mock business issuer to return a successful renewal response (payload)
+        var newOffer = TestInfrastructureUtils.createCredentialOffer(mockMvc, deferredPayload).andReturn();
+        var management = getManagementJsonObject(newOffer);
+        var preAuthCode = IssuanceV2TestUtils.getPreAuthCodeFromDeeplink(management.get("offer_deeplink").getAsString());
+        var oAuthToken = requestTokenWithDpop(preAuthCode, dpopKey);
+
+        var requestString = IssuanceV2TestUtils.getCredentialRequestStringV2(mockMvc, List.of(jwk), applicationProperties);
+
+        IssuanceV2TestUtils.requestCredentialV2(mockMvc, oAuthToken.getAccessToken(), requestString)
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        // Act: refresh the access token using the refresh token and DPoP key
+        refreshTokenWithDpop(oAuthToken.getRefreshToken(), dpopKey);
+
+        // Ensure the management/offer is in READY state as the business issuer would set it
+        updateStatus(mockMvc, management.get("management_id").getAsString(), UpdateCredentialStatusRequestTypeDto.READY)
+                .andExpect(status().isOk());
+
+        // Act: refresh the access token using the refresh token and DPoP key
+        refreshTokenWithDpop(oAuthToken.getRefreshToken(), dpopKey);
     }
 
     @Test
@@ -417,6 +450,16 @@ class RenewalFlowIT {
         Map<String, Map<String, Object>> tokenStatusListMap = (Map<String, Map<String, Object>>) credentialClaimSet
                 .getClaim("status");
         return (long) tokenStatusListMap.get("status_list").get("idx");
+    }
 
+    private JsonObject getManagementJsonObject(MvcResult result) throws Exception {
+        return JsonParser.parseString(result.getResponse().getContentAsString())
+                .getAsJsonObject();
+    }
+
+    private String getCredentialRequestString(String proof) {
+        return String.format(
+                "{ \"format\": \"vc+sd-jwt\" , \"proof\": {\"proof_type\": \"jwt\", \"jwt\": \"%s\"}}",
+                proof);
     }
 }
