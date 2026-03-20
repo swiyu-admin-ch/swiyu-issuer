@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.At
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
@@ -109,10 +110,7 @@ public class TestInfrastructureUtils {
     }
 
     public static JWK getDPoPKey() throws JOSEException {
-        return new ECKeyGenerator(Curve.P_256)
-                .keyID("HolderDPoPKey")
-                .keyUse(KeyUse.SIGNATURE)
-                .generate().toECKey();
+        return createEcKey("HolderDPoPKey");
     }
 
     public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
@@ -158,6 +156,12 @@ public class TestInfrastructureUtils {
                 .andReturn();
 
         return JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject();
+    }
+
+    public static ResultActions createCredentialOffer(MockMvc mock, String offerRequestString) throws Exception {
+        return mock.perform(post("/management/api/credentials")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(offerRequestString));
     }
 
     public static CredentialWithDeeplinkResponseDto createInitialCredentialWithDeeplinkResponse(MockMvc mock, CreateCredentialOfferRequestDto offerRequest) throws Exception {
@@ -244,6 +248,19 @@ public class TestInfrastructureUtils {
         String credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}",
                 credentialConfigId, proof);
         return new CredentialFetchData(token, credentialRequestString);
+    }
+
+    public static CredentialOfferMetadataDto getDeferredCredentialMetadataDto() {
+        return new CredentialOfferMetadataDto(true, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null,
+                null);
+    }
+
+    public static ECKey createEcKey(String keyId) throws JOSEException {
+        return new ECKeyGenerator(Curve.P_256)
+                .keyUse(KeyUse.SIGNATURE)
+                .keyID(keyId)
+                .issueTime(new Date())
+                .generate();
     }
 
     public record CredentialFetchData(Object token, String credentialRequestString) {

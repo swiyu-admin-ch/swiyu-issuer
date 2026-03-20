@@ -63,6 +63,14 @@ public class IssuanceTestUtils {
         );
     }
 
+    public static ResultActions requestCredentialFromDeferred(MockMvc mock, String accessToken, String deferredCredentialRequestString) throws Exception {
+        return mock.perform(post("/oid4vci/api/deferred_credential")
+                        .header("Authorization", String.format("BEARER %s", accessToken))
+                        .contentType("application/json")
+                        .content(deferredCredentialRequestString))
+                .andExpect(status().isOk());
+    }
+
     public static ResultActions updateStatus(MockMvc mock, String managementId, UpdateCredentialStatusRequestTypeDto statusType) throws Exception {
         return mock.perform(patch("/management/api/credentials/" + managementId + "/status?credentialStatus=%s".formatted(statusType.name()))
                 .contentType(MediaType.APPLICATION_JSON_VALUE));

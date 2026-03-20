@@ -1,9 +1,9 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.RequiredArgsConstructor;
@@ -119,7 +119,6 @@ public class OAuthService {
         OAuthTokenDto.OAuthTokenDtoBuilder oauthTokenResponseBuilder = OAuthTokenDto.builder()
                 .accessToken(newAccessToken.toString())
                 .expiresIn(applicationProperties.getTokenTTL());
-
 
         if (applicationProperties.isAllowTokenRefresh()) {
             if (mgmt.getRefreshToken() == null || applicationProperties.isAllowRefreshTokenRotation()) {
