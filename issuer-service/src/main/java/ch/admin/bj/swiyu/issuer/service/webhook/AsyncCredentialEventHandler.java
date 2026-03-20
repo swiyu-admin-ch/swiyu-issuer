@@ -25,6 +25,14 @@ public class AsyncCredentialEventHandler {
         log.info("Processed ErrorEvent for CredentialOfferId: {}", errorEvent.credentialOfferId());
     }
 
+    /**
+     * Triggered after a successful transaction commit.
+     *
+     * The annotation @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) ensures that the webhook event
+     * is only sent to the Business Issuer if the state change has actually been persisted in the database.
+     * This prevents so-called "ghost webhooks" (false positives) where a webhook is sent,
+     * but the transaction is later rolled back (e.g., due to a failure updating the Status List).
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     public void handleOfferStateChangeEvent(OfferStateChangeEvent stateChangeEvent) {
@@ -32,6 +40,13 @@ public class AsyncCredentialEventHandler {
         log.info("Processed StateChangeEvent for CredentialOfferId: {}", stateChangeEvent.credentialOfferId());
     }
 
+    /**
+     * Triggered after a transaction rollback.
+     *
+     * The annotation @TransactionalEventListener(phase = TransactionPhase.AFTER_ROLLBACK) ensures that in case of a failure
+     * (e.g., if updating the external Status List fails), an error webhook is sent to the Business Issuer.
+     * This keeps both systems in sync regarding failed operations.
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_ROLLBACK)
     @Async
     public void handleOfferStateChangeRollback(OfferStateChangeEvent stateChangeEvent) {
@@ -41,6 +56,14 @@ public class AsyncCredentialEventHandler {
                 "Status list update failed for state transition to " + stateChangeEvent.newState(), CallbackEventTrigger.CREDENTIAL_OFFER);
     }
 
+    /**
+     * Triggered after a successful transaction commit.
+     *
+     * The annotation @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) ensures that the webhook event
+     * is only sent to the Business Issuer if the state change has actually been persisted in the database.
+     * This prevents so-called "ghost webhooks" (false positives) where a webhook is sent,
+     * but the transaction is later rolled back (e.g., due to a failure updating the Status List).
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     public void handleManagementStateChangeEvent(ManagementStateChangeEvent managementStateChangeEvent) {
@@ -48,6 +71,13 @@ public class AsyncCredentialEventHandler {
         log.info("Processed StateChangeEvent for CredentialManagementId: {}", managementStateChangeEvent.credentialManagementId());
     }
 
+    /**
+     * Triggered after a transaction rollback.
+     *
+     * The annotation @TransactionalEventListener(phase = TransactionPhase.AFTER_ROLLBACK) ensures that in case of a failure
+     * (e.g., if updating the external Status List fails), an error webhook is sent to the Business Issuer.
+     * This keeps both systems in sync regarding failed operations.
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_ROLLBACK)
     @Async
     public void handleManagementStateChangeRollback(ManagementStateChangeEvent managementStateChangeEvent) {
