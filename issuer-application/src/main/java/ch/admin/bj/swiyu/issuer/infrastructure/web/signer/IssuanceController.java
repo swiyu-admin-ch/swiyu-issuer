@@ -285,13 +285,12 @@ public class IssuanceController {
         if (bearerToken == null) {
             throw OAuthException.invalidRequest("No authorization header found");
         }
-        var regexPattern = Pattern.compile("bearer (.*)", Pattern.CASE_INSENSITIVE);
+        var regexPattern = Pattern.compile("(bearer |dpop )(.+)", Pattern.CASE_INSENSITIVE);
         var matcher = regexPattern.matcher(bearerToken);
         if (!matcher.find()) {
             throw OAuthException.invalidRequest("No bearer token found");
         }
-
-        return matcher.group(1);
+        return matcher.group(2);
     }
 
     private @NotNull ClientAgentInfo getClientAgentInfo(HttpServletRequest request) {
