@@ -29,7 +29,7 @@ public class OAuthTokenDto implements SpringDocOAuth2Token, Serializable {
     private String refreshToken;
 
     @JsonProperty("token_type")
-    private String tokenType;
+    private OAuthTokenTypeDto tokenType;
 
     @JsonProperty("expires_in")
     private long expiresIn;
@@ -41,7 +41,7 @@ public class OAuthTokenDto implements SpringDocOAuth2Token, Serializable {
 
     @Override
     public String getTokenType() {
-        return this.tokenType;
+        return this.tokenType.toString();
     }
 
     @Override

@@ -60,7 +60,7 @@ public class DemonstratingProofOfPossessionService {
      */
     @Transactional
     public void registerDpop(@NotBlank String preAuthCode, @Nullable String dpop, HttpRequest request) {
-        if (isDpopUnused(dpop, false)) {
+        if (canSkipDpopValidation(dpop, false)) {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
@@ -80,7 +80,7 @@ public class DemonstratingProofOfPossessionService {
     @Transactional
     public void validateDpop(@NotBlank String accessToken, @Nullable String dpop, @NotNull HttpRequest request) {
         var credentialManagement = oAuthService.getCredentialManagementByAccessToken(accessToken);
-        if (isDpopUnused(dpop, credentialManagement.hasDPoPKey())) {
+        if (canSkipDpopValidation(dpop, credentialManagement.hasDPoPKey())) {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
@@ -118,7 +118,7 @@ public class DemonstratingProofOfPossessionService {
     @Transactional
     public void refreshDpop(String refreshToken, String dpop, ServletServerHttpRequest request) {
         var credentialManagement = oAuthService.getUnrevokedCredentialOfferByRefreshToken(refreshToken);
-        if (isDpopUnused(dpop, credentialManagement.hasDPoPKey())) {
+        if (canSkipDpopValidation(dpop, credentialManagement.hasDPoPKey())) {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
@@ -131,9 +131,11 @@ public class DemonstratingProofOfPossessionService {
     /**
      * Checks if the dpop has not been included and is set to be optional.
      */
-    private boolean isDpopUnused(@Nullable String dpop, boolean hasRegisteredDPoPKey) {
+    private boolean canSkipDpopValidation(@Nullable String dpop, boolean hasRegisteredDPoPKey) {
         if (StringUtils.isBlank(dpop)) {
+            // No DPoP Header was provided in the credential request
             if (applicationProperties.isDpopEnforce() || hasRegisteredDPoPKey) {
+                // A DPoP Header was strictly required ==> Aborting with exception
                 throw new DemonstratingProofOfPossessionException("Authorization server requires nonce in DPoP proof",
                         DemonstratingProofOfPossessionError.USE_DPOP_NONCE);
             } else {
@@ -141,6 +143,7 @@ public class DemonstratingProofOfPossessionService {
                 return true;
             }
         }
+        // DPoP header is present -> DPoP Validation must be performed
         return false;
     }
 
