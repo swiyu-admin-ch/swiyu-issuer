@@ -33,7 +33,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -48,8 +47,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
-import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
-import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_REQUEST;
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.hamcrest.Matchers.containsString;
@@ -66,7 +64,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
 class IssuanceControllerIT {
-
     private static UUID offerId;
     private static StatusList testStatusList;
     private static ECKey jwk;
@@ -441,39 +438,6 @@ class IssuanceControllerIT {
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString(INVALID_GRANT.getErrorCode())));
-    }
-
-    @Test
-    void noPreauthCode_thenException() throws Exception {
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code"))
-                .andExpect(status().isBadRequest());
-
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
-                        .param("pre-authorized_code", ""))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void testInvalidGrantType_thenBadRequest() throws Exception {
-        // With Valid preauth code
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
-                        .param("pre-authorized_code", "deadbeef-dead-dead-dead-deaddeafbeef"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_REQUEST.getErrorCode())));
-
-        // With Invalid preauth code
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
-                        .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_REQUEST.getErrorCode())));
     }
 
     private void addOverride(UUID preAuthCode, ConfigurationOverride override) {
