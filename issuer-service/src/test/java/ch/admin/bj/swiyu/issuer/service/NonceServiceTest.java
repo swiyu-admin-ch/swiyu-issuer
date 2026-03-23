@@ -80,4 +80,46 @@ class NonceServiceTest {
         nonceService.cleanNonceCache();
         verify(cachedNonceRepository).deleteAllOlderThan(any(Instant.class));
     }
+
+    @Test
+    void isValidSelfContainedNonce_shouldReturnTrue_andStoreNonce_whenValid() {
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(60);
+
+        var nonce = new SelfContainedNonce(nonceSecret);
+
+        when(cachedNonceRepository.findById(nonce.getNonceId()))
+                .thenReturn(Optional.empty());
+
+        boolean result = nonceService.isValidSelfContainedNonce(nonce.getNonce());
+
+        assertTrue(result);
+        verify(cachedNonceRepository).save(any(CachedNonce.class));
+    }
+
+    @Test
+    void isValidSelfContainedNonce_shouldReturnFalse_whenNonceAlreadyUsed() {
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(60);
+
+        var nonce = new SelfContainedNonce(nonceSecret);
+
+        when(cachedNonceRepository.findById(nonce.getNonceId()))
+                .thenReturn(Optional.of(new CachedNonce(nonce.getNonceId(), nonce.getNonceInstant())));
+
+        boolean result = nonceService.isValidSelfContainedNonce(nonce.getNonce());
+
+        assertFalse(result);
+        verify(cachedNonceRepository, never()).save(any());
+    }
+
+    @Test
+    void isValidSelfContainedNonce_shouldReturnFalse_whenNonceInvalid() {
+        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(60);
+
+        String invalidNonce = "invalid::nonce::format";
+
+        boolean result = nonceService.isValidSelfContainedNonce(invalidNonce);
+
+        assertFalse(result);
+        verify(cachedNonceRepository, never()).save(any());
+    }
 }

@@ -61,10 +61,78 @@
       "vct": "urn:vct:com.example.credential",
       "vct_metadata_uri": "${external-url}/oid4vci/vct/my-vct-v01",
       "vct_metadata_uri#integrity": "sha256-ThisIsNotActuallyTheCorrectSRI.ItDependsOnTheExactContentOfVctMetadata=",
+      "credential_metadata": {
+        "display": [
+          {
+            "name": "${stage}Beispiel Credential",
+            "locale": "de-CH",
+            "logo": {
+              "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABMUlEQVR4nO2VTU4CQRCFv9c9ToIXYccRhMR4Ar2DbrmI8SB6Ak0UjsCOi2iE6So3I0kPg7R/CQve8qVev+p+NTVwxB6opGgwnFwqVGO8aVUVbs3sbfnysE9bFXUhvyDGa6wlQkS+roG/MQCtsASWcq4Aoczg5zgQA6cp4nqQTdFgOL5SqCaYeXaW/EwKI7ylJdxtIdc8bze00zW7/6SykCWdE6sblDKd3NgcDuCOFEaEMMoNIvLmBOg3AL1vT8sOuIP31eXT9e8hd27gNSFuV3WfCEACdfoLEWxd7zRw9KTUJMwyXX/IvpClPGR33JllffRfLMfpcHJLrKabbEKElO5el8/TfdqyDNS7UorWzIF8yb9A4TbtTFeIYFbvrv+mgbseldJq88NxcGf+teqIQnwAtnl4Gff2T2YAAAAASUVORK5CYII="
+            },
+            "description": "Beispiel Credential",
+            "background_color": "#007AFF"
+          },
+          {
+            "name": "${stage}Example Credential",
+            "locale": "en-US",
+            "logo": {
+              "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABMUlEQVR4nO2VTU4CQRCFv9c9ToIXYccRhMR4Ar2DbrmI8SB6Ak0UjsCOi2iE6So3I0kPg7R/CQve8qVev+p+NTVwxB6opGgwnFwqVGO8aVUVbs3sbfnysE9bFXUhvyDGa6wlQkS+roG/MQCtsASWcq4Aoczg5zgQA6cp4nqQTdFgOL5SqCaYeXaW/EwKI7ylJdxtIdc8bze00zW7/6SykCWdE6sblDKd3NgcDuCOFEaEMMoNIvLmBOg3AL1vT8sOuIP31eXT9e8hd27gNSFuV3WfCEACdfoLEWxd7zRw9KTUJMwyXX/IvpClPGR33JllffRfLMfpcHJLrKabbEKElO5el8/TfdqyDNS7UorWzIF8yb9A4TbtTFeIYFbvrv+mgbseldJq88NxcGf+teqIQnwAtnl4Gff2T2YAAAAASUVORK5CYII="
+            },
+            "description": "Test Credential",
+            "background_color": "#007AFF"
+          }
+        ],
+        "claims": [
+          {
+            "type": {
+              "mandatory": true,
+              "path": [
+                "type"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Abschluss Typ"
+                }
+              ]
+            }
+          },
+          {
+            "name": {
+              "mandatory": true,
+              "path": [
+                "name"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Diplomtitle"
+                }
+              ]
+            }
+          },
+          {
+            "average_grade": {
+              "mandatory": false,
+              "path": [
+                "average_grade"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Notendurchschnitt"
+                }
+              ]
+            }
+          }
+        ]
+      },
       "claims": {
         "type": {
           "mandatory": true,
-          "value_type": "string",
+          "path": [
+            "type"
+          ],
           "display": [
             {
               "locale": "de-CH",
@@ -74,7 +142,9 @@
         },
         "name": {
           "mandatory": true,
-          "value_type": "string",
+          "path": [
+            "name"
+          ],
           "display": [
             {
               "locale": "de-CH",
@@ -84,7 +154,9 @@
         },
         "average_grade": {
           "mandatory": false,
-          "value_type": "number",
+          "path": [
+            "average_grade"
+          ],
           "display": [
             {
               "locale": "de-CH",
@@ -110,6 +182,52 @@
         }
       },
       "vct": "${external-url}/oid4vci/vct/my-vct-v01",
+      "credential_metadata": {
+        "claims": [
+          {
+            "type": {
+              "mandatory": true,
+              "path": [
+                "type"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Abschluss Typ"
+                }
+              ]
+            }
+          },
+          {
+            "name": {
+              "mandatory": true,
+              "path": [
+                "name"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Diplomtitle"
+                }
+              ]
+            }
+          },
+          {
+            "average_grade": {
+              "mandatory": false,
+              "path": [
+                "average_grade"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Notendurchschnitt"
+                }
+              ]
+            }
+          }
+        ]
+      },
       "claims": {
         "type": {
           "mandatory": true,
@@ -190,6 +308,24 @@
         "ES256"
       ],
       "vct": "unbound_example_sd_jwt",
+      "credential_metadata": {
+        "claims": [
+          {
+            "animal": {
+              "mandatory": true,
+              "path": [
+                "animal"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Tier"
+                }
+              ]
+            }
+          }
+        ]
+      },
       "claims": {
         "animal": {
           "mandatory": true,
@@ -224,6 +360,52 @@
         }
       },
       "vct": "${external-url}/oid4vci/vct/my-vct-v01",
+      "credential_metadata": {
+        "claims": [
+          {
+            "type": {
+              "mandatory": true,
+              "path": [
+                "type"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Abschluss Typ"
+                }
+              ]
+            }
+          },
+          {
+            "name": {
+              "mandatory": true,
+              "path": [
+                "name"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Diplomtitle"
+                }
+              ]
+            }
+          },
+          {
+            "average_grade": {
+              "mandatory": false,
+              "path": [
+                "average_grade"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Notendurchschnitt"
+                }
+              ]
+            }
+          }
+        ]
+      },
       "claims": {
         "type": {
           "mandatory": true,
@@ -274,6 +456,52 @@
         }
       },
       "vct": "${external-url}/oid4vci/vct/my-vct-v01",
+      "credential_metadata": {
+        "claims": [
+          {
+            "type": {
+              "mandatory": true,
+              "path": [
+                "type"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Abschluss Typ"
+                }
+              ]
+            }
+          },
+          {
+            "name": {
+              "mandatory": true,
+              "path": [
+                "name"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Diplomtitle"
+                }
+              ]
+            }
+          },
+          {
+            "average_grade": {
+              "mandatory": false,
+              "path": [
+                "average_grade"
+              ],
+              "display": [
+                {
+                  "locale": "de-CH",
+                  "name": "Notendurchschnitt"
+                }
+              ]
+            }
+          }
+        ]
+      },
       "claims": {
         "type": {
           "mandatory": true,
@@ -323,6 +551,50 @@
         }
       },
       "vct": "test",
+      "credential_metadata": {
+        "claims": [
+          {
+            "hello": {
+              "mandatory": false,
+              "path": [
+                "hello"
+              ]
+            }
+          },
+          {
+            "lastName": {
+              "mandatory": true,
+              "path": [
+                "lastName"
+              ]
+            }
+          },
+          {
+            "firstName": {
+              "mandatory": false,
+              "path": [
+                "firstName"
+              ]
+            }
+          },
+          {
+            "dateOfBirth": {
+              "mandatory": false,
+              "path": [
+                "dateOfBirth"
+              ]
+            }
+          },
+          {
+            "credential_subject_data": {
+              "mandatory": false,
+              "path": [
+                "credential_subject_data"
+              ]
+            }
+          }
+        ]
+      },
       "claims": {
         "hello": {
           "mandatory": false,
