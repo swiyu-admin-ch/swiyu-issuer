@@ -3,7 +3,6 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -34,6 +33,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -432,7 +432,7 @@ class IssuanceControllerIT {
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_GRANT.name())));
+                .andExpect(content().string(containsString(INVALID_GRANT.getErrorCode())));
 
         // check that correct preauthcode is used
         mock.perform(post("/oid4vci/api/token")
@@ -440,7 +440,7 @@ class IssuanceControllerIT {
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_GRANT.name())));
+                .andExpect(content().string(containsString(INVALID_GRANT.getErrorCode())));
     }
 
     @Test
@@ -465,7 +465,7 @@ class IssuanceControllerIT {
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "deadbeef-dead-dead-dead-deaddeafbeef"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_REQUEST.name())));
+                .andExpect(content().string(containsString(INVALID_REQUEST.getErrorCode())));
 
         // With Invalid preauth code
         mock.perform(post("/oid4vci/api/token")
@@ -473,7 +473,7 @@ class IssuanceControllerIT {
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_REQUEST.name())));
+                .andExpect(content().string(containsString(INVALID_REQUEST.getErrorCode())));
     }
 
     private void addOverride(UUID preAuthCode, ConfigurationOverride override) {

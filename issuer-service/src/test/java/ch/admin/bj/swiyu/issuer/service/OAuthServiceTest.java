@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
@@ -13,7 +14,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 class OAuthServiceTest {
 
@@ -97,5 +99,17 @@ class OAuthServiceTest {
                 .isEqualTo(refreshToken.toString());
         // verify that repository save was called (tokens updated)
         Mockito.verify(credentialManagementRepository).save(mockMgmt);
+    }
+
+    @Test
+    void refreshOAuthToken_whenInvalidToken_thenThrowError() {
+        var exception = assertThrows(OAuthException.class, () -> oauthService.refreshOAuthToken("invalid token"));
+        assertThat(exception.getError()).isEqualTo(OAuthError.INVALID_REQUEST);
+    }
+
+    @Test
+    void getUnrevokedCredentialOfferByRefreshToken_whenInvalidRefreshToken_thenThrowError() {
+        var exception = assertThrows(OAuthException.class, () -> oauthService.getUnrevokedCredentialOfferByRefreshToken("invalid token"));
+        assertThat(exception.getError()).isEqualTo(OAuthError.INVALID_REQUEST);
     }
 }

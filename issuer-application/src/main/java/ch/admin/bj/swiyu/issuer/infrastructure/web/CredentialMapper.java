@@ -17,7 +17,7 @@ public class CredentialMapper {
         var error = toOAuthErrorDto(exception.getError());
 
         return ApiErrorDto.builder()
-                .errorCode(error.name())
+                .errorCode(error.getErrorCode())
                 .errorDescription(exception.getMessage())
                 .status(error.getHttpStatus())
                 .build();

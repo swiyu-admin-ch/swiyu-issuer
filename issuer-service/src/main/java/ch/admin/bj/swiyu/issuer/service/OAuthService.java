@@ -97,7 +97,7 @@ public class OAuthService {
      *
      * @param refreshToken the refresh token string (expected UUID)
      * @return the matching non-revoked CredentialManagement
-     * @throws OAuthException if the token is not a valid UUID or no non-revoked credential is found
+     * @throws OAuthException (Invalid Token) if the token is not a valid UUID or no non-revoked credential is found
      */
     @Transactional
     public CredentialManagement getUnrevokedCredentialOfferByRefreshToken(String refreshToken) {
@@ -157,6 +157,12 @@ public class OAuthService {
                 });
     }
 
+    /**
+     * parses the UUID of a preAuthCode
+     * @param preAuthCode token
+     * @return uuid of the preAuthCode
+     * @throws OAuthException (Invalid Request)
+     */
     private UUID uuidOrException(String preAuthCode) {
         try {
             return UUID.fromString(preAuthCode);

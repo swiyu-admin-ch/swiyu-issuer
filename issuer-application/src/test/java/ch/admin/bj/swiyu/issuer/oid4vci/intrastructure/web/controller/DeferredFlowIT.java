@@ -473,7 +473,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_TOKEN"))
+                .andExpect(jsonPath("$.error").value("invalid_token"))
                 .andExpect(jsonPath("$.error_description").value("Invalid accessToken"))
                 .andReturn();
     }
