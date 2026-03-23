@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SD_JWT_FORMAT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -230,7 +229,7 @@ class HolderBindingServiceTest {
 
         List<String> proofs = holderKeys.stream().map(holderKey -> assertDoesNotThrow(() -> TestServiceUtils.createHolderProof(holderKey,
                 "did:example:issuer", new SelfContainedNonce(nonceService.getNonceSecret()).getNonce(),
-                ProofType.JWT.getClaimTyp(), false))).toList();
+                ProofType.JWT.getClaimTyp()))).toList();
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(
                 Map.of(ProofType.JWT.toString(), proofs),

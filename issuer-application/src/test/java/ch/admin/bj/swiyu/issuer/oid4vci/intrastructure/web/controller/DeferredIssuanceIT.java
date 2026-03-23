@@ -673,30 +673,30 @@ class DeferredIssuanceIT {
         Instant instant = Instant.now(Clock.fixed(Instant.parse("2025-01-01T00:00:00.00Z"), ZoneId.of("UTC")));
 
         try (MockedStatic<Instant> mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
-                mockedStatic.when(Instant::now)
-                                .thenReturn(instant);
+            mockedStatic.when(Instant::now)
+                    .thenReturn(instant);
 
-                var preNonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
-                var nonce = preNonce + "::" + SelfContainedNonce.createSignature(preNonce, nonceService.getNonceSecret());
+            var preNonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
+            var nonce = preNonce + "::" + SelfContainedNonce.createSignature(preNonce, nonceService.getNonceSecret());
 
-                var credentialRequestString = getCredentialRequestString(
-                                nonce,
-                                offerWithDynamicExpiration.getMetadataCredentialSupportedId()
-                                                .getFirst());
+            var credentialRequestString = getCredentialRequestString(
+                    nonce,
+                    offerWithDynamicExpiration.getMetadataCredentialSupportedId()
+                            .getFirst());
 
-                requestCredential(mock,
-                                offerWithDynamicExpiration.getCredentialManagement().getAccessToken()
-                                                .toString(),
-                                credentialRequestString)
-                                .andExpect(status().isAccepted())
-                                .andReturn();
+            requestCredential(mock,
+                    offerWithDynamicExpiration.getCredentialManagement().getAccessToken()
+                            .toString(),
+                    credentialRequestString)
+                    .andExpect(status().isAccepted())
+                    .andReturn();
 
-                var result = credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId())
-                                .orElseThrow();
+            var result = credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId())
+                    .orElseThrow();
 
-                assertEquals(instant.plusSeconds(expirationInSeconds)
-                                .getEpochSecond(),
-                                result.getOfferExpirationTimestamp());
+            assertEquals(instant.plusSeconds(expirationInSeconds)
+                            .getEpochSecond(),
+                    result.getOfferExpirationTimestamp());
         }
     }
 
@@ -710,7 +710,7 @@ class DeferredIssuanceIT {
                         applicationProperties.getTemplateReplacement()
                                 .get("external-url"),
                         cNonce,
-                        ProofType.JWT.getClaimTyp(), false)))
+                        ProofType.JWT.getClaimTyp())))
                 .toList();
 
         var proofString = proofs.stream().reduce((a, b) -> a + "\", \"" + b).orElse("");

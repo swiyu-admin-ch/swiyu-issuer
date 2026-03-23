@@ -3,7 +3,6 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -99,6 +98,13 @@ class IssuanceControllerIT {
         Map<String, String> credentialSubjectData = new HashMap<>();
         credentialSubjectData.put("animal", "Tux");
         return credentialSubjectData;
+    }
+
+    private static String extractVcFromCredentialResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
+        var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
+                .getAsJsonObject()
+                .getAsJsonArray("credentials");
+        return credentials.get(0).getAsJsonObject().get("credential").getAsString();
     }
 
     private CredentialOffer createUnboundCredentialOffer() throws Exception {
@@ -217,8 +223,8 @@ class IssuanceControllerIT {
         assertFalse(nonceService.isUsedNonce(selfContainedNonce));
 
         String proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(),
-                true);
+                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp()
+        );
         String credentialRequestString = getCredentialRequestString(proof);
         // First time OK
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
@@ -235,8 +241,8 @@ class IssuanceControllerIT {
         tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, newOfferPreAuthCode.toString());
         token = tokenResponse.get("access_token");
         proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(),
-                true);
+                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp()
+        );
         credentialRequestString = getCredentialRequestString(proof);
         // Should BadRequest with some error hinting that proof was reused
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
@@ -260,8 +266,8 @@ class IssuanceControllerIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         var proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"), outdatedNonce.getNonce(), ProofType.JWT.getClaimTyp(),
-                true);
+                applicationProperties.getTemplateReplacement().get("external-url"), outdatedNonce.getNonce(), ProofType.JWT.getClaimTyp()
+        );
         var credentialRequestString = getCredentialRequestString(proof);
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
@@ -310,7 +316,7 @@ class IssuanceControllerIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"), UUID.randomUUID().toString(),
-                ProofType.JWT.getClaimTyp(), true);
+                ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
@@ -329,7 +335,7 @@ class IssuanceControllerIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, "wrong type", true);
+                nonce, "wrong type");
         String credentialRequestString = objectMapper.writeValueAsString(new CreateCredentialRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),
@@ -347,7 +353,7 @@ class IssuanceControllerIT {
         var token = tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), true,
+                nonce, ProofType.JWT.getClaimTyp(),
                 Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
         String credentialRequestString = getCredentialRequestString(proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
@@ -362,7 +368,7 @@ class IssuanceControllerIT {
         var token = tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), true,
+                nonce, ProofType.JWT.getClaimTyp(),
                 Date.from(Instant.now().minus(1, ChronoUnit.HOURS)));
         String credentialRequestString = getCredentialRequestString(proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
@@ -494,8 +500,7 @@ class IssuanceControllerIT {
                 jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce,
-                ProofType.JWT.getClaimTyp(),
-                true
+                ProofType.JWT.getClaimTyp()
         );
 
         String credentialRequestString = getCredentialRequestString(proof);
@@ -529,13 +534,6 @@ class IssuanceControllerIT {
                 null
         );
         return objectMapper.writeValueAsString(request);
-    }
-
-    private static String extractVcFromCredentialResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
-        var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
-                .getAsJsonObject()
-                .getAsJsonArray("credentials");
-        return credentials.get(0).getAsJsonObject().get("credential").getAsString();
     }
 
     private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {

@@ -241,7 +241,7 @@ class CredentialServiceOrchestratorTest {
         when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
         when(credConfig.getVct()).thenReturn("test-vct");
 
-        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("did:jwk", "jwk"));
+        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("jwk"));
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test", credConfig));
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(credConfig);
 

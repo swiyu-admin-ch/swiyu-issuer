@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProofJwtTest {
@@ -62,41 +63,11 @@ class ProofJwtTest {
         var expirationTimestamp = offer.getOfferExpirationTimestamp();
         var exc = assertThrows(Oid4vcException.class,
                 () -> proofJwt.isValidHolderBinding(audience, algorithms, expirationTimestamp));
-        assertTrue(exc.getMessage().contains("None of the supported binding method/s was found in the header"));
+        assertTrue(exc.getMessage().contains("No valid holder key binding was found in the proof header"));
     }
 
     @Test
-    void givenUnsupportedDidMethod_whenHolderBindingValidate_thenThrow() throws JOSEException {
-        var nonce = getNonce();
-        var aud = "http://issuer.com";
-        var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .type(new JOSEObjectType(ProofType.JWT.getClaimTyp()));
-        headerBuilder.keyID("did:tdw:notvalid");
-        JWSHeader header = headerBuilder
-                .build();
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .claim("nonce", nonce)
-                .claim("aud", aud)
-                .issueTime(new Date())
-                .build();
-        JWSSigner signer = new ECDSASigner(jwk);
-        SignedJWT jwt = new SignedJWT(header, claims);
-        jwt.sign(signer);
-        var proof = jwt.serialize();
-
-        ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120, nonceSecret);
-
-        String audience = "http://issuer.com";
-        List<String> algorithms = List.of("ES256");
-        Long expirationTimestamp = Instant.now().plusSeconds(600).getEpochSecond();
-        var exc = assertThrows(Oid4vcException.class,
-                () -> proofJwt.isValidHolderBinding(audience, algorithms, expirationTimestamp));
-
-        assertTrue(exc.getMessage().contains("Did method provided in kid attribute did:tdw is not supported"));
-    }
-
-    @Test
-    void givenInvalidJwtDidKeyRepresentation_whenHolderBindingValidate_thenThrow() throws JOSEException {
+    void givenLegacyHolderKeyBinding_whenHolderBindingValidation_thenThrow() throws JOSEException {
         var nonce = getNonce();
         var aud = "http://issuer.com";
         var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
@@ -115,28 +86,30 @@ class ProofJwtTest {
         var proof = jwt.serialize();
 
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120, nonceSecret);
+
         String audience = "http://issuer.com";
         List<String> algorithms = List.of("ES256");
         Long expirationTimestamp = Instant.now().plusSeconds(600).getEpochSecond();
         var exc = assertThrows(Oid4vcException.class,
                 () -> proofJwt.isValidHolderBinding(audience, algorithms, expirationTimestamp));
-        assertTrue(exc.getMessage().contains("could not be parsed to a JWK"));
+
+        assertThat(exc.getMessage()).contains("No valid holder key binding was found in the proof header");
     }
 
     @Test
     void givenValidKidAttributeRepresentation_whenHolderBindingValidate_thenValid_() throws JOSEException {
-        // Check holder proof with didJwk
+        // Check holder proof
         var nonce = getNonce();
-        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp());
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120, nonceSecret);
         assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().plusSeconds(600).getEpochSecond()));
     }
 
     @Test
     void givenValidJwkAttributeRepresentation_whenHolderBindingValidate_thenValid_() throws JOSEException {
-        // Check holder proof with didJwk
+        // Check holder proof
         var nonce = getNonce();
-        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp());
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120, nonceSecret);
         assertTrue(proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().plusSeconds(600).getEpochSecond()));
     }
@@ -144,7 +117,7 @@ class ProofJwtTest {
     @Test
     void givenExpiredNonce_whenIsValidHolderBinding_thenThrowProofException() throws JOSEException {
         var nonce = UUID.randomUUID() + "::" + Instant.now().minus(1, ChronoUnit.DAYS).toString() + "::notCheckedHash";
-        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp());
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120, nonceSecret);
         var exception = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().getEpochSecond()));
         assertEquals("Nonce is expired", exception.getMessage());
@@ -153,7 +126,7 @@ class ProofJwtTest {
     @Test
     void givenInvalidNonce_whenIsValidHolderBinding_thenThrowProofException() throws JOSEException {
         var nonce = UUID.randomUUID() + "::" + "::notCheckedHash";
-        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp());
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120, nonceSecret);
         var exception = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().getEpochSecond()));
         assertEquals("Invalid nonce claim in proof JWT", exception.getMessage());
@@ -162,7 +135,7 @@ class ProofJwtTest {
     @Test
     void givenExpiredToken_whenIsValidHolderBinding_thenThrowProofException() throws JOSEException {
         var nonce = getNonce();
-        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp());
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120, nonceSecret);
         var exception = assertThrows(Oid4vcException.class, () -> proofJwt.isValidHolderBinding("http://issuer.com", List.of("ES256"), Instant.now().minusSeconds(10).getEpochSecond()));
         assertEquals("Token is expired", exception.getMessage());
@@ -171,7 +144,7 @@ class ProofJwtTest {
     @Test
     void givenNoBinding_whenGetBinding_thenThrowIllegalStateException() throws JOSEException {
         var nonce = getNonce();
-        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp(), true);
+        String proof = TestServiceUtils.createHolderProof(jwk, "http://issuer.com", nonce, ProofType.JWT.getClaimTyp());
         ProofJwt proofJwt = new ProofJwt(ProofType.JWT, proof, 10, 120, nonceSecret);
         var exception = assertThrows(IllegalStateException.class, () -> proofJwt.getBinding());
         assertEquals("Must first call isValidHolderBinding", exception.getMessage());
