@@ -60,7 +60,7 @@ public class DemonstratingProofOfPossessionService {
      */
     @Transactional
     public void registerDpop(@NotBlank String preAuthCode, @Nullable String dpop, HttpRequest request) {
-        if (isDpopUnused(dpop)) {
+        if (canSkipDpopValidation(dpop, false)) {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
@@ -79,11 +79,11 @@ public class DemonstratingProofOfPossessionService {
      */
     @Transactional
     public void validateDpop(@NotBlank String accessToken, @Nullable String dpop, @NotNull HttpRequest request) {
-        if (isDpopUnused(dpop)) {
+        var credentialManagement = oAuthService.getCredentialManagementByAccessToken(accessToken);
+        if (canSkipDpopValidation(dpop, credentialManagement.hasDPoPKey())) {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
-        var credentialManagement = oAuthService.getCredentialManagementByAccessToken(accessToken);
         demonstratingProofOfPossessionValidationService.validateAccessTokenBinding(accessToken, dpopJwt, credentialManagement.getDpopKey());
     }
 
@@ -117,11 +117,11 @@ public class DemonstratingProofOfPossessionService {
      */
     @Transactional
     public void refreshDpop(String refreshToken, String dpop, ServletServerHttpRequest request) {
-        if (isDpopUnused(dpop)) {
+        var credentialManagement = oAuthService.getUnrevokedCredentialOfferByRefreshToken(refreshToken);
+        if (canSkipDpopValidation(dpop, credentialManagement.hasDPoPKey())) {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
-        var credentialManagement = oAuthService.getUnrevokedCredentialOfferByRefreshToken(refreshToken);
         demonstratingProofOfPossessionValidationService.validateBoundPublicKey(dpopJwt, credentialManagement.getDpopKey());
         credentialManagement.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
         credentialManagementRepository.save(credentialManagement);
@@ -131,9 +131,11 @@ public class DemonstratingProofOfPossessionService {
     /**
      * Checks if the dpop has not been included and is set to be optional.
      */
-    private boolean isDpopUnused(@Nullable String dpop) {
+    private boolean canSkipDpopValidation(@Nullable String dpop, boolean hasRegisteredDPoPKey) {
         if (StringUtils.isBlank(dpop)) {
-            if (applicationProperties.isDpopEnforce()) {
+            // No DPoP Header was provided in the credential request
+            if (applicationProperties.isDpopEnforce() || hasRegisteredDPoPKey) {
+                // A DPoP Header was strictly required ==> Aborting with exception
                 throw new DemonstratingProofOfPossessionException("Authorization server requires nonce in DPoP proof",
                         DemonstratingProofOfPossessionError.USE_DPOP_NONCE);
             } else {
@@ -141,6 +143,7 @@ public class DemonstratingProofOfPossessionService {
                 return true;
             }
         }
+        // DPoP header is present -> DPoP Validation must be performed
         return false;
     }
 
