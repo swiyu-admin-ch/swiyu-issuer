@@ -120,7 +120,7 @@ public abstract class CredentialBuilder {
 
         this.holderBindings = !CollectionUtils.isEmpty(holderKeys)
                 ? holderKeys.stream()
-                .map(HolderKeyBinding::createFromJsonString)
+                .map(key -> new HolderKeyBinding(key))
                 .toList()
                 : List.of();
         return this;

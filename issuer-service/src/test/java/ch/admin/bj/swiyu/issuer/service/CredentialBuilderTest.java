@@ -140,7 +140,7 @@ class CredentialBuilderTest {
 
         builder.holderBindings(privateKeys.stream().map(ECKey::toPublicJWK).map(Object::toString).toList());
         List<HolderKeyBinding> holderKeyBindings = list.stream()
-                .map(HolderKeyBinding::createFromJsonString)
+                .map(key -> new HolderKeyBinding(key))
                 .toList();
 
         doReturn(List.of("credential1")).when(builder).getCredential(List.of(holderKeyBindings.getFirst()));

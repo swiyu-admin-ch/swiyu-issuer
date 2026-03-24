@@ -133,9 +133,9 @@ class SdJwtCredentialTest {
 
         // provide two holder keys so batch size becomes 2
         ECKey ecJWK = new ECKeyGenerator(Curve.P_256).keyID("k1").generate();
-        HolderKeyBinding holderKeyBinding1 = HolderKeyBinding.createFromJsonString(ecJWK.toPublicJWK().toJSONString());
+        HolderKeyBinding holderKeyBinding1 = new HolderKeyBinding(ecJWK.toPublicJWK().toJSONString());
         ECKey ecJWK2 = new ECKeyGenerator(Curve.P_256).keyID("k2").generate();
-        HolderKeyBinding holderKeyBinding2 = HolderKeyBinding.createFromJsonString(ecJWK2.toPublicJWK().toJSONString());
+        HolderKeyBinding holderKeyBinding2 = new HolderKeyBinding(ecJWK2.toPublicJWK().toJSONString());
 
         // Act & Assert
         assertThrows(IllegalStateException.class, () -> subject.getCredential(List.of(holderKeyBinding1, holderKeyBinding2)));
