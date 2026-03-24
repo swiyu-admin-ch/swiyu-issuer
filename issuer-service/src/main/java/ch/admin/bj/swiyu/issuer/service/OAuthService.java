@@ -118,7 +118,7 @@ public class OAuthService {
     /**
      * Extracts the access token without bearer / dpop prefix from the HTTP Authorization Header string.
      * @param authorizationRequestHeader value of Authorization Header
-     * @return access token provided in the authoriazion header
+     * @return access token provided in the authorization header
      */
     public String getAccessToken(String authorizationRequestHeader) {
         if (authorizationRequestHeader == null) {
@@ -158,7 +158,7 @@ public class OAuthService {
             }
         }
         
-        if(CollectionUtils.isEmpty(mgmt.getDpopKey())) {
+        if (CollectionUtils.isEmpty(mgmt.getDpopKey())) {
             // If we have a DPoP Key registered we use DPoP tokens
             oauthTokenResponseBuilder.tokenType(OAuthTokenTypeDto.BEARER);
         } else {
