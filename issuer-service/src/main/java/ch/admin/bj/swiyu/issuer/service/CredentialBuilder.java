@@ -40,7 +40,7 @@ public abstract class CredentialBuilder {
     private CredentialResponseEncryptor credentialResponseEncryptor;
     private CredentialOffer credentialOffer;
     private CredentialConfiguration credentialConfiguration;
-    private List<HolderKeyBinding> holderBindings = new ArrayList<>();
+    private List<HolderKeyBinding> holderKeyBindings = new ArrayList<>();
     private List<String> metadataCredentialsSupportedIds;
 
     CredentialBuilder(ApplicationProperties applicationProperties,
@@ -74,7 +74,7 @@ public abstract class CredentialBuilder {
 
     public CredentialEnvelopeDto buildCredentialEnvelope() {
         // if no holder bindings are set, we only create 1 credential
-        List<CredentialObjectDto> credentials = getCredential(holderBindings).stream()
+        List<CredentialObjectDto> credentials = getCredential(holderKeyBindings).stream()
                 .map(CredentialObjectDto::new)
                 .toList();
         var credentialResponseDto = new CredentialEndpointResponseDto(credentials, null, null);
@@ -118,7 +118,7 @@ public abstract class CredentialBuilder {
      */
     public CredentialBuilder holderBindings(List<String> holderKeys) {
 
-        this.holderBindings = !CollectionUtils.isEmpty(holderKeys)
+        this.holderKeyBindings = !CollectionUtils.isEmpty(holderKeys)
                 ? holderKeys.stream()
                 .map(key -> new HolderKeyBinding(key))
                 .toList()
