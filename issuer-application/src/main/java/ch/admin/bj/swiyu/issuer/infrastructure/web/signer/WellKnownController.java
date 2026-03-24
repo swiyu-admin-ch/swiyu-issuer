@@ -49,8 +49,8 @@ public class WellKnownController {
      */
     @GetMapping(value = {
         "/oid4vci/.well-known/openid-configuration",
-        ".well-known/openid-configuration",
-        ".well-known/oauth-authorization-server",
+        "/.well-known/openid-configuration",
+        "/.well-known/oauth-authorization-server",
         "/oid4vci/.well-known/oauth-authorization-server",
         "/.well-known/oauth-authorization-server/oid4vci",
         })
