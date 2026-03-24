@@ -16,6 +16,8 @@ import com.nimbusds.jwt.SignedJWT;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -74,18 +76,26 @@ class WellKnownControllerIT {
                 .andExpect(content().string(not(containsString("${external-url}"))));
     }
 
-    @Test
-    void testGetOauthAuthorizationServer_thenSuccess() throws Exception {
-        mock.perform(get("/oid4vci/.well-known/oauth-authorization-server"))
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/.well-known/oauth-authorization-server",
+        "/oid4vci/.well-known/oauth-authorization-server",
+        "/.well-known/oauth-authorization-server/oid4vci"})
+    void testGetOauthAuthorizationServer_thenSuccess(String uri) throws Exception {
+        mock.perform(get(uri))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("token_endpoint")))
                 .andExpect(content().string(containsString("\"pre-authorized_grant_anonymous_access_supported\":true")))
                 .andExpect(content().string(not(containsString("${external-url}"))));
     }
 
-    @Test
-    void testGetIssuerMetadata_thenSuccess() throws Exception {
-        mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/.well-known/openid-credential-issuer",
+        "/oid4vci/.well-known/openid-credential-issuer",
+        "/.well-known/openid-credential-issuer/oid4vci"})
+    void testGetIssuerMetadata_thenSuccess(String uri) throws Exception {
+        mock.perform(get(uri))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile_version").value(SwissProfileVersions.ISSUANCE_PROFILE_VERSION))
                 .andExpect(content().string(not(containsString("${external-url}"))))
@@ -98,12 +108,18 @@ class WellKnownControllerIT {
                 .andExpect(content().string(Matchers.not(containsString("issuanceBatchSize")))); // Util Field should not be displayed metadata
     }
 
-    @Test
-    void testGetIssuerMetadataByTenantIdSigned_thenSuccess() throws Exception {
-        var url = testHelper.createBasicOfferJsonAndGetTenantID();
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "%s/.well-known/openid-credential-issuer",
+        "/oid4vci/%s/.well-known/openid-credential-issuer",
+        "/.well-known/openid-credential-issuer/%s",
+        "/.well-known/openid-credential-issuer/oid4vci/%s",
+        })
+    void testGetIssuerMetadataByTenantIdSigned_thenSuccess(String uri) throws Exception {
+        var tenantId = testHelper.createBasicOfferJsonAndGetTenantID();
 
         var response = assertDoesNotThrow(() -> mock.perform(get(
-                        "%s/.well-known/openid-credential-issuer".formatted(url))
+                        uri.formatted(tenantId))
                         .accept("application/jwt"))
                 .andExpect(status().isOk())
                 .andReturn());
@@ -117,7 +133,13 @@ class WellKnownControllerIT {
         assertEquals(SwissProfileVersions.ISSUANCE_PROFILE_VERSION, header.getCustomParam(SwissProfileVersions.PROFILE_VERSION_PARAM));
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "%s/.well-known/openid-credential-issuer",
+        "/oid4vci/%s/.well-known/openid-credential-issuer",
+        "/.well-known/openid-credential-issuer/%s",
+        "/.well-known/openid-credential-issuer/oid4vci/%s",
+        })
     void testGetIssuerMetadataByTenantIdUnsigned_thenSuccess() throws Exception {
         var url = testHelper.createBasicOfferJsonAndGetTenantID();
 
