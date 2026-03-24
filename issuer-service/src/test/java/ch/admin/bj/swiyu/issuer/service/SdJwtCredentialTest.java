@@ -25,6 +25,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class SdJwtCredentialTest {
@@ -245,6 +246,27 @@ class SdJwtCredentialTest {
         assertNull(offer.getVcHashes());
     }
 
+    /**
+     * Test for a VC with array disclosures which should looks in decoded form similar to
+     * {
+     *     "profile_version": "swiss-profile-vc:1.0.0",
+     *     "alg": "ES256",
+     *     "typ": "vc+sd-jwt"
+     * }.{
+     *     "iss": "did:example:issuer",
+     *     "iat": 1774310400,
+     *     "vct": "urn:vct:test:1",
+     *     "_sd_alg": "sha-256",
+     *     "foo": [
+     *         {
+     *         "...": "qlO5w7znGvkU7DWheg0s5fLvNuIB5Pw_oD9OxpenmVY"
+     *         },
+     *         {
+     *         "...": "RtdAx5HYC6cNAQDJFsKbiRlBYQRFG8f0uvuju9BYNyY"
+     *         }
+     *     ]
+     * }~["PVAEARUcGDMYACiLwsA1DQ","bar1"]~["SjXMEuJeI0dHQmbW4gZ_Zg","bar2"]~
+     */
     @Test
     void whenArrayDisclosure_withRecursionDisabled_thenSuccess() throws Exception {
 
@@ -279,6 +301,25 @@ class SdJwtCredentialTest {
         assertTrue(fooClaim.stream().allMatch(entry -> entry.containsKey("...")));
     }
 
+    /**
+     * Test for when only an array list is included but recursive disclosures are used.
+     * This causes the array to be wrapped in a wrapper.
+     * The created VC should in decoded form look like
+     * {
+     *   "profile_version": "swiss-profile-vc:1.0.0",
+     *   "alg": "ES256",
+     *   "typ": "vc+sd-jwt"
+     * }.{
+     *   "iss": "did:example:issuer",
+     *   "_sd": [
+     *       "j-HmgNvc54JKVVReI0Eclng-QiFJj8M3Vv_yktd0uv4"
+     *   ],
+     *   "iat": 1774310400,
+     *   "vct": "urn:vct:test:1",
+     *   "_sd_alg": "sha-256"
+     * }~["IXJ7Np8MwLB5do1Yxsil-Q","bar1"]~["Y4tA7pvDr8mNnd1I0doxLw","bar2"]
+     * ~["Nxjorg9T_qEP28rC-xJ5qA","foo",[{"...":"AAL7lEZtrahouJboEpiHOz72MYY7IX9olGcjzUWkKDw"},{"...":"DlrJJveRk3V_lO5-4Zgx1_l_nR6XAYp0b96LW9Co08g"}]]
+     */
     @Test
     void whenListRecursive() throws Exception {
 
@@ -340,6 +381,15 @@ class SdJwtCredentialTest {
         assertEquals(6, disclosures.size());
     }
 
+    /**
+     * {
+     * "foo": ["bar1", "bar2", {"abc": "yolo1"}]
+     * "tst": {
+     *  "inner_foo": [....]
+     *  "inner_tst": {"aaaa": "bbbbb"}
+     * }
+     * }
+     */
     @Test
     void whenGetCredential_withRecursivelyNested_thenSuccess() throws Exception {
 
@@ -377,7 +427,7 @@ class SdJwtCredentialTest {
     void whenListRecursive_withObject_shouldBeFlattened_thenSuccess() throws Exception {
 
         when(applicationProperties.isRecursiveDisclosureEnabled()).thenReturn(true);
-        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getOfferDataList());
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getNestedOfferDataList());
 
         CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getNestedOfferDataList());
 
@@ -411,7 +461,7 @@ class SdJwtCredentialTest {
     void whenList_withObject_shouldBeFlattened_thenSuccess() throws Exception {
 
         when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
-        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getOfferDataList());
+        when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(getNestedOfferDataList());
 
         CredentialOffer offer = createCredentialOffer(metadataCredentialSupportedId, getNestedOfferDataList());
 
