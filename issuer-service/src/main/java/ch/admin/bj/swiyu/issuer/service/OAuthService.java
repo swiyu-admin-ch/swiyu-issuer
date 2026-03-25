@@ -121,7 +121,7 @@ public class OAuthService {
     /**
      * Extracts the access token without bearer / dpop prefix from the HTTP
      * Authorization Header string.
-     * 
+     *
      * @param authorizationRequestHeader value of Authorization Header
      * @return access token provided in the authorization header
      */
@@ -151,6 +151,7 @@ public class OAuthService {
         OAuthTokenDto.OAuthTokenDtoBuilder oauthTokenResponseBuilder = OAuthTokenDto.builder()
                 .accessToken(newAccessToken.toString())
                 .expiresIn(applicationProperties.getTokenTTL());
+
 
         if (applicationProperties.isAllowTokenRefresh()) {
             if (mgmt.getRefreshToken() == null || applicationProperties.isAllowRefreshTokenRotation()) {
@@ -199,6 +200,12 @@ public class OAuthService {
                 });
     }
 
+    /**
+     * parses the UUID of a preAuthCode
+     * @param preAuthCode token
+     * @return uuid of the preAuthCode
+     * @throws OAuthException (Invalid Request)
+     */
     private UUID uuidOrException(String preAuthCode) {
         try {
             return UUID.fromString(preAuthCode);

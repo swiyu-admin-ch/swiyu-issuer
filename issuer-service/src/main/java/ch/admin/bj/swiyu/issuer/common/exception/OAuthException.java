@@ -23,4 +23,8 @@ public class OAuthException extends RuntimeException {
     public static OAuthException invalidGrant(String detailMessage) {
         return new OAuthException(OAuthError.INVALID_GRANT, detailMessage);
     }
+
+    public static OAuthException unsupportedGrantType(String detailedMessage) {
+        return new OAuthException(OAuthError.UNSUPPORTED_GRANT_TYPE, detailedMessage);
+    }
 }
