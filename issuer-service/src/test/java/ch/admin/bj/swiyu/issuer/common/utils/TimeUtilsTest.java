@@ -14,9 +14,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TimeUtilsTest {
 
     @Test
-    void testInstantToRoundedUnixTimestamp() {
+    void testInstantToRoundedUpUnixTimestamp() {
         Instant now = Instant.now();
-        Long timestamp = TimeUtils.instantToRoundedUnixTimestamp(now);
+        Long timestamp = TimeUtils.instantToRoundedUpUnixTimestamp(now);
         assertNotNull(timestamp);
         assertTrue(now.getEpochSecond() <= timestamp);
         assertTrue(now.plus(1, ChronoUnit.DAYS).getEpochSecond() > timestamp);
@@ -29,16 +29,39 @@ class TimeUtilsTest {
     }
 
     @Test
-    void testInstantRoundedUnixTimestamp_instantsOfSameDayShouldRoundToSameInstant() {
+    void testInstantRoundedUpUnixTimestamp_instantsOfSameDayShouldRoundToSameInstant() {
         var date = LocalDate.parse("2026-12-31");
         var instant1 = date.atStartOfDay(ZoneOffset.UTC).withHour(12).withMinute(30).withSecond(29).withNano(10).toInstant();
         var instant2 = date.atStartOfDay(ZoneOffset.UTC).withHour(7).withMinute(54).withSecond(13).withNano(928).toInstant();
-        assertThat(TimeUtils.instantToRoundedUnixTimestamp(instant1)).isEqualTo(TimeUtils.instantToRoundedUnixTimestamp(instant2));
+        assertThat(TimeUtils.instantToRoundedUpUnixTimestamp(instant1)).isEqualTo(TimeUtils.instantToRoundedUpUnixTimestamp(instant2));
+    }
+
+    @Test
+    void testInstantToRoundedDownUnixTimestamp() {
+        Instant now = Instant.now();
+        Long timestamp = TimeUtils.instantToRoundedDownUnixTimestamp(now);
+        assertNotNull(timestamp);
+        assertTrue(now.getEpochSecond() >= timestamp);
+        assertTrue(now.plus(-1, ChronoUnit.DAYS).getEpochSecond() < timestamp);
+        var timestampInstant = Instant.ofEpochSecond(timestamp).atZone(ZoneOffset.UTC);
+        assertEquals(0, timestampInstant.getHour());
+        assertEquals(0, timestampInstant.getMinute());
+        assertEquals(0, timestampInstant.getSecond());
+        // Nanosecond should be zero, as max precision of a Unix timestamp is a second
+        assertEquals(0, timestampInstant.getNano());
+    }
+
+    @Test
+    void testInstantRoundedDownUnixTimestamp_instantsOfSameDayShouldRoundToSameInstant() {
+        var date = LocalDate.parse("2026-12-31");
+        var instant1 = date.atStartOfDay(ZoneOffset.UTC).withHour(12).withMinute(30).withSecond(29).withNano(10).toInstant();
+        var instant2 = date.atStartOfDay(ZoneOffset.UTC).withHour(7).withMinute(54).withSecond(13).withNano(928).toInstant();
+        assertThat(TimeUtils.instantToRoundedDownUnixTimestamp(instant1)).isEqualTo(TimeUtils.instantToRoundedDownUnixTimestamp(instant2));
     }
 
     @Test
     void testInstantToUnixTimestampWithNull() {
-        assertNull(TimeUtils.instantToRoundedUnixTimestamp(null));
+        assertNull(TimeUtils.instantToRoundedUpUnixTimestamp(null));
     }
 
     @Test

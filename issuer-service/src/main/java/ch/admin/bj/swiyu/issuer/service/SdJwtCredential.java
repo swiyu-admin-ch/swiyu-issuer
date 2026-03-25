@@ -25,7 +25,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.*;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 import static java.util.Objects.nonNull;
 
@@ -212,16 +212,17 @@ public class SdJwtCredential extends CredentialBuilder {
             Optional.ofNullable(credentialMetadata.vctMetadataUriIntegrity())
                     .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
         }
-        builder.putClaim("iat", instantToRoundedUnixTimestamp(Instant.now()));
+        // subtracting 1 day, as instantToRoundedUnixTimestamp rounds up to the end of the day
+        builder.putClaim("iat", instantToRoundedDownUnixTimestamp(Instant.now()));
 
         // optional field -> only added when set
         if (nonNull(getCredentialOffer().getCredentialValidFrom())) {
-            builder.putClaim("nbf", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
+            builder.putClaim("nbf", instantToRoundedDownUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
         }
 
         // optional field -> only added when set
         if (nonNull(getCredentialOffer().getCredentialValidUntil())) {
-            builder.putClaim("exp", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
+            builder.putClaim("exp", instantToRoundedUpUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
         }
     }
 
