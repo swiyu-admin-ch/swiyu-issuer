@@ -7,6 +7,8 @@ import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 import java.util.Optional;
@@ -14,6 +16,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class OAuthServiceTest {
 
@@ -97,5 +101,19 @@ class OAuthServiceTest {
                 .isEqualTo(refreshToken.toString());
         // verify that repository save was called (tokens updated)
         Mockito.verify(credentialManagementRepository).save(mockMgmt);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"bearer 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "BEARER 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "dpop 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "DPoP 0c16dd9c-1dcd-4fc1-b503-bc42c505f113"})
+    void getAccessToken_whenCorrectAuthorizationHeader_thenSuccess(String authorizationRequestHeader) {
+        final String ACCESS_TOKEN = "0c16dd9c-1dcd-4fc1-b503-bc42c505f113";
+        var extractedToken = oauthService.getAccessToken(authorizationRequestHeader);
+        assertThat(extractedToken).as("extracted token should match the access token").isEqualTo(ACCESS_TOKEN);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "bearer ", "dpop ", "barer 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "0c16dd9c-1dcd-4fc1-b503-bc42c505f113"}) 
+    void getAccessToken_whenIllegalAuthorizationHeader_thenOAuthException(String authorizationRequestHeader){
+        assertThrows(OAuthException.class, () -> oauthService.getAccessToken(authorizationRequestHeader));
     }
 }

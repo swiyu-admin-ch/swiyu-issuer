@@ -107,15 +107,14 @@ public class SelfContainedNonce {
     }
 
     /**
-     * Validates if the nonce has not expired.
+     * Checks whether the nonce has expired.
+     * A nonce is considered expired if its timestamp is not strictly within
+     * the acceptable time window defined by the provided lifetime in seconds.
      *
-     * It validates that the timestamp is within an acceptable range
-     * based on the provided lifetime in seconds
-     *
-     * @param nonce           the nonce string to be validated
+     * @param nonce           the nonce string to check
      * @param lifetimeSeconds the maximum number of seconds a nonce is considered
      *                        valid from its creation
-     * @return true if the nonce is valid
+     * @return true if the nonce has expired; false otherwise
      */
     private static boolean hasExpired(SelfContainedNonce nonce, int lifetimeSeconds) {
         var now = Instant.now();
@@ -124,12 +123,13 @@ public class SelfContainedNonce {
     }
 
     /**
+     * Checks whether the nonce signature is invalid.
      * Validates the signature of the nonce by
      * matching the calculated signature hash with the one given in the nonce.
      * 
-     * @param nonce  the nonce string to be validated
+     * @param nonce  the nonce string to check
      * @param secret the secret used to create the nonce hash
-     * @return
+     * @return true if the signature is invalid; false if it matches
      */
     private static boolean hasInvalidSignature(SelfContainedNonce nonce, IssuerSecret secret) {
         var calculatedSignature = createSignature(nonce.preNonce, secret);

@@ -1,18 +1,28 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.regex.Pattern;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachine;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenTypeDto;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Service for performing OAuth 2.0 Authorization Server related tasks
@@ -106,6 +116,23 @@ public class OAuthService {
     }
 
     /**
+     * Extracts the access token without bearer / dpop prefix from the HTTP Authorization Header string.
+     * @param authorizationRequestHeader value of Authorization Header
+     * @return access token provided in the authorization header
+     */
+    public String getAccessToken(String authorizationRequestHeader) {
+        if (authorizationRequestHeader == null) {
+            throw OAuthException.invalidRequest("No authorization header found");
+        }
+        var regexPattern = Pattern.compile("(bearer|dpop) (.+)", Pattern.CASE_INSENSITIVE);
+        var matcher = regexPattern.matcher(authorizationRequestHeader);
+        if (!matcher.find()) {
+            throw OAuthException.invalidRequest("No bearer token found");
+        }
+        return matcher.group(2);
+    }
+
+    /**
      * Update the OAuth 2.0 access_token and refresh_token
      *
      * @param mgmt credential offer which is being updated
@@ -130,6 +157,14 @@ public class OAuthService {
                 oauthTokenResponseBuilder.refreshToken(mgmt.getRefreshToken().toString());
             }
         }
+        
+        if (CollectionUtils.isEmpty(mgmt.getDpopKey())) {
+            // If we have a DPoP Key registered we use DPoP tokens
+            oauthTokenResponseBuilder.tokenType(OAuthTokenTypeDto.BEARER);
+        } else {
+            oauthTokenResponseBuilder.tokenType(OAuthTokenTypeDto.DPoP);
+        }
+
         credentialManagementRepository.save(mgmt);
         return oauthTokenResponseBuilder.build();
     }

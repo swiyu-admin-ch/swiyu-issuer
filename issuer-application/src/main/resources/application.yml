@@ -48,7 +48,43 @@ management:
     env:
       show-values: ALWAYS # NEVER to hide all values
       # Values to expose on the env endpoint
-      allowedProperties: local.server.port, server.ports, application.external-url, application.template-replacement.external-url, application.offer-validity, application.deferred-offer-validity-seconds, application.issuer-id, application.status-list.verification-method, application.key.sdjwt.verification-method, application.key-management-method, swiyu.business-partner-id, application.deeplink-schema, application.template-replacement.external-url, application.allow-token-refresh, application.allow-refresh-token-rotation, application.nonce-lifetime-seconds, springdoc.swagger-ui.path, webhook.callback-interval, logging.expect-correlation-id, application.min-deferred-offer-interval-seconds, application.trusted-attestation-providers, application.enable-jwt-authentication, application.authentication-jwks, application.status-list.hsm.host, application.status-list.hsm.port, application.offer-expiration-interval, application.openid-file, application.metadata-file, application.data-integrity-jwks, application.data-integrity-enforced, application.key.sdjwt.hsm.host, application.key.sdjwt.hsm.port, application.url-rewrite.mapping, swiyu.status-registry.api-url, swiyu.status-registry.token-url, webhook.callback-uri
+      allowedProperties: >
+        local.server.port,
+        server.ports,
+        application.external-url,
+        application.template-replacement.external-url,
+        application.offer-validity,
+        application.deferred-offer-validity-seconds,
+        application.issuer-id,
+        application.status-list.verification-method,
+        application.key.sdjwt.verification-method,
+        application.key-management-method,
+        swiyu.business-partner-id,
+        application.deeplink-schema,
+        application.template-replacement.external-url,
+        application.allow-token-refresh,
+        application.allow-refresh-token-rotation,
+        application.nonce-lifetime-seconds,
+        springdoc.swagger-ui.path,
+        webhook.callback-interval,
+        logging.expect-correlation-id,
+        application.min-deferred-offer-interval-seconds,
+        application.trusted-attestation-providers,
+        application.enable-jwt-authentication,
+        application.authentication-jwks,
+        application.status-list.hsm.host,
+        application.status-list.hsm.port,
+        application.offer-expiration-interval,
+        application.openid-file,
+        application.metadata-file,
+        application.data-integrity-jwks,
+        application.data-integrity-enforced,
+        application.key.sdjwt.hsm.host,
+        application.key.sdjwt.hsm.port,
+        application.url-rewrite.mapping,
+        swiyu.status-registry.api-url,
+        swiyu.status-registry.token-url,
+        webhook.callback-uri
   health:
     livenessState:
       enabled: true
@@ -227,6 +263,7 @@ monitoring:
 
 caching:
   publicKeyCacheTTL: ${PUBLIC_KEY_CACHE_TTL_MILLI:3600000} # 1 hour
+  encryptionMetadataCacheTTL: ${ENCRYPTION_METADATA_CACHE_TTL_MILLI:300000} # 5 minutes – must be less than 2× encryption-key-rotation-interval (grace period = 30min); recommended ~1/3 of rotation interval
 
 database-migration:
   init-container: ${IS_INIT_CONTAINER_EXECUTION:false}
