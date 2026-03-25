@@ -22,7 +22,9 @@ public class TimeUtils {
         if (instant == null) {
             return null;
         }
-        return instant.truncatedTo(ChronoUnit.DAYS).getEpochSecond();
+        var zdt = instant.truncatedTo(ChronoUnit.DAYS).atZone(ZoneOffset.UTC);
+        var adjusted = zdt.withHour(23).withMinute(59).withSecond(59);
+        return adjusted.toInstant().getEpochSecond();
     }
 
     public static String instantToISO8601(Instant instant) {
