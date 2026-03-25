@@ -406,7 +406,7 @@ public class CredentialManagementService {
 
         validationService.validateCredentialOfferCreateRequest(newOffer, offerData);
 
-        var statusLists = statusListOrchestrator.resolveAndLockAndValidateStatusLists(newOffer);
+        var statusLists = statusListOrchestrator.lockAndValidateStatusListsForOffer(newOffer);
 
         // Validate issuer DIDs match
         var issuerDid = validationService.determineIssuerDid(newOffer, applicationProperties.getIssuerId());
@@ -555,7 +555,7 @@ public class CredentialManagementService {
                 offerDuration);
 
         // Get used status lists and ensure they are managed by the issuer
-        var statusLists = statusListOrchestrator.resolveAndLockAndValidateStatusLists(requestDto);
+        var statusLists = statusListOrchestrator.lockAndValidateStatusListsForOffer(requestDto);
 
         // Validate issuer DIDs match
         var issuerDid = validationService.determineIssuerDid(requestDto, applicationProperties.getIssuerId());

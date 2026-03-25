@@ -148,7 +148,7 @@ public class StatusListOrchestrator {
     @Transactional
     public StatusListDto updateStatusList(UUID statusListId, @Nullable ConfigurationOverrideDto overrideDto) {
 
-        StatusList statusList = statusListRepository.findByIdLocked(statusListId).orElseThrow(
+        StatusList statusList = statusListRepository.findByIdForUpdate(statusListId).orElseThrow(
                 () -> new ResourceNotFoundException(String.format("Status list %s not found", statusListId)));
 
         TokenStatusListToken token = loadTokenStatusListToken(statusList);
@@ -193,8 +193,8 @@ public class StatusListOrchestrator {
      * @throws BadRequestException if not all status lists can be resolved
      */
     @Transactional(readOnly = true)
-    public List<StatusList> resolveAndLockAndValidateStatusLists(CreateCredentialOfferRequestDto request) {
-        var statusLists = statusListRepository.findByUriIn(request.getStatusLists());
+    public List<StatusList> lockAndValidateStatusListsForOffer(CreateCredentialOfferRequestDto request) {
+        var statusLists = statusListRepository.findByUriInForUpdate(request.getStatusLists());
         return StatusListValidator.requireAllStatusListsResolved(request, statusLists);
     }
 

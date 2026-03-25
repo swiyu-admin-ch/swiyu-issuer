@@ -24,10 +24,11 @@ public interface StatusListRepository extends JpaRepository<StatusList, UUID> {
      */
     @Query("SELECT c FROM StatusList c WHERE :uuid = c.id")
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<StatusList> findByIdLocked(UUID uuid);
+    Optional<StatusList> findByIdForUpdate(UUID uuid);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    List<StatusList> findByUriIn(List<String> uris);
+    @Query("SELECT s FROM StatusList s WHERE s.uri IN :uris")
+    List<StatusList> findByUriInForUpdate(List<String> uris);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM StatusList s WHERE s.id IN :ids")

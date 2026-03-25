@@ -163,12 +163,12 @@ class StatusListIndexServiceTest {
     void claimRandomIndexes_alwaysLocksStatusListBeforeReadingView() {
         var statusList = buildStatusList();
         stubFreeIndexes(statusList, List.of(1, 2, 3, 4, 5));
-        when(statusListRepository.findByIdLocked(statusList.getId()))
+        when(statusListRepository.findByIdForUpdate(statusList.getId()))
                 .thenReturn(Optional.of(statusList));
 
         service.claimRandomIndexes(statusList, 2);
 
-        verify(statusListRepository).findByIdLocked(statusList.getId());
+        verify(statusListRepository).findByIdForUpdate(statusList.getId());
     }
 
     /**
@@ -179,7 +179,7 @@ class StatusListIndexServiceTest {
     void claimRandomIndexes_whenLockAcquired_returnsRequestedIndexes() {
         var statusList = buildStatusList();
         stubFreeIndexes(statusList, List.of(10, 20, 30));
-        when(statusListRepository.findByIdLocked(statusList.getId()))
+        when(statusListRepository.findByIdForUpdate(statusList.getId()))
                 .thenReturn(Optional.of(statusList));
 
         Set<Integer> result = service.claimRandomIndexes(statusList, 2);

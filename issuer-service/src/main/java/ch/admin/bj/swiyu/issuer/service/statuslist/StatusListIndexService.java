@@ -56,7 +56,7 @@ public class StatusListIndexService {
         // Acquire a pessimistic write lock on the StatusList row before querying the
         // available-index view. The lock is held for the duration of the transaction,
         // serializing concurrent requests and preventing duplicate index assignments.
-        statusListRepository.findByIdLocked(statusList.getId());
+        statusListRepository.findByIdForUpdate(statusList.getId());
 
         return getRandomIndexes(batchSize, statusList);
     }
