@@ -84,7 +84,7 @@ public class IssuanceController {
             @ModelAttribute OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
             HttpServletRequest request) {
 
-        if (oauthAccessTokenRequestDto == null) {
+        if (oauthAccessTokenRequestDto == null || oauthAccessTokenRequestDto.grant_type() == null) {
             throw OAuthException.invalidRequest("The request is missing a required parameter");
         }
 
@@ -95,7 +95,7 @@ public class IssuanceController {
             String refreshToken = oauthAccessTokenRequestDto.refresh_token();
             return oauthRefreshToken(dpop, request, refreshToken);
         } else {
-            throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
+            throw OAuthException.unsupportedGrantType("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
     }
 
@@ -174,7 +174,7 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        String accessToken = getAccessToken(bearerToken);
+        String accessToken = oauthService.getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
 
 
@@ -248,7 +248,7 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        String accessToken = getAccessToken(bearerToken);
+        String accessToken = oauthService.getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
         credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
@@ -267,7 +267,14 @@ public class IssuanceController {
                 dpop,
                 new ServletServerHttpRequest(request)
         );
-        return oauthService.refreshOAuthToken(refreshToken);
+
+        try {
+            return oauthService.refreshOAuthToken(refreshToken);
+        } catch (OAuthException exc) {
+            // Other endpoints calling issueOAuthToken expect an invalid token OAuthException
+            // this exception is caught here and replaced with invalid grant to follow the specification
+            throw OAuthException.invalidGrant("invalid refresh token");
+        }
     }
 
     private OAuthTokenDto oauthTokenPreAuthorized(String dpop, HttpServletRequest request, String preauthorizedCode) {
@@ -278,20 +285,14 @@ public class IssuanceController {
                 preauthorizedCode,
                 dpop,
                 new ServletServerHttpRequest(request));
-        return oauthService.issueOAuthToken(preauthorizedCode);
-    }
 
-    private String getAccessToken(String bearerToken) {
-        if (bearerToken == null) {
-            throw OAuthException.invalidRequest("No authorization header found");
+        try{
+            return oauthService.issueOAuthToken(preauthorizedCode);
+        } catch (OAuthException exc) {
+            // Other endpoints calling issueOAuthToken expect an invalid token OAuthException
+            // this exception is caught here and replaced with invalid grant to follow the specification
+            throw OAuthException.invalidGrant("invalid token");
         }
-        var regexPattern = Pattern.compile("bearer (.*)", Pattern.CASE_INSENSITIVE);
-        var matcher = regexPattern.matcher(bearerToken);
-        if (!matcher.find()) {
-            throw OAuthException.invalidRequest("No bearer token found");
-        }
-
-        return matcher.group(1);
     }
 
     private @NotNull ClientAgentInfo getClientAgentInfo(HttpServletRequest request) {

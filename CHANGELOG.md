@@ -23,7 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nonces are now validated to originate from this service, preventing client side generated nonces
 - Fixed encryption cache invalidation in horizontally scaled deployments: the `IssuerMetadataEncryptionCache` is now
   evicted periodically on every pod via a scheduled task instead of being invalidated only on the pod performing
-  the key rotation. This prevents stale pods from publishing deprecated encryption keys in the issuer metadata `(#796)`
+  the key rotation. This prevents stale pods from publishing deprecated encryption keys in the issuer metadata `(#796)` 
+- DPoP allows now the correct authorization header, without breaking previously used DPoP header
+- Prevent downgrading once using DPoP
+- Return OID4VCI compliant error responses, most notably `error_code` is now in lower case
 - Fixed false positive webhook callback sent to Business Issuer when a status list write fails during REVOKE or SUSPEND `(#786)`:
   - State change events are now only delivered after a successful transaction commit (`@TransactionalEventListener(AFTER_COMMIT)`).
   - When the status list update fails and the transaction rolls back, an `ERROR` callback with error code `STATUS_LIST_UPDATE_FAILED` is sent instead, so the Business Issuer is correctly informed that the state change did not take effect.
