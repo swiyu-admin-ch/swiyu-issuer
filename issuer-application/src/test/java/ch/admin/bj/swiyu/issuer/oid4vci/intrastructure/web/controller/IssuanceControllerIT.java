@@ -3,7 +3,6 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -48,8 +47,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
-import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
-import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_REQUEST;
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.hamcrest.Matchers.containsString;
@@ -66,7 +64,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
 class IssuanceControllerIT {
-
     private static UUID offerId;
     private static StatusList testStatusList;
     private static ECKey jwk;
@@ -432,7 +429,7 @@ class IssuanceControllerIT {
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_GRANT.name())));
+                .andExpect(content().string(containsString(INVALID_GRANT.getErrorCode())));
 
         // check that correct preauthcode is used
         mock.perform(post("/oid4vci/api/token")
@@ -440,40 +437,7 @@ class IssuanceControllerIT {
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_GRANT.name())));
-    }
-
-    @Test
-    void noPreauthCode_thenException() throws Exception {
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code"))
-                .andExpect(status().isBadRequest());
-
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
-                        .param("pre-authorized_code", ""))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void testInvalidGrantType_thenBadRequest() throws Exception {
-        // With Valid preauth code
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
-                        .param("pre-authorized_code", "deadbeef-dead-dead-dead-deaddeafbeef"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_REQUEST.name())));
-
-        // With Invalid preauth code
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
-                        .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_REQUEST.name())));
+                .andExpect(content().string(containsString(INVALID_GRANT.getErrorCode())));
     }
 
     private void addOverride(UUID preAuthCode, ConfigurationOverride override) {

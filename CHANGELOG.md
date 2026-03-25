@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed encryption cache invalidation in horizontally scaled deployments: the `IssuerMetadataEncryptionCache` is now
   evicted periodically on every pod via a scheduled task instead of being invalidated only on the pod performing
   the key rotation. This prevents stale pods from publishing deprecated encryption keys in the issuer metadata `(#796)` 
+- DPoP allows now the correct authorization header, without breaking previously used DPoP header
+- Prevent downgrading once using DPoP
+- Return OID4VCI compliant error responses, most notably `error_code` is now in lower case
 
 - Added `nonce_endpoint`, `deferred_credential_endpoint`, and `batch_credential_issuance` (with min batch size of 10)
   to `sample.compose.yml` `(#737)`.
