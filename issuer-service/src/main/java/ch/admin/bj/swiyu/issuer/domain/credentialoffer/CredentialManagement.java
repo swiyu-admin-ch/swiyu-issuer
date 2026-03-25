@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -125,5 +126,9 @@ public class CredentialManagement {
      */
     public void setCredentialManagementStatusJustForTestUsage(CredentialStatusManagementType credentialManagementStatus) {
         this.credentialManagementStatus = credentialManagementStatus;
+    }
+
+    public boolean hasDPoPKey() {
+        return !CollectionUtils.isEmpty(dpopKey);
     }
 }

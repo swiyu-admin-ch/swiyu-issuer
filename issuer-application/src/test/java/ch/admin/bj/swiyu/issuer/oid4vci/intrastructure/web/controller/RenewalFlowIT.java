@@ -60,7 +60,7 @@ import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.createEcKey;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.requestCredential;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.fetchOAuthTokenDpop;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -161,21 +161,21 @@ class RenewalFlowIT {
         var newOffer = TestInfrastructureUtils.createCredentialOffer(mockMvc, deferredPayload).andReturn();
         var management = getManagementJsonObject(newOffer);
         var preAuthCode = IssuanceTestUtils.getPreAuthCodeFromDeeplink(management.get("offer_deeplink").getAsString());
-        var oAuthToken = requestTokenWithDpop(preAuthCode, dpopKey);
+        var oAuthToken = fetchOAuthTokenDpop(mockMvc, preAuthCode, dpopKey, "http://localhost:8080");
 
-        requestCredential(mockMvc, oAuthToken.getAccessToken(), getCredentialRequestString(mockMvc, List.of(jwk), applicationProperties))
+        requestCredentialWithDpop(mockMvc, (String) oAuthToken.get("access_token"), getCredentialRequestString(mockMvc, List.of(jwk), applicationProperties), issuerMetadata, dpopKey)
                 .andExpect(status().isAccepted())
                 .andReturn();
 
         // Act: refresh the access token using the refresh token and DPoP key
-        refreshTokenWithDpop(oAuthToken.getRefreshToken(), dpopKey);
+        refreshTokenWithDpop((String) oAuthToken.get("refresh_token"), dpopKey);
 
         // Ensure the management/offer is in READY state as the business issuer would set it
         updateStatus(mockMvc, management.get("management_id").getAsString(), UpdateCredentialStatusRequestTypeDto.READY)
                 .andExpect(status().isOk());
 
         // Act: refresh the access token using the refresh token and DPoP key
-        refreshTokenWithDpop(oAuthToken.getRefreshToken(), dpopKey);
+        refreshTokenWithDpop((String) oAuthToken.get("refresh_token"), dpopKey);
     }
 
     @Test

@@ -70,7 +70,6 @@ public class TestInfrastructureUtils {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("expires_in")))
                 .andExpect(content().string(containsString("access_token")))
-                .andExpect(content().string(containsString("BEARER")))
                 .andReturn();
         @SuppressWarnings("unchecked")
         Map<String, Object> tokenResponse = new ObjectMapper().readValue(response.getResponse().getContentAsString(), HashMap.class);
@@ -107,10 +106,6 @@ public class TestInfrastructureUtils {
                 claimSetBuilder.build());
         signedJwt.sign(new ECDSASigner(dpopKey.toECKey()));
         return signedJwt.serialize();
-    }
-
-    public static JWK getDPoPKey() throws JOSEException {
-        return createEcKey("HolderDPoPKey");
     }
 
     public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {

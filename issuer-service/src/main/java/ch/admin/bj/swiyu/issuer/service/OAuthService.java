@@ -1,18 +1,28 @@
 package ch.admin.bj.swiyu.issuer.service;
 
+import java.util.Optional;
+import java.util.UUID;
+import java.util.regex.Pattern;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStateMachine;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenTypeDto;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Service for performing OAuth 2.0 Authorization Server related tasks
@@ -33,7 +43,7 @@ public class OAuthService {
      *
      * @param preAuthCode Pre-authorization code of holder
      * @return OAuth authorization token which can be used in credential service
-     * endpoint
+     *         endpoint
      * @throws OAuthException if no offer was found with associated pre-auth_code
      */
     @Transactional
@@ -46,7 +56,8 @@ public class OAuthService {
                     offer.getCredentialStatus());
             throw OAuthException.invalidGrant("Credential has already been used");
         }
-        log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {}, offer ID is {} and new status is {}",
+        log.info(
+                "Pre-Authorized code consumed, sending Access Token {}. Management ID is {}, offer ID is {} and new status is {}",
                 mgmt.getAccessToken(), mgmt.getId(), offer.getId(), offer.getCredentialStatus());
         credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
         return updateOAuthTokens(mgmt);
@@ -97,12 +108,33 @@ public class OAuthService {
      *
      * @param refreshToken the refresh token string (expected UUID)
      * @return the matching non-revoked CredentialManagement
-     * @throws OAuthException if the token is not a valid UUID or no non-revoked credential is found
+     * @throws OAuthException if the token is not a valid UUID or no non-revoked
+     *                        credential is found
      */
     @Transactional
     public CredentialManagement getUnrevokedCredentialOfferByRefreshToken(String refreshToken) {
         var uuid = uuidOrException(refreshToken);
-        return getNonRevokedCredentialOffer(credentialManagementRepository.findByRefreshToken(uuid)).orElseThrow(() -> OAuthException.invalidToken("Invalid refresh token"));
+        return getNonRevokedCredentialOffer(credentialManagementRepository.findByRefreshToken(uuid))
+                .orElseThrow(() -> OAuthException.invalidToken("Invalid refresh token"));
+    }
+
+    /**
+     * Extracts the access token without bearer / dpop prefix from the HTTP
+     * Authorization Header string.
+     * 
+     * @param authorizationRequestHeader value of Authorization Header
+     * @return access token provided in the authorization header
+     */
+    public String getAccessToken(String authorizationRequestHeader) {
+        if (authorizationRequestHeader == null) {
+            throw OAuthException.invalidRequest("No authorization header found");
+        }
+        var regexPattern = Pattern.compile("(bearer|dpop) (.+)", Pattern.CASE_INSENSITIVE);
+        var matcher = regexPattern.matcher(authorizationRequestHeader);
+        if (!matcher.find()) {
+            throw OAuthException.invalidRequest("No bearer token found");
+        }
+        return matcher.group(2);
     }
 
     /**
@@ -129,6 +161,14 @@ public class OAuthService {
                 oauthTokenResponseBuilder.refreshToken(mgmt.getRefreshToken().toString());
             }
         }
+
+        if (CollectionUtils.isEmpty(mgmt.getDpopKey())) {
+            // If we have a DPoP Key registered we use DPoP tokens
+            oauthTokenResponseBuilder.tokenType(OAuthTokenTypeDto.BEARER);
+        } else {
+            oauthTokenResponseBuilder.tokenType(OAuthTokenTypeDto.DPoP);
+        }
+
         credentialManagementRepository.save(mgmt);
         return oauthTokenResponseBuilder.build();
     }
@@ -140,8 +180,10 @@ public class OAuthService {
                 .orElseThrow(() -> OAuthException.invalidGrant("Invalid preAuthCode"));
     }
 
-    private Optional<CredentialManagement> getNonRevokedCredentialOffer(Optional<CredentialManagement> credentialOffer) {
-        return credentialOffer.filter(offer -> offer.getCredentialManagementStatus() != CredentialStatusManagementType.REVOKED);
+    private Optional<CredentialManagement> getNonRevokedCredentialOffer(
+            Optional<CredentialManagement> credentialOffer) {
+        return credentialOffer
+                .filter(offer -> offer.getCredentialManagementStatus() != CredentialStatusManagementType.REVOKED);
     }
 
     private Optional<CredentialOffer> getExpirationCheckedCredentialOffer(Optional<CredentialOffer> credentialOffer) {
@@ -149,7 +191,8 @@ public class OAuthService {
                 .map(offer -> {
                     if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED
                             && offer.hasExpirationTimeStampPassed()) {
-                        credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
+                        credentialStateMachine.sendEventAndUpdateStatus(offer,
+                                CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
                         return credentialOfferRepository.save(offer);
                     }
                     return offer;
