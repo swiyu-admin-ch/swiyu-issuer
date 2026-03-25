@@ -248,9 +248,8 @@ public class SdJwtCredential extends CredentialBuilder {
 
             switch (entryValue) {
                 case Map<?, ?> mapValue when mapValue instanceof Map<?, ?> m &&
-                        m.keySet().stream().allMatch(String.class::isInstance) -> {
-                    handleNestedClaimRecursive(entryKey, (Map<String, Object>) m, disclosures, disclosuresForVCObjectProperties);
-                }
+                        m.keySet().stream().allMatch(String.class::isInstance) ->
+                        handleNestedClaimRecursive(entryKey, (Map<String, Object>) m, disclosures, disclosuresForVCObjectProperties);
                 case Collection<?> collectionValue ->
                         handleListDisclosures(builder, Map.entry(entryKey, entryValue), collectionValue, disclosures);
                 default ->
