@@ -97,6 +97,15 @@ public class CredentialOfferTestData {
         return credentialSubjectData;
     }
 
+    public static Map<String, Object> getUniversityCredentialListSubjectData() {
+        Map<String, Object> credentialSubjectData = new HashMap<>();
+        Map<String, Object> nestedSubjectData = new HashMap<>();
+        nestedSubjectData.put("type", List.of("Bachelor of Science", "Master of Science"));
+        nestedSubjectData.put("name", "University of Bern");
+        credentialSubjectData.put("nested", nestedSubjectData);
+        return credentialSubjectData;
+    }
+
     public static CredentialOfferStatus linkStatusList(CredentialOffer offer, StatusList statusList, int index) {
         return new CredentialOfferStatus(
                 new CredentialOfferStatusKey(offer.getId(), statusList.getId(), index)

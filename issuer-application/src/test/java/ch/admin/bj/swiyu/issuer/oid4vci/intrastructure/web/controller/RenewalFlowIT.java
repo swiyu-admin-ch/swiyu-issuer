@@ -163,7 +163,7 @@ class RenewalFlowIT {
         var preAuthCode = IssuanceTestUtils.getPreAuthCodeFromDeeplink(management.get("offer_deeplink").getAsString());
         var oAuthToken = fetchOAuthTokenDpop(mockMvc, preAuthCode, dpopKey, "http://localhost:8080");
 
-        requestCredentialWithDpop(mockMvc, (String) oAuthToken.get("access_token"), getCredentialRequestString(mockMvc, List.of(jwk), applicationProperties), issuerMetadata, dpopKey)
+        requestCredentialWithDpop(mockMvc, (String) oAuthToken.get("access_token"), getCredentialRequestString(mockMvc, List.of(jwk), applicationProperties, "university_example_sd_jwt"), issuerMetadata, dpopKey)
                 .andExpect(status().isAccepted())
                 .andReturn();
 
@@ -244,7 +244,7 @@ class RenewalFlowIT {
                         () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
         requestCredentialWithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
@@ -271,7 +271,7 @@ class RenewalFlowIT {
                         () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
         requestCredentialWithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,
@@ -380,7 +380,7 @@ class RenewalFlowIT {
 
         oauthTokenResponse = requestTokenWithDpop(preAuthCode, dpopKey);
 
-        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
         requestCredentialWithDpop(mockMvc, oauthTokenResponse.getAccessToken(), credentialRequestString,
@@ -434,14 +434,13 @@ class RenewalFlowIT {
                 .map(privindex -> assertDoesNotThrow(
                         () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
-        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties);
-        return credentialRequestString;
+        return getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
     }
 
     private JWTClaimsSet getCredentialClaimsSet(CredentialObjectDto issuedCredential) {
         var sdjwt = SDJWT.parse(issuedCredential.credential());
         var jwt = assertDoesNotThrow(() -> SignedJWT.parse(sdjwt.getCredentialJwt()));
-        return assertDoesNotThrow(() -> jwt.getJWTClaimsSet());
+        return assertDoesNotThrow(jwt::getJWTClaimsSet);
     }
 
     private long getStatusIndex(JWTClaimsSet credentialClaimSet) {

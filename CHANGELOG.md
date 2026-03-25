@@ -9,14 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- tbd
+- Added possibility to add array disclosures and objects without recursion.
+    - If `recursiveDisclosureEnabled` is set to false (default) objects are flattened and arrays are added like:
+
+```json
+{
+    "_sd": [
+        "..."
+    ],
+    "languages": [
+        {
+            "...": "some digest"
+        }
+    ]
+}
+```
+
+- Added possibility to add array disclosures and objects with recursion. If `recursiveDisclosureEnabled` is set to true
+  objects and arrays are added as described in the specification:
+    - https://datatracker.ietf.org/doc/draft-ietf-oauth-selective-disclosure-jwt/22/ chapter 4.2.6 and 6.3
 
 ### Changed
 
 - Breaking Contract change:
-  - Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
-      - The nonce column from credential_offer table is also removed.
-  - Removed Deprecated OID4VCI Draft 13 Endpoints
+    - Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
+        - The nonce column from credential_offer table is also removed.
+    - Removed Deprecated OID4VCI Draft 13 Endpoints
 
 ### Fixed
 
@@ -28,29 +46,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevent downgrading once using DPoP
 - Return OID4VCI compliant error responses, most notably `error_code` is now in lower case
 
-## 2.4.0
-
-### Added
-
-- Added `nonce_endpoint`, `deferred_credential_endpoint`, and `batch_credential_issuance` (with min batch size of 10) to `sample.compose.yml` `(#737)`.
+- Added `nonce_endpoint`, `deferred_credential_endpoint`, and `batch_credential_issuance` (with min batch size of 10)
+  to `sample.compose.yml` `(#737)`.
 - New endpoint `/actuator/env` to retrieve configuration details.
-- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}` to retrieve offer-specific information `(#577)`.
-- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}/status` to retrieve the status of the offer `(#577)`.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}` to retrieve offer-specific
+  information `(#577)`.
+- New endpoint `/management/api/credentials/{credentialManagementId}/offers/{offerId}/status` to retrieve the status of
+  the offer `(#577)`.
 - Send callback on every credential offer and credential management status change `(#577)`.
 - Added field `event_trigger` to callback request `(#577)`:
     - Set to `CREDENTIAL_MANAGEMENT` on credential management status change.
     - Set to `CREDENTIAL_OFFER` on credential offer status change.
-- Allow setting the used Database Schema with environment variable `POSTGRES_DB_SCHEMA`. Default remains `public` `(#604)`.
+- Allow setting the used Database Schema with environment variable `POSTGRES_DB_SCHEMA`. Default
+  remains `public` `(#604)`.
 - Updated Batch Issuance logic `(#642)`:
     - Min batch size must be 10 in metadata to improve privacy.
-    - If the wallet sends fewer proofs than requested, the issuer will return a VC for every proof provided and will not throw an error.
+    - If the wallet sends fewer proofs than requested, the issuer will return a VC for every proof provided and will not
+      throw an error.
 - Added health checks for stale callbacks, Registry token getting refreshed, and Status List availability `(#268)`.
-- Added new validation for `profile_version` to OCA and VCT files. This leads to warnings in the console rather than startup failures `(#721)`.
-- Support and persist `configuration_override` in `POST /management/api/status-list/{statusListId}` to control key material selection (e.g., HSM key) during current and subsequent status list publications `(#690)`.
+- Added new validation for `profile_version` to OCA and VCT files. This leads to warnings in the console rather than
+  startup failures `(#721)`.
+- Support and persist `configuration_override` in `POST /management/api/status-list/{statusListId}` to control key
+  material selection (e.g., HSM key) during current and subsequent status list publications `(#690)`.
 - Swiss Profile versioning support for future version detection via `profile_version` `(#694)`:
     - Issuer metadata includes `profile_version` in unsigned JSON body and in signed JWT header.
     - SD-JWT VC and Status list tokens include `profile_version` in JWT header.
-    - New environment variable `APPLICATION_SWISS_PROFILE_VERSIONING_ENFORCEMENT` (default: false) to optionally enforce `profile_version` checks for incoming JWT-based artifacts.
+    - New environment variable `APPLICATION_SWISS_PROFILE_VERSIONING_ENFORCEMENT` (default: false) to optionally
+      enforce `profile_version` checks for incoming JWT-based artifacts.
 - Add support for VCT version and VCT subtype in issuer metadata `(#749)`.
 - Provide `vct_metadata_uri` and its integrity in the issuer metadata when an override is available `(#749)`.
 
@@ -60,7 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed credential issuer identifier when using signed metadata `(#520)`.
 - Return `400 Bad Request` when encryption is required but an unencrypted request is received `(#664)`.
 - Allow deferred credential requests to be encrypted and fix related encryption handling `(#602)`.
-- Enhanced `Oid4vcException` to include context information in error messages for better readability and debugging `(#519)`.
+- Enhanced `Oid4vcException` to include context information in error messages for better readability and
+  debugging `(#519)`.
 - Fixed weak unlinkability by rounding down timestamps (iat, exp, nbf) within issued credentials `(#548)`.
 - Removed `ISSUANCE_PENDING` credential request errors to strictly align with the specification.
 - Fixed signed metadata always using the first key, even when keys were rotated by issuers during renewals `(#634)`.
@@ -74,9 +97,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Optimized Status List updates by bulk loading and reducing repository calls `(#744`, `#746)`.
-- Enhanced JWT verification to be included during the initialization of credential requests for better security `(#368)`.
+- Enhanced JWT verification to be included during the initialization of credential requests for better
+  security `(#368)`.
 - Updated deferred credential handling to better align with the OID4VCI specification `(#665)`.
-- Removed the obsolete "version" tag from SD-JWT payloads, Status List tokens, Credential Offer data, and Issuer Metadata to align with the current specification `(#694)`.
+- Removed the obsolete "version" tag from SD-JWT payloads, Status List tokens, Credential Offer data, and Issuer
+  Metadata to align with the current specification `(#694)`.
 
 ### Removed
 
