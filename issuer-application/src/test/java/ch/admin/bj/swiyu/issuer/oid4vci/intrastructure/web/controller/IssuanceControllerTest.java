@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenGrantType;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenTypeDto;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.signer.IssuanceController;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
@@ -50,7 +51,7 @@ class IssuanceControllerTest {
     @Test
     void oauthTokenEndpointWithValidPreAuthorizedCode_thenSuccess() {
         var uuid = UUID.randomUUID();
-        var response = OAuthTokenDto.builder().accessToken("access").refreshToken("refresh").build();
+        var response = OAuthTokenDto.builder().accessToken("access").refreshToken("refresh").tokenType(OAuthTokenTypeDto.BEARER).build();
         when(oAuthService.issueOAuthToken(uuid.toString())).thenReturn(response);
         assertDoesNotThrow(() -> mvc.perform(post(tokenEndpoint).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE).param("grant_type", OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName()).param("pre-authorized_code", uuid.toString())).andExpect(status().isOk()).andExpect(jsonPath("$.access_token").value(response.getAccessToken())).andExpect(jsonPath("$.refresh_token").value(response.getRefreshToken())));
     }
@@ -58,7 +59,7 @@ class IssuanceControllerTest {
     @Test
     void oauthTokenEndpointWithValidRefreshToken_thenSuccess() {
         var uuid = UUID.randomUUID();
-        var response = OAuthTokenDto.builder().accessToken("access").refreshToken("refresh").build();
+        var response = OAuthTokenDto.builder().accessToken("access").refreshToken("refresh").tokenType(OAuthTokenTypeDto.BEARER).build();
         when(oAuthService.refreshOAuthToken(uuid.toString())).thenReturn(response);
         assertDoesNotThrow(() -> mvc.perform(post(tokenEndpoint).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE).param("grant_type", OAuthTokenGrantType.REFRESH_TOKEN.getName()).param("refresh_token", uuid.toString())).andExpect(status().isOk()).andExpect(jsonPath("$.access_token").value(response.getAccessToken())).andExpect(jsonPath("$.refresh_token").value(response.getRefreshToken())));
     }
