@@ -155,21 +155,6 @@ public class SdJwtCredential extends CredentialBuilder {
         return Collections.unmodifiableList(sdjwts);
     }
 
-    /**
-     * Calculate batch size by the number of proofs provided by the holder or batch size defined in issuer metadata
-     *
-     * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
-     * @return batch size to issue
-     */
-    private int calculateBatchSize(@Nullable List<DidJwk> holderPublicKeys) {
-        if (!getIssuerMetadata().isBatchIssuanceAllowed()) {
-            return 1;
-        }
-        return holderPublicKeys != null && !holderPublicKeys.isEmpty()
-                ? holderPublicKeys.size()
-                : getIssuerMetadata().getIssuanceBatchSize();
-    }
-
     @Override
     JWSSigner createSigner() {
         var override = this.getCredentialOffer()
@@ -184,47 +169,6 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
-    private void addTechnicalData(SDObjectBuilder builder, ConfigurationOverride override) {
-        // Mandatory claims or claims which always need to be disclosed according to SD-JWT VC specification
-        builder.putClaim("iss", override.issuerDidOrDefault(getApplicationProperties().getIssuerId()));
-        // Get first entry because we expect the list to only contain one item
-        var metadataId = getMetadataCredentialsSupportedIds().getFirst();
-        var credentailConfiguration = getIssuerMetadata().getCredentialConfigurationById(metadataId);
-        builder.putClaim("vct", credentailConfiguration.getVct());
-        // Optional vct addons
-        Optional.ofNullable(credentailConfiguration.getVctMetadataUri())
-                .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
-        Optional.ofNullable(credentailConfiguration.getVctMetadataUriIntegrity())
-                .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
-        Optional.ofNullable(credentailConfiguration.getVctVersion())
-                .ifPresent(o -> builder.putClaim("vct_version", o));
-        Optional.ofNullable(credentailConfiguration.getVctSubtype())
-                .ifPresent(o -> builder.putClaim("vct_subtype", o));
-        Optional.ofNullable(credentailConfiguration.getVctSubtypeVersion())
-                .ifPresent(o -> builder.putClaim("vct_subtype_version", o));
-        // if we have dynamically overriden vct#integrity or such, add it
-        var credentialMetadata = getCredentialOffer().getCredentialMetadata();
-        if (nonNull(credentialMetadata)) {
-            Optional.ofNullable(credentialMetadata.vctIntegrity())
-                    .ifPresent(o -> builder.putClaim("vct#integrity", o));
-            Optional.ofNullable(credentialMetadata.vctMetadataUri())
-                    .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
-            Optional.ofNullable(credentialMetadata.vctMetadataUriIntegrity())
-                    .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
-        }
-        builder.putClaim("iat", instantToRoundedUnixTimestamp(Instant.now()));
-
-        // optional field -> only added when set
-        if (nonNull(getCredentialOffer().getCredentialValidFrom())) {
-            builder.putClaim("nbf", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
-        }
-
-        // optional field -> only added when set
-        if (nonNull(getCredentialOffer().getCredentialValidUntil())) {
-            builder.putClaim("exp", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
-        }
-    }
-
     /**
      * Prepares the discosures, the actual business data of the sd-jwt
      *
@@ -235,10 +179,16 @@ public class SdJwtCredential extends CredentialBuilder {
         // Code below follows example from https://github.com/authlete/sd-jwt?tab=readme-ov-file#credential-jwt
         List<Disclosure> disclosures = new ArrayList<>();
         List<Disclosure> embedded = new ArrayList<>();
-
         // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
-        var disclosableClaims = handleClaimsRecursive(builder, disclosures, getOfferData(), embedded);
-        disclosableClaims.forEach(builder::putSDClaim);
+
+        // If recursive disclosure is enabled, traverse nested objects and build disclosures recursively
+        // so object properties become embedded SD claims; otherwise use the non-recursive handler.
+        if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
+            handleClaimsRecursive(builder, disclosures, getOfferData(), embedded);
+        } else {
+            handleClaims(builder, disclosures, getOfferData(), embedded);
+        }
+        embedded.forEach(builder::putSDClaim);
 
         return disclosures;
     }
@@ -287,6 +237,93 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
+    protected List<Disclosure> handleClaimsRecursive(SDObjectBuilder builder,
+                                                     List<Disclosure> disclosures,
+                                                     Map<String, Object> offerData,
+                                                     List<Disclosure> disclosuresForVCObjectProperties) {
+
+        offerData.forEach((entryKey, entryValue) -> {
+
+            if (validateOfferData(entryKey, entryValue)) return;
+
+            switch (entryValue) {
+                case Map<?, ?> mapValue when mapValue instanceof Map<?, ?> m &&
+                        m.keySet().stream().allMatch(String.class::isInstance) -> {
+                    handleNestedClaimRecursive(entryKey, (Map<String, Object>) m, disclosures, disclosuresForVCObjectProperties);
+                }
+                case Collection<?> collectionValue ->
+                        handleListDisclosures(builder, Map.entry(entryKey, entryValue), collectionValue, disclosures);
+                default ->
+                        handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties, builder);
+            }
+        });
+
+        return disclosuresForVCObjectProperties;
+    }
+
+    protected void handleClaims(SDObjectBuilder builder,
+                                List<Disclosure> disclosures,
+                                Map<String, Object> offerData,
+                                List<Disclosure> disclosuresForVCObjectProperties) {
+
+        offerData.forEach((entryKey, entryValue) -> {
+
+            if (validateOfferData(entryKey, entryValue)) return;
+
+            if (entryValue instanceof Collection<?> collectionValue) {
+                var disc = collectionValue.stream().map(item -> {
+                    var dis = new Disclosure(item);
+                    disclosures.add(dis);
+                    return dis.toArrayElement();
+                }).toList();
+
+                builder.putClaim(entryKey, disc);
+            } else {
+                handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties, builder);
+            }
+        });
+    }
+
+    private boolean validateOfferData(String entryKey, Object entryValue) {
+        if (SDJWT_PROTECTED_CLAIMS.contains(entryKey)) {
+            // We only log the issue and do not add the claim.
+            log.warn(
+                    "Upstream application tried to override protected claim {} in credential offer {}. Original value has been retained",
+                    entryKey,
+                    getCredentialOffer().getId());
+            return true;
+        }
+
+        if (entryValue == null) {
+            log.warn(
+                    "Null value for claim {} in credential offer {} has been ignored and will not be included in the credential",
+                    entryKey,
+                    getCredentialOffer().getId());
+            return true;
+        }
+        return false;
+    }
+
+    private void handleNestedClaimRecursive(String entryKey,
+                                            Map<String, Object> mapValue,
+                                            List<Disclosure> disclosures,
+                                            List<Disclosure> disclosuresForVCObjectProperties) {
+
+        // Create a new builder for the nested map to build its disclosures
+        var nestedBuilder = new SDObjectBuilder();
+        // throw away list for recursive calls, we only need the disclosuresForVCObjectPropertie of the top level in recursive case (as these cases should not be added as sd claims)
+        var ignoredDisclosuresForVCObjectProperties = new ArrayList<Disclosure>();
+
+        // Recursive call for nested maps
+        handleClaimsRecursive(nestedBuilder, disclosures, mapValue, ignoredDisclosuresForVCObjectProperties);
+
+        // Create new Disclosure for the nested map and add it to the disclosures list and the parent builder
+        var nestedDigest = new Disclosure(entryKey, nestedBuilder.build());
+
+        disclosures.add(nestedDigest);
+        disclosuresForVCObjectProperties.add(nestedDigest);
+    }
+
     /**
      * Build status JSON for a single slice
      */
@@ -300,74 +337,10 @@ public class SdJwtCredential extends CredentialBuilder {
                 .orElse(new HashMap<>());
     }
 
-    private void handleLeafClaim(Map.Entry<String, Object> entry, List<Disclosure> disclosures, List<Disclosure> disclosuresForVCObjectProperties, SDObjectBuilder builder) {
-        var disclosure = new Disclosure(entry.getKey(), entry.getValue());
-        disclosures.add(disclosure);
-        builder.putSDClaim(disclosure);
-        disclosuresForVCObjectProperties.add(disclosure);
-    }
-
-    protected List<Disclosure> handleClaimsRecursive(SDObjectBuilder builder,
-                                                     List<Disclosure> disclosures,
-                                                     Map<String, Object> offerData,
-                                                     List<Disclosure> disclosuresForVCObjectProperties) {
-
-        offerData.forEach((entryKey, entryValue) -> {
-
-            if (SDJWT_PROTECTED_CLAIMS.contains(entryKey)) {
-                // We only log the issue and do not add the claim.
-                log.warn(
-                        "Upstream application tried to override protected claim {} in credential offer {}. Original value has been retained",
-                        entryKey,
-                        getCredentialOffer().getId());
-                return;
-            }
-
-            if (entryValue == null) {
-                log.warn(
-                        "Null value for claim {} in credential offer {} has been ignored and will not be included in the credential",
-                        entryKey,
-                        getCredentialOffer().getId());
-                return;
-            }
-
-            switch (entryValue) {
-                case Map<?, ?> mapValue -> {
-
-                    if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
-
-                        // Create a new builder for the nested map to build its disclosures
-                        var nestedBuilder = new SDObjectBuilder();
-                        // throw away list for recursive calls, we only need the disclosuresForVCObjectPropertie of the top level in recursive case (as these cases should not be added as sd claims)
-                        var ignoredDisclosuresForVCObjectProperties = new ArrayList<Disclosure>();
-
-                        // Recursive call for nested maps
-                        handleClaimsRecursive(nestedBuilder, disclosures, (Map<String, Object>) mapValue, ignoredDisclosuresForVCObjectProperties);
-
-                        // Create new Disclosure for the nested map and add it to the disclosures list and the parent builder
-                        var nestedDigest = new Disclosure(entryKey, nestedBuilder.build());
-
-                        disclosures.add(nestedDigest);
-                        disclosuresForVCObjectProperties.add(nestedDigest);
-                    } else {
-                        // If recursive disclosures are not enabled, we treat the entire map as a leaf claim
-                        handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties, builder);
-                    }
-                }
-                case Collection<?> collectionValue ->
-                        buildListDisclosures(builder, Map.entry(entryKey, entryValue), collectionValue, disclosures);
-                default ->
-                        handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties, builder);
-            }
-        });
-
-        return disclosuresForVCObjectProperties;
-    }
-
-    private void buildListDisclosures(SDObjectBuilder builder,
-                                      Map.Entry<String, Object> entry,
-                                      Collection<?> collectionValue,
-                                      List<Disclosure> disclosures) {
+    private void handleListDisclosures(SDObjectBuilder builder,
+                                       Map.Entry<String, Object> entry,
+                                       Collection<?> collectionValue,
+                                       List<Disclosure> disclosures) {
         var disc = collectionValue.stream().map(item -> {
             var dis = new Disclosure(item);
             disclosures.add(dis);
@@ -382,6 +355,69 @@ public class SdJwtCredential extends CredentialBuilder {
             builder.putSDClaim(recDisclosure);
         } else {
             builder.putClaim(entry.getKey(), disc);
+        }
+    }
+
+    private void handleLeafClaim(Map.Entry<String, Object> entry, List<Disclosure> disclosures, List<Disclosure> disclosuresForVCObjectProperties, SDObjectBuilder builder) {
+        var disclosure = new Disclosure(entry.getKey(), entry.getValue());
+        disclosures.add(disclosure);
+        builder.putSDClaim(disclosure);
+        disclosuresForVCObjectProperties.add(disclosure);
+    }
+
+    /**
+     * Calculate batch size by the number of proofs provided by the holder or batch size defined in issuer metadata
+     *
+     * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
+     * @return batch size to issue
+     */
+    private int calculateBatchSize(@Nullable List<DidJwk> holderPublicKeys) {
+        if (!getIssuerMetadata().isBatchIssuanceAllowed()) {
+            return 1;
+        }
+        return holderPublicKeys != null && !holderPublicKeys.isEmpty()
+                ? holderPublicKeys.size()
+                : getIssuerMetadata().getIssuanceBatchSize();
+    }
+
+    private void addTechnicalData(SDObjectBuilder builder, ConfigurationOverride override) {
+        // Mandatory claims or claims which always need to be disclosed according to SD-JWT VC specification
+        builder.putClaim("iss", override.issuerDidOrDefault(getApplicationProperties().getIssuerId()));
+        // Get first entry because we expect the list to only contain one item
+        var metadataId = getMetadataCredentialsSupportedIds().getFirst();
+        var credentailConfiguration = getIssuerMetadata().getCredentialConfigurationById(metadataId);
+        builder.putClaim("vct", credentailConfiguration.getVct());
+        // Optional vct addons
+        Optional.ofNullable(credentailConfiguration.getVctMetadataUri())
+                .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
+        Optional.ofNullable(credentailConfiguration.getVctMetadataUriIntegrity())
+                .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
+        Optional.ofNullable(credentailConfiguration.getVctVersion())
+                .ifPresent(o -> builder.putClaim("vct_version", o));
+        Optional.ofNullable(credentailConfiguration.getVctSubtype())
+                .ifPresent(o -> builder.putClaim("vct_subtype", o));
+        Optional.ofNullable(credentailConfiguration.getVctSubtypeVersion())
+                .ifPresent(o -> builder.putClaim("vct_subtype_version", o));
+        // if we have dynamically overriden vct#integrity or such, add it
+        var credentialMetadata = getCredentialOffer().getCredentialMetadata();
+        if (nonNull(credentialMetadata)) {
+            Optional.ofNullable(credentialMetadata.vctIntegrity())
+                    .ifPresent(o -> builder.putClaim("vct#integrity", o));
+            Optional.ofNullable(credentialMetadata.vctMetadataUri())
+                    .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
+            Optional.ofNullable(credentialMetadata.vctMetadataUriIntegrity())
+                    .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
+        }
+        builder.putClaim("iat", instantToRoundedUnixTimestamp(Instant.now()));
+
+        // optional field -> only added when set
+        if (nonNull(getCredentialOffer().getCredentialValidFrom())) {
+            builder.putClaim("nbf", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
+        }
+
+        // optional field -> only added when set
+        if (nonNull(getCredentialOffer().getCredentialValidUntil())) {
+            builder.putClaim("exp", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
         }
     }
 }
