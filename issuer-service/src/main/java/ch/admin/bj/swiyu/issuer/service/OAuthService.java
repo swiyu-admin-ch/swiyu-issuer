@@ -43,7 +43,7 @@ public class OAuthService {
      *
      * @param preAuthCode Pre-authorization code of holder
      * @return OAuth authorization token which can be used in credential service
-     * endpoint
+     *         endpoint
      * @throws OAuthException if no offer was found with associated pre-auth_code
      */
     @Transactional
@@ -56,7 +56,8 @@ public class OAuthService {
                     offer.getCredentialStatus());
             throw OAuthException.invalidGrant("Credential has already been used");
         }
-        log.info("Pre-Authorized code consumed, sending Access Token {}. Management ID is {}, offer ID is {} and new status is {}",
+        log.info(
+                "Pre-Authorized code consumed, sending Access Token {}. Management ID is {}, offer ID is {} and new status is {}",
                 mgmt.getAccessToken(), mgmt.getId(), offer.getId(), offer.getCredentialStatus());
         credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
         return updateOAuthTokens(mgmt);
@@ -107,16 +108,20 @@ public class OAuthService {
      *
      * @param refreshToken the refresh token string (expected UUID)
      * @return the matching non-revoked CredentialManagement
-     * @throws OAuthException (Invalid Token) if the token is not a valid UUID or no non-revoked credential is found
+     * @throws OAuthException if the token is not a valid UUID or no non-revoked
+     *                        credential is found
      */
     @Transactional
     public CredentialManagement getUnrevokedCredentialOfferByRefreshToken(String refreshToken) {
         var uuid = uuidOrException(refreshToken);
-        return getNonRevokedCredentialOffer(credentialManagementRepository.findByRefreshToken(uuid)).orElseThrow(() -> OAuthException.invalidToken("Invalid refresh token"));
+        return getNonRevokedCredentialOffer(credentialManagementRepository.findByRefreshToken(uuid))
+                .orElseThrow(() -> OAuthException.invalidToken("Invalid refresh token"));
     }
 
     /**
-     * Extracts the access token without bearer / dpop prefix from the HTTP Authorization Header string.
+     * Extracts the access token without bearer / dpop prefix from the HTTP
+     * Authorization Header string.
+     *
      * @param authorizationRequestHeader value of Authorization Header
      * @return access token provided in the authorization header
      */
@@ -157,7 +162,7 @@ public class OAuthService {
                 oauthTokenResponseBuilder.refreshToken(mgmt.getRefreshToken().toString());
             }
         }
-        
+
         if (CollectionUtils.isEmpty(mgmt.getDpopKey())) {
             // If we have a DPoP Key registered we use DPoP tokens
             oauthTokenResponseBuilder.tokenType(OAuthTokenTypeDto.BEARER);
@@ -176,8 +181,10 @@ public class OAuthService {
                 .orElseThrow(() -> OAuthException.invalidGrant("Invalid preAuthCode"));
     }
 
-    private Optional<CredentialManagement> getNonRevokedCredentialOffer(Optional<CredentialManagement> credentialOffer) {
-        return credentialOffer.filter(offer -> offer.getCredentialManagementStatus() != CredentialStatusManagementType.REVOKED);
+    private Optional<CredentialManagement> getNonRevokedCredentialOffer(
+            Optional<CredentialManagement> credentialOffer) {
+        return credentialOffer
+                .filter(offer -> offer.getCredentialManagementStatus() != CredentialStatusManagementType.REVOKED);
     }
 
     private Optional<CredentialOffer> getExpirationCheckedCredentialOffer(Optional<CredentialOffer> credentialOffer) {
@@ -185,7 +192,8 @@ public class OAuthService {
                 .map(offer -> {
                     if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED
                             && offer.hasExpirationTimeStampPassed()) {
-                        credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
+                        credentialStateMachine.sendEventAndUpdateStatus(offer,
+                                CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
                         return credentialOfferRepository.save(offer);
                     }
                     return offer;
