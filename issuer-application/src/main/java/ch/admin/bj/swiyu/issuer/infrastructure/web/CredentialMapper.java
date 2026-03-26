@@ -46,13 +46,16 @@ public class CredentialMapper {
     public static CredentialRequestErrorDto toCredentialRequestError(CredentialRequestError source) {
         return switch (source) {
             case INVALID_CREDENTIAL_REQUEST -> CredentialRequestErrorDto.INVALID_CREDENTIAL_REQUEST;
+            case INVALID_NONCE -> CredentialRequestErrorDto.INVALID_NONCE;
+            case INVALID_PROOF -> CredentialRequestErrorDto.INVALID_PROOF;
+            case UNKNOWN_CREDENTIAL_IDENTIFIER -> CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_IDENTIFIER;
+            case UNKNOWN_CREDENTIAL_CONFIGURATION -> CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_CONFIGURATION;
+            case INVALID_ENCRYPTION_PARAMETERS -> CredentialRequestErrorDto.INVALID_ENCRYPTION_PARAMETERS;
+            case CREDENTIAL_REQUEST_DENIED -> CredentialRequestErrorDto.CREDENTIAL_REQUEST_DENIED;
+            case INVALID_TRANSACTION_ID -> CredentialRequestErrorDto.INVALID_TRANSACTION_ID;
             case UNSUPPORTED_CREDENTIAL_TYPE -> CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE;
             case UNSUPPORTED_CREDENTIAL_FORMAT -> CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_FORMAT;
-            case INVALID_PROOF -> CredentialRequestErrorDto.INVALID_PROOF;
-            case INVALID_ENCRYPTION_PARAMETERS -> CredentialRequestErrorDto.INVALID_ENCRYPTION_PARAMETERS;
             case ISSUANCE_PENDING -> CredentialRequestErrorDto.ISSUANCE_PENDING;
-            case INVALID_TRANSACTION_ID -> CredentialRequestErrorDto.INVALID_TRANSACTION_ID;
-            case CREDENTIAL_REQUEST_DENIED -> CredentialRequestErrorDto.CREDENTIAL_REQUEST_DENIED;
         };
     }
 }
