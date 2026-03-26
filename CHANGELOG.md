@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
       - The nonce column from credential_offer table is also removed.
   - Removed Deprecated OID4VCI Draft 13 Endpoints
+- Use OID4VCI 1.0 compliant error codes for credential_endpoint and deferred_credential_endpoint error responses.
 
 ### Fixed
 
