@@ -31,8 +31,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
@@ -54,7 +54,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-@Transactional
 class KeyAttestationFlowIT {
     private static ECKey jwk;
     private final UUID testOfferNoAttestationId = UUID.randomUUID();
@@ -74,7 +73,7 @@ class KeyAttestationFlowIT {
 
     @Autowired
     ApplicationProperties applicationProperties;
-    @MockitoBean
+    @MockitoSpyBean
     AsyncCredentialEventHandler testEventListener;
     @Autowired
     private DidKeyResolverFacade didKeyResolver;
