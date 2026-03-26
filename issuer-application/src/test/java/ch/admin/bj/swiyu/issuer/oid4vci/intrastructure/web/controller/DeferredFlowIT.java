@@ -32,6 +32,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.UnsupportedEncodingException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.*;
@@ -80,7 +82,7 @@ class DeferredFlowIT {
     private final ObjectMapper objectMapper = new ObjectMapper();
     @MockitoBean
     DidKeyResolverFacade didKeyResolver;
-    @MockitoBean
+    @MockitoSpyBean
     AsyncCredentialEventHandler testEventListener;
     @MockitoSpyBean
     private IssuerMetadata issuerMetadata;
@@ -156,8 +158,7 @@ class DeferredFlowIT {
 
         String token = (String) tokenDto.get("access_token");
 
-        verify(testEventListener, Mockito.times(1))
-                .handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
+        awaitHandleOfferStateChangeEvent(1);
         var nonce = requestNonce(mock);
 
         String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), false);
@@ -165,7 +166,7 @@ class DeferredFlowIT {
         var deferredCredentialResponse = TestInfrastructureUtils.requestCredential(mock, token, getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
                 .andReturn();
-        verify(testEventListener, Mockito.times(1)).handleDeferredEvent(any(DeferredEvent.class));
+        awaitHandleDeferredEvent(1);
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
@@ -203,8 +204,7 @@ class DeferredFlowIT {
                 .andExpect(status().isOk())
                 .andReturn();
         // -> Claming_in_Progress -> Deferred -> Ready -> Issued
-        verify(testEventListener, Mockito.times(4))
-                .handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
+        awaitHandleOfferStateChangeEvent(4);
 
         var vc = getVcStringFromResponse(credentialResponse);
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
@@ -239,7 +239,7 @@ class DeferredFlowIT {
                         getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
                 .andReturn();
-        verify(testEventListener, Mockito.times(1)).handleDeferredEvent(any(DeferredEvent.class));
+        awaitHandleDeferredEvent(1);
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
@@ -287,7 +287,7 @@ class DeferredFlowIT {
                         getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
                 .andReturn();
-        verify(testEventListener, Mockito.times(1)).handleDeferredEvent(any(DeferredEvent.class));
+        awaitHandleDeferredEvent(1);
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
@@ -757,6 +757,32 @@ class DeferredFlowIT {
         return statusListRepository.save(statusList);
     }
 
+    /**
+     * Polls until the async event handler has been invoked at least {@code times} times
+     * for {@link OfferStateChangeEvent}.
+     */
+    private void awaitHandleOfferStateChangeEvent(int times) {
+        Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .pollInterval(Duration.ofMillis(100))
+                .untilAsserted(() ->
+                        verify(testEventListener, Mockito.atLeast(times))
+                                .handleOfferStateChangeEvent(any(OfferStateChangeEvent.class)));
+    }
+
+    /**
+     * Polls until the async event handler has been invoked at least {@code times} times
+     * for {@link DeferredEvent}.
+     */
+    private void awaitHandleDeferredEvent(int times) {
+        Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .pollInterval(Duration.ofMillis(100))
+                .untilAsserted(() ->
+                        verify(testEventListener, Mockito.atLeast(times))
+                                .handleDeferredEvent(any(DeferredEvent.class)));
+    }
+
     private ResultActions getDeferredCallResultActions(Object token, String deferredCredentialRequestString)
             throws Exception {
         return mock.perform(post(deferredCredentialEndpoint)
@@ -814,3 +840,4 @@ class DeferredFlowIT {
                 CredentialWithDeeplinkResponseDto.class);
     }
 }
+

@@ -34,10 +34,12 @@ public class CredentialOfferTestData {
     }
 
     public static StatusList createStatusList() {
+        var statusListId = UUID.randomUUID();
         var statusListToken = new TokenStatusListToken(2, 10000);
         return StatusList.builder()
+                .id(statusListId)
                 .config(Map.of("bits", 2))
-                .uri("https://localhost:8080/status")
+                .uri("https://localhost:8080/status/" + statusListId)
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
                 .maxLength(10000)
                 .build();

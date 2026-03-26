@@ -15,6 +15,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListPersistenceService;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -137,7 +139,7 @@ class StatusListWebhookIT {
         updateStatus(mock, issuedManagement.getId().toString(), UpdateCredentialStatusRequestTypeDto.REVOKED)
                 .andExpect(status().isOk());
 
-        var events = findAllCallbackEvents();
+        var events = awaitCallbackEvents(1);
 
         assertThat(events).hasSize(1);
         var event = events.getFirst();
@@ -162,7 +164,7 @@ class StatusListWebhookIT {
         updateStatus(mock, issuedManagement.getId().toString(), UpdateCredentialStatusRequestTypeDto.REVOKED)
                 .andExpect(status().is4xxClientError());
 
-        var events = findAllCallbackEvents();
+        var events = awaitCallbackEvents(1);
 
         assertThat(events).hasSize(1);
         var event = events.getFirst();
@@ -188,7 +190,7 @@ class StatusListWebhookIT {
         updateStatus(mock, issuedManagement.getId().toString(), UpdateCredentialStatusRequestTypeDto.SUSPENDED)
                 .andExpect(status().is4xxClientError());
 
-        var events = findAllCallbackEvents();
+        var events = awaitCallbackEvents(1);
 
         assertThat(events).hasSize(1);
         var event = events.getFirst();
@@ -197,6 +199,18 @@ class StatusListWebhookIT {
         assertThat(event.getEventTrigger()).isEqualTo(CallbackEventTrigger.CREDENTIAL_MANAGEMENT);
         assertThat(event.getSubjectId()).isEqualTo(issuedManagement.getId());
         assertThat(events).noneMatch(e -> e.getType() == CallbackEventType.VC_STATUS_CHANGED);
+    }
+
+    /**
+     * Polls until at least {@code expectedCount} CallbackEvents are present in the database,
+     * waiting at most 5 seconds. Required because the handler runs on a separate thread via {@code @Async}.
+     */
+    private List<CallbackEvent> awaitCallbackEvents(int expectedCount) {
+        Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .pollInterval(Duration.ofMillis(100))
+                .until(() -> findAllCallbackEvents().size() >= expectedCount);
+        return findAllCallbackEvents();
     }
 
     /**
