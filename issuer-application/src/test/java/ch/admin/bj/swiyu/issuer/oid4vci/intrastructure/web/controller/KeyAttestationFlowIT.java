@@ -54,7 +54,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-@Transactional
 class KeyAttestationFlowIT {
     private static ECKey jwk;
     private final UUID testOfferNoAttestationId = UUID.randomUUID();

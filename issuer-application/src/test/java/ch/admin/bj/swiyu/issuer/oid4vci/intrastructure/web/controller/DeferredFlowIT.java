@@ -32,6 +32,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -47,7 +48,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -73,7 +73,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-@Transactional
 class DeferredFlowIT {
 
     private static ECKey jwk;
@@ -122,6 +121,7 @@ class DeferredFlowIT {
 
     @BeforeEach
     void setUp() throws JOSEException {
+        cleanDatabase();
         statusList = saveStatusList(createStatusList());
 
         jwk = new ECKeyGenerator(Curve.P_256)
@@ -129,6 +129,18 @@ class DeferredFlowIT {
                 .keyID("Test-Key")
                 .issueTime(new Date())
                 .generate();
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanDatabase();
+    }
+
+    private void cleanDatabase() {
+        credentialOfferStatusRepository.deleteAll();
+        credentialOfferRepository.deleteAll();
+        credentialManagementRepository.deleteAll();
+        statusListRepository.deleteAll();
     }
 
     @Test
@@ -689,7 +701,8 @@ class DeferredFlowIT {
                     .andExpect(status().isAccepted())
                     .andReturn();
 
-            var result = credentialOfferRepository.findByIdForUpdate(unboundOffer.getId()).orElseThrow();
+            var result = Objects.requireNonNull(transactionTemplate.execute(status ->
+                    credentialOfferRepository.findByIdForUpdate(unboundOffer.getId()).orElseThrow()));
 
             assertEquals(instant.plusSeconds(applicationProperties.getDeferredOfferValiditySeconds())
                     .getEpochSecond(), result.getOfferExpirationTimestamp());
@@ -733,7 +746,8 @@ class DeferredFlowIT {
                     .andExpect(status().isAccepted())
                     .andReturn();
 
-            var result = credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId()).orElseThrow();
+            var result = Objects.requireNonNull(transactionTemplate.execute(status ->
+                    credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId()).orElseThrow()));
 
             assertEquals(instant.plusSeconds(expirationInSeconds).getEpochSecond(), result.getOfferExpirationTimestamp());
         }
