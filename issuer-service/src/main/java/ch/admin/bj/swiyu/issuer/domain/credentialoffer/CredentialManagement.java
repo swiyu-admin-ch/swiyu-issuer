@@ -111,11 +111,19 @@ public class CredentialManagement {
                 CredentialOfferStatusType.READY)
                 : java.util.EnumSet.of(CredentialOfferStatusType.ISSUED);
 
-        return this.getCredentialOffers().stream()
+        java.util.List<UUID> matched = this.getCredentialOffers().stream()
                 .filter(offer -> allowedStatuses.contains(offer.getCredentialStatus()))
                 .map(CredentialOffer::getNonce)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No valid nonce found for current credential management state"));
+                .toList();
+
+        if (matched.isEmpty()) {
+            throw new IllegalStateException("No valid nonce found for current credential management state");
+        }
+        if (matched.size() > 1) {
+            throw new IllegalStateException("Multiple valid nonces found for current credential management state");
+        }
+
+        return matched.getFirst();
     }
 
     /**
