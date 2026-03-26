@@ -45,6 +45,12 @@ public class TestInfrastructureUtils {
         return fetchOAuthTokenDpop(mock, preAuthCode, null, null);
     }
 
+    public static ResultActions createCredentialOffer(MockMvc mock, String offerRequestString) throws Exception {
+        return mock.perform(post("/management/api/credentials")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(offerRequestString));
+    }
+
     /**
      * Fetches OAuth 2.0 token with optional DPoP
      *

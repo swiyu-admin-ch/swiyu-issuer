@@ -105,17 +105,25 @@ public class CredentialManagement {
 
 
     public UUID getLastValidLegacyNonce() {
-        return this.isPreIssuanceProcess()
-                // is normal issuance process -> get offer in progress and use this nonce
-                ? this.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.IN_PROGRESS)
-                .map(o -> o.getNonce())
-                .findFirst()
-                .orElseThrow()
-                // is refresh
-                : this.getCredentialOffers().stream().filter(offer -> offer.getCredentialStatus() == CredentialOfferStatusType.ISSUED)
-                .map(o -> o.getNonce())
-                .findFirst()
-                .orElseThrow();
+        Set<CredentialOfferStatusType> allowedStatuses = this.isPreIssuanceProcess()
+                ? java.util.EnumSet.of(CredentialOfferStatusType.IN_PROGRESS,
+                CredentialOfferStatusType.DEFERRED,
+                CredentialOfferStatusType.READY)
+                : java.util.EnumSet.of(CredentialOfferStatusType.ISSUED);
+
+        java.util.List<UUID> matched = this.getCredentialOffers().stream()
+                .filter(offer -> allowedStatuses.contains(offer.getCredentialStatus()))
+                .map(CredentialOffer::getNonce)
+                .toList();
+
+        if (matched.isEmpty()) {
+            throw new IllegalStateException("No valid nonce found for current credential management state");
+        }
+        if (matched.size() > 1) {
+            throw new IllegalStateException("Multiple valid nonces found for current credential management state");
+        }
+
+        return matched.getFirst();
     }
 
     /**
