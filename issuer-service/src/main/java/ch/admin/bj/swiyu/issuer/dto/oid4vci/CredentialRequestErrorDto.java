@@ -11,13 +11,7 @@ public enum CredentialRequestErrorDto {
     INVALID_NONCE("invalid_nonce"),
     INVALID_ENCRYPTION_PARAMETERS("invalid_encryption_parameters"),
     CREDENTIAL_REQUEST_DENIED("credential_request_denied"),
-    INVALID_TRANSACTION_ID("invalid_transaction_id"),
-    @Deprecated(since = "OID4VCI 1.0")
-    UNSUPPORTED_CREDENTIAL_TYPE("unsupported_credential_type"),
-    @Deprecated(since = "OID4VCI 1.0")
-    UNSUPPORTED_CREDENTIAL_FORMAT("unsupported_credential_format"),
-    @Deprecated(since = "OID4VCI 1.0")
-    ISSUANCE_PENDING("issuance_pending");
+    INVALID_TRANSACTION_ID("invalid_transaction_id");
 
     private final String errorCode;
 

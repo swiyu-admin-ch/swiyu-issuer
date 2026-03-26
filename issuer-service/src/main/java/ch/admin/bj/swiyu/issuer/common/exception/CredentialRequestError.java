@@ -52,10 +52,4 @@ public enum CredentialRequestError {
      * Credential Issuer or it was already used to obtain a Credential.
      */
     INVALID_TRANSACTION_ID,
-    @Deprecated(since = "OID4VCI 1.0")
-    UNSUPPORTED_CREDENTIAL_TYPE,
-    @Deprecated(since = "OID4VCI 1.0")
-    UNSUPPORTED_CREDENTIAL_FORMAT,
-    @Deprecated(since = "OID4VCI 1.0")
-    ISSUANCE_PENDING,
 }
