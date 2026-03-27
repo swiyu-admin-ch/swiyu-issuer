@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseE
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -190,7 +191,7 @@ class CredentialBuilderTest {
     }
 
     @Test
-    void buildEnvelopeDto_withEncryption_thenSuccess() throws JOSEException {
+    void buildEnvelopeDto_withEncryption_thenSuccess() throws JOSEException, ParseException {
 
         var issuerCredentialResponseEncryption = new IssuerCredentialResponseEncryption();
         issuerCredentialResponseEncryption.setAlgValuesSupported(List.of("ECDH-ES"));
@@ -198,7 +199,7 @@ class CredentialBuilderTest {
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
         var jwk = createPrivateKey().toPublicJWK().toJSONObject();
-        CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, "ECDH-ES", "A128GCM");
+        CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, "A128GCM");
 
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), encryptor);
 
@@ -303,6 +304,7 @@ class CredentialBuilderTest {
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
                 .issueTime(new Date())
+                .algorithm(JWEAlgorithm.ECDH_ES)
                 .generate();
     }
 
