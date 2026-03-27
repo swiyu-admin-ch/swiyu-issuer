@@ -111,6 +111,9 @@ class DeferredIssuanceIT {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
     }
 
+    /**
+     * Creates a response encryption request object with a deprecated alg entry, which should be provided as part of the encryption jwk
+     */
     private static String createResponseEncryptionJson(ECKey ecJWK) {
         return String.format("""
                         {
@@ -406,6 +409,7 @@ class DeferredIssuanceIT {
 
         ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
                 .keyID("transportEncKeyEC")
+                .algorithm(JWEAlgorithm.ECDH_ES)
                 .generate();
 
         var responseEncryptionJson = createResponseEncryptionJson(ecJWK);
@@ -499,6 +503,7 @@ class DeferredIssuanceIT {
         if (rotateHolderEncryptionKey) {
             ecJWK = new ECKeyGenerator(Curve.P_256)
                     .keyID("transportEncKeyECNew")
+                    .algorithm(JWEAlgorithm.ECDH_ES)
                     .generate();
             deferredCredentialRequestClaimBuilder.claim("credential_response_encryption",
                     JWTClaimsSet.parse(createResponseEncryptionJson(ecJWK)).getClaims());
