@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
       - The nonce column from credential_offer table is also removed.
   - Removed Deprecated OID4VCI Draft 13 Endpoints
+  - Removed support for did:jwk, as it is not part of the swiss-profiles anymore
 
 ### Fixed
 
