@@ -158,8 +158,7 @@ class KeyAttestationFlowIT {
                 jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce,
-                ProofType.JWT.getClaimTyp(),
-                true
+                ProofType.JWT.getClaimTyp()
         );
 
         // V2: credential_configuration_id + proofs.jwt

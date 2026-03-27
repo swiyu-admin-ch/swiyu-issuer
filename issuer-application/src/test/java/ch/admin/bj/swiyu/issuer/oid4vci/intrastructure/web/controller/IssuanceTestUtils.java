@@ -125,8 +125,8 @@ public class IssuanceTestUtils {
         for (ECKey holderPrivateKey : holderPrivateKeys) {
             String proof = TestServiceUtils.createHolderProof(holderPrivateKey, applicationProperties.getTemplateReplacement().get("external-url"),
                     nonce,
-                    ProofType.JWT.getClaimTyp(),
-                    false);
+                    ProofType.JWT.getClaimTyp()
+            );
             proofs.add(proof);
         }
         var proofString = proofs.stream().reduce((a, b) -> a + "\", \"" + b).orElse("");

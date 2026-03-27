@@ -4,7 +4,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.HolderKeyBinding;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import com.nimbusds.jose.JOSEException;
@@ -133,12 +133,12 @@ class SdJwtCredentialTest {
 
         // provide two holder keys so batch size becomes 2
         ECKey ecJWK = new ECKeyGenerator(Curve.P_256).keyID("k1").generate();
-        DidJwk didJwk1 = DidJwk.createFromJsonString(ecJWK.toPublicJWK().toJSONString());
+        HolderKeyBinding holderKeyBinding1 = new HolderKeyBinding(ecJWK.toPublicJWK().toJSONString());
         ECKey ecJWK2 = new ECKeyGenerator(Curve.P_256).keyID("k2").generate();
-        DidJwk didJwk2 = DidJwk.createFromJsonString(ecJWK2.toPublicJWK().toJSONString());
+        HolderKeyBinding holderKeyBinding2 = new HolderKeyBinding(ecJWK2.toPublicJWK().toJSONString());
 
         // Act & Assert
-        assertThrows(IllegalStateException.class, () -> subject.getCredential(List.of(didJwk1, didJwk2)));
+        assertThrows(IllegalStateException.class, () -> subject.getCredential(List.of(holderKeyBinding1, holderKeyBinding2)));
     }
 
     @Test
