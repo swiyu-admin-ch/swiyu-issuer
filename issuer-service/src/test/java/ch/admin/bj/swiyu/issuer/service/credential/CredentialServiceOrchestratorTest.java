@@ -44,6 +44,9 @@ import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.getCredenti
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class CredentialServiceOrchestratorTest {
@@ -628,7 +631,7 @@ class CredentialServiceOrchestratorTest {
         var accessTokenString = accessToken.toString();
         var exception = assertThrows(Oid4vcException.class, () -> credentialServiceOrchestrator.createCredential(credentialRequestDto, accessTokenString, null, null));
 
-        assertEquals(CredentialRequestError.UNSUPPORTED_CREDENTIAL_TYPE, exception.getError());
+        assertEquals(CredentialRequestError.UNKNOWN_CREDENTIAL_IDENTIFIER, exception.getError());
         assertEquals("Mismatch between requested and offered credential configuration id.", exception.getMessage());
     }
 

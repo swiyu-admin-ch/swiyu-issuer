@@ -50,6 +50,7 @@ import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INV
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -380,7 +381,9 @@ class IssuanceControllerIT {
 
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token,
                 credentialRequestString);
-        assertEquals("Unprocessable Entity", credentialResponse.get("error_description").getAsString());
+        assertThat(credentialResponse.get("error_description").getAsString())
+            .as("Helpful errors should be returned to implementers")
+            .isEqualTo("proofs.jwt: must not be empty");
     }
 
     @Test
