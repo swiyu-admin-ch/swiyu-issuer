@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the key rotation. This prevents stale pods from publishing deprecated encryption keys in the issuer metadata `(#796)` 
 - DPoP allows now the correct authorization header, without breaking previously used DPoP header
 - Prevent downgrading once using DPoP
+- Return OID4VCI compliant error responses, most notably `error_code` is now in lower case
 
 ## 2.4.0
 

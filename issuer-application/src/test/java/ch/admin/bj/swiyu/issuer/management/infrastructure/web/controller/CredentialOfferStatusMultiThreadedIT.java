@@ -28,6 +28,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
 
@@ -77,6 +78,8 @@ class CredentialOfferStatusMultiThreadedIT {
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
@@ -130,12 +133,15 @@ class CredentialOfferStatusMultiThreadedIT {
             }
         }).toList();
         // Get unique indexed on status list
-        var indexSet = credentialManagementRepository.findAllById(results).stream()
-                .map(mgmt -> mgmt.getCredentialOffers().stream().map(offer -> {
-                    Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
-                    return byOfferStatusId.stream().findFirst().get().getId().getIndex();
-                }))
-                .collect(Collectors.toSet());
+        var indexSet = transactionTemplate.execute(status ->
+                credentialManagementRepository.findAllById(results).stream()
+                        .flatMap(mgmt -> mgmt.getCredentialOffers().stream())
+                        .map(offer -> {
+                            Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
+                            return byOfferStatusId.stream().findFirst().get().getId().getIndex();
+                        })
+                        .collect(Collectors.toSet())
+        );
         Assertions.assertThat(indexSet).as("Should be the same size if no status was used multiple times")
                 .hasSameSizeAs(results);
     }
