@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevent downgrading once using DPoP
 - Return OID4VCI compliant error responses, most notably `error_code` is now in lower case
 - Valid time range of a credential is now inclusive (starting at START DATE 00:00:00 and ending at END DATE 23:59:59)
+- Fixed validation of metadata claim descriptor paths. It now correctly supports claims path pointer and validates them
+  according to the specs `(#824)`.
 - For Credential Response Encryption use the alg in JWK, as defined by the specification.
 
 ## 2.4.0
