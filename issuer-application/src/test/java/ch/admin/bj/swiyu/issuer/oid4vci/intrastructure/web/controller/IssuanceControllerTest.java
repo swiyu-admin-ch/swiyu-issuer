@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenGrantType;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenTypeDto;
@@ -184,7 +185,6 @@ class IssuanceControllerTest {
 
     @Test
     void testCredentialEndpoint_whenMalformedRequest() {
-
         var ex = assertThrows(Oid4vcException.class,
                 () -> controller.createCredential(ACCESS_TOKEN, null, "Hello world", httpRequest));
         assertThat(ex.getError()).as(INVALID_REQUEST_REASON)
@@ -198,6 +198,7 @@ class IssuanceControllerTest {
         assertThat(ex.getError()).as(INVALID_REQUEST_REASON)
                 .isEqualTo(CredentialRequestError.INVALID_CREDENTIAL_REQUEST);
     }
+
     private final String credentialEndpoint = "/oid4vci/api/credential";
 
     @Test
@@ -209,7 +210,7 @@ class IssuanceControllerTest {
                                 post(credentialEndpoint).contentType("application/jwt").content("{}")
                                         .header("Authorization", accessToken)
                         ).andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.error").value("invalid_credential_request"))
+                        .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.INVALID_CREDENTIAL_REQUEST.getErrorCode()))
                         .andExpect(jsonPath("$.error_description").value(errorDescription))
 
         );

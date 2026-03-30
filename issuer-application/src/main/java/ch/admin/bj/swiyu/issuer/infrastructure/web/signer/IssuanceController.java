@@ -184,12 +184,7 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        String accessToken;
-        try {
-            accessToken =  oauthService.getAccessToken(bearerToken);
-        } catch (OAuthException exc) {
-            throw new Oid4vcException(CredentialRequestError.INVALID_CREDENTIAL_REQUEST, exc.getMessage());
-        }
+        var accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
 
 
@@ -263,7 +258,7 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        String accessToken = oauthService.getAccessToken(bearerToken);
+        String accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
         credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
@@ -345,6 +340,14 @@ public class IssuanceController {
         try {
             return objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
         } catch (IOException | ConstraintViolationException e) {
+            throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
+        }
+    }
+
+    private String getAccessToken(String bearerToken) {
+        try {
+            return this.oauthService.getAccessToken(bearerToken);
+        } catch (OAuthException e) {
             throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
         }
     }
