@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added possibility to add array disclosures and objects without recursion.
+    - If `recursiveDisclosureEnabled` is set to false (default) objects are flattened and arrays are added like:
+
+```json
+{
+    "_sd": [
+        "..."
+    ],
+    "languages": [
+        {
+            "...": "some digest"
+        }
+    ]
+}
+```
+
+- Added possibility to add array disclosures and objects with recursion. If `recursiveDisclosureEnabled` is set to true
+  objects and arrays are added as described in the specification:
+    - https://datatracker.ietf.org/doc/draft-ietf-oauth-selective-disclosure-jwt/22/ chapter 4.2.6 and 6.3
 - Added `Swiss Government Root CA VI` to image
 
 ### Changed

@@ -38,10 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.text.ParseException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
@@ -80,11 +78,8 @@ class IssuanceIT {
     private ObjectMapper objectMapper;
     @MockitoSpyBean
     private IssuerMetadata issuerMetadata;
-    @Autowired
-    private CredentialManagementRepository credentialManagementRepository;
     @MockitoSpyBean
     private CredentialPersistenceService persistenceService;
-
 
     @BeforeEach
     void setUp() {
@@ -108,7 +103,7 @@ class IssuanceIT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
 
-        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         var response = IssuanceTestUtils.requestCredential(mock, (String) tokenDto.get("access_token"), credentialRequestString)
                 .andExpect(status().isOk())
@@ -116,6 +111,34 @@ class IssuanceIT {
                 .andExpect(jsonPath("$.credentials").isNotEmpty())
                 .andExpect(jsonPath("$.transaction_id").doesNotExist())
                 .andExpect(jsonPath("$.interval").doesNotExist())
+                .andReturn();
+
+        var credentials = extractCredentials(response);
+
+        assertEquals(issuerMetadata.getIssuanceBatchSize(), credentials.size());
+        var credential = credentials.get(0).getAsJsonObject();
+        var credentialString = credential.get("credential").getAsString();
+        testHolderBinding(credentialString, holderKeys.getFirst());
+    }
+
+    @Test
+    void testSdJwtOffer_withProofAndList_thenSuccess() throws Exception {
+
+        var configurationId = "university_example_sd_jwt_list";
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of(configurationId))
+                .credentialSubjectData(getUniversityCredentialListSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
+
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, configurationId);
+
+        var response = IssuanceTestUtils.requestCredential(mock, (String) tokenDto.get("access_token"), credentialRequestString)
+                .andExpect(status().isOk())
                 .andReturn();
 
         var credentials = extractCredentials(response);
@@ -147,7 +170,7 @@ class IssuanceIT {
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
 
-        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, "university_example_sd_jwt");
         var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
@@ -257,7 +280,7 @@ class IssuanceIT {
                         }
                         """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
                 encryptionKey.toPublicJWK().toJSONString());
-        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, responseEncryptionJson);
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, responseEncryptionJson, "university_example_sd_jwt");
 
         // Request encryption
         var requestEncryption = metadata.getRequestEncryption();
@@ -314,7 +337,7 @@ class IssuanceIT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -378,7 +401,7 @@ class IssuanceIT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
@@ -404,7 +427,7 @@ class IssuanceIT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
-        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
@@ -432,7 +455,7 @@ class IssuanceIT {
         var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
         var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenDto.get("access_token");
-        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
@@ -466,30 +489,11 @@ class IssuanceIT {
 
         var tokenDto = fetchOAuthTokenDpop(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString(), null, null);
         var token = tokenDto.get("access_token");
-        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
-    }
-
-    private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
-        CredentialManagement credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .accessToken(UUID.randomUUID())
-                .credentialManagementStatus(CredentialStatusManagementType.INIT)
-                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
-                .renewalRequestCnt(0)
-                .renewalResponseCnt(0)
-                .build());
-
-        offer.setCredentialManagement(credentialManagement);
-        var storedOffer = credentialOfferRepository.save(offer);
-        credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
-
-        credentialManagement.addCredentialOffer(storedOffer);
-        credentialManagementRepository.save(credentialManagement);
-        return storedOffer;
     }
 
     private StatusList saveStatusList(StatusList statusList) {
