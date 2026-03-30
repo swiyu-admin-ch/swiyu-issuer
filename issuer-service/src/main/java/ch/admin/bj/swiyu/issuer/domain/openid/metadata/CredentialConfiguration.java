@@ -63,23 +63,23 @@ public class CredentialConfiguration {
     @Nullable
     @JsonProperty("vct_version")
     @Schema(description = """
-                    The vct_version indicates the version of the vct. It is recommended to use semver-notation
-                    """)
+            The vct_version indicates the version of the vct. It is recommended to use semver-notation
+            """)
     private String vctVersion;
 
     @Nullable
     @JsonProperty("vct_subtype")
     @Schema(description = """
-                    An optional value that can describe an adaption of the vct. 
-                    This value can then be used by verifiers who require the adoption of the vct standard.
-                    """)
+            An optional value that can describe an adaption of the vct. 
+            This value can then be used by verifiers who require the adoption of the vct standard.
+            """)
     private String vctSubtype;
 
-        @Nullable
+    @Nullable
     @JsonProperty("vct_subtype_version")
     @Schema(description = """
-                    The vct_subtype_version indicates the version of the vct_subtype. It is recommended to use semver-notation
-                    """)
+            The vct_subtype_version indicates the version of the vct_subtype. It is recommended to use semver-notation
+            """)
     private String vctSubtypeVersion;
 
     /**
@@ -108,7 +108,7 @@ public class CredentialConfiguration {
                  If missing, credential will be issued as unbound VC.
             """)
     @Valid
-    private List<@Pattern(regexp = "^(did:)?jwk$", message = "Only jwk and did:jwk are supported") String> cryptographicBindingMethodsSupported;
+    private List<@Pattern(regexp = "^jwk$", message = "Only jwk is supported") String> cryptographicBindingMethodsSupported;
 
     /**
      * Case-sensitive strings that identify the algorithms that the Issuer uses to sign the issued Credential

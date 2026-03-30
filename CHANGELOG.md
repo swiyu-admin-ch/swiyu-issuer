@@ -32,9 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Breaking Contract change:
-    - Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
-        - The nonce column from credential_offer table is also removed.
-    - Removed Deprecated OID4VCI Draft 13 Endpoints
+  - Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
+      - The nonce column from credential_offer table is also removed.
+  - Removed Deprecated OID4VCI Draft 13 Endpoints
+  - Removed support for did:jwk, as it is not part of the swiss-profiles anymore
 
 ### Fixed
 
@@ -45,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DPoP allows now the correct authorization header, without breaking previously used DPoP header
 - Prevent downgrading once using DPoP
 - Return OID4VCI compliant error responses, most notably `error_code` is now in lower case
+- Valid time range of a credential is now inclusive (starting at START DATE 00:00:00 and ending at END DATE 23:59:59)
 
 - Added `nonce_endpoint`, `deferred_credential_endpoint`, and `batch_credential_issuance` (with min batch size of 10)
   to `sample.compose.yml` `(#737)`.

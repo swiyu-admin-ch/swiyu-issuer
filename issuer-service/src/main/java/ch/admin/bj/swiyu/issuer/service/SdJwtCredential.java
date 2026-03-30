@@ -9,7 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatusReference;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.HolderKeyBinding;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.authlete.sd.Disclosure;
@@ -25,7 +25,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.*;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 import static java.util.Objects.nonNull;
 
@@ -47,14 +47,14 @@ public class SdJwtCredential extends CredentialBuilder {
             "sd_hash",
             "...");
     /**
-     * Single element in the Sd-Jwt batch issuance context means it can not be different
+     * Single element in the Sd-Jwt batch issuance context means it can not be
+     * different
      * in slices and will be reused for each element in the batch.
      * Be aware that this can potentially lead to linkability
      */
     public static final int SINGLE_ELEMENT = 1;
 
     private final SdjwtProperties sdjwtProperties;
-
 
     public SdJwtCredential(
             ApplicationProperties applicationProperties,
@@ -73,11 +73,12 @@ public class SdJwtCredential extends CredentialBuilder {
         this.sdjwtProperties = sdjwtProperties;
     }
 
-    private static void addHolderBinding(List<DidJwk> holderPublicKeys, int i, SDObjectBuilder builder) {
+    private static void addHolderBinding(List<HolderKeyBinding> holderPublicKeys, int i, SDObjectBuilder builder) {
         if (holderPublicKeys != null && !holderPublicKeys.isEmpty()) {
             var idx = i;
             if (holderPublicKeys.size() == SINGLE_ELEMENT) {
-                // Using the same index for all elements in the batch; should only be used in tests as this would allow linkability
+                // Using the same index for all elements in the batch; should only be used in
+                // tests as this would allow linkability
                 idx = 0;
             }
             var holderPublicKey = holderPublicKeys.get(idx);
@@ -97,9 +98,7 @@ public class SdJwtCredential extends CredentialBuilder {
                         "Failed to expand holder binding into cnf",
                         Map.of(
                                 "holderKeyIndex", idx,
-                                "didJwk", holderPublicKey.getDidJwk()
-                        )
-                );
+                                "jwk", holderPublicKey.holderKeyJson()));
             }
         }
     }
@@ -114,15 +113,17 @@ public class SdJwtCredential extends CredentialBuilder {
      * otherwise by the issuer metadata configuration.
      * Validates alignment of holder keys and status references before issuing.
      *
-     * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
+     * @param holderPublicKeys the holders public keys that will be bound to the
+     *                         created credential jwts
      * @return a list of serialized SD-JWTs
      */
     @Override
-    public List<String> getCredential(@Nullable List<DidJwk> holderPublicKeys) {
+    public List<String> getCredential(@Nullable List<HolderKeyBinding> holderPublicKeys) {
         var statusReferences = getStatusReferences();
         var batchSize = calculateBatchSize(holderPublicKeys);
 
-        if (!getStatusFactory().isCompatibleStatusReferencesToBatchSize(statusReferences, getIssuerMetadata(), batchSize)) {
+        if (!getStatusFactory().isCompatibleStatusReferencesToBatchSize(statusReferences, getIssuerMetadata(),
+                batchSize)) {
             throw new IllegalStateException(
                     "Batch size and status references do not match anymore. Cannot issue credential");
         }
@@ -176,13 +177,16 @@ public class SdJwtCredential extends CredentialBuilder {
      */
     protected List<Disclosure> prepareDisclosures(SDObjectBuilder builder) {
         // Optional claims as disclosures
-        // Code below follows example from https://github.com/authlete/sd-jwt?tab=readme-ov-file#credential-jwt
+        // Code below follows example from
+        // https://github.com/authlete/sd-jwt?tab=readme-ov-file#credential-jwt
         List<Disclosure> disclosures = new ArrayList<>();
         List<Disclosure> embedded = new ArrayList<>();
         // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
 
-        // If recursive disclosure is enabled, traverse nested objects and build disclosures recursively
-        // so object properties become embedded SD claims; otherwise use the non-recursive handler.
+        // If recursive disclosure is enabled, traverse nested objects and build
+        // disclosures recursively
+        // so object properties become embedded SD claims; otherwise use the
+        // non-recursive handler.
         if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
             handleClaimsRecursive(builder, disclosures, getOfferData(), embedded);
         } else {
@@ -193,9 +197,10 @@ public class SdJwtCredential extends CredentialBuilder {
         return disclosures;
     }
 
-    private List<VerifiableCredentialStatusReference> addStatusReferences(Map<String, List<VerifiableCredentialStatusReference>> statusReferences,
-                                                                          int index,
-                                                                          SDObjectBuilder builder) {
+    private List<VerifiableCredentialStatusReference> addStatusReferences(
+            Map<String, List<VerifiableCredentialStatusReference>> statusReferences,
+            int index,
+            SDObjectBuilder builder) {
 
         var status = statusReferences.values()
                 .stream()
@@ -217,11 +222,13 @@ public class SdJwtCredential extends CredentialBuilder {
      * Create a SignedJWT
      *
      * @param override Override value for signing key
-     * @param builder  Selective Disclosure Objects (Hashes or always disclosed objects) to be included in the claims of the JWT
-     * @return JWT Signed with the key provided in the Configuration Override or by default key
+     * @param builder  Selective Disclosure Objects (Hashes or always disclosed
+     *                 objects) to be included in the claims of the JWT
+     * @return JWT Signed with the key provided in the Configuration Override or by
+     *         default key
      */
     private SignedJWT createSignedJWT(ConfigurationOverride override,
-                                      SDObjectBuilder builder) {
+            SDObjectBuilder builder) {
         try {
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                     .type(new JOSEObjectType(SD_JWT_FORMAT))
@@ -238,22 +245,25 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     protected List<Disclosure> handleClaimsRecursive(SDObjectBuilder builder,
-                                                     List<Disclosure> disclosures,
-                                                     Map<String, Object> offerData,
-                                                     List<Disclosure> disclosuresForVCObjectProperties) {
+            List<Disclosure> disclosures,
+            Map<String, Object> offerData,
+            List<Disclosure> disclosuresForVCObjectProperties) {
 
         offerData.forEach((entryKey, entryValue) -> {
 
-            if (validateOfferData(entryKey, entryValue)) return;
+            if (validateOfferData(entryKey, entryValue))
+                return;
 
             switch (entryValue) {
                 case Map<?, ?> mapValue when mapValue instanceof Map<?, ?> m &&
                         m.keySet().stream().allMatch(String.class::isInstance) ->
-                        handleNestedClaimRecursive(entryKey, (Map<String, Object>) m, disclosures, disclosuresForVCObjectProperties);
+                    handleNestedClaimRecursive(entryKey, (Map<String, Object>) m, disclosures,
+                            disclosuresForVCObjectProperties);
                 case Collection<?> collectionValue ->
-                        handleListDisclosures(builder, Map.entry(entryKey, entryValue), collectionValue, disclosures);
+                    handleListDisclosures(builder, Map.entry(entryKey, entryValue), collectionValue, disclosures);
                 default ->
-                        handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties, builder);
+                    handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties,
+                            builder);
             }
         });
 
@@ -261,13 +271,14 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     protected void handleClaims(SDObjectBuilder builder,
-                                List<Disclosure> disclosures,
-                                Map<String, Object> offerData,
-                                List<Disclosure> disclosuresForVCObjectProperties) {
+            List<Disclosure> disclosures,
+            Map<String, Object> offerData,
+            List<Disclosure> disclosuresForVCObjectProperties) {
 
         offerData.forEach((entryKey, entryValue) -> {
 
-            if (validateOfferData(entryKey, entryValue)) return;
+            if (validateOfferData(entryKey, entryValue))
+                return;
 
             if (entryValue instanceof Collection<?> collectionValue) {
                 var disc = collectionValue.stream().map(item -> {
@@ -278,7 +289,8 @@ public class SdJwtCredential extends CredentialBuilder {
 
                 builder.putClaim(entryKey, disc);
             } else {
-                handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties, builder);
+                handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties,
+                        builder);
             }
         });
     }
@@ -304,19 +316,22 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     private void handleNestedClaimRecursive(String entryKey,
-                                            Map<String, Object> mapValue,
-                                            List<Disclosure> disclosures,
-                                            List<Disclosure> disclosuresForVCObjectProperties) {
+            Map<String, Object> mapValue,
+            List<Disclosure> disclosures,
+            List<Disclosure> disclosuresForVCObjectProperties) {
 
         // Create a new builder for the nested map to build its disclosures
         var nestedBuilder = new SDObjectBuilder();
-        // throw away list for recursive calls, we only need the disclosuresForVCObjectPropertie of the top level in recursive case (as these cases should not be added as sd claims)
+        // throw away list for recursive calls, we only need the
+        // disclosuresForVCObjectPropertie of the top level in recursive case (as these
+        // cases should not be added as sd claims)
         var ignoredDisclosuresForVCObjectProperties = new ArrayList<Disclosure>();
 
         // Recursive call for nested maps
         handleClaimsRecursive(nestedBuilder, disclosures, mapValue, ignoredDisclosuresForVCObjectProperties);
 
-        // Create new Disclosure for the nested map and add it to the disclosures list and the parent builder
+        // Create new Disclosure for the nested map and add it to the disclosures list
+        // and the parent builder
         var nestedDigest = new Disclosure(entryKey, nestedBuilder.build());
 
         disclosures.add(nestedDigest);
@@ -337,9 +352,9 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     private void handleListDisclosures(SDObjectBuilder builder,
-                                       Map.Entry<String, Object> entry,
-                                       Collection<?> collectionValue,
-                                       List<Disclosure> disclosures) {
+            Map.Entry<String, Object> entry,
+            Collection<?> collectionValue,
+            List<Disclosure> disclosures) {
         var disc = collectionValue.stream().map(item -> {
             var dis = new Disclosure(item);
             disclosures.add(dis);
@@ -357,7 +372,8 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
-    private void handleLeafClaim(Map.Entry<String, Object> entry, List<Disclosure> disclosures, List<Disclosure> disclosuresForVCObjectProperties, SDObjectBuilder builder) {
+    private void handleLeafClaim(Map.Entry<String, Object> entry, List<Disclosure> disclosures,
+            List<Disclosure> disclosuresForVCObjectProperties, SDObjectBuilder builder) {
         var disclosure = new Disclosure(entry.getKey(), entry.getValue());
         disclosures.add(disclosure);
         builder.putSDClaim(disclosure);
@@ -365,12 +381,14 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     /**
-     * Calculate batch size by the number of proofs provided by the holder or batch size defined in issuer metadata
+     * Calculate batch size by the number of proofs provided by the holder or batch
+     * size defined in issuer metadata
      *
-     * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
+     * @param holderPublicKeys the holders public keys that will be bound to the
+     *                         created credential jwts
      * @return batch size to issue
      */
-    private int calculateBatchSize(@Nullable List<DidJwk> holderPublicKeys) {
+    private int calculateBatchSize(@Nullable List<HolderKeyBinding> holderPublicKeys) {
         if (!getIssuerMetadata().isBatchIssuanceAllowed()) {
             return 1;
         }
@@ -380,7 +398,8 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     private void addTechnicalData(SDObjectBuilder builder, ConfigurationOverride override) {
-        // Mandatory claims or claims which always need to be disclosed according to SD-JWT VC specification
+        // Mandatory claims or claims which always need to be disclosed according to
+        // SD-JWT VC specification
         builder.putClaim("iss", override.issuerDidOrDefault(getApplicationProperties().getIssuerId()));
         // Get first entry because we expect the list to only contain one item
         var metadataId = getMetadataCredentialsSupportedIds().getFirst();

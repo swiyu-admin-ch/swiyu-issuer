@@ -15,10 +15,22 @@ public class TimeUtils {
     private static final DateTimeFormatter ISO_OFFSET_DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX").withZone(ZoneOffset.UTC);
 
+    /** returns the UNIX timestamp of the provided instant rounded up to the end of the day.
+     * E.g. 2025-01-09 10:15:30.12345 is truncated to 2025-01-09 23:59:59
+     */
+    public static Long instantToRoundedUpUnixTimestamp(Instant instant) {
+        if (instant == null) {
+            return null;
+        }
+        var zdt = instant.truncatedTo(ChronoUnit.DAYS).atZone(ZoneOffset.UTC);
+        var adjusted = zdt.withHour(23).withMinute(59).withSecond(59);
+        return adjusted.toInstant().getEpochSecond();
+    }
+
     /** returns the UNIX timestamp of the provided instant rounded down to the day.
      * E.g. 2025-01-09 10:15:30.12345 is truncated to 2025-01-09 00:00
      */
-    public static Long instantToRoundedUnixTimestamp(Instant instant) {
+    public static Long instantToRoundedDownUnixTimestamp(Instant instant) {
         if (instant == null) {
             return null;
         }
