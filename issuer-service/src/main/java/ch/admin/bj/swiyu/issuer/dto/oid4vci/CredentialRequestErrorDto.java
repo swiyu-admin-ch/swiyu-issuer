@@ -7,13 +7,13 @@ import lombok.Getter;
 @Getter
 public enum CredentialRequestErrorDto {
     INVALID_CREDENTIAL_REQUEST("invalid_credential_request"),
-    UNSUPPORTED_CREDENTIAL_TYPE("unsupported_credential_type"),
-    UNSUPPORTED_CREDENTIAL_FORMAT("unsupported_credential_format"),
+    UNKNOWN_CREDENTIAL_CONFIGURATION("unknown_credential_configuration"),
+    UNKNOWN_CREDENTIAL_IDENTIFIER("unknown_credential_identifier"),
     INVALID_PROOF("invalid_proof"),
+    INVALID_NONCE("invalid_nonce"),
     INVALID_ENCRYPTION_PARAMETERS("invalid_encryption_parameters"),
-    ISSUANCE_PENDING("issuance_pending"),
-    INVALID_TRANSACTION_ID("invalid_transaction_id"),
-    CREDENTIAL_REQUEST_DENIED("credential_request_denied");
+    CREDENTIAL_REQUEST_DENIED("credential_request_denied"),
+    INVALID_TRANSACTION_ID("invalid_transaction_id");
 
     private final String errorCode;
 

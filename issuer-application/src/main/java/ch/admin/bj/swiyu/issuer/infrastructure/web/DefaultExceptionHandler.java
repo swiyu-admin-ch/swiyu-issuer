@@ -23,7 +23,6 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -80,7 +79,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
-    @ExceptionHandler({BadRequestException.class, CredentialException.class, IllegalStateException.class})
+    @ExceptionHandler({BadRequestException.class, IllegalStateException.class})
     public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
         final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(BAD_REQUEST.getReasonPhrase())
@@ -107,7 +106,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
-    @ExceptionHandler(ConfigurationException.class)
+    @ExceptionHandler({ConfigurationException.class, CredentialException.class})
     public ResponseEntity<ApiErrorDto> handleConfigurationException(final Exception exception) {
         final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(INTERNAL_SERVER_ERROR.getReasonPhrase())

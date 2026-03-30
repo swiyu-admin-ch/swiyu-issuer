@@ -3,6 +3,8 @@ package ch.admin.bj.swiyu.issuer.service.offer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -34,7 +36,7 @@ public class CredentialFormatFactory {
     public CredentialBuilder getFormatBuilder(String configurationIdentifier) {
         var configuration = issuerMetadata.getCredentialConfigurationSupported().get(configurationIdentifier);
         if (configuration == null) {
-            throw new IllegalArgumentException("Unknown configuration identifier: " + configurationIdentifier);
+            throw new Oid4vcException(CredentialRequestError.UNKNOWN_CREDENTIAL_CONFIGURATION, "Unknown configuration identifier: " + configurationIdentifier);
         }
 
         return switch (configuration.getFormat()) {
@@ -52,7 +54,8 @@ public class CredentialFormatFactory {
                     throw new ConfigurationException("Signing Key Configuration could not be used for signature", e);
                 }
             }
-            default -> throw new IllegalArgumentException("Unknown format: " + configuration.getFormat());
+            // When the format is not supported the issuer metadata configuraiton has an issue
+            default -> throw new ConfigurationException("Unknown format: " + configuration.getFormat());
         };
     }
 }

@@ -9,7 +9,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatusReference;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.HolderKeyBinding;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.authlete.sd.Disclosure;
@@ -25,7 +25,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.*;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 import static java.util.Objects.nonNull;
 
@@ -73,7 +73,7 @@ public class SdJwtCredential extends CredentialBuilder {
         this.sdjwtProperties = sdjwtProperties;
     }
 
-    private static void addHolderBinding(List<DidJwk> holderPublicKeys, int i, SDObjectBuilder builder) {
+    private static void addHolderBinding(List<HolderKeyBinding> holderPublicKeys, int i, SDObjectBuilder builder) {
         if (holderPublicKeys != null && !holderPublicKeys.isEmpty()) {
             var idx = i;
             if (holderPublicKeys.size() == SINGLE_ELEMENT) {
@@ -97,7 +97,7 @@ public class SdJwtCredential extends CredentialBuilder {
                         "Failed to expand holder binding into cnf",
                         Map.of(
                                 "holderKeyIndex", idx,
-                                "didJwk", holderPublicKey.getDidJwk()
+                                "jwk", holderPublicKey.holderKeyJson()
                         )
                 );
             }
@@ -118,7 +118,7 @@ public class SdJwtCredential extends CredentialBuilder {
      * @return a list of serialized SD-JWTs
      */
     @Override
-    public List<String> getCredential(@Nullable List<DidJwk> holderPublicKeys) {
+    public List<String> getCredential(@Nullable List<HolderKeyBinding> holderPublicKeys) {
         var statusReferences = getStatusReferences();
         var batchSize = calculateBatchSize(holderPublicKeys);
 
@@ -161,7 +161,7 @@ public class SdJwtCredential extends CredentialBuilder {
      * @param holderPublicKeys the holders public keys that will be bound to the created credential jwts
      * @return batch size to issue
      */
-    private int calculateBatchSize(@Nullable List<DidJwk> holderPublicKeys) {
+    private int calculateBatchSize(@Nullable List<HolderKeyBinding> holderPublicKeys) {
         if (!getIssuerMetadata().isBatchIssuanceAllowed()) {
             return 1;
         }
@@ -212,16 +212,17 @@ public class SdJwtCredential extends CredentialBuilder {
             Optional.ofNullable(credentialMetadata.vctMetadataUriIntegrity())
                     .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
         }
-        builder.putClaim("iat", instantToRoundedUnixTimestamp(Instant.now()));
+        // subtracting 1 day, as instantToRoundedUnixTimestamp rounds up to the end of the day
+        builder.putClaim("iat", instantToRoundedDownUnixTimestamp(Instant.now()));
 
         // optional field -> only added when set
         if (nonNull(getCredentialOffer().getCredentialValidFrom())) {
-            builder.putClaim("nbf", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
+            builder.putClaim("nbf", instantToRoundedDownUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
         }
 
         // optional field -> only added when set
         if (nonNull(getCredentialOffer().getCredentialValidUntil())) {
-            builder.putClaim("exp", instantToRoundedUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
+            builder.putClaim("exp", instantToRoundedUpUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
         }
     }
 

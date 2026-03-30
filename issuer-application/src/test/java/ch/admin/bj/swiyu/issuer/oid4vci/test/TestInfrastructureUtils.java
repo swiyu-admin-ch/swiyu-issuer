@@ -237,7 +237,6 @@ public class TestInfrastructureUtils {
                 issuerId,
                 nonce,
                 ProofType.JWT.getClaimTyp(),
-                false,
                 resistance,
                 attestationIssuerDid);
         String credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}",

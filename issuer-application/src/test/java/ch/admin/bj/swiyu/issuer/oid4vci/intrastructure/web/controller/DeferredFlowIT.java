@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -13,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
@@ -148,7 +150,7 @@ class DeferredFlowIT {
                 .handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
         var nonce = requestNonce(mock);
 
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp());
 
         var deferredCredentialResponse = TestInfrastructureUtils.requestCredential(mock, token, getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
@@ -221,7 +223,7 @@ class DeferredFlowIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
 
         var deferredCredentialResponse = TestInfrastructureUtils.requestCredential(mock, (String) tokenDto.get("access_token"),
                         getCredentialRequestString(proof))
@@ -269,7 +271,7 @@ class DeferredFlowIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
 
         var deferredCredentialResponse = TestInfrastructureUtils.requestCredential(mock, (String) tokenDto.get("access_token"),
                         getCredentialRequestString(proof))
@@ -321,7 +323,6 @@ class DeferredFlowIT {
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce,
                 ProofType.JWT.getClaimTyp(),
-                false,
                 AttackPotentialResistance.ISO_18045_HIGH,
                 null);
 
@@ -432,7 +433,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.INVALID_TRANSACTION_ID.getErrorCode()))
                 .andReturn();
     }
 
@@ -447,7 +448,7 @@ class DeferredFlowIT {
         String token = (String) tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = TestInfrastructureUtils.requestCredential(mock, token, credentialRequestString)
@@ -485,7 +486,7 @@ class DeferredFlowIT {
         String token = (String) tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         // wrong token
@@ -509,7 +510,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
+                .andExpect(jsonPath("$.error").value( CredentialRequestErrorDto.INVALID_TRANSACTION_ID.getErrorCode()))
                 .andExpect(jsonPath("$.error_description").value("Invalid transaction id"))
                 .andReturn();
     }
@@ -526,7 +527,7 @@ class DeferredFlowIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = TestInfrastructureUtils.requestCredential(mock, token, credentialRequestString)
@@ -549,7 +550,7 @@ class DeferredFlowIT {
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.INVALID_TRANSACTION_ID.getErrorCode()))
                 .andReturn();
     }
 
@@ -565,7 +566,7 @@ class DeferredFlowIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = TestInfrastructureUtils.requestCredential(mock, token, credentialRequestString)
@@ -584,7 +585,7 @@ class DeferredFlowIT {
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("CREDENTIAL_REQUEST_DENIED"));
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.CREDENTIAL_REQUEST_DENIED.getErrorCode()));
     }
 
     @Test
@@ -763,7 +764,7 @@ class DeferredFlowIT {
     private String getCredentialRequestStringByNonce(String nonce) throws Exception {
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"), nonce,
-                ProofType.JWT.getClaimTyp(), false);
+                ProofType.JWT.getClaimTyp());
         return getCredentialRequestString(proof);
     }
 
