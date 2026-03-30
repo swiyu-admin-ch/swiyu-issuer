@@ -41,7 +41,6 @@ public class CredentialResponseEncryptor {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
                     "Encryption was requested but is not offered.",
                     Map.of(
-                            "requestedAlg", requestedEncryption.getAlg(),
                             "requestedEnc", requestedEncryption.getEnc()
                     ));
         }
