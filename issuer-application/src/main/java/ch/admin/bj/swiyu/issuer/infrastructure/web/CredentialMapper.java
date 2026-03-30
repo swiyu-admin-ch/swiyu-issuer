@@ -37,7 +37,7 @@ public class CredentialMapper {
 
     public static ApiErrorDto toCredentialRequestErrorResponseDto(Oid4vcException exception) {
         return ApiErrorDto.builder()
-                .errorCode(toCredentialRequestError(exception.getError()).name())
+                .errorCode(toCredentialRequestError(exception.getError()).getErrorCode())
                 .errorDescription(exception.getMessage())
                 .status(HttpStatus.BAD_REQUEST)
                 .build();

@@ -134,7 +134,7 @@ class KeyAttestationFlowIT {
 
         IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.getErrorCode()));
     }
 
     @Test
@@ -145,7 +145,7 @@ class KeyAttestationFlowIT {
         mockDidResolve(jwk.toPublicJWK());
         IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.getErrorCode()));
     }
 
     @Test
@@ -169,7 +169,7 @@ class KeyAttestationFlowIT {
                 proof
         );
         var response = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.name());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.INVALID_PROOF.getErrorCode());
         Assertions.assertThat(response.get("error_description").getAsString()).contains("Attestation");
 
         var errorEventCaptor = org.mockito.ArgumentCaptor.forClass(ErrorEvent.class);
@@ -185,7 +185,7 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate().toPublicJWK());
         var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.getErrorCode());
     }
 
     private void mockDidResolve(JWK key) {
