@@ -5,7 +5,7 @@ import jakarta.validation.ConstraintValidatorContext;
 
 import java.util.List;
 
-public class PathElementsValidator implements ConstraintValidator<ValidPathElements, List<?>> {
+public class ClaimPathPointerValidator implements ConstraintValidator<ValidPathElements, List<?>> {
 
     @Override
     public boolean isValid(List<?> value, ConstraintValidatorContext context) {
@@ -23,7 +23,7 @@ public class PathElementsValidator implements ConstraintValidator<ValidPathEleme
                 case String ignored -> {
                     // is valid, continue
                 }
-                case Number n when isValidNumber(n) -> {
+                case Number n when n.intValue() == Math.abs(n.doubleValue()) -> {
                     // is valid, continue
                 }
                 default -> {
@@ -32,19 +32,5 @@ public class PathElementsValidator implements ConstraintValidator<ValidPathEleme
             }
         }
         return true;
-    }
-
-    private boolean isValidNumber(Number n) {
-        double d = n.doubleValue();
-
-        // get the number without any decimals
-        long l = n.longValue();
-
-        // Double allows infinite numbers and NaN which are not valid integers
-        if (!Double.isFinite(d) || Double.isNaN(d)) return false; // not an integer
-
-        // check if the double value is equal to the long value, which means it's an integer
-        // check if non-negative integer
-        return d == l && l >= 0;
     }
 }

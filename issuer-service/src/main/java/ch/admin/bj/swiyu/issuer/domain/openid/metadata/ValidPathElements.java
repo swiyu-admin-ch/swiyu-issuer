@@ -7,7 +7,7 @@ import java.lang.annotation.*;
 
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = PathElementsValidator.class)
+@Constraint(validatedBy = ClaimPathPointerValidator.class)
 @Documented
 public @interface ValidPathElements {
     String message() default "path must only contain strings, nulls, or non-negative integers";
