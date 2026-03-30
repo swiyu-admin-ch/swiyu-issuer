@@ -548,6 +548,18 @@ Callback Object Structure
 | event_description | Human readable details.                                                                                                |
 | timestamp         | timestamp the event occurred. Can differ from the time it is sent.                                                     |
 
+### Adding certificates to the image via the `certs` directory
+
+To add additional CA or TLS certificates to the application image, place PEM encoded files into the project `certs`
+directory (path: `./certs`) and rebuild the image. Certificates must end with `crt`. Do not store private keys
+in `certs`.
+
+Steps:
+
+1. Copy one or more `.crt` files to `./certs` (e.g. `my-ca.pem`).
+2. Rebuild the Docker image so the files are included.
+3. Certificates are imported into the truststore during image build.
+
 ## Data Structure
 
 ```mermaid
