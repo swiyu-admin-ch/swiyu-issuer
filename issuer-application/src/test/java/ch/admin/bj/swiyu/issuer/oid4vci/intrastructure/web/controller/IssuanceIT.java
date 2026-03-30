@@ -269,6 +269,7 @@ class IssuanceIT {
         ECKey encryptionKey = new ECKeyGenerator(Curve.P_256)
                 .keyID("transportEncKeyEC")
                 .keyUse(KeyUse.ENCRYPTION)
+                .algorithm(JWEAlgorithm.ECDH_ES)
                 .generate();
 
         var responseEncryptionJson = String.format("""
@@ -293,6 +294,7 @@ class IssuanceIT {
                 JWEAlgorithm.ECDH_ES,
                 EncryptionMethod.parse(requestEncryption.getEncValuesSupported().getFirst()))
                 .keyID(requestKey.getKeyID())
+                .alg(JWEAlgorithm.ECDH_ES)
                 .compressionAlgorithm(CompressionAlgorithm.DEF).build();
         var jweObject = new JWEObject(requestJweHeader, new Payload(credentialRequestString));
         assertDoesNotThrow(() -> jweObject.encrypt(requestEncryptor));
