@@ -124,6 +124,7 @@ public class OAuthService {
      *
      * @param authorizationRequestHeader value of Authorization Header
      * @return access token provided in the authorization header
+     * @throws OAuthException if no or incorrect authorization header is found
      */
     public String getAccessToken(String authorizationRequestHeader) {
         if (authorizationRequestHeader == null) {

@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
@@ -11,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,7 +41,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * OpenID4VC Issuance Controller
@@ -174,11 +176,20 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        String accessToken = oauthService.getAccessToken(bearerToken);
+        String accessToken;
+        try {
+            accessToken =  oauthService.getAccessToken(bearerToken);
+        } catch (OAuthException exc) {
+            throw new Oid4vcException(CredentialRequestError.INVALID_CREDENTIAL_REQUEST, exc.getMessage());
+        }
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
 
-
-        var dto = objectMapper.readValue(unparsedRequestDto, CreateCredentialRequestDto.class);
+        CreateCredentialRequestDto dto;
+        try {
+            dto = objectMapper.readValue(unparsedRequestDto, CreateCredentialRequestDto.class);
+        } catch (JsonProcessingException exc) {
+            throw new Oid4vcException(CredentialRequestError.INVALID_CREDENTIAL_REQUEST, "Failed to process the provided json. If payload encryption is active, use content-type 'application/jwt'.");
+        }
         validateRequestDtoOrThrow(dto, validator);
         credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
