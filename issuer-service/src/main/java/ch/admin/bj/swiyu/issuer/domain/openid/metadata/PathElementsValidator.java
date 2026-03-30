@@ -44,9 +44,7 @@ public class PathElementsValidator implements ConstraintValidator<ValidPathEleme
         if (!Double.isFinite(d) || Double.isNaN(d)) return false; // not an integer
 
         // check if the double value is equal to the long value, which means it's an integer
-        if (d != l) return false;
-
         // check if non-negative integer
-        return l >= 0;
+        return d == l && l >= 0;
     }
 }
