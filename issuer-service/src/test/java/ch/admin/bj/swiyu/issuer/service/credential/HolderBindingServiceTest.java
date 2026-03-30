@@ -233,7 +233,7 @@ class HolderBindingServiceTest {
 
         List<String> proofs = holderKeys.stream().map(holderKey -> assertDoesNotThrow(() -> TestServiceUtils.createHolderProof(holderKey,
                 "did:example:issuer", new SelfContainedNonce(nonceService.getNonceSecret()).getNonce(),
-                ProofType.JWT.getClaimTyp(), false))).toList();
+                ProofType.JWT.getClaimTyp()))).toList();
 
         CredentialRequestClass credentialRequest = new CredentialRequestClass(
                 Map.of(ProofType.JWT.toString(), proofs),

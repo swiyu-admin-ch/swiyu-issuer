@@ -109,6 +109,9 @@ The integrity can be calculated using shell commands.
 > The `metadata_credential_supported_id` must exist in the issuer metadata at
 > `/.well-known/openid-credential-issuer` under `credential_configurations_supported`.
 > If it does not, the credential request will fail later.
+> \
+> The `credential_valid_until` and `credential_valid_from` are rounded up and down respectively for improved unlinkability.
+>  Thus the example credential is valid from 2010-01-01T00:00:00Z until 2030-01-01T23:59:59Z.
 
 More details on the vct claim can be found in
 the [swiss profile](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#sd-jwt-vc)
