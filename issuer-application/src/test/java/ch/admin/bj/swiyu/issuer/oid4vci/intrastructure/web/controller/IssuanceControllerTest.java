@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = IssuanceController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
 class IssuanceControllerTest {
-    // Mocks of the issuance controller
+    // Mocks for the issuance controller
     @MockitoBean
     private ApplicationProperties props;
     @MockitoBean
@@ -81,6 +81,10 @@ class IssuanceControllerTest {
 
         // missing parameter
         assertDoesNotThrow(() -> mvc.perform(post(tokenEndpoint).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE).param("grant_type", OAuthTokenGrantType.REFRESH_TOKEN.getName())).andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value(expectedErrorCode)));
+
+        // unsupported parameter (tx_code, client_id)
+        assertDoesNotThrow(() -> mvc.perform(post(tokenEndpoint).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE).param("grant_type", OAuthTokenGrantType.REFRESH_TOKEN.getName()).param("tx_code", "some tx_code")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value(expectedErrorCode)));
+        assertDoesNotThrow(() -> mvc.perform(post(tokenEndpoint).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE).param("grant_type", OAuthTokenGrantType.REFRESH_TOKEN.getName()).param("client_id", "my client")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value(expectedErrorCode)));
     }
 
     @Test

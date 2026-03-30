@@ -83,6 +83,14 @@ public class IssuanceController {
             @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
             @ModelAttribute OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
             HttpServletRequest request) {
+        // TODO to be removed when implementing https://jira.bit.admin.ch/browse/EIDOMNI-709
+        if (request.getParameter("tx_code") != null) {
+            throw OAuthException.invalidRequest("Unsupported parameter 'tx_code'");
+        }
+
+        if (request.getParameter("client_id") != null) {
+            throw OAuthException.invalidRequest("Unsupported parameter 'client_id'");
+        }
 
         if (oauthAccessTokenRequestDto == null || oauthAccessTokenRequestDto.grant_type() == null) {
             throw OAuthException.invalidRequest("The request is missing a required parameter");
@@ -286,7 +294,7 @@ public class IssuanceController {
                 dpop,
                 new ServletServerHttpRequest(request));
 
-        try{
+        try {
             return oauthService.issueOAuthToken(preauthorizedCode);
         } catch (OAuthException exc) {
             // Other endpoints calling issueOAuthToken expect an invalid token OAuthException
