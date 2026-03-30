@@ -30,6 +30,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_NONCE;
+import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SD_JWT_FORMAT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -44,6 +47,7 @@ class HolderBindingServiceTest {
     private CredentialOffer offer;
     private CredentialConfiguration config;
     private CredentialManagement management;
+    private KeyAttestationService keyAttestationService;
 
     @BeforeEach
     void setUp() {
@@ -52,7 +56,7 @@ class HolderBindingServiceTest {
         OpenIdIssuerConfiguration openIdIssuerConfiguration = mock(OpenIdIssuerConfiguration.class);
         when(openIdIssuerConfiguration.getIssuerMetadata()).thenReturn(issuerMetadata);
         nonceService = mock(NonceService.class);
-        KeyAttestationService keyAttestationService = mock(KeyAttestationService.class);
+        keyAttestationService = mock(KeyAttestationService.class);
         ApplicationProperties applicationProperties = mock(ApplicationProperties.class);
         var metadataService = mock(MetadataService.class);
         when(metadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
@@ -239,8 +243,45 @@ class HolderBindingServiceTest {
         assertDoesNotThrow(() -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer));
     }
 
+    @Test
+    void throwsInvalidNonceException_whenNonceIsReused() {
+        // arrange: supported proof type
+        SupportedProofType proofType = new SupportedProofType();
+        proofType.setSupportedSigningAlgorithms(List.of("ES256"));
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(supportedCredentialId));
+        when(config.getProofTypesSupported()).thenReturn(Map.of("jwt", proofType));
+
+        // mock a proof JWT with a reusable nonce
+        ProofJwt proofJwt = mock(ProofJwt.class);
+        when(proofJwt.getProofType()).thenReturn(ProofType.JWT);
+        when(proofJwt.isValidHolderBinding(anyString(), anyList(), anyLong()))
+            .thenReturn(true);
+        when(proofJwt.getBinding()).thenReturn("binding-1");
+
+        // create a nonce that will be reported as already used
+        SelfContainedNonce reusedNonce = new SelfContainedNonce(nonceService.getNonceSecret());
+        when(proofJwt.getNonce()).thenReturn(reusedNonce);
+        when(nonceService.isUsedNonce(reusedNonce)).thenReturn(true);
+
+        // spy the request class to return our mocked proof list
+        CredentialRequestClass credentialRequest = mock(CredentialRequestClass.class);
+        when(credentialRequest.getProofs(anyInt(), anyInt(), any()))
+            .thenReturn(List.of(proofJwt));
+
+        // act & assert
+        Oid4vcException ex = assertThrows(Oid4vcException.class,
+                () -> holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer));
+
+        // the service should wrap the InvalidNonceException as INVALID_NONCE
+        assertThat(ex.getError())
+            .as("When an invalid or reused nonce is used in a proof a invalid_nonce error must be thrown")
+            .isEqualTo(INVALID_NONCE);
+    }
+
     private void mockBatchCredentialIssuance(int batchSize) {
         var batchCredentialIssuance = new BatchCredentialIssuance(batchSize);
         when(issuerMetadata.getBatchCredentialIssuance()).thenReturn(batchCredentialIssuance);
     }
+
+
 }
