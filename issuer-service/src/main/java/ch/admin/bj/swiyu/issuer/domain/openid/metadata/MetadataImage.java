@@ -15,9 +15,10 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MetadataImage {
     @NotNull
+    @ValidMetadataLogoUri
     @JsonProperty(value = "uri")
     @Schema(description = """
-            tring value that contains a URI where the Wallet can obtain the logo of the Credential Issuer.
+            String value that contains a URI where the Wallet can obtain the logo of the Credential Issuer.
             The Wallet needs to determine the scheme, since the URI value could use the https: scheme, the data: scheme, etc.""")
     private String uri;
 }
