@@ -50,10 +50,9 @@ jobs:
       - name: Generate Pact contracts (consumer tests)
         run: |
           mvn --batch-mode --no-transfer-progress \
-            -pl issuer-application -am \
             test \
-            -Dtest="**/pact/consumer/**" \
-            -DfailIfNoTests=false
+            -Dtest="*PactTest" \
+            -Dsurefire.failIfNoSpecifiedTests=false
 
       # Publish contracts to the Pact Broker.
       - name: Publish contracts to Pact Broker
