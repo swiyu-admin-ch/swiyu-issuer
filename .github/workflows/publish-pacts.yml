@@ -52,7 +52,7 @@ jobs:
         run: |
           mvn --batch-mode --no-transfer-progress \
             pact:publish \
-            -Dpactbroker.url="${{ secrets.PACT_BROKER_URL }}" \
+            -Dpactbroker.url="${{ secrets.PACT_BROKER_BASE_URL }}" \
             -Dpactbroker.auth.token="${{ secrets.PACT_BROKER_TOKEN }}" \
             -Dpact.consumer.version="${{ steps.mvn.outputs.version }}+${{ steps.git.outputs.sha }}" \
             -Dpact.publish.consumer.tags="${{ github.ref_name }}"
