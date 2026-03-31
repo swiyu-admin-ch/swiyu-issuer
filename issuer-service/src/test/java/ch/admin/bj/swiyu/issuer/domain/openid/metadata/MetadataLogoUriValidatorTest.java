@@ -31,7 +31,7 @@ class MetadataLogoUriValidatorTest {
     }
 
     @Test
-    void nullUriShouldViolateNotNull() {
+    void isValid_withNullUri_shouldViolateNotNull_thenError() {
         MetadataImage m = new MetadataImage();
         m.setUri(null);
         Set<ConstraintViolation<MetadataImage>> violations = validator.validate(m);
@@ -39,7 +39,7 @@ class MetadataLogoUriValidatorTest {
     }
 
     @Test
-    void invalidDataPrefixShouldViolate() {
+    void isValid_withInvalidDataPrefix_thenError() {
         MetadataImage m = new MetadataImage();
         m.setUri("data:image/gif;base64,R0lGODdhAQABAIAAAAUEBA==");
         Set<ConstraintViolation<MetadataImage>> violations = validator.validate(m);
@@ -50,7 +50,7 @@ class MetadataLogoUriValidatorTest {
     @ValueSource(strings = {
             "data:image/png;base64,whatever",
             "data:image/jpeg;base64,whatever"})
-    void invalidDataPrefixShouldViolate_thenSuccess(String logoUri) {
+    void isValid_withValidDataPrefix_thenSuccess(String logoUri) {
         MetadataImage m = new MetadataImage();
         m.setUri(logoUri);
         Set<ConstraintViolation<MetadataImage>> violations = validator.validate(m);
