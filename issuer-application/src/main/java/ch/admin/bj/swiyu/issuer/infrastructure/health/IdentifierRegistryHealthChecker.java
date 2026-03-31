@@ -5,7 +5,6 @@ import ch.admin.bj.swiyu.didresolveradapter.DidResolverAdapter;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
 import ch.admin.eid.did_sidekicks.DidDoc;
-import ch.admin.eid.didresolver.Did;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -75,10 +74,7 @@ public class IdentifierRegistryHealthChecker extends CachedHealthChecker {
         if (did == null || did.isBlank()) {
             return false;
         }
-        try (Did resolved = new Did(did)) {
-            final String url = resolved.getUrl();
-            DidDoc didDoc = didResolverAdapter.resolveDid(url, null);
-
+        try (DidDoc didDoc = didResolverAdapter.resolveDid(did, null)) {
             return didDoc != null;
         } catch (Exception e) {
             return false;

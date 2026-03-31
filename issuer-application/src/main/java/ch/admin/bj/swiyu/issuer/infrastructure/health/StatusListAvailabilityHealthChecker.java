@@ -21,6 +21,7 @@ public class StatusListAvailabilityHealthChecker extends CachedHealthChecker {
     @Override
     protected void performCheck(Health.Builder builder) throws Exception {
         builder.withDetail("partnerId", swiyuProperties.businessPartnerId());
+        
         try {
             statusBusinessApi.getAllStatusListEntries(swiyuProperties.businessPartnerId(), 0, 1, null).block();
             builder.up();
