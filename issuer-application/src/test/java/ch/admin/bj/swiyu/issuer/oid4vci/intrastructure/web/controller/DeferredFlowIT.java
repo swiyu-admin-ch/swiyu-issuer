@@ -161,7 +161,7 @@ class DeferredFlowIT {
         awaitHandleOfferStateChangeEvent(1);
         var nonce = requestNonce(mock);
 
-        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(), false);
+        String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp());
 
         var deferredCredentialResponse = TestInfrastructureUtils.requestCredential(mock, token, getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
@@ -233,7 +233,7 @@ class DeferredFlowIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
 
         var deferredCredentialResponse = TestInfrastructureUtils.requestCredential(mock, (String) tokenDto.get("access_token"),
                         getCredentialRequestString(proof))
@@ -281,7 +281,7 @@ class DeferredFlowIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
 
         var deferredCredentialResponse = TestInfrastructureUtils.requestCredential(mock, (String) tokenDto.get("access_token"),
                         getCredentialRequestString(proof))
@@ -333,7 +333,6 @@ class DeferredFlowIT {
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce,
                 ProofType.JWT.getClaimTyp(),
-                false,
                 AttackPotentialResistance.ISO_18045_HIGH,
                 null);
 
@@ -459,7 +458,7 @@ class DeferredFlowIT {
         String token = (String) tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = TestInfrastructureUtils.requestCredential(mock, token, credentialRequestString)
@@ -497,7 +496,7 @@ class DeferredFlowIT {
         String token = (String) tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         // wrong token
@@ -538,7 +537,7 @@ class DeferredFlowIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = TestInfrastructureUtils.requestCredential(mock, token, credentialRequestString)
@@ -577,7 +576,7 @@ class DeferredFlowIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), false);
+                nonce, ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         var response = TestInfrastructureUtils.requestCredential(mock, token, credentialRequestString)
@@ -803,7 +802,7 @@ class DeferredFlowIT {
     private String getCredentialRequestStringByNonce(String nonce) throws Exception {
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"), nonce,
-                ProofType.JWT.getClaimTyp(), false);
+                ProofType.JWT.getClaimTyp());
         return getCredentialRequestString(proof);
     }
 

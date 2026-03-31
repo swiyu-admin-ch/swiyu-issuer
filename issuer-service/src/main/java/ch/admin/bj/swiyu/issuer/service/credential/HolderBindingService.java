@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_CREDENTIAL_REQUEST;
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_NONCE;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 
 /**
@@ -197,7 +198,7 @@ public class HolderBindingService {
             }
             return nonce;
         } catch (ExpiredNonceException | InvalidNonceException e) {
-            throw new Oid4vcException(INVALID_PROOF, e.getMessage());
+            throw new Oid4vcException(INVALID_NONCE, e.getMessage());
         }
     }
 
@@ -206,8 +207,8 @@ public class HolderBindingService {
             var nonce = ensureNonceNotReused(requestProof);
 
             nonceService.registerNonce(nonce);
-        } catch (InvalidNonceException | Oid4vcException e) {
-            throw new Oid4vcException(INVALID_PROOF, e.getMessage());
+        } catch (InvalidNonceException e) {
+            throw new Oid4vcException(INVALID_NONCE, e.getMessage());
         }
     }
 

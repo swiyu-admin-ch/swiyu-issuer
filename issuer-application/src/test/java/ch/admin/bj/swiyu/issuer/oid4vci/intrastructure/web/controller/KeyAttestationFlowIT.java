@@ -133,7 +133,7 @@ class KeyAttestationFlowIT {
 
         IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_IDENTIFIER.name()));
     }
 
     @Test
@@ -144,7 +144,7 @@ class KeyAttestationFlowIT {
         mockDidResolve(jwk.toPublicJWK());
         IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_IDENTIFIER.name()));
     }
 
     @Test
@@ -157,8 +157,7 @@ class KeyAttestationFlowIT {
                 jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce,
-                ProofType.JWT.getClaimTyp(),
-                true
+                ProofType.JWT.getClaimTyp()
         );
 
         // V2: credential_configuration_id + proofs.jwt
@@ -184,7 +183,7 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate().toPublicJWK());
         var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_IDENTIFIER.name());
     }
 
     private void mockDidResolve(JWK key) {

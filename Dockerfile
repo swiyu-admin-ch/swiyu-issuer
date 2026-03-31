@@ -7,6 +7,9 @@ EXPOSE 8080
 
 COPY scripts/entrypoint.sh /app/
 
+# Add CA cert(s) into /certs-app so the entrypoint will import them into Java cacerts at startup
+COPY certs/root_ca_vi.crt /certs-app/root_ca_vi.crt
+
 ARG JAR_FILE=issuer-application/target/*.jar
 COPY ${JAR_FILE} /app/app.jar
 

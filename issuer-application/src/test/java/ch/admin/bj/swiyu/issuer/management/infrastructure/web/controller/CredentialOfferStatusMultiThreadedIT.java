@@ -4,11 +4,11 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -171,7 +171,7 @@ class CredentialOfferStatusMultiThreadedIT {
 
                 var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mvc, preAuthCode);
                 var token = tokenResponse.get("access_token");
-                var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
+                var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
                 // set to issued
                 requestCredential(mvc, (String) token, credentialRequestString)

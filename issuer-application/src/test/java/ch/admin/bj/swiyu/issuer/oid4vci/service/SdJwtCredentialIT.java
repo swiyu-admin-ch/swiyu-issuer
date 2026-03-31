@@ -29,7 +29,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedDownUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUpUnixTimestamp;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.JwtTestUtils.getJWTPayload;
@@ -136,11 +137,11 @@ class SdJwtCredentialIT {
                         assertEquals("sha-256", alg);
 
                         // timestamps are rounded down to the day to break traceability
-                        assertEquals(instantToRoundedUnixTimestamp(Instant.now()),
+                        assertEquals(instantToRoundedDownUnixTimestamp(Instant.now()),
                                         ((Integer) JsonPath.read(payload, "$.nbf")).longValue());
-                        assertEquals(instantToRoundedUnixTimestamp(Instant.now()),
+                        assertEquals(instantToRoundedDownUnixTimestamp(Instant.now()),
                                         ((Integer) JsonPath.read(payload, "$.iat")).longValue());
-                        assertEquals(instantToRoundedUnixTimestamp(expiration),
+                        assertEquals(instantToRoundedUpUnixTimestamp(expiration),
                                         ((Integer) JsonPath.read(payload, "$.exp")).longValue());
                 }
                 // test that payloads within the same batch are unique
