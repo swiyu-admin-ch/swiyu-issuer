@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   objects and arrays are added as described in the specification:
     - https://datatracker.ietf.org/doc/draft-ietf-oauth-selective-disclosure-jwt/22/ chapter 4.2.6 and 6.3
 - Added `Swiss Government Root CA VI` to image
+- Added additional check for logo uri in the issuer metadata to check the logo uri (must
+  contain `data:image/png;base64, ...` or `data:image/jpeg;base64,...`)
 
 ### Changed
 
