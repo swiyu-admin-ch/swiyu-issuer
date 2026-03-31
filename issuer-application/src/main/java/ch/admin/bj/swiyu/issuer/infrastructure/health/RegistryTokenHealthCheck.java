@@ -11,7 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 @Component
-@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
 public class RegistryTokenHealthCheck extends CachedHealthChecker {
 
     private final TokenSetRepository tokenSetRepository;

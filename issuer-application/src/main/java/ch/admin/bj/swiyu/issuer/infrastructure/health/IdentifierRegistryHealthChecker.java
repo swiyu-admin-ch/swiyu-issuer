@@ -17,7 +17,7 @@ import java.util.List;
  * Health checker that validates the reachability / resolvability of DID (or DID key) identifiers
  * configured for the issuer itself as well as the trusted attestation providers.
  */
-@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
 @Component
 @RequiredArgsConstructor
 public class IdentifierRegistryHealthChecker extends CachedHealthChecker {

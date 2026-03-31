@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 /**
  * Health checker for SD-JWT signing key verification using shared abstract base.
  */
-@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
 @Component
 public class SdJwtSigningKeyVerificationHealthChecker extends AbstractSigningKeyVerificationHealthChecker<SdjwtProperties> {
 
