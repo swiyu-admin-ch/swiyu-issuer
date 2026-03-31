@@ -58,7 +58,7 @@ jobs:
       - name: Publish contracts to Pact Broker
         run: |
           mvn --batch-mode --no-transfer-progress \
-            pact:publish \
+            au.com.dius.pact.provider:maven:publish \
             -Dpactbroker.url="${{ secrets.PACT_BROKER_BASE_URL }}" \
             -Dpactbroker.auth.token="${{ secrets.PACT_BROKER_TOKEN }}" \
             -Dpact.consumer.version="${{ steps.mvn.outputs.version }}+${{ steps.git.outputs.sha }}" \
