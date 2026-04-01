@@ -11,7 +11,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.jweutil.JweUtil;
 import ch.admin.bj.swiyu.jweutil.JweUtilException;
 import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.JWK;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

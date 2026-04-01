@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -13,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
@@ -431,7 +433,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.INVALID_TRANSACTION_ID.getErrorCode()))
                 .andReturn();
     }
 
@@ -508,7 +510,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
+                .andExpect(jsonPath("$.error").value( CredentialRequestErrorDto.INVALID_TRANSACTION_ID.getErrorCode()))
                 .andExpect(jsonPath("$.error_description").value("Invalid transaction id"))
                 .andReturn();
     }
@@ -548,7 +550,7 @@ class DeferredFlowIT {
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("INVALID_TRANSACTION_ID"))
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.INVALID_TRANSACTION_ID.getErrorCode()))
                 .andReturn();
     }
 
@@ -583,7 +585,7 @@ class DeferredFlowIT {
 
         getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("CREDENTIAL_REQUEST_DENIED"));
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.CREDENTIAL_REQUEST_DENIED.getErrorCode()));
     }
 
     @Test

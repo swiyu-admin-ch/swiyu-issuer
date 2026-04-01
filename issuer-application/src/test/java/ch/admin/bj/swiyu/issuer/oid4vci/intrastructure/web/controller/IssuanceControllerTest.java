@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenGrantType;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenTypeDto;
@@ -32,6 +33,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -183,7 +185,6 @@ class IssuanceControllerTest {
 
     @Test
     void testCredentialEndpoint_whenMalformedRequest() {
-
         var ex = assertThrows(Oid4vcException.class,
                 () -> controller.createCredential(ACCESS_TOKEN, null, "Hello world", httpRequest));
         assertThat(ex.getError()).as(INVALID_REQUEST_REASON)
@@ -196,5 +197,22 @@ class IssuanceControllerTest {
                 () -> controller.createDeferredCredential(ACCESS_TOKEN, null, "Hello World", httpRequest));
         assertThat(ex.getError()).as(INVALID_REQUEST_REASON)
                 .isEqualTo(CredentialRequestError.INVALID_CREDENTIAL_REQUEST);
+    }
+
+    private final String credentialEndpoint = "/oid4vci/api/credential";
+
+    @Test
+    void createCredential_invalidAccessToken_thenError() {
+        var accessToken = "Bearer foo";
+        var errorDescription = "example description";
+        when(oAuthService.getAccessToken(accessToken)).thenThrow(OAuthException.invalidRequest(errorDescription));
+        assertDoesNotThrow(() -> mvc.perform(
+                                post(credentialEndpoint).contentType("application/jwt").content("{}")
+                                        .header("Authorization", accessToken)
+                        ).andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.INVALID_CREDENTIAL_REQUEST.getErrorCode()))
+                        .andExpect(jsonPath("$.error_description").value(errorDescription))
+
+        );
     }
 }

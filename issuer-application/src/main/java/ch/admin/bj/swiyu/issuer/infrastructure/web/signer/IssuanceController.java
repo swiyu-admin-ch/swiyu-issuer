@@ -14,8 +14,6 @@ import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,7 +41,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * OpenID4VC Issuance Controller
@@ -187,10 +184,10 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        String accessToken = oauthService.getAccessToken(bearerToken);
+        var accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
 
-        
+
         var dto = parseCredentialRequestDto(unparsedRequestDto);
         credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
@@ -261,7 +258,7 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        String accessToken = oauthService.getAccessToken(bearerToken);
+        String accessToken = getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
         credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
@@ -340,9 +337,17 @@ public class IssuanceController {
     }
 
     private DeferredCredentialEndpointRequestDto parseDeferredCredentialRequestDto(String unparsedRequestDto) {
-        try { 
+        try {
             return objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
         } catch (IOException | ConstraintViolationException e) {
+            throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
+        }
+    }
+
+    private String getAccessToken(String bearerToken) {
+        try {
+            return this.oauthService.getAccessToken(bearerToken);
+        } catch (OAuthException e) {
             throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
         }
     }
