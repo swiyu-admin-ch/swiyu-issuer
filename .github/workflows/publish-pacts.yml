@@ -1,0 +1,59 @@
+name: Publish Pact Contracts
+run-name: ${{ github.repository }} is publishing Pact consumer contracts
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish-pacts:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Resolve short Git SHA
+        id: git
+        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Read project version from Maven
+        id: mvn
+        run: |
+          VERSION=$(mvn --batch-mode --no-transfer-progress \
+            help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      # Run only the Pact consumer tests so the contract JSON files are written
+      - name: Generate Pact contracts (consumer tests)
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            test \
+            -Dtest="*PactTest" \
+            -Dsurefire.failIfNoSpecifiedTests=false
+
+      # Publish contracts to the Pact Broker.
+      - name: Publish contracts to Pact Broker
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            -pl issuer-application \
+            au.com.dius.pact.provider:maven:publish \
+            -Dpact.broker.url="${{ secrets.PACT_BROKER_BASE_URL }}" \
+            -Dpact.broker.token="${{ secrets.PACT_BROKER_TOKEN }}" \
+            -Dpact.rootDir=issuer-application/target/pacts \
+            -Dpact.consumer.version="${{ steps.mvn.outputs.version }}+${{ steps.git.outputs.sha }}" \
+            -Dpact.publish.consumer.tags="${{ github.ref_name }}"
