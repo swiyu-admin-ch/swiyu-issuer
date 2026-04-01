@@ -229,6 +229,7 @@ application:
   url-rewrite:
     mapping: "${URL_REWRITE_MAPPING:{}}"
   signed-metadata-enabled: ${ENABLE_SIGNED_METADATA:false}
+  recursive-disclosure-enabled: ${RECURSIVE_DISCLOSURE_ENABLED:false}
   automatic-status-list-synchronization-disabled: ${DISABLE_STATUS_LIST_SYNCHRONIZATION:false}
 
 
