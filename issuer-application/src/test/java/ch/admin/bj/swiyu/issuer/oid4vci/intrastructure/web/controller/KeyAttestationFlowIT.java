@@ -67,6 +67,9 @@ class KeyAttestationFlowIT {
     MockMvc mock;
 
     @Autowired
+    CredentialOfferStatusRepository credentialOfferStatusRepository;
+
+    @Autowired
     CredentialOfferRepository credentialOfferRepository;
 
     @Autowired
@@ -89,6 +92,7 @@ class KeyAttestationFlowIT {
 
     @AfterEach
     void tearDown() {
+        credentialOfferStatusRepository.deleteAll();
         credentialOfferRepository.deleteAll();
         credentialManagementRepository.deleteAll();
     }
