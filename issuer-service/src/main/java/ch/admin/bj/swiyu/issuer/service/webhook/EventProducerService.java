@@ -37,10 +37,11 @@ public class EventProducerService {
     }
 
     /**
-     * Only used for Credential Management State Changes from CredentialStateMachineAction
+     * Publishes a management state change event for a credential management state transition.
+     * Only used for Credential Management State Changes from CredentialStateMachineAction.
      *
-     * @param credentialManagementId
-     * @param state
+     * @param credentialManagementId the id of the credential management entity
+     * @param state                  the new target state
      */
     public void produceManagementStateChangeEvent(UUID credentialManagementId, CredentialStatusManagementType state) {
         var managementStateChangeEvent = new ManagementStateChangeEvent(
@@ -51,10 +52,11 @@ public class EventProducerService {
     }
 
     /**
-     * Only used for Credential Offer State Changes from CredentialStateMachineAction
+     * Publishes an offer state change event for a credential offer state transition.
+     * Only used for Credential Offer State Changes from CredentialStateMachineAction.
      *
-     * @param credentialOfferId
-     * @param state
+     * @param credentialOfferId the id of the credential offer
+     * @param state             the new target state
      */
     public void produceOfferStateChangeEvent(UUID credentialOfferId, CredentialOfferStatusType state) {
         var offerStateChangeEvent = new OfferStateChangeEvent(
