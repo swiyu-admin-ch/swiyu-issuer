@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 @Component
-@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
 public class CallbackHealthChecker extends CachedHealthChecker {
     private static final String AMOUNT_OF_STALE_CALLBACKS = "amountOfStaleCallbacks";
     private static final Duration DEFAULT_DURATION_UNTIL_STALE = Duration.ofMinutes(1);

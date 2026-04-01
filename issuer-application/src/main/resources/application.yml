@@ -41,6 +41,7 @@ http:
 management:
   endpoint:
     health:
+      registry-health-checks-enabled: ${REGISTRY_HEALTH_CHECKS_ENABLED:false}
       probes:
         enabled: true
       show-components: always

@@ -22,7 +22,7 @@ import org.springframework.web.client.RestTemplate;
  * Always adds the configured business partner id as a detail.
  * </p>
  */
-@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
 @Component
 @RequiredArgsConstructor
 public class StatusRegistryIssuerHealthChecker extends CachedHealthChecker {

@@ -12,7 +12,7 @@ import org.springframework.web.reactive.function.client.WebClientException;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
 public class StatusListAvailabilityHealthChecker extends CachedHealthChecker {
 
     private final StatusBusinessApiApi statusBusinessApi;
@@ -21,6 +21,7 @@ public class StatusListAvailabilityHealthChecker extends CachedHealthChecker {
     @Override
     protected void performCheck(Health.Builder builder) throws Exception {
         builder.withDetail("partnerId", swiyuProperties.businessPartnerId());
+
         try {
             statusBusinessApi.getAllStatusListEntries(swiyuProperties.businessPartnerId(), 0, 1, null).block();
             builder.up();

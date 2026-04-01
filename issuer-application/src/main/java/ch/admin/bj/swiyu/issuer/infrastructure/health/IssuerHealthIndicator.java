@@ -14,7 +14,7 @@ import java.util.Map;
  * <p>Propagates DOWN if any underlying checker is not UP and exposes each checkers details.</p>
  */
 @Component
-@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class IssuerHealthIndicator implements HealthIndicator {
 
