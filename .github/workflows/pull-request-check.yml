@@ -73,7 +73,7 @@ jobs:
           tags: pull_request_check:latest
           build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
           file: Dockerfile
-      - name: Run Snyk to check for vulnerabilities
+      - name: Run Snyk to check for vulnerabilities 🔍
         uses: snyk/actions/maven-3-jdk-21@master
         continue-on-error: true # needed as we want SARIF to be uploaded
         env:
@@ -81,7 +81,7 @@ jobs:
         with:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           args: --severity-threshold=high --sarif-file-output=snyk.sarif
-      - name: Upload result to GitHub Code Scanning
+      - name: Upload result as sarif to GitHub Code Scanning 📦
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk.sarif
