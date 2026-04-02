@@ -33,10 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Breaking Contract change:
-  - Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
-      - The nonce column from credential_offer table is also removed.
-  - Removed Deprecated OID4VCI Draft 13 Endpoints
-  - Removed support for did:jwk, as it is not part of the swiss-profiles anymore
+    - Removed c_nonce from OAuthTokenDto the nonce can be retrieved from the nonce endpoint.
+        - The nonce column from credential_offer table is also removed.
+    - Removed Deprecated OID4VCI Draft 13 Endpoints
+    - Removed support for did:jwk, as it is not part of the swiss-profiles anymore
 - Use OID4VCI 1.0 compliant error codes for credential_endpoint and deferred_credential_endpoint error responses.
 
 ### Fixed
@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed validation of metadata claim descriptor paths. It now correctly supports claims path pointer and validates them
   according to the specs `(#824)`.
 - For Credential Response Encryption use the alg in JWK, as defined by the specification.
+- Fixed nullpointer exception for offer details with deferred offer validity, when using an older offer
 
 
 ## 2.4.0
