@@ -17,6 +17,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+          config-file: ./.github/codeql/codeql-config.yml
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
