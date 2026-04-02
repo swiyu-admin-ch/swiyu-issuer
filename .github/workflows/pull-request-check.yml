@@ -78,6 +78,8 @@ jobs:
         continue-on-error: true # needed as we want SARIF to be uploaded
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}
         with:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           args: --severity-threshold=high --sarif-file-output=snyk.sarif
