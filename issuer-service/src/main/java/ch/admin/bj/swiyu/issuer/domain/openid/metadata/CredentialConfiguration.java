@@ -19,8 +19,10 @@ import lombok.experimental.SuperBuilder;
 
 import org.springframework.validation.annotation.Validated;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 
@@ -144,5 +146,9 @@ public class CredentialConfiguration {
                             "cryptographicBindingMethodsSupported", cryptographicBindingMethodsSupported
                     ));
         }
+    }
+
+    public Map<String, SupportedProofType> getProofTypesSupported() {
+        return Objects.requireNonNullElseGet(proofTypesSupported, HashMap::new);
     }
 }
