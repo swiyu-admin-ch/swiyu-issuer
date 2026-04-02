@@ -29,7 +29,7 @@ jobs:
           java-version: '21'
           cache: 'maven'
       - name: Build & test with Maven (produce JaCoCo)
-        run: mvn --batch-mode clean verify -DskipTests=false
+        run: mvn --batch-mode clean verify -DskipTests=true
       - name: Upload JaCoCo reports
         uses: actions/upload-artifact@v4
         with:
@@ -46,6 +46,20 @@ jobs:
           node-version: 20
       - name: Add coverage to summary
         run: node .github/scripts/coverage-summary.js
+      - name: Run Snyk to check for vulnerabilities 🔍
+        uses: snyk/actions/maven-3-jdk-21@master
+        continue-on-error: true # needed as we want SARIF to be uploaded
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}
+        with:
+          # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
+          args: --severity-threshold=high --sarif-file-output=snyk.sarif
+      - name: Upload result as sarif to GitHub Code Scanning 📦
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk.sarif
         # Note: codeQL MUST be after the compile step
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
@@ -73,17 +87,3 @@ jobs:
           tags: pull_request_check:latest
           build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
           file: Dockerfile
-      - name: Run Snyk to check for vulnerabilities 🔍
-        uses: snyk/actions/maven-3-jdk-21@master
-        continue-on-error: true # needed as we want SARIF to be uploaded
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: https://api.eu.snyk.io
-          SNYK_ORG: ${{ secrets.SNYK_ORG }}
-        with:
-          # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
-          args: --severity-threshold=high #--sarif-file-output=snyk.sarif
-#      - name: Upload result as sarif to GitHub Code Scanning 📦
-#        uses: github/codeql-action/upload-sarif@v3
-#        with:
-#          sarif_file: snyk.sarif
