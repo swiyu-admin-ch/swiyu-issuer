@@ -73,13 +73,15 @@ jobs:
           tags: pull_request_check:latest
           build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
           file: Dockerfile
-
-# Because of security issues with Trivy, we currently disable the vulnerability scan
-#      - name: Run Trivy vulnerability scan
-#        uses: aquasecurity/trivy-action@0.34.0
-#        with:
-#          image-ref: pull_request_check:latest
-#          severity: 'CRITICAL,HIGH'
-#          exit-code: 1
-#          ignore-unfixed: true
-#          format: table
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/maven-3-jdk-21@master
+        continue-on-error: true # needed as we want SARIF to be uploaded
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
+          args: --severity-threshold=high --sarif-file-output=snyk.sarif
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk.sarif
