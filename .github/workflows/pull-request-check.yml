@@ -17,6 +17,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Run Snyk to check for vulnerabilities 🔍
+        uses: snyk/actions/maven-3-jdk-21@master
+        continue-on-error: true # needed as we want SARIF to be uploaded
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}
+        with:
+          # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
+          args: --severity-threshold=high --sarif-file-output=snyk.sarif
+      - name: Upload result as sarif to GitHub Code Scanning 📦
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk.sarif
+          # Note: codeQL MUST be after the compile step
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -41,21 +56,6 @@ jobs:
           node-version: 20
       - name: Add coverage to summary
         run: node .github/scripts/coverage-summary.js
-      - name: Run Snyk to check for vulnerabilities 🔍
-        uses: snyk/actions/maven-3-jdk-21@master
-        continue-on-error: true # needed as we want SARIF to be uploaded
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: https://api.eu.snyk.io
-          SNYK_ORG: ${{ secrets.SNYK_ORG }}
-        with:
-          # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
-          args: --severity-threshold=high --sarif-file-output=snyk.sarif
-      - name: Upload result as sarif to GitHub Code Scanning 📦
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: snyk.sarif
-        # Note: codeQL MUST be after the compile step
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
