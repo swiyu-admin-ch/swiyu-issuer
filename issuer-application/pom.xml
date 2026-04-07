@@ -375,6 +375,10 @@
                 <version>${pact.version}</version>
                 <configuration>
                     <pactDirectory>${pact.rootDir}</pactDirectory>
+                    <pactBrokerUrl>${pact.broker.url}</pactBrokerUrl>
+                    <pactBrokerToken>${pact.broker.token}</pactBrokerToken>
+                    <projectVersion>${pact.consumer.version}</projectVersion>
+                    <trimSnapshot>false</trimSnapshot>
                 </configuration>
             </plugin>
         </plugins>
