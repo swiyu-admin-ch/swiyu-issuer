@@ -47,8 +47,6 @@ jobs:
         run: node .github/scripts/coverage-summary.js
 
         #CodeQL and PMD analysis
-      - name: Build project for CodeQL
-        run: mvn --batch-mode clean verify -DskipTests=true
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
@@ -65,16 +63,11 @@ jobs:
         with:
           sarif_file: pmd-report.sarif
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
       - name: Run Snyk to check for vulnerabilities 🔍
         uses: snyk/actions/maven-3-jdk-21@master
         continue-on-error: true
         env:
+          JAVA_HOME: ''
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: https://api.eu.snyk.io
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
@@ -82,7 +75,6 @@ jobs:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           args: --maven-aggregate-project --severity-threshold=high --sarif-file-output=snyk.sarif
       - name: Upload result as sarif to GitHub Code Scanning 📦
-        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk.sarif
