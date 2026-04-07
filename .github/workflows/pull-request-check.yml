@@ -68,14 +68,14 @@ jobs:
           context: .
           load: true
           pull: true # Prevent old images to be used, which may trigger CVE findings
-          tags: pull_request_check:latest
+          tags: pull-request-check:latest
           build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
           file: Dockerfile
       - name: Scan Docker image with Snyk 🐳
         uses: snyk/actions/docker@master
         continue-on-error: false
         with:
-          args: --file=Dockerfile --image=pull_request_check:latest --severity-threshold=high
+          args: --file=Dockerfile --image=pull-request-check:latest --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: https://api.eu.snyk.io
