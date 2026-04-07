@@ -54,14 +54,13 @@ jobs:
         id: pmd
         with:
           rulesets: '.github/rulesets/java/pmd_omni_ruleset.xml'
-          cache: true
       - name: Upload PMD SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: pmd-report.sarif
       - name: Run Snyk to check for vulnerabilities 🔍
         uses: snyk/actions/maven-3-jdk-21@master
-        continue-on-error: true
+        continue-on-error: false
         env:
           JAVA_HOME: '' # Snyk action sets JAVA_HOME to a path that is not compatible with the setup-java action, so we need to reset it here
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -71,6 +70,7 @@ jobs:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           args: --maven-aggregate-project --severity-threshold=high --sarif-file-output=snyk.sarif
       - name: Upload result as sarif to GitHub Code Scanning 📦
+        if: always() # We want to upload the SARIF file even if the Snyk action fails, to have the results in the Code Scanning tab of GitHub
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk.sarif
@@ -87,7 +87,7 @@ jobs:
           file: Dockerfile
       - name: Scan Docker image with Snyk 🐳
         uses: snyk/actions/docker@master
-        continue-on-error: true
+        continue-on-error: false
         with:
           image: pull_request_check:latest
           args: --file=Dockerfile --severity-threshold=high
