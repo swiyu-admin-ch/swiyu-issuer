@@ -142,7 +142,7 @@ jobs:
         with:
           image: pull_request_check:latest
           args: --file=Dockerfile --severity-threshold=high
-          env:
-            SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-            SNYK_API: https://api.eu.snyk.io
-            SNYK_ORG: ${{ secrets.SNYK_ORG }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}
