@@ -90,7 +90,7 @@ jobs:
         uses: snyk/actions/docker@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: ${{ vars.SNYK_API }}
+          SNYK_API: https://api.eu.snyk.io
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
         with:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
@@ -101,5 +101,5 @@ jobs:
           args: monitor --docker ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: ${{ vars.SNYK_API }}
+          SNYK_API: https://api.eu.snyk.io
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
