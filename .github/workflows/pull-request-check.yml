@@ -75,7 +75,6 @@ jobs:
         uses: snyk/actions/docker@master
         continue-on-error: false
         with:
-          image: ghcr.io/swiyu-admin-ch/swiyu-issuer:${{ matrix.image-tag }}
           args: --file=Dockerfile --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
