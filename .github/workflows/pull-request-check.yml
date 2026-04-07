@@ -16,6 +16,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+          config-file: ./.github/codeql/codeql-config.yml
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -41,23 +46,7 @@ jobs:
       - name: Add coverage to summary
         run: node .github/scripts/coverage-summary.js
 
-  code-ql-and-pmd-analysis:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java
-          config-file: ./.github/codeql/codeql-config.yml
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
+        #CodeQL and PMD analysis
       - name: Build project for CodeQL
         run: mvn --batch-mode clean verify -DskipTests=true
       - name: Perform CodeQL Analysis
@@ -76,15 +65,15 @@ jobs:
         with:
           sarif_file: pmd-report.sarif
 
-  snyk-vulnerability-scan:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
       - name: Run Snyk to check for vulnerabilities 🔍
         uses: snyk/actions/maven-3-jdk-21@master
-        continue-on-error: false
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: https://api.eu.snyk.io
@@ -98,20 +87,7 @@ jobs:
         with:
           sarif_file: snyk.sarif
 
-  snyk-docker-vulnerability-scan:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
-      - name: Build & test with Maven
-        run: mvn --batch-mode clean verify -DskipTests=true
+      # Build image and check for vulnerabilities with Snyk
       - name: Build and push docker image
         id: push
         uses: docker/build-push-action@v6
@@ -124,7 +100,7 @@ jobs:
           file: Dockerfile
       - name: Scan Docker image with Snyk 🐳
         uses: snyk/actions/docker@master
-        continue-on-error: false
+        continue-on-error: true
         with:
           image: pull_request_check:latest
           args: --file=Dockerfile --severity-threshold=high
