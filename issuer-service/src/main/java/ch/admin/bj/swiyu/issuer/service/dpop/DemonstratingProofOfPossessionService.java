@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nimbusds.jwt.SignedJWT;
@@ -70,7 +71,7 @@ public class DemonstratingProofOfPossessionService {
      * @param dpop        Serialized Json Web Token to be validated, must contain nonce and jwk with the public key of the holder
      * @param request     HTTP request associated with the DPoP for validating Request Method and URI
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public void registerDpop(@NotBlank String preAuthCode, @Nullable String dpop, HttpRequest request) {
         if (canSkipDpopValidation(dpop, false)) {
             return;
@@ -114,7 +115,7 @@ public class DemonstratingProofOfPossessionService {
      * @param dpop         dpop for validating key binding
      * @param request      http request with which the dpop was received for validating uri & method
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public void refreshDpop(String refreshToken, String dpop, ServletServerHttpRequest request) {
         var credentialManagement = oAuthService.getUnrevokedCredentialOfferByRefreshToken(refreshToken);
         if (canSkipDpopValidation(dpop, credentialManagement.hasDPoPKey())) {
