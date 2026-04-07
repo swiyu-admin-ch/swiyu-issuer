@@ -42,27 +42,13 @@ public class AuthorizationService {
     public OAuthTokenDto processOAuthTokenEndpointRequest(@Nullable String dpop,
         OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
         HttpServletRequest request) {
-        if (request.getParameter("tx_code") != null) {
-            throw OAuthException.invalidRequest("Unsupported parameter 'tx_code'");
-        }
-
-        if (request.getParameter("client_id") != null) {
-            throw OAuthException.invalidRequest("Unsupported parameter 'client_id'");
-        }
+        validateBlockedRequestParameters(request);
 
         if (oauthAccessTokenRequestDto == null || oauthAccessTokenRequestDto.grant_type() == null) {
             throw OAuthException.invalidRequest("The request is missing a required parameter");
         }
 
-        if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
-            String preauthorizedCode = oauthAccessTokenRequestDto.preauthorized_code();
-            return oauthTokenPreAuthorized(dpop, request, preauthorizedCode);
-        } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
-            String refreshToken = oauthAccessTokenRequestDto.refresh_token();
-            return oauthRefreshToken(dpop, request, refreshToken);
-        } else {
-            throw OAuthException.unsupportedGrantType("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code or refresh_token");
-        }
+        return processTokenRequestByGrantType(dpop, oauthAccessTokenRequestDto, request);
     }
 
 
@@ -124,5 +110,33 @@ public class AuthorizationService {
         HttpHeaders headers = new HttpHeaders();
         demonstratingProofOfPossessionService.addDpopNonce(headers);
         return new ResponseEntity<>(nonceService.createNonce(), headers, HttpStatus.OK);
+    }
+
+
+    private OAuthTokenDto processTokenRequestByGrantType(String dpop, OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
+            HttpServletRequest request) {
+        if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
+            String preauthorizedCode = oauthAccessTokenRequestDto.preauthorized_code();
+            return oauthTokenPreAuthorized(dpop, request, preauthorizedCode);
+        } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
+            String refreshToken = oauthAccessTokenRequestDto.refresh_token();
+            return oauthRefreshToken(dpop, request, refreshToken);
+        } else {
+            throw OAuthException.unsupportedGrantType("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code or refresh_token");
+        }
+    }
+
+    /**
+     * Validate some request parametesr which may explicitly not be set
+     * @param request
+     */
+    private void validateBlockedRequestParameters(HttpServletRequest request) {
+        if (request.getParameter("tx_code") != null) {
+            throw OAuthException.invalidRequest("Unsupported parameter 'tx_code'");
+        }
+
+        if (request.getParameter("client_id") != null) {
+            throw OAuthException.invalidRequest("Unsupported parameter 'client_id'");
+        }
     }
 }
