@@ -105,7 +105,6 @@ class HolderBindingServiceIT {
                     applicationProperties.getTemplateReplacement().get("external-url"),
                     nonce,
                     ProofType.JWT.getClaimTyp(),
-                    true,
                     AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
                     applicationProperties.getTrustedAttestationProviders().getFirst(),
                     attestationKey);
@@ -134,7 +133,6 @@ class HolderBindingServiceIT {
                     applicationProperties.getTemplateReplacement().get("external-url"),
                     nonce,
                     ProofType.JWT.getClaimTyp(),
-                    true,
                     AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
                     applicationProperties.getTrustedAttestationProviders().getFirst(),
                     attestationKey);
@@ -179,7 +177,6 @@ class HolderBindingServiceIT {
                     applicationProperties.getTemplateReplacement().get("external-url"),
                     nonce,
                     ProofType.JWT.getClaimTyp(),
-                    true,
                     AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
                     applicationProperties.getTrustedAttestationProviders().getFirst(),
                     attestationKey);
@@ -212,7 +209,6 @@ class HolderBindingServiceIT {
                     applicationProperties.getTemplateReplacement().get("external-url"),
                     nonce,
                     ProofType.JWT.getClaimTyp(),
-                    true,
                     AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
                     applicationProperties.getTrustedAttestationProviders().getFirst(),
                     attestationKey);
@@ -239,7 +235,6 @@ class HolderBindingServiceIT {
                     applicationProperties.getTemplateReplacement().get("external-url"),
                     UUID.randomUUID().toString(),
                     ProofType.JWT.getClaimTyp(),
-                    true,
                     AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
                     applicationProperties.getTrustedAttestationProviders().getFirst(),
                     attestationKey);
@@ -270,7 +265,6 @@ class HolderBindingServiceIT {
                     applicationProperties.getTemplateReplacement().get("external-url"),
                     nonce,
                     ProofType.JWT.getClaimTyp(),
-                    true,
                     AttackPotentialResistance.ISO_18045_ENHANCED_BASIC,
                     applicationProperties.getTrustedAttestationProviders().getFirst(),
                     attestationKey);

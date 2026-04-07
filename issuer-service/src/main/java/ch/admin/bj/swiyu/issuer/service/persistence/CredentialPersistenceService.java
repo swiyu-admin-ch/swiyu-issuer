@@ -1,15 +1,18 @@
 package ch.admin.bj.swiyu.issuer.service.persistence;
 
-import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListIndexService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Service responsible for credential offer persistence operations.
@@ -25,8 +28,7 @@ public class CredentialPersistenceService {
     private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialManagementRepository credentialManagementRepository;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
-    private final AvailableStatusListIndexRepository availableStatusListIndexRepository;
-    private final Random random = new Random();
+    private final StatusListIndexService statusListIndexService;
 
     /**
      * Saves a credential offer entity.
@@ -138,13 +140,21 @@ public class CredentialPersistenceService {
      * @param credentialOfferId the credential offer ID
      * @param issuanceBatchSize the batch size for issuance
      */
+    @Transactional
     public void saveStatusListEntries(
             List<StatusList> statusLists,
             UUID credentialOfferId,
             int issuanceBatchSize) {
 
-        for (StatusList statusList : statusLists) {
-            Set<Integer> randomIndexes = getRandomIndexes(issuanceBatchSize, statusList);
+        // Sort by ID before locking to guarantee a consistent lock-acquisition order
+        // across concurrent transactions and prevent deadlocks.
+        var sortedStatusLists = statusLists.stream()
+                .sorted(Comparator.comparing(StatusList::getId))
+                .toList();
+
+        for (StatusList statusList : sortedStatusLists) {
+
+            Set<Integer> randomIndexes = statusListIndexService.claimRandomIndexes(statusList, issuanceBatchSize);
 
             // Create Status List entries
             var offerStatuses = randomIndexes.stream().map(freeIndex -> {
@@ -164,35 +174,5 @@ public class CredentialPersistenceService {
 
             credentialOfferStatusRepository.saveAll(offerStatuses);
         }
-    }
-
-    /**
-     * Gets random available indexes from a status list.
-     *
-     * @param issuanceBatchSize the number of indexes needed
-     * @param statusList        the status list
-     * @return a set of random available indexes
-     * @throws BadRequestException if not enough indexes are available
-     */
-    Set<Integer> getRandomIndexes(int issuanceBatchSize, StatusList statusList) {
-        // Find all free indexes for this status list
-        var freeIndexes = availableStatusListIndexRepository.findById(statusList.getUri())
-                .orElseThrow(() -> new BadRequestException(
-                        "No status indexes remain in status list %s to create credential offer"
-                                .formatted(statusList.getUri())))
-                .getFreeIndexes();
-
-        if (freeIndexes.size() < issuanceBatchSize) {
-            throw new BadRequestException(
-                    "Too few status indexes remain in status list %s to create credential offer"
-                            .formatted(statusList.getUri()));
-        }
-
-        // Random sample free indexes without repetitions
-        Set<Integer> sampledNumbers = new LinkedHashSet<>();
-        while (sampledNumbers.size() < issuanceBatchSize) {
-            sampledNumbers.add(freeIndexes.remove(random.nextInt(freeIndexes.size())));
-        }
-        return sampledNumbers;
     }
 }

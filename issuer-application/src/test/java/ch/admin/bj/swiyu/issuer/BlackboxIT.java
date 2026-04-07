@@ -341,6 +341,7 @@ class BlackboxIT {
                 .toList();
         var holderEncryptionKeys = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("HolderEncryptionKey")
                 .keyUse(KeyUse.ENCRYPTION)
+                .algorithm(JWEAlgorithm.ECDH_ES)
                 .generate());
 
         var holderBindingJwts = holderBindingKeys.stream()
@@ -354,9 +355,6 @@ class BlackboxIT {
                 new CredentialResponseEncryptionDto(
                         holderEncryptionKeys.toPublicJWK()
                                 .toJSONObject(),
-                        issuerMetadata.getResponseEncryption()
-                                .getAlgValuesSupported()
-                                .getFirst(),
                         issuerMetadata.getResponseEncryption()
                                 .getEncValuesSupported()
                                 .getFirst()

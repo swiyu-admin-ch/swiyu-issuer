@@ -260,7 +260,7 @@ With response:
                 "ES256"
             ],
             "cryptographic_binding_methods_supported": [
-                "did:jwk"
+                "jwk"
             ],
             "proof_types_supported": {
                 "jwt": {

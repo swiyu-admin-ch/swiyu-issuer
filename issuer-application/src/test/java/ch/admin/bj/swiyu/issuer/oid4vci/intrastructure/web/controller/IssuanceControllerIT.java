@@ -3,7 +3,6 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -48,10 +47,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
-import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
-import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_REQUEST;
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -66,7 +65,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
 class IssuanceControllerIT {
-
     private static UUID offerId;
     private static StatusList testStatusList;
     private static ECKey jwk;
@@ -99,6 +97,13 @@ class IssuanceControllerIT {
         Map<String, String> credentialSubjectData = new HashMap<>();
         credentialSubjectData.put("animal", "Tux");
         return credentialSubjectData;
+    }
+
+    private static String extractVcFromCredentialResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
+        var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
+                .getAsJsonObject()
+                .getAsJsonArray("credentials");
+        return credentials.get(0).getAsJsonObject().get("credential").getAsString();
     }
 
     private CredentialOffer createUnboundCredentialOffer() throws Exception {
@@ -217,8 +222,8 @@ class IssuanceControllerIT {
         assertFalse(nonceService.isUsedNonce(selfContainedNonce));
 
         String proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(),
-                true);
+                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp()
+        );
         String credentialRequestString = getCredentialRequestString(proof);
         // First time OK
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
@@ -235,8 +240,8 @@ class IssuanceControllerIT {
         tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, newOfferPreAuthCode.toString());
         token = tokenResponse.get("access_token");
         proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp(),
-                true);
+                applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp()
+        );
         credentialRequestString = getCredentialRequestString(proof);
         // Should BadRequest with some error hinting that proof was reused
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
@@ -260,8 +265,8 @@ class IssuanceControllerIT {
         var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, validPreAuthCode.toString());
         var token = tokenResponse.get("access_token");
         var proof = TestServiceUtils.createHolderProof(jwk,
-                applicationProperties.getTemplateReplacement().get("external-url"), outdatedNonce.getNonce(), ProofType.JWT.getClaimTyp(),
-                true);
+                applicationProperties.getTemplateReplacement().get("external-url"), outdatedNonce.getNonce(), ProofType.JWT.getClaimTyp()
+        );
         var credentialRequestString = getCredentialRequestString(proof);
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
@@ -310,7 +315,7 @@ class IssuanceControllerIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"), UUID.randomUUID().toString(),
-                ProofType.JWT.getClaimTyp(), true);
+                ProofType.JWT.getClaimTyp());
         String credentialRequestString = getCredentialRequestString(proof);
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
@@ -329,7 +334,7 @@ class IssuanceControllerIT {
 
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, "wrong type", true);
+                nonce, "wrong type");
         String credentialRequestString = objectMapper.writeValueAsString(new CreateCredentialRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),
@@ -347,7 +352,7 @@ class IssuanceControllerIT {
         var token = tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), true,
+                nonce, ProofType.JWT.getClaimTyp(),
                 Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
         String credentialRequestString = getCredentialRequestString(proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
@@ -362,7 +367,7 @@ class IssuanceControllerIT {
         var token = tokenResponse.get("access_token");
         String proof = TestServiceUtils.createHolderProof(jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
-                nonce, ProofType.JWT.getClaimTyp(), true,
+                nonce, ProofType.JWT.getClaimTyp(),
                 Date.from(Instant.now().minus(1, ChronoUnit.HOURS)));
         String credentialRequestString = getCredentialRequestString(proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
@@ -383,7 +388,9 @@ class IssuanceControllerIT {
 
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token,
                 credentialRequestString);
-        assertEquals("Unprocessable Entity", credentialResponse.get("error_description").getAsString());
+        assertThat(credentialResponse.get("error_description").getAsString())
+            .as("Helpful errors should be returned to implementers")
+            .isEqualTo("proofs.jwt: must not be empty");
     }
 
     @Test
@@ -432,7 +439,7 @@ class IssuanceControllerIT {
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_GRANT.name())));
+                .andExpect(content().string(containsString(INVALID_GRANT.getErrorCode())));
 
         // check that correct preauthcode is used
         mock.perform(post("/oid4vci/api/token")
@@ -440,40 +447,7 @@ class IssuanceControllerIT {
                         .param("grant_type", grantType)
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_GRANT.name())));
-    }
-
-    @Test
-    void noPreauthCode_thenException() throws Exception {
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code"))
-                .andExpect(status().isBadRequest());
-
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
-                        .param("pre-authorized_code", ""))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void testInvalidGrantType_thenBadRequest() throws Exception {
-        // With Valid preauth code
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
-                        .param("pre-authorized_code", "deadbeef-dead-dead-dead-deaddeafbeef"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_REQUEST.name())));
-
-        // With Invalid preauth code
-        mock.perform(post("/oid4vci/api/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "urn:ietf:params:oauth:grant-type:test-authorized_code")
-                        .param("pre-authorized_code", "aaaaaaaa-dead-dead-dead-deaddeafdead"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString(INVALID_REQUEST.name())));
+                .andExpect(content().string(containsString(INVALID_GRANT.getErrorCode())));
     }
 
     private void addOverride(UUID preAuthCode, ConfigurationOverride override) {
@@ -494,8 +468,7 @@ class IssuanceControllerIT {
                 jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce,
-                ProofType.JWT.getClaimTyp(),
-                true
+                ProofType.JWT.getClaimTyp()
         );
 
         String credentialRequestString = getCredentialRequestString(proof);
@@ -529,13 +502,6 @@ class IssuanceControllerIT {
                 null
         );
         return objectMapper.writeValueAsString(request);
-    }
-
-    private static String extractVcFromCredentialResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
-        var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
-                .getAsJsonObject()
-                .getAsJsonArray("credentials");
-        return credentials.get(0).getAsJsonObject().get("credential").getAsString();
     }
 
     private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {

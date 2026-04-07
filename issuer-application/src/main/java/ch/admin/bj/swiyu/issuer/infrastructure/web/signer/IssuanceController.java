@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
@@ -11,6 +13,9 @@ import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -83,8 +88,16 @@ public class IssuanceController {
             @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
             @ModelAttribute OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
             HttpServletRequest request) {
+        // TODO to be removed when implementing https://jira.bit.admin.ch/browse/EIDOMNI-709
+        if (request.getParameter("tx_code") != null) {
+            throw OAuthException.invalidRequest("Unsupported parameter 'tx_code'");
+        }
 
-        if (oauthAccessTokenRequestDto == null) {
+        if (request.getParameter("client_id") != null) {
+            throw OAuthException.invalidRequest("Unsupported parameter 'client_id'");
+        }
+
+        if (oauthAccessTokenRequestDto == null || oauthAccessTokenRequestDto.grant_type() == null) {
             throw OAuthException.invalidRequest("The request is missing a required parameter");
         }
 
@@ -95,7 +108,7 @@ public class IssuanceController {
             String refreshToken = oauthAccessTokenRequestDto.refresh_token();
             return oauthRefreshToken(dpop, request, refreshToken);
         } else {
-            throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
+            throw OAuthException.unsupportedGrantType("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
         }
     }
 
@@ -166,7 +179,7 @@ public class IssuanceController {
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
                                                    @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
                                                    @NotNull @RequestBody String requestMessage,
-                                                   HttpServletRequest request) throws IOException {
+                                                   HttpServletRequest request) {
         String unparsedRequestDto = jweService.decryptRequest(requestMessage, request.getContentType());
 
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
@@ -174,12 +187,11 @@ public class IssuanceController {
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        String accessToken = getAccessToken(bearerToken);
+        String accessToken = oauthService.getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
 
-
-        var dto = objectMapper.readValue(unparsedRequestDto, CreateCredentialRequestDto.class);
-        validateRequestDtoOrThrow(dto, validator);
+        
+        var dto = parseCredentialRequestDto(unparsedRequestDto);
         credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
         var headers = new HttpHeaders();
@@ -244,11 +256,12 @@ public class IssuanceController {
                                                            HttpServletRequest request) throws IOException {
         String unparsedRequestDto = jweService.decryptRequest(requestMessage, request.getContentType());
 
-        DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
+        DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = parseDeferredCredentialRequestDto(
+                unparsedRequestDto);
 
         CredentialEnvelopeDto credentialEnvelope;
 
-        String accessToken = getAccessToken(bearerToken);
+        String accessToken = oauthService.getAccessToken(bearerToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
         credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
@@ -267,7 +280,14 @@ public class IssuanceController {
                 dpop,
                 new ServletServerHttpRequest(request)
         );
-        return oauthService.refreshOAuthToken(refreshToken);
+
+        try {
+            return oauthService.refreshOAuthToken(refreshToken);
+        } catch (OAuthException exc) {
+            // Other endpoints calling issueOAuthToken expect an invalid token OAuthException
+            // this exception is caught here and replaced with invalid grant to follow the specification
+            throw OAuthException.invalidGrant("invalid refresh token");
+        }
     }
 
     private OAuthTokenDto oauthTokenPreAuthorized(String dpop, HttpServletRequest request, String preauthorizedCode) {
@@ -278,20 +298,14 @@ public class IssuanceController {
                 preauthorizedCode,
                 dpop,
                 new ServletServerHttpRequest(request));
-        return oauthService.issueOAuthToken(preauthorizedCode);
-    }
 
-    private String getAccessToken(String bearerToken) {
-        if (bearerToken == null) {
-            throw OAuthException.invalidRequest("No authorization header found");
+        try {
+            return oauthService.issueOAuthToken(preauthorizedCode);
+        } catch (OAuthException exc) {
+            // Other endpoints calling issueOAuthToken expect an invalid token OAuthException
+            // this exception is caught here and replaced with invalid grant to follow the specification
+            throw OAuthException.invalidGrant("invalid token");
         }
-        var regexPattern = Pattern.compile("bearer (.*)", Pattern.CASE_INSENSITIVE);
-        var matcher = regexPattern.matcher(bearerToken);
-        if (!matcher.find()) {
-            throw OAuthException.invalidRequest("No bearer token found");
-        }
-
-        return matcher.group(1);
     }
 
     private @NotNull ClientAgentInfo getClientAgentInfo(HttpServletRequest request) {
@@ -312,6 +326,24 @@ public class IssuanceController {
                 sb.append(String.format("%s: %s", constraintViolation.getPropertyPath(), constraintViolation.getMessage()));
             }
             throw new ConstraintViolationException(sb.toString(), violations);
+        }
+    }
+
+    private CreateCredentialRequestDto parseCredentialRequestDto(String unparsedRequestDto) {
+        try {
+            var dto = objectMapper.readValue(unparsedRequestDto, CreateCredentialRequestDto.class);
+            validateRequestDtoOrThrow(dto, validator);
+            return dto;
+        } catch (IOException | ConstraintViolationException e) {
+            throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
+        }
+    }
+
+    private DeferredCredentialEndpointRequestDto parseDeferredCredentialRequestDto(String unparsedRequestDto) {
+        try { 
+            return objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
+        } catch (IOException | ConstraintViolationException e) {
+            throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
         }
     }
 }

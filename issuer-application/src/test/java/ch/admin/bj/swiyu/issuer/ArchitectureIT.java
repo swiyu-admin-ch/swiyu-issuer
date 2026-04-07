@@ -1,14 +1,5 @@
 package ch.admin.bj.swiyu.issuer;
 
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListConfigDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
-import ch.admin.bj.swiyu.issuer.dto.statuslist.ValidStatusListMaxLengthValidator;
-import ch.admin.bj.swiyu.issuer.service.NonceService;
-import ch.admin.bj.swiyu.issuer.service.OAuthService;
-import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
-import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
-import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionValidationService;
-import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListSigningService;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;

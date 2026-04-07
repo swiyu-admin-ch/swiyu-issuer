@@ -47,7 +47,13 @@ public class WellKnownController {
      * @return {@link OAuthAuthorizationServerMetadataDto} containing the unsigned Authorization Server
      * configuration metadata, enriched with the signing algorithms supported for DPoP.
      */
-    @GetMapping(value = {"/oid4vci/.well-known/openid-configuration", ".well-known/openid-configuration", "/oid4vci/.well-known/oauth-authorization-server", ".well-known/oauth-authorization-server"})
+    @GetMapping(value = {
+        "/oid4vci/.well-known/openid-configuration",
+        "/.well-known/openid-configuration",
+        "/.well-known/oauth-authorization-server",
+        "/oid4vci/.well-known/oauth-authorization-server",
+        "/.well-known/oauth-authorization-server/oid4vci",
+        })
     @Operation(summary = "Retrieve OAuth 2.0 Authorization Server Metadata",
             description = "Returns the configuration metadata of the Authorization Server in accordance with RFC 8414. " +
                     "This includes URLs to endpoints (e.g., token endpoint), supported grant types, as well as " +
@@ -62,14 +68,21 @@ public class WellKnownController {
      *
      * @return Issuer Metadata as defined by OID4VCI
      */
-    @GetMapping(value = {"/oid4vci/.well-known/openid-credential-issuer", ".well-known/openid-credential-issuer"})
+    @GetMapping(value = {
+        "/oid4vci/.well-known/openid-credential-issuer",
+        "/.well-known/openid-credential-issuer",
+        "/.well-known/openid-credential-issuer/oid4vci"})
     @Operation(summary = "Information about credentials which can be issued.")
     public IssuerMetadata getIssuerMetadata() {
         // Unwrap the object from the spring cache object.
         return (IssuerMetadata) AopProxyUtils.getSingletonTarget(jweService.issuerMetadataWithEncryptionOptions());
     }
 
-    @GetMapping(value = {"/{tenantId}/.well-known/openid-credential-issuer", "/oid4vci/{tenantId}/.well-known/openid-credential-issuer"})
+    @GetMapping(value = {
+        "/{tenantId}/.well-known/openid-credential-issuer",
+        "/oid4vci/{tenantId}/.well-known/openid-credential-issuer",
+        "/.well-known/openid-credential-issuer/{tenantId}",
+        "/.well-known/openid-credential-issuer/oid4vci/{tenantId}"})
     @Operation(summary = "Information about credentials which can be issued.")
     public Object getIssuerMetadataByTenantId(
             @PathVariable UUID tenantId,
@@ -97,7 +110,14 @@ public class WellKnownController {
      * @return signed or unsigned tenant-specific Authorization Server metadata, matching the
      *         requested content type.
      */
-    @GetMapping(value = {"/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/openid-configuration", "/oid4vci/{tenantId}/.well-known/oauth-authorization-server", "/{tenantId}/.well-known/oauth-authorization-server"})
+    @GetMapping(value = {
+        "/{tenantId}/.well-known/openid-configuration",
+        "/oid4vci/{tenantId}/.well-known/openid-configuration",
+        "/oid4vci/{tenantId}/.well-known/oauth-authorization-server",
+        "/{tenantId}/.well-known/oauth-authorization-server",
+        "/{tenantId}/.well-known/oauth-authorization-server/oid4vci",
+        "/.well-known/oauth-authorization-server/{tenantId}",
+        "/.well-known/oauth-authorization-server/{tenantId}/oid4vci"})
     @Operation(
             summary = "Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata",
             description = "Returns the Authorization Server configuration metadata for the given tenant in accordance with RFC 8414. " +
