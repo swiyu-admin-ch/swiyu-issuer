@@ -55,5 +55,5 @@ jobs:
             -Dpact.broker.url="${{ secrets.PACT_BROKER_BASE_URL }}" \
             -Dpact.broker.token="${{ secrets.PACT_BROKER_TOKEN }}" \
             -Dpact.rootDir=issuer-application/target/pacts \
-            -Dpact.consumer.version="${{ steps.mvn.outputs.version }}+${{ steps.git.outputs.sha }}" \
+            -Dpact.consumer.version="${{ steps.mvn.outputs.version }}-${{ steps.git.outputs.sha }}" \
             -Dpact.publish.consumer.tags="${{ github.ref_name }}"
