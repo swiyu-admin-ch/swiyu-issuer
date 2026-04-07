@@ -116,6 +116,7 @@ jobs:
         with:
           sarif_file: snyk.sarif
   snyk-docker-vulnerability-scan:
+    needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -126,6 +127,8 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: 'maven'
+      - name: Build & test with Maven
+        run: mvn --batch-mode clean verify -DskipTests=true
       - name: Build and push docker image
         id: push
         uses: docker/build-push-action@v6
