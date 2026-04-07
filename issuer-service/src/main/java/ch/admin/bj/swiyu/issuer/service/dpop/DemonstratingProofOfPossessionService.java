@@ -161,8 +161,8 @@ public class DemonstratingProofOfPossessionService {
             return false;
         }
         return credentialOffer.getMetadataCredentialSupportedId().stream()
-            .map(offerCredentialSupportedId -> metadata.getCredentialConfigurationById(offerCredentialSupportedId))
-            .flatMap(conf -> conf.getProofTypesSupported().values().stream())
+            .flatMap(offerCredentialSupportedId -> metadata.getCredentialConfigurationById(offerCredentialSupportedId)
+                .getProofTypesSupported().values().stream())
             .map(SupportedProofType::getKeyAttestationRequirement)
             .filter(Objects::nonNull) // Key Attestation Requirement can be null
             .flatMap(keyAttestationRequirement -> keyAttestationRequirement.getKeyStorage().stream())
