@@ -2,10 +2,6 @@ name: Publish Pact Contracts
 run-name: ${{ github.repository }} is publishing Pact consumer contracts
 
 on:
-  # Temp trigger (test publishing)
-  pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
@@ -13,10 +9,6 @@ on:
 
 jobs:
   publish-pacts:
-    # Temp if (test publishing)
-    if: >
-      github.event_name != 'pull_request' ||
-      github.head_ref == 'feature/EIDOMNI-381-setup-pact-contract-testing'
     runs-on: ubuntu-latest
 
     permissions:
