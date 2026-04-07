@@ -16,11 +16,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java
-          config-file: ./.github/codeql/codeql-config.yml
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -45,6 +40,17 @@ jobs:
           node-version: 20
       - name: Add coverage to summary
         run: node .github/scripts/coverage-summary.js
+  code-analysis:
+    runs-on: ubuntu-latest
+    needs: docker-security-scan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+          config-file: ./.github/codeql/codeql-config.yml
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
@@ -60,7 +66,12 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: pmd-report.sarif
-
+  snyk-image-scan:
+    runs-on: ubuntu-latest
+    needs: docker-security-scan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Build and push docker image
         id: push
         uses: docker/build-push-action@v6
@@ -75,7 +86,7 @@ jobs:
         uses: snyk/actions/docker@master
         continue-on-error: false
         with:
-          args: --file=Dockerfile --severity-threshold=high
+          args: --file=Dockerfile --image=pull_request_check:latest --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: ${{ vars.SNYK_API }}
