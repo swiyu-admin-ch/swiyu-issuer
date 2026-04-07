@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 jobs:
-  docker-security-scan:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -46,26 +46,6 @@ jobs:
       - name: Add coverage to summary
         run: node .github/scripts/coverage-summary.js
 
-      - name: Build and push docker image
-        id: push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          pull: true # Prevent old images to be used, which may trigger CVE findings
-          tags: pull_request_check:latest
-          build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
-          file: Dockerfile
-      - name: Scan Docker image with Snyk 🐳
-        uses: snyk/actions/docker@master
-        continue-on-error: false
-        with:
-          image: pull_request_check:latest
-          args: --file=Dockerfile --severity-threshold=high
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: https://api.eu.snyk.io
-          SNYK_ORG: ${{ secrets.SNYK_ORG }}
   code-ql-and-pmd-analysis:
     runs-on: ubuntu-latest
     needs: docker-security-scan
@@ -135,3 +115,34 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk.sarif
+  snyk-docker-vulnerability-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+      - name: Build and push docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          pull: true # Prevent old images to be used, which may trigger CVE findings
+          tags: pull_request_check:latest
+          build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
+          file: Dockerfile
+      - name: Scan Docker image with Snyk 🐳
+        uses: snyk/actions/docker@master
+        continue-on-error: false
+        with:
+          image: pull_request_check:latest
+          args: --file=Dockerfile --severity-threshold=high
+          env:
+            SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+            SNYK_API: https://api.eu.snyk.io
+            SNYK_ORG: ${{ secrets.SNYK_ORG }}
