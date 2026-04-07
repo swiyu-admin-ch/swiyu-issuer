@@ -17,10 +17,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: java
-          config-file: ./.github/codeql/codeql-config.yml
+          config-file: ./.github/codeql/codeql-config.ymlgithub/codeql-action/init@v4
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -38,17 +38,15 @@ jobs:
             verifier-service/target/site/jacoco/index.html
             verifier-application/target/site/jacoco/jacoco.xml
             verifier-application/target/site/jacoco/index.html
-
       - name: Setup Node.js (for coverage summary script)
         uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Add coverage to summary
         run: node .github/scripts/coverage-summary.js
-
         #CodeQL and PMD analysis
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:java"
       - name: Run PMD static analysis
@@ -57,28 +55,25 @@ jobs:
         with:
           rulesets: '.github/rulesets/java/pmd_omni_ruleset.xml'
           cache: true
-
       - name: Upload PMD SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: pmd-report.sarif
-
       - name: Run Snyk to check for vulnerabilities 🔍
         uses: snyk/actions/maven-3-jdk-21@master
         continue-on-error: true
         env:
           JAVA_HOME: '' # Snyk action sets JAVA_HOME to a path that is not compatible with the setup-java action, so we need to reset it here
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: ${{ vars.SNYK_API }}
-          SNYK_ORG: ${{ vars.SNYK_ORG }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}
         with:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           args: --maven-aggregate-project --severity-threshold=high --sarif-file-output=snyk.sarif
       - name: Upload result as sarif to GitHub Code Scanning 📦
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk.sarif
-
       # Build image and check for vulnerabilities with Snyk
       - name: Build and push docker image
         id: push
@@ -98,5 +93,5 @@ jobs:
           args: --file=Dockerfile --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: ${{ vars.SNYK_API }}
-          SNYK_ORG: ${{ vars.SNYK_ORG }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}
