@@ -67,10 +67,10 @@ jobs:
         uses: snyk/actions/maven-3-jdk-21@master
         continue-on-error: true
         env:
-          JAVA_HOME: ''
+          JAVA_HOME: '' # Snyk action sets JAVA_HOME to a path that is not compatible with the setup-java action, so we need to reset it here
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: https://api.eu.snyk.io
-          SNYK_ORG: ${{ secrets.SNYK_ORG }}
+          SNYK_API: ${{ vars.SNYK_API }}
+          SNYK_ORG: ${{ vars.SNYK_ORG }}
         with:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           args: --maven-aggregate-project --severity-threshold=high --sarif-file-output=snyk.sarif
@@ -98,5 +98,5 @@ jobs:
           args: --file=Dockerfile --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: https://api.eu.snyk.io
-          SNYK_ORG: ${{ secrets.SNYK_ORG }}
+          SNYK_API: ${{ vars.SNYK_API }}
+          SNYK_ORG: ${{ vars.SNYK_ORG }}
