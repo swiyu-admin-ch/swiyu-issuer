@@ -61,7 +61,7 @@ public class AuthorizationService {
             String refreshToken = oauthAccessTokenRequestDto.refresh_token();
             return oauthRefreshToken(dpop, request, refreshToken);
         } else {
-            throw OAuthException.unsupportedGrantType("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
+            throw OAuthException.unsupportedGrantType("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code or refresh_token");
         }
     }
 
