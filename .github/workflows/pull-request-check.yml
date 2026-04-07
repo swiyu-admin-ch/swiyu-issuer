@@ -17,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: java
           config-file: ./.github/codeql/codeql-config.yml
@@ -57,7 +57,7 @@ jobs:
           cache: true
 
       - name: Upload PMD SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: pmd-report.sarif
 
@@ -68,14 +68,15 @@ jobs:
           context: .
           load: true
           pull: true # Prevent old images to be used, which may trigger CVE findings
-          tags: pull-request-check:latest
+          tags: pull_request_check:latest
           build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
           file: Dockerfile
       - name: Scan Docker image with Snyk 🐳
         uses: snyk/actions/docker@master
         continue-on-error: false
         with:
-          args: --file=Dockerfile --image=pull-request-check:latest --severity-threshold=high
+          image: pull_request_check:latest
+          args: --file=Dockerfile --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: https://api.eu.snyk.io
@@ -98,6 +99,6 @@ jobs:
           args: --maven-aggregate-project --severity-threshold=high --sarif-file-output=snyk.sarif
       - name: Upload result as sarif to GitHub Code Scanning 📦
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk.sarif
