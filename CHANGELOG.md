@@ -55,6 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed validation of metadata claim descriptor paths. It now correctly supports claims path pointer and validates them
   according to the specs `(#824)`.
 - For Credential Response Encryption use the alg in JWK, as defined by the specification.
+- Fixed a bug in the `IdentifierRegistryHealthChecker` where an invalid parameter was used for the call.
+    - Added new env variable `REGISTRY_HEALTH_CHECKS_ENABLED` to enable status registry health checks
 - Fixed nullpointer exception for offer details with deferred offer validity, when using an older offer
 
 
