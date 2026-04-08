@@ -48,12 +48,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DPoP allows now the correct authorization header, without breaking previously used DPoP header
 - Prevent downgrading once using DPoP
 - Return OID4VCI compliant error responses, most notably `error_code` is now in lower case
+- Fixed false positive webhook callback sent to Business Issuer when a status list write fails during REVOKE or SUSPEND `(#786)`:
+  - State change events are now only delivered after a successful transaction commit (`@TransactionalEventListener(AFTER_COMMIT)`).
+  - When the status list update fails and the transaction rolls back, an `ERROR` callback with error code `STATUS_LIST_UPDATE_FAILED` is sent instead, so the Business Issuer is correctly informed that the state change did not take effect.
 - Valid time range of a credential is now inclusive (starting at START DATE 00:00:00 and ending at END DATE 23:59:59)
 - Fixed validation of metadata claim descriptor paths. It now correctly supports claims path pointer and validates them
   according to the specs `(#824)`.
 - For Credential Response Encryption use the alg in JWK, as defined by the specification.
 - Fixed a bug in the `IdentifierRegistryHealthChecker` where an invalid parameter was used for the call.
     - Added new env variable `REGISTRY_HEALTH_CHECKS_ENABLED` to enable status registry health checks
+- Fixed nullpointer exception for offer details with deferred offer validity, when using an older offer
+
 
 ## 2.4.0
 
