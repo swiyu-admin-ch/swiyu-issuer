@@ -45,7 +45,7 @@ class MetadataLogoUriValidationTest {
             "image/png;base64,whatever"})
     void isValid_withInvalidDataPrefix_thenError(String logoUri) {
         MetadataImage m = new MetadataImage();
-        m.setUri("data:image/gif;base64,R0lGODdhAQABAIAAAAUEBA==");
+        m.setUri(logoUri);
         Set<ConstraintViolation<MetadataImage>> violations = validator.validate(m);
         assertThat(violations).isNotEmpty();
     }
