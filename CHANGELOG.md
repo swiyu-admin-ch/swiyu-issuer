@@ -30,7 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - https://datatracker.ietf.org/doc/draft-ietf-oauth-selective-disclosure-jwt/22/ chapter 4.2.6 and 6.3
 - Added `Swiss Government Root CA VI` to image
 - Added additional check for logo uri in the issuer metadata to check the logo uri (must
-  contain `data:image/png;base64, ...` or `data:image/jpeg;base64,...`)
+  be a data URI of the mime type image/png or image/jpeg. For example: `data:image/png;base64, ...`
+  or `data:image/jpeg;base64,...`)
 
 ### Changed
 
@@ -50,9 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DPoP allows now the correct authorization header, without breaking previously used DPoP header
 - Prevent downgrading once using DPoP
 - Return OID4VCI compliant error responses, most notably `error_code` is now in lower case
-- Fixed false positive webhook callback sent to Business Issuer when a status list write fails during REVOKE or SUSPEND `(#786)`:
-  - State change events are now only delivered after a successful transaction commit (`@TransactionalEventListener(AFTER_COMMIT)`).
-  - When the status list update fails and the transaction rolls back, an `ERROR` callback with error code `STATUS_LIST_UPDATE_FAILED` is sent instead, so the Business Issuer is correctly informed that the state change did not take effect.
+- Fixed false positive webhook callback sent to Business Issuer when a status list write fails during REVOKE or
+  SUSPEND `(#786)`:
+    - State change events are now only delivered after a successful transaction
+      commit (`@TransactionalEventListener(AFTER_COMMIT)`).
+    - When the status list update fails and the transaction rolls back, an `ERROR` callback with error
+      code `STATUS_LIST_UPDATE_FAILED` is sent instead, so the Business Issuer is correctly informed that the state
+      change did not take effect.
 - Valid time range of a credential is now inclusive (starting at START DATE 00:00:00 and ending at END DATE 23:59:59)
 - Fixed validation of metadata claim descriptor paths. It now correctly supports claims path pointer and validates them
   according to the specs `(#824)`.
@@ -60,7 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed a bug in the `IdentifierRegistryHealthChecker` where an invalid parameter was used for the call.
     - Added new env variable `REGISTRY_HEALTH_CHECKS_ENABLED` to enable status registry health checks
 - Fixed nullpointer exception for offer details with deferred offer validity, when using an older offer
-
 
 ## 2.4.0
 

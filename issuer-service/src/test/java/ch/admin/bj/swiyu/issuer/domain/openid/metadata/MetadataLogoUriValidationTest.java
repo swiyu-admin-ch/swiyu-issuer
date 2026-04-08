@@ -14,7 +14,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class MetadataLogoUriValidatorTest {
+class MetadataLogoUriValidationTest {
 
     private static ValidatorFactory factory;
     private static Validator validator;
@@ -38,8 +38,12 @@ class MetadataLogoUriValidatorTest {
         assertThat(violations).isNotEmpty();
     }
 
-    @Test
-    void isValid_withInvalidDataPrefix_thenError() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "",
+            "data:image/gif;base64,R0lGODdhAQABAIAAAAUEBA==",
+            "image/png;base64,whatever"})
+    void isValid_withInvalidDataPrefix_thenError(String logoUri) {
         MetadataImage m = new MetadataImage();
         m.setUri("data:image/gif;base64,R0lGODdhAQABAIAAAAUEBA==");
         Set<ConstraintViolation<MetadataImage>> violations = validator.validate(m);

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 /**
@@ -15,7 +16,7 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MetadataImage {
     @NotNull
-    @ValidMetadataLogoUri
+    @Pattern(regexp = "^data:image/(png|jpeg);base64,.*$", message = "must be a valid URI or a base64 data image (data:image/png;base64 or data:image/jpeg;base64)")
     @JsonProperty(value = "uri")
     @Schema(description = """
             String value that contains a URI where the Wallet can obtain the logo of the Credential Issuer.
