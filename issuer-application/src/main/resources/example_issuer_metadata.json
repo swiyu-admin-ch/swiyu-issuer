@@ -172,7 +172,7 @@
         "ES256"
       ],
       "cryptographic_binding_methods_supported": [
-        "did:jwk"
+        "jwk"
       ],
       "proof_types_supported": {
         "jwt": {
@@ -258,6 +258,47 @@
               "name": "Notendurchschnitt"
             }
           ]
+        }
+      }
+    },
+    "university_example_sd_jwt_list": {
+      "format": "vc+sd-jwt",
+      "credential_signing_alg_values_supported": [
+        "ES256"
+      ],
+      "cryptographic_binding_methods_supported": [
+        "jwk"
+      ],
+      "proof_types_supported": {
+        "jwt": {
+          "proof_signing_alg_values_supported": [
+            "ES256"
+          ]
+        }
+      },
+      "vct": "${external-url}/oid4vci/vct/my-vct-v01",
+      "claims": {
+        "nested": {
+          "name": {
+            "mandatory": true,
+            "value_type": "string",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Universitätsname"
+              }
+            ]
+          },
+          "type": {
+            "mandatory": true,
+            "value_type": "array",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typen"
+              }
+            ]
+          }
         }
       }
     },
@@ -500,7 +541,7 @@
         "ES256"
       ],
       "cryptographic_binding_methods_supported": [
-        "did:jwk"
+        "jwk"
       ],
       "proof_types_supported": {
         "jwt": {

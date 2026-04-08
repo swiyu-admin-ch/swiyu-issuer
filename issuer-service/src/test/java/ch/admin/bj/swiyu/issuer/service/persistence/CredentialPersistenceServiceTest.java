@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.persistence;
 
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListIndexService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class CredentialPersistenceServiceTest {
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
 
     @Mock
-    private AvailableStatusListIndexRepository availableStatusListIndexRepository;
+    private StatusListIndexService statusListIndexService;
 
     private CredentialPersistenceService persistenceService;
 
@@ -40,7 +41,7 @@ class CredentialPersistenceServiceTest {
                 credentialOfferRepository,
                 credentialManagementRepository,
                 credentialOfferStatusRepository,
-                availableStatusListIndexRepository
+                statusListIndexService
         );
     }
 
@@ -188,14 +189,10 @@ class CredentialPersistenceServiceTest {
                 .build();
         var offerId = UUID.randomUUID();
 
-        var freeIndexes = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-        var availableIndexes = AvailableStatusListIndexes.builder()
-                .statusListUri(statusList.getUri())
-                .freeIndexes(new ArrayList<>(freeIndexes))
-                .build();
+        var claimedIndexes = Set.of(1, 2, 3);
 
-        when(availableStatusListIndexRepository.findById(statusList.getUri()))
-                .thenReturn(Optional.of(availableIndexes));
+        when(statusListIndexService.claimRandomIndexes(statusList, 3))
+                .thenReturn(claimedIndexes);
 
         persistenceService.saveStatusListEntries(List.of(statusList), offerId, 3);
 
@@ -215,7 +212,7 @@ class CredentialPersistenceServiceTest {
             assertNotNull(s.getId());
             assertEquals(offerId, s.getId().getOfferId());
             assertEquals(statusList.getId(), s.getId().getStatusListId());
-            assertTrue(freeIndexes.contains(s.getId().getIndex()));
+            assertTrue(claimedIndexes.contains(s.getId().getIndex()));
         }
     }
 
@@ -233,17 +230,11 @@ class CredentialPersistenceServiceTest {
         var freeIndexes1 = Arrays.asList(1, 2, 3, 4);
         var freeIndexes2 = Arrays.asList(10, 11, 12, 13);
 
-        when(availableStatusListIndexRepository.findById(statusList1.getUri()))
-                .thenReturn(Optional.of(AvailableStatusListIndexes.builder()
-                        .statusListUri(statusList1.getUri())
-                        .freeIndexes(new ArrayList<>(freeIndexes1))
-                        .build()));
+        when(statusListIndexService.claimRandomIndexes(statusList1, issuanceBatchSize))
+                .thenReturn(Set.copyOf(freeIndexes1.subList(0, issuanceBatchSize)));
 
-        when(availableStatusListIndexRepository.findById(statusList2.getUri()))
-                .thenReturn(Optional.of(AvailableStatusListIndexes.builder()
-                        .statusListUri(statusList2.getUri())
-                        .freeIndexes(new ArrayList<>(freeIndexes2))
-                        .build()));
+        when(statusListIndexService.claimRandomIndexes(statusList2, issuanceBatchSize))
+                .thenReturn(Set.copyOf(freeIndexes2.subList(0, issuanceBatchSize)));
 
         persistenceService.saveStatusListEntries(List.of(statusList1, statusList2), offerId, issuanceBatchSize);
 
@@ -252,7 +243,8 @@ class CredentialPersistenceServiceTest {
     }
 
     /**
-     * Exception path: if no indexes are available for the given status list URI, the method must fail.
+     * Exception path: if no indexes are available, {@link StatusListIndexService} throws a
+     * {@link BadRequestException} which must propagate through the persistence service.
      */
     @Test
     void saveStatusListEntries_shouldThrowWhenNoIndexesAvailable() {
@@ -262,8 +254,10 @@ class CredentialPersistenceServiceTest {
                 .build();
         var offerId = UUID.randomUUID();
 
-        when(availableStatusListIndexRepository.findById(statusList.getUri()))
-                .thenReturn(Optional.empty());
+        when(statusListIndexService.claimRandomIndexes(statusList, 3))
+                .thenThrow(new BadRequestException(
+                        "No status indexes remain in status list %s to create credential offer"
+                                .formatted(statusList.getUri())));
 
         var ex = assertThrows(BadRequestException.class,
                 () -> persistenceService.saveStatusListEntries(List.of(statusList), offerId, 3));
@@ -271,7 +265,9 @@ class CredentialPersistenceServiceTest {
     }
 
     /**
-     * Exception path: if less than {@code issuanceBatchSize} free indexes exist, the method must fail.
+     * Exception path: if fewer than {@code issuanceBatchSize} free indexes exist,
+     * {@link StatusListIndexService} throws a {@link BadRequestException} which must
+     * propagate through the persistence service.
      */
     @Test
     void saveStatusListEntries_shouldThrowWhenNotEnoughIndexesAvailable() {
@@ -281,44 +277,14 @@ class CredentialPersistenceServiceTest {
                 .build();
         var offerId = UUID.randomUUID();
 
-        var freeIndexes = Arrays.asList(1, 2); // only two free indexes
-        when(availableStatusListIndexRepository.findById(statusList.getUri()))
-                .thenReturn(Optional.of(AvailableStatusListIndexes.builder()
-                        .statusListUri(statusList.getUri())
-                        .freeIndexes(freeIndexes)
-                        .build()));
+        when(statusListIndexService.claimRandomIndexes(statusList, 3))
+                .thenThrow(new BadRequestException(
+                        "Too few status indexes remain in status list %s to create credential offer"
+                                .formatted(statusList.getUri())));
 
         var ex = assertThrows(BadRequestException.class,
                 () -> persistenceService.saveStatusListEntries(List.of(statusList), offerId, 3));
         assertTrue(ex.getMessage().contains(statusList.getUri()));
     }
 
-    /**
-     * Ensures getRandomIndexes never reuses indexes and only returns unique values from the freeIndexes list.
-     */
-    @Test
-    void getRandomIndexes_shouldReturnUniqueIndexes() {
-        // Arrange
-        var statusList = StatusList.builder()
-                .id(UUID.randomUUID())
-                .uri("https://example.com/status")
-                .build();
-        List<Integer> freeIndexes = Arrays.asList(10, 20, 30, 40, 50, 60, 70, 80, 90, 100);
-        var availableIndexes = AvailableStatusListIndexes.builder()
-                .statusListUri(statusList.getUri())
-                .freeIndexes(new ArrayList<>(freeIndexes))
-                .build();
-        when(availableStatusListIndexRepository.findById(statusList.getUri()))
-                .thenReturn(Optional.of(availableIndexes));
-
-        int batchSize = 5;
-
-        Set<Integer> result = persistenceService.getRandomIndexes(batchSize, statusList);
-
-        // Assert
-        assertEquals(batchSize, result.size(), "Should return exactly batchSize unique indexes");
-        assertTrue(freeIndexes.containsAll(result), "All returned indexes must be from the original freeIndexes");
-        // Ensure no duplicates (Set guarantees this, but we check for clarity)
-        assertEquals(batchSize, result.stream().distinct().count(), "No duplicate indexes should be present");
-    }
 }

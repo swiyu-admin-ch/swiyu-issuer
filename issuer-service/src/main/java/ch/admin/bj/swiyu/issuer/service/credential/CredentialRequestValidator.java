@@ -5,14 +5,12 @@ import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNSUPPORTED_CREDENTIAL_FORMAT;
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNSUPPORTED_CREDENTIAL_TYPE;
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNKNOWN_CREDENTIAL_IDENTIFIER;
 
 /**
  * Stateless validation helpers for credential requests compared to an offer and issuer configuration.
@@ -52,7 +50,7 @@ public class CredentialRequestValidator {
                 && !credentialOffer.getMetadataCredentialSupportedId()
                 .getFirst()
                 .equals(credentialRequest.getCredentialConfigurationId())) {
-            throw new Oid4vcException(UNSUPPORTED_CREDENTIAL_TYPE,
+            throw new Oid4vcException(UNKNOWN_CREDENTIAL_IDENTIFIER,
                     "Mismatch between requested and offered credential configuration id.",
                     Map.of(
                             "requestedConfigurationId", credentialRequest.getCredentialConfigurationId(),

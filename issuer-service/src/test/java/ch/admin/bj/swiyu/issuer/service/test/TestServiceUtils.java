@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.ECKey;
@@ -21,8 +20,8 @@ import java.util.UUID;
 
 public class TestServiceUtils {
 
-    public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk) throws JOSEException {
-        return createHolderProof(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, Date.from(Instant.now()));
+    public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString) throws JOSEException {
+        return createHolderProof(holderPrivateKey, issuerUri, nonce, proofTypeString, Date.from(Instant.now()));
     }
 
     public static String createAttestedHolderProof(
@@ -30,10 +29,9 @@ public class TestServiceUtils {
             String issuerUri,
             String nonce,
             String proofTypeString,
-            boolean useDidJwk,
             AttackPotentialResistance attestationLevel,
             String attestationIssuerDid) throws JOSEException {
-        return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, Date.from(Instant.now()), attestationLevel, attestationIssuerDid, holderPrivateKey);
+        return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, Date.from(Instant.now()), attestationLevel, attestationIssuerDid, holderPrivateKey);
     }
 
     public static String createAttestedHolderProof(
@@ -41,15 +39,14 @@ public class TestServiceUtils {
             String issuerUri,
             String nonce,
             String proofTypeString,
-            boolean useDidJwk,
             AttackPotentialResistance attestationLevel,
             String attestationIssuerDid,
             ECKey attestationKey) throws JOSEException {
-        return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, Date.from(Instant.now()), attestationLevel, attestationIssuerDid, attestationKey);
+        return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, Date.from(Instant.now()), attestationLevel, attestationIssuerDid, attestationKey);
     }
 
-    public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, boolean useDidJwk, Date issueTime) throws JOSEException {
-        return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, useDidJwk, issueTime, null, null, holderPrivateKey);
+    public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, Date issueTime) throws JOSEException {
+        return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, issueTime, null, null, holderPrivateKey);
     }
 
     @NotNull
@@ -58,7 +55,6 @@ public class TestServiceUtils {
             String issuerUri,
             String nonce,
             String proofTypeString,
-            boolean useDidJwk,
             Date issueTime,
             @Nullable AttackPotentialResistance attestationLevel,
             @Nullable String attestationIssuerDid,
@@ -67,11 +63,7 @@ public class TestServiceUtils {
 
         var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType(proofTypeString));
-        if (useDidJwk) {
-            headerBuilder.keyID(DidJwk.createFromJsonString(holderPrivateKey.toPublicJWK().toJSONString()).getDidJwk());
-        } else {
-            headerBuilder.jwk(holderPrivateKey.toPublicJWK());
-        }
+        headerBuilder.jwk(holderPrivateKey.toPublicJWK());
         // Add attestation if required
         if (attestationLevel != null) {
             JWSSigner attestationSigner = new ECDSASigner(attestationKey);

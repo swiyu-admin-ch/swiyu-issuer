@@ -20,6 +20,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,8 +32,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
@@ -54,7 +55,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-@Transactional
 class KeyAttestationFlowIT {
     private static ECKey jwk;
     private final UUID testOfferNoAttestationId = UUID.randomUUID();
@@ -67,6 +67,9 @@ class KeyAttestationFlowIT {
     MockMvc mock;
 
     @Autowired
+    CredentialOfferStatusRepository credentialOfferStatusRepository;
+
+    @Autowired
     CredentialOfferRepository credentialOfferRepository;
 
     @Autowired
@@ -74,7 +77,7 @@ class KeyAttestationFlowIT {
 
     @Autowired
     ApplicationProperties applicationProperties;
-    @MockitoBean
+    @MockitoSpyBean
     AsyncCredentialEventHandler testEventListener;
     @Autowired
     private DidKeyResolverFacade didKeyResolver;
@@ -85,6 +88,13 @@ class KeyAttestationFlowIT {
         createCredentialOffer(createTestOffer(testOfferAnyAttestationId, CredentialOfferStatusType.OFFERED, "university_example_any_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
         createCredentialOffer(createTestOffer(testOfferHighAttestationId, CredentialOfferStatusType.OFFERED, "university_example_high_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
         jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate();
+    }
+
+    @AfterEach
+    void tearDown() {
+        credentialOfferStatusRepository.deleteAll();
+        credentialOfferRepository.deleteAll();
+        credentialManagementRepository.deleteAll();
     }
 
     /**
@@ -134,7 +144,7 @@ class KeyAttestationFlowIT {
 
         IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_IDENTIFIER.name()));
     }
 
     @Test
@@ -145,7 +155,7 @@ class KeyAttestationFlowIT {
         mockDidResolve(jwk.toPublicJWK());
         IssuanceTestUtils.requestCredential(mock, (String) fetchData.token(), fetchData.credentialRequestString())
                 .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name()));
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_IDENTIFIER.name()));
     }
 
     @Test
@@ -158,8 +168,7 @@ class KeyAttestationFlowIT {
                 jwk,
                 applicationProperties.getTemplateReplacement().get("external-url"),
                 nonce,
-                ProofType.JWT.getClaimTyp(),
-                true
+                ProofType.JWT.getClaimTyp()
         );
 
         // V2: credential_configuration_id + proofs.jwt
@@ -185,7 +194,7 @@ class KeyAttestationFlowIT {
         var fetchData = prepareAttested(mock, testOfferHighAttestationId, AttackPotentialResistance.ISO_18045_ENHANCED_BASIC);
         mockDidResolve(new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate().toPublicJWK());
         var response = TestInfrastructureUtils.requestFailingCredential(mock, fetchData.token(), fetchData.credentialRequestString());
-        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNSUPPORTED_CREDENTIAL_TYPE.name());
+        Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_IDENTIFIER.name());
     }
 
     private void mockDidResolve(JWK key) {
