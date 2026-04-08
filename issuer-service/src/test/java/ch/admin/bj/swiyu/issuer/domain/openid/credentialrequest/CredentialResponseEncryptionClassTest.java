@@ -18,7 +18,7 @@ class CredentialResponseEncryptionClassTest {
         var key = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("TestKey").algorithm(JWEAlgorithm.ECDH_ES).keyUse(KeyUse.ENCRYPTION).generate());
         var keyJson = key.toPublicJWK().toJSONObject();
         var credentialResponseEncryption = assertDoesNotThrow(() -> new CredentialResponseEncryptionClass(keyJson, EncryptionMethod.A256GCM.getName()));
-        assertDoesNotThrow(credentialResponseEncryption::getAlg);
+        assertDoesNotThrow(credentialResponseEncryption::extractAlg);
         assertDoesNotThrow(credentialResponseEncryption::getEnc);
     }
 
@@ -26,7 +26,8 @@ class CredentialResponseEncryptionClassTest {
     void whenMissingAlg_thenThrowsOid4vcException() {
         var key = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("TestKey").keyUse(KeyUse.ENCRYPTION).generate());
         var keyJson = key.toPublicJWK().toJSONObject();
-        assertThrows(Oid4vcException.class, () -> new CredentialResponseEncryptionClass(keyJson, EncryptionMethod.A256GCM.getName()));
+        var responseEncryption = assertDoesNotThrow(() -> new CredentialResponseEncryptionClass(keyJson, EncryptionMethod.A256GCM.getName()));
+        assertThrows(Oid4vcException.class, () -> responseEncryption.extractAlg());
     }
 
 }

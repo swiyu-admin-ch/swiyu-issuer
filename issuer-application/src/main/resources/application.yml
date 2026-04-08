@@ -41,6 +41,7 @@ http:
 management:
   endpoint:
     health:
+      registry-health-checks-enabled: ${REGISTRY_HEALTH_CHECKS_ENABLED:false}
       probes:
         enabled: true
       show-components: always
@@ -110,7 +111,7 @@ application:
   # URL under which this service can be reached from the web
   external-url: ${EXTERNAL_URL:}
   offer-validity: 2592000
-  deferred-offer-validity-seconds: ${DEFERRED_OFFER_VALIDITY_SECONDS:}864000 # 60 * 60 * 24 * 10 => 10 days;
+  deferred-offer-validity-seconds: ${DEFERRED_OFFER_VALIDITY_SECONDS:864000} # 60 * 60 * 24 * 10 => 10 days;
   min-deferred-offer-interval-seconds: ${MIN_DEFERRED_OFFER_WAITING_SECONDS:10}
   # List of DID of Attestation providers we trust in
   trusted-attestation-providers: ${TRUSTED_ATTESTATION_PROVIDERS:}

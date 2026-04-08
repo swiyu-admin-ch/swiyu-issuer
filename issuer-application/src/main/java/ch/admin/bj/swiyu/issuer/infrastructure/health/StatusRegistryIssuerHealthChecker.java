@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -22,7 +21,7 @@ import org.springframework.web.client.RestTemplate;
  * Always adds the configured business partner id as a detail.
  * </p>
  */
-@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
+@ConditionalRegistryHealthChecksEnabled
 @Component
 @RequiredArgsConstructor
 public class StatusRegistryIssuerHealthChecker extends CachedHealthChecker {

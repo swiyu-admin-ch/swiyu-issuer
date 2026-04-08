@@ -29,14 +29,9 @@ public class CredentialRequestMapper {
         if (credentialRequestDto == null) {
             return null;
         }
-
-        try {
-            return new CredentialResponseEncryptionClass(
+        return new CredentialResponseEncryptionClass(
                     credentialRequestDto.jwk(),
                     credentialRequestDto.enc()
             );
-        } catch (ParseException e) {
-            throw new Oid4vcException(e, CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS, "Encryption JWK cannot be parsed.");
-        }
     }
 }

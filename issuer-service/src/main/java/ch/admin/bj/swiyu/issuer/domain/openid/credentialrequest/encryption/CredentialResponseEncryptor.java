@@ -59,9 +59,9 @@ public class CredentialResponseEncryptor {
             throw new Oid4vcException(
                     INVALID_ENCRYPTION_PARAMETERS,
                     String.format("Requested encryption is not offered. alg: %s , enc: %s",
-                            requestedEncryption.getAlg(), requestedEncryption.getEnc()),
+                            requestedEncryption.extractAlg(), requestedEncryption.getEnc()),
                     Map.of(
-                            "requestedAlg", requestedEncryption.getAlg(),
+                            "requestedAlg", requestedEncryption.extractAlg(),
                             "requestedEnc", requestedEncryption.getEnc(),
                             "offeredAlgs", offeredEncryption.getAlgValuesSupported(),
                             "offeredEncs", offeredEncryption.getEncValuesSupported()
@@ -99,7 +99,7 @@ public class CredentialResponseEncryptor {
                     INVALID_ENCRYPTION_PARAMETERS,
                     "Mismatch between specified encryption algorithm, encryption & provided key - " + e.getMessage(),
                     Map.of(
-                            "alg", requestedEncryption != null ? requestedEncryption.getAlg() : "null",
+                            "alg", requestedEncryption != null ? requestedEncryption.extractAlg() : "null",
                             "enc", requestedEncryption != null ? requestedEncryption.getEnc() : "null"
                     )
             );
@@ -108,7 +108,7 @@ public class CredentialResponseEncryptor {
 
 
     public String encryptResponse(String oid4vciCredentialJson) {
-        JWEAlgorithm alg = JWEAlgorithm.parse(requestedEncryption.getAlg());
+        JWEAlgorithm alg = JWEAlgorithm.parse(requestedEncryption.extractAlg());
         EncryptionMethod enc = EncryptionMethod.parse(requestedEncryption.getEnc());
         JWK holderPublicKey = guardedParseJWK();
 
@@ -129,7 +129,7 @@ public class CredentialResponseEncryptor {
             throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS,
                     "Encryption was not possible with the provided parameters - " + e.getMessage(),
                     Map.of(
-                            "alg", requestedEncryption != null ? requestedEncryption.getAlg() : "null",
+                            "alg", requestedEncryption != null ? requestedEncryption.extractAlg() : "null",
                             "enc", requestedEncryption != null ? requestedEncryption.getEnc() : "null"
                     )
             );
