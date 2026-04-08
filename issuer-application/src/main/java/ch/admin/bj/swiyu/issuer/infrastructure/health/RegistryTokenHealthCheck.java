@@ -4,14 +4,13 @@ import ch.admin.bj.swiyu.issuer.domain.ecosystem.EcosystemApiType;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenSetRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
 
 @Component
-@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
+@ConditionalRegistryHealthChecksEnabled
 public class RegistryTokenHealthCheck extends CachedHealthChecker {
 
     private final TokenSetRepository tokenSetRepository;

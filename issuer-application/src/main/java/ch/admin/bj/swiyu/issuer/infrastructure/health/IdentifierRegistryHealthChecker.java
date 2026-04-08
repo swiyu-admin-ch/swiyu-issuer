@@ -7,7 +7,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Ke
 import ch.admin.eid.did_sidekicks.DidDoc;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ import java.util.List;
  * Health checker that validates the reachability / resolvability of DID (or DID key) identifiers
  * configured for the issuer itself as well as the trusted attestation providers.
  */
-@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
+@ConditionalRegistryHealthChecksEnabled
 @Component
 @RequiredArgsConstructor
 public class IdentifierRegistryHealthChecker extends CachedHealthChecker {

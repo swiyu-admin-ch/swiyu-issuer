@@ -3,14 +3,13 @@ package ch.admin.bj.swiyu.issuer.infrastructure.health;
 import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
 
 @Component
-@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
+@ConditionalRegistryHealthChecksEnabled
 public class CallbackHealthChecker extends CachedHealthChecker {
     private static final String AMOUNT_OF_STALE_CALLBACKS = "amountOfStaleCallbacks";
     private static final Duration DEFAULT_DURATION_UNTIL_STALE = Duration.ofMinutes(1);

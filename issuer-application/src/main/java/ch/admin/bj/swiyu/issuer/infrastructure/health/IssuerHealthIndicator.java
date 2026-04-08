@@ -4,7 +4,6 @@ package ch.admin.bj.swiyu.issuer.infrastructure.health;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -14,7 +13,7 @@ import java.util.Map;
  * <p>Propagates DOWN if any underlying checker is not UP and exposes each checkers details.</p>
  */
 @Component
-@ConditionalOnProperty(prefix = "management.endpoint.health", name = "registry-health-checks-enabled", havingValue = "true")
+@ConditionalRegistryHealthChecksEnabled
 @RequiredArgsConstructor
 public class IssuerHealthIndicator implements HealthIndicator {
 
