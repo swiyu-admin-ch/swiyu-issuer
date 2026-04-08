@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestableProof;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestationJwt;
@@ -59,6 +60,29 @@ public class KeyAttestationService {
                     ));
         }
 
+        AttestationJwt attestation = validateKeyAttestation(attestationRequirement, attestationJwt);
+        verifyProofKeyInAttestedKeys(requestProof, attestation);
+
+        try {
+            return attestation.toJsonString();
+        } catch (ParseException e) {
+            throw new Oid4vcException(e, INVALID_PROOF, "Key attestation is malformed!");
+        }
+    }
+
+    /**
+     * Validates a key attestation JWT and check if the supplied {@link KeyAttestationRequirement} is satisfied.
+     * <br>
+     *
+     * @param attestationRequirement the requirement defining the expected key storage and
+     *                               other attestation constraints
+     * @param attestationJwt the raw JWT string to be validated
+     * @return a fully parsed and validated {@link AttestationJwt}
+     * @throws Oid4vcException if parsing fails, the JWT is malformed, the provider is not
+     *                         trusted, validation against the requirement fails, or the
+     *                         signature algorithm is unsupported
+     */
+    public AttestationJwt validateKeyAttestation(KeyAttestationRequirement attestationRequirement, String attestationJwt) {
         try {
             AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt, applicationProperties.isSwissProfileVersioningEnforcement());
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
@@ -71,10 +95,8 @@ public class KeyAttestationService {
             if (!attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage())) {
                 throw new Oid4vcException(INVALID_PROOF, "Key attestation was invalid or not matching the attack resistance for the credential!");
             }
-
-            verifyProofKeyInAttestedKeys(requestProof, attestation);
-
-            return attestation.toJsonString();
+            
+            return attestation;
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Key attestation is malformed!");
         } catch (IllegalArgumentException e) {
@@ -111,7 +133,17 @@ public class KeyAttestationService {
         }
     }
 
-    private void verifyKeyPresentInAttestation(ECKey proofKey, AttestationJwt attestation) {
+
+    /**
+     * Verifies that the supplied {@code proofKey} is listed in the {@code attested_keys}
+     * claim of the given {@link AttestationJwt}.
+     *
+     * @param proofKey    the EC key used as proof
+     * @param attestation the attestation JWT containing the {@code attested_keys}
+     * @throws Oid4vcException with {@code INVALID_PROOF} if the proof key does not
+     *         match any key in the attestation or if thumb‑print computation fails
+     */
+    public void verifyKeyPresentInAttestation(ECKey proofKey, AttestationJwt attestation) {
         try {
             if (!attestation.containsKey(proofKey)) {
                 throw new Oid4vcException(INVALID_PROOF,

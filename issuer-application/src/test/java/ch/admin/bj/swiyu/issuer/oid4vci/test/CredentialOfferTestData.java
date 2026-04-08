@@ -34,10 +34,12 @@ public class CredentialOfferTestData {
     }
 
     public static StatusList createStatusList() {
+        var statusListId = UUID.randomUUID();
         var statusListToken = new TokenStatusListToken(2, 10000);
         return StatusList.builder()
+                .id(statusListId)
                 .config(Map.of("bits", 2))
-                .uri("https://localhost:8080/status")
+                .uri("https://localhost:8080/status/" + statusListId)
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
                 .maxLength(10000)
                 .build();
@@ -94,6 +96,15 @@ public class CredentialOfferTestData {
         Map<String, String> credentialSubjectData = new HashMap<>();
         credentialSubjectData.put("type", "Bachelor of Science");
         credentialSubjectData.put("name", "Data Science");
+        return credentialSubjectData;
+    }
+
+    public static Map<String, Object> getUniversityCredentialListSubjectData() {
+        Map<String, Object> credentialSubjectData = new HashMap<>();
+        Map<String, Object> nestedSubjectData = new HashMap<>();
+        nestedSubjectData.put("type", List.of("Bachelor of Science", "Master of Science"));
+        nestedSubjectData.put("name", "University of Bern");
+        credentialSubjectData.put("nested", nestedSubjectData);
         return credentialSubjectData;
     }
 

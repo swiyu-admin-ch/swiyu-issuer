@@ -26,10 +26,14 @@ public class ActuatorSanitizer implements SanitizingFunction {
     public ActuatorSanitizer(ActuatorEnvProperties properties) {
         List<String> allowedProperties = properties.getAllowedProperties();
         for (String key : allowedProperties) {
-            this.whitelist.add(getPattern(key));
+            if (!key.isBlank()) {
+                this.whitelist.add(getPattern(key));
+            }
         }
         for (String key : keysToSanitize) {
-            this.blacklist.add(getPattern(key));
+            if (!key.isBlank()) {
+                this.blacklist.add(getPattern(key));
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventRepository;
 import ch.admin.bj.swiyu.issuer.dto.callback.CallbackEventTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.callback.WebhookCallbackDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
@@ -13,6 +14,7 @@ import okhttp3.mockwebserver.MockWebServer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +25,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
@@ -40,15 +41,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-@Transactional
 @ExtendWith(OutputCaptureExtension.class)
-/**
- * Test Webhook Callbacks including if the RestClient has been used correctly.
- */
 class WebhookIT {
     static final String API_KEY_HEADER = "x-api-key";
     static final String API_KEY_VALUE = "1235";
-
 
     // https://square.github.io/okhttp/#mockwebserver
     private static MockWebServer mockWebServer;
@@ -56,6 +52,8 @@ class WebhookIT {
     private WebhookEventProcessor webhookEventProcessor;
     @Autowired
     private WebhookEventProducer webhookEventProducer;
+    @Autowired
+    private CallbackEventRepository callbackEventRepository;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -75,6 +73,13 @@ class WebhookIT {
     @AfterAll
     static void tearDown() throws IOException {
         mockWebServer.shutdown();
+    }
+
+    @BeforeEach
+    void cleanUp() {
+        // Ensures no leftover CallbackEvents from previous tests remain,
+        // which would cause the PESSIMISTIC_WRITE lock in triggerProcessCallback() to block indefinitely.
+        callbackEventRepository.deleteAll();
     }
 
     @Test

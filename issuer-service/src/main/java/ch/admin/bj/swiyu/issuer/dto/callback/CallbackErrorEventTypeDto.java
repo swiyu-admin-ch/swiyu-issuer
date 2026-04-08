@@ -5,5 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(name = "CallbackErrorEventType")
 public enum CallbackErrorEventTypeDto {
     OAUTH_TOKEN_EXPIRED,
-    KEY_BINDING_ERROR
+    KEY_BINDING_ERROR,
+    STATUS_LIST_UPDATE_FAILED
 }
