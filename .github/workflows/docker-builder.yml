@@ -26,7 +26,7 @@ on:
         default: ''
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ vars.DOCKER_IMAGE }}
 
 # Github documentation
 jobs:
