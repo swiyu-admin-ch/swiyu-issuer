@@ -16,7 +16,7 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MetadataImage {
     @NotNull
-    @Pattern(regexp = "^data:image/(png|jpeg);base64,.*$", message = "must be a valid URI or a base64 data image (data:image/png;base64 or data:image/jpeg;base64)")
+    @Pattern(regexp = "^data:image/(png|jpeg);base64,.*$", message = "must be a valid data URL image (data:image/png;base64, or data:image/jpeg;base64,)")
     @JsonProperty(value = "uri")
     @Schema(description = """
             String value that contains a data URL containing the logo of the Credential Issuer.
