@@ -19,7 +19,7 @@ public class MetadataImage {
     @Pattern(regexp = "^data:image/(png|jpeg);base64,.*$", message = "must be a valid URI or a base64 data image (data:image/png;base64 or data:image/jpeg;base64)")
     @JsonProperty(value = "uri")
     @Schema(description = """
-            String value that contains a URI where the Wallet can obtain the logo of the Credential Issuer.
+            String value that contains a data URL containing the logo of the Credential Issuer.
             The Wallet needs to determine the scheme, since the URI value could use the https: scheme, the data: scheme, etc.""")
     private String uri;
 }
