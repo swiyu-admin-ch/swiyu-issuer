@@ -31,18 +31,19 @@ public class AuthorizationService {
 
 
     /**
-     * Processes all things needed for the token_endpoint of an authorization server implementing 
+     * Processes all things needed for the token_endpoint of an authorization server implementing
      * pre-authorized_code and refresh_code flows, both with a DPoP header.
-     * @param dpop DPoP token as provided in HTTP Request Header by the client.
+     *
+     * @param dpop                       DPoP token as provided in HTTP Request Header by the client.
      * @param oauthAccessTokenRequestDto body of the token request
-     * @param request full request with anciallary headers and request target uri
+     * @param request                    full request with anciallary headers and request target uri
      * @return
      */
     @Transactional
     public OAuthTokenDto processOAuthTokenEndpointRequest(@Nullable String dpop,
-        OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
-        HttpServletRequest request) {
-        validateBlockedRequestParameters(request);
+                                                          OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
+                                                          HttpServletRequest request) {
+        validateUnsupportedRequestParameters(request);
 
         if (oauthAccessTokenRequestDto == null || oauthAccessTokenRequestDto.grant_type() == null) {
             throw OAuthException.invalidRequest("The request is missing a required parameter");
@@ -54,15 +55,26 @@ public class AuthorizationService {
 
     /**
      * Extracts the access token from the authorization header
+     *
      * @param authorizationToken the full authorization property, BEARER <access_token> or DPOP <access_token>
-     * @param dpop DPoP jwt in serialized form
-     * @param request full http request
+     * @param dpop               DPoP jwt in serialized form
+     * @param request            full http request
      * @return the access token
      */
     public String getValidatedAccessToken(String authorizationToken, String dpop, HttpServletRequest request) {
         String accessToken = oauthService.getAccessToken(authorizationToken);
         demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
         return accessToken;
+    }
+
+    /**
+     * Create a HTTP Response with a DPoP Nonce header as used for DPoP
+     * and a nonce body as used for credential proofs.
+     */
+    public ResponseEntity<NonceResponseDto> createNonceResponse() {
+        HttpHeaders headers = new HttpHeaders();
+        demonstratingProofOfPossessionService.addDpopNonce(headers);
+        return new ResponseEntity<>(nonceService.createNonce(), headers, HttpStatus.OK);
     }
 
     private OAuthTokenDto oauthRefreshToken(String dpop, HttpServletRequest request, String refreshToken) {
@@ -102,19 +114,8 @@ public class AuthorizationService {
         }
     }
 
-    /**
-     * Create a HTTP Response with a DPoP Nonce header as used for DPoP
-     * and a nonce body as used for credential proofs.
-     */
-    public ResponseEntity<NonceResponseDto> createNonceResponse() {
-        HttpHeaders headers = new HttpHeaders();
-        demonstratingProofOfPossessionService.addDpopNonce(headers);
-        return new ResponseEntity<>(nonceService.createNonce(), headers, HttpStatus.OK);
-    }
-
-
     private OAuthTokenDto processTokenRequestByGrantType(String dpop, OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
-            HttpServletRequest request) {
+                                                         HttpServletRequest request) {
         if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
             String preauthorizedCode = oauthAccessTokenRequestDto.preauthorized_code();
             return oauthTokenPreAuthorized(dpop, request, preauthorizedCode);
@@ -125,12 +126,8 @@ public class AuthorizationService {
             throw OAuthException.unsupportedGrantType("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code or refresh_token");
         }
     }
-
-    /**
-     * Validate some request parametesr which may explicitly not be set
-     * @param request
-     */
-    private void validateBlockedRequestParameters(HttpServletRequest request) {
+    
+    private void validateUnsupportedRequestParameters(HttpServletRequest request) {
         if (request.getParameter("tx_code") != null) {
             throw OAuthException.invalidRequest("Unsupported parameter 'tx_code'");
         }
