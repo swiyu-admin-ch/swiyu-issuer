@@ -20,6 +20,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagemen
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenTypeDto;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferUtil;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -188,16 +189,7 @@ public class OAuthService {
     }
 
     private Optional<CredentialOffer> getExpirationCheckedCredentialOffer(Optional<CredentialOffer> credentialOffer) {
-        return credentialOffer
-                .map(offer -> {
-                    if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED
-                            && offer.hasExpirationTimeStampPassed()) {
-                        credentialStateMachine.sendEventAndUpdateStatus(offer,
-                                CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
-                        return credentialOfferRepository.save(offer);
-                    }
-                    return offer;
-                });
+        return credentialOffer.map(offer -> CredentialOfferUtil.getExpirationCheckedCredentialOffer(offer, credentialStateMachine, credentialOfferRepository));
     }
 
     /**
