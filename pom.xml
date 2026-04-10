@@ -63,6 +63,20 @@
                 <version>${bouncycastle.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+
+            <!-- Check again when spring-cloud-kubernetes-fabric8-config is updated -->
+            <dependency>
+                <groupId>io.vertx</groupId>
+                <artifactId>vertx-core</artifactId>
+                <version>4.5.26</version>
+                <scope>compile</scope>
+            </dependency>
+
             <!-- centrally manage swiyu-jws-signature-service version -->
             <dependency>
                 <groupId>ch.admin.swiyu</groupId>
