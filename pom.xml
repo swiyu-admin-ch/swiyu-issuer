@@ -71,6 +71,14 @@
                 <scope>compile</scope>
             </dependency>
 
+            <!-- Source: https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.20.0</version>
+                <scope>compile</scope>
+            </dependency>
+
             <!-- centrally manage swiyu-jws-signature-service version -->
             <dependency>
                 <groupId>ch.admin.swiyu</groupId>
