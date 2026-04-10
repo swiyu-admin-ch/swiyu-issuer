@@ -50,7 +50,7 @@
         <springframework.cloud.version>2025.0.1</springframework.cloud.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <generic-java-lib.version>1.2.0</generic-java-lib.version>
+        <generic-java-lib.version>1.4.0</generic-java-lib.version>
     </properties>
 
     <dependencyManagement>
