@@ -63,12 +63,6 @@
                 <version>${bouncycastle.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.bouncycastle</groupId>
-                <artifactId>bcprov-jdk18on</artifactId>
-                <version>${bouncycastle.version}</version>
-            </dependency>
-
             <!-- Check again when spring-cloud-kubernetes-fabric8-config is updated -->
             <dependency>
                 <groupId>io.vertx</groupId>
