@@ -5,14 +5,13 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientException;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(prefix = "app.health", name = "enabled", havingValue = "true")
+@ConditionalRegistryHealthChecksEnabled
 public class StatusListAvailabilityHealthChecker extends CachedHealthChecker {
 
     private final StatusBusinessApiApi statusBusinessApi;
@@ -21,6 +20,7 @@ public class StatusListAvailabilityHealthChecker extends CachedHealthChecker {
     @Override
     protected void performCheck(Health.Builder builder) throws Exception {
         builder.withDetail("partnerId", swiyuProperties.businessPartnerId());
+
         try {
             statusBusinessApi.getAllStatusListEntries(swiyuProperties.businessPartnerId(), 0, 1, null).block();
             builder.up();

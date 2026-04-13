@@ -30,7 +30,7 @@ public class IssuerCredentialResponseEncryption extends IssuerCredentialEncrypti
     private List<@Pattern(regexp = "^ECDH-ES$") String> algValuesSupported = List.of("ECDH-ES");
 
     public boolean contains(CredentialResponseEncryptionClass requestedEncryption) {
-        return algValuesSupported.contains(requestedEncryption.getAlg())
+        return algValuesSupported.contains(requestedEncryption.extractAlg())
                 && encValuesSupported.contains(requestedEncryption.getEnc());
     }
 }

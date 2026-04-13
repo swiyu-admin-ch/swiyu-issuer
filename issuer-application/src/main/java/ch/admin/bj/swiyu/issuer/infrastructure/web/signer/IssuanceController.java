@@ -8,10 +8,9 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
-import ch.admin.bj.swiyu.issuer.service.NonceService;
-import ch.admin.bj.swiyu.issuer.service.OAuthService;
+import ch.admin.bj.swiyu.issuer.service.AuthorizationService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
-import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
+
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,13 +29,10 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -60,13 +56,12 @@ public class IssuanceController {
     public static final String DPOP_HTTP_HEADER = "DPoP";
 
     private final CredentialServiceOrchestrator credentialServiceOrchestrator;
-    private final NonceService nonceService;
     private final JweService jweService;
-    private final OAuthService oauthService;
-    private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
 
     private final Validator validator;
     private final ObjectMapper objectMapper;
+
+    private final AuthorizationService authorizationSerivce;
 
 
     @Timed
@@ -85,28 +80,7 @@ public class IssuanceController {
             @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
             @ModelAttribute OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
             HttpServletRequest request) {
-        // TODO to be removed when implementing https://jira.bit.admin.ch/browse/EIDOMNI-709
-        if (request.getParameter("tx_code") != null) {
-            throw OAuthException.invalidRequest("Unsupported parameter 'tx_code'");
-        }
-
-        if (request.getParameter("client_id") != null) {
-            throw OAuthException.invalidRequest("Unsupported parameter 'client_id'");
-        }
-
-        if (oauthAccessTokenRequestDto == null || oauthAccessTokenRequestDto.grant_type() == null) {
-            throw OAuthException.invalidRequest("The request is missing a required parameter");
-        }
-
-        if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
-            String preauthorizedCode = oauthAccessTokenRequestDto.preauthorized_code();
-            return oauthTokenPreAuthorized(dpop, request, preauthorizedCode);
-        } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
-            String refreshToken = oauthAccessTokenRequestDto.refresh_token();
-            return oauthRefreshToken(dpop, request, refreshToken);
-        } else {
-            throw OAuthException.unsupportedGrantType("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
-        }
+        return authorizationSerivce.processOAuthTokenEndpointRequest(dpop, oauthAccessTokenRequestDto, request);
     }
 
     @Timed
@@ -120,9 +94,7 @@ public class IssuanceController {
                     Also provides a DPoP nonce. For more details towards demonstrating proof of possession refer to <a href="https://datatracker.ietf.org/doc/html/rfc9449#name-authorization-server-provid">RFC9449</a>
                     """)
     public ResponseEntity<NonceResponseDto> createNonce() {
-        HttpHeaders headers = new HttpHeaders();
-        demonstratingProofOfPossessionService.addDpopNonce(headers);
-        return new ResponseEntity<>(nonceService.createNonce(), headers, HttpStatus.OK);
+        return authorizationSerivce.createNonceResponse();
     }
 
     @Timed
@@ -180,16 +152,11 @@ public class IssuanceController {
         String unparsedRequestDto = jweService.decryptRequest(requestMessage, request.getContentType());
 
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
-        var clientInfo = getClientAgentInfo(request);
+        ClientAgentInfo clientInfo = getClientAgentInfo(request);
 
-        CredentialEnvelopeDto credentialEnvelope;
-
-        var accessToken = getAccessToken(bearerToken);
-        demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
-
-
-        var dto = parseCredentialRequestDto(unparsedRequestDto);
-        credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
+        String accessToken = getAccessToken(bearerToken, dpop, request);
+        CreateCredentialRequestDto dto = parseCredentialRequestDto(unparsedRequestDto);
+        CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
@@ -256,53 +223,13 @@ public class IssuanceController {
         DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = parseDeferredCredentialRequestDto(
                 unparsedRequestDto);
 
-        CredentialEnvelopeDto credentialEnvelope;
-
-        String accessToken = getAccessToken(bearerToken);
-        demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
-        credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
+        String accessToken = getAccessToken(bearerToken, dpop, request);
+        CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())
                 .headers(headers)
                 .body(credentialEnvelope.getOid4vciCredentialJson());
-    }
-
-    private OAuthTokenDto oauthRefreshToken(String dpop, HttpServletRequest request, String refreshToken) {
-        if (StringUtils.isBlank(refreshToken)) {
-            throw OAuthException.invalidRequest("Refresh Token is required");
-        }
-        demonstratingProofOfPossessionService.refreshDpop(
-                refreshToken,
-                dpop,
-                new ServletServerHttpRequest(request)
-        );
-
-        try {
-            return oauthService.refreshOAuthToken(refreshToken);
-        } catch (OAuthException exc) {
-            // Other endpoints calling issueOAuthToken expect an invalid token OAuthException
-            // this exception is caught here and replaced with invalid grant to follow the specification
-            throw OAuthException.invalidGrant("invalid refresh token");
-        }
-    }
-
-    private OAuthTokenDto oauthTokenPreAuthorized(String dpop, HttpServletRequest request, String preauthorizedCode) {
-        if (StringUtils.isBlank(preauthorizedCode)) {
-            throw OAuthException.invalidRequest("Pre-authorized code is required");
-        }
-        demonstratingProofOfPossessionService.registerDpop(
-                preauthorizedCode,
-                dpop,
-                new ServletServerHttpRequest(request));
-
-        try {
-            return oauthService.issueOAuthToken(preauthorizedCode);
-        } catch (OAuthException exc) {
-            // Other endpoints calling issueOAuthToken expect an invalid token OAuthException
-            // this exception is caught here and replaced with invalid grant to follow the specification
-            throw OAuthException.invalidGrant("invalid token");
-        }
     }
 
     private @NotNull ClientAgentInfo getClientAgentInfo(HttpServletRequest request) {
@@ -344,9 +271,9 @@ public class IssuanceController {
         }
     }
 
-    private String getAccessToken(String bearerToken) {
+    private String getAccessToken(String bearerToken, String dpop, HttpServletRequest request) {
         try {
-            return this.oauthService.getAccessToken(bearerToken);
+            return this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
         } catch (OAuthException e) {
             throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
         }

@@ -34,6 +34,8 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -49,12 +51,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.UnsupportedEncodingException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.*;
@@ -75,7 +77,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-@Transactional
 class DeferredFlowIT {
 
     private static ECKey jwk;
@@ -83,7 +84,7 @@ class DeferredFlowIT {
     private final ObjectMapper objectMapper = new ObjectMapper();
     @MockitoBean
     DidKeyResolverFacade didKeyResolver;
-    @MockitoBean
+    @MockitoSpyBean
     AsyncCredentialEventHandler testEventListener;
     @MockitoSpyBean
     private IssuerMetadata issuerMetadata;
@@ -124,6 +125,7 @@ class DeferredFlowIT {
 
     @BeforeEach
     void setUp() throws JOSEException {
+        cleanDatabase();
         statusList = saveStatusList(createStatusList());
 
         jwk = new ECKeyGenerator(Curve.P_256)
@@ -131,6 +133,18 @@ class DeferredFlowIT {
                 .keyID("Test-Key")
                 .issueTime(new Date())
                 .generate();
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanDatabase();
+    }
+
+    private void cleanDatabase() {
+        credentialOfferStatusRepository.deleteAll();
+        credentialOfferRepository.deleteAll();
+        credentialManagementRepository.deleteAll();
+        statusListRepository.deleteAll();
     }
 
     @Test
@@ -146,8 +160,7 @@ class DeferredFlowIT {
 
         String token = (String) tokenDto.get("access_token");
 
-        verify(testEventListener, Mockito.times(1))
-                .handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
+        awaitHandleOfferStateChangeEvent(1);
         var nonce = requestNonce(mock);
 
         String proof = TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, ProofType.JWT.getClaimTyp());
@@ -155,7 +168,7 @@ class DeferredFlowIT {
         var deferredCredentialResponse = TestInfrastructureUtils.requestCredential(mock, token, getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
                 .andReturn();
-        verify(testEventListener, Mockito.times(1)).handleDeferredEvent(any(DeferredEvent.class));
+        awaitHandleDeferredEvent(1);
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
@@ -193,8 +206,7 @@ class DeferredFlowIT {
                 .andExpect(status().isOk())
                 .andReturn();
         // -> Claming_in_Progress -> Deferred -> Ready -> Issued
-        verify(testEventListener, Mockito.times(4))
-                .handleOfferStateChangeEvent(any(OfferStateChangeEvent.class));
+        awaitHandleOfferStateChangeEvent(4);
 
         var vc = getVcStringFromResponse(credentialResponse);
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUniversityCredentialSubjectData());
@@ -229,7 +241,7 @@ class DeferredFlowIT {
                         getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
                 .andReturn();
-        verify(testEventListener, Mockito.times(1)).handleDeferredEvent(any(DeferredEvent.class));
+        awaitHandleDeferredEvent(1);
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
@@ -277,7 +289,7 @@ class DeferredFlowIT {
                         getCredentialRequestString(proof))
                 .andExpect(status().isAccepted())
                 .andReturn();
-        verify(testEventListener, Mockito.times(1)).handleDeferredEvent(any(DeferredEvent.class));
+        awaitHandleDeferredEvent(1);
 
         DeferredDataDto deferredDataDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredDataDto.class);
@@ -467,7 +479,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_token"))
+                .andExpect(jsonPath("$.error").value("invalid_credential_request"))
                 .andExpect(jsonPath("$.error_description").value("Invalid accessToken"))
                 .andReturn();
     }
@@ -690,7 +702,8 @@ class DeferredFlowIT {
                     .andExpect(status().isAccepted())
                     .andReturn();
 
-            var result = credentialOfferRepository.findByIdForUpdate(unboundOffer.getId()).orElseThrow();
+            var result = Objects.requireNonNull(transactionTemplate.execute(status ->
+                    credentialOfferRepository.findByIdForUpdate(unboundOffer.getId()).orElseThrow()));
 
             assertEquals(instant.plusSeconds(applicationProperties.getDeferredOfferValiditySeconds())
                     .getEpochSecond(), result.getOfferExpirationTimestamp());
@@ -734,7 +747,8 @@ class DeferredFlowIT {
                     .andExpect(status().isAccepted())
                     .andReturn();
 
-            var result = credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId()).orElseThrow();
+            var result = Objects.requireNonNull(transactionTemplate.execute(status ->
+                    credentialOfferRepository.findByIdForUpdate(offerWithDynamicExpiration.getId()).orElseThrow()));
 
             assertEquals(instant.plusSeconds(expirationInSeconds).getEpochSecond(), result.getOfferExpirationTimestamp());
         }
@@ -742,6 +756,32 @@ class DeferredFlowIT {
 
     private StatusList saveStatusList(StatusList statusList) {
         return statusListRepository.save(statusList);
+    }
+
+    /**
+     * Polls until the async event handler has been invoked at least {@code times} times
+     * for {@link OfferStateChangeEvent}.
+     */
+    private void awaitHandleOfferStateChangeEvent(int times) {
+        Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .pollInterval(Duration.ofMillis(100))
+                .untilAsserted(() ->
+                        verify(testEventListener, Mockito.atLeast(times))
+                                .handleOfferStateChangeEvent(any(OfferStateChangeEvent.class)));
+    }
+
+    /**
+     * Polls until the async event handler has been invoked at least {@code times} times
+     * for {@link DeferredEvent}.
+     */
+    private void awaitHandleDeferredEvent(int times) {
+        Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .pollInterval(Duration.ofMillis(100))
+                .untilAsserted(() ->
+                        verify(testEventListener, Mockito.atLeast(times))
+                                .handleDeferredEvent(any(DeferredEvent.class)));
     }
 
     private ResultActions getDeferredCallResultActions(Object token, String deferredCredentialRequestString)
@@ -801,3 +841,4 @@ class DeferredFlowIT {
                 CredentialWithDeeplinkResponseDto.class);
     }
 }
+

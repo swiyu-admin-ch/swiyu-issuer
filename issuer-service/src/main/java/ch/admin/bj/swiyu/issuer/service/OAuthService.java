@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
@@ -46,7 +47,7 @@ public class OAuthService {
      *         endpoint
      * @throws OAuthException if no offer was found with associated pre-auth_code
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public OAuthTokenDto issueOAuthToken(String preAuthCode) {
         var offer = getCredentialOfferByPreAuthCode(preAuthCode);
         var mgmt = offer.getCredentialManagement();
@@ -90,7 +91,7 @@ public class OAuthService {
      * @return OAuth2.0 response with access_token and refresh_token
      * @throws OAuthException if no offer was found with associated refresh_token
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public OAuthTokenDto refreshOAuthToken(String refreshToken) {
         var credentialManagement = getUnrevokedCredentialOfferByRefreshToken(refreshToken);
         log.info("Refreshing OAuth 2.0 token for Management ID is {} and associated status is {}",
