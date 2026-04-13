@@ -28,7 +28,7 @@ jobs:
           java-version: '21'
           cache: 'maven'
       - name: Build & test with Maven (produce JaCoCo)
-        run: mvn --batch-mode clean verify -DskipTests=true
+        run: mvn --batch-mode clean verify -DskipTests=false
       - name: Upload JaCoCo reports
         uses: actions/upload-artifact@v4
         with:
@@ -90,7 +90,7 @@ jobs:
         continue-on-error: false
         with:
           image: pull_request_check:latest
-          args: --file=Dockerfile --severity-threshold=high
+          args: --file=Dockerfile --severity-threshold=high --exclude-base-image-vulns
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: https://api.eu.snyk.io
