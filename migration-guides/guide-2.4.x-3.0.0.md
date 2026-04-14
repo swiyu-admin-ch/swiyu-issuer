@@ -74,19 +74,6 @@ It is based on the **v3.0.0** section in `CHANGELOG.md` ("latest (3.0.0)").
 - **with recursion** (`recursiveDisclosureEnabled=true`): objects and arrays are emitted according to the SD-JWT
   specification.
 
-An example from the spec:
-
-```json
-{
-}
-```
-
-With disclosures:
-
-```json
-
-```
-
 **What you need to do**
 
 - At the moment only the default non-recursive behavior is used by the wallet, but you can enable recursive disclosure
