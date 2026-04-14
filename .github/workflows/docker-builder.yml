@@ -87,7 +87,7 @@ jobs:
           file: Dockerfile
 
       - name: Monitor Snyk for vulnerabilities in code 📦
-        uses: snyk/actions/docker@master
+        uses: snyk/actions/maven-3-jdk-21@master
         env:
           JAVA_HOME: '' # Snyk action sets JAVA_HOME to a path that is not compatible with the setup-java action, so we need to reset it here
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
