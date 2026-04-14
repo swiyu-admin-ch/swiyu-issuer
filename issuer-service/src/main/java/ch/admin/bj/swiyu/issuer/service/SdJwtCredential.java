@@ -83,13 +83,10 @@ public class SdJwtCredential extends CredentialBuilder {
             }
             var holderPublicKey = holderPublicKeys.get(idx);
             try {
-                // Todo: Refactor this once wallet migration is finished
                 var cnf = holderPublicKey.getJWK()
                         .toJSONObject();
                 var cnfClaim = new HashMap<>();
                 cnfClaim.put("jwk", cnf);
-                cnfClaim.putAll(cnf);
-
                 builder.putClaim("cnf", cnfClaim);
             } catch (ParseException e) {
                 throw new Oid4vcException(
