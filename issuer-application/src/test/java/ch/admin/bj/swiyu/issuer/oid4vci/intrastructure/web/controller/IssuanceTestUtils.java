@@ -91,23 +91,31 @@ public class IssuanceTestUtils {
         return responseJson.get("credentials").getAsJsonArray();
     }
 
+    /**
+     * Tests that the public components of the holderPrivateKey are in the VC's cnf claim
+     * 
+     * "cnf":{
+     *   "jwk":{
+     *     "kty": "EC",
+     *     "use": "sig",
+     *     "crv": "P-256",
+     *     "x": "18wHLeIgW9wVN6VD1Txgpqy2LszYkMf6J8njVAibvhM",
+     *     "y": "-V4dS4UaLMgP_4fY4j8ir7cl1TXlFdAgcx55o7TkcSA"
+     *    }
+     *  }
+     */
     public void testHolderBinding(String vc, ECKey holderPrivateKey) throws ParseException {
         JsonObject claims = getVcClaims(vc);
         assertNotNull(claims.get("cnf"));
-        JsonObject legacyCnf = claims.get("cnf").getAsJsonObject();
-        JsonObject cnf = legacyCnf.get("jwk").getAsJsonObject();
+        JsonObject cnf = claims.get("cnf").getAsJsonObject();
+        assertNotNull(cnf.get("jwk"));
+        JsonObject cnfJwk = cnf.get("jwk").getAsJsonObject();
 
-        // for legacy reasons the cnf is not a JWK but a map with the same properties
-        assertEquals(holderPrivateKey.getKeyID(), legacyCnf.get("kid").getAsString());
-        assertEquals(holderPrivateKey.getCurve().toString(), legacyCnf.get("crv").getAsString());
-        assertEquals(holderPrivateKey.getX().toString(), legacyCnf.get("x").getAsString());
-        assertEquals(holderPrivateKey.getY().toString(), legacyCnf.get("y").getAsString());
-
-        assertNotNull(cnf);
-        assertEquals(holderPrivateKey.getKeyID(), cnf.get("kid").getAsString());
-        assertEquals(holderPrivateKey.getCurve().toString(), cnf.get("crv").getAsString());
-        assertEquals(holderPrivateKey.getX().toString(), cnf.get("x").getAsString());
-        assertEquals(holderPrivateKey.getY().toString(), cnf.get("y").getAsString());
+        assertNotNull(cnfJwk);
+        assertEquals(holderPrivateKey.getKeyID(), cnfJwk.get("kid").getAsString());
+        assertEquals(holderPrivateKey.getCurve().toString(), cnfJwk.get("crv").getAsString());
+        assertEquals(holderPrivateKey.getX().toString(), cnfJwk.get("x").getAsString());
+        assertEquals(holderPrivateKey.getY().toString(), cnfJwk.get("y").getAsString());
     }
 
     public static JsonObject getVcClaims(String vc) throws ParseException {

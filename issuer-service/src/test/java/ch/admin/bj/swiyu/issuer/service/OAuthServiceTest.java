@@ -18,6 +18,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
 
 class OAuthServiceTest {
 
@@ -125,5 +128,20 @@ class OAuthServiceTest {
     @ValueSource(strings = {"", "bearer ", "dpop ", "barer 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "0c16dd9c-1dcd-4fc1-b503-bc42c505f113"})
     void getAccessToken_whenIllegalAuthorizationHeader_thenOAuthException(String authorizationRequestHeader){
         assertThrows(OAuthException.class, () -> oauthService.getAccessToken(authorizationRequestHeader));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"EXPIRED", "CANCELLED", "ISSUED"})
+    void issueOAuthToken_whenTerminal_thenDoNotExpireOffer(String offerState) {
+        var state = CredentialOfferStatusType.valueOf(offerState);
+        var preAuthCode = UUID.randomUUID();
+        var offer = Mockito.mock(CredentialOffer.class);
+        when(offer.getCredentialStatus()).thenReturn(state);
+        when(offer.hasExpirationTimeStampPassed()).thenReturn(true);
+        when(offer.isTerminatedOffer()).thenCallRealMethod();
+        when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(offer));
+        var error = assertThrows(OAuthException.class, () -> oauthService.issueOAuthToken(preAuthCode.toString()));
+        assertThat(error.getMessage()).isEqualToIgnoringCase("Credential has already been used");
+        Mockito.verify(credentialStateMachine, times(0)).sendEventAndUpdateStatus(any(CredentialOffer.class), any());
     }
 }

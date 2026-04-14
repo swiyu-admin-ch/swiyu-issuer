@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
@@ -20,6 +21,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagemen
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenTypeDto;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferUtil;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +48,7 @@ public class OAuthService {
      *         endpoint
      * @throws OAuthException if no offer was found with associated pre-auth_code
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public OAuthTokenDto issueOAuthToken(String preAuthCode) {
         var offer = getCredentialOfferByPreAuthCode(preAuthCode);
         var mgmt = offer.getCredentialManagement();
@@ -90,7 +92,7 @@ public class OAuthService {
      * @return OAuth2.0 response with access_token and refresh_token
      * @throws OAuthException if no offer was found with associated refresh_token
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public OAuthTokenDto refreshOAuthToken(String refreshToken) {
         var credentialManagement = getUnrevokedCredentialOfferByRefreshToken(refreshToken);
         log.info("Refreshing OAuth 2.0 token for Management ID is {} and associated status is {}",
@@ -188,16 +190,7 @@ public class OAuthService {
     }
 
     private Optional<CredentialOffer> getExpirationCheckedCredentialOffer(Optional<CredentialOffer> credentialOffer) {
-        return credentialOffer
-                .map(offer -> {
-                    if (offer.getCredentialStatus() != CredentialOfferStatusType.EXPIRED
-                            && offer.hasExpirationTimeStampPassed()) {
-                        credentialStateMachine.sendEventAndUpdateStatus(offer,
-                                CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
-                        return credentialOfferRepository.save(offer);
-                    }
-                    return offer;
-                });
+        return credentialOffer.map(offer -> CredentialOfferUtil.getExpirationCheckedCredentialOffer(offer, credentialStateMachine, credentialOfferRepository));
     }
 
     /**
