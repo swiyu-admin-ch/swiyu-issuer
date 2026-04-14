@@ -238,11 +238,11 @@ public class CredentialOffer {
     }
 
     public boolean isProcessableOffer() {
-        return this.credentialStatus.isProcessable();
+        return this.getCredentialStatus().isProcessable();
     }
 
     public boolean isTerminatedOffer() {
-        return this.credentialStatus.isTerminalState();
+        return this.getCredentialStatus().isTerminalState();
     }
 
     @NotNull
