@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 
-
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -168,22 +167,27 @@
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-jws-signature-service</artifactId>
+            <version>${generic-java-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-did-resolver-adapter</artifactId>
+            <version>${generic-java-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-jwe-util</artifactId>
+            <version>${generic-java-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-jwt-util</artifactId>
+            <version>${generic-java-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-dpop-util</artifactId>
+            <version>${generic-java-lib.version}</version>
         </dependency>
 
     </dependencies>
@@ -320,4 +324,3 @@
     </build>
 
 </project>
-
