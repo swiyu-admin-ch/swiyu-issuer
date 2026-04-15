@@ -28,7 +28,7 @@ jobs:
           java-version: '21'
           cache: 'maven'
       - name: Build & test with Maven (produce JaCoCo)
-        run: mvn --batch-mode clean verify -DskipTests=true
+        run: mvn --batch-mode clean verify -DskipTests=false
       - name: Upload JaCoCo reports
         uses: actions/upload-artifact@v4
         with:
@@ -91,16 +91,6 @@ jobs:
         with:
           image: pull_request_check:latest
           args: --file=Dockerfile --severity-threshold=high --exclude-base-image-vulns
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          SNYK_API: https://api.eu.snyk.io
-          SNYK_ORG: ${{ secrets.SNYK_ORG }}
-      - name: Monitor Snyk for vulnerabilities in image 🐳
-        uses: snyk/actions/docker@master
-        with:
-          command: monitor
-          image: ghcr.io/swiyu-admin-ch/swiyu-issuer:main
-          args: --severity-threshold=high --severity-threshold=high--project-tags:app-name=swiyu-verifier,version=${{ inputs.version_tag != '' && inputs.version_tag || 'main' }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: https://api.eu.snyk.io
