@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
+import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.signer.IssuanceController;
@@ -77,14 +78,11 @@ class IssuanceControllerTest {
     @Test
     void createCredential_invalidAccessToken_thenError() {
         when(authorizationService.getValidatedAccessToken(ACCESS_TOKEN, null, httpRequest))
-                .thenThrow(OAuthException.invalidRequest("Invalid Request"));
+                .thenThrow(OAuthException.invalidToken("Invalid Token"));
 
-        var ex = assertThrows(Oid4vcException.class,
+        var ex = assertThrows(OAuthException.class,
                 () -> controller.createCredential(ACCESS_TOKEN, null, "Hello World", httpRequest));
         assertThat(ex.getError()).as(INVALID_REQUEST_REASON)
-                .isEqualTo(CredentialRequestError.INVALID_CREDENTIAL_REQUEST);
+                .isEqualTo(OAuthError.INVALID_TOKEN);
     }
 }
-
-
-

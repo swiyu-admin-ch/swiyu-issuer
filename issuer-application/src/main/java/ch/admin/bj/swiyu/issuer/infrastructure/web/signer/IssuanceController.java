@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
-import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
@@ -154,7 +153,7 @@ public class IssuanceController {
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
         ClientAgentInfo clientInfo = getClientAgentInfo(request);
 
-        String accessToken = getAccessToken(bearerToken, dpop, request);
+        String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
         CreateCredentialRequestDto dto = parseCredentialRequestDto(unparsedRequestDto);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
@@ -223,7 +222,7 @@ public class IssuanceController {
         DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = parseDeferredCredentialRequestDto(
                 unparsedRequestDto);
 
-        String accessToken = getAccessToken(bearerToken, dpop, request);
+        String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
@@ -267,14 +266,6 @@ public class IssuanceController {
         try {
             return objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
         } catch (IOException | ConstraintViolationException e) {
-            throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
-        }
-    }
-
-    private String getAccessToken(String bearerToken, String dpop, HttpServletRequest request) {
-        try {
-            return this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
-        } catch (OAuthException e) {
             throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
         }
     }
