@@ -10,9 +10,6 @@ permissions:
   attestations: write
   id-token: write
 
-env:
-  IMAGE_VERSION_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.version_tag || 'main' }}
-
 jobs:
   docker-security-scan:
     runs-on: ubuntu-latest
@@ -31,7 +28,7 @@ jobs:
           java-version: '21'
           cache: 'maven'
       - name: Build & test with Maven (produce JaCoCo)
-        run: mvn --batch-mode clean verify -DskipTests=true
+        run: mvn --batch-mode clean verify -DskipTests=false
       - name: Upload JaCoCo reports
         uses: actions/upload-artifact@v4
         with:
