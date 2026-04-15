@@ -23,7 +23,7 @@ on:
         description: 'Optional version tag to add to the image (e.g., 2.2.0)'
         required: false
         type: string
-        default: ''
+        default: 'main'
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -73,7 +73,7 @@ jobs:
             type=sha
             type=raw,value=dev,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
             type=raw,value=${{ inputs.environment_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.environment_tag != 'none' }}
-            type=raw,value=${{ inputs.version_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.version_tag != '' }}
+            type=raw,value=${{ inputs.version_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.version_tag != 'main' }}
       - name: Build and push docker image
         id: push
         uses: docker/build-push-action@v6
@@ -96,13 +96,13 @@ jobs:
         with:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           command: monitor
-          args: --maven-aggregate-project --severity-threshold=high --project-tags:app-name=swiyu-verifier,version=${{ steps.meta.outputs.tags }}
+          args: --maven-aggregate-project --severity-threshold=high --project-tags:app-name=swiyu-verifier,version=${{ inputs.version_tag  }}
       - name: Monitor Snyk for vulnerabilities in image 🐳
         uses: snyk/actions/docker@master
         with:
           command: monitor
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
-          args: --severity-threshold=high --severity-threshold=high--project-tags:app-name=swiyu-verifier,version=${{ steps.meta.outputs.tags }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.version_tag }}
+          args: --severity-threshold=high --severity-threshold=high--project-tags:app-name=swiyu-verifier,version=${{ inputs.version_tag }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: https://api.eu.snyk.io
