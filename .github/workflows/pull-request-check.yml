@@ -92,13 +92,13 @@ jobs:
           image: pull_request_check:latest
           args: --file=Dockerfile --severity-threshold=high --exclude-base-image-vulns
         env:
-          JAVA_HOME: ''
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: https://api.eu.snyk.io
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
       - name: Monitor Snyk for vulnerabilities in image 🐳
         uses: snyk/actions/docker@master
         with:
+          JAVA_HOME: ''
           command: monitor
           image: ghcr.io/swiyu-admin-ch/swiyu-issuer:main
           args: --severity-threshold=high --severity-threshold=high--project-tags:app-name=swiyu-verifier,version=${{ steps.meta.outputs.tags }}
