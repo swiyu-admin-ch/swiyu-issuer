@@ -10,6 +10,11 @@ permissions:
   attestations: write
   id-token: write
 
+env:
+  IMAGE_VERSION_TAG: ${{ github.event_name == 'workflow_dispatch'
+                       ? inputs.version_tag
+    : 'main' } }
+
 jobs:
   docker-security-scan:
     runs-on: ubuntu-latest
