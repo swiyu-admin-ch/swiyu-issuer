@@ -109,6 +109,9 @@ The integrity can be calculated using shell commands.
 > The `metadata_credential_supported_id` must exist in the issuer metadata at
 > `/.well-known/openid-credential-issuer` under `credential_configurations_supported`.
 > If it does not, the credential request will fail later.
+> \
+> The `credential_valid_until` and `credential_valid_from` are rounded up and down respectively for improved unlinkability.
+>  Thus the example credential is valid from 2010-01-01T00:00:00Z until 2030-01-01T23:59:59Z.
 
 More details on the vct claim can be found in
 the [swiss profile](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#sd-jwt-vc)
@@ -301,6 +304,7 @@ The Generic Issuer service is configured using environment variables.
 | Variable                   | Description                                                       | Type | Default      |
 |----------------------------|-------------------------------------------------------------------|------|--------------|
 | PUBLIC_KEY_CACHE_TTL_MILLI | TTL in milliseconds how long a public key result should be cached | int  | 3600000 (1h) |
+| ENCRYPTION_METADATA_CACHE_TTL_MILLI | TTL in milliseconds how long the issuer metadata encryption cache is valid before being evicted on every pod. Rotated keys are kept in the database for a grace period of `2 × encryption-key-rotation-interval` before deletion, so the cache TTL must be strictly less than that grace period. Recommended: roughly one third of the rotation interval. | int | 300000 (5min) |
 
 #### Security
 
@@ -543,6 +547,18 @@ Callback Object Structure
 | event             | The new VC state if event_type is VC_STATUS_CHANGED. If ISSUANCE_ERROR one of OAUTH_TOKEN_EXPIRED or KEY_BINDING_ERROR |
 | event_description | Human readable details.                                                                                                |
 | timestamp         | timestamp the event occurred. Can differ from the time it is sent.                                                     |
+
+### Adding certificates to the image via the `certs` directory
+
+To add additional CA or TLS certificates to the application image, place PEM encoded files into the project `certs`
+directory (path: `./certs`) and rebuild the image. Certificates must end with `crt`. Do not store private keys
+in `certs`.
+
+Steps:
+
+1. Copy one or more `.crt` files to `./certs` (e.g. `my-ca.pem`).
+2. Rebuild the Docker image so the files are included.
+3. Certificates are imported into the truststore during image build.
 
 ## Data Structure
 

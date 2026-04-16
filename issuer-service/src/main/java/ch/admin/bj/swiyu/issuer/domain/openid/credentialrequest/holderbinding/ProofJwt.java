@@ -29,6 +29,7 @@ public class ProofJwt extends Proof implements AttestableProof {
      */
     private final int acceptableProofTimeWindowSeconds;
     private final int nonceLifetimeSeconds;
+    private final IssuerSecret nonceSecret;
     private String holderKeyJson;
     private SignedJWT signedJWT;
     /**
@@ -36,12 +37,12 @@ public class ProofJwt extends Proof implements AttestableProof {
      */
     private SelfContainedNonce nonce;
 
-    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds) {
+    public ProofJwt(ProofType proofType, String jwt, int acceptableProofTimeWindowSeconds, int nonceLifetimeSeconds, IssuerSecret nonceSecret) {
         super(proofType);
         this.jwt = jwt;
         this.acceptableProofTimeWindowSeconds = acceptableProofTimeWindowSeconds;
         this.nonceLifetimeSeconds = nonceLifetimeSeconds;
-        this.nonce = null;
+        this.nonceSecret = nonceSecret;
     }
 
     private static Oid4vcException proofException(String errorDescription, Map<String, Object> context) {
@@ -121,7 +122,7 @@ public class ProofJwt extends Proof implements AttestableProof {
 
         try {
             var nonceString = signedJWT.getJWTClaimsSet().getStringClaim("nonce");
-            nonce = new SelfContainedNonce(nonceString, nonceLifetimeSeconds);
+            nonce = new SelfContainedNonce(nonceString, nonceLifetimeSeconds, nonceSecret);
             return nonce;
         } catch (ParseException e) {
             throw proofException(
@@ -195,8 +196,7 @@ public class ProofJwt extends Proof implements AttestableProof {
 
     private void validateNonce() {
         try {
-            var nonce = getNonce();
-            SelfContainedNonce.validateNonce(nonce);
+            getNonce();
         } catch (InvalidNonceException e) {
             throw proofException("Invalid nonce claim in proof JWT",
                     Map.of(
@@ -214,46 +214,19 @@ public class ProofJwt extends Proof implements AttestableProof {
     }
 
     /**
-     * Gets the ECKey from either kid with did or the cnf entry
+     * Gets the ECKey from jwk header entry
      *
      * @return the Holder's ECKey
      */
     private ECKey getNormalizedECKey(JWSHeader header) {
-        var kid = header.getKeyID();
-
-        // Public key present as did
-        if (kid != null && kid.startsWith("did:")) {
-            var didMatcher = Pattern.compile("did:[a-z]+(?=:.+)").matcher(kid);
-            if (didMatcher.find() && !didMatcher.group().equals("did:jwk")) {
-                throw proofException(String.format("Did method provided in kid attribute %s is not supported", didMatcher.group()),
-                        Map.of(
-                                "kidPresent", kid != null,
-                                "kidIsDid", true,
-                                "didMethod", didMatcher.group()
-                        ));
-            }
-            if (didMatcher.group().equals("did:jwk")) {
-                try {
-                    return DidJwk.createFromDidJwk(kid).getJWK().toECKey();
-                } catch (ParseException e) {
-                    throw proofException(String.format("kid property %s could not be parsed to a JWK", kid),
-                            Map.of(
-                                    "kidPresent", kid != null,
-                                    "kidIsDid", true
-                            ));
-                }
-            }
-        }
-
         // Public key is present as jwk
         if (header.getJWK() != null) {
             return header.getJWK().toECKey();
         }
 
         // No public key present which the current system supports
-        throw proofException(String.format("None of the supported binding method/s was found in the header %s", header),
+        throw proofException(String.format("No valid holder key binding was found in the proof header %s", header),
                 Map.of(
-                        "kidPresent", kid != null,
                         "jwkPresent", header.getJWK() != null
                 ));
     }

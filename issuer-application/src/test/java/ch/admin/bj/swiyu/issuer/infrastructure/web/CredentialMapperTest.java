@@ -17,7 +17,7 @@ class CredentialMapperTest {
         for (OAuthError error : OAuthError.values()) {
             OAuthException ex = new OAuthException(error, "msg");
             ApiErrorDto dto = CredentialMapper.oauthErrorToApiErrorDto(ex);
-            assertEquals(CredentialMapper.toOAuthErrorDto(error).name(), dto.getErrorCode());
+            assertEquals(CredentialMapper.toOAuthErrorDto(error).getErrorCode(), dto.getErrorCode());
             assertEquals("msg", dto.getErrorDescription());
         }
     }

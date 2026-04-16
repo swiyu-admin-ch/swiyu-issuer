@@ -1,4 +1,3 @@
-# Inspired by https://thomasthornton.cloud/2025/03/18/setting-up-trivy-in-your-github-actions/
 name: Pull Request Check
 run-name: ${{ github.repository }} is evaluating pull request
 on: [ pull_request ]
@@ -18,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: java
           config-file: ./.github/codeql/codeql-config.yml
@@ -39,16 +38,15 @@ jobs:
             verifier-service/target/site/jacoco/index.html
             verifier-application/target/site/jacoco/jacoco.xml
             verifier-application/target/site/jacoco/index.html
-
       - name: Setup Node.js (for coverage summary script)
         uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Add coverage to summary
         run: node .github/scripts/coverage-summary.js
-        # Note: codeQL MUST be after the compile step
+        #CodeQL and PMD analysis
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:java"
       - name: Run PMD static analysis
@@ -56,13 +54,27 @@ jobs:
         id: pmd
         with:
           rulesets: '.github/rulesets/java/pmd_omni_ruleset.xml'
-          cache: true
-
       - name: Upload PMD SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: pmd-report.sarif
-
+      - name: Run Snyk to check for vulnerabilities 🔍
+        uses: snyk/actions/maven-3-jdk-21@master
+        continue-on-error: false
+        env:
+          JAVA_HOME: '' # Snyk action sets JAVA_HOME to a path that is not compatible with the setup-java action, so we need to reset it here
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}
+        with:
+          # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
+          args: --maven-aggregate-project --severity-threshold=high --sarif-file-output=snyk.sarif
+      - name: Upload result as sarif to GitHub Code Scanning 📦
+        if: always() # We want to upload the SARIF file even if the Snyk action fails, to have the results in the Code Scanning tab of GitHub
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: snyk.sarif
+      # Build image and check for vulnerabilities with Snyk
       - name: Build and push docker image
         id: push
         uses: docker/build-push-action@v6
@@ -73,12 +85,13 @@ jobs:
           tags: pull_request_check:latest
           build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
           file: Dockerfile
-
-      - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.30.0
+      - name: Scan Docker image with Snyk 🐳
+        uses: snyk/actions/docker@master
+        continue-on-error: false
         with:
-          image-ref: pull_request_check:latest
-          severity: 'CRITICAL,HIGH'
-          exit-code: 1
-          ignore-unfixed: true
-          format: table
+          image: pull_request_check:latest
+          args: --file=Dockerfile --severity-threshold=high --exclude-base-image-vulns
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}

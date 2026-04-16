@@ -16,6 +16,7 @@ public class CacheConfig {
     public static final String ISSUER_METADATA_PARSED_CACHE = "IssuerMetadataParsedCache";
     public static final String ISSUER_METADATA_ENCRYPTION_CACHE = "IssuerMetadataEncryptionCache";
     public static final String JWS_SIGNER_CACHE = "JwsSignerCache";
+    public static final String ISSUER_SECRET_CACHE = "IssuerSecretCache";
 
     @Bean
     public CacheManager cacheManager() {
@@ -25,6 +26,7 @@ public class CacheConfig {
                 ISSUER_METADATA_CACHE,
                 ISSUER_METADATA_PARSED_CACHE,
                 ISSUER_METADATA_ENCRYPTION_CACHE,
-                JWS_SIGNER_CACHE);
+                JWS_SIGNER_CACHE,
+                ISSUER_SECRET_CACHE);
     }
 }

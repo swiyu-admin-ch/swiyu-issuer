@@ -1,12 +1,17 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.CacheConfig;
 import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecretRepository;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import lombok.AllArgsConstructor;
+
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +25,10 @@ import java.util.List;
 public class NonceService {
     private final ApplicationProperties applicationProperties;
     private final CachedNonceRepository cachedNonceRepository;
+    private final IssuerSecretRepository issuerSecretRepository;
 
     public NonceResponseDto createNonce() {
-        return new NonceResponseDto(new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce());
+        return new NonceResponseDto(new SelfContainedNonce(getNonceSecret()).getNonce());
     }
 
     /**
@@ -36,7 +42,7 @@ public class NonceService {
     public boolean isValidSelfContainedNonce(String nonce) {
         SelfContainedNonce selfContainedNonce;
         try {
-            selfContainedNonce = new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds());
+            selfContainedNonce = new SelfContainedNonce(nonce, applicationProperties.getNonceLifetimeSeconds(), getNonceSecret());
 
             if (isNonceRegisteredInCache(selfContainedNonce)) {
                 return false;
@@ -74,6 +80,11 @@ public class NonceService {
     public void cleanNonceCache() {
         cachedNonceRepository.deleteAllOlderThan(
                 Instant.now().minus(applicationProperties.getNonceLifetimeSeconds(), ChronoUnit.SECONDS));
+    }
+
+    @Cacheable(CacheConfig.ISSUER_SECRET_CACHE)
+    public IssuerSecret getNonceSecret() {
+        return issuerSecretRepository.findAll().getFirst();
     }
 
     private void saveNonceInCache(SelfContainedNonce nonce) {

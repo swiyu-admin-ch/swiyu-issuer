@@ -1,16 +1,17 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
-import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
-import ch.admin.bj.swiyu.issuer.service.NonceService;
-import ch.admin.bj.swiyu.issuer.service.OAuthService;
+import ch.admin.bj.swiyu.issuer.service.AuthorizationService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
-import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
+
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,18 +28,14 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * OpenID4VC Issuance Controller
@@ -58,13 +55,12 @@ public class IssuanceController {
     public static final String DPOP_HTTP_HEADER = "DPoP";
 
     private final CredentialServiceOrchestrator credentialServiceOrchestrator;
-    private final NonceService nonceService;
     private final JweService jweService;
-    private final OAuthService oauthService;
-    private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
 
     private final Validator validator;
     private final ObjectMapper objectMapper;
+
+    private final AuthorizationService authorizationSerivce;
 
 
     @Timed
@@ -83,20 +79,7 @@ public class IssuanceController {
             @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
             @ModelAttribute OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
             HttpServletRequest request) {
-
-        if (oauthAccessTokenRequestDto == null) {
-            throw OAuthException.invalidRequest("The request is missing a required parameter");
-        }
-
-        if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
-            String preauthorizedCode = oauthAccessTokenRequestDto.preauthorized_code();
-            return oauthTokenPreAuthorized(dpop, request, preauthorizedCode);
-        } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
-            String refreshToken = oauthAccessTokenRequestDto.refresh_token();
-            return oauthRefreshToken(dpop, request, refreshToken);
-        } else {
-            throw OAuthException.invalidRequest("Grant type must be urn:ietf:params:oauth:grant-type:pre-authorized_code");
-        }
+        return authorizationSerivce.processOAuthTokenEndpointRequest(dpop, oauthAccessTokenRequestDto, request);
     }
 
     @Timed
@@ -110,9 +93,7 @@ public class IssuanceController {
                     Also provides a DPoP nonce. For more details towards demonstrating proof of possession refer to <a href="https://datatracker.ietf.org/doc/html/rfc9449#name-authorization-server-provid">RFC9449</a>
                     """)
     public ResponseEntity<NonceResponseDto> createNonce() {
-        HttpHeaders headers = new HttpHeaders();
-        demonstratingProofOfPossessionService.addDpopNonce(headers);
-        return new ResponseEntity<>(nonceService.createNonce(), headers, HttpStatus.OK);
+        return authorizationSerivce.createNonceResponse();
     }
 
     @Timed
@@ -166,21 +147,17 @@ public class IssuanceController {
     public ResponseEntity<String> createCredential(@RequestHeader("Authorization") String bearerToken,
                                                    @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
                                                    @NotNull @RequestBody String requestMessage,
-                                                   HttpServletRequest request) throws IOException {
+                                                   HttpServletRequest request) {
         String unparsedRequestDto = jweService.decryptRequest(requestMessage, request.getContentType());
 
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
         var clientInfo = getClientAgentInfo(request);
 
-        CredentialEnvelopeDto credentialEnvelope;
+        String accessToken = authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
 
-        String accessToken = getAccessToken(bearerToken);
-        demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
-
-
-        var dto = objectMapper.readValue(unparsedRequestDto, CreateCredentialRequestDto.class);
-        validateRequestDtoOrThrow(dto, validator);
-        credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
+        
+        var dto = parseCredentialRequestDto(unparsedRequestDto);
+        CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
@@ -244,54 +221,16 @@ public class IssuanceController {
                                                            HttpServletRequest request) throws IOException {
         String unparsedRequestDto = jweService.decryptRequest(requestMessage, request.getContentType());
 
-        DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
+        DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = parseDeferredCredentialRequestDto(
+                unparsedRequestDto);
 
-        CredentialEnvelopeDto credentialEnvelope;
-
-        String accessToken = getAccessToken(bearerToken);
-        demonstratingProofOfPossessionService.validateDpop(accessToken, dpop, new ServletServerHttpRequest(request));
-        credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
+        String accessToken = authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
+        CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())
                 .headers(headers)
                 .body(credentialEnvelope.getOid4vciCredentialJson());
-    }
-
-    private OAuthTokenDto oauthRefreshToken(String dpop, HttpServletRequest request, String refreshToken) {
-        if (StringUtils.isBlank(refreshToken)) {
-            throw OAuthException.invalidRequest("Refresh Token is required");
-        }
-        demonstratingProofOfPossessionService.refreshDpop(
-                refreshToken,
-                dpop,
-                new ServletServerHttpRequest(request)
-        );
-        return oauthService.refreshOAuthToken(refreshToken);
-    }
-
-    private OAuthTokenDto oauthTokenPreAuthorized(String dpop, HttpServletRequest request, String preauthorizedCode) {
-        if (StringUtils.isBlank(preauthorizedCode)) {
-            throw OAuthException.invalidRequest("Pre-authorized code is required");
-        }
-        demonstratingProofOfPossessionService.registerDpop(
-                preauthorizedCode,
-                dpop,
-                new ServletServerHttpRequest(request));
-        return oauthService.issueOAuthToken(preauthorizedCode);
-    }
-
-    private String getAccessToken(String bearerToken) {
-        if (bearerToken == null) {
-            throw OAuthException.invalidRequest("No authorization header found");
-        }
-        var regexPattern = Pattern.compile("bearer (.*)", Pattern.CASE_INSENSITIVE);
-        var matcher = regexPattern.matcher(bearerToken);
-        if (!matcher.find()) {
-            throw OAuthException.invalidRequest("No bearer token found");
-        }
-
-        return matcher.group(1);
     }
 
     private @NotNull ClientAgentInfo getClientAgentInfo(HttpServletRequest request) {
@@ -312,6 +251,24 @@ public class IssuanceController {
                 sb.append(String.format("%s: %s", constraintViolation.getPropertyPath(), constraintViolation.getMessage()));
             }
             throw new ConstraintViolationException(sb.toString(), violations);
+        }
+    }
+
+    private CreateCredentialRequestDto parseCredentialRequestDto(String unparsedRequestDto) {
+        try {
+            var dto = objectMapper.readValue(unparsedRequestDto, CreateCredentialRequestDto.class);
+            validateRequestDtoOrThrow(dto, validator);
+            return dto;
+        } catch (IOException | ConstraintViolationException e) {
+            throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
+        }
+    }
+
+    private DeferredCredentialEndpointRequestDto parseDeferredCredentialRequestDto(String unparsedRequestDto) {
+        try { 
+            return objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
+        } catch (IOException | ConstraintViolationException e) {
+            throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
         }
     }
 }

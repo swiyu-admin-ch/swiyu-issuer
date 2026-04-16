@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.enc;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.CacheCustomizer;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKey;
 import ch.admin.bj.swiyu.issuer.domain.openid.EncryptionKeyRepository;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
@@ -34,7 +33,6 @@ public class EncryptionKeyService {
 
     private final ApplicationProperties applicationProperties;
     private final EncryptionKeyRepository encryptionKeyRepository;
-    private final CacheCustomizer cacheCustomizer;
 
     /**
      * Performs a key rotation for the encryption keys, replacing the currently active key set.
@@ -124,7 +122,6 @@ public class EncryptionKeyService {
         } catch (JOSEException e) {
             throw new IllegalStateException(e);
         }
-        cacheCustomizer.emptyIssuerMetadataEncryptionCache();
     }
 
     /**

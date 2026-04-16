@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
@@ -12,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatus
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -101,12 +103,17 @@ class DeferredIssuanceIT {
     @Autowired
     private JweService encryptionService;
     @Autowired
+    private NonceService nonceService;
+    @Autowired
     private CredentialManagementRepository credentialManagementRepository;
 
     private static String getDeferredCredentialRequestString(String transactionId) {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
     }
 
+    /**
+     * Creates a response encryption request object with a deprecated alg entry, which should be provided as part of the encryption jwk
+     */
     private static String createResponseEncryptionJson(ECKey ecJWK) {
         return String.format("""
                         {
@@ -402,6 +409,7 @@ class DeferredIssuanceIT {
 
         ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
                 .keyID("transportEncKeyEC")
+                .algorithm(JWEAlgorithm.ECDH_ES)
                 .generate();
 
         var responseEncryptionJson = createResponseEncryptionJson(ecJWK);
@@ -495,6 +503,7 @@ class DeferredIssuanceIT {
         if (rotateHolderEncryptionKey) {
             ecJWK = new ECKeyGenerator(Curve.P_256)
                     .keyID("transportEncKeyECNew")
+                    .algorithm(JWEAlgorithm.ECDH_ES)
                     .generate();
             deferredCredentialRequestClaimBuilder.claim("credential_response_encryption",
                     JWTClaimsSet.parse(createResponseEncryptionJson(ecJWK)).getClaims());
@@ -672,7 +681,8 @@ class DeferredIssuanceIT {
             mockedStatic.when(Instant::now)
                     .thenReturn(instant);
 
-            var nonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
+            var preNonce = UUID.randomUUID() + "::" + Instant.now().minusSeconds(10L).toString();
+            var nonce = preNonce + "::" + SelfContainedNonce.createSignature(preNonce, nonceService.getNonceSecret());
 
             var credentialRequestString = getCredentialRequestString(
                     nonce,
@@ -705,7 +715,7 @@ class DeferredIssuanceIT {
                         applicationProperties.getTemplateReplacement()
                                 .get("external-url"),
                         cNonce,
-                        ProofType.JWT.getClaimTyp(), false)))
+                        ProofType.JWT.getClaimTyp())))
                 .toList();
 
         var proofString = proofs.stream().reduce((a, b) -> a + "\", \"" + b).orElse("");

@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest;
 
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import jakarta.annotation.Nullable;
@@ -39,7 +40,7 @@ public class CredentialRequestClass {
         this.credentialResponseEncryption = credentialResponseEncryption;
     }
 
-    public List<ProofJwt> getProofs(int acceptableProofTimeWindow, int nonceLifetimeSeconds) {
+    public List<ProofJwt> getProofs(int acceptableProofTimeWindow, int nonceLifetimeSeconds, IssuerSecret nonceSecret) {
 
         if (proof == null || proof.isEmpty()) {
             return List.of();
@@ -52,7 +53,7 @@ public class CredentialRequestClass {
         }
 
         return jwtList.stream()
-                .map(proofJwt -> new ProofJwt(ProofType.JWT, proofJwt.toString(), acceptableProofTimeWindow, nonceLifetimeSeconds))
+                .map(proofJwt -> new ProofJwt(ProofType.JWT, proofJwt.toString(), acceptableProofTimeWindow, nonceLifetimeSeconds, nonceSecret))
                 .toList();
 
     }

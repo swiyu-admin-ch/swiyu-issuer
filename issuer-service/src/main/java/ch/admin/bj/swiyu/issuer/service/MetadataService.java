@@ -20,17 +20,16 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import ch.admin.bj.swiyu.dpop.DpopConstants;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.credential.OpenIdIssuerConfiguration;
-import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
@@ -46,7 +45,6 @@ public class MetadataService {
     private final CredentialManagementService credentialManagementService;
     private final JwsSignatureFacade jwsSignatureFacade;
     private final JweService jweService;
-    private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final SdjwtProperties sdjwtProperties;
     private final ApplicationProperties applicationProperties;
     private final ObjectMapper objectMapper;
@@ -148,7 +146,9 @@ public class MetadataService {
      * @return the unsigned {@link OAuthAuthorizationServerMetadataDto} for this issuer
      */
     public OAuthAuthorizationServerMetadataDto getUnsignedOAuthAuthorizationServerMetadata() {
-        return openIdIssuerConfiguration.getOpenIdConfiguration();
+        return addSigningAlgorithmsSupportedAndSwissprofileVersion(
+                    openIdIssuerConfiguration.getOpenIdConfiguration()
+                );
     }
 
     /**
@@ -255,5 +255,20 @@ public class MetadataService {
 
 
         return claimsSetBuilder.build();
+    }
+
+    /**
+     * Extend OpenIdConfiguration with the signing algorithms supported for DPoP.
+     *
+     * @param openIdConfiguration The configuration to be extended
+     * @return the openidConfiguration with added dpop_signing_alg_values_supported
+     */
+    public OAuthAuthorizationServerMetadataDto addSigningAlgorithmsSupportedAndSwissprofileVersion(OAuthAuthorizationServerMetadataDto openIdConfiguration) {
+        var builder = openIdConfiguration.toBuilder();
+        builder.dpop_signing_alg_values_supported(DpopConstants.SUPPORTED_ALGORITHMS)
+                .profile_version(SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                .preauthorized_grant_anonymous_access_supported(true);
+    
+        return builder.build();
     }
 }

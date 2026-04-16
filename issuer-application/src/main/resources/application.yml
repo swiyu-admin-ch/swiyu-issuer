@@ -41,6 +41,7 @@ http:
 management:
   endpoint:
     health:
+      registry-health-checks-enabled: ${REGISTRY_HEALTH_CHECKS_ENABLED:false}
       probes:
         enabled: true
       show-components: always
@@ -48,7 +49,43 @@ management:
     env:
       show-values: ALWAYS # NEVER to hide all values
       # Values to expose on the env endpoint
-      allowedProperties: local.server.port, server.ports, application.external-url, application.template-replacement.external-url, application.offer-validity, application.deferred-offer-validity-seconds, application.issuer-id, application.status-list.verification-method, application.key.sdjwt.verification-method, application.key-management-method, swiyu.business-partner-id, application.deeplink-schema, application.template-replacement.external-url, application.allow-token-refresh, application.allow-refresh-token-rotation, application.nonce-lifetime-seconds, springdoc.swagger-ui.path, webhook.callback-interval, logging.expect-correlation-id, application.min-deferred-offer-interval-seconds, application.trusted-attestation-providers, application.enable-jwt-authentication, application.authentication-jwks, application.status-list.hsm.host, application.status-list.hsm.port, application.offer-expiration-interval, application.openid-file, application.metadata-file, application.data-integrity-jwks, application.data-integrity-enforced, application.key.sdjwt.hsm.host, application.key.sdjwt.hsm.port, application.url-rewrite.mapping, swiyu.status-registry.api-url, swiyu.status-registry.token-url, webhook.callback-uri
+      allowedProperties: >
+        local.server.port,
+        server.ports,
+        application.external-url,
+        application.template-replacement.external-url,
+        application.offer-validity,
+        application.deferred-offer-validity-seconds,
+        application.issuer-id,
+        application.status-list.verification-method,
+        application.key.sdjwt.verification-method,
+        application.key-management-method,
+        swiyu.business-partner-id,
+        application.deeplink-schema,
+        application.template-replacement.external-url,
+        application.allow-token-refresh,
+        application.allow-refresh-token-rotation,
+        application.nonce-lifetime-seconds,
+        springdoc.swagger-ui.path,
+        webhook.callback-interval,
+        logging.expect-correlation-id,
+        application.min-deferred-offer-interval-seconds,
+        application.trusted-attestation-providers,
+        application.enable-jwt-authentication,
+        application.authentication-jwks,
+        application.status-list.hsm.host,
+        application.status-list.hsm.port,
+        application.offer-expiration-interval,
+        application.openid-file,
+        application.metadata-file,
+        application.data-integrity-jwks,
+        application.data-integrity-enforced,
+        application.key.sdjwt.hsm.host,
+        application.key.sdjwt.hsm.port,
+        application.url-rewrite.mapping,
+        swiyu.status-registry.api-url,
+        swiyu.status-registry.token-url,
+        webhook.callback-uri
   health:
     livenessState:
       enabled: true
@@ -74,7 +111,7 @@ application:
   # URL under which this service can be reached from the web
   external-url: ${EXTERNAL_URL:}
   offer-validity: 2592000
-  deferred-offer-validity-seconds: ${DEFERRED_OFFER_VALIDITY_SECONDS:}864000 # 60 * 60 * 24 * 10 => 10 days;
+  deferred-offer-validity-seconds: ${DEFERRED_OFFER_VALIDITY_SECONDS:864000} # 60 * 60 * 24 * 10 => 10 days;
   min-deferred-offer-interval-seconds: ${MIN_DEFERRED_OFFER_WAITING_SECONDS:10}
   # List of DID of Attestation providers we trust in
   trusted-attestation-providers: ${TRUSTED_ATTESTATION_PROVIDERS:}
@@ -193,6 +230,7 @@ application:
   url-rewrite:
     mapping: "${URL_REWRITE_MAPPING:{}}"
   signed-metadata-enabled: ${ENABLE_SIGNED_METADATA:false}
+  recursive-disclosure-enabled: ${RECURSIVE_DISCLOSURE_ENABLED:false}
   automatic-status-list-synchronization-disabled: ${DISABLE_STATUS_LIST_SYNCHRONIZATION:false}
 
 
@@ -227,6 +265,7 @@ monitoring:
 
 caching:
   publicKeyCacheTTL: ${PUBLIC_KEY_CACHE_TTL_MILLI:3600000} # 1 hour
+  encryptionMetadataCacheTTL: ${ENCRYPTION_METADATA_CACHE_TTL_MILLI:300000} # 5 minutes – must be less than 2× encryption-key-rotation-interval (grace period = 30min); recommended ~1/3 of rotation interval
 
 database-migration:
   init-container: ${IS_INIT_CONTAINER_EXECUTION:false}

@@ -13,7 +13,5 @@ public record CredentialResponseEncryptionDto(
         @NotNull
         Map<String, Object> jwk,
         @NotNull
-        String alg,
-        @NotNull
         String enc) {
 }

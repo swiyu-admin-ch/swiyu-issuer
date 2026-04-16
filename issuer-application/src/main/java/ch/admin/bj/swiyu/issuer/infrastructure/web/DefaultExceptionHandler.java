@@ -2,9 +2,9 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.exception.DpopErrorDto;
+import ch.admin.bj.swiyu.issuer.service.NonceService;
 import jakarta.validation.ConstraintViolationException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +36,7 @@ import static org.springframework.http.HttpStatus.*;
 public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final ApplicationProperties applicationProperties;
+    private final NonceService nonceService;
 
     @ExceptionHandler(OAuthException.class)
     public ResponseEntity<ApiErrorDto> handleOAuthException(final OAuthException exception) {
@@ -78,7 +79,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
-    @ExceptionHandler({BadRequestException.class, CredentialException.class, IllegalStateException.class})
+    @ExceptionHandler({BadRequestException.class, IllegalStateException.class})
     public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
         final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(BAD_REQUEST.getReasonPhrase())
@@ -105,7 +106,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
-    @ExceptionHandler(ConfigurationException.class)
+    @ExceptionHandler({ConfigurationException.class, CredentialException.class})
     public ResponseEntity<ApiErrorDto> handleConfigurationException(final Exception exception) {
         final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
                 .errorDescription(INTERNAL_SERVER_ERROR.getReasonPhrase())
@@ -140,7 +141,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         MultiValueMap<String, String> responseHeaders = new HttpHeaders();
         if (DemonstratingProofOfPossessionError.USE_DPOP_NONCE.equals(ex.getDpopError())) {
             responseStatus = BAD_REQUEST;
-            responseHeaders.put("DPoP-Nonce", List.of(new SelfContainedNonce(applicationProperties.getNonceLifetimeSeconds()).getNonce()));
+            responseHeaders.put("DPoP-Nonce", List.of(nonceService.createNonce().nonce()));
         } else {
             log.debug("DPoP faulty user input intercepted", ex);
         }

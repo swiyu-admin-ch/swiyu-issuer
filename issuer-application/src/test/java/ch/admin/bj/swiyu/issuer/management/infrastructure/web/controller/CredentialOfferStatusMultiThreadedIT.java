@@ -4,11 +4,11 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -28,6 +28,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
 
@@ -77,6 +78,8 @@ class CredentialOfferStatusMultiThreadedIT {
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
@@ -130,12 +133,15 @@ class CredentialOfferStatusMultiThreadedIT {
             }
         }).toList();
         // Get unique indexed on status list
-        var indexSet = credentialManagementRepository.findAllById(results).stream()
-                .map(mgmt -> mgmt.getCredentialOffers().stream().map(offer -> {
-                    Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
-                    return byOfferStatusId.stream().findFirst().get().getId().getIndex();
-                }))
-                .collect(Collectors.toSet());
+        var indexSet = transactionTemplate.execute(status ->
+                credentialManagementRepository.findAllById(results).stream()
+                        .flatMap(mgmt -> mgmt.getCredentialOffers().stream())
+                        .map(offer -> {
+                            Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
+                            return byOfferStatusId.stream().findFirst().get().getId().getIndex();
+                        })
+                        .collect(Collectors.toSet())
+        );
         Assertions.assertThat(indexSet).as("Should be the same size if no status was used multiple times")
                 .hasSameSizeAs(results);
     }
@@ -165,7 +171,7 @@ class CredentialOfferStatusMultiThreadedIT {
 
                 var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mvc, preAuthCode);
                 var token = tokenResponse.get("access_token");
-                var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
+                var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
                 // set to issued
                 requestCredential(mvc, (String) token, credentialRequestString)

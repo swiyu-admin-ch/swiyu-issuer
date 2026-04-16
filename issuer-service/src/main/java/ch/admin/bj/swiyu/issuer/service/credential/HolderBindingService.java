@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_CREDENTIAL_REQUEST;
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_NONCE;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 
 /**
@@ -106,7 +107,9 @@ public class HolderBindingService {
         try {
             return credentialRequest.getProofs(
                     applicationProperties.getAcceptableProofTimeWindowSeconds(),
-                    applicationProperties.getNonceLifetimeSeconds());
+                    applicationProperties.getNonceLifetimeSeconds(),
+                    nonceService.getNonceSecret()
+            );
         } catch (IllegalArgumentException e) {
             throw new Oid4vcException(e, INVALID_CREDENTIAL_REQUEST, "Invalid proof",
                     Map.of("proofType", credentialRequest.getProof() != null ? credentialRequest.getProof().toString() : "null"));
@@ -195,7 +198,7 @@ public class HolderBindingService {
             }
             return nonce;
         } catch (ExpiredNonceException | InvalidNonceException e) {
-            throw new Oid4vcException(INVALID_PROOF, e.getMessage());
+            throw new Oid4vcException(INVALID_NONCE, e.getMessage());
         }
     }
 
@@ -204,8 +207,8 @@ public class HolderBindingService {
             var nonce = ensureNonceNotReused(requestProof);
 
             nonceService.registerNonce(nonce);
-        } catch (InvalidNonceException | Oid4vcException e) {
-            throw new Oid4vcException(INVALID_PROOF, e.getMessage());
+        } catch (InvalidNonceException e) {
+            throw new Oid4vcException(INVALID_NONCE, e.getMessage());
         }
     }
 
@@ -232,7 +235,7 @@ public class HolderBindingService {
     }
 
     private IssuerMetadata getIssuerMetadata(UUID tenantId) {
-        if (applicationProperties.isSignedMetadataEnabled()) {
+        if (applicationProperties.isSignedMetadataEnabled() && tenantId != null) {
             return metadataService.getUnsignedIssuerMetadata(tenantId);
         }
         return metadataService.getUnsignedIssuerMetadata();

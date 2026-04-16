@@ -44,6 +44,9 @@ import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.getCredenti
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class CredentialServiceOrchestratorTest {
@@ -230,7 +233,7 @@ class CredentialServiceOrchestratorTest {
         when(sdJwtCredential.credentialResponseEncryption(any(), any())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.holderBindings(anyList())).thenReturn(sdJwtCredential);
         when(sdJwtCredential.credentialType(anyList())).thenReturn(sdJwtCredential);
-        when(statusListOrchestrator.findByUriIn(any())).thenReturn(List.of(statusList));
+        when(statusListOrchestrator.lockAndValidateStatusListsForOffer(any())).thenReturn(List.of(statusList));
 
         var claim = new CredentialClaim();
         claim.setMandatory(true);
@@ -241,7 +244,7 @@ class CredentialServiceOrchestratorTest {
         when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
         when(credConfig.getVct()).thenReturn("test-vct");
 
-        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("did:jwk", "jwk"));
+        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("jwk"));
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test", credConfig));
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(credConfig);
 
@@ -481,7 +484,7 @@ class CredentialServiceOrchestratorTest {
         when(applicationProperties.getMinDeferredOfferIntervalSeconds()).thenReturn(600L);
 
         List<ProofJwt> proofs = List.of(mock(ProofJwt.class));
-        when(credentialRequest.getProofs(anyInt(), anyInt())).thenReturn(proofs);
+        when(credentialRequest.getProofs(anyInt(), anyInt(), any())).thenReturn(proofs);
         when(holderBindingService.getValidateHolderPublicKeys(credentialRequest, offer)).thenReturn(proofs);
 
         mockVCBuilder(offer);
@@ -628,7 +631,7 @@ class CredentialServiceOrchestratorTest {
         var accessTokenString = accessToken.toString();
         var exception = assertThrows(Oid4vcException.class, () -> credentialServiceOrchestrator.createCredential(credentialRequestDto, accessTokenString, null, null));
 
-        assertEquals(CredentialRequestError.UNSUPPORTED_CREDENTIAL_TYPE, exception.getError());
+        assertEquals(CredentialRequestError.UNKNOWN_CREDENTIAL_IDENTIFIER, exception.getError());
         assertEquals("Mismatch between requested and offered credential configuration id.", exception.getMessage());
     }
 
