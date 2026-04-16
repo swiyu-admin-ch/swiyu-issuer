@@ -86,12 +86,8 @@ public class KeyAttestationService {
         try {
             AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt, applicationProperties.isSwissProfileVersioningEnforcement());
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
-
-            // If trusted Attestation Services is empty, all attestation services are trusted for ease of trying out things.
-            if (!trustedAttestationServices.isEmpty()) {
-                attestation.throwIfNotTrustedAttestationProvider(trustedAttestationServices);
-            }
-
+            attestation.throwIfNotTrustedAttestationProvider(trustedAttestationServices);
+            
             if (!attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage())) {
                 throw new Oid4vcException(INVALID_PROOF, "Key attestation was invalid or not matching the attack resistance for the credential!");
             }

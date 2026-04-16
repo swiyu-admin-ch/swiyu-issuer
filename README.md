@@ -499,7 +499,7 @@ The attestations integrity and signature are checked in every case.
 
 | Variable                      | Description                                                                                                                                                                   | Default |
 |-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| TRUSTED_ATTESTATION_PROVIDERS | This array of strings contains dids (used in JWT "iss" claim) to be trusted for the key attestation. Is only used if key attestations are demanded for the credential issued. | []      |
+| TRUSTED_ATTESTATION_PROVIDERS | This array of strings contains dids (used in JWT "iss" claim) to be trusted for the key attestation. Is only used if key attestations are demanded for the credential issued. If not set, key attestations cannot be used. | []      |
 
 #### VC Metadata provisioning
 

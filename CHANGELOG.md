@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Removed support for did:jwk, as it is not part of the swiss-profiles anymore
 - Use OID4VCI 1.0 compliant error codes for credential_endpoint and deferred_credential_endpoint error responses.
 - Contracted cnf to now only provide the correct shape as defined in RFC 7800
+- When not providing any key attestation provider, no key attestations are accepted instead of all.
 
 ### Fixed
 
