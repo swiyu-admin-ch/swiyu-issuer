@@ -45,6 +45,8 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -212,8 +214,7 @@ class StatusListIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        String offerCred = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"lastName\" : \"lastName\"}, \"status_lists\": [\"%s\"]}"
-                .formatted(statusRegistryUrl);
+        String offerCred = getMinimalPayloadForCredentialSupportedIdTest(null, null, statusRegistryUrl);
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(offerCred))
                 .andExpect(status().isOk())
@@ -433,20 +434,7 @@ class StatusListIT {
 
     private JsonObject createOffer(JsonObject statusList) throws Exception {
 
-        String offerData = """
-                {
-                    "type": "UniversityDegreeCredential",
-                    "name": "Bachelor of Science"
-                  }""";
-        // We add the data to the other parts needed for offering a credential
-        String jsonPayload = String.format("""
-                {
-                  "metadata_credential_supported_id": ["university_example_sd_jwt"],
-                  "credential_subject_data": %s,
-                  "offer_validity_seconds": 36000,
-                  "status_lists": ["%s"]
-                }
-                """, offerData, statusList.get("statusRegistryUrl").getAsString());
+        String jsonPayload = getMinimalPayloadForUniversityCredential(statusList.get("statusRegistryUrl").getAsString());
 
         var response = mvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)

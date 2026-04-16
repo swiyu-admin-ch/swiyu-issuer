@@ -59,6 +59,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForDeferredUniversityCredential;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.createEcKey;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.fetchOAuthTokenDpop;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -136,8 +138,7 @@ class RenewalFlowIT {
         // will be used a VC we create
         var statusListUri = statusListDto.getStatusRegistryUrl();
 
-        payload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"status_lists\": [\"%s\"]}"
-                .formatted(statusListUri);
+        payload = getMinimalPayloadForUniversityCredential(statusListUri);
 
         payloadMap = Map.of("name", "name", "type", "type");
         // here
@@ -155,7 +156,7 @@ class RenewalFlowIT {
 
         var jwk = createEcKey("test-key-1");
 
-        var deferredPayload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"credential_metadata\": {\"deferred\": true}}";
+        var deferredPayload = getMinimalPayloadForDeferredUniversityCredential(null);
 
         // Arrange: mock business issuer to return a successful renewal response (payload)
         var newOffer = TestInfrastructureUtils.createCredentialOffer(mockMvc, deferredPayload).andReturn();
@@ -364,6 +365,7 @@ class RenewalFlowIT {
                 .toList();
 
         MvcResult result = TestInfrastructureUtils.createCredentialOffer(mockMvc, payload)
+                .andExpect(status().isOk())
                 .andReturn();
 
         var managementJsonObject = getManagementJsonObject(result);

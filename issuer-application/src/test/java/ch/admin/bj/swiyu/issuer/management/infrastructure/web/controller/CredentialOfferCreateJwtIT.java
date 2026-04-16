@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -46,21 +47,8 @@ class CredentialOfferCreateJwtIT {
      */
     @Test
     void createOfferWithJWT() throws Exception {
-        // This offerData is the data we want to offer in the Verifiable Credential
-        String offerData = """
-                {
-                    "lastName": "Example",
-                    "firstName": "Edward",
-                    "dateOfBirth": "1.1.1970"
-                  }""";
         // We add the data to the other parts needed for offering a credential
-        String jsonPayload = String.format("""
-                {
-                  "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": %s,
-                  "offer_validity_seconds": 36000
-                }
-                """, offerData);
+        String jsonPayload = getMinimalPayloadForCredentialSupportedIdTest();
         testJWTCreateOffer(jsonPayload);
     }
 
@@ -73,27 +61,15 @@ class CredentialOfferCreateJwtIT {
     @Test
     void createOfferWithJWTAndInnerJWT() throws Exception {
         // Offer data we want to use in the VC as JWT
-        String offerData = """
-                {
-                    "lastName": "Example",
-                    "firstName": "Edward",
-                    "dateOfBirth": "1.1.1970"
-                  }""";
         // Build the JWT
         ECKey ecJWK = ECKey.parse(ApplicationIT.privateKey);
-        var claims = JWTClaimsSet.parse(offerData);
+        var claims = JWTClaimsSet.parse(getCredentialOfferData());
 
         SignedJWT jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("testkey").build(), claims);
         jwt.sign(new ECDSASigner(ecJWK));
         String payload = jwt.serialize();
         // Adding in the offer data is done in the same way as without data integrity
-        String jsonPayload = String.format("""
-                {
-                  "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": "%s",
-                  "offer_validity_seconds": 36000
-                }
-                """, payload);
+        String jsonPayload = getMinimalPayloadForCredentialSupportedIdTest();
         testJWTCreateOffer(jsonPayload);
     }
 
@@ -161,5 +137,16 @@ class CredentialOfferCreateJwtIT {
         return mvc.perform(post(BASE_URL)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload));
+    }
+
+    private String getCredentialOfferData() {
+        return """
+                {
+                    "credential_subject_data": "credential_subject_data",
+                    "hello": "world",
+                    "lastName": "Example",
+                    "firstName": "Edward",
+                    "dateOfBirth": "1.1.1970"
+                }""";
     }
 }

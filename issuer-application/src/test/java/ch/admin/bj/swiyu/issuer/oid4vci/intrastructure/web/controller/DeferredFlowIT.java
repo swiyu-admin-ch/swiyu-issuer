@@ -409,10 +409,11 @@ class DeferredFlowIT {
     void testOfferCreation_withMissingMandatoryClaim() throws Exception {
 
         var extendedOfferData = new HashMap<String, Object>(getUniversityCredentialSubjectData());
-        extendedOfferData.remove("lastName"); // removing required claim
+        var missingClaim = "name";
+        extendedOfferData.remove(missingClaim); // removing required claim
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(List.of("test"))
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
                 .credentialMetadata(getDeferredCredentialMetadataDto())
                 .credentialSubjectData(extendedOfferData)
                 .build();
@@ -423,7 +424,7 @@ class DeferredFlowIT {
         createCredentialOffer(mock, offerRequestString)
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.detail")
-                        .value("Mandatory credential claims are missing! lastName"))
+                        .value("Mandatory credential claims are missing! " + missingClaim))
                 .andReturn();
     }
 
@@ -839,4 +840,3 @@ class DeferredFlowIT {
                 CredentialWithDeeplinkResponseDto.class);
     }
 }
-

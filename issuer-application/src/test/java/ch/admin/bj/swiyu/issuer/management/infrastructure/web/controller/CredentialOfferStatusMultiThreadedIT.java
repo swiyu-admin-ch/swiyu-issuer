@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -155,8 +156,7 @@ class CredentialOfferStatusMultiThreadedIT {
                         .boxed()
                         .map(privindex -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                         .toList();
-                String payload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"status_lists\": [\"%s\"]}"
-                        .formatted(statusRegistryUrl);
+                String payload = getMinimalPayloadForUniversityCredential(statusRegistryUrl);
 
                 MvcResult result = mvc
                         .perform(post("/management/api/credentials").contentType("application/json").content(payload))

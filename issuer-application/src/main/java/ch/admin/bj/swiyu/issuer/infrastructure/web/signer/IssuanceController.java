@@ -155,7 +155,7 @@ public class IssuanceController {
 
         String accessToken = authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
 
-        
+
         var dto = parseCredentialRequestDto(unparsedRequestDto);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
@@ -265,7 +265,7 @@ public class IssuanceController {
     }
 
     private DeferredCredentialEndpointRequestDto parseDeferredCredentialRequestDto(String unparsedRequestDto) {
-        try { 
+        try {
             return objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
         } catch (IOException | ConstraintViolationException e) {
             throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());

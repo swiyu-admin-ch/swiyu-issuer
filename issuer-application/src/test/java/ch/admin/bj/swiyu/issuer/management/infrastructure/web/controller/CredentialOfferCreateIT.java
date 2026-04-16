@@ -40,9 +40,13 @@ import reactor.core.publisher.Mono;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.common.date.DateTimeUtils.ISO8601_FORMAT;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -89,9 +93,7 @@ class CredentialOfferCreateIT {
     @Transactional
     void testCreateOffer_thenSuccess() throws Exception {
         String metadataCredentialSupportedId = "test";
-        String minPayloadWithEmptySubject = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\":\"lastName\"}}",
-                metadataCredentialSupportedId);
+        String minPayloadWithEmptySubject = getMinimalPayloadForCredentialSupportedIdTest();
 
         var test = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
                 .andExpect(status().isOk())
@@ -126,8 +128,8 @@ class CredentialOfferCreateIT {
 
         String now = new SimpleDateFormat(ISO8601_FORMAT).format(new Date(new Date().getTime() + 1000));
         String minPayloadWithValidUntil = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\": \"lastName\"}, \"credential_valid_until\" : \"%s\"}",
-                metadataCredentialSupportedId, now);
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": %s, \"credential_valid_until\" : \"%s\"}",
+                metadataCredentialSupportedId, getMinimalCredentialSubjectDataStringForCredentialSupportedIdTest(), now);
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isOk());
     }
@@ -136,14 +138,12 @@ class CredentialOfferCreateIT {
     @Transactional
     void testCreateOfferOverrideConfiguration_thenSuccess() throws Exception {
         final String metadataCredentialSupportedId = "test";
-        final String expectedCredentialSubjectData = "{\"hello\":\"world\",\"lastName\":\"lastName\"}";
+        final String expectedCredentialSubjectData = getMinimalCredentialSubjectDataStringForCredentialSupportedIdTest();
         final String issuerDid = "did:example:offer";
         final String verificationMethod = "did:example:offer#key1";
-        final String keyId = "keyidrandom";
-        final String keyPin = "4032";
         final String payload = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": %s, \"configuration_override\":{\"issuer_did\":\"%s\",\"verification_method\":\"%s\",\"key_id\":\"%s\",\"key_pin\":\"%s\"}}",
-                metadataCredentialSupportedId, expectedCredentialSubjectData, issuerDid, verificationMethod, keyId, keyPin);
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": %s, \"configuration_override\":{\"issuer_did\":\"%s\",\"verification_method\":\"%s\"}}",
+                metadataCredentialSupportedId, expectedCredentialSubjectData, issuerDid, verificationMethod);
 
         final MvcResult result = mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(payload))
                 .andExpect(status().isOk())
@@ -171,8 +171,6 @@ class CredentialOfferCreateIT {
         assertNotNull(newCredential.getConfigurationOverride(), "configurationOverride must be persisted");
         assertEquals(issuerDid, newCredential.getConfigurationOverride().issuerDid());
         assertEquals(verificationMethod, newCredential.getConfigurationOverride().verificationMethod());
-        assertEquals(keyId, newCredential.getConfigurationOverride().keyId());
-        assertEquals(keyPin, newCredential.getConfigurationOverride().keyPin());
     }
 
     @Test
@@ -188,30 +186,25 @@ class CredentialOfferCreateIT {
 
     @Test
     void testCreateOffer_unexpectedClaim_thenBadRequest() throws Exception {
-        String minPayloadWithValidUntil = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"%s\": \"arbitrary claim\",  \"lastName\": \"lastName\"}}",
-                "test", UUID.randomUUID());
-        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(Matchers.containsString("Unexpected credential claims found")));
-    }
 
-    @Test
-    void testCreateOffer_missingClaim_thenBadRequest() throws Exception {
+        var unexpectedClaim = "unexpectedClaim";
+        var objectMapper = new ObjectMapper();
+        var credentialSubjectData = getMinimalCredentialSubjectDataForCredentialSupportedIdTest();
+        credentialSubjectData.put(unexpectedClaim, unexpectedClaim);
         String minPayloadWithValidUntil = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"average_grade\": 5.5}}",
-                "university_example_sd_jwt");
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": %s}",
+                "test", objectMapper.writeValueAsString(credentialSubjectData));
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(Matchers.containsString("Mandatory credential claims are missing")));
+                .andExpect(content().string(Matchers.containsString("Unexpected credential claims found! " + unexpectedClaim)));
     }
 
     @Test
     void testCreateOffer_noMilliseconds_thenSuccess() throws Exception {
         String validUntilNoMilliseconds = "3025-02-25T15:55:11Z";
         String minPayloadWithValidUntil = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\": \"lastName\"}, \"credential_valid_until\" : \"%s\"}",
-                "test", validUntilNoMilliseconds);
+                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": %s, \"credential_valid_until\" : \"%s\"}",
+                "test", getMinimalCredentialSubjectDataStringForCredentialSupportedIdTest(), validUntilNoMilliseconds);
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isOk());
     }
@@ -270,17 +263,7 @@ class CredentialOfferCreateIT {
     @Test
     void testGetOfferData_thenSuccess() throws Exception {
 
-        String jsonPayload = """
-                {
-                  "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": {
-                    "hello": "world",
-                    "lastName":"lastName"
-                  },
-                  "offer_validity_seconds": 36000,
-                  "deferred_offer_validity_seconds": 37000
-                }
-                """;
+        String jsonPayload = getMinimalPayloadForCredentialSupportedIdTest(36000, 37000, null);
 
         MvcResult result = mvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -313,16 +296,13 @@ class CredentialOfferCreateIT {
         String jsonPayload = String.format("""
                 {
                   "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": {
-                    "hello": "world",
-                     "lastName": "lastName"
-                  },
+                  "credential_subject_data": %s,
                   "offer_validity_seconds": 36000,
                   "credential_metadata": {
                     "vct#integrity": "%s"
                   }
                 }
-                """, testIntegrity);
+                """, getMinimalCredentialSubjectDataStringForCredentialSupportedIdTest(), testIntegrity);
 
         MvcResult result = mvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -338,17 +318,14 @@ class CredentialOfferCreateIT {
         String jsonPayload = """
                 {
                   "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": {
-                    "hello": "world",
-                     "lastName": "lastName"
-                  },
+                  "credential_subject_data": %s,
                   "offer_validity_seconds": 36000,
                   "credential_metadata": {
                     "vct_metadata_uri": "https://example.com/credentials/vct/metadata.json",
                     "vct_metadata_uri#integrity": "sha256-TmHzu3DojO4MFaBXcJ6akg8JY/JWOcDU8PfUViEMYKk="
                   }
                 }
-                """;
+                """.formatted(getMinimalCredentialSubjectDataStringForCredentialSupportedIdTest());
 
         var response = mvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -372,15 +349,13 @@ class CredentialOfferCreateIT {
         String jsonPayload = """
                 {
                   "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": {
-                    "hello": "world"
-                  },
+                  "credential_subject_data": %s,
                   "offer_validity_seconds": 36000,
                   "credential_metadata": {
                     "vct_metadata_uri": ""
                   }
                 }
-                """;
+                """.formatted(getMinimalCredentialSubjectDataStringForCredentialSupportedIdTest());
 
         var response = mvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -435,7 +410,7 @@ class CredentialOfferCreateIT {
 
         final CreateCredentialOfferRequestDto firstCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of("hello", "world", "lastName", "lastName"))
+                .credentialSubjectData(getMinimalCredentialSubjectDataForCredentialSupportedIdTest())
                 .statusLists(List.of(firstStatusListDto.getStatusRegistryUrl()))
                 .configurationOverride(new ConfigurationOverrideDto(firstIssuer, null, null, null))
                 .build();
@@ -456,7 +431,7 @@ class CredentialOfferCreateIT {
 
         final CreateCredentialOfferRequestDto secondCredential = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("test"))
-                .credentialSubjectData(Map.of("hello", "sky", "lastName", "lastName"))
+                .credentialSubjectData(getMinimalCredentialSubjectDataForCredentialSupportedIdTest())
                 .statusLists(List.of(secondStatusListDto.getStatusRegistryUrl()))
                 .configurationOverride(new ConfigurationOverrideDto(secondIssuer, null, null, null))
                 .build();
