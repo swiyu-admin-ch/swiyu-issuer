@@ -131,10 +131,12 @@ public class SdJwtCredential extends CredentialBuilder {
 
         List<VerifiableCredentialStatusReference> usedCredentialStatusReferences = new ArrayList<>(batchSize);
         for (int i = 0; i < batchSize; i++) {
+            Map<String, Object> alwaysDisclosedData = new HashMap<>();
+            Map<String, Object> selectivelyDiscloseableData = getOfferData();
+            prepareTechnicalData(alwaysDisclosedData, selectivelyDiscloseableData, override);
             final var builder = new SDObjectBuilder();
-
-            addTechnicalData(builder, override);
-            final var disclosures = prepareDisclosures(builder);
+            putAlwaysDisclosedData(builder, alwaysDisclosedData);
+            final var disclosures = putSelectivelyDiscloseableData(builder, selectivelyDiscloseableData);
 
             addHolderBinding(holderPublicKeys, i, builder);
             usedCredentialStatusReferences.addAll(addStatusReferences(statusReferences, i, builder));
@@ -153,7 +155,7 @@ public class SdJwtCredential extends CredentialBuilder {
         return Collections.unmodifiableList(sdjwts);
     }
 
-    @Override
+	@Override
     JWSSigner createSigner() {
         var override = this.getCredentialOffer()
                 .getConfigurationOverride();
@@ -168,16 +170,17 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     /**
-     * Prepares the discosures, the actual business data of the sd-jwt
+     * Add the selectively discloseable data to the SD-JWT and prepare the discosures
      *
-     * @return list of the disclosures possible
+     * @return list of the disclosures
      */
-    protected List<Disclosure> prepareDisclosures(SDObjectBuilder builder) {
+    protected List<Disclosure> putSelectivelyDiscloseableData(SDObjectBuilder builder, Map<String, Object> selectivelyDiscloseableData) {
         // Optional claims as disclosures
         // Code below follows example from
         // https://github.com/authlete/sd-jwt?tab=readme-ov-file#credential-jwt
         List<Disclosure> disclosures = new ArrayList<>();
         List<Disclosure> embedded = new ArrayList<>();
+        
         // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
 
         // If recursive disclosure is enabled, traverse nested objects and build
@@ -185,14 +188,18 @@ public class SdJwtCredential extends CredentialBuilder {
         // so object properties become embedded SD claims; otherwise use the
         // non-recursive handler.
         if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
-            handleClaimsRecursive(builder, disclosures, getOfferData(), embedded);
+            handleClaimsRecursive(builder, disclosures, selectivelyDiscloseableData, embedded);
         } else {
-            handleClaims(builder, disclosures, getOfferData(), embedded);
+            handleClaims(builder, disclosures, selectivelyDiscloseableData, embedded);
         }
         embedded.forEach(builder::putSDClaim);
 
         return disclosures;
     }
+
+    private void putAlwaysDisclosedData(SDObjectBuilder builder, Map<String,Object> alwaysDisclosedData) {
+		alwaysDisclosedData.entrySet().forEach(e -> builder.putClaim(e.getKey(), e.getValue()));
+	}
 
     private List<VerifiableCredentialStatusReference> addStatusReferences(
             Map<String, List<VerifiableCredentialStatusReference>> statusReferences,
@@ -394,47 +401,47 @@ public class SdJwtCredential extends CredentialBuilder {
                 : getIssuerMetadata().getIssuanceBatchSize();
     }
 
-    private void addTechnicalData(SDObjectBuilder builder, ConfigurationOverride override) {
+    private void prepareTechnicalData(Map<String, Object> alwaysDisclosedData, Map<String, Object> selectivelyDiscloseableData, ConfigurationOverride override) {
         // Mandatory claims or claims which always need to be disclosed according to
         // SD-JWT VC specification
-        builder.putClaim("iss", override.issuerDidOrDefault(getApplicationProperties().getIssuerId()));
+        alwaysDisclosedData.put("iss", override.issuerDidOrDefault(getApplicationProperties().getIssuerId()));
         // Get first entry because we expect the list to only contain one item
         var metadataId = getMetadataCredentialsSupportedIds().getFirst();
         var credentailConfiguration = getIssuerMetadata().getCredentialConfigurationById(metadataId);
-        builder.putClaim("vct", credentailConfiguration.getVct());
+        alwaysDisclosedData.put("vct", credentailConfiguration.getVct());
         // Optional vct addons
         Optional.ofNullable(credentailConfiguration.getVctMetadataUri())
-                .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
+                .ifPresent(o -> alwaysDisclosedData.put("vct_metadata_uri", o));
         Optional.ofNullable(credentailConfiguration.getVctMetadataUriIntegrity())
-                .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
+                .ifPresent(o -> alwaysDisclosedData.put("vct_metadata_uri#integrity", o));
         Optional.ofNullable(credentailConfiguration.getVctVersion())
-                .ifPresent(o -> builder.putClaim("vct_version", o));
+                .ifPresent(o -> selectivelyDiscloseableData.put("vct_version", o));
         Optional.ofNullable(credentailConfiguration.getVctSubtype())
-                .ifPresent(o -> builder.putClaim("vct_subtype", o));
+                .ifPresent(o -> selectivelyDiscloseableData.put("vct_subtype", o));
         Optional.ofNullable(credentailConfiguration.getVctSubtypeVersion())
-                .ifPresent(o -> builder.putClaim("vct_subtype_version", o));
+                .ifPresent(o -> selectivelyDiscloseableData.put("vct_subtype_version", o));
         // if we have dynamically overriden vct#integrity or such, add it
         var credentialMetadata = getCredentialOffer().getCredentialMetadata();
         if (nonNull(credentialMetadata)) {
             Optional.ofNullable(credentialMetadata.vctIntegrity())
-                    .ifPresent(o -> builder.putClaim("vct#integrity", o));
+                    .ifPresent(o -> alwaysDisclosedData.put("vct#integrity", o));
             Optional.ofNullable(credentialMetadata.vctMetadataUri())
-                    .ifPresent(o -> builder.putClaim("vct_metadata_uri", o));
+                    .ifPresent(o -> alwaysDisclosedData.put("vct_metadata_uri", o));
             Optional.ofNullable(credentialMetadata.vctMetadataUriIntegrity())
-                    .ifPresent(o -> builder.putClaim("vct_metadata_uri#integrity", o));
+                    .ifPresent(o -> alwaysDisclosedData.put("vct_metadata_uri#integrity", o));
         }
         // subtracting 1 day, as instantToRoundedUnixTimestamp rounds up to the end of
         // the day
-        builder.putClaim("iat", instantToRoundedDownUnixTimestamp(Instant.now()));
+        alwaysDisclosedData.put("iat", instantToRoundedDownUnixTimestamp(Instant.now()));
 
         // optional field -> only added when set
         if (nonNull(getCredentialOffer().getCredentialValidFrom())) {
-            builder.putClaim("nbf", instantToRoundedDownUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
+            alwaysDisclosedData.put("nbf", instantToRoundedDownUnixTimestamp(getCredentialOffer().getCredentialValidFrom()));
         }
 
         // optional field -> only added when set
         if (nonNull(getCredentialOffer().getCredentialValidUntil())) {
-            builder.putClaim("exp", instantToRoundedUpUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
+            alwaysDisclosedData.put("exp", instantToRoundedUpUnixTimestamp(getCredentialOffer().getCredentialValidUntil()));
         }
     }
 }
