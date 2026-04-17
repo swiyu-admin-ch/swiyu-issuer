@@ -1,6 +1,6 @@
 # Credential Issuance documentation
 
-## Prerequisites for all calls (V1 and V2)
+## Prerequisites
 
 ```mermaid
 sequenceDiagram
@@ -358,131 +358,7 @@ With response:
 > [!NOTE]
 > Please store the `c_nonce` as it is needed in later steps and will be referenced as `C_NONCE`.
 
-## Deferred Credential Issuance V1
-
-Actor: Wallet
-
-> [!NOTE]
-> The deferred credential request uses exactly the same endpoint and payload as the normal credential request. Only the
-> response and following steps / calls are different.
-
-To create the proof for the credential, you need the `C_NONCE` then build a JWT according to
-the [SWISS-Profile-jwt-proof-type](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#jwt-proof-type).
-It is not recommended to reuse your private keys to sign different credentials.
-
-```bash
-curl -X 'POST' \
-  'http://localhost:8080/oid4vci/api/credential' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer $ACCESS_TOKEN' \
-  -d '{
-    "format": "vc+sd-jwt",
-    "proof": {
-        "proof_type": "jwt",
-        "jwt": "eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJUZXN0LUtleSIsIngiOiJtMDhWTkNBY1FSVGNBRVFrdlk5SUwzMHpXeG42Zk5UM2NTNVBvc0JqdGZ3IiwieSI6IjlkZUZKSVR0dWZkNGlwZXdOTEduMWVYRUpaSlBCR1AxTGtWV3dQZGloRnciLCJpYXQiOjE3NTQ2NDMzNjh9fQ.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvb2lkNHZjaSIsIm5vbmNlIjoiY2MxYmI4N2MtOTA3MC00OWE4LWFmMTYtNTA3MTkwZjg0ZmUyIiwiaWF0IjoxNzU0NjQzMzY4fQ.MFuxwr_TnEU6xqgaXkXaS0_6KRWSVd8LDPmkSUkMMrJlGHjL_m56B6TYiijZ_1HmpuS89hBSGT9xEsUbh-ShjA"
-    }
-}'
-```
-
-And the wallet receives a transaction ID in the response:
-
-```json
-{
-    "transaction_id": "3c2e23f5-6aea-4478-b4a0-304fdc1b4933"
-}
-```
-
-> [!NOTE]
-> Please store the `transaction_id` as it is needed in later steps and will be referenced as `$TRANSACTION_ID`.
-
-### With the transaction ID, the wallet can check if the credential is ready
-
-Actor: Wallet
-
-```bash
-curl -X 'POST' \
-  'http://localhost:8080/oid4vci/api/deferred_credential' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer $ACCESS_TOKEN' \
-  -d '{ "transaction_id": "$TRANSACTION_ID"}'
-```
-
-And receives (as the business issuer has not evaluated the offer yet) the following response:
-
-```json
-{
-    "error": "ISSUANCE_PENDING",
-    "error_description": "The credential is not marked as ready to be issued"
-}
-```
-
-### Business Issuer checks the offer updates status and sets the offer data (if desired)
-
-Actor: Business Issuer
-
-The business issuer can then either update the status of the offer (if the offer data is already set or not)
-
-```bash
-curl -X 'PATCH' 'http://localhost:8080/management/api/credentials/$MANAGEMENT_ID/status?credentialStatus=READY' -H 'accept: application/json'
-```
-
-Then receives:
-
-```json
-{
-    "id": "$MANAGEMENT_ID",
-    "status": "READY"
-}
-```
-
-or can update the offer data which sets the status to READY automatically:
-
-```bash
-curl -X 'PATCH' \
-  'http://localhost:8080/management/api/credentials/$MANAGEMENT_ID' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "type": "Bachelor of Science",
-    "name":"Data Science",
-    "average_grade":"5.33"
-  }'
-```
-
-Then receives:
-
-```json
-{
-    "id": "$MANAGEMENT_ID",
-    "status": "READY"
-}
-```
-
-### With the transaction ID, the wallet can check if the credential is ready
-
-Actor: Wallet
-
-```bash
-curl -X 'POST' \
-  'http://localhost:8080/oid4vci/api/deferred_credential' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer $ACCESS_TOKEN' \
-  -d '{ "transaction_id": "$TRANSACTION_ID"}'
-```
-
-And receives (as the business issuer has not evaluated the offer yet) the following response:
-
-```json
-{
-    "credential": "eyJ2ZXIiOiIxLjAiLCJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImRpZDpleGFtcGxlOmxvY2FsaG9zdCUzQTgwODA6YWJjYWJjI3Nkand0In0.eyJfc2QiOlsiUF9fUEd0WVRLd0pwTDJRenZRY1pkU1BuLWUxamFtaEVOcGdhelNTS2ZZSSIsImRKUEFQWnFmbDA1ZjRzTE44VkpzV2NTSjFXdnNOeFAzd0YwQW9QeGNJSUEiLCJxM2lwVDJVa1RIbWNmMDlHMGx5MXlfWFlDYlVsbWd0Rm5hb0M5V3Y1c2J3Il0sInZjdCNpbnRlZ3JpdHkiOiJzaGEyNTYtU1ZITGZLZmNaY0JydytkOUVMLzFFWHh2R0Nka1E3dE1HdlptZDB5c01jaz0iLCJ2Y3QiOiJ0ZXN0IiwiX3NkX2FsZyI6InNoYS0yNTYiLCJpc3MiOiJkaWQ6dGR3OmV4YW1wbGUiLCJjbmYiOnsia3R5IjoiRUMiLCJ1c2UiOiJzaWciLCJjcnYiOiJQLTI1NiIsImtpZCI6IlRlc3QtS2V5IiwieCI6IlkzcFdCQnY0Tk5sMFN2bVk2WUdmbjc3Zjhid3d2cllsaVNiUkxVejk1TUEiLCJ5IjoiT01RdVE0SXZFTzNydUVya2ZqU0FKSk00NURhdy1SYXJTNy1tX0xHd2c5RSIsImlhdCI6MTc1NDY0NTI2NCwiandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJUZXN0LUtleSIsIngiOiJZM3BXQkJ2NE5ObDBTdm1ZNllHZm43N2Y4Ynd3dnJZbGlTYlJMVXo5NU1BIiwieSI6Ik9NUXVRNEl2RU8zcnVFcmtmalNBSkpNNDVEYXctUmFyUzctbV9MR3dnOUUiLCJpYXQiOjE3NTQ2NDUyNjR9fSwiaWF0IjoxNzU0NjQ1MjkzfQ.Yxz4ri2ztDdhp4jiOkenCp1_M1NKwGI_GX_lzLEj8CFQ0UppZtud5meTD1fC4K-1Oh82ii04fw08NhkVlTY87A~WyJwVW9kaUJmX2dmcnNzVFZCVHR5RHJnIiwibGFzdE5hbWUiLCJsYXN0TmFtZSJd~WyJIZmpPYW1YbEJqTDdqWU1ZMUpnZFFnIiwiZmlyc3ROYW1lIiwiZmlyc3ROYW1lIl0~WyJpa0xMS1pfV0IwdGxQMWhOUXdhZkhnIiwiZGF0ZU9mQmlydGgiLCIyMDAwLTAxLTAxIl0~",
-    "format": "vc+sd-jwt"
-}
-```
-
-## Deferred Credential Issuance V2
+## Deferred Credential Issuance
 
 > [!WARNING]  
 > Please be careful with V2. This part is still under construction and not yet pentested and should not be used in a
