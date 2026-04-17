@@ -285,7 +285,7 @@ class SdJwtCredentialTest {
         List<String> credentials = sdJwtCredential.getCredential(null);
 
         // should contain 2 disclosures (for every list element) + jwt (no binding)
-        var sdJwtComponents = getVcSdJwtPars(credentials.getFirst());
+        var sdJwtComponents = getVcSdJwtParts(credentials.getFirst());
         assertEquals(3, sdJwtComponents.length);
 
         // check if disclosures contain the list values
@@ -338,7 +338,7 @@ class SdJwtCredentialTest {
         List<String> credentials = sdJwtCredential.getCredential(null);
 
         // should contain 2 disclosures (for every list element) + jwt (no binding)
-        var sdJwtComponents = getVcSdJwtPars(credentials.getFirst());
+        var sdJwtComponents = getVcSdJwtParts(credentials.getFirst());
         assertEquals(4, sdJwtComponents.length);
 
         // check if disclosures contain the list values
@@ -405,7 +405,7 @@ class SdJwtCredentialTest {
         sdJwtCredential.credentialOffer(offer);
         sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
-        var sdJwtComponents = getVcSdJwtPars(sdJwtCredential.getCredential(null).getFirst());
+        var sdJwtComponents = getVcSdJwtParts(sdJwtCredential.getCredential(null).getFirst());
 
         // should contain 1 jwt + 5 address-disclosures + other disclosure (no key binding) for the test claim = 7 disclosures in total
         assertEquals(7, sdJwtComponents.length);
@@ -441,7 +441,7 @@ class SdJwtCredentialTest {
         List<String> credentials = sdJwtCredential.getCredential(null);
 
         // should contain 2 disclosures (for every list element) + jwt (no binding)
-        var sdJwtComponents = getVcSdJwtPars(credentials.getFirst());
+        var sdJwtComponents = getVcSdJwtParts(credentials.getFirst());
         assertEquals(4, sdJwtComponents.length);
 
         // check if disclosures contain the list values
@@ -475,7 +475,7 @@ class SdJwtCredentialTest {
         List<String> credentials = sdJwtCredential.getCredential(null);
 
         // should contain 2 disclosures (for every list element) + jwt (no binding)
-        var sdJwtComponents = getVcSdJwtPars(credentials.getFirst());
+        var sdJwtComponents = getVcSdJwtParts(credentials.getFirst());
         assertEquals(3, sdJwtComponents.length);
 
         // check if disclosures contain the list values
@@ -492,7 +492,7 @@ class SdJwtCredentialTest {
         assertTrue(fooClaim.stream().allMatch(entry -> entry.containsKey("...")));
     }
 
-    private String[] getVcSdJwtPars(String vc) {
+    private String[] getVcSdJwtParts(String vc) {
         return vc.split("~");
     }
 
