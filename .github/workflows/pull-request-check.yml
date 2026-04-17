@@ -83,7 +83,7 @@ jobs:
           load: true
           pull: true # Prevent old images to be used, which may trigger CVE findings
           tags: pull_request_check:latest
-          build-args: SOURCE_IMAGE=eclipse-temurin:21-jre-ubi9-minimal
+          build-args: SOURCE_IMAGE=bit-base-images-docker-hosted.nexus.bit.admin.ch/bit/eclipse-temurin:21-jre-ubi9-minimal
           file: Dockerfile
       - name: Scan Docker image with Snyk 🐳
         uses: snyk/actions/docker@master
