@@ -130,7 +130,6 @@ public class CredentialOfferValidationService {
 
             // validate missing and surplus using dedicated helpers
             validatePathClaimsMissing(claimDescriptor, validatedOfferData);
-            validatePathClaimsSurplus(descriptorPaths, validatedOfferData);
         } else {
             var metadataClaims = Optional.ofNullable(credentialConfiguration.getClaims())
                     .orElseGet(HashMap::new)
@@ -185,24 +184,6 @@ public class CredentialOfferValidationService {
                     .sorted()
                     .collect(Collectors.joining(","));
             throw new BadRequestException("Mandatory credential claims are missing: [%s]".formatted(formatted));
-        }
-    }
-
-    /**
-     * Validate that there are no concrete offer-data leaf paths which are not covered by any descriptor.
-     */
-    private void validatePathClaimsSurplus(Set<List<Object>> descriptorPaths, Map<String, Object> offerData) {
-
-        Set<List<Object>> offerDataClaimsPath = ClaimsPathPointerUtil.flatten(offerData, List.of());
-
-        offerDataClaimsPath.removeAll(descriptorPaths);
-
-        if (!offerDataClaimsPath.isEmpty()) {
-            var formatted = offerDataClaimsPath.stream()
-                    .map(this::formatPath)
-                    .sorted()
-                    .collect(Collectors.joining(","));
-            throw new BadRequestException("Unexpected additional credential claims found: [%s]".formatted(formatted));
         }
     }
 

@@ -3,7 +3,10 @@ package ch.admin.bj.swiyu.issuer.service.offer;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 @UtilityClass
 public class ClaimsPathPointerUtil {
@@ -15,7 +18,7 @@ public class ClaimsPathPointerUtil {
      * @throws IllegalArgumentException if not all requested claims are present, if path does not exist, value mismatch in the sd jwt's claims
      */
     public static void validateRequestedClaims(Map<String, Object> objectMap, List<Object> requestedClaimsPointerPath, List<Object> requestedValues) {
-    
+
         var claims = selectClaim(objectMap, requestedClaimsPointerPath);
 
         List<Object> sanitizedRequestValues = requestedValues;
@@ -28,35 +31,6 @@ public class ClaimsPathPointerUtil {
         if (requestedValues != null && Collections.disjoint(claims, sanitizedRequestValues)) {
             throw new IllegalArgumentException("Not all requested claim values are satisfied");
         }
-    }
-
-    public static Set<List<Object>> flatten(Object obj,
-                                            List<Object> path) {
-
-        Set<List<Object>> result = new HashSet<>();
-
-        if (obj instanceof Map<?, ?> map) {
-
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                List<Object> newPath = new ArrayList<>(path);
-                newPath.add(entry.getKey()); // String key
-                result.addAll(flatten(entry.getValue(), newPath));
-            }
-
-        } else if (obj instanceof List<?> list) {
-
-            for (Object o : list) {
-                List<Object> newPath = new ArrayList<>(path);
-                result.addAll(flatten(o, newPath));
-            }
-
-        } else {
-            if (!path.isEmpty()) {
-                result.add(path);
-            }
-        }
-
-        return result;
     }
 
     static List<Object> selectClaim(Map<String, Object> objectMap, List<Object> claimsPointerPath) {

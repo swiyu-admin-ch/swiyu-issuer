@@ -185,21 +185,6 @@ class CredentialOfferCreateIT {
     }
 
     @Test
-    void testCreateOffer_unexpectedClaim_thenBadRequest() throws Exception {
-
-        var unexpectedClaim = "unexpectedClaim";
-        var objectMapper = new ObjectMapper();
-        var credentialSubjectData = getMinimalCredentialSubjectDataForCredentialSupportedIdTest();
-        credentialSubjectData.put(unexpectedClaim, unexpectedClaim);
-        String minPayloadWithValidUntil = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": %s}",
-                "test", objectMapper.writeValueAsString(credentialSubjectData));
-        mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(Matchers.containsString("Unexpected additional credential claims found: [" + unexpectedClaim + "]")));
-    }
-
-    @Test
     void testCreateOffer_noMilliseconds_thenSuccess() throws Exception {
         String validUntilNoMilliseconds = "3025-02-25T15:55:11Z";
         String minPayloadWithValidUntil = String.format(

@@ -318,9 +318,8 @@ class CredentialOfferValidationServiceTest {
         assertDoesNotThrow(() -> validationService.validateCredentialOfferCreateRequest(request, offerData));
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsIllegalArgumentException(boolean mandatory) throws JsonProcessingException {
+    @Test
+    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsIllegalArgumentException() throws JsonProcessingException {
 
         var additionalInfoList = new ArrayList<>();
         additionalInfoList.add(null);
@@ -331,11 +330,11 @@ class CredentialOfferValidationServiceTest {
                     "claims": [
                         {
                             "path": ["additional_info_list"],
-                            "mandatory": %s
+                            "mandatory": true
                         }
                     ]
                 }
-                """.formatted(mandatory);
+                """;
 
         mockCredentialConfigInteractions(credentialMetadata);
 
@@ -356,7 +355,7 @@ class CredentialOfferValidationServiceTest {
 
         var additionalInfoList = new ArrayList<>();
         additionalInfoList.add("test");
-        Map<String, Object> validatedOfferData = Map.of("test", "test", "additional_info_list", additionalInfoList);
+        Map<String, Object> validatedOfferData = Map.of("test", "test", "additional_info_list", additionalInfoList, "additional_info_list_2", List.of(Map.of("additional_info_map", "additional_info_map")));
         Map<String, Object> offerData = Map.of("data", validatedOfferData);
 
         var credentialMetadata = """
@@ -371,8 +370,8 @@ class CredentialOfferValidationServiceTest {
                             "mandatory": true
                         },
                         {
-                            "path": ["additional_info_map"],
-                            "mandatory": false
+                            "path": ["additional_info_list_2", null, "additional_info_map"],
+                            "mandatory": true
                         }
                     ]
                 }
