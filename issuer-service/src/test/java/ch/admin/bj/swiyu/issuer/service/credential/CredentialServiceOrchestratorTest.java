@@ -160,6 +160,7 @@ class CredentialServiceOrchestratorTest {
         var offer = getCredentialOffer(CredentialOfferStatusType.OFFERED, expirationTimeStamp, offerData, preAuthorizedCode, null, null);
         var mgmt = CredentialManagement.builder()
                 .accessToken(uuid)
+                .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .credentialOffers(Set.of(offer))
                 .build();
@@ -600,6 +601,7 @@ class CredentialServiceOrchestratorTest {
         var offer = getCredentialOffer(status, expirationTimeStamp, offerData, UUID.randomUUID(), null, transactionId);
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
+                .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .accessTokenExpirationTimestamp(expirationTimeStamp)
                 .credentialOffers(Set.of(offer))
                 .build();
