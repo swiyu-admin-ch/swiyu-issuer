@@ -318,7 +318,7 @@ class IssuanceControllerIT {
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value(INVALID_PROOF.name()))
+                .andExpect(jsonPath("$.error").value(INVALID_PROOF.getErrorCode()))
                 .andExpect(jsonPath("$.error_description")
                         .value("Invalid nonce claim in proof JWT"))
                 .andReturn();
@@ -340,7 +340,7 @@ class IssuanceControllerIT {
         ));
 
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
-        assertEquals(INVALID_PROOF.name(), credentialResponse.get("error").getAsString());
+        assertEquals(INVALID_PROOF.getErrorCode(), credentialResponse.get("error").getAsString());
     }
 
     @Test
@@ -355,7 +355,7 @@ class IssuanceControllerIT {
         String credentialRequestString = getCredentialRequestString(proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
 
-        assertEquals(INVALID_PROOF.name(), credentialResponse.get("error").getAsString());
+        assertEquals(INVALID_PROOF.getErrorCode(), credentialResponse.get("error").getAsString());
     }
 
     @Test
@@ -370,7 +370,7 @@ class IssuanceControllerIT {
         String credentialRequestString = getCredentialRequestString(proof);
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token, credentialRequestString);
 
-        assertEquals(INVALID_PROOF.name(), credentialResponse.get("error").getAsString());
+        assertEquals(INVALID_PROOF.getErrorCode(), credentialResponse.get("error").getAsString());
     }
 
     @Test
@@ -404,7 +404,7 @@ class IssuanceControllerIT {
 
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value(INVALID_PROOF.name()));
+                .andExpect(jsonPath("$.error").value(INVALID_PROOF.getErrorCode()));
     }
 
     @Test

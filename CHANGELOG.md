@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validation uses now the `credential_metadata.claims` as default for the validation and the `claims` as fallback amd
   don't check surplus.
 - Contracted cnf to now only provide the correct shape as defined in RFC 7800
+- When not providing any key attestation provider, no key attestations are accepted instead of all.
 
 ### Fixed
 

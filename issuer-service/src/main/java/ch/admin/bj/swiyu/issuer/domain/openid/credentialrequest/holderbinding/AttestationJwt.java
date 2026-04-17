@@ -154,7 +154,7 @@ public final class AttestationJwt {
      */
     public void throwIfNotTrustedAttestationProvider(@NotNull List<String> trustedAttestationProviders) throws IllegalArgumentException {
         if (!trustedAttestationProviders.contains(claims.getIssuer())) {
-            throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted issuers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
+            throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted attestation providers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
         }
     }
 
