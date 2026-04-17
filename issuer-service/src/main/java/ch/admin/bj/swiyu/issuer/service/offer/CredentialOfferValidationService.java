@@ -123,11 +123,6 @@ public class CredentialOfferValidationService {
 
             List<MetadataClaimDescriptor> claimDescriptor = credentialConfiguration.getCredentialMetadata().getClaimDescriptor();
 
-            Set<List<Object>> descriptorPaths = claimDescriptor
-                    .stream()
-                    .map(MetadataClaimDescriptor::getPath)
-                    .collect(Collectors.toSet());
-
             // validate missing and surplus using dedicated helpers
             validatePathClaimsMissing(claimDescriptor, validatedOfferData);
         } else {
