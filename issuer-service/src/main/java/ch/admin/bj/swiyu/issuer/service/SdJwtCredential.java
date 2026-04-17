@@ -137,7 +137,7 @@ public class SdJwtCredential extends CredentialBuilder {
         final var credentialConfiguration = getIssuerMetadata().getCredentialConfigurationById(metadataId);
         for (int i = 0; i < batchSize; i++) {
             Map<String, Object> alwaysDisclosedData = prepareAlwaysDisclosedData(credentialConfiguration, override);
-            Map<String, Object> selectivelyDisclosableData = prepareSelectivelyDisclosableData(credentialConfiguration, override);
+            Map<String, Object> selectivelyDisclosableData = prepareSelectivelyDisclosableData(credentialConfiguration);
             final SDObjectBuilder builder = new SDObjectBuilder();
             putAlwaysDisclosedData(builder, alwaysDisclosedData);
             final List<Disclosure> disclosures = putSelectivelyDiscloseableData(builder, selectivelyDisclosableData);
@@ -443,7 +443,7 @@ public class SdJwtCredential extends CredentialBuilder {
         return alwaysDisclosedData;
     }
 
-    private Map<String, Object> prepareSelectivelyDisclosableData(CredentialConfiguration credentailConfiguration, ConfigurationOverride override) {
+    private Map<String, Object> prepareSelectivelyDisclosableData(CredentialConfiguration credentailConfiguration) {
         // Custom Data
         Map<String, Object> selectivelyDisclosableData = getOfferData();
         // Extended VCT versioning
