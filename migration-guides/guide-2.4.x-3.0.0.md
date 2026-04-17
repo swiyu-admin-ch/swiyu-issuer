@@ -42,7 +42,7 @@ It is based on the **v3.0.0** section in `CHANGELOG.md` ("latest (3.0.0)").
 
 **What changed**
 
-- Support for `did:jwk` was removed because it is no longer part of the Swiss profiles.
+- Support for `did:jwk` for cryptographic_binding_methods_supported in issuer metadata was removed because it is no longer part of the Swiss profiles.
 
 **What you need to do**
 
