@@ -227,7 +227,7 @@ New way with claims path pointers:
 - [ ] Apply DB migrations (Flyway) and verify the `credential_offer.nonce` column is removed.
 - [ ] Update OID4VCI clients to use the nonce endpoint (don’t expect `c_nonce` in token response).
 - [ ] Verify no client uses draft-13 endpoints.
-- [ ] Verify issuer DID is not `did:jwk`.
+- [ ] Verify issuer metadata cryptographic_binding_methods_supported is not `did:jwk`.
 - [ ] Validate issuer metadata `logo_uri` is a data URI (png/jpeg only).
 - [ ] Update client error-handling for OID4VCI 1.0 compliant (lower-case) error codes.
 - [ ] Decide whether to enable `REGISTRY_HEALTH_CHECKS_ENABLED`.
