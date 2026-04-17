@@ -161,7 +161,7 @@ It is based on the **v3.0.0** section in `CHANGELOG.md` ("latest (3.0.0)").
 - Add the `credential_metadata.claims` to your issuer metadata. Be aware that if you set the claims the validation will
   use these values instead of the legacy `claims` path.
 
-Old way -> Still used for `claims` as fallback in issuer metadata, but the new way is recommended
+Old way -> Still used for `claims` as fallback in issuer metadata, but the new way MUST be used, as the wallet will soon stop support for the old style of claims.
 for `credential_metadata.claims`:
 
 ```json
