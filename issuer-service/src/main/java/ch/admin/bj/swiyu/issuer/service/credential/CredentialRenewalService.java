@@ -45,7 +45,7 @@ public class CredentialRenewalService {
                                                    ClientAgentInfo clientInfo,
                                                    String dpopKey) {
 
-        ensureManagementNotRevokedOrSuspended(mgmt);
+        ensureRenewableState(mgmt);
         ensureRenewalFlowEnabled(mgmt);
         ensureDpopKeyPresent(dpopKey);
         ensureNoPendingRenewalRequest(mgmt);
@@ -63,8 +63,8 @@ public class CredentialRenewalService {
         return envelopeDto;
     }
 
-    void ensureManagementNotRevokedOrSuspended(CredentialManagement mgmt) {
-        if (mgmt.getCredentialManagementStatus() == CredentialStatusManagementType.REVOKED || mgmt.getCredentialManagementStatus() == CredentialStatusManagementType.SUSPENDED) {
+    void ensureRenewableState(CredentialManagement mgmt) {
+        if (mgmt.getCredentialManagementStatus() != CredentialStatusManagementType.ISSUED) {
             throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential management is %s, no renewal possible".formatted(mgmt.getCredentialManagementStatus().name()));
         }
     }

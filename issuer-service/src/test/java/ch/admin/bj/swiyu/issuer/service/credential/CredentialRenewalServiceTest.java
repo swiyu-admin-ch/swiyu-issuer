@@ -96,7 +96,7 @@ class CredentialRenewalServiceTest {
                 .credentialManagementStatus(CredentialStatusManagementType.REVOKED)
                 .build();
 
-        assertThatThrownBy(() -> service.ensureManagementNotRevokedOrSuspended(mgmt))
+        assertThatThrownBy(() -> service.ensureRenewableState(mgmt))
                 .isInstanceOf(RenewalException.class)
                 .hasMessageContaining("REVOKED");
     }
@@ -107,9 +107,21 @@ class CredentialRenewalServiceTest {
                 .credentialManagementStatus(CredentialStatusManagementType.SUSPENDED)
                 .build();
 
-        assertThatThrownBy(() -> service.ensureManagementNotRevokedOrSuspended(mgmt))
+        assertThatThrownBy(() -> service.ensureRenewableState(mgmt))
                 .isInstanceOf(RenewalException.class)
                 .hasMessageContaining("SUSPENDED");
+    }
+
+    @Test
+    void handleRenewalFlow_ensureNoRenewalWhenDeferred() {
+        var mgmt = CredentialManagement.builder()
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .credentialOffers(Set.of(CredentialOffer.builder()
+                        .credentialStatus(CredentialOfferStatusType.DEFERRED)
+                .build())).build();
+        assertThatThrownBy(() -> service.ensureRenewableState(mgmt))
+                .isInstanceOf(RenewalException.class)
+                .hasMessageContaining("INIT");
     }
 
     @Test
