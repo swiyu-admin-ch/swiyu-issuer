@@ -1,6 +1,6 @@
 # Credential Issuance documentation
 
-## Prerequisites for all calls (V1 and V2)
+## Prerequisites
 
 ```mermaid
 sequenceDiagram
@@ -312,74 +312,7 @@ With response:
 > [!NOTE]
 > Please store the `c_nonce` ($C_NONCE) as it is needed to create a proof in the next step.
 
-## Credential Issuance V1
-
-Here you can find the different calls and responses for the credential issuance process. The sequence diagram above
-illustrates the flow of messages between the Business Issuer, Issuer Agent, Issuer Database, Status Registry, and
-Wallet.
-
-This is currently the default flow for credential issuance. The v2 flow is currently in development and should not be
-used in production.
-
-```mermaid
-sequenceDiagram
-    actor WALLET as Holder
-    participant ISS as Issuer Agent
-    participant DB as Issuer DB
-
-# Get credential
-    WALLET ->>+ ISS: Get openid metadata
-ISS-->>-WALLET: 
-
-WALLET->>+ISS: Get issuer metadata
-ISS-->>-WALLET:
-
-WALLET->>+ISS: Get oauth token
-ISS-->>-WALLET : Oauth token
-
-
-WALLET->>+ISS: Get credential
-ISS->>+DB: Get offer data and status list INFO
-DB-->>-ISS:
-ISS-->>-WALLET: VC
-
-```
-
-### Get credential
-
-To create the proof for the credential, you need the `$C_NONCE` then build a JWT according to
-the [SWISS-Profile-jwt-proof-type](https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#jwt-proof-type).
-It is not recommended to reuse your private keys to sign different credentials.
-
-```bash
-curl -X 'POST' \
-  'http://localhost:8080/oid4vci/api/credential' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer $ACCESS_TOKEN' \
-  -d '{
-    "format": "vc+sd-jwt",
-    "proof": {
-        "proof_type": "jwt",
-        "jwt": "eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJUZXN0LUtleSIsIngiOiJmeUx4T1ZaSmpOdnVud1EyXy1ncmcxalZwSWM1ZFhIR3BwUlQ1UXVVV0k0IiwieSI6ImxYMXZLRTl5dEF0MkZTazRKV2NwcW9UbzQ5bW52MGpva0NoMUZXdWEyamsiLCJpYXQiOjE3NTQ1ODEzODh9fQ.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvb2lkNHZjaSIsIm5vbmNlIjoiNWFkYWJlNjYtNmM1OC00NjEyLThiYjMtYjAzNDJlZWZhY2JjIiwiaWF0IjoxNzU0NTgxMzg4fQ.YKR2v4K7joiJvow5KurTxt7pP5lsx3nvWzDONIp2VTtluddT_jOADTJYDA-PKVjoA_c2exqDa8RUPK6roYjnnw"
-    }
-}'
-```
-
-And the wallet receives the credential in the response:
-
-```json
-{
-    "credential": "eyJ2ZXIiOiIxLjAiLCJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImRpZDpleGFtcGxlOmxvY2FsaG9zdCUzQTgwODA6YWJjYWJjI3Nkand0In0.eyJfc2QiOlsiMkVHOG55NjVPY1RjMDYxSGtUbW43M0NJV3hHT2xFVVpMbUkxc3B2NVNmMCIsInNKNXNaZ2wyU1VIU18zOGJwOXJYMnpHQ0hjcHlXQ0EtcUpOaE1UWlZvXzgiLCJ6bW5HRUdTd3NWdlNhVFpPZ18zR0Q1WHIybzdwS2FzRnF6WkxtRGQzT2lvIl0sInZjdCNpbnRlZ3JpdHkiOiJzaGEyNTYtU1ZITGZLZmNaY0JydytkOUVMLzFFWHh2R0Nka1E3dE1HdlptZDB5c01jaz0iLCJuYmYiOjE3NTQ1ODEzNzgsInZjdCI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9vaWQ0dmNpL3ZjdC9teS12Y3QtdjAxIiwiX3NkX2FsZyI6InNoYS0yNTYiLCJpc3MiOiJkaWQ6dGR3OmV4YW1wbGUiLCJjbmYiOnsia3R5IjoiRUMiLCJ1c2UiOiJzaWciLCJjcnYiOiJQLTI1NiIsImtpZCI6IlRlc3QtS2V5IiwieCI6ImZ5THhPVlpKak52dW53UTJfLWdyZzFqVnBJYzVkWEhHcHBSVDVRdVVXSTQiLCJ5IjoibFgxdktFOXl0QXQyRlNrNEpXY3Bxb1RvNDltbnYwam9rQ2gxRld1YTJqayIsImlhdCI6MTc1NDU4MTM4OCwiandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJUZXN0LUtleSIsIngiOiJmeUx4T1ZaSmpOdnVud1EyXy1ncmcxalZwSWM1ZFhIR3BwUlQ1UXVVV0k0IiwieSI6ImxYMXZLRTl5dEF0MkZTazRKV2NwcW9UbzQ5bW52MGpva0NoMUZXdWEyamsiLCJpYXQiOjE3NTQ1ODEzODh9fSwiZXhwIjoxNzU0NTgxNTA4LCJpYXQiOjE3NTQ1ODE0MTIsInN0YXR1cyI6eyJzdGF0dXNfbGlzdCI6eyJ0eXBlIjoiU3dpc3NUb2tlblN0YXR1c0xpc3QtMS4wIiwidXJpIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6ODA4MC9zdGF0dXMiLCJpZHgiOjB9fX0.iTC8TZEJAOoE4DuWBtNSsSsy3dhaVmzXhql6k_K0pCVJszMBnEc0vbTszZYcjfwB2svriZGXBAiGZzgZZJ6Psg~WyJTYXRZVGQ2X1UwZWJ2NkZIWXJpQ1Z3IiwiYXZlcmFnZV9ncmFkZSIsIjUuMzMiXQ~WyJTb3dTSk1PVWdZMm5qSnlNZnRGdER3IiwiZGVncmVlIiwiQmFjaGVsb3Igb2YgU2NpZW5jZSJd~WyJCa3YwZ3BiTnFwYVA5TzZRay04VVZnIiwibmFtZSIsIkRhdGEgU2NpZW5jZSJd~",
-    "format": "vc+sd-jwt"
-}
-``` 
-
-## Credential Issuance V2
-
-> [!WARNING]  
-> Please be careful with V2. This part is still under construction and not yet pentested and should not be used in a
-> production environment.
+## Credential Issuance
 
 ```mermaid
 sequenceDiagram
