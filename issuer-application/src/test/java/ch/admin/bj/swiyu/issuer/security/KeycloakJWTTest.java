@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,9 +43,6 @@ class KeycloakJWTTest {
 
     static final String MANAGEMENT_BASE_URL = "/management/api/credentials";
     static final String STATUS_BASE_URL = "/management/api/status-list";
-    static final String MINIMAL_PAYLOAD = """
-            {"metadata_credential_supported_id":["test"],"credential_subject_data":{"hello":"world", "lastName":"lastName"}}
-            """;
 
     static final DockerImageName KC_IMAGE = DockerImageName.parse("quay.io/keycloak/keycloak:25.0");
     static final Path REALM_FILE = Path.of("target/test/keycloak/realm-trust.json");
@@ -152,7 +150,7 @@ class KeycloakJWTTest {
     void testManagementEndpoint_whenMissingAuthorizationHeader() throws Exception {
         mvc.perform(post(MANAGEMENT_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(MINIMAL_PAYLOAD))
+                        .content(getMinimalPayloadForCredentialSupportedIdTest()))
                 .andExpect(status().isUnauthorized());
 
         mvc.perform(get(MANAGEMENT_BASE_URL + "/" + UUID.randomUUID()))
@@ -166,7 +164,7 @@ class KeycloakJWTTest {
 
         mvc.perform(post(MANAGEMENT_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(MINIMAL_PAYLOAD)
+                        .content(getMinimalPayloadForCredentialSupportedIdTest())
                         .header(HttpHeaders.AUTHORIZATION, fakeAuthorization))
                 .andExpect(status().isUnauthorized());
 
@@ -186,7 +184,7 @@ class KeycloakJWTTest {
 
         final var result = mvc.perform(post(MANAGEMENT_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(MINIMAL_PAYLOAD)
+                        .content(getMinimalPayloadForCredentialSupportedIdTest())
                         .header(HttpHeaders.AUTHORIZATION, authorization))
                 .andExpect(status().isOk())
                 .andReturn();

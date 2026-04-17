@@ -47,7 +47,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
-import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.*;
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,9 +147,7 @@ class IssuanceControllerIT {
         // Override with always enabled signed metadata
         when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
 
-        String minPayloadWithEmptySubject = String.format(
-                "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\": \"Example\"}}",
-                "test");
+        String minPayloadWithEmptySubject = getMinimalPayloadForCredentialSupportedIdTest();
 
         var offerResponse = mock
                 .perform(post("/management/api/credentials").contentType(MediaType.APPLICATION_JSON)
@@ -389,8 +387,8 @@ class IssuanceControllerIT {
         JsonObject credentialResponse = TestInfrastructureUtils.requestFailingCredential(mock, token,
                 credentialRequestString);
         assertThat(credentialResponse.get("error_description").getAsString())
-            .as("Helpful errors should be returned to implementers")
-            .isEqualTo("proofs.jwt: must not be empty");
+                .as("Helpful errors should be returned to implementers")
+                .isEqualTo("proofs.jwt: must not be empty");
     }
 
     @Test

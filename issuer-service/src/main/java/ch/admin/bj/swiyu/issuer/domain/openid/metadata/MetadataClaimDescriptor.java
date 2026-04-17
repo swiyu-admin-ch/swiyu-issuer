@@ -23,7 +23,7 @@ public class MetadataClaimDescriptor {
     @NotNull
     @NotEmpty
     @ValidPathElements
-    private List<String> path;
+    private List<Object> path;
 
     @JsonProperty(value = "mandatory", defaultValue = "false")
     private boolean mandatory;

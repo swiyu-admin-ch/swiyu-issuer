@@ -33,6 +33,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,17 +44,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-/**
- * Testing the coverage of securing endpoints
- */
 class OAuthSingleKeyJWTTest {
     static final String MANAGEMENT_BASE_URL = "/management/api/credentials";
     static final String STATUS_BASE_URL = "/management/api/status-list";
     static RSAKey rsaKey;
     static Path publicKeyPath = Path.of("target/test/public-key.pem");
-    private final String minPayloadWithEmptySubject = String.format(
-            "{\"metadata_credential_supported_id\": [\"%s\"], \"credential_subject_data\": {\"hello\": \"world\", \"lastName\": \"lastName\"}}",
-            "test");
+
     @Autowired
     private MockMvc mvc;
 
@@ -106,7 +102,7 @@ class OAuthSingleKeyJWTTest {
     void testManagementEndpoint_whenUnauthorized() throws Exception {
 
         // Expect the endpoints to block requests if not authorized
-        mvc.perform(post(MANAGEMENT_BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithEmptySubject))
+        mvc.perform(post(MANAGEMENT_BASE_URL).contentType(MediaType.APPLICATION_JSON).content(getMinimalPayloadForCredentialSupportedIdTest()))
                 .andExpect(status().isUnauthorized());
 
         var randomUUID = UUID.randomUUID();
@@ -124,7 +120,7 @@ class OAuthSingleKeyJWTTest {
 
         var result = mvc.perform(post(MANAGEMENT_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(minPayloadWithEmptySubject)
+                        .content(getMinimalPayloadForCredentialSupportedIdTest())
                         .header("Authorization", "Bearer " + bearerToken))
                 .andExpect(status().isOk())
                 .andReturn();

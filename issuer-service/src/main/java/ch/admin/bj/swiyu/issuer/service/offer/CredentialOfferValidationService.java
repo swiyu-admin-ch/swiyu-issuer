@@ -1,10 +1,11 @@
 package ch.admin.bj.swiyu.issuer.service.offer;
 
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.MetadataClaimDescriptor;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.service.DataIntegrityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SDJWT_PROTECTED_CLAIMS;
 
@@ -33,6 +35,21 @@ public class CredentialOfferValidationService {
     private final DataIntegrityService dataIntegrityService;
 
     /**
+     * Determines the issuer DID for a given status list.
+     * <p>
+     * If the status list contains a configuration override with a non-empty issuer DID,
+     * that value is returned. Otherwise, the provided default issuer ID is used.
+     *
+     * @param statusList      the status list to resolve the issuer DID from
+     * @param defaultIssuerId the default issuer ID to use if no override is present
+     * @return the resolved issuer DID
+     */
+    private static String determineIssuerDid(StatusList statusList, String defaultIssuerId) {
+        var override = statusList.getConfigurationOverride();
+        return override.issuerDidOrDefault(defaultIssuerId);
+    }
+
+    /**
      * Validates a credential offer create request, performing sanity checks with configurations.
      *
      * @param createCredentialRequest the create credential request to be validated
@@ -44,12 +61,12 @@ public class CredentialOfferValidationService {
             @Valid CreateCredentialOfferRequestDto createCredentialRequest,
             Map<String, Object> offerData) {
 
-        var credentialOfferMetadataId = createCredentialRequest.getMetadataCredentialSupportedId().getFirst();
+        var metadataCredentialSupportedId = createCredentialRequest.getMetadataCredentialSupportedId().getFirst();
 
         // Date checks, if exists
         validateOfferedCredentialValiditySpan(createCredentialRequest);
 
-        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadataId);
+        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(metadataCredentialSupportedId);
 
         // Check if credential format is supported otherwise throw error
         validateCredentialFormat(credentialConfiguration);
@@ -77,17 +94,17 @@ public class CredentialOfferValidationService {
      * Validates the credential request offer data.
      *
      * @param offerData               the offer data to validate
-     * @param isDeferredRequest       whether this is a deferred request
+     * @param allowEmptyData          empty data can be allowed with initial deferred request
      * @param credentialConfiguration the credential configuration
      * @throws BadRequestException if validation fails
      */
     public void validateCredentialRequestOfferData(
             Map<String, Object> offerData,
-            boolean isDeferredRequest,
+            boolean allowEmptyData,
             CredentialConfiguration credentialConfiguration) {
 
         // with deferred requests the offer data can be empty initially if the data is set it must be validated
-        if (isDeferredRequest && CollectionUtils.isEmpty(offerData)) {
+        if (allowEmptyData && CollectionUtils.isEmpty(offerData)) {
             return;
         }
 
@@ -101,12 +118,21 @@ public class CredentialOfferValidationService {
         // check if credentialSubjectData contains protected claims
         validateProtectedClaims(validatedOfferData);
 
-        var metadataClaims = Optional.ofNullable(credentialConfiguration.getClaims())
-                .orElseGet(HashMap::new)
-                .keySet();
+        if (credentialConfiguration.getCredentialMetadata() != null &&
+                credentialConfiguration.getCredentialMetadata().getClaimDescriptor() != null) {
 
-        validateClaimsMissing(metadataClaims, validatedOfferData, credentialConfiguration);
-        validateClaimsSurplus(metadataClaims, validatedOfferData);
+            List<MetadataClaimDescriptor> claimDescriptor = credentialConfiguration.getCredentialMetadata().getClaimDescriptor();
+
+            // validate missing and surplus using dedicated helpers
+            validatePathClaimsMissing(claimDescriptor, validatedOfferData);
+        } else {
+            var metadataClaims = Optional.ofNullable(credentialConfiguration.getClaims())
+                    .orElseGet(HashMap::new)
+                    .keySet();
+
+            validateClaimsMissing(metadataClaims, validatedOfferData, credentialConfiguration);
+            validateClaimsSurplus(metadataClaims, validatedOfferData);
+        }
     }
 
     /**
@@ -124,6 +150,49 @@ public class CredentialOfferValidationService {
             throw new BadRequestException(
                     "The following claims are not allowed in the credentialSubjectData: " + reservedClaims);
         }
+    }
+
+    /**
+     * Validate that all descriptor paths are present in the offer data.
+     */
+    private void validatePathClaimsMissing(List<MetadataClaimDescriptor> claimDescriptors, Map<String, Object> offerData) {
+
+        // checks if mandatory claims are present, if path does not exist or if there is a value mismatch in the sd jwt's claims, if any of this is the case the claim is treated as missing
+        var missing = claimDescriptors.stream()
+                .filter(claimDescriptor -> {
+                    try {
+                        if (Boolean.TRUE.equals(claimDescriptor.isMandatory())) {
+                            ClaimsPathPointerUtil.validateRequestedClaims(offerData, claimDescriptor.getPath(), null);
+                        }
+                        return false;
+                    } catch (Exception e) {
+                        log.error("Error while validating descriptor path %s against offer data, treating as missing"
+                                .formatted(formatPath(claimDescriptor.getPath())), e);
+                        return true;
+                    }
+                })
+                .collect(Collectors.toSet());
+
+        if (!missing.isEmpty()) {
+            var formatted = missing.stream()
+                    .map(descriptor -> formatPath(descriptor.getPath()))
+                    .sorted()
+                    .collect(Collectors.joining(","));
+            throw new BadRequestException("Mandatory credential claims are missing: [%s]".formatted(formatted));
+        }
+    }
+
+    private String formatPath(List<Object> path) {
+        // Use dot notation, arrays shown as [idx]
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0, n = path.size(); i < n; i++) {
+            Object o = path.get(i);
+            if (i > 0) {
+                sb.append(' ');
+            }
+            sb.append(o);
+        }
+        return sb.toString();
     }
 
     /**
@@ -227,21 +296,6 @@ public class CredentialOfferValidationService {
     }
 
     /**
-     * Determines the issuer DID for a given status list.
-     * <p>
-     * If the status list contains a configuration override with a non-empty issuer DID,
-     * that value is returned. Otherwise, the provided default issuer ID is used.
-     *
-     * @param statusList      the status list to resolve the issuer DID from
-     * @param defaultIssuerId the default issuer ID to use if no override is present
-     * @return the resolved issuer DID
-     */
-    private static String determineIssuerDid(StatusList statusList, String defaultIssuerId) {
-        var override = statusList.getConfigurationOverride();
-        return override.issuerDidOrDefault(defaultIssuerId);
-    }
-
-    /**
      * Determines the issuer DID from the request or default configuration.
      *
      * @param requestDto      the credential offer request
@@ -256,4 +310,3 @@ public class CredentialOfferValidationService {
         return defaultIssuerId;
     }
 }
-
