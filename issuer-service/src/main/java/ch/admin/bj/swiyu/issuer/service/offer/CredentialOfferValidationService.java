@@ -57,7 +57,6 @@ public class CredentialOfferValidationService {
      * @throws BadRequestException   if validation fails
      * @throws IllegalStateException if the credential configuration format is unsupported
      */
-    // todo here
     public void validateCredentialOfferCreateRequest(
             @Valid CreateCredentialOfferRequestDto createCredentialRequest,
             Map<String, Object> offerData) {
@@ -131,6 +130,7 @@ public class CredentialOfferValidationService {
 
             // validate missing and surplus using dedicated helpers
             validatePathClaimsMissing(claimDescriptor, validatedOfferData);
+            validateClaimsContent(descriptorPaths, validatedOfferData);
             validatePathClaimsSurplus(descriptorPaths, validatedOfferData);
         } else {
             var metadataClaims = Optional.ofNullable(credentialConfiguration.getClaims())
@@ -164,13 +164,7 @@ public class CredentialOfferValidationService {
      */
     private void validatePathClaimsMissing(List<MetadataClaimDescriptor> claimDescriptors, Map<String, Object> offerData) {
 
-        /*
-        var missingOfferedClaims = new HashSet<>(metadataClaims);
-        missingOfferedClaims.removeAll(offerData.keySet());
-        // Remove optional claims
-        missingOfferedClaims.removeIf(claimKey ->
-                !credentialConfiguration.getClaims().get(claimKey).isMandatory());
-         */
+        // checks if mandatory claims are present, if path does not exist or if there is a value mismatch in the sd jwt's claims, if any of this is the case the claim is treated as missing
         var missing = claimDescriptors.stream()
                 .filter(claimDescriptor -> {
                     try {
@@ -191,7 +185,30 @@ public class CredentialOfferValidationService {
                     .map(descriptor -> formatPath(descriptor.getPath()))
                     .sorted()
                     .collect(Collectors.joining(","));
-            throw new BadRequestException("Mandatory credential claims are missing! %s".formatted(formatted));
+            throw new BadRequestException("Mandatory credential claims are missing: [%s]".formatted(formatted));
+        }
+    }
+
+    private void validateClaimsContent(Set<List<Object>> claimDescriptorsPaths, Map<String, Object> offerData) {
+        var empty = claimDescriptorsPaths.stream()
+                .filter(claimDescriptorPath -> {
+                    try {
+                        var claimValues = ClaimsPathPointerUtil.selectClaim(offerData, claimDescriptorPath);
+                        return claimValues.isEmpty();
+                    } catch (Exception e) {
+                        log.error("Empty offer values found for descriptor path %s"
+                                .formatted(formatPath(claimDescriptorPath)), e);
+                        return true;
+                    }
+                })
+                .collect(Collectors.toSet());
+
+        if (!empty.isEmpty()) {
+            var formatted = empty.stream()
+                    .map(this::formatPath)
+                    .sorted()
+                    .collect(Collectors.joining(","));
+            throw new BadRequestException("Empty offer values found: [%s]".formatted(formatted));
         }
     }
 
@@ -209,14 +226,18 @@ public class CredentialOfferValidationService {
                     .map(this::formatPath)
                     .sorted()
                     .collect(Collectors.joining(","));
-            throw new BadRequestException("Unexpected credential claims found! %s".formatted(formatted));
+            throw new BadRequestException("Unexpected additional credential claims found: [%s]".formatted(formatted));
         }
     }
 
     private String formatPath(List<Object> path) {
         // Use dot notation, arrays shown as [idx]
         StringBuilder sb = new StringBuilder();
-        for (Object o : path) {
+        for (int i = 0, n = path.size(); i < n; i++) {
+            Object o = path.get(i);
+            if (i > 0) {
+                sb.append(' ');
+            }
             sb.append(o);
         }
         return sb.toString();

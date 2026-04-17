@@ -60,6 +60,17 @@ class ClaimsPathPointerUtilTest {
         assertEquals(List.of("base"), originalPath);
     }
 
+    @Test
+    void flatten_withEmptyArray_throwsIllegalA() {
+        List<Object> originalPath = new ArrayList<>(List.of("base"));
+        Map<String, Object> root = new HashMap<>();
+        root.put("a", "x");
+
+        ClaimsPathPointerUtil.flatten(root, originalPath);
+
+        assertEquals(List.of("base"), originalPath);
+    }
+
     /**
      * Verifies complex sttructure.
      */

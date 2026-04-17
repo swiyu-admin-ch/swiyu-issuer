@@ -196,7 +196,7 @@ class CredentialOfferCreateIT {
                 "test", objectMapper.writeValueAsString(credentialSubjectData));
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(minPayloadWithValidUntil))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(Matchers.containsString("Unexpected credential claims found! " + unexpectedClaim)));
+                .andExpect(content().string(Matchers.containsString("Unexpected additional credential claims found: [" + unexpectedClaim + "]")));
     }
 
     @Test

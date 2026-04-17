@@ -401,7 +401,7 @@ class DeferredFlowIT {
         TestInfrastructureUtils.createCredentialOffer(mock, offerRequestString)
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.detail")
-                        .value("Unexpected credential claims found! unexpectedClaim"))
+                        .value("Unexpected additional credential claims found: [unexpectedClaim]"))
                 .andReturn();
     }
 
@@ -424,7 +424,7 @@ class DeferredFlowIT {
         createCredentialOffer(mock, offerRequestString)
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.detail")
-                        .value("Mandatory credential claims are missing! " + missingClaim))
+                        .value("Mandatory credential claims are missing: [" + missingClaim + "]"))
                 .andReturn();
     }
 

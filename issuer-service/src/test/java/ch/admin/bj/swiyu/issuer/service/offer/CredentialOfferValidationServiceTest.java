@@ -1,25 +1,32 @@
 package ch.admin.bj.swiyu.issuer.service.offer;
 
-import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfigurationMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.DataIntegrityService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 /**
@@ -212,6 +219,128 @@ class CredentialOfferValidationServiceTest {
     }
 
     @Test
+    void validateCredentialOfferCreateRequest_withMissingValue_throwsIllegalArgumentException() throws JsonProcessingException {
+
+        Map<String, Object> offerData = Map.of("path", List.of());
+
+        var credentialMetadata = """
+                {
+                    "claims": [
+                        {
+                            "path": ["mandatory"],
+                            "mandatory": true
+                        },
+                        {
+                            "path": ["additional_info_list"],
+                            "mandatory": false
+                        }
+                    ]
+                }
+                """;
+
+        mockCredentialConfigInteractions(credentialMetadata);
+
+        var request = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialValidFrom(Instant.now().plusSeconds(10))
+                .credentialValidUntil(Instant.now().plusSeconds(3600))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
+                .build();
+
+        var ex = assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
+        assertEquals(ex.getMessage(), "Mandatory credential claims are missing: [mandatory]");
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void validateCredentialOfferCreateRequest_withEmptyArray_throwsIllegalArgumentException(boolean mandatory) throws JsonProcessingException {
+
+        Map<String, Object> offerData = Map.of("path", List.of());
+
+        var credentialMetadata = """
+                {
+                    "claims": [
+                        {
+                            "path": ["additional_info_list"],
+                            "mandatory": %s
+                        }
+                    ]
+                }
+                """.formatted(mandatory);
+
+        mockCredentialConfigInteractions(credentialMetadata);
+
+        var request = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialValidFrom(Instant.now().plusSeconds(10))
+                .credentialValidUntil(Instant.now().plusSeconds(3600))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
+                .build();
+
+        assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void validateCredentialOfferCreateRequest_withEmptyObject_throwsIllegalArgumentException(boolean mandatory) throws JsonProcessingException {
+
+        Map<String, Object> offerData = Map.of("path", Map.of("additional_info_map", Map.of()));
+
+        var credentialMetadata = """
+                {
+                    "claims": [
+                        {
+                            "path": ["additional_info_map"],
+                            "mandatory": %s
+                        }
+                    ]
+                }
+                """.formatted(mandatory);
+
+        mockCredentialConfigInteractions(credentialMetadata);
+
+        var request = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialValidFrom(Instant.now().plusSeconds(10))
+                .credentialValidUntil(Instant.now().plusSeconds(3600))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
+                .build();
+
+        assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsIllegalArgumentException(boolean mandatory) throws JsonProcessingException {
+
+        var additionalInfoList = new ArrayList<>();
+        additionalInfoList.add(null);
+        Map<String, Object> offerData = Map.of("path", Map.of("additional_info_list", additionalInfoList));
+
+        var credentialMetadata = """
+                {
+                    "claims": [
+                        {
+                            "path": ["additional_info_list"],
+                            "mandatory": %s
+                        }
+                    ]
+                }
+                """.formatted(mandatory);
+
+        mockCredentialConfigInteractions(credentialMetadata);
+
+        var request = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialValidFrom(Instant.now().plusSeconds(10))
+                .credentialValidUntil(Instant.now().plusSeconds(3600))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
+                .build();
+
+        assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
+    }
+
+    @Test
     void determineIssuerDid_shouldReturnOverrideIfPresent() {
         var request = CreateCredentialOfferRequestDto.builder()
                 .configurationOverride(new ConfigurationOverrideDto("did:example:override", null, null, null))
@@ -256,5 +385,13 @@ class CredentialOfferValidationServiceTest {
 
         assertTrue(ex.getMessage().contains("Status List issuer did is not the same"));
         assertTrue(ex.getMessage().contains("https://example.com/status"));
+    }
+
+    private void mockCredentialConfigInteractions(String credentialMetadata) throws JsonProcessingException {
+        var objectMapper = new ObjectMapper();
+        var credConfig = Mockito.mock(CredentialConfiguration.class);
+        when(credConfig.getCredentialMetadata()).thenReturn(objectMapper.readValue(credentialMetadata, CredentialConfigurationMetadata.class));
+        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credConfig);
     }
 }

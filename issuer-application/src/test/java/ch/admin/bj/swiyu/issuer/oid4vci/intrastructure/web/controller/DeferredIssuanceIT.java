@@ -275,7 +275,7 @@ class DeferredIssuanceIT {
                 incorrectSubjectData)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error_description").value("Bad Request"))
-                .andExpect(jsonPath("$.detail").value("Mandatory credential claims are missing! " + missingClaimName));
+                .andExpect(jsonPath("$.detail").value("Mandatory credential claims are missing: [" + missingClaimName + "]"));
 
         // wallet checks is still pending
         performCredentialRequestWithString(token.toString(), deferredCredentialRequestString)

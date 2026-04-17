@@ -33,8 +33,8 @@ public class ClaimsPathPointerUtil {
         }
     }
 
-    static Set<List<Object>> flatten(Object obj,
-                                     List<Object> path) {
+    public static Set<List<Object>> flatten(Object obj,
+                                            List<Object> path) {
 
         Set<List<Object>> result = new HashSet<>();
 
@@ -65,7 +65,7 @@ public class ClaimsPathPointerUtil {
         return result;
     }
 
-    private static List<Object> selectClaim(Map<String, Object> objectMap, List<Object> claimsPointerPath) {
+    static List<Object> selectClaim(Map<String, Object> objectMap, List<Object> claimsPointerPath) {
         var selected = new DcqlPathSelection(objectMap);
         for (Object path : claimsPointerPath) {
             switch (path) {
