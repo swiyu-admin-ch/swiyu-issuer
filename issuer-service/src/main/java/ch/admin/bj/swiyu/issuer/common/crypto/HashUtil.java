@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.common.crypto;
 
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Base64;
 
 import org.bouncycastle.crypto.digests.SHA256Digest;
@@ -31,5 +32,16 @@ public class HashUtil {
         byte[] hmacOut = new byte[hmac.getMacSize()];
         hmac.doFinal(hmacOut, 0);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(hmacOut);
+    }
+
+    /**
+     * Compares the digests of two strings in a time 
+     * constant manner preventing timing attack
+     * @param digestA
+     * @param digestB
+     * @return true if both are equal
+     */
+    public static boolean equalsConstantTime(String digestA, String digestB) {
+        return MessageDigest.isEqual(digestA.getBytes(StandardCharsets.UTF_8), digestB.getBytes(StandardCharsets.UTF_8));
     }
 }
