@@ -42,7 +42,8 @@ It is based on the **v3.0.0** section in `CHANGELOG.md` ("latest (3.0.0)").
 
 **What changed**
 
-- Support for `did:jwk` for cryptographic_binding_methods_supported in issuer metadata was removed because it is no longer part of the Swiss profiles.
+- Support for `did:jwk` for cryptographic_binding_methods_supported in issuer metadata was removed because it is no
+  longer part of the Swiss profiles.
 
 **What you need to do**
 
@@ -129,9 +130,20 @@ It is based on the **v3.0.0** section in `CHANGELOG.md` ("latest (3.0.0)").
 - Update issuer metadata to ensure `logo_uri` is a valid data URI of the allowed types. If not update the metadata
   accordingly.
 
+### 9) Restrict trusted attestation providers
+
+**What changed**
+
+- Empty list of trusted attestation providers is no longer allowed. When not providing any key attestation provider, no
+  key attestations are accepted instead of all.
+
+** What you need to do**
+
+- Set `TRUSTED_ATTESTATION_PROVIDERS` if not set, key attestations cannot be used
+
 ## Operational / deployment changes
 
-### 9) Optional registry health checks
+### 10) Optional registry health checks
 
 **What changed**
 
@@ -143,7 +155,7 @@ It is based on the **v3.0.0** section in `CHANGELOG.md` ("latest (3.0.0)").
 
 - Decide whether to enable it and ensure the registry endpoint and credentials are configured.
 
-### 10) Metadata claim descriptor path validation improved
+### 11) Metadata claim descriptor path validation improved
 
 **What changed**
 
@@ -161,7 +173,8 @@ It is based on the **v3.0.0** section in `CHANGELOG.md` ("latest (3.0.0)").
 - Add the `credential_metadata.claims` to your issuer metadata. Be aware that if you set the claims the validation will
   use these values instead of the legacy `claims` path.
 
-Old way -> Still used for `claims` as fallback in issuer metadata, but the new way MUST be used, as the wallet will soon stop support for the old style of claims.
+Old way -> Still used for `claims` as fallback in issuer metadata, but the new way MUST be used, as the wallet will soon
+stop support for the old style of claims.
 for `credential_metadata.claims`:
 
 ```json
@@ -233,6 +246,7 @@ New way with claims path pointers:
 - [ ] Decide whether to enable `REGISTRY_HEALTH_CHECKS_ENABLED`.
 - [ ] Update claims in issuer metadata to use new `credential_metadata.claims` with claims path pointers and ensure
   validation is correct.
+- [ ] Update `TRUSTED_ATTESTATION_PROVIDERS` if you want to use key attestations
 
 ## Reference
 
