@@ -1,8 +1,10 @@
 package ch.admin.bj.swiyu.issuer.dto.oid4vci;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
 
 @Schema(name = "CredentialRequestError", enumAsRef = true)
+@Getter
 public enum CredentialRequestErrorDto {
     INVALID_CREDENTIAL_REQUEST("invalid_credential_request"),
     UNKNOWN_CREDENTIAL_CONFIGURATION("unknown_credential_configuration"),

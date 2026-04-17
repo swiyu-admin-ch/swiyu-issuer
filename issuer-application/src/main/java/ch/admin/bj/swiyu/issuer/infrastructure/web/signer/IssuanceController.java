@@ -151,12 +151,10 @@ public class IssuanceController {
         String unparsedRequestDto = jweService.decryptRequest(requestMessage, request.getContentType());
 
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
-        var clientInfo = getClientAgentInfo(request);
+        ClientAgentInfo clientInfo = getClientAgentInfo(request);
 
-        String accessToken = authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
-
-        
-        var dto = parseCredentialRequestDto(unparsedRequestDto);
+        String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
+        CreateCredentialRequestDto dto = parseCredentialRequestDto(unparsedRequestDto);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
         var headers = new HttpHeaders();
@@ -224,7 +222,7 @@ public class IssuanceController {
         DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = parseDeferredCredentialRequestDto(
                 unparsedRequestDto);
 
-        String accessToken = authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
+        String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
@@ -265,7 +263,7 @@ public class IssuanceController {
     }
 
     private DeferredCredentialEndpointRequestDto parseDeferredCredentialRequestDto(String unparsedRequestDto) {
-        try { 
+        try {
             return objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
         } catch (IOException | ConstraintViolationException e) {
             throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());

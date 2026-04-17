@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
+import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
+import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.infrastructure.web.signer.IssuanceController;
 import ch.admin.bj.swiyu.issuer.service.AuthorizationService;
@@ -14,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +35,7 @@ class IssuanceControllerTest {
     private HttpServletRequest httpRequest;
     private AuthorizationService authorizationService;
     private IssuanceController controller;
-    
+
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String INVALID_REQUEST_REASON = "When the Credential Request is missing a required parameter, includes an unsupported parameter or parameter value, repeats the same parameter, or is otherwise malformed, the error 'invalid_credential_request' must be returned.";
@@ -47,7 +48,7 @@ class IssuanceControllerTest {
         httpRequest = Mockito.mock(HttpServletRequest.class);
         authorizationService = Mockito.mock(AuthorizationService.class);
         controller = new IssuanceController(credentialServiceOrchestrator, jweService, null, objectMapper, authorizationService);
-        
+
         when(jweService.decryptRequest(anyString(), anyString())).then(a -> {
             return a.getArguments()[0];
         }); // Return input
@@ -60,7 +61,6 @@ class IssuanceControllerTest {
 
     @Test
     void testCredentialEndpoint_whenMalformedRequest() {
-
         var ex = assertThrows(Oid4vcException.class,
                 () -> controller.createCredential(ACCESS_TOKEN, null, "Hello world", httpRequest));
         assertThat(ex.getError()).as(INVALID_REQUEST_REASON)
@@ -74,7 +74,15 @@ class IssuanceControllerTest {
         assertThat(ex.getError()).as(INVALID_REQUEST_REASON)
                 .isEqualTo(CredentialRequestError.INVALID_CREDENTIAL_REQUEST);
     }
+
+    @Test
+    void createCredential_invalidAccessToken_thenError() {
+        when(authorizationService.getValidatedAccessToken(ACCESS_TOKEN, null, httpRequest))
+                .thenThrow(OAuthException.invalidToken("Invalid Token"));
+
+        var ex = assertThrows(OAuthException.class,
+                () -> controller.createCredential(ACCESS_TOKEN, null, "Hello World", httpRequest));
+        assertThat(ex.getError()).as(INVALID_REQUEST_REASON)
+                .isEqualTo(OAuthError.INVALID_TOKEN);
+    }
 }
-
-
-
