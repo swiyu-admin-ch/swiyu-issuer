@@ -314,6 +314,30 @@ class CredentialOfferCreateIT {
     }
 
     @Test
+    void testCreateOfferVcMetadata_whenDeferredNoData_thenSuccess() throws Exception {
+        String testIntegrity = "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=";
+        String jsonPayload = String.format("""
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": null,
+                  "offer_validity_seconds": 36000,
+                  "credential_metadata": {
+                    "vct#integrity": "%s",
+                    "deferred": true
+                  }
+                }
+                """, testIntegrity);
+
+        MvcResult result = mvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andReturn();
+        String id = JsonPath.read(result.getResponse().getContentAsString(), "$.offer_id");
+        assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().vctIntegrity());
+    }
+
+    @Test
     void testCreateOfferVcMetadata_metadataIntegration_thenSuccess() throws Exception {
         String jsonPayload = """
                 {

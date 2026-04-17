@@ -221,7 +221,8 @@ class CredentialOfferValidationServiceTest {
     @Test
     void validateCredentialOfferCreateRequest_withMissingValue_throwsIllegalArgumentException() throws JsonProcessingException {
 
-        Map<String, Object> offerData = Map.of("path", List.of());
+        Map<String, Object> validatedOfferData = Map.of("path", List.of());
+        Map<String, Object> offerData = Map.of("data", validatedOfferData);
 
         var credentialMetadata = """
                 {
@@ -247,6 +248,8 @@ class CredentialOfferValidationServiceTest {
                 .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
                 .build();
 
+        when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(validatedOfferData);
+
         var ex = assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
         assertEquals(ex.getMessage(), "Mandatory credential claims are missing: [mandatory]");
     }
@@ -255,13 +258,14 @@ class CredentialOfferValidationServiceTest {
     @ValueSource(booleans = {true, false})
     void validateCredentialOfferCreateRequest_withEmptyArray_throwsIllegalArgumentException(boolean mandatory) throws JsonProcessingException {
 
-        Map<String, Object> offerData = Map.of("path", List.of());
+        Map<String, Object> validatedOfferData = Map.of("path", List.of());
+        Map<String, Object> offerData = Map.of("data", validatedOfferData);
 
         var credentialMetadata = """
                 {
                     "claims": [
                         {
-                            "path": ["additional_info_list"],
+                            "path": ["path"],
                             "mandatory": %s
                         }
                     ]
@@ -277,14 +281,17 @@ class CredentialOfferValidationServiceTest {
                 .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
                 .build();
 
-        assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
+        when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(validatedOfferData);
+
+        assertDoesNotThrow(() -> validationService.validateCredentialOfferCreateRequest(request, offerData));
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void validateCredentialOfferCreateRequest_withEmptyObject_throwsIllegalArgumentException(boolean mandatory) throws JsonProcessingException {
 
-        Map<String, Object> offerData = Map.of("path", Map.of("additional_info_map", Map.of()));
+        Map<String, Object> validatedOfferData = Map.of("additional_info_map", Map.of());
+        Map<String, Object> offerData = Map.of("data", validatedOfferData);
 
         var credentialMetadata = """
                 {
@@ -306,7 +313,9 @@ class CredentialOfferValidationServiceTest {
                 .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
                 .build();
 
-        assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
+        when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(validatedOfferData);
+
+        assertDoesNotThrow(() -> validationService.validateCredentialOfferCreateRequest(request, offerData));
     }
 
     @ParameterizedTest
@@ -336,8 +345,51 @@ class CredentialOfferValidationServiceTest {
                 .credentialValidUntil(Instant.now().plusSeconds(3600))
                 .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
                 .build();
+        when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(offerData);
+
 
         assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
+    }
+
+    @Test
+    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsIllegalArgumentException2() throws JsonProcessingException {
+
+        var additionalInfoList = new ArrayList<>();
+        additionalInfoList.add("test");
+        Map<String, Object> validatedOfferData = Map.of("test", "test", "additional_info_list", additionalInfoList);
+        Map<String, Object> offerData = Map.of("data", validatedOfferData);
+
+        var credentialMetadata = """
+                {
+                    "claims": [
+                        {
+                            "path": ["test"],
+                            "mandatory": true
+                        },
+                        {
+                            "path": ["additional_info_list"],
+                            "mandatory": true
+                        },
+                        {
+                            "path": ["additional_info_map"],
+                            "mandatory": false
+                        }
+                    ]
+                }
+                """;
+
+        mockCredentialConfigInteractions(credentialMetadata);
+
+        var request = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialValidFrom(Instant.now().plusSeconds(10))
+                .credentialValidUntil(Instant.now().plusSeconds(3600))
+                .credentialMetadata(new CredentialOfferMetadataDto(true, null, null, null))
+                .build();
+
+        when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(validatedOfferData);
+
+        assertDoesNotThrow(() -> validationService.validateCredentialOfferCreateRequest(request, offerData));
     }
 
     @Test

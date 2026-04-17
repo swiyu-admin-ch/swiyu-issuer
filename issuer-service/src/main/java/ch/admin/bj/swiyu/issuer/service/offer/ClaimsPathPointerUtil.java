@@ -15,10 +15,7 @@ public class ClaimsPathPointerUtil {
      * @throws IllegalArgumentException if not all requested claims are present, if path does not exist, value mismatch in the sd jwt's claims
      */
     public static void validateRequestedClaims(Map<String, Object> objectMap, List<Object> requestedClaimsPointerPath, List<Object> requestedValues) {
-        if (CollectionUtils.isEmpty(requestedClaimsPointerPath)) {
-            throw new IllegalArgumentException("Requested claims pointer path is empty");
-        }
-
+    
         var claims = selectClaim(objectMap, requestedClaimsPointerPath);
 
         List<Object> sanitizedRequestValues = requestedValues;
@@ -50,9 +47,6 @@ public class ClaimsPathPointerUtil {
 
             for (Object o : list) {
                 List<Object> newPath = new ArrayList<>(path);
-
-                newPath.add(null); // wildcard
-
                 result.addAll(flatten(o, newPath));
             }
 

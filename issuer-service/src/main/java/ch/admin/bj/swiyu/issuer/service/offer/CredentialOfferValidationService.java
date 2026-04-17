@@ -94,17 +94,17 @@ public class CredentialOfferValidationService {
      * Validates the credential request offer data.
      *
      * @param offerData               the offer data to validate
-     * @param isDeferredRequest       whether this is a deferred request
+     * @param allowEmptyData          empty data can be allowed with initial deferred request
      * @param credentialConfiguration the credential configuration
      * @throws BadRequestException if validation fails
      */
     public void validateCredentialRequestOfferData(
             Map<String, Object> offerData,
-            boolean isDeferredRequest,
+            boolean allowEmptyData,
             CredentialConfiguration credentialConfiguration) {
 
         // with deferred requests the offer data can be empty initially if the data is set it must be validated
-        if (isDeferredRequest && CollectionUtils.isEmpty(offerData)) {
+        if (allowEmptyData && CollectionUtils.isEmpty(offerData)) {
             return;
         }
 
@@ -130,7 +130,6 @@ public class CredentialOfferValidationService {
 
             // validate missing and surplus using dedicated helpers
             validatePathClaimsMissing(claimDescriptor, validatedOfferData);
-            validateClaimsContent(descriptorPaths, validatedOfferData);
             validatePathClaimsSurplus(descriptorPaths, validatedOfferData);
         } else {
             var metadataClaims = Optional.ofNullable(credentialConfiguration.getClaims())
@@ -186,29 +185,6 @@ public class CredentialOfferValidationService {
                     .sorted()
                     .collect(Collectors.joining(","));
             throw new BadRequestException("Mandatory credential claims are missing: [%s]".formatted(formatted));
-        }
-    }
-
-    private void validateClaimsContent(Set<List<Object>> claimDescriptorsPaths, Map<String, Object> offerData) {
-        var empty = claimDescriptorsPaths.stream()
-                .filter(claimDescriptorPath -> {
-                    try {
-                        var claimValues = ClaimsPathPointerUtil.selectClaim(offerData, claimDescriptorPath);
-                        return claimValues.isEmpty();
-                    } catch (Exception e) {
-                        log.error("Empty offer values found for descriptor path %s"
-                                .formatted(formatPath(claimDescriptorPath)), e);
-                        return true;
-                    }
-                })
-                .collect(Collectors.toSet());
-
-        if (!empty.isEmpty()) {
-            var formatted = empty.stream()
-                    .map(this::formatPath)
-                    .sorted()
-                    .collect(Collectors.joining(","));
-            throw new BadRequestException("Empty offer values found: [%s]".formatted(formatted));
         }
     }
 
