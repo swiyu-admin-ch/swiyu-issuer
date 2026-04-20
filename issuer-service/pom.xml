@@ -85,11 +85,6 @@
             <artifactId>jna</artifactId>
             <version>5.16.0</version>
         </dependency>
-        <dependency>
-            <groupId>io.github.swiyu-admin-ch</groupId>
-            <artifactId>didresolver</artifactId>
-            <version>2.6.0</version>
-        </dependency>
 
         <!-- Scheduling / Locking -->
         <dependency>
