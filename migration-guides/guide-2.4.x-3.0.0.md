@@ -1,8 +1,8 @@
-# Migration Guide: v2.4.x → v3.0.0
+# Migration Guide: v2.4.x → v3.0.1
 
-This guide helps you migrate from **v2.4.x** to **v3.0.0** of the Generic Issuer Service.
+This guide helps you migrate from **v2.4.x** to **v3.0.1** of the Generic Issuer Service.
 
-It is based on the **v3.0.0** section in `CHANGELOG.md` ("latest (3.0.0)").
+It is based on the **v3.0.1** section in `CHANGELOG.md` ("latest (3.0.1)").
 
 ## Compatibility summary
 
@@ -250,4 +250,4 @@ New way with claims path pointers:
 
 ## Reference
 
-- `CHANGELOG.md` → section: `latest (3.0.0)`
+- `CHANGELOG.md` → section: `latest (3.0.1)`
