@@ -3,16 +3,20 @@ package ch.admin.bj.swiyu.issuer.pact.consumer;
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.LambdaDsl;
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
-import au.com.dius.pact.consumer.junit5.PactConsumerTestExt;
+import au.com.dius.pact.consumer.junit5.PactConsumerTest;
 import au.com.dius.pact.consumer.junit5.PactTestFor;
 import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.V4Pact;
 import au.com.dius.pact.core.model.annotations.Pact;
+import ch.admin.bit.jeap.security.test.jws.JwsBuilderFactory;
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.UUID;
@@ -20,8 +24,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@ExtendWith(PactConsumerTestExt.class)
+@ExtendWith(SpringExtension.class)
+@PactConsumerTest
 @PactTestFor(providerName = StatusRegistryConsumerPactTest.PROVIDER, pactVersion = PactSpecVersion.V4)
+@Import(PactConsumerTestConfig.class)
 class StatusRegistryConsumerPactTest {
 
     static final String CONSUMER = "swiyu-issuer";
@@ -35,9 +41,26 @@ class StatusRegistryConsumerPactTest {
 
     private static final String PATH =
             "/api/v1/status/business-entities/" + BUSINESS_ENTITY_ID
-            + "/status-list-entries/" + STATUS_REGISTRY_ENTRY_ID;
+                    + "/status-list-entries/" + STATUS_REGISTRY_ENTRY_ID;
 
     private static final String ERROR_CODE_RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND";
+
+    @Autowired
+    private JwsBuilderFactory jwsBuilderFactory;
+
+    private String token;
+
+    private String token() {
+        if (token == null) {
+            token = PactConsumerSupport.buildJwsToken(
+                    jwsBuilderFactory,
+                    "swiyuServiceClient",
+                    BUSINESS_ENTITY_ID,
+                    "ti_@status_#write"
+            );
+        }
+        return token;
+    }
 
     @Pact(consumer = CONSUMER, provider = PROVIDER)
     public V4Pact pact_updateStatusListEntry_success(final PactDslWithProvider builder) {
@@ -46,6 +69,7 @@ class StatusRegistryConsumerPactTest {
                 .uponReceiving("PUT valid status list JWT")
                 .method("PUT")
                 .path(PATH)
+                .matchHeader("Authorization", "Bearer .*", "Bearer " + token())
                 .matchHeader("Content-Type", "application/statuslist\\+jwt.*", "application/statuslist+jwt")
                 .body(STATUS_LIST_JWT)
                 .willRespondWith()
@@ -60,6 +84,7 @@ class StatusRegistryConsumerPactTest {
                 .uponReceiving("PUT status list JWT for non-existing entry")
                 .method("PUT")
                 .path(PATH)
+                .matchHeader("Authorization", "Bearer .*", "Bearer " + token())
                 .matchHeader("Content-Type", "application/statuslist\\+jwt.*", "application/statuslist+jwt")
                 .body(STATUS_LIST_JWT)
                 .willRespondWith()
@@ -99,6 +124,7 @@ class StatusRegistryConsumerPactTest {
     private StatusBusinessApiApi buildApiClient(final MockServer mockServer) {
         final ApiClient apiClient = new ApiClient();
         apiClient.setBasePath(mockServer.getUrl());
+        apiClient.setBearerToken(token());
         return new StatusBusinessApiApi(apiClient);
     }
 }

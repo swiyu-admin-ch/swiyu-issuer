@@ -53,6 +53,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <generic-java-lib.version>1.2.0</generic-java-lib.version>
         <pact.version>4.6.20</pact.version>
+        <jeap.version>20.5.0</jeap.version>
     </properties>
 
     <dependencyManagement>
