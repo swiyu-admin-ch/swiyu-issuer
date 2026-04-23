@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
@@ -12,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.google.gson.JsonObject;
@@ -45,6 +45,8 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -212,8 +214,7 @@ class StatusListIT {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        String offerCred = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"lastName\" : \"lastName\"}, \"status_lists\": [\"%s\"]}"
-                .formatted(statusRegistryUrl);
+        String offerCred = getMinimalPayloadForCredentialSupportedIdTest(null, null, statusRegistryUrl);
 
         mvc.perform(post(BASE_URL).contentType(MediaType.APPLICATION_JSON).content(offerCred))
                 .andExpect(status().isOk())
@@ -345,7 +346,7 @@ class StatusListIT {
                 .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredential(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
@@ -373,7 +374,7 @@ class StatusListIT {
                 .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredential(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
@@ -384,7 +385,7 @@ class StatusListIT {
                 .andExpect(status().isOk());
 
         // should be only called once (1) on status list create and once (1) on update
-        verify(statusBusinessApi, times(1+1)).updateStatusListEntry(any(), any(), any());
+        verify(statusBusinessApi, times(1 + 1)).updateStatusListEntry(any(), any(), any());
     }
 
     @Test
@@ -403,7 +404,7 @@ class StatusListIT {
                 .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         requestCredential(mvc, accessToken, credentialRequestString)
                 .andExpect(status().isOk())
@@ -433,20 +434,7 @@ class StatusListIT {
 
     private JsonObject createOffer(JsonObject statusList) throws Exception {
 
-        String offerData = """
-                {
-                    "type": "UniversityDegreeCredential",
-                    "name": "Bachelor of Science"
-                  }""";
-        // We add the data to the other parts needed for offering a credential
-        String jsonPayload = String.format("""
-                {
-                  "metadata_credential_supported_id": ["university_example_sd_jwt"],
-                  "credential_subject_data": %s,
-                  "offer_validity_seconds": 36000,
-                  "status_lists": ["%s"]
-                }
-                """, offerData, statusList.get("statusRegistryUrl").getAsString());
+        String jsonPayload = getMinimalPayloadForUniversityCredential(statusList.get("statusRegistryUrl").getAsString());
 
         var response = mvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)

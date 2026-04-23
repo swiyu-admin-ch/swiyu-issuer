@@ -63,6 +63,14 @@ public class IssuanceTestUtils {
         );
     }
 
+    public static ResultActions requestCredentialFromDeferred(MockMvc mock, String accessToken, String deferredCredentialRequestString) throws Exception {
+        return mock.perform(post("/oid4vci/api/deferred_credential")
+                        .header("Authorization", String.format("BEARER %s", accessToken))
+                        .contentType("application/json")
+                        .content(deferredCredentialRequestString))
+                .andExpect(status().isOk());
+    }
+
     public static ResultActions updateStatus(MockMvc mock, String managementId, UpdateCredentialStatusRequestTypeDto statusType) throws Exception {
         return mock.perform(patch("/management/api/credentials/" + managementId + "/status?credentialStatus=%s".formatted(statusType.name()))
                 .contentType(MediaType.APPLICATION_JSON_VALUE));
@@ -83,23 +91,31 @@ public class IssuanceTestUtils {
         return responseJson.get("credentials").getAsJsonArray();
     }
 
+    /**
+     * Tests that the public components of the holderPrivateKey are in the VC's cnf claim
+     * 
+     * "cnf":{
+     *   "jwk":{
+     *     "kty": "EC",
+     *     "use": "sig",
+     *     "crv": "P-256",
+     *     "x": "18wHLeIgW9wVN6VD1Txgpqy2LszYkMf6J8njVAibvhM",
+     *     "y": "-V4dS4UaLMgP_4fY4j8ir7cl1TXlFdAgcx55o7TkcSA"
+     *    }
+     *  }
+     */
     public void testHolderBinding(String vc, ECKey holderPrivateKey) throws ParseException {
         JsonObject claims = getVcClaims(vc);
         assertNotNull(claims.get("cnf"));
-        JsonObject legacyCnf = claims.get("cnf").getAsJsonObject();
-        JsonObject cnf = legacyCnf.get("jwk").getAsJsonObject();
+        JsonObject cnf = claims.get("cnf").getAsJsonObject();
+        assertNotNull(cnf.get("jwk"));
+        JsonObject cnfJwk = cnf.get("jwk").getAsJsonObject();
 
-        // for legacy reasons the cnf is not a JWK but a map with the same properties
-        assertEquals(holderPrivateKey.getKeyID(), legacyCnf.get("kid").getAsString());
-        assertEquals(holderPrivateKey.getCurve().toString(), legacyCnf.get("crv").getAsString());
-        assertEquals(holderPrivateKey.getX().toString(), legacyCnf.get("x").getAsString());
-        assertEquals(holderPrivateKey.getY().toString(), legacyCnf.get("y").getAsString());
-
-        assertNotNull(cnf);
-        assertEquals(holderPrivateKey.getKeyID(), cnf.get("kid").getAsString());
-        assertEquals(holderPrivateKey.getCurve().toString(), cnf.get("crv").getAsString());
-        assertEquals(holderPrivateKey.getX().toString(), cnf.get("x").getAsString());
-        assertEquals(holderPrivateKey.getY().toString(), cnf.get("y").getAsString());
+        assertNotNull(cnfJwk);
+        assertEquals(holderPrivateKey.getKeyID(), cnfJwk.get("kid").getAsString());
+        assertEquals(holderPrivateKey.getCurve().toString(), cnfJwk.get("crv").getAsString());
+        assertEquals(holderPrivateKey.getX().toString(), cnfJwk.get("x").getAsString());
+        assertEquals(holderPrivateKey.getY().toString(), cnfJwk.get("y").getAsString());
     }
 
     public static JsonObject getVcClaims(String vc) throws ParseException {
@@ -107,7 +123,7 @@ public class IssuanceTestUtils {
         return JsonParser.parseString(jwt.getPayload().toString()).getAsJsonObject();
     }
 
-    public static String getCredentialRequestString(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties, String encryption) throws Exception {
+    public static String getCredentialRequestString(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties, String encryption, String credentialConfigurationId) throws Exception {
 
         var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         JsonObject nonceResponseJson = JsonParser.parseString(nonceResponse).getAsJsonObject();
@@ -117,21 +133,21 @@ public class IssuanceTestUtils {
         for (ECKey holderPrivateKey : holderPrivateKeys) {
             String proof = TestServiceUtils.createHolderProof(holderPrivateKey, applicationProperties.getTemplateReplacement().get("external-url"),
                     nonce,
-                    ProofType.JWT.getClaimTyp(),
-                    false);
+                    ProofType.JWT.getClaimTyp()
+            );
             proofs.add(proof);
         }
         var proofString = proofs.stream().reduce((a, b) -> a + "\", \"" + b).orElse("");
         if (encryption == null) {
             return String.format("{\"credential_configuration_id\": \"%s\", \"proofs\": {\"jwt\": [\"%s\"]}}",
-                    "university_example_sd_jwt", proofString);
+                    credentialConfigurationId, proofString);
         } else {
-            return String.format("{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}", "university_example_sd_jwt", encryption, proofString);
+            return String.format("{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}", credentialConfigurationId, encryption, proofString);
         }
     }
 
-    public static String getCredentialRequestString(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties) throws Exception {
-        return getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, null);
+    public static String getCredentialRequestString(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties, String credentialConfigurationId) throws Exception {
+        return getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, null, credentialConfigurationId);
     }
 
     public static List<ECKey> createHolderPrivateKeys(int numberOfKeys) throws JOSEException {

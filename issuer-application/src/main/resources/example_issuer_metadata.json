@@ -84,46 +84,40 @@
         ],
         "claims": [
           {
-            "type": {
-              "mandatory": true,
-              "path": [
-                "type"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Abschluss Typ"
-                }
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "type"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typ"
+              }
+            ]
           },
           {
-            "name": {
-              "mandatory": true,
-              "path": [
-                "name"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Diplomtitle"
-                }
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "name"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Diplomtitle"
+              }
+            ]
           },
           {
-            "average_grade": {
-              "mandatory": false,
-              "path": [
-                "average_grade"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Notendurchschnitt"
-                }
-              ]
-            }
+            "mandatory": false,
+            "path": [
+              "average_grade"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Notendurchschnitt"
+              }
+            ]
           }
         ]
       },
@@ -172,7 +166,7 @@
         "ES256"
       ],
       "cryptographic_binding_methods_supported": [
-        "did:jwk"
+        "jwk"
       ],
       "proof_types_supported": {
         "jwt": {
@@ -185,46 +179,40 @@
       "credential_metadata": {
         "claims": [
           {
-            "type": {
-              "mandatory": true,
-              "path": [
-                "type"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Abschluss Typ"
-                }
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "type"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typ"
+              }
+            ]
           },
           {
-            "name": {
-              "mandatory": true,
-              "path": [
-                "name"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Diplomtitle"
-                }
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "name"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Diplomtitle"
+              }
+            ]
           },
           {
-            "average_grade": {
-              "mandatory": false,
-              "path": [
-                "average_grade"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Notendurchschnitt"
-                }
-              ]
-            }
+            "mandatory": false,
+            "path": [
+              "average_grade"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Notendurchschnitt"
+              }
+            ]
           }
         ]
       },
@@ -261,6 +249,47 @@
         }
       }
     },
+    "university_example_sd_jwt_list": {
+      "format": "vc+sd-jwt",
+      "credential_signing_alg_values_supported": [
+        "ES256"
+      ],
+      "cryptographic_binding_methods_supported": [
+        "jwk"
+      ],
+      "proof_types_supported": {
+        "jwt": {
+          "proof_signing_alg_values_supported": [
+            "ES256"
+          ]
+        }
+      },
+      "vct": "${external-url}/oid4vci/vct/my-vct-v01",
+      "claims": {
+        "nested": {
+          "name": {
+            "mandatory": true,
+            "value_type": "string",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Universitätsname"
+              }
+            ]
+          },
+          "type": {
+            "mandatory": true,
+            "value_type": "array",
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typen"
+              }
+            ]
+          }
+        }
+      }
+    },
     "unbound_example_sd_jwt": {
       "format": "vc+sd-jwt",
       "credential_signing_alg_values_supported": [
@@ -270,18 +299,16 @@
       "credential_metadata": {
         "claims": [
           {
-            "animal": {
-              "mandatory": true,
-              "path": [
-                "animal"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Tier"
-                }
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "animal"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Tier"
+              }
+            ]
           }
         ]
       },
@@ -322,46 +349,40 @@
       "credential_metadata": {
         "claims": [
           {
-            "type": {
-              "mandatory": true,
-              "path": [
-                "type"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Abschluss Typ"
-                }
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "type"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typ"
+              }
+            ]
           },
           {
-            "name": {
-              "mandatory": true,
-              "path": [
-                "name"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Diplomtitle"
-                }
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "name"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Diplomtitle"
+              }
+            ]
           },
           {
-            "average_grade": {
-              "mandatory": false,
-              "path": [
-                "average_grade"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Notendurchschnitt"
-                }
-              ]
-            }
+            "mandatory": false,
+            "path": [
+              "average_grade"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Notendurchschnitt"
+              }
+            ]
           }
         ]
       },
@@ -418,46 +439,40 @@
       "credential_metadata": {
         "claims": [
           {
-            "type": {
-              "mandatory": true,
-              "path": [
-                "type"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Abschluss Typ"
-                }
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "type"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typ"
+              }
+            ]
           },
           {
-            "name": {
-              "mandatory": true,
-              "path": [
-                "name"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Diplomtitle"
-                }
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "name"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Diplomtitle"
+              }
+            ]
           },
           {
-            "average_grade": {
-              "mandatory": false,
-              "path": [
-                "average_grade"
-              ],
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Notendurchschnitt"
-                }
-              ]
-            }
+            "mandatory": false,
+            "path": [
+              "average_grade"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Notendurchschnitt"
+              }
+            ]
           }
         ]
       },
@@ -500,7 +515,7 @@
         "ES256"
       ],
       "cryptographic_binding_methods_supported": [
-        "did:jwk"
+        "jwk"
       ],
       "proof_types_supported": {
         "jwt": {
@@ -513,44 +528,22 @@
       "credential_metadata": {
         "claims": [
           {
-            "hello": {
-              "mandatory": false,
-              "path": [
-                "hello"
-              ]
-            }
+            "mandatory": true,
+            "path": [
+              "lastName"
+            ]
           },
           {
-            "lastName": {
-              "mandatory": true,
-              "path": [
-                "lastName"
-              ]
-            }
+            "mandatory": false,
+            "path": [
+              "firstName"
+            ]
           },
           {
-            "firstName": {
-              "mandatory": false,
-              "path": [
-                "firstName"
-              ]
-            }
-          },
-          {
-            "dateOfBirth": {
-              "mandatory": false,
-              "path": [
-                "dateOfBirth"
-              ]
-            }
-          },
-          {
-            "credential_subject_data": {
-              "mandatory": false,
-              "path": [
-                "credential_subject_data"
-              ]
-            }
+            "mandatory": false,
+            "path": [
+              "dateOfBirth"
+            ]
           }
         ]
       },

@@ -121,6 +121,7 @@ public class ApplicationProperties {
     private JWKSet dataIntegrityKeySet;
     private boolean dataIntegrityEnforced;
     private boolean signedMetadataEnabled;
+    private boolean recursiveDisclosureEnabled;
 
     /**
      * If set to true, Swiss Profile version indications (profile_version) will be enforced where applicable.

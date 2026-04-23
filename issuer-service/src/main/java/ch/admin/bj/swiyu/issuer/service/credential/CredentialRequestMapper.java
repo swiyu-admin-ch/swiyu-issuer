@@ -1,5 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -7,6 +9,7 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import lombok.experimental.UtilityClass;
 
+import java.text.ParseException;
 import java.util.Map;
 
 import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SD_JWT_FORMAT;
@@ -26,11 +29,9 @@ public class CredentialRequestMapper {
         if (credentialRequestDto == null) {
             return null;
         }
-
         return new CredentialResponseEncryptionClass(
-                credentialRequestDto.jwk(),
-                credentialRequestDto.alg(),
-                credentialRequestDto.enc()
-        );
+                    credentialRequestDto.jwk(),
+                    credentialRequestDto.enc()
+            );
     }
 }

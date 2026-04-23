@@ -44,6 +44,9 @@ import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.getCredenti
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class CredentialServiceOrchestratorTest {
@@ -157,6 +160,7 @@ class CredentialServiceOrchestratorTest {
         var offer = getCredentialOffer(CredentialOfferStatusType.OFFERED, expirationTimeStamp, offerData, preAuthorizedCode, null, null);
         var mgmt = CredentialManagement.builder()
                 .accessToken(uuid)
+                .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
                 .credentialOffers(Set.of(offer))
                 .build();
@@ -241,7 +245,7 @@ class CredentialServiceOrchestratorTest {
         when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
         when(credConfig.getVct()).thenReturn("test-vct");
 
-        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("did:jwk", "jwk"));
+        when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("jwk"));
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test", credConfig));
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(credConfig);
 
@@ -597,6 +601,7 @@ class CredentialServiceOrchestratorTest {
         var offer = getCredentialOffer(status, expirationTimeStamp, offerData, UUID.randomUUID(), null, transactionId);
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
+                .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .accessTokenExpirationTimestamp(expirationTimeStamp)
                 .credentialOffers(Set.of(offer))
                 .build();
@@ -628,7 +633,7 @@ class CredentialServiceOrchestratorTest {
         var accessTokenString = accessToken.toString();
         var exception = assertThrows(Oid4vcException.class, () -> credentialServiceOrchestrator.createCredential(credentialRequestDto, accessTokenString, null, null));
 
-        assertEquals(CredentialRequestError.UNSUPPORTED_CREDENTIAL_TYPE, exception.getError());
+        assertEquals(CredentialRequestError.UNKNOWN_CREDENTIAL_IDENTIFIER, exception.getError());
         assertEquals("Mismatch between requested and offered credential configuration id.", exception.getMessage());
     }
 

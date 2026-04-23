@@ -39,6 +39,8 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -160,8 +162,7 @@ class CredentialOfferStatusIT {
         var usedStatusLists = offers.stream().map(CredentialOfferStatus::getId).map(CredentialOfferStatusKey::getStatusListId).distinct().toList();
         assertThat(usedStatusLists).as("Only one status list should have been used").hasSize(1);
         assertThat(credentialOfferStatusRepository.countByStatusListId(usedStatusLists.getFirst())).as("All entries should be filled").isEqualTo(STATUS_LIST_MAX_LENGTH);
-        String payload = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\",\"lastName\" : \"lastName\"}, \"status_lists\": [\"%s\"]}"
-                .formatted(statusRegistryUrl);
+        String payload = getMinimalPayloadForCredentialSupportedIdTest(null, null, statusRegistryUrl);
         mvc
                 .perform(post(CredentialOfferTestHelper.BASE_URL).contentType("application/json").content(payload))
                 .andExpect(status().isBadRequest())
@@ -179,8 +180,7 @@ class CredentialOfferStatusIT {
                 .map(privindex -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        String payload = "{\"metadata_credential_supported_id\": [\"university_example_sd_jwt\"],\"credential_subject_data\": {\"name\" : \"name\", \"type\": \"type\"}, \"status_lists\": [\"%s\"]}"
-                .formatted(statusRegistryUrl);
+        String payload = getMinimalPayloadForUniversityCredential(statusRegistryUrl);
 
         MvcResult result = mvc
                 .perform(post("/management/api/credentials").contentType("application/json").content(payload))
@@ -191,7 +191,7 @@ class CredentialOfferStatusIT {
 
         var token = IssuanceTestUtils.getAccessTokenFromDeeplink(mvc, managementJsonObject.get("offer_deeplink").getAsString());
 
-        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties);
+        var credentialRequestString = getCredentialRequestString(mvc, holderKeys, applicationProperties, "university_example_sd_jwt");
 
         // set to issued
         requestCredential(mvc, token, credentialRequestString)

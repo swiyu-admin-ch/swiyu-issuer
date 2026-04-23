@@ -1,8 +1,8 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -51,7 +52,7 @@ public class CredentialOfferTestHelper {
     }
 
     public UUID createBasicOfferJsonAndGetUUID() throws Exception {
-        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\", \"lastName\": \"lastName\"}}";
+        String minPayloadWithEmptySubject = getMinimalPayloadForCredentialSupportedIdTest();
 
         MvcResult result = mvc
                 .perform(post(BASE_URL).contentType("application/json").content(minPayloadWithEmptySubject))
@@ -62,7 +63,7 @@ public class CredentialOfferTestHelper {
 
     public String createBasicOfferJsonAndGetTenantID() throws Exception {
         var objectMapper = new ObjectMapper();
-        String minPayloadWithEmptySubject = "{\"metadata_credential_supported_id\": [\"test\"], \"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\", \"lastName\": \"lastName\"}}";
+        String minPayloadWithEmptySubject = getMinimalPayloadForCredentialSupportedIdTest();
 
         MvcResult result = mvc
                 .perform(post(BASE_URL).contentType("application/json").content(minPayloadWithEmptySubject))
@@ -73,15 +74,14 @@ public class CredentialOfferTestHelper {
         var deeplink = createCredentialOfferResponse.getOfferDeeplink();
         var parsedDeeplink = assertDoesNotThrow(() -> new URI(deeplink));
         var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
-        var credentialOffer = offerQuery.get(0);
+        var credentialOffer = offerQuery.getFirst();
         var parsedOffer = assertDoesNotThrow(
                 () -> objectMapper.readValue(credentialOffer.getValue(), Map.class));
         return assertDoesNotThrow(() -> new URI(parsedOffer.get("credential_issuer").toString()).getPath());
     }
 
     public UUID createStatusListLinkedOfferAndGetUUID() throws Exception {
-        String payload = "{\"metadata_credential_supported_id\": [\"test\"],\"credential_subject_data\": {\"credential_subject_data\" : \"credential_subject_data\", \"lastName\": \"lastName\"}, \"status_lists\": [\"%s\"]}"
-                .formatted(statusRegistryUrl);
+        String payload = getMinimalPayloadForCredentialSupportedIdTest(null, null, statusRegistryUrl);
 
         MvcResult result = mvc
                 .perform(post(BASE_URL).contentType("application/json").content(payload))

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -20,7 +21,9 @@ import java.util.List;
 public class MetadataClaimDescriptor {
     @JsonProperty(value = "path")
     @NotNull
-    private List<String> path;
+    @NotEmpty
+    @ValidPathElements
+    private List<Object> path;
 
     @JsonProperty(value = "mandatory", defaultValue = "false")
     private boolean mandatory;

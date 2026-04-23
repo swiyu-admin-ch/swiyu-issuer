@@ -1,10 +1,10 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
+import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferUtil;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -72,19 +72,6 @@ public class CredentialIssuanceService {
      * @param mgmt the credential management session
      */
     private void checkIfAnyOfferExpiredAndUpdate(CredentialManagement mgmt) {
-        mgmt.getCredentialOffers().forEach(this::terminateExpiredOffer);
-    }
-
-    /**
-     * Terminates the offer if it is not already terminated and has passed its expiration timestamp.
-     *
-     * @param offer the credential offer to check and possibly terminate
-     */
-    private void terminateExpiredOffer(CredentialOffer offer) {
-        if (!offer.isTerminatedOffer() && offer.hasExpirationTimeStampPassed()) {
-            credentialStateMachine.sendEventAndUpdateStatus(
-                    offer, CredentialStateMachineConfig.CredentialOfferEvent.EXPIRE);
-            credentialOfferRepository.save(offer);
-        }
+        mgmt.getCredentialOffers().forEach(offer -> CredentialOfferUtil.getExpirationCheckedCredentialOffer(offer, credentialStateMachine, credentialOfferRepository));
     }
 }

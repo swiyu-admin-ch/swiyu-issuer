@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
@@ -17,7 +18,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
 
 class OAuthServiceTest {
 
@@ -76,8 +79,6 @@ class OAuthServiceTest {
                 .isNotEqualTo(refreshToken.toString());
         // verify that repository save was called (tokens updated)
         Mockito.verify(credentialManagementRepository).save(mockMgmt);
-
-
     }
 
     @Test
@@ -103,6 +104,18 @@ class OAuthServiceTest {
         Mockito.verify(credentialManagementRepository).save(mockMgmt);
     }
 
+    @Test
+    void refreshOAuthToken_whenInvalidToken_thenThrowError() {
+        var exception = assertThrows(OAuthException.class, () -> oauthService.refreshOAuthToken("invalid token"));
+        assertThat(exception.getError()).isEqualTo(OAuthError.INVALID_REQUEST);
+    }
+
+    @Test
+    void getUnrevokedCredentialOfferByRefreshToken_whenInvalidRefreshToken_thenThrowError() {
+        var exception = assertThrows(OAuthException.class, () -> oauthService.getUnrevokedCredentialOfferByRefreshToken("invalid token"));
+        assertThat(exception.getError()).isEqualTo(OAuthError.INVALID_REQUEST);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"bearer 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "BEARER 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "dpop 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "DPoP 0c16dd9c-1dcd-4fc1-b503-bc42c505f113"})
     void getAccessToken_whenCorrectAuthorizationHeader_thenSuccess(String authorizationRequestHeader) {
@@ -112,8 +125,23 @@ class OAuthServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "bearer ", "dpop ", "barer 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "0c16dd9c-1dcd-4fc1-b503-bc42c505f113"}) 
+    @ValueSource(strings = {"", "bearer ", "dpop ", "barer 0c16dd9c-1dcd-4fc1-b503-bc42c505f113", "0c16dd9c-1dcd-4fc1-b503-bc42c505f113"})
     void getAccessToken_whenIllegalAuthorizationHeader_thenOAuthException(String authorizationRequestHeader){
         assertThrows(OAuthException.class, () -> oauthService.getAccessToken(authorizationRequestHeader));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"EXPIRED", "CANCELLED", "ISSUED"})
+    void issueOAuthToken_whenTerminal_thenDoNotExpireOffer(String offerState) {
+        var state = CredentialOfferStatusType.valueOf(offerState);
+        var preAuthCode = UUID.randomUUID();
+        var offer = Mockito.mock(CredentialOffer.class);
+        when(offer.getCredentialStatus()).thenReturn(state);
+        when(offer.hasExpirationTimeStampPassed()).thenReturn(true);
+        when(offer.isTerminatedOffer()).thenCallRealMethod();
+        when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(offer));
+        var error = assertThrows(OAuthException.class, () -> oauthService.issueOAuthToken(preAuthCode.toString()));
+        assertThat(error.getMessage()).isEqualToIgnoringCase("Credential has already been used");
+        Mockito.verify(credentialStateMachine, times(0)).sendEventAndUpdateStatus(any(CredentialOffer.class), any());
     }
 }

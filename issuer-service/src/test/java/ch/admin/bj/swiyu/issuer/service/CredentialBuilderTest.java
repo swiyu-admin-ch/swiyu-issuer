@@ -6,13 +6,14 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.DidJwk;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.HolderKeyBinding;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -29,6 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -130,19 +132,19 @@ class CredentialBuilderTest {
 
         var list = privateKeys.stream().map(jwk -> {
             try {
-                return TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), "c_nonce", ProofType.JWT.getClaimTyp(), true);
+                return TestServiceUtils.createHolderProof(jwk, applicationProperties.getTemplateReplacement().get("external-url"), "c_nonce", ProofType.JWT.getClaimTyp());
             } catch (JOSEException e) {
                 throw new RuntimeException(e);
             }
         }).toList();
 
-        builder.holderBindings(list);
-        List<DidJwk> didJwks = list.stream()
-                .map(DidJwk::createFromJsonString)
+        builder.holderBindings(privateKeys.stream().map(ECKey::toPublicJWK).map(Object::toString).toList());
+        List<HolderKeyBinding> holderKeyBindings = list.stream()
+                .map(key -> new HolderKeyBinding(key))
                 .toList();
 
-        doReturn(List.of("credential1")).when(builder).getCredential(List.of(didJwks.getFirst()));
-        doReturn(List.of("credential2")).when(builder).getCredential(List.of(didJwks.get(1)));
+        doReturn(List.of("credential1")).when(builder).getCredential(List.of(holderKeyBindings.getFirst()));
+        doReturn(List.of("credential2")).when(builder).getCredential(List.of(holderKeyBindings.get(1)));
 
         var result = builder.buildCredentialEnvelope();
 
@@ -188,7 +190,7 @@ class CredentialBuilderTest {
     }
 
     @Test
-    void buildEnvelopeDto_withEncryption_thenSuccess() throws JOSEException {
+    void buildEnvelopeDto_withEncryption_thenSuccess() throws JOSEException, ParseException {
 
         var issuerCredentialResponseEncryption = new IssuerCredentialResponseEncryption();
         issuerCredentialResponseEncryption.setAlgValuesSupported(List.of("ECDH-ES"));
@@ -196,7 +198,7 @@ class CredentialBuilderTest {
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
         var jwk = createPrivateKey().toPublicJWK().toJSONObject();
-        CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, "ECDH-ES", "A128GCM");
+        CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, "A128GCM");
 
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), encryptor);
 
@@ -301,6 +303,7 @@ class CredentialBuilderTest {
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
                 .issueTime(new Date())
+                .algorithm(JWEAlgorithm.ECDH_ES)
                 .generate();
     }
 
@@ -312,11 +315,11 @@ class CredentialBuilderTest {
         }
 
         @Override
-        public List<String> getCredential(List<DidJwk> didJwk) {
-            if (didJwk == null) {
+        public List<String> getCredential(List<HolderKeyBinding> holderKeyBinding) {
+            if (holderKeyBinding == null) {
                 return List.of(getCredentialSingle(null));
             }
-            return didJwk.stream().map(this::getCredentialSingle).toList();
+            return holderKeyBinding.stream().map(this::getCredentialSingle).toList();
         }
 
         @Override
@@ -324,8 +327,12 @@ class CredentialBuilderTest {
             return null;
         }
 
-        protected String getCredentialSingle(DidJwk didJwk) {
-            return didJwk == null ? "credential" : "credential-" + didJwk.getDidJwk();
+        protected String getCredentialSingle(HolderKeyBinding holderKeyBinding) {
+            try {
+                return holderKeyBinding == null ? "credential" : "credential-" + holderKeyBinding.getJWK().toJSONString();
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

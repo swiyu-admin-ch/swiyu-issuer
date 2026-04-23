@@ -50,7 +50,7 @@ public class CredentialEnvelopeService {
 
 
     /**
-     * Builds and returns a credential envelope (OID4VCI 2.0).
+     * Builds and returns a OID4VCI 1.0 style credential envelope.
      */
     public CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
                                                              CredentialRequestClass credentialRequest,

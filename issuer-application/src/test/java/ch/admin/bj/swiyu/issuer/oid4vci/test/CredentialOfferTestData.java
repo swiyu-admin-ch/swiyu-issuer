@@ -1,14 +1,13 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.GsonBuilder;
 import lombok.experimental.UtilityClass;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @UtilityClass
 public class CredentialOfferTestData {
@@ -34,10 +33,12 @@ public class CredentialOfferTestData {
     }
 
     public static StatusList createStatusList() {
+        var statusListId = UUID.randomUUID();
         var statusListToken = new TokenStatusListToken(2, 10000);
         return StatusList.builder()
+                .id(statusListId)
                 .config(Map.of("bits", 2))
-                .uri("https://localhost:8080/status")
+                .uri("https://localhost:8080/status/" + statusListId)
                 .statusZipped(statusListToken.getStatusListClaims().get("lst").toString())
                 .maxLength(10000)
                 .build();
@@ -94,6 +95,45 @@ public class CredentialOfferTestData {
         Map<String, String> credentialSubjectData = new HashMap<>();
         credentialSubjectData.put("type", "Bachelor of Science");
         credentialSubjectData.put("name", "Data Science");
+        credentialSubjectData.put("average_grade", "Data average_grade");
+        return credentialSubjectData;
+    }
+
+    public static String getMinimalPayloadForUniversityCredential(String statusList) throws JsonProcessingException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("metadata_credential_supported_id", List.of("university_example_sd_jwt"));
+        payload.put("credential_subject_data", getUniversityCredentialSubjectData());
+        if (statusList != null) {
+            payload.put("status_lists", List.of(statusList));
+        }
+
+        return objectMapper.writeValueAsString(payload);
+    }
+
+    public static String getMinimalPayloadForDeferredUniversityCredential(String statusList) throws JsonProcessingException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("metadata_credential_supported_id", List.of("university_example_sd_jwt"));
+        payload.put("credential_subject_data", getUniversityCredentialSubjectData());
+        if (statusList != null) {
+            payload.put("status_lists", List.of(statusList));
+        }
+        payload.put("credential_metadata", Map.of("deferred", true));
+
+        return objectMapper.writeValueAsString(payload);
+    }
+
+    public static Map<String, Object> getUniversityCredentialListSubjectData() {
+        Map<String, Object> credentialSubjectData = new HashMap<>();
+        Map<String, Object> nestedSubjectData = new HashMap<>();
+        nestedSubjectData.put("type", List.of("Bachelor of Science", "Master of Science"));
+        nestedSubjectData.put("name", "University of Bern");
+        credentialSubjectData.put("nested", nestedSubjectData);
         return credentialSubjectData;
     }
 
@@ -101,5 +141,44 @@ public class CredentialOfferTestData {
         return new CredentialOfferStatus(
                 new CredentialOfferStatusKey(offer.getId(), statusList.getId(), index)
         );
+    }
+
+    public static Map<String, String> getMinimalCredentialSubjectDataForCredentialSupportedIdTest() {
+        return new HashMap<>(Map.of("firstName", "firstName", "lastName", "lastName", "dateOfBirth", "1990-01-01"));
+    }
+
+    public static String getMinimalCredentialSubjectDataStringForCredentialSupportedIdTest() throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        return objectMapper.writeValueAsString(getMinimalCredentialSubjectDataForCredentialSupportedIdTest());
+    }
+
+    public static String getMinimalPayloadForCredentialSupportedIdTest() throws JsonProcessingException {
+
+        return getMinimalPayloadForCredentialSupportedIdTest(null, null, null);
+    }
+
+    public static String getMinimalPayloadForCredentialSupportedIdTest(Integer offerValiditySeconds,
+                                                                       Integer deferredOfferValiditySeconds,
+                                                                       String statusList) throws JsonProcessingException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        Map<String, Object> credentialSubjectData = new HashMap<>(Map.of("metadata_credential_supported_id", new ArrayList<>(List.of("test")),
+                "credential_subject_data", getMinimalCredentialSubjectDataForCredentialSupportedIdTest()));
+
+        if (offerValiditySeconds != null) {
+            credentialSubjectData.put("offer_validity_seconds", offerValiditySeconds);
+        }
+
+        if (deferredOfferValiditySeconds != null) {
+            credentialSubjectData.put("deferred_offer_validity_seconds", deferredOfferValiditySeconds);
+        }
+
+        if (statusList != null) {
+            credentialSubjectData.put("status_lists", List.of(statusList));
+        }
+
+        return objectMapper.writeValueAsString(credentialSubjectData);
     }
 }

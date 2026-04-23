@@ -133,7 +133,7 @@ public class SelfContainedNonce {
      */
     private static boolean hasInvalidSignature(SelfContainedNonce nonce, IssuerSecret secret) {
         var calculatedSignature = createSignature(nonce.preNonce, secret);
-        return !(calculatedSignature.equals(nonce.nonceSignature));
+        return !HashUtil.equalsConstantTime(nonce.nonceSignature, calculatedSignature);
     }
 
     private static UUID parseNonceId(String[] components) {
