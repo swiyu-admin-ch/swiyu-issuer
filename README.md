@@ -15,6 +15,7 @@ instance of the service.
 
 ## Table of Contents
 
+- [Architecture Documentation](#architecture-documentation)
 - [Overview](#Overview)
 - [Deployment](#deployment)
 - [Development](#development)
@@ -23,6 +24,10 @@ instance of the service.
 - [Missing Features and Known Issues](#missing-features-and-known-issues)
 - [Contributions and feedback](#contributions-and-feedback)
 - [License](#license)
+
+## Architecture Documentation
+
+The detailed architecture documentation can be found here: [Architecture Generic Issuer](docs/Architecture_generic_issuer.pdf)
 
 ## Overview
 
