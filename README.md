@@ -1,4 +1,3 @@
-![github-banner](https://github.com/swiyu-admin-ch/swiyu-admin-ch.github.io/blob/main/assets/images/github-banner.jpg)
 
 # Generic issuer service
 

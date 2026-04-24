@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## latest (3.0.1)
+## 3.0.2 - (2026-04-24)
+
+### Fixed
+
+- Fixed deserialization failure when loading credential offers that contain legacy JSON fields no longer present in the
+  current domain model (e.g. `format` in `CredentialRequestClass`). `(#940)`
+
+## 3.0.1 - (2026-04-21)
 
 ### Added
 
@@ -47,9 +54,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When not providing any key attestation provider, no key attestations are accepted instead of all.
 
 ### Fixed
-
-- Fixed deserialization failure when loading credential offers that contain legacy JSON fields no longer present in the
-  current domain model (e.g. `format` in `CredentialRequestClass`).
 - Nonces are now validated to originate from this service, preventing client side generated nonces
 - Fixed encryption cache invalidation in horizontally scaled deployments: the `IssuerMetadataEncryptionCache` is now
   evicted periodically on every pod via a scheduled task instead of being invalidated only on the pod performing
