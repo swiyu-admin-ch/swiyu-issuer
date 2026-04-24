@@ -14,7 +14,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-issuer-parent</artifactId>
-    <version>3.0.2</version>
+    <version>3.0.3</version>
     <name>Swiyu issuer parent pom</name>
     <description>Generic issuer for public beta</description>
 

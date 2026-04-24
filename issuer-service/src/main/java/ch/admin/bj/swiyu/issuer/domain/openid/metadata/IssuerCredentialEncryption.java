@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
@@ -18,6 +19,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class IssuerCredentialEncryption {
     @JsonProperty("enc_values_supported")
     @Schema(description = "List of supported JWE encryption algorithms")

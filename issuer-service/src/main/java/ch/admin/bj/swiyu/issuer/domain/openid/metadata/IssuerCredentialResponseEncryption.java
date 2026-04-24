@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialResponseEncryptionClass;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import java.util.List;
 @Data
 @Validated
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
 @NoArgsConstructor
 public class IssuerCredentialResponseEncryption extends IssuerCredentialEncryption {
