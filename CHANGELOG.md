@@ -56,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed deserialization failure when loading credential offers that contain legacy JSON fields no longer present in the
+  current domain model (e.g. `format` in `CredentialRequestClass`).
 - Nonces are now validated to originate from this service, preventing client side generated nonces
 - Fixed encryption cache invalidation in horizontally scaled deployments: the `IssuerMetadataEncryptionCache` is now
   evicted periodically on every pod via a scheduled task instead of being invalidated only on the pod performing
