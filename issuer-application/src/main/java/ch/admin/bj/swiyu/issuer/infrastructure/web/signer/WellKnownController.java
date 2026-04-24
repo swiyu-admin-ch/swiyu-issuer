@@ -10,8 +10,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopProxyUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -32,7 +35,7 @@ import java.util.UUID;
 public class WellKnownController {
 
     private final JweService jweService;
-    private static final String CONTENT_TYPE_APPLICATION_JWT = "application/jwt";
+    private static final MediaType CONTENT_TYPE_APPLICATION_JWT = MediaType.parseMediaType("application/jwt");
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final MetadataService metadataService;
 
@@ -86,7 +89,7 @@ public class WellKnownController {
     @Operation(summary = "Information about credentials which can be issued.")
     public Object getIssuerMetadataByTenantId(
             @PathVariable UUID tenantId,
-            @RequestHeader("Accept") String acceptHeader) {
+            @RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {
 
         if (expectsSignedResponse(acceptHeader)) {
             return metadataService.getSignedIssuerMetadata(tenantId);
@@ -126,7 +129,7 @@ public class WellKnownController {
                     "required for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP.")
     public Object getAuthorizationServerMetadataByTenantId(
             @PathVariable UUID tenantId,
-            @RequestHeader("Accept") String acceptHeader) {
+            @RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {
 
         if (expectsSignedResponse(acceptHeader)) {
             return metadataService.getSignedOAuthAuthorizationServerMetadata(tenantId);
@@ -136,6 +139,7 @@ public class WellKnownController {
     }
 
     private static boolean expectsSignedResponse(String acceptHeader) {
-        return acceptHeader.contains(CONTENT_TYPE_APPLICATION_JWT);
+        List<MediaType> mediaTypes = MediaType.parseMediaTypes(acceptHeader);
+        return mediaTypes.stream().anyMatch(m -> m.equalsTypeAndSubtype(CONTENT_TYPE_APPLICATION_JWT) && m.getQualityValue()!=0);
     }
 }
