@@ -26,10 +26,11 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -78,8 +79,7 @@ class StatusListIT {
     private StatusBusinessApiApi statusBusinessApi;
     @MockitoBean
     private JwsSignatureFacade jwsSignatureFacade;
-    @Mock
-    private ApiClient mockApiClient;
+    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     @Autowired
     private IssuerMetadata issuerMetadata;
     @MockitoSpyBean
@@ -262,7 +262,7 @@ class StatusListIT {
         var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().is(HttpStatus.UNPROCESSABLE_CONTENT.value()))
                 .andReturn().getResponse().getContentAsString();
 
         assertTrue(result.contains("statusListCreateDto: Status list has invalid size %s cannot exceed the maximum size limit of %s"
@@ -279,7 +279,7 @@ class StatusListIT {
         var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().is(HttpStatus.UNPROCESSABLE_CONTENT.value()))
                 .andReturn().getResponse().getContentAsString();
 
         assertTrue(result.contains("statusListCreateDto: Status list has invalid size %s cannot exceed the maximum size limit of %s"
@@ -295,7 +295,7 @@ class StatusListIT {
         var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().is(HttpStatus.UNPROCESSABLE_CONTENT.value()))
                 .andReturn()
                 .getResponse().getContentAsString();
 
@@ -311,7 +311,7 @@ class StatusListIT {
         var result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().is(HttpStatus.UNPROCESSABLE_CONTENT.value()))
                 .andReturn().getResponse()
                 .getContentAsString();
 
@@ -428,9 +428,6 @@ class StatusListIT {
         return String.format("{\"type\": \"TOKEN_STATUS_LIST\",\"maxLength\": %d,\"config\": {\"bits\": %d}}", maxLength, bits);
     }
 
-    private String getCreateStatusListPayload(int maxLength, int bits) {
-        return String.format("{\"maxLength\": %d,\"config\": {\"bits\": %d}}", maxLength, bits);
-    }
 
     private JsonObject createOffer(JsonObject statusList) throws Exception {
 

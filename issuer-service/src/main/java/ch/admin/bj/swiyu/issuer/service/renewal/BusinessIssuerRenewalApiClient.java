@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -34,14 +33,14 @@ public class BusinessIssuerRenewalApiClient {
                 .onStatus(HttpStatusCode::isError, response -> {
                     log.error("Renewal request to {} failed with status code {}",
                             applicationProperties.getBusinessIssuerRenewalApiEndpoint(), response.statusCode());
-                    return reactor.core.publisher.Mono.error(new RenewalException(HttpStatus.valueOf(response.statusCode().value()), "Renewal request failed"));
+                    return reactor.core.publisher.Mono.error(new RenewalException(response.statusCode(), "Renewal request failed"));
                 })
                 .bodyToMono(RenewalResponseDto.class)
                 .block();
         } catch (RestClientResponseException e) {
             log.error("Renewal request to {} failed with status code {} with message {}",
                     applicationProperties.getBusinessIssuerRenewalApiEndpoint(), e.getStatusCode(), e.getMessage());
-            throw new RenewalException(HttpStatus.valueOf(e.getStatusCode().value()), "Renewal request failed: "+ e.getMessage()); // propagate the exception
+            throw new RenewalException(e.getStatusCode(), "Renewal request failed: " + e.getMessage());
         }
     }
 }

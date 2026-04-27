@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.issuer.common.exception;
 
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 import java.io.Serial;
 
@@ -10,9 +10,9 @@ public class RenewalException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    private final HttpStatus httpStatus;
+    private final HttpStatusCode httpStatus;
 
-    public RenewalException(HttpStatus status, String message) {
+    public RenewalException(HttpStatusCode status, String message) {
         super(message);
         this.httpStatus = status;
     }

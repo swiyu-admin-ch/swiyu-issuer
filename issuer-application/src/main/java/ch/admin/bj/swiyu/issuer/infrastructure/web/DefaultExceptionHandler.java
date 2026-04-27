@@ -138,7 +138,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler
     public ResponseEntity<DpopErrorDto> handleDpopException(final DemonstratingProofOfPossessionException ex) {
         HttpStatus responseStatus = UNAUTHORIZED;
-        MultiValueMap<String, String> responseHeaders = new HttpHeaders();
+        HttpHeaders responseHeaders = new HttpHeaders();
         if (DemonstratingProofOfPossessionError.USE_DPOP_NONCE.equals(ex.getDpopError())) {
             responseStatus = BAD_REQUEST;
             responseHeaders.put("DPoP-Nonce", List.of(nonceService.createNonce().nonce()));

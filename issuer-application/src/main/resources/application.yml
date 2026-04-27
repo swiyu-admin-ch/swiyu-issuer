@@ -1,6 +1,16 @@
 spring:
+  jackson:
+    # Jackson 3 (default in Spring Boot 4) requires explicit config to use no-args constructor + setters.
+    # USE_PROPERTIES_BASED matches Jackson 2 default behavior, needed for Lombok @Data + @Builder DTOs.
+    constructor-detector: use-properties-based
   http:
-    client:
+    converters:
+      # Use Jackson 2 (com.fasterxml.jackson) for HTTP message conversion so all @JsonProperty,
+      # @JsonIgnoreProperties etc. annotations on existing DTOs continue to work.
+      # Jackson2HttpMessageConvertersConfiguration is deprecated since Boot 4.0 for removal in 4.3 –
+      # migrate DTOs to Jackson 3 (tools.jackson) before upgrading to Boot 4.3.
+      preferred-json-mapper: jackson2
+    clients:
       connect-timeout: 10000 # 10 seconds
       read-timeout: 30000 # 30 seconds
   jpa:
