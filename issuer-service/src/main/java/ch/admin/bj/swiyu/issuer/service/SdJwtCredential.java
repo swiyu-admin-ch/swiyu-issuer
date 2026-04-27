@@ -201,7 +201,7 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     private void putAlwaysDisclosedData(SDObjectBuilder builder, Map<String, Object> alwaysDisclosedData) {
-        alwaysDisclosedData.entrySet().forEach(e -> builder.putClaim(e.getKey(), e.getValue()));
+        alwaysDisclosedData.forEach(builder::putClaim);
     }
 
     private List<VerifiableCredentialStatusReference> addStatusReferences(
@@ -267,8 +267,8 @@ public class SdJwtCredential extends CredentialBuilder {
                     m.keySet().stream().allMatch(String.class::isInstance) ->
                     handleNestedClaimMapRecursive(entryKey, (Map<String, Object>) m, disclosures, builder);
             case Collection<?> collectionValue ->
-                    handleListDisclosures(builder, Map.entry(entryKey, entryValue), collectionValue, disclosures);
-            default -> handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, builder);
+                    handleListDisclosures(builder, entryKey, collectionValue, disclosures);
+            default -> handleLeafClaim(entryKey, entryValue, disclosures, builder);
         }
     }
 
@@ -281,6 +281,7 @@ public class SdJwtCredential extends CredentialBuilder {
             if (validateOfferData(entryKey, entryValue))
                 return;
 
+            // handles list
             if (entryValue instanceof Collection<?> collectionValue) {
                 var disc = collectionValue.stream().map(item -> {
                     var dis = new Disclosure(item);
@@ -290,7 +291,7 @@ public class SdJwtCredential extends CredentialBuilder {
 
                 builder.putClaim(entryKey, disc);
             } else {
-                handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, builder);
+                handleLeafClaim(entryKey, entryValue, disclosures, builder);
             }
         });
     }
@@ -348,32 +349,33 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     private void handleListDisclosures(SDObjectBuilder builder,
-                                       Map.Entry<String, Object> entry,
+                                       String key,
                                        Collection<?> collectionValue,
                                        List<Disclosure> disclosures) {
+
         var disc = collectionValue.stream().map(item -> {
             var dis = new Disclosure(item);
             disclosures.add(dis);
             return dis.toArrayElement();
         }).toList();
 
-        if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
-
-            // for strings
-            var recDisclosure = new Disclosure(entry.getKey(), disc);
-            disclosures.add(recDisclosure);
-            builder.putSDClaim(recDisclosure);
-        } else {
-            builder.putClaim(entry.getKey(), disc);
-        }
+        var recDisclosure = new Disclosure(key, disc);
+        disclosures.add(recDisclosure);
+        builder.putSDClaim(recDisclosure);
     }
 
-    private void handleLeafClaim(Map.Entry<String, Object> entry,
+    private void handleLeafClaim(String key,
+                                 Object value,
                                  List<Disclosure> disclosures,
                                  SDObjectBuilder builder) {
-        var disclosure = new Disclosure(entry.getKey(), entry.getValue());
+        var disclosure = new Disclosure(key, value);
         disclosures.add(disclosure);
         builder.putSDClaim(disclosure);
+    }
+
+    private void handleListLeafClaim(Object value, List<Disclosure> disclosures) {
+        var disclosure = new Disclosure(value);
+        disclosures.add(disclosure);
     }
 
     /**

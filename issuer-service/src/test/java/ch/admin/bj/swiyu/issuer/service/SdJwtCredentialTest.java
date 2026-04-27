@@ -375,6 +375,7 @@ class SdJwtCredentialTest {
 
         // should contain 2 disclosures (for every list element) + jwt (no binding)
         var sdJwtComponents = getVcSdJwtParts(credentials.getFirst());
+        // todo check
         assertEquals(4, sdJwtComponents.length);
 
         // check if disclosures contain the list values
