@@ -16,4 +16,9 @@ public class RenewalException extends RuntimeException {
         super(message);
         this.httpStatus = status;
     }
+
+    public RenewalException(HttpStatusCode status, String message, Throwable cause) {
+        super(message, cause);
+        this.httpStatus = status;
+    }
 }

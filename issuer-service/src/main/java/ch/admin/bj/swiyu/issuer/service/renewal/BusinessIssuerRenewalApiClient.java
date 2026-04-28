@@ -40,7 +40,7 @@ public class BusinessIssuerRenewalApiClient {
         } catch (RestClientResponseException e) {
             log.error("Renewal request to {} failed with status code {} with message {}",
                     applicationProperties.getBusinessIssuerRenewalApiEndpoint(), e.getStatusCode(), e.getMessage());
-            throw new RenewalException(e.getStatusCode(), "Renewal request failed: " + e.getMessage());
+            throw new RenewalException(e.getStatusCode(), "Renewal request failed: " + e.getMessage(), e);
         }
     }
 }
