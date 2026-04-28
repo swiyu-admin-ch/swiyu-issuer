@@ -38,12 +38,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <!-- Health API (Health/HealthIndicator moved from spring-boot-actuate to spring-boot-health in Boot 4) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-health</artifactId>
         </dependency>
-        <!-- spring-boot-jackson2 registers com.fasterxml.jackson.databind.ObjectMapper bean in Boot 4 (which defaults to Jackson 3) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-jackson2</artifactId>
@@ -52,7 +50,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-json</artifactId>
         </dependency>
-        <!-- spring-boot-starter-webclient includes spring-boot-webclient which registers WebClient.Builder bean in Boot 4 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webclient</artifactId>
@@ -103,7 +100,6 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- Flyway: use starter so Spring Boot 4 auto-configures Flyway before Hibernate validation -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>
@@ -192,19 +188,16 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- AutoConfigureMockMvc moved to spring-boot-webmvc-test in Boot 4 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- DataJpaTest moved to spring-boot-data-jpa-test in Boot 4 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-data-jpa-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- AutoConfigureTestDatabase moved to spring-boot-jdbc-test in Boot 4 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-jdbc-test</artifactId>
