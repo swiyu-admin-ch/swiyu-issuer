@@ -3,7 +3,7 @@ package ch.admin.bj.swiyu.issuer.infrastructure.health;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.EcosystemApiType;
 import ch.admin.bj.swiyu.issuer.domain.ecosystem.TokenSetRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;

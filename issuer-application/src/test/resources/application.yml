@@ -1,5 +1,10 @@
 
 spring:
+  jackson:
+    constructor-detector: use-properties-based
+  http:
+    converters:
+      preferred-json-mapper: jackson2
   docker:
     compose:
       enabled: false
