@@ -1,16 +1,18 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
+import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
-import java.util.zip.*;
-
-import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
 /**
  * See <a href=
@@ -20,12 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Getter
 public class TokenStatusListToken {
-
-    /**
-     * zlib needs some maximum buffer size.
-     * Randomly chosen 100 MB
-     */
-    private static int BUFFER_SIZE = 100 * 1024 * 1024;
 
     /**
      * Indicator how many consecutive bits of the token status list are contained
@@ -60,10 +56,6 @@ public class TokenStatusListToken {
     public TokenStatusListToken(int bits, byte[] statusList) {
         this.bits = bits;
         this.statusList = statusList;
-    }
-
-    public static TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws IOException {
-        return new TokenStatusListToken(bits, decodeStatusList(lst));
     }
 
     public static TokenStatusListToken loadTokenStatusListToken(int bits, String lst, int maxBufferSize) throws IOException {
@@ -149,6 +141,8 @@ public class TokenStatusListToken {
      * @return the status bits as an integer
      */
     public int getStatus(int idx) {
+        verifyIndexArgument(idx);
+
         byte entryByte = getStatusEntryByte(idx);
         // The starting position of the status in the Byte
         var bitIndex = (idx * bits) % 8;
@@ -168,10 +162,11 @@ public class TokenStatusListToken {
      * @param status The new status to be set
      */
     public void setStatus(int idx, int status) {
+        verifyIndexArgument(idx);
         verifyStatusArgument(status);
         unsetStatus(idx);
         byte entryByte = getStatusEntryByte(idx);
-        entryByte |= getBitPosition(idx, status);
+        entryByte |= (byte) getBitPosition(idx, status);
         setStatusEntryByte(idx, entryByte);
     }
 
@@ -181,20 +176,13 @@ public class TokenStatusListToken {
      * @param idx index of the status list entry
      */
     public void unsetStatus(int idx) {
+        verifyIndexArgument(idx);
         int status = (1 << bits) - 1;
         verifyStatusArgument(status);
         byte entryByte = getStatusEntryByte(idx);
         // Shift the bit to the correct position in the byte
-        entryByte &= ~getBitPosition(idx, status);
+        entryByte &= (byte) ~getBitPosition(idx, status);
         setStatusEntryByte(idx, entryByte);
-    }
-
-    public boolean canRevoke() {
-        return bits >= TokenStatusListBit.REVOKE.getValue();
-    }
-
-    public boolean canSuspend() {
-        return bits >= TokenStatusListBit.SUSPEND.getValue();
     }
 
     /**
@@ -229,31 +217,16 @@ public class TokenStatusListToken {
      * Warning, this sets the whole byte, can therefore also affect neighbouring
      * statuses if statusValue is incorrect
      *
-     * @param idx
+     * @param idx         index of the status list entry which should be updated
      * @param statusValue the bytes from getStatusEntryByte but modified
      */
     private void setStatusEntryByte(int idx, byte statusValue) {
         statusList[idx * bits / 8] = statusValue;
     }
 
-    /**
-     * @param lst
-     * @return the bytes of the status list
-     * @throws DataFormatException if the lst is not a zlib compressed status list
-     */
-    private static byte[] decodeStatusList(String lst) throws IOException {
-        // base64 decoding the data
-        byte[] zippedData = Base64.getUrlDecoder().decode(lst);
-
-
-        var zlibOutput = new ByteArrayOutputStream();
-        var inflaterStream = new InflaterOutputStream(zlibOutput);
-        inflaterStream.write(zippedData);
-        inflaterStream.finish();
-        byte[] clippedZlibOutput = Arrays.copyOf(zlibOutput.toByteArray(), zlibOutput.size());
-        inflaterStream.close();
-        return clippedZlibOutput;
-
+    private void verifyIndexArgument(int idx) {
+        if (idx < 0) {
+            throw new IndexOutOfBoundsException("Status List Index %d must not be negative".formatted(idx));
+        }
     }
-
 }
