@@ -191,7 +191,7 @@ public class SdJwtCredential extends CredentialBuilder {
         // disclosures recursively
         // so object properties become embedded SD claims; otherwise use the
         // non-recursive handler.
-        if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
+        if (getApplicationProperties().isRecursiveDisclosureEnabled()) {
             handleClaimsRecursive(builder, disclosures, selectivelyDiscloseableData);
         } else {
             handleClaims(builder, disclosures, selectivelyDiscloseableData);
@@ -263,9 +263,8 @@ public class SdJwtCredential extends CredentialBuilder {
             return;
 
         switch (entryValue) {
-            case Map<?, ?> mapValue when mapValue instanceof Map<?, ?> m &&
-                    m.keySet().stream().allMatch(String.class::isInstance) ->
-                    handleNestedClaimMapRecursive(entryKey, (Map<String, Object>) m, disclosures, builder);
+            case Map<?, ?> mapValue when mapValue.keySet().stream().allMatch(String.class::isInstance) ->
+                    handleNestedClaimMapRecursive(entryKey, (Map<String, Object>) mapValue, disclosures, builder);
             case Collection<?> collectionValue ->
                     handleListDisclosures(builder, entryKey, collectionValue, disclosures);
             default -> handleLeafClaim(entryKey, entryValue, disclosures, builder);
@@ -371,11 +370,6 @@ public class SdJwtCredential extends CredentialBuilder {
         var disclosure = new Disclosure(key, value);
         disclosures.add(disclosure);
         builder.putSDClaim(disclosure);
-    }
-
-    private void handleListLeafClaim(Object value, List<Disclosure> disclosures) {
-        var disclosure = new Disclosure(value);
-        disclosures.add(disclosure);
     }
 
     /**
