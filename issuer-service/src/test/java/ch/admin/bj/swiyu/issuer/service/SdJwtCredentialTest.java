@@ -486,9 +486,7 @@ class SdJwtCredentialTest {
         // check if disclosures contain the list values
         var disclosuresString = List.of(sdJwtDisclosures).subList(1, sdJwtDisclosures.length);
         var disclosures = disclosuresString.stream().map(Disclosure::parse).toList();
-
-        var claimNames = disclosures.stream().map(Disclosure::getClaimName).toList();
-
+        
         // should contain a foo claim with the list values in the disclosures
         SignedJWT signedJWT = SignedJWT.parse(sdJwtDisclosures[0]);
 
