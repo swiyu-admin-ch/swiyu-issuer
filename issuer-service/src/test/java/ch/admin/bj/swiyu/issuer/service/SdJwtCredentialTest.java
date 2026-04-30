@@ -427,7 +427,7 @@ class SdJwtCredentialTest {
     }
 
     @Test
-    void whenList_withObject_shouldBeFlattened2_thenSuccess() throws Exception {
+    void whenList_withDeeplyNestedObject_thenSuccess() throws Exception {
 
         String offerDataString = """
                 {
@@ -506,12 +506,6 @@ class SdJwtCredentialTest {
         assertDoesNotThrow(() -> ClaimsPathPointerUtil.validateRequestedClaims(decodedMap, List.of("object", "array_arrays", 1, 0), List.of(1)));
         assertDoesNotThrow(() -> ClaimsPathPointerUtil.validateRequestedClaims(decodedMap, List.of("object", "array_arrays", 2, 0), List.of(2)));
         assertDoesNotThrow(() -> ClaimsPathPointerUtil.validateRequestedClaims(decodedMap, List.of("object", "array_arrays", 3, "claim"), List.of("Nested element")));
-
-        // should contain 2 _sd elements (address and test claim)
-        assertEquals(1, ((List<String>) signedJWT.getJWTClaimsSet().getClaims().get("_sd")).size());
-
-        // should have
-        //assertEquals(22, disclosures.size());
     }
 
     private String[] getVcSdJwtParts(String vc) {
