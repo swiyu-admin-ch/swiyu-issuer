@@ -4,7 +4,7 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientException;
 

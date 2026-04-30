@@ -11,6 +11,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
@@ -26,7 +27,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@ExtendWith(OutputCaptureExtension.class)
+@ExtendWith({OutputCaptureExtension.class, MockitoExtension.class})
 class DefaultExceptionHandlerTest {
 
     private DefaultExceptionHandler handler;

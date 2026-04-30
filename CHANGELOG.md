@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Migrated to Spring Boot 4.0.6 (Spring Framework 7) `(#537)`:
+  - Upgraded Spring Cloud to 2025.1.1 and springdoc-openapi to 3.0.0.
+  - Added dedicated starters for extracted autoconfiguration modules: `spring-boot-starter-webclient`,
+    `spring-boot-starter-flyway`, and `spring-boot-health`.
+  - Retained Jackson 2 (`com.fasterxml.jackson`) via `spring-boot-jackson2` and
+    `spring.http.converters.preferred-json-mapper=jackson2` (Boot 4 defaults to Jackson 3).
+  - Replaced `HttpStatus` with `HttpStatusCode` in `RenewalException` and `ApiErrorDto` to support non-standard
+    HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
+  - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
+
 ### Fixed
 
 ## 3.0.0
