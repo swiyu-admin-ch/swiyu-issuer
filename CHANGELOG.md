@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## latest (3.0.0)
+## next
+
+### Added
+
+### Changed
+
+- Migrated to Spring Boot 4.0.6 (Spring Framework 7) `(#537)`:
+  - Upgraded Spring Cloud to 2025.1.1 and springdoc-openapi to 3.0.0.
+  - Added dedicated starters for extracted autoconfiguration modules: `spring-boot-starter-webclient`,
+    `spring-boot-starter-flyway`, and `spring-boot-health`.
+  - Retained Jackson 2 (`com.fasterxml.jackson`) via `spring-boot-jackson2` and
+    `spring.http.converters.preferred-json-mapper=jackson2` (Boot 4 defaults to Jackson 3).
+  - Replaced `HttpStatus` with `HttpStatusCode` in `RenewalException` and `ApiErrorDto` to support non-standard
+    HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
+  - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
+
+### Fixed
+
+## 3.0.0
 
 ### Added
 
@@ -48,6 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed deserialization failure when loading credential offers that contain legacy JSON fields no longer present in the
+  current domain model (e.g. `format` in `CredentialRequestClass`).
 - Nonces are now validated to originate from this service, preventing client side generated nonces
 - Fixed encryption cache invalidation in horizontally scaled deployments: the `IssuerMetadataEncryptionCache` is now
   evicted periodically on every pod via a scheduled task instead of being invalidated only on the pod performing

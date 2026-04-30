@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -120,7 +120,7 @@ class WellKnownControllerIT {
 
         var response = assertDoesNotThrow(() -> mock.perform(get(
                         uri.formatted(tenantId))
-                        .accept("application/jwt"))
+                        .accept("application/JWT;application/JSON"))
                 .andExpect(status().isOk())
                 .andReturn());
 
@@ -144,7 +144,7 @@ class WellKnownControllerIT {
         var url = testHelper.createBasicOfferJsonAndGetTenantID();
 
         mock.perform(get("%s/.well-known/openid-credential-issuer".formatted(url))
-                        .accept("application/json"))
+                        .accept("Application/json,application/jwt;q=0.0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile_version").value(SwissProfileVersions.ISSUANCE_PROFILE_VERSION))
                 .andExpect(content().string(not(containsString("${external-url}"))))
@@ -169,7 +169,7 @@ class WellKnownControllerIT {
         // openid-credential-issuer
         var issuerMetadataResponse = assertDoesNotThrow(() -> mock.perform(get(
                         "%s/.well-known/openid-credential-issuer".formatted(url))
-                        .accept("application/jwt"))
+                        .accept("Application/jwT;q=0.1,APPLICATION/JSON;q=0.9"))
                 .andExpect(status().isOk())
                 .andReturn());
 

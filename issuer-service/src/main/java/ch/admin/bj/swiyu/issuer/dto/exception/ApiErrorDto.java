@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 @Builder
 @Getter
@@ -22,7 +22,7 @@ public class ApiErrorDto {
     @JsonProperty("detail")
     String errorDetails;
     @JsonIgnore
-    HttpStatus status;
+    HttpStatusCode status;
     @JsonProperty("trace_id")
     String traceId;
 }

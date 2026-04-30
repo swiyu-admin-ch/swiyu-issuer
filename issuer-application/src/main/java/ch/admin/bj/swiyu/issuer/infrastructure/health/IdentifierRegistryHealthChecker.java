@@ -6,7 +6,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
 import ch.admin.eid.did_sidekicks.DidDoc;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
