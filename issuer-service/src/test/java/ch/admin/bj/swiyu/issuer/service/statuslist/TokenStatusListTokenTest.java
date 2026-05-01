@@ -1,5 +1,9 @@
 package ch.admin.bj.swiyu.issuer.service.statuslist;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -10,11 +14,8 @@ import java.util.zip.DeflaterOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 class TokenStatusListTokenTest {
+
     @Test
     void testCreateNewStatusList_thenSuccess() throws IOException {
         /*
@@ -158,6 +159,15 @@ class TokenStatusListTokenTest {
         assertDoesNotThrow(() -> {
             TokenStatusListToken.decodeStatusList(base64CompressionBomb, 204800);
         });
+    }
+
+    @Test
+    void testNegativeStatusIndex_thenThrows() {
+        var statusList = new TokenStatusListToken(2, 4);
+
+        assertThrows(IndexOutOfBoundsException.class, () -> statusList.getStatus(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> statusList.setStatus(-1, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> statusList.unsetStatus(-1));
     }
 
     /**

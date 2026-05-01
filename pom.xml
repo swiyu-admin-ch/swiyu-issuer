@@ -56,6 +56,14 @@
     <dependencyManagement>
         <dependencies>
 
+            <!-- Fixes CVE-2026-42198 -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <scope>runtime</scope>
+                <version>42.7.11</version>
+            </dependency>
+
             <!-- Todo check again on spring boot upgrade-->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
