@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 import java.util.zip.Deflater;
@@ -64,17 +63,18 @@ public class TokenStatusListToken {
 
     private static String encodeStatusList(byte[] statusList) {
         // zipping the data
-        try {
-            var zlibOutput = new ByteArrayOutputStream();
-            var deflaterStream = new DeflaterOutputStream(zlibOutput, new Deflater(9));
-            deflaterStream.write(statusList);
-            deflaterStream.finish();
-            byte[] clippedZlibOutput = Arrays.copyOf(zlibOutput.toByteArray(), zlibOutput.size());
-            deflaterStream.close();
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(clippedZlibOutput);
+        var deflater = new Deflater(9);
+        try (var zlibOutput = new ByteArrayOutputStream()) {
+            try (var deflaterStream = new DeflaterOutputStream(zlibOutput, deflater)) {
+                deflaterStream.write(statusList);
+            }
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(zlibOutput.toByteArray());
         } catch (IOException e) {
             log.error("Error occurred during zipping of Status List data", e);
             throw new ConfigurationException("Status List data can not be zipped");
+        } finally {
+            // Release native Deflater resources explicitly
+            deflater.end();
         }
     }
 
@@ -144,15 +144,12 @@ public class TokenStatusListToken {
         verifyIndexArgument(idx);
 
         byte entryByte = getStatusEntryByte(idx);
-        // The starting position of the status in the Byte
+        // The starting position of the status in the byte
         var bitIndex = (idx * bits) % 8;
-        // Mask to remove all bits larger than the status
-        var mask = (1 << bitIndex << bits) - 1;
-        // Drop all bits larger than our status
-        var maskedByte = entryByte & mask;
-        // Shift the status to the start of the byte so 1 = revoked, 2 = suspended, etc,
-        // also removes all bits smaller than our status
-        return maskedByte >> bitIndex;
+        // Mask for the status width, e.g. bits=2 → 0b00000011
+        var mask = (1 << bits) - 1;
+        // Shift the entry to the LSB, then mask off the relevant bits
+        return (entryByte >> bitIndex) & mask;
     }
 
     /**
@@ -209,7 +206,9 @@ public class TokenStatusListToken {
         try {
             return statusList[idx * bits / 8];
         } catch (ArrayIndexOutOfBoundsException e) {
-            throw new IndexOutOfBoundsException("Status List Index %d out of bounds (Max size %d)".formatted(idx, statusList.length * bits));
+            var ex = new IndexOutOfBoundsException("Status List Index %d out of bounds (Max size %d)".formatted(idx, statusList.length * bits));
+            ex.initCause(e);
+            throw ex;
         }
     }
 
