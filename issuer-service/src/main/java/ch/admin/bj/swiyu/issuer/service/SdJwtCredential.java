@@ -26,7 +26,8 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.*;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedDownUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUpUnixTimestamp;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 import static java.util.Objects.nonNull;
 
@@ -183,7 +184,6 @@ public class SdJwtCredential extends CredentialBuilder {
         // Code below follows example from
         // https://github.com/authlete/sd-jwt?tab=readme-ov-file#credential-jwt
         List<Disclosure> disclosures = new ArrayList<>();
-        List<Disclosure> embedded = new ArrayList<>();
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
 
@@ -191,18 +191,17 @@ public class SdJwtCredential extends CredentialBuilder {
         // disclosures recursively
         // so object properties become embedded SD claims; otherwise use the
         // non-recursive handler.
-        if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
-            handleClaimsRecursive(builder, disclosures, selectivelyDiscloseableData, embedded);
+        if (getApplicationProperties().isRecursiveDisclosureEnabled()) {
+            handleClaimsRecursive(builder, disclosures, selectivelyDiscloseableData);
         } else {
-            handleClaims(builder, disclosures, selectivelyDiscloseableData, embedded);
+            handleClaims(builder, disclosures, selectivelyDiscloseableData);
         }
-        embedded.forEach(builder::putSDClaim);
 
         return disclosures;
     }
 
     private void putAlwaysDisclosedData(SDObjectBuilder builder, Map<String, Object> alwaysDisclosedData) {
-        alwaysDisclosedData.entrySet().forEach(e -> builder.putClaim(e.getKey(), e.getValue()));
+        alwaysDisclosedData.forEach(builder::putClaim);
     }
 
     private List<VerifiableCredentialStatusReference> addStatusReferences(
@@ -233,7 +232,7 @@ public class SdJwtCredential extends CredentialBuilder {
      * @param builder  Selective Disclosure Objects (Hashes or always disclosed
      *                 objects) to be included in the claims of the JWT
      * @return JWT Signed with the key provided in the Configuration Override or by
-     *         default key
+     * default key
      */
     private SignedJWT createSignedJWT(ConfigurationOverride override,
                                       SDObjectBuilder builder) {
@@ -252,42 +251,36 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
-    protected List<Disclosure> handleClaimsRecursive(SDObjectBuilder builder,
-                                                     List<Disclosure> disclosures,
-                                                     Map<String, Object> offerData,
-                                                     List<Disclosure> disclosuresForVCObjectProperties) {
+    protected void handleClaimsRecursive(SDObjectBuilder builder,
+                                         List<Disclosure> disclosures,
+                                         Map<String, Object> offerData) {
 
-        offerData.forEach((entryKey, entryValue) -> {
+        offerData.forEach((entryKey, entryValue) -> handleClaimRecursive(entryKey, entryValue, disclosures, builder));
+    }
 
-            if (validateOfferData(entryKey, entryValue))
-                return;
+    private void handleClaimRecursive(String entryKey, Object entryValue, List<Disclosure> disclosures, SDObjectBuilder builder) {
+        if (validateOfferData(entryKey, entryValue))
+            return;
 
-            switch (entryValue) {
-                case Map<?, ?> mapValue when mapValue instanceof Map<?, ?> m &&
-                        m.keySet().stream().allMatch(String.class::isInstance) ->
-                        handleNestedClaimRecursive(entryKey, (Map<String, Object>) m, disclosures,
-                                disclosuresForVCObjectProperties);
-                case Collection<?> collectionValue ->
-                        handleListDisclosures(builder, Map.entry(entryKey, entryValue), collectionValue, disclosures);
-                default ->
-                        handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties,
-                                builder);
-            }
-        });
-
-        return disclosuresForVCObjectProperties;
+        switch (entryValue) {
+            case Map<?, ?> mapValue when mapValue.keySet().stream().allMatch(String.class::isInstance) ->
+                    handleNestedClaimMapRecursive(entryKey, (Map<String, Object>) mapValue, disclosures, builder);
+            case Collection<?> collectionValue ->
+                    handleListDisclosures(builder, entryKey, collectionValue, disclosures);
+            default -> handleLeafClaim(entryKey, entryValue, disclosures, builder);
+        }
     }
 
     protected void handleClaims(SDObjectBuilder builder,
                                 List<Disclosure> disclosures,
-                                Map<String, Object> offerData,
-                                List<Disclosure> disclosuresForVCObjectProperties) {
+                                Map<String, Object> offerData) {
 
         offerData.forEach((entryKey, entryValue) -> {
 
             if (validateOfferData(entryKey, entryValue))
                 return;
 
+            // handles list
             if (entryValue instanceof Collection<?> collectionValue) {
                 var disc = collectionValue.stream().map(item -> {
                     var dis = new Disclosure(item);
@@ -297,8 +290,7 @@ public class SdJwtCredential extends CredentialBuilder {
 
                 builder.putClaim(entryKey, disc);
             } else {
-                handleLeafClaim(Map.entry(entryKey, entryValue), disclosures, disclosuresForVCObjectProperties,
-                        builder);
+                handleLeafClaim(entryKey, entryValue, disclosures, builder);
             }
         });
     }
@@ -323,27 +315,23 @@ public class SdJwtCredential extends CredentialBuilder {
         return false;
     }
 
-    private void handleNestedClaimRecursive(String entryKey,
-                                            Map<String, Object> mapValue,
-                                            List<Disclosure> disclosures,
-                                            List<Disclosure> disclosuresForVCObjectProperties) {
+    private void handleNestedClaimMapRecursive(String entryKey,
+                                               Map<String, Object> mapValue,
+                                               List<Disclosure> disclosures,
+                                               SDObjectBuilder builder) {
 
         // Create a new builder for the nested map to build its disclosures
         var nestedBuilder = new SDObjectBuilder();
-        // throw away list for recursive calls, we only need the
-        // disclosuresForVCObjectPropertie of the top level in recursive case (as these
-        // cases should not be added as sd claims)
-        var ignoredDisclosuresForVCObjectProperties = new ArrayList<Disclosure>();
 
         // Recursive call for nested maps
-        handleClaimsRecursive(nestedBuilder, disclosures, mapValue, ignoredDisclosuresForVCObjectProperties);
+        handleClaimsRecursive(nestedBuilder, disclosures, mapValue);
 
         // Create new Disclosure for the nested map and add it to the disclosures list
         // and the parent builder
         var nestedDigest = new Disclosure(entryKey, nestedBuilder.build());
 
         disclosures.add(nestedDigest);
-        disclosuresForVCObjectProperties.add(nestedDigest);
+        builder.putSDClaim(nestedDigest);
     }
 
     /**
@@ -360,32 +348,28 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
     private void handleListDisclosures(SDObjectBuilder builder,
-                                       Map.Entry<String, Object> entry,
+                                       String key,
                                        Collection<?> collectionValue,
                                        List<Disclosure> disclosures) {
+
         var disc = collectionValue.stream().map(item -> {
             var dis = new Disclosure(item);
             disclosures.add(dis);
             return dis.toArrayElement();
         }).toList();
 
-        if (Boolean.TRUE.equals(getApplicationProperties().isRecursiveDisclosureEnabled())) {
-
-            // for strings
-            var recDisclosure = new Disclosure(entry.getKey(), disc);
-            disclosures.add(recDisclosure);
-            builder.putSDClaim(recDisclosure);
-        } else {
-            builder.putClaim(entry.getKey(), disc);
-        }
+        var recDisclosure = new Disclosure(key, disc);
+        disclosures.add(recDisclosure);
+        builder.putSDClaim(recDisclosure);
     }
 
-    private void handleLeafClaim(Map.Entry<String, Object> entry, List<Disclosure> disclosures,
-                                 List<Disclosure> disclosuresForVCObjectProperties, SDObjectBuilder builder) {
-        var disclosure = new Disclosure(entry.getKey(), entry.getValue());
+    private void handleLeafClaim(String key,
+                                 Object value,
+                                 List<Disclosure> disclosures,
+                                 SDObjectBuilder builder) {
+        var disclosure = new Disclosure(key, value);
         disclosures.add(disclosure);
         builder.putSDClaim(disclosure);
-        disclosuresForVCObjectProperties.add(disclosure);
     }
 
     /**
