@@ -184,6 +184,14 @@
             <artifactId>swiyu-dpop-util</artifactId>
             <version>${generic-java-lib.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-jwt-validator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-sdjwt-validator</artifactId>
+        </dependency>
 
     </dependencies>
 

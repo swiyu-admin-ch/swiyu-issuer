@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Ho
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.sdjwtvalidator.SdJwtVcValidator;
 import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
 import com.authlete.sd.SDObjectBuilder;
@@ -25,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.*;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
@@ -35,18 +37,12 @@ public class SdJwtCredential extends CredentialBuilder {
 
     public static final String SD_JWT_FORMAT = "vc+sd-jwt";
 
-    public static final List<String> SDJWT_PROTECTED_CLAIMS = List.of("sub",
-            "iss",
-            "nbf",
-            "exp",
-            "iat",
-            "cnf",
-            "vct",
-            "status",
-            "_sd",
-            "_sd_alg",
-            "sd_hash",
-            "...");
+    public static final List<String> SDJWT_PROTECTED_CLAIMS = Stream.concat(
+            SdJwtVcValidator.PROTECTED_CLAIMS.stream(),
+            // Additional claims protected at issuance time beyond the SD-JWT VC spec:
+            // "sub" – reserved JWT claim; "sd_hash" / "..." – SD-JWT structural claims
+            Stream.of("sub", "sd_hash", "...")
+    ).toList();
     /**
      * Single element in the Sd-Jwt batch issuance context means it can not be
      * different

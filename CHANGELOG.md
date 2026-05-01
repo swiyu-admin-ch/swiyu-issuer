@@ -20,8 +20,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Replaced `HttpStatus` with `HttpStatusCode` in `RenewalException` and `ApiErrorDto` to support non-standard
     HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
   - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
+- Integrated `swiyu-jwt-validator` and `swiyu-sdjwt-validator` libraries for centralized JWT validation `(#873)`:
+  - Key attestation JWT signature verification is now performed via `DidJwtValidator` (Flow B, two-step).
+  - DID URLs are validated against a configurable Base Registry allowlist (`APPLICATION_ACCEPTED_IDENTIFIER_HOSTS`,
+    defaults: `identifier-reg.trust-infra.swiyu-int.admin.ch`, `identifier-reg.trust-infra.swiyu.admin.ch`)
+    to prevent CSRF and "phone home" attacks.
+  - The `iss` claim is no longer validated and no longer required in attestation JWTs; trust is established
+    exclusively via the `kid` header per PARENT-ADR-027.
+  - Trusted attestation provider checks now compare the `kid`-derived DID (via `DidKidParser`) instead of
+    the `iss` claim.
+  - Manual `#`-splitting on `kid` values replaced by `DidJwtValidator.getDidString()`.
+  - `SdJwtVcValidator` bean provided for future SD-JWT VC validation use cases.
 
 ### Fixed
+
+- Fixed SD-JWT protected claims list to include all claims that MUST NOT be selectively disclosed per
+  SD-JWT VC 3.2.2.2: added `vct#integrity`, `vct_metadata_uri`, and `vct_metadata_uri#integrity` `(#873)`.
+- Fixed `.well-known/openid-credential-issuer` tenant endpoints returning `406 Not Acceptable` when
+  `Accept: application/openidvci-issuer-metadata+jwt` was set. The endpoint now correctly declares the
+  OID4VCI-specific media type and sets the `Content-Type` header accordingly `(#873)`.
+
 
 ## 3.0.0
 

@@ -48,14 +48,16 @@ class AttestationJwtTest {
     }
 
     /**
-     * If only the issuer is checked for being trusted and the key id is used to resolve the public key, it is
+     * Per PARENT-ADR-027, the {@code iss} claim is intentionally ignored during attestation parsing.
+     * Trust is established exclusively via the {@code kid}. Therefore, a diverging {@code iss} and {@code kid}
+     * must NOT cause a rejection at parse time – signature verification (DID resolution) happens externally.
      */
-    @ParameterizedTest(name = "should reject JWT when attackerKeyID={0}, issuerDid={1}")
+    @ParameterizedTest(name = "should accept JWT despite diverging kid={0} and iss={1} (iss is ignored per ADR-027)")
     @CsvSource({
             "did:example:12345#key-1, did:example:9876",
             "did:example:trusted-fake#key-1, did:example:trusted"
     })
-    void whenDivergingIssuerAndKidUsingKeyStorage_thenThrowIllegalArgumentException(String attackerKeyID, String issuerDid) throws JOSEException {
+    void whenDivergingIssuerAndKidUsingKeyStorage_thenParseSucceeds(String attackerKeyID, String issuerDid) throws JOSEException {
         var signingKey = new ECKeyGenerator(Curve.P_256).keyID(attackerKeyID).keyUse(KeyUse.SIGNATURE).generate();
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
@@ -71,8 +73,8 @@ class AttestationJwtTest {
                         .build());
         attestation.sign(new ECDSASigner(signingKey));
         var parsedJwt = attestation.serialize();
-        Assertions.assertThrows(IllegalArgumentException.class,
-                () -> AttestationJwt.parseJwt(parsedJwt , true));
+        // iss is ignored per PARENT-ADR-027; only kid matters for trust – no exception expected here
+        Assertions.assertDoesNotThrow(() -> AttestationJwt.parseJwt(parsedJwt, true));
     }
 
     @Test

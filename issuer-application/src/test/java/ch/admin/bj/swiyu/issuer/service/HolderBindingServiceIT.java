@@ -17,6 +17,9 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.credential.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
+import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+import ch.admin.bj.swiyu.didresolveradapter.DidResolverAdapter;
+import ch.admin.eid.did_sidekicks.DidDoc;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -51,6 +54,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
 class HolderBindingServiceIT {
+
+    /** A real did:tdw DID accepted by DidKidParser (used as attestation issuer DID). */
+    private static final String ATTESTATION_ISSUER_DID = "did:tdw:QmWrXWFEDenvoYWFXxSQGFCa6Pi22Cdsg2r6weGhY2ChiQ:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:2e246676-209a-4c21-aceb-721f8a90b212";
+
     @Autowired
     private ApplicationProperties applicationProperties;
     @Autowired
@@ -61,6 +68,10 @@ class HolderBindingServiceIT {
     private IssuerSecretRepository nonceSecretRepository;
     @MockitoBean
     private DidKeyResolverFacade didKeyResolver;
+    @MockitoBean
+    private DidJwtValidator didJwtValidator;
+    @MockitoBean
+    private DidResolverAdapter didResolverAdapter;
 
     private IssuerSecret nonceSecret;
     private ECKey attestationKey;
@@ -87,8 +98,14 @@ class HolderBindingServiceIT {
 
     @BeforeEach
     void setUp() throws JOSEException {
-        attestationKey = new ECKeyGenerator(Curve.P_256).keyID("did:test:test-attestation-builder#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        attestationKey = new ECKeyGenerator(Curve.P_256).keyID(ATTESTATION_ISSUER_DID + "#key-1").keyUse(KeyUse.SIGNATURE).generate();
         Mockito.when(didKeyResolver.resolveKey(Mockito.any())).thenReturn(attestationKey);
+        // Bypass DID resolution for test attestation DIDs – real DID validation is covered by KeyAttestationServiceTest
+        Mockito.doReturn("https://identifier-reg.trust-infra.swiyu-int.admin.ch/test").when(didJwtValidator).getAndValidateResolutionUrl(Mockito.any());
+        Mockito.doReturn(ATTESTATION_ISSUER_DID).when(didJwtValidator).getDidString(Mockito.any());
+        Mockito.doNothing().when(didJwtValidator).validateJwt(Mockito.any(String.class), Mockito.any(DidDoc.class));
+        DidDoc mockDidDoc = Mockito.mock(DidDoc.class);
+        Mockito.doReturn(mockDidDoc).when(didResolverAdapter).resolveDid(Mockito.any(), Mockito.any());
         nonceSecret = nonceSecretRepository.findAll().getFirst();
     }
 

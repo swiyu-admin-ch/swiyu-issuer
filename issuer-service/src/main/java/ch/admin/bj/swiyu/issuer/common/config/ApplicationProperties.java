@@ -17,6 +17,7 @@ import java.text.ParseException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Validated
@@ -126,6 +127,14 @@ public class ApplicationProperties {
      * Default is false to allow a transitional period.
      */
     private boolean swissProfileVersioningEnforcement = false;
+
+    /**
+     * Allowed hosts for DID-based issuer resolution (anti-CSRF / phone-home protection).
+     * DID URLs whose host does not match any entry are rejected by swiyu-jwt-validator.
+     * Override via environment variable {@code APPLICATION_ACCEPTED_IDENTIFIER_HOSTS}.
+     */
+    @NotNull
+    private Set<String> acceptedIdentifierHosts;
 
     @PostConstruct
     public void init() {

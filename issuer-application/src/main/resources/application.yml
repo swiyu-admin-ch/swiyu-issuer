@@ -125,6 +125,10 @@ application:
   min-deferred-offer-interval-seconds: ${MIN_DEFERRED_OFFER_WAITING_SECONDS:10}
   # List of DID of Attestation providers we trust in
   trusted-attestation-providers: ${TRUSTED_ATTESTATION_PROVIDERS:}
+  # Allowed hosts for DID-based issuer resolution (anti-CSRF / phone-home protection).
+  # DID URLs whose host does not match any entry are rejected by swiyu-jwt-validator.
+  # Override via environment variable APPLICATION_ACCEPTED_IDENTIFIER_HOSTS.
+  accepted-identifier-hosts: ${APPLICATION_ACCEPTED_IDENTIFIER_HOSTS:identifier-reg.trust-infra.swiyu-int.admin.ch,identifier-reg.trust-infra.swiyu.admin.ch}
   enable-jwt-authentication: ${ENABLE_JWT_AUTH:false}
   # Flag to enable the storage of hashes of *each* VC signed by the generic issuer. This is the JWS of the SD-JWT VC.
   # This is more reliable than using the already present key_attestations,

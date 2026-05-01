@@ -1,10 +1,10 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
+import ch.admin.bj.swiyu.jwtvalidator.DidKidParser;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -53,21 +53,18 @@ public final class AttestationJwt {
         // Check required Headers & Payload
         validateHeader(parsedJwt.getHeader(), enforceSwissProfileVersioning);
         validateBody(claims);
-        // Validation between Header and body
-        if (!parsedJwt.getHeader().getKeyID().split("#")[0].equals(claims.getIssuer())) {
-            throw new IllegalArgumentException("The key id must conform to the did syntax (did:webvh ...)");
-        }
         return new AttestationJwt(parsedJwt, extractSupportedAttackPotentialResistance(claims));
     }
 
     /**
-     * @param jwtClaimsSet The JWT Body to be checked for Attestation JWT Required attributes
-     * @throws IllegalArgumentException if one of the checks fails
+     * Validates required claims of the attestation JWT body.
+     * Note: the {@code iss} claim is intentionally not validated here – per PARENT-ADR-027
+     * the {@code iss} claim is optional and ignored; trust is established exclusively via the {@code kid}.
+     *
+     * @param jwtClaimsSet The JWT body to be checked
+     * @throws IllegalArgumentException if a required claim is missing or invalid
      */
     private static void validateBody(JWTClaimsSet jwtClaimsSet) throws IllegalArgumentException {
-        if (StringUtils.isEmpty(jwtClaimsSet.getIssuer())) {
-            throw new IllegalArgumentException("Issuer is required");
-        }
         if (jwtClaimsSet.getIssueTime() == null) {
             throw new IllegalArgumentException("IssueTime is required");
         }
@@ -149,33 +146,43 @@ public final class AttestationJwt {
     }
 
     /**
-     * @param trustedAttestationProviders list of trusted issuers
-     * @throws IllegalArgumentException if the issuer of the jwt is not matching the list of trusted attestation providers
+     * Verifies that the attestation provider DID – derived from the {@code kid} in the JWT header –
+     * is contained in the list of trusted attestation providers.
+     *
+     * <p>Per PARENT-ADR-027 the {@code iss} claim is ignored; trust is established exclusively
+     * via the {@code kid}. The DID is extracted from the absolute {@code kid} (DID URL with
+     * {@code #} fragment) using {@link DidKidParser#getDidFromAbsoluteKid(String)}.</p>
+     *
+     * @param trustedAttestationProviders list of trusted attestation provider DID strings
+     * @throws IllegalArgumentException if the kid-derived DID is not in the trusted list
      */
     public void throwIfNotTrustedAttestationProvider(@NotNull List<String> trustedAttestationProviders) throws IllegalArgumentException {
-        if (!trustedAttestationProviders.contains(claims.getIssuer())) {
-            throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted attestation providers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
+        String kid = signedJWT.getHeader().getKeyID();
+        String did = new DidKidParser().getDidFromAbsoluteKid(kid);
+        if (!trustedAttestationProviders.contains(did)) {
+            throw new IllegalArgumentException(
+                    "The attestation provider DID %s is not in the list of trusted attestation providers %s."
+                            .formatted(did, String.join(", ", trustedAttestationProviders)));
         }
     }
 
     /**
-     * @param keyResolver service to resolve the public JWK with
-     * @param resistance  Which resistance must be attested
-     * @return true if the attestation is valid and the resistance is matching
-     * @throws JOSEException if the fetched Key can not be parsed as a supported JWSVerifier
+     * Checks whether the attested attack potential resistance satisfies the required resistance levels.
+     *
+     * <p>Signature verification is handled externally by the service layer via
+     * {@code DidJwtValidator} before this method is called.</p>
+     *
+     * @param resistance the required {@link AttackPotentialResistance} levels; if empty, any
+     *                   attestation is considered valid
+     * @return {@code true} if the attested resistance matches at least one required level,
+     *         or if {@code resistance} is empty
      */
-    public boolean isValidAttestation(@NotNull KeyResolver keyResolver, @NotNull List<AttackPotentialResistance> resistance) throws JOSEException {
-        var header = signedJWT.getHeader();
-        var key = keyResolver.resolveKey(header.getKeyID());
-        if (!signedJWT.verify(new ECDSAVerifier(key.toECKey()))) {
-            throw new JOSEException("JWT verification failed");
-        }
+    public boolean isValidAttestation(@NotNull List<AttackPotentialResistance> resistance) {
         if (resistance.isEmpty()) {
             return true;
         }
         var providedResistanceSet = new HashSet<>(attestedAttackPotentialResistance);
         providedResistanceSet.retainAll(resistance);
-        // We only care IF we have a matching resistance spec
         return !providedResistanceSet.isEmpty();
     }
 
