@@ -14,7 +14,8 @@ import java.util.UUID;
 @ConfigurationProperties(prefix = "swiyu")
 public record SwiyuProperties(
         @NotNull RegistryProperties statusRegistry,
-        @NotNull UUID businessPartnerId) {
+        @NotNull UUID businessPartnerId,
+        TrustRegistryProperties trustRegistry) {
     public record RegistryProperties(
             @NotNull URL apiUrl,
             @NotNull URL tokenUrl,
@@ -25,5 +26,17 @@ public record SwiyuProperties(
             @NotNull Boolean enableRefreshTokenFlow,
             @NotEmpty @NotNull String customerKey,
             @NotEmpty @NotNull String customerSecret) {
+    }
+
+    /**
+     * Configuration properties for the Trust Registry sidechannel API.
+     * Optional – if not configured, trust statement caching is disabled.
+     */
+    public record TrustRegistryProperties(
+            @NotNull URL apiUrl,
+            @NotNull String customerKey,
+            @NotNull String customerSecret,
+            long maxCacheSize,
+            long clockSkewBufferSeconds) {
     }
 }
