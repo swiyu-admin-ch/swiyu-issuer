@@ -37,6 +37,7 @@ public record SwiyuProperties(
             @NotNull String customerKey,
             @NotNull String customerSecret,
             long maxCacheSize,
-            long clockSkewBufferSeconds) {
+            long clockSkewBufferSeconds,
+            Long maxCacheTtlSeconds) {
     }
 }

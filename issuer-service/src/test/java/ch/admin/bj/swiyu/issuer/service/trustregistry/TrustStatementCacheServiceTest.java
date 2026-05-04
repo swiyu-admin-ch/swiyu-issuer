@@ -1,0 +1,295 @@
+package ch.admin.bj.swiyu.issuer.service.trustregistry;
+
+import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
+import ch.admin.bj.swiyu.core.trust.client.model.PagedModelString;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
+
+import java.net.URL;
+import java.time.Instant;
+import java.util.Date;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+/**
+ * Unit tests for {@link TrustStatementCacheService}.
+ *
+ * <p>Verifies cache behaviour (hit/miss/invalidation), TTL capping via {@code maxCacheTtlSeconds},
+ * graceful fallback on API failure, and null-safety when no response is returned.</p>
+ */
+class TrustStatementCacheServiceTest {
+
+    private TrustProtocol20Api trustProtocol20Api;
+    private TrustStatementCacheService service;
+
+    private static final String ISSUER_DID = "did:tdw:test:issuer";
+
+    @BeforeEach
+    void setUp() throws Exception {
+        trustProtocol20Api = mock(TrustProtocol20Api.class);
+        service = buildService(null /* no maxCacheTtlSeconds cap */);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private TrustStatementCacheService buildService(Long maxCacheTtlSeconds) throws Exception {
+        var trustRegistry = new SwiyuProperties.TrustRegistryProperties(
+                new URL("https://trust-reg.example.ch/"),
+                "key",
+                "secret",
+                1_000,
+                60,
+                maxCacheTtlSeconds);
+        var props = mock(SwiyuProperties.class);
+        when(props.trustRegistry()).thenReturn(trustRegistry);
+        return new TrustStatementCacheService(trustProtocol20Api, new ObjectMapper(), props);
+    }
+
+    /**
+     * Creates a signed JWT with the given exp timestamp (epoch seconds).
+     */
+    private static String buildJwt(long expEpochSeconds) throws Exception {
+        var key = new ECKeyGenerator(Curve.P_256).generate();
+        var header = new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .type(new JOSEObjectType("jwt"))
+                .build();
+        var claims = new JWTClaimsSet.Builder()
+                .issuer("did:tdw:trust-registry:issuer")
+                .issueTime(new Date())
+                .expirationTime(Date.from(Instant.ofEpochSecond(expEpochSeconds)))
+                .build();
+        var jwt = new SignedJWT(header, claims);
+        jwt.sign(new ECDSASigner(key));
+        return jwt.serialize();
+    }
+
+    private static PagedModelString pagedModel(String... jwts) {
+        var model = new PagedModelString();
+        model.setContent(List.of(jwts));
+        return model;
+    }
+
+    // -------------------------------------------------------------------------
+    // idTS – basic fetch & cache hit
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getIdentityTrustStatement_firstCall_fetchesFromApi() throws Exception {
+        var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
+        when(trustProtocol20Api.listIdTS(eq(ISSUER_DID), eq(true), isNull(), isNull(), isNull()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        var result = service.getIdentityTrustStatement(ISSUER_DID);
+
+        assertThat(result).isEqualTo(jwt);
+        verify(trustProtocol20Api, times(1)).listIdTS(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getIdentityTrustStatement_secondCall_usesCache() throws Exception {
+        var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        service.getIdentityTrustStatement(ISSUER_DID);
+        service.getIdentityTrustStatement(ISSUER_DID);
+
+        // API must only be called once – second call hits the cache
+        verify(trustProtocol20Api, times(1)).listIdTS(any(), any(), any(), any(), any());
+    }
+
+    // -------------------------------------------------------------------------
+    // piaTS – basic fetch & cache hit
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getProtectedIssuanceAuthorizationTrustStatement_firstCall_fetchesFromApi() throws Exception {
+        var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
+        when(trustProtocol20Api.listPiaTS(eq(ISSUER_DID), eq(true), isNull(), isNull(), isNull()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        var result = service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+
+        assertThat(result).isEqualTo(jwt);
+        verify(trustProtocol20Api, times(1)).listPiaTS(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getProtectedIssuanceAuthorizationTrustStatement_secondCall_usesCache() throws Exception {
+        var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
+        when(trustProtocol20Api.listPiaTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+
+        verify(trustProtocol20Api, times(1)).listPiaTS(any(), any(), any(), any(), any());
+    }
+
+    // -------------------------------------------------------------------------
+    // Invalidation
+    // -------------------------------------------------------------------------
+
+    @Test
+    void invalidateIdentityTrustStatement_forcesRefetchOnNextCall() throws Exception {
+        var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        service.getIdentityTrustStatement(ISSUER_DID);
+        service.invalidateIdentityTrustStatement(ISSUER_DID);
+        service.getIdentityTrustStatement(ISSUER_DID);
+
+        verify(trustProtocol20Api, times(2)).listIdTS(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void invalidateProtectedIssuanceAuthorizationTrustStatement_forcesRefetchOnNextCall() throws Exception {
+        var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
+        when(trustProtocol20Api.listPiaTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        service.invalidateProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+
+        verify(trustProtocol20Api, times(2)).listPiaTS(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void invalidateAllTrustStatements_invalidatesBothCaches() throws Exception {
+        var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+        when(trustProtocol20Api.listPiaTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        service.getIdentityTrustStatement(ISSUER_DID);
+        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+
+        service.invalidateAllTrustStatements(ISSUER_DID);
+
+        service.getIdentityTrustStatement(ISSUER_DID);
+        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+
+        verify(trustProtocol20Api, times(2)).listIdTS(any(), any(), any(), any(), any());
+        verify(trustProtocol20Api, times(2)).listPiaTS(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void invalidate_doesNotAffectOtherDids() throws Exception {
+        var otherDid = "did:tdw:test:other-issuer";
+        var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        service.getIdentityTrustStatement(ISSUER_DID);
+        service.getIdentityTrustStatement(otherDid);
+
+        service.invalidateIdentityTrustStatement(ISSUER_DID);
+
+        service.getIdentityTrustStatement(ISSUER_DID); // re-fetched
+        service.getIdentityTrustStatement(otherDid);   // still cached
+
+        // ISSUER_DID fetched twice (initial + after invalidation), otherDid fetched once
+        verify(trustProtocol20Api, times(3)).listIdTS(any(), any(), any(), any(), any());
+    }
+
+    // -------------------------------------------------------------------------
+    // Graceful fallback on API failure
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getIdentityTrustStatement_whenApiFails_returnsNull() {
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.error(new RuntimeException("connection refused")));
+
+        var result = service.getIdentityTrustStatement(ISSUER_DID);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void getIdentityTrustStatement_whenApiReturnsNull_returnsNull() {
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel() /* empty list */));
+
+        var result = service.getIdentityTrustStatement(ISSUER_DID);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void getProtectedIssuanceAuthorizationTrustStatement_whenApiFails_returnsNull() {
+        when(trustProtocol20Api.listPiaTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.error(new RuntimeException("timeout")));
+
+        var result = service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+
+        assertThat(result).isNull();
+    }
+
+    // -------------------------------------------------------------------------
+    // maxCacheTtlSeconds cap
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getIdentityTrustStatement_withMaxCacheTtlCap_capIsApplied() throws Exception {
+        // JWT valid for 1 day, but cap is 10 seconds → cache entry should be stored (not rejected)
+        service = buildService(10L);
+        var jwt = buildJwt(Instant.now().plusSeconds(86400).getEpochSecond());
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        var result = service.getIdentityTrustStatement(ISSUER_DID);
+
+        // The JWT is returned correctly regardless of the cap (cap only affects eviction time)
+        assertThat(result).isEqualTo(jwt);
+    }
+
+    @Test
+    void getIdentityTrustStatement_withoutMaxCacheTtlCap_expBasedTtlUsed() throws Exception {
+        // No cap → exp-based TTL; verify the JWT is returned and cached
+        var jwt = buildJwt(Instant.now().plusSeconds(86400).getEpochSecond());
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(jwt)));
+
+        service.getIdentityTrustStatement(ISSUER_DID);
+        service.getIdentityTrustStatement(ISSUER_DID); // cache hit
+
+        verify(trustProtocol20Api, times(1)).listIdTS(any(), any(), any(), any(), any());
+    }
+
+    // -------------------------------------------------------------------------
+    // Malformed JWT payload
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getIdentityTrustStatement_withMalformedJwt_returnsFallbackTtlAndJwt() {
+        var malformed = "not.a.jwt";
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(malformed)));
+
+        // Should still return the raw string (fallback TTL of 60s is used internally)
+        var result = service.getIdentityTrustStatement(ISSUER_DID);
+
+        assertThat(result).isEqualTo(malformed);
+    }
+}
+

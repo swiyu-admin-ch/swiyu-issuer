@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
-import ch.admin.bj.swiyu.core.trust.client.api.TrustStatementApi;
+import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
 import ch.admin.bj.swiyu.core.trust.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import lombok.AllArgsConstructor;
@@ -55,14 +55,13 @@ public class TrustRegistryConfig {
     }
 
     /**
-     * Exposes the generated {@link TrustStatementApi} as a Spring bean.
+     * Exposes the generated {@link TrustProtocol20Api} as a Spring bean.
      *
      * @param trustRegistryApiClient the configured API client
-     * @return the Trust Statement API facade
+     * @return the Trust Protocol 2.0 API facade
      */
     @Bean
-    public TrustStatementApi trustStatementApi(ApiClient trustRegistryApiClient) {
-        return new TrustStatementApi(trustRegistryApiClient);
+    public TrustProtocol20Api trustProtocol20Api(ApiClient trustRegistryApiClient) {
+        return new TrustProtocol20Api(trustRegistryApiClient);
     }
 }
-
