@@ -9,6 +9,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -32,6 +33,17 @@ import static org.mockito.Mockito.*;
  * graceful fallback on API failure, and null-safety when no response is returned.</p>
  */
 class TrustStatementCacheServiceTest {
+
+    /** Shared EC key for the entire test class – generated once to avoid per-test crypto overhead. */
+    private static final ECKey TEST_KEY;
+
+    static {
+        try {
+            TEST_KEY = new ECKeyGenerator(Curve.P_256).generate();
+        } catch (Exception e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     private TrustProtocol20Api trustProtocol20Api;
     private TrustStatementCacheService service;
@@ -65,7 +77,6 @@ class TrustStatementCacheServiceTest {
      * Creates a signed JWT with the given exp timestamp (epoch seconds).
      */
     private static String buildJwt(long expEpochSeconds) throws Exception {
-        var key = new ECKeyGenerator(Curve.P_256).generate();
         var header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType("jwt"))
                 .build();
@@ -75,7 +86,7 @@ class TrustStatementCacheServiceTest {
                 .expirationTime(Date.from(Instant.ofEpochSecond(expEpochSeconds)))
                 .build();
         var jwt = new SignedJWT(header, claims);
-        jwt.sign(new ECDSASigner(key));
+        jwt.sign(new ECDSASigner(TEST_KEY));
         return jwt.serialize();
     }
 
@@ -208,7 +219,8 @@ class TrustStatementCacheServiceTest {
         service.getIdentityTrustStatement(otherDid);   // still cached
 
         // ISSUER_DID fetched twice (initial + after invalidation), otherDid fetched once
-        verify(trustProtocol20Api, times(3)).listIdTS(any(), any(), any(), any(), any());
+        verify(trustProtocol20Api, times(2)).listIdTS(eq(ISSUER_DID), any(), any(), any(), any());
+        verify(trustProtocol20Api, times(1)).listIdTS(eq(otherDid), any(), any(), any(), any());
     }
 
     // -------------------------------------------------------------------------
@@ -250,8 +262,8 @@ class TrustStatementCacheServiceTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void getIdentityTrustStatement_withMaxCacheTtlCap_capIsApplied() throws Exception {
-        // JWT valid for 1 day, but cap is 10 seconds → cache entry should be stored (not rejected)
+    void getIdentityTrustStatement_withMaxCacheTtlCap_jwtIsReturnedCorrectly() throws Exception {
+        // JWT valid for 1 day, but cap is 10 seconds – cap only affects eviction, not the returned value
         service = buildService(10L);
         var jwt = buildJwt(Instant.now().plusSeconds(86400).getEpochSecond());
         when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
@@ -259,7 +271,6 @@ class TrustStatementCacheServiceTest {
 
         var result = service.getIdentityTrustStatement(ISSUER_DID);
 
-        // The JWT is returned correctly regardless of the cap (cap only affects eviction time)
         assertThat(result).isEqualTo(jwt);
     }
 
@@ -291,5 +302,21 @@ class TrustStatementCacheServiceTest {
 
         assertThat(result).isEqualTo(malformed);
     }
-}
 
+    // -------------------------------------------------------------------------
+    // Expired JWT → minimum TTL
+    // -------------------------------------------------------------------------
+
+    @Test
+    void getIdentityTrustStatement_withExpiredJwt_returnsJwtWithMinimumTtl() throws Exception {
+        // JWT already expired (exp in the past) → should still be returned but cached with 1s TTL
+        var expiredJwt = buildJwt(Instant.now().minusSeconds(10).getEpochSecond());
+        when(trustProtocol20Api.listIdTS(any(), any(), any(), any(), any()))
+                .thenReturn(Mono.just(pagedModel(expiredJwt)));
+
+        var result = service.getIdentityTrustStatement(ISSUER_DID);
+
+        // The JWT is returned as-is; signature/expiry validation is the caller's responsibility
+        assertThat(result).isEqualTo(expiredJwt);
+    }
+}

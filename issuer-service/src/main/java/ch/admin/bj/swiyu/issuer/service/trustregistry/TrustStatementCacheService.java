@@ -31,6 +31,10 @@ import java.util.concurrent.TimeUnit;
  * which allows individual credentials to be issued under a different DID than the default
  * {@code application.issuer-id}. Cache entries are keyed by the actual issuer DID used.</p>
  *
+ * <p>API failures and empty responses are negatively cached (via {@code Optional.empty()})
+ * for a short duration to prevent retry storms and cascading failures when the
+ * Trust Registry is unavailable.</p>
+ *
  * <p>Only active when a {@link TrustProtocol20Api} bean is present
  * (i.e. {@code swiyu.trust-registry.api-url} is configured).</p>
  */
@@ -38,6 +42,12 @@ import java.util.concurrent.TimeUnit;
 @Service
 @ConditionalOnBean(TrustProtocol20Api.class)
 public class TrustStatementCacheService {
+
+    /**
+     * Fallback TTL in seconds used when the JWT {@code exp} claim cannot be parsed.
+     * Keeps the cache from growing stale indefinitely while allowing a retry after a short window.
+     */
+    private static final long FALLBACK_TTL_SECONDS = 60;
 
     private final TrustProtocol20Api trustProtocol20Api;
     private final ObjectMapper objectMapper;
@@ -52,12 +62,16 @@ public class TrustStatementCacheService {
     private final Long maxCacheTtlSeconds;
 
     /**
-     * Note: {@code @Cacheable} is intentionally NOT used here because Spring's cache abstraction
-     * only supports a static TTL per cache, not a dynamic per-entry TTL. Caffeine is used
-     * directly to implement exp-based eviction as required by the trust statement lifecycle.
+     * Two separate caches keyed by issuer DID – one per statement type (idTS / piaTS).
+     * Separate caches ensure that invalidating one type does not affect the other,
+     * and that each statement type has its own independent TTL per issuer.
+     *
+     * <p>Note: {@code @Cacheable} is intentionally NOT used here because Spring's cache
+     * abstraction only supports a static TTL per cache, not a dynamic per-entry TTL.
+     * Caffeine is used directly to implement exp-based eviction.</p>
      */
-    private final Cache<String, String> idTsCache;
-    private final Cache<String, String> piaTsCache;
+    private final Cache<String, Optional<String>> idTsCache;
+    private final Cache<String, Optional<String>> piaTsCache;
 
     /**
      * Creates a new {@code TrustStatementCacheService}.
@@ -72,9 +86,9 @@ public class TrustStatementCacheService {
         this.trustProtocol20Api = trustProtocol20Api;
         this.objectMapper = objectMapper;
         var trustRegistry = swiyuProperties.trustRegistry();
-        this.maxCacheSize = trustRegistry != null ? trustRegistry.maxCacheSize() : 1_000;
-        this.clockSkewBufferSeconds = trustRegistry != null ? trustRegistry.clockSkewBufferSeconds() : 60;
-        this.maxCacheTtlSeconds = trustRegistry != null ? trustRegistry.maxCacheTtlSeconds() : null;
+        this.maxCacheSize = trustRegistry.maxCacheSize();
+        this.clockSkewBufferSeconds = trustRegistry.clockSkewBufferSeconds();
+        this.maxCacheTtlSeconds = trustRegistry.maxCacheTtlSeconds();
         this.idTsCache = buildCache();
         this.piaTsCache = buildCache();
     }
@@ -88,7 +102,8 @@ public class TrustStatementCacheService {
      */
     @Nullable
     public String getIdentityTrustStatement(String issuerDid) {
-        return idTsCache.get(issuerDid, this::fetchIdentityTrustStatement);
+        Optional<String> cached = idTsCache.get(issuerDid, this::fetchIdentityTrustStatement);
+        return cached.isPresent() ? cached.orElse(null) : null;
     }
 
     /**
@@ -101,28 +116,27 @@ public class TrustStatementCacheService {
      */
     @Nullable
     public String getProtectedIssuanceAuthorizationTrustStatement(String issuerDid) {
-        return piaTsCache.get(issuerDid, this::fetchProtectedIssuanceAuthorizationTrustStatement);
+        Optional<String> cached = piaTsCache.get(issuerDid, this::fetchProtectedIssuanceAuthorizationTrustStatement);
+        return cached.isPresent() ? cached.orElse(null) : null;
     }
 
-    @Nullable
-    private String fetchIdentityTrustStatement(String issuerDid) {
+    private Optional<String> fetchIdentityTrustStatement(String issuerDid) {
         try {
             var response = trustProtocol20Api.listIdTS(issuerDid, true, null, null, null).block();
-            return extractFirstJwt(response != null ? response.getContent() : null, "idTS", issuerDid);
+            return Optional.ofNullable(extractFirstJwt(response != null ? response.getContent() : null, "idTS", issuerDid));
         } catch (Exception e) {
-            log.warn("Failed to fetch identity trust statement (idTS) for issuer {}: {}", issuerDid, e.getMessage());
-            return null;
+            log.warn("Failed to fetch idTS for issuer {}: {}", issuerDid, e.getMessage());
+            return Optional.empty();
         }
     }
 
-    @Nullable
-    private String fetchProtectedIssuanceAuthorizationTrustStatement(String issuerDid) {
+    private Optional<String>  fetchProtectedIssuanceAuthorizationTrustStatement(String issuerDid) {
         try {
             var response = trustProtocol20Api.listPiaTS(issuerDid, true, null, null, null).block();
-            return extractFirstJwt(response != null ? response.getContent() : null, "piaTS", issuerDid);
+            return Optional.ofNullable(extractFirstJwt(response != null ? response.getContent() : null, "piaTS", issuerDid));
         } catch (Exception e) {
             log.warn("Failed to fetch protected issuance authorization trust statement (piaTS) for issuer {}: {}", issuerDid, e.getMessage());
-            return null;
+            return Optional.empty();
         }
     }
 
@@ -181,26 +195,37 @@ public class TrustStatementCacheService {
      * The expiry of each entry is calculated from the {@code exp} claim of the cached JWT,
      * minus a clock-skew buffer to ensure served statements are still valid upon receipt.
      */
-    private Cache<String, String> buildCache() {
+    private Cache<String, Optional<String>> buildCache() {
         return Caffeine.newBuilder()
                 .maximumSize(maxCacheSize)
-                .expireAfter(new Expiry<String, String>() {
-                    @Override
-                    public long expireAfterCreate(String key, String jwt, long currentTime) {
-                        return computeNanosUntilExpiry(jwt);
-                    }
-
-                    @Override
-                    public long expireAfterUpdate(String key, String jwt, long currentTime, long currentDuration) {
-                        return computeNanosUntilExpiry(jwt);
-                    }
-
-                    @Override
-                    public long expireAfterRead(String key, String jwt, long currentTime, long currentDuration) {
-                        return currentDuration;
-                    }
-                })
+                .expireAfter(buildExpiry())
                 .build();
+    }
+
+    /**
+     * Returns a Caffeine {@link Expiry} that derives the per-entry TTL from the JWT {@code exp} claim.
+     * On read, the remaining duration is preserved unchanged.
+     */
+    private Expiry<String, Optional<String>> buildExpiry() {
+        return new Expiry<>() {
+            @Override
+            public long expireAfterCreate(String key, Optional<String> jwtOpt, long currentTime) {
+                return jwtOpt.map(TrustStatementCacheService.this::computeNanosUntilExpiry)
+                        // Negative Caching: Bei API-Fehler für 30 Sekunden nicht mehr probieren!
+                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(30));
+            }
+
+            @Override
+            public long expireAfterUpdate(String key, Optional<String> jwtOpt, long currentTime, long currentDuration) {
+                return jwtOpt.map(TrustStatementCacheService.this::computeNanosUntilExpiry)
+                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(30));
+            }
+
+            @Override
+            public long expireAfterRead(String key, Optional<String> jwtOpt, long currentTime, long currentDuration) {
+                return currentDuration;
+            }
+        };
     }
 
     /**
@@ -212,8 +237,10 @@ public class TrustStatementCacheService {
      * trust statement cache with the DID public key cache TTL to avoid serving
      * statements whose referenced DID key has already been rotated.</p>
      *
+     * <p>If parsing fails, {@link #FALLBACK_TTL_SECONDS} is used as fallback.</p>
+     *
      * @param jwt the serialized JWT string
-     * @return remaining lifetime in nanoseconds
+     * @return remaining lifetime in nanoseconds (minimum 1 second)
      */
     private long computeNanosUntilExpiry(String jwt) {
         return extractExpFromJwt(jwt)
@@ -233,8 +260,8 @@ public class TrustStatementCacheService {
                     return TimeUnit.SECONDS.toNanos(remainingSeconds);
                 })
                 .orElseGet(() -> {
-                    log.warn("Could not extract exp from trust statement JWT – using 60s fallback TTL");
-                    return TimeUnit.SECONDS.toNanos(60);
+                    log.warn("Could not extract exp from trust statement JWT – using {}s fallback TTL", FALLBACK_TTL_SECONDS);
+                    return TimeUnit.SECONDS.toNanos(FALLBACK_TTL_SECONDS);
                 });
     }
 
