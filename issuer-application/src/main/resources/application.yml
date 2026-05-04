@@ -268,12 +268,6 @@ swiyu:
     customer-secret: ${secret.swiyu.trust-registry.customer-secret:${SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET:}}
     max-cache-size: ${SWIYU_TRUST_REGISTRY_MAX_CACHE_SIZE:1000}
     clock-skew-buffer-seconds: ${SWIYU_TRUST_REGISTRY_CLOCK_SKEW_BUFFER_SECONDS:60}
-    # Optional hard upper bound for the trust statement cache TTL in seconds.
-    # When set, effective TTL = min(exp-based TTL, max-cache-ttl-seconds).
-    # Recommended: set to publicKeyCacheTTL (in seconds) to avoid serving trust statements
-    # whose referenced DID key has already been rotated out of the public key cache.
-    # Example: 3600 = 1 hour (matches default publicKeyCacheTTL of 3600000ms)
-    # If not set (default), TTL is derived exclusively from the JWT exp claim.
     max-cache-ttl-seconds: ${SWIYU_TRUST_REGISTRY_MAX_CACHE_TTL_SECONDS:#{null}}
 
 webhook:
