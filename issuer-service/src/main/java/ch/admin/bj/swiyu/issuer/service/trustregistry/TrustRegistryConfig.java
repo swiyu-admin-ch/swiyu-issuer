@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Set;
 
@@ -42,7 +43,7 @@ public class TrustRegistryConfig {
     public ApiClient trustRegistryApiClient() {
         var props = swiyuProperties.trustRegistry();
         var credentials = props.customerKey() + ":" + props.customerSecret();
-        var encoded = Base64.getEncoder().encodeToString(credentials.getBytes());
+        var encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
 
         var reConfigured = webClient.mutate()
                 .filter((request, next) -> next.exchange(

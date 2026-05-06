@@ -9,11 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
+import com.nimbusds.jwt.JWTParser;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientException;
 
+import java.io.IOException;
+import java.text.ParseException;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
@@ -49,6 +53,8 @@ public class TrustStatementCacheService {
      * Keeps the cache from growing stale indefinitely while allowing a retry after a short window.
      */
     private static final long FALLBACK_TTL_SECONDS = 60;
+
+    private static final int MIN_JWT_PARTS = 2;
 
     private final TrustProtocol20Api trustProtocol20Api;
     private final ObjectMapper objectMapper;
@@ -146,7 +152,7 @@ public class TrustStatementCacheService {
         } catch (JwtValidatorException e) {
             log.warn("idTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
             return Optional.empty();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("Failed to fetch idTS for issuer {}: {}", issuerDid, e.getMessage());
             return Optional.empty();
         }
@@ -163,10 +169,11 @@ public class TrustStatementCacheService {
         } catch (JwtValidatorException e) {
             log.warn("piaTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
             return Optional.empty();
-        } catch (Exception e) {
-            log.warn("Failed to fetch protected issuance authorization trust statement (piaTS) for issuer {}: {}", issuerDid, e.getMessage());
+        } catch (RuntimeException e) {
+            log.warn("API or network error fetching piaTS for issuer {}: {}", issuerDid, e.getMessage());
             return Optional.empty();
         }
+
     }
 
     /**
@@ -318,25 +325,18 @@ public class TrustStatementCacheService {
     }
 
     /**
-     * Decodes the JWT payload (without signature verification) and extracts the {@code exp} claim.
+     * Parses the JWT (without signature verification) and extracts the {@code exp} claim.
      *
      * @param jwt the serialized JWT string
      * @return the {@code exp} epoch-second value, or empty if parsing fails
      */
     private Optional<Long> extractExpFromJwt(String jwt) {
         try {
-            String[] parts = jwt.split("\\.");
-            if (parts.length < 2) {
-                return Optional.empty();
-            }
-            byte[] payloadBytes = Base64.getUrlDecoder().decode(parts[1]);
-            JsonNode payload = objectMapper.readTree(payloadBytes);
-            if (payload.has("exp")) {
-                return Optional.of(payload.get("exp").asLong());
-            }
-        } catch (Exception e) {
+            return Optional.ofNullable(JWTParser.parse(jwt).getJWTClaimsSet().getExpirationTime())
+                    .map(expirationDate -> expirationDate.getTime() / 1000);
+        } catch (ParseException e) {
             log.warn("Failed to parse JWT payload for exp extraction: {}", e.getMessage());
+            return Optional.empty();
         }
-        return Optional.empty();
     }
 }
