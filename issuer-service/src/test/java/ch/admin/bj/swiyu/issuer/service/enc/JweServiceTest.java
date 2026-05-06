@@ -21,7 +21,6 @@ import org.mockito.Mockito;
 import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,7 +47,7 @@ class JweServiceTest {
                 .build())
             .build();
         encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository);
-        jweService = new JweService(applicationProperties, issuerMetadata, encryptionKeyService, Optional.empty());
+        jweService = new JweService(applicationProperties, issuerMetadata, encryptionKeyService);
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())
                 .thenReturn(KEY_ROTATION_INTERVAL);
         encryptionKeyService.rotateEncryptionKeys();
