@@ -79,7 +79,7 @@ public class DemonstratingProofOfPossessionService {
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
         var credentialOffer = credentialOfferRepository.findByPreAuthorizedCode(UUID.fromString(preAuthCode)).orElseThrow();
         var mgmt = credentialOffer.getCredentialManagement();
-        if (requiresKeyAttestationIso18045High(credentialOffer)) {
+        if (requiresKeyAttestation(credentialOffer)) {
             validateDPoPKeyAttestation(dpopJwt);
         }
         mgmt.setDPoPKey(dpopJwt.getHeader().getJWK().toJSONObject());
@@ -146,11 +146,12 @@ public class DemonstratingProofOfPossessionService {
     }
 
     /**
-     * Load the Issuer Metadata to evaluate if any the credentials offered require iso_18045_high AttackPotentialResistance
+     * Load the Issuer Metadata to evaluate if any the credentials offered require a certain level of AttackPotentialResistance
+     * As android devices do not broadly support ISO_18045_HIGH, ISO_18045_ENHANCED_BASIC is also requiring a key attestation
      * @param credentialOffer the offer to be evaluated
      * @return true if a key attestation with iso_18045_high is required, else false
      */
-    protected boolean requiresKeyAttestationIso18045High(CredentialOffer credentialOffer) {
+    protected boolean requiresKeyAttestation(CredentialOffer credentialOffer) {
         var metadata = metadataService.getUnsignedIssuerMetadata();
         var offeredCredentialTypes = credentialOffer.getMetadataCredentialSupportedId();
         if (offeredCredentialTypes == null) {
@@ -165,7 +166,7 @@ public class DemonstratingProofOfPossessionService {
             .map(SupportedProofType::getKeyAttestationRequirement)
             .filter(Objects::nonNull) // Key Attestation Requirement can be null
             .flatMap(keyAttestationRequirement -> keyAttestationRequirement.getKeyStorage().stream())
-            .anyMatch(attackPotentialResistanceRequirement -> AttackPotentialResistance.ISO_18045_HIGH.equals(attackPotentialResistanceRequirement));
+            .anyMatch(attackPotentialResistanceRequirement -> List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH).contains(attackPotentialResistanceRequirement));
     }
 
     /**
@@ -187,7 +188,7 @@ public class DemonstratingProofOfPossessionService {
         }
         keyAttestationService.validateKeyAttestation(
                 KeyAttestationRequirement.builder()
-                        .keyStorage(List.of(AttackPotentialResistance.ISO_18045_HIGH)).build(),
+                        .keyStorage(List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH)).build(),
                 dpopKeyAttestation.toString());
     }
 

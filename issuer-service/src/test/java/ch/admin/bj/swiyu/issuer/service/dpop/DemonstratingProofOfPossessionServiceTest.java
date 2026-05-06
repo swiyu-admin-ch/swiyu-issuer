@@ -224,17 +224,17 @@ class DemonstratingProofOfPossessionServiceTest {
         
 
   @Test
-    void requiresKeyAttestationIso18045High_nullSupportedId() {
+    void requiresKeyAttestation_nullSupportedId() {
         // CredentialOffer returns null for supported credential IDs
         var offer = Mockito.mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(null);
         // No interaction with metadataService should be needed
-        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestationIso18045High(offer));
+        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestation(offer));
         assertThat(result).isFalse();
     }
 
     @Test
-    void requiresKeyAttestationIso18045High_noKeyAttestationDefined() {
+    void requiresKeyAttestation_noKeyAttestationDefined() {
         // Create one mock where no requirement is defined (is null)
         var offer = Mockito.mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("cred1"));
@@ -248,12 +248,12 @@ class DemonstratingProofOfPossessionServiceTest {
         supportedProofType.setKeyAttestationRequirement(null);
         when(credConfig.getProofTypesSupported()).thenReturn(Map.of("jwt", supportedProofType));
 
-        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestationIso18045High(offer));
+        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestation(offer));
         assertThat(result).isFalse();
     }
 
     @Test
-    void requiresKeyAttestationIso18045High_keyAttestationWithoutHigh() {
+    void requiresKeyAttestation_keyAttestationWithoutHigh() {
         // Create one mock with low requirement
         var offer = Mockito.mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("cred1"));
@@ -268,12 +268,12 @@ class DemonstratingProofOfPossessionServiceTest {
         supportedProofType.setKeyAttestationRequirement(keyAttReq);
         when(credConfig.getProofTypesSupported()).thenReturn(Map.of("jwt", supportedProofType));
 
-        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestationIso18045High(offer));
-        assertThat(result).isFalse();
+        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestation(offer));
+        assertThat(result).isTrue();
     }
 
     @Test
-    void requiresKeyAttestationIso18045High_keyAttestationWithHigh() {
+    void requiresKeyAttestation_keyAttestationWithHigh() {
         // Create 1 Mock with high requirement
         var offer = Mockito.mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("cred1"));
@@ -288,12 +288,12 @@ class DemonstratingProofOfPossessionServiceTest {
         supportedProofType.setKeyAttestationRequirement(keyAttReq);
         when(credConfig.getProofTypesSupported()).thenReturn(Map.of("jwt", supportedProofType));
 
-        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestationIso18045High(offer));
+        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestation(offer));
         assertThat(result).isTrue();
     }
 
     @Test
-    void requiresKeyAttestationIso18045High_multipleCredentialsOneRequiresHigh() {
+    void requiresKeyAttestation_multipleCredentialsOneRequiresHigh() {
         // Create Mocks with 2 offered Credentials. one with high one with low attestation requirement
         var offer = Mockito.mock(CredentialOffer.class);
         when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("cred1", "cred2"));
@@ -314,7 +314,7 @@ class DemonstratingProofOfPossessionServiceTest {
         ).build()).build();
         when(credConfig2.getProofTypesSupported()).thenReturn(Map.of("jwt", highProofType));
         // Then
-        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestationIso18045High(offer));
+        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestation(offer));
         assertThat(result).isTrue();
     }
 
