@@ -8,22 +8,21 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryptio
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementInjectionService;
 import ch.admin.bj.swiyu.jweutil.JweUtil;
 import ch.admin.bj.swiyu.jweutil.JweUtilException;
-import com.nimbusds.jose.*;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.JWEObject;
 import com.nimbusds.jose.jwk.JWK;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
 import java.text.ParseException;
-import java.util.Optional;
+import java.util.Map;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 
@@ -40,11 +39,6 @@ public class JweService {
     private final IssuerMetadata issuerMetadata;
     private final EncryptionKeyService encryptionKeyService;
 
-    /**
-     * Optional service for injecting Trust Protocol 2.0 trust statements into issuer metadata.
-     * Present only when {@code swiyu.trust-registry.api-url} is configured.
-     */
-    private final Optional<TrustStatementInjectionService> trustStatementInjectionService;
 
     /**
      * Overriding bean issuer metadata encryption options with supported values.
@@ -61,8 +55,6 @@ public class JweService {
         issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder()
                 .encRequired(applicationProperties.isEncryptionEnforce())
                 .build());
-
-        trustStatementInjectionService.ifPresent(s -> s.injectTrustStatements(issuerMetadata, applicationProperties.getIssuerId()));
 
         return issuerMetadata;
     }

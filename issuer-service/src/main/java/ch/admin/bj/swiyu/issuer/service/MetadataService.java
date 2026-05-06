@@ -74,6 +74,24 @@ public class MetadataService {
     }
 
     /**
+     * Returns the unsigned issuer metadata for the default issuer, with Trust Protocol 2.0 trust statements injected.
+     * <p>
+     * This method creates a fresh, thread-local copy of the base issuer metadata and injects the current
+     * trust statements (idTS, piaTS) for the default issuer DID, if the TrustStatementInjectionService is present.
+     * <p>
+     *
+     * @return the unsigned {@link IssuerMetadata} for the default issuer, including injected trust statements if available
+     */
+    public IssuerMetadata getUnsignedIssuerMetadataWithTS() {
+        IssuerMetadata base = unwrapProxy(jweService.issuerMetadataWithEncryptionOptions());
+        IssuerMetadata result = base.toBuilder().build();
+        trustStatementInjectionService.ifPresent(s ->
+                s.injectTrustStatements(result, applicationProperties.getIssuerId())
+        );
+        return result;
+    }
+
+    /**
      * Returns an instance of the issuer metadata without signing where the credential_issuer path has been extended by the tenantId.
      * Note: The credential issuer identifier needs to match exactly the one provided in the credential offer. <br>
      * Append the tenant ID to the credential identifier; for example <br>
