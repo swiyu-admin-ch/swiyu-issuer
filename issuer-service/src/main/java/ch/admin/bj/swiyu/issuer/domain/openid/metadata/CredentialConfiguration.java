@@ -136,6 +136,15 @@ public class CredentialConfiguration {
     @JsonProperty("credential_metadata")
     private CredentialConfigurationMetadata credentialMetadata;
 
+    /**
+     * Protected Issuance Authorization Trust Statement (piaTS) JWT as defined by Trust Protocol 2.0.
+     * Injected at runtime for credential configurations that require key attestation (Protected VCs).
+     * {@code null} for non-protected configurations or when no trust registry is configured.
+     */
+    @Nullable
+    @JsonProperty("protected_issuance_authorization_trust_statement")
+    private String protectedIssuanceAuthorizationTrustStatement;
+
 
     @PostConstruct
     public void postConstruct() {

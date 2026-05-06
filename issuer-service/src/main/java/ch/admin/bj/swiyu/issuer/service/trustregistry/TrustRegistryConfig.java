@@ -3,6 +3,8 @@ package ch.admin.bj.swiyu.issuer.service.trustregistry;
 import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
 import ch.admin.bj.swiyu.core.trust.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+import ch.admin.bj.swiyu.jwtvalidator.UrlRestriction;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,6 +15,7 @@ import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Base64;
+import java.util.Set;
 
 /**
  * Spring configuration for the Trust Registry sidechannel API client.
@@ -63,5 +66,20 @@ public class TrustRegistryConfig {
     @Bean
     public TrustProtocol20Api trustProtocol20Api(ApiClient trustRegistryApiClient) {
         return new TrustProtocol20Api(trustRegistryApiClient);
+    }
+
+    /**
+     * Creates a {@link DidJwtValidator} restricted to the Trust Registry's host.
+     *
+     * <p>The allowlist is derived from the configured {@code swiyu.trust-registry.api-url} host,
+     * so that Trust Statement JWTs whose {@code kid} resolves to a different host are rejected.</p>
+     *
+     * @return a {@link DidJwtValidator} scoped to the Trust Registry's DID domain
+     */
+    @Bean
+    public DidJwtValidator trustStatementDidJwtValidator() {
+        String trustRegistryHost = swiyuProperties.trustRegistry().apiUrl().getHost();
+        log.info("Configuring trust statement JWT validator with allowed DID host: {}", trustRegistryHost);
+        return new DidJwtValidator(new UrlRestriction(Set.of(trustRegistryHost)));
     }
 }

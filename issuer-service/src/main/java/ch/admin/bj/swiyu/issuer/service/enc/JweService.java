@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryptio
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementInjectionService;
 import ch.admin.bj.swiyu.jweutil.JweUtil;
 import ch.admin.bj.swiyu.jweutil.JweUtilException;
 import com.nimbusds.jose.*;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.text.ParseException;
+import java.util.Optional;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 
@@ -39,6 +41,12 @@ public class JweService {
     private final EncryptionKeyService encryptionKeyService;
 
     /**
+     * Optional service for injecting Trust Protocol 2.0 trust statements into issuer metadata.
+     * Present only when {@code swiyu.trust-registry.api-url} is configured.
+     */
+    private final Optional<TrustStatementInjectionService> trustStatementInjectionService;
+
+    /**
      * Overriding bean issuer metadata encryption options with supported values.
      */
     @Transactional(readOnly = true)
@@ -53,6 +61,9 @@ public class JweService {
         issuerMetadata.setResponseEncryption(IssuerCredentialResponseEncryption.builder()
                 .encRequired(applicationProperties.isEncryptionEnforce())
                 .build());
+
+        trustStatementInjectionService.ifPresent(s -> s.injectTrustStatements(issuerMetadata, applicationProperties.getIssuerId()));
+
         return issuerMetadata;
     }
 

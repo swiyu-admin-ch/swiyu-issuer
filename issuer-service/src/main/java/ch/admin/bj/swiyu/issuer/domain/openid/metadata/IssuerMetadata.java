@@ -99,6 +99,16 @@ public class IssuerMetadata {
     @Nullable
     private String profileVersion;
 
+    /**
+     * Identity Trust Statement (idTS) JWT as defined by Trust Protocol 2.0.
+     * Included in the issuer metadata so that the wallet can verify the issuer's
+     * identity against the trust registry during the OpenID4VCI flow.
+     * {@code null} if no trust registry is configured or the statement is currently unavailable.
+     */
+    @Nullable
+    @JsonProperty("credential_issuer_identity_trust_statement")
+    private String credentialIssuerIdentityTrustStatement;
+
     public @NotNull CredentialConfiguration getCredentialConfigurationById(String credentialConfigurationSupportedId) {
         CredentialConfiguration credentialConfiguration = credentialConfigurationSupported.get(credentialConfigurationSupportedId);
 

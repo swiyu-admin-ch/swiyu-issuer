@@ -2,6 +2,8 @@ package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
 import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.service.enc.CacheMaintenanceService;
+import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -9,7 +11,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -35,12 +37,11 @@ import java.util.concurrent.TimeUnit;
  * for a short duration to prevent retry storms and cascading failures when the
  * Trust Registry is unavailable.</p>
  *
- * <p>Only active when a {@link TrustProtocol20Api} bean is present
- * (i.e. {@code swiyu.trust-registry.api-url} is configured).</p>
+ * <p>Only active when {@code swiyu.trust-registry.api-url} is configured.</p>
  */
 @Slf4j
 @Service
-@ConditionalOnBean(TrustProtocol20Api.class)
+@ConditionalOnProperty(prefix = "swiyu.trust-registry", name = "api-url")
 public class TrustStatementCacheService {
 
     /**
@@ -53,6 +54,7 @@ public class TrustStatementCacheService {
     private final ObjectMapper objectMapper;
     private final long maxCacheSize;
     private final long clockSkewBufferSeconds;
+    private final CacheMaintenanceService cacheMaintenanceService;
 
     /**
      * Optional hard upper bound for the cache TTL in seconds.
@@ -60,6 +62,14 @@ public class TrustStatementCacheService {
      * When null, TTL is derived exclusively from the JWT exp claim.
      */
     private final Long maxCacheTtlSeconds;
+
+    /**
+     * Optional validator for trust statement signatures.
+     * Present only when {@code swiyu.trust-registry.api-url} is configured AND
+     * {@code trustStatementDidJwtValidator} bean is available.
+     * When absent, trust statements are cached without signature verification.
+     */
+    private final Optional<TrustStatementValidator> trustStatementValidator;
 
     /**
      * Two separate caches keyed by issuer DID – one per statement type (idTS / piaTS).
@@ -82,9 +92,13 @@ public class TrustStatementCacheService {
      */
     public TrustStatementCacheService(TrustProtocol20Api trustProtocol20Api,
                                       ObjectMapper objectMapper,
-                                      SwiyuProperties swiyuProperties) {
+                                      SwiyuProperties swiyuProperties,
+                                      Optional<TrustStatementValidator> trustStatementValidator,
+                                      CacheMaintenanceService cacheMaintenanceService) {
         this.trustProtocol20Api = trustProtocol20Api;
         this.objectMapper = objectMapper;
+        this.trustStatementValidator = trustStatementValidator;
+        this.cacheMaintenanceService = cacheMaintenanceService;
         var trustRegistry = swiyuProperties.trustRegistry();
         this.maxCacheSize = trustRegistry.maxCacheSize();
         this.clockSkewBufferSeconds = trustRegistry.clockSkewBufferSeconds();
@@ -122,22 +136,55 @@ public class TrustStatementCacheService {
 
     private Optional<String> fetchIdentityTrustStatement(String issuerDid) {
         try {
-            var response = trustProtocol20Api.listIdTS(issuerDid, true, null, null, null).block();
-            return Optional.ofNullable(extractFirstJwt(response != null ? response.getContent() : null, "idTS", issuerDid));
+            String jwt = trustProtocol20Api.getIdTS(issuerDid).block();
+            if (jwt == null) {
+                log.warn("No idTS trust statement found for issuer {}", issuerDid);
+            } else {
+                validateTrustStatement(jwt, "idTS", issuerDid);
+            }
+            return Optional.ofNullable(jwt);
+        } catch (JwtValidatorException e) {
+            log.warn("idTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
+            return Optional.empty();
         } catch (Exception e) {
             log.warn("Failed to fetch idTS for issuer {}: {}", issuerDid, e.getMessage());
             return Optional.empty();
         }
     }
 
-    private Optional<String>  fetchProtectedIssuanceAuthorizationTrustStatement(String issuerDid) {
+    private Optional<String> fetchProtectedIssuanceAuthorizationTrustStatement(String issuerDid) {
         try {
             var response = trustProtocol20Api.listPiaTS(issuerDid, true, null, null, null).block();
-            return Optional.ofNullable(extractFirstJwt(response != null ? response.getContent() : null, "piaTS", issuerDid));
+            String jwt = extractFirstJwt(response != null ? response.getContent() : null, "piaTS", issuerDid);
+            if (jwt != null) {
+                validateTrustStatement(jwt, "piaTS", issuerDid);
+            }
+            return Optional.ofNullable(jwt);
+        } catch (JwtValidatorException e) {
+            log.warn("piaTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
+            return Optional.empty();
         } catch (Exception e) {
             log.warn("Failed to fetch protected issuance authorization trust statement (piaTS) for issuer {}: {}", issuerDid, e.getMessage());
             return Optional.empty();
         }
+    }
+
+    /**
+     * Runs the pre-cache allowlist check via {@link TrustStatementValidator} (no HTTP call).
+     * If no validator is configured, the check is skipped and a warning is logged.
+     *
+     * @param jwt       the trust statement JWT to check
+     * @param type      the statement type label for logging ("idTS" or "piaTS")
+     * @param issuerDid the issuer DID for logging context
+     * @throws JwtValidatorException if the DID URL resolved from the JWT is not on the allowlist
+     */
+    private void validateTrustStatement(String jwt, String type, String issuerDid) {
+        if (trustStatementValidator.isEmpty()) {
+            log.warn("No TrustStatementValidator configured – skipping allowlist check for {} of issuer {}", type, issuerDid);
+            return;
+        }
+        trustStatementValidator.get().validateAllowlist(jwt);
+        log.debug("{} allowlist check passed for issuer {}", type, issuerDid);
     }
 
     /**
@@ -173,12 +220,17 @@ public class TrustStatementCacheService {
      * <p>Convenience method combining both invalidations. Useful when a general
      * trust failure is detected and all statements for an issuer should be refreshed.</p>
      *
+     * <p>In addition, it triggers the clearing of the public key and encryption metadata
+     * caches to ensure that potentially rotated keys are reloaded.</p>
+     *
      * @param issuerDid the issuer DID whose cached trust statements should be invalidated
      */
     public void invalidateAllTrustStatements(String issuerDid) {
         log.info("Invalidating all cached trust statements for issuer {}", issuerDid);
         idTsCache.invalidate(issuerDid);
         piaTsCache.invalidate(issuerDid);
+        cacheMaintenanceService.evictEncryptionMetadataManually(issuerDid);
+        cacheMaintenanceService.evictPublicKeyManually(issuerDid);
     }
 
     @Nullable

@@ -92,10 +92,10 @@ public class WellKnownController {
             @RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {
 
         if (expectsSignedResponse(acceptHeader)) {
-            return metadataService.getSignedIssuerMetadata(tenantId);
+            return metadataService.getSignedIssuerMetadataWithTS(tenantId);
         }
 
-        return metadataService.getUnsignedIssuerMetadata(tenantId);
+        return metadataService.getUnsignedIssuerMetadataWithTS(tenantId);
     }
 
     /**

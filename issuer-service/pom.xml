@@ -190,6 +190,12 @@
             <artifactId>swiyu-dpop-util</artifactId>
             <version>${generic-java-lib.version}</version>
         </dependency>
+        <!-- JWT validation via DID-based Flow B for Trust Statement signature verification -->
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-jwt-validator</artifactId>
+            <version>${generic-java-lib.version}</version>
+        </dependency>
 
     </dependencies>
 
