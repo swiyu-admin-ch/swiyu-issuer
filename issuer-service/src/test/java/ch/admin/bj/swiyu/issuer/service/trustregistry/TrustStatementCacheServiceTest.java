@@ -36,7 +36,9 @@ import static org.mockito.Mockito.*;
  */
 class TrustStatementCacheServiceTest {
 
-    /** Shared EC key for the entire test class – generated once to avoid per-test crypto overhead. */
+    /**
+     * Shared EC key for the entire test class – generated once to avoid per-test crypto overhead.
+     */
     private static final ECKey TEST_KEY;
 
     static {
@@ -75,7 +77,7 @@ class TrustStatementCacheServiceTest {
         var props = mock(SwiyuProperties.class);
         when(props.trustRegistry()).thenReturn(trustRegistry);
         // No TrustStatementValidator – signature validation is skipped in unit tests
-        return new TrustStatementCacheService(trustProtocol20Api, new ObjectMapper(), props, Optional.empty(), cacheMaintenanceService);
+        return new TrustStatementCacheService(trustProtocol20Api, props, Optional.empty(), cacheMaintenanceService);
     }
 
     /**

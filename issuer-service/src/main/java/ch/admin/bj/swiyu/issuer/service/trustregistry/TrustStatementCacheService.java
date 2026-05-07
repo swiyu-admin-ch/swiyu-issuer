@@ -50,10 +50,7 @@ public class TrustStatementCacheService {
      */
     private static final long FALLBACK_TTL_SECONDS = 60;
 
-    private static final int MIN_JWT_PARTS = 2;
-
     private final TrustProtocol20Api trustProtocol20Api;
-    private final ObjectMapper objectMapper;
     private final long maxCacheSize;
     private final long clockSkewBufferSeconds;
     private final CacheMaintenanceService cacheMaintenanceService;
@@ -89,16 +86,13 @@ public class TrustStatementCacheService {
      * Creates a new {@code TrustStatementCacheService}.
      *
      * @param trustProtocol20Api generated API client for the trust sidechannel
-     * @param objectMapper       Jackson mapper for JWT payload parsing
      * @param swiyuProperties    application properties for cache tuning
      */
     public TrustStatementCacheService(TrustProtocol20Api trustProtocol20Api,
-                                      ObjectMapper objectMapper,
                                       SwiyuProperties swiyuProperties,
                                       Optional<TrustStatementValidator> trustStatementValidator,
                                       CacheMaintenanceService cacheMaintenanceService) {
         this.trustProtocol20Api = trustProtocol20Api;
-        this.objectMapper = objectMapper;
         this.trustStatementValidator = trustStatementValidator;
         this.cacheMaintenanceService = cacheMaintenanceService;
         var trustRegistry = swiyuProperties.trustRegistry();
