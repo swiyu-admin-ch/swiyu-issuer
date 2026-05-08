@@ -9,7 +9,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Service responsible for injecting Trust Protocol 2.0 trust statements into
@@ -36,13 +35,13 @@ public class TrustStatementInjectionService {
     private final TrustStatementCacheService trustStatementCacheService;
 
     /**
-     * Optional validator for signature verification at inject time.
+     * Validator for signature verification at inject time.
      * When present, each cached trust statement JWT is verified against the
      * Trust Registry's current DID Document before injection. This ensures
      * key rotations are detected immediately, without waiting for cache expiry.
      * On failure the cache entry is invalidated so a fresh statement is fetched next time.
      */
-    private final Optional<TrustStatementValidator> trustStatementValidator;
+    private final TrustStatementValidator trustStatementValidator;
 
     /**
      * Injects the idTS and piaTS trust statement JWTs into the given issuer metadata.
@@ -124,11 +123,8 @@ public class TrustStatementInjectionService {
      *         {@code false} if verification failed (cache is invalidated)
      */
     private boolean verifySignatureOrInvalidate(String jwt, String type, String issuerDid) {
-        if (trustStatementValidator.isEmpty()) {
-            return true;
-        }
         try {
-            trustStatementValidator.get().validateSignature(jwt);
+            trustStatementValidator.validateSignature(jwt);
             return true;
         } catch (JwtValidatorException e) {
             log.warn("{} signature verification failed for issuer {} – invalidating cache: {}", type, issuerDid, e.getMessage());

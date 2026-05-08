@@ -50,6 +50,12 @@ public class TrustStatementCacheService {
      */
     private static final long FALLBACK_TTL_SECONDS = 60;
 
+    /**
+     * Negative cache TTL in seconds applied when the TMS API returns empty or fails.
+     * Prevents retry storms within this window.
+     */
+    private static final long NEGATIVE_CACHE_TTL_SECONDS = 30;
+
     private final TrustProtocol20Api trustProtocol20Api;
     private final long maxCacheSize;
     private final long clockSkewBufferSeconds;
@@ -261,13 +267,13 @@ public class TrustStatementCacheService {
             public long expireAfterCreate(String key, Optional<String> jwtOpt, long currentTime) {
                 return jwtOpt.map(TrustStatementCacheService.this::computeNanosUntilExpiry)
                         // Negative Caching: Bei API-Fehler für 30 Sekunden nicht mehr probieren!
-                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(30));
+                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS));
             }
 
             @Override
             public long expireAfterUpdate(String key, Optional<String> jwtOpt, long currentTime, long currentDuration) {
                 return jwtOpt.map(TrustStatementCacheService.this::computeNanosUntilExpiry)
-                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(30));
+                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS));
             }
 
             @Override

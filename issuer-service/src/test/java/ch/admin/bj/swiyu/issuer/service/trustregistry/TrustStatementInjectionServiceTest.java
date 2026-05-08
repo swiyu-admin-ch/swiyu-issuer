@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -21,8 +20,7 @@ class TrustStatementInjectionServiceTest {
 
     private TrustStatementCacheService cacheService;
     private TrustStatementValidator validator;
-    private TrustStatementInjectionService serviceWithValidator;
-    private TrustStatementInjectionService serviceWithoutValidator;
+    private TrustStatementInjectionService trustStatementInjectionService;
 
     private static final String ISSUER_DID = "did:tdw:test:issuer";
     private static final String ID_TS = "id.ts.jwt";
@@ -32,8 +30,7 @@ class TrustStatementInjectionServiceTest {
     void setUp() {
         cacheService = mock(TrustStatementCacheService.class);
         validator = mock(TrustStatementValidator.class);
-        serviceWithValidator = new TrustStatementInjectionService(cacheService, Optional.of(validator));
-        serviceWithoutValidator = new TrustStatementInjectionService(cacheService, Optional.empty());
+        trustStatementInjectionService = new TrustStatementInjectionService(cacheService, validator);
     }
 
     private IssuerMetadata createMetadata(boolean withProtectedVc) {
@@ -64,7 +61,7 @@ class TrustStatementInjectionServiceTest {
         when(cacheService.getIdentityTrustStatement(ISSUER_DID)).thenReturn(ID_TS);
 
         IssuerMetadata metadata = createMetadata(false);
-        serviceWithoutValidator.injectTrustStatements(metadata, ISSUER_DID);
+        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
 
         assertThat(metadata.getCredentialIssuerIdentityTrustStatement()).isEqualTo(ID_TS);
     }
@@ -74,7 +71,7 @@ class TrustStatementInjectionServiceTest {
         when(cacheService.getIdentityTrustStatement(ISSUER_DID)).thenReturn(null);
 
         IssuerMetadata metadata = createMetadata(false);
-        serviceWithoutValidator.injectTrustStatements(metadata, ISSUER_DID);
+        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
 
         assertThat(metadata.getCredentialIssuerIdentityTrustStatement()).isNull();
     }
@@ -84,7 +81,7 @@ class TrustStatementInjectionServiceTest {
         when(cacheService.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID)).thenReturn(PIA_TS);
 
         IssuerMetadata metadata = createMetadata(true);
-        serviceWithoutValidator.injectTrustStatements(metadata, ISSUER_DID);
+        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
 
         CredentialConfiguration config = metadata.getCredentialConfigurationSupported().get("TestFormat");
         assertThat(config.getProtectedIssuanceAuthorizationTrustStatement()).isEqualTo(PIA_TS);
@@ -95,7 +92,7 @@ class TrustStatementInjectionServiceTest {
         when(cacheService.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID)).thenReturn(PIA_TS);
 
         IssuerMetadata metadata = createMetadata(false);
-        serviceWithoutValidator.injectTrustStatements(metadata, ISSUER_DID);
+        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
 
         CredentialConfiguration config = metadata.getCredentialConfigurationSupported().get("TestFormat");
         assertThat(config.getProtectedIssuanceAuthorizationTrustStatement()).isNull();
@@ -107,7 +104,7 @@ class TrustStatementInjectionServiceTest {
         when(cacheService.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID)).thenReturn(PIA_TS);
 
         IssuerMetadata metadata = createMetadata(true);
-        serviceWithValidator.injectTrustStatements(metadata, ISSUER_DID);
+        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
 
         verify(validator).validateSignature(ID_TS);
         verify(validator).validateSignature(PIA_TS);
@@ -125,7 +122,7 @@ class TrustStatementInjectionServiceTest {
         doThrow(new JwtValidatorException("Invalid PIA TS Signature")).when(validator).validateSignature(PIA_TS);
 
         IssuerMetadata metadata = createMetadata(true);
-        serviceWithValidator.injectTrustStatements(metadata, ISSUER_DID);
+        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
 
         verify(cacheService, times(2)).invalidateAllTrustStatements(ISSUER_DID); // once for ID TS, once for PIA TS
 
