@@ -17,6 +17,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -62,9 +63,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @AutoConfigureMockMvc
 @Testcontainers
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "signed-metadata"})
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
+@Slf4j
 class WellKnownTrustStatementIT {
 
     /**
@@ -111,6 +113,18 @@ class WellKnownTrustStatementIT {
     private StatusListRepository statusListRepository;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
+
+    /**
+     * Creates a credential offer and returns the {@code metadataTenantId} UUID that is embedded
+     * in the {@code credential_issuer} path and used as the {@code {tenantId}} path variable by
+     * {@link ch.admin.bj.swiyu.issuer.infrastructure.web.signer.WellKnownController#getIssuerMetadataByTenantId}.
+     */
+    private UUID createOfferAndGetMetadataTenantId() throws Exception {
+        UUID managementId = testHelper.createBasicOfferJsonAndGetUUID();
+        return credentialManagementRepository.findById(managementId)
+                .orElseThrow(() -> new IllegalStateException("CredentialManagement not found for id " + managementId))
+                .getMetadataTenantId();
+    }
 
     private CredentialOfferTestHelper testHelper;
 
@@ -189,28 +203,6 @@ class WellKnownTrustStatementIT {
     }
 
 /**
-     * Verifies the happy path for the global (non-tenant) issuer metadata endpoint:
-     * both idTS and piaTS are injected into {@code GET /.well-known/openid-credential-issuer}.
-     *
-     * @throws Exception if MockMvc or JWT operations fail
-     */
-    @Test
-    void testGlobalEndpoint_TrustStatementsAreInjected() throws Exception {
-        stubTrustStatements();
-
-        mockMvc.perform(get("/.well-known/openid-credential-issuer"))
-                .andExpect(status().isOk())
-                // EIDOMNI-881: idTS field is present and populated at root level
-                .andExpect(jsonPath("$.credential_issuer_identity_trust_statement").value(not(emptyOrNullString())))
-                // EIDOMNI-882: piaTS field is present and populated in Protected VC configuration
-                .andExpect(jsonPath(
-                        "$.credential_configurations_supported."
-                                + PROTECTED_CREDENTIAL_KEY
-                                + ".protected_issuance_authorization_trust_statement")
-                        .value(not(emptyOrNullString())));
-    }
-
-    /**
      * Verifies the happy path for the tenant-scoped issuer metadata endpoint:
      * both idTS and piaTS are injected into
      * {@code GET /{tenantId}/.well-known/openid-credential-issuer}.
@@ -223,10 +215,10 @@ class WellKnownTrustStatementIT {
      */
     @Test
     void testTenantEndpoint_TrustStatementsAreInjected() throws Exception {
-        String tenantPath = testHelper.createBasicOfferJsonAndGetTenantID();
+        UUID tenantId = createOfferAndGetMetadataTenantId();
         stubTrustStatements();
 
-        mockMvc.perform(get(tenantPath + "/.well-known/openid-credential-issuer")
+        var result = mockMvc.perform(get("/" + tenantId + "/.well-known/openid-credential-issuer")
                         .accept("application/json"))
                 .andExpect(status().isOk())
                 // EIDOMNI-881: idTS field is present and populated at root level
@@ -236,6 +228,16 @@ class WellKnownTrustStatementIT {
                         "$.credential_configurations_supported."
                                 + PROTECTED_CREDENTIAL_KEY
                                 + ".protected_issuance_authorization_trust_statement")
-                        .value(not(emptyOrNullString())));
+                        .value(not(emptyOrNullString())))
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        String idTs = com.jayway.jsonpath.JsonPath.read(responseBody, "$.credential_issuer_identity_trust_statement");
+        String piaTs = com.jayway.jsonpath.JsonPath.read(responseBody,
+                "$.credential_configurations_supported." + PROTECTED_CREDENTIAL_KEY + ".protected_issuance_authorization_trust_statement");
+
+        log.info("[DEMO] Full response body:\n{}", responseBody);
+        log.info("[DEMO] credential_issuer_identity_trust_statement (idTS):\n{}", idTs);
+        log.info("[DEMO] protected_issuance_authorization_trust_statement (piaTS) for '{}':\n{}", PROTECTED_CREDENTIAL_KEY, piaTs);
     }
 }
