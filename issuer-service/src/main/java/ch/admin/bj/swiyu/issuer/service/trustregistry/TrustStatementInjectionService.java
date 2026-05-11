@@ -113,8 +113,7 @@ public class TrustStatementInjectionService {
             return;
         }
 
-        configs.values().stream()
-                .filter(this::isProtectedVcConfiguration)
+        configs.values()
                 .forEach(config -> injectPiaTsIntoConfig(config, allPiaTs, issuerDid));
     }
 
@@ -191,7 +190,7 @@ public class TrustStatementInjectionService {
             return null;
         }
         return allPiaTs.stream()
-                .filter(jwt -> vct.equals(extractVctFromJwt(jwt)))
+                .filter(jwt -> vct.equals(extractCanIssueVctFromPiaTsJwt(jwt)))
                 .findFirst()
                 .orElse(null);
     }
@@ -215,7 +214,7 @@ public class TrustStatementInjectionService {
      * @param jwt the compact serialized JWT string
      * @return the {@code can_issue.vct} value, or {@code null} if absent or if parsing fails
      */
-    private String extractVctFromJwt(String jwt) {
+    private String extractCanIssueVctFromPiaTsJwt(String jwt) {
         try {
             Object canIssue = JWTParser.parse(jwt).getJWTClaimsSet().getClaim("can_issue");
             if (canIssue instanceof Map<?, ?> map) {
