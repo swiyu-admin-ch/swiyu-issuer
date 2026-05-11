@@ -60,4 +60,13 @@ swiyu:
     # bootstrap-refresh-token: is not needed for BV internal deployments, if you need this you also need a different token-url
     customer-key: "customer-key"
     customer-secret: "customer-secret"
+  trust-registry:
+    api-url: "https://trust-registry.example.ch"
+    # customer-key / customer-secret are dummy local values; use real creds where applicable
+    customer-key: "customer-key"
+    customer-secret: "customer-secret"
+    # Cache tuning for local development
+    max-cache-size: 1000
+    clock-skew-buffer-seconds: 60
+    max-cache-ttl-seconds: 3600
   business-partner-id: "0212063f-7bf6-4639-b4f2-4c482ee453cf"

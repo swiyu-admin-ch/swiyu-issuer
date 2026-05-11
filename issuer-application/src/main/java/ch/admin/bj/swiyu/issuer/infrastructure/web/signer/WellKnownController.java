@@ -78,7 +78,7 @@ public class WellKnownController {
     @Operation(summary = "Information about credentials which can be issued.")
     public IssuerMetadata getIssuerMetadata() {
         // Unwrap the object from the spring cache object.
-        return (IssuerMetadata) AopProxyUtils.getSingletonTarget(jweService.issuerMetadataWithEncryptionOptions());
+        return metadataService.getUnsignedIssuerMetadata();
     }
 
     @GetMapping(value = {
@@ -92,10 +92,10 @@ public class WellKnownController {
             @RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {
 
         if (expectsSignedResponse(acceptHeader)) {
-            return metadataService.getSignedIssuerMetadata(tenantId);
+            return metadataService.getSignedIssuerMetadataWithTS(tenantId);
         }
 
-        return metadataService.getUnsignedIssuerMetadata(tenantId);
+        return metadataService.getUnsignedIssuerMetadataWithTS(tenantId);
     }
 
     /**

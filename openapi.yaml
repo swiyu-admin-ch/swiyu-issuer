@@ -13,6 +13,11 @@ tags:
   description: "Public OpenID for Verifiable Credential Issuance (OID4VCI) API endpoints,\
     \ including issuing OAuth tokens for credential requests, issuing verifiable credentials,\
     \ and supporting deferred credential issuance (IF-111)"
+- name: Actuator
+  description: Monitor and interact
+  externalDocs:
+    description: Spring Boot Actuator Web API Documentation
+    url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
 - name: Credential API
   description: "Exposes API endpoints for managing credential offers and their statuses.\
     \ Supports creating new credential offers, retrieving offer data and deeplinks,\
@@ -29,11 +34,6 @@ tags:
     \ credential metadata as required by the OID4VCI specification. Provides endpoints\
     \ for OpenID Connect issuer configuration, OAuth authorization server information,\
     \ and issuer metadata describing supported verifiable credentials (IF-112)"
-- name: Actuator
-  description: Monitor and interact
-  externalDocs:
-    description: Spring Boot Actuator Web API Documentation
-    url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
 paths:
   /oid4vci/api/token:
     post:
@@ -415,192 +415,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UpdateStatusResponse"
-  /{tenantId}/.well-known/openid-credential-issuer:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Information about credentials which can be issued.
-      operationId: getIssuerMetadataByTenantId
-      parameters:
-      - name: tenantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: Accept
-        in: header
-        required: true
-        schema:
-          type: string
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-  /oid4vci/{tenantId}/.well-known/openid-credential-issuer:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Information about credentials which can be issued.
-      operationId: getIssuerMetadataByTenantId_1
-      parameters:
-      - name: tenantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: Accept
-        in: header
-        required: true
-        schema:
-          type: string
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-  /oid4vci/{tenantId}/.well-known/oauth-authorization-server:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
-      description: "Returns the Authorization Server configuration metadata for the\
-        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
-        \ the response is provided either as an unsigned JSON document or as a signed\
-        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
-        \ endpoint), supported grant types and extensions required for OpenID for\
-        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
-      operationId: getAuthorizationServerMetadataByTenantId
-      parameters:
-      - name: tenantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: Accept
-        in: header
-        required: true
-        schema:
-          type: string
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-  /oid4vci/{tenantId}/.well-known/openid-configuration:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
-      description: "Returns the Authorization Server configuration metadata for the\
-        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
-        \ the response is provided either as an unsigned JSON document or as a signed\
-        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
-        \ endpoint), supported grant types and extensions required for OpenID for\
-        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
-      operationId: getAuthorizationServerMetadataByTenantId_1
-      parameters:
-      - name: tenantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: Accept
-        in: header
-        required: true
-        schema:
-          type: string
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-  /{tenantId}/.well-known/oauth-authorization-server:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
-      description: "Returns the Authorization Server configuration metadata for the\
-        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
-        \ the response is provided either as an unsigned JSON document or as a signed\
-        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
-        \ endpoint), supported grant types and extensions required for OpenID for\
-        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
-      operationId: getAuthorizationServerMetadataByTenantId_2
-      parameters:
-      - name: tenantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: Accept
-        in: header
-        required: true
-        schema:
-          type: string
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-  /{tenantId}/.well-known/openid-configuration:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
-      description: "Returns the Authorization Server configuration metadata for the\
-        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
-        \ the response is provided either as an unsigned JSON document or as a signed\
-        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
-        \ endpoint), supported grant types and extensions required for OpenID for\
-        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
-      operationId: getAuthorizationServerMetadataByTenantId_3
-      parameters:
-      - name: tenantId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: Accept
-        in: header
-        required: true
-        schema:
-          type: string
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
   /oid4vci/vct/{metadataKey}:
     get:
       tags:
@@ -661,112 +475,6 @@ paths:
             application/schema+json:
               schema:
                 type: string
-  /oid4vci/.well-known/openid-credential-issuer:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Information about credentials which can be issued.
-      operationId: getIssuerMetadata
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/IssuerMetadata"
-  /.well-known/openid-credential-issuer:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Information about credentials which can be issued.
-      operationId: getIssuerMetadata_1
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/IssuerMetadata"
-  /.well-known/openid-configuration:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Retrieve OAuth 2.0 Authorization Server Metadata
-      description: "Returns the configuration metadata of the Authorization Server\
-        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
-        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
-        \ Credential Issuance (OID4VCI) and DPoP."
-      operationId: getAuthorizationServerMetadata
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
-  /.well-known/oauth-authorization-server:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Retrieve OAuth 2.0 Authorization Server Metadata
-      description: "Returns the configuration metadata of the Authorization Server\
-        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
-        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
-        \ Credential Issuance (OID4VCI) and DPoP."
-      operationId: getAuthorizationServerMetadata_1
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
-  /oid4vci/.well-known/oauth-authorization-server:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Retrieve OAuth 2.0 Authorization Server Metadata
-      description: "Returns the configuration metadata of the Authorization Server\
-        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
-        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
-        \ Credential Issuance (OID4VCI) and DPoP."
-      operationId: getAuthorizationServerMetadata_2
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
-  /oid4vci/.well-known/openid-configuration:
-    get:
-      tags:
-      - Well-known endpoints API
-      summary: Retrieve OAuth 2.0 Authorization Server Metadata
-      description: "Returns the configuration metadata of the Authorization Server\
-        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
-        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
-        \ Credential Issuance (OID4VCI) and DPoP."
-      operationId: getAuthorizationServerMetadata_3
-      responses:
-        "404":
-          description: Not Found
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
   /management/api/credentials/{credentialManagementId}/offers/{offerId}:
     get:
       tags:
@@ -985,6 +693,485 @@ paths:
             application/json:
               schema:
                 type: object
+  /.well-known/openid-credential-issuer/{tenantId}:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Information about credentials which can be issued.
+      operationId: getIssuerMetadataByTenantId
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /.well-known/openid-credential-issuer/oid4vci/{tenantId}:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Information about credentials which can be issued.
+      operationId: getIssuerMetadataByTenantId_1
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /{tenantId}/.well-known/openid-credential-issuer:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Information about credentials which can be issued.
+      operationId: getIssuerMetadataByTenantId_2
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /oid4vci/{tenantId}/.well-known/openid-credential-issuer:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Information about credentials which can be issued.
+      operationId: getIssuerMetadataByTenantId_3
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /.well-known/openid-credential-issuer/oid4vci:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Information about credentials which can be issued.
+      operationId: getIssuerMetadata
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/IssuerMetadata"
+  /oid4vci/.well-known/openid-credential-issuer:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Information about credentials which can be issued.
+      operationId: getIssuerMetadata_1
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/IssuerMetadata"
+  /.well-known/openid-credential-issuer:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Information about credentials which can be issued.
+      operationId: getIssuerMetadata_2
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/IssuerMetadata"
+  /oid4vci/{tenantId}/.well-known/oauth-authorization-server:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /{tenantId}/.well-known/oauth-authorization-server/oid4vci:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId_1
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /oid4vci/{tenantId}/.well-known/openid-configuration:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId_2
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /{tenantId}/.well-known/oauth-authorization-server:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId_3
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /.well-known/oauth-authorization-server/{tenantId}:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId_4
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /{tenantId}/.well-known/openid-configuration:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId_5
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /.well-known/oauth-authorization-server/{tenantId}/oid4vci:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata
+      description: "Returns the Authorization Server configuration metadata for the\
+        \ given tenant in accordance with RFC 8414. Depending on the 'Accept' header,\
+        \ the response is provided either as an unsigned JSON document or as a signed\
+        \ JWT. The metadata includes issuer information, endpoint URLs (e.g., token\
+        \ endpoint), supported grant types and extensions required for OpenID for\
+        \ Verifiable Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadataByTenantId_6
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /.well-known/openid-configuration:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve OAuth 2.0 Authorization Server Metadata
+      description: "Returns the configuration metadata of the Authorization Server\
+        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
+        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
+        \ Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadata
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
+  /.well-known/oauth-authorization-server/oid4vci:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve OAuth 2.0 Authorization Server Metadata
+      description: "Returns the configuration metadata of the Authorization Server\
+        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
+        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
+        \ Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadata_1
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
+  /.well-known/oauth-authorization-server:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve OAuth 2.0 Authorization Server Metadata
+      description: "Returns the configuration metadata of the Authorization Server\
+        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
+        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
+        \ Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadata_2
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
+  /oid4vci/.well-known/oauth-authorization-server:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve OAuth 2.0 Authorization Server Metadata
+      description: "Returns the configuration metadata of the Authorization Server\
+        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
+        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
+        \ Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadata_3
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
+  /oid4vci/.well-known/openid-configuration:
+    get:
+      tags:
+      - Well-known endpoints API
+      summary: Retrieve OAuth 2.0 Authorization Server Metadata
+      description: "Returns the configuration metadata of the Authorization Server\
+        \ in accordance with RFC 8414. This includes URLs to endpoints (e.g., token\
+        \ endpoint), supported grant types, as well as extensions for OpenID for Verifiable\
+        \ Credential Issuance (OID4VCI) and DPoP."
+      operationId: getAuthorizationServerMetadata_4
+      responses:
+        "404":
+          description: Not Found
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
 components:
   schemas:
     OauthAccessTokenRequest:
@@ -1005,13 +1192,13 @@ components:
     OAuthToken:
       type: object
       properties:
-        token_type:
-          type: string
         scope:
           type: string
         access_token:
           type: string
         refresh_token:
+          type: string
+        token_type:
           type: string
         expires_in:
           type: integer
@@ -1033,12 +1220,9 @@ components:
         jwk:
           type: object
           additionalProperties: {}
-        alg:
-          type: string
         enc:
           type: string
       required:
-      - alg
       - enc
       - jwk
     DeferredCredentialEndpointRequest:
@@ -1104,9 +1288,8 @@ components:
             Optional object providing information how to encrypt the Credential Response, if present.
           example: |
             {
-               "alg": "ECDH-ES",
                "enc": "A128GCM",
-               "jwk": {"kty":"EC","crv":"P-256","kid":"transportEncKeyEC","x":"DTaouFJpyVkLvfhoOvuTDR6_nmTt7YTvEHsHzK0Ingk","y":"vOipfo61Sy64XpneRyR5g6NCGXLv_Q7f3-kEDMT-G9U"
+               "jwk": {"kty":"EC", "alg": "ECDH-ES","crv":"P-256","kid":"transportEncKeyEC","x":"DTaouFJpyVkLvfhoOvuTDR6_nmTt7YTvEHsHzK0Ingk","y":"vOipfo61Sy64XpneRyR5g6NCGXLv_Q7f3-kEDMT-G9U"
             }
       required:
       - credential_configuration_id
@@ -1387,6 +1570,88 @@ components:
       - SUSPENDED
       - REVOKED
       example: SUSPENDED
+    ClientAgentInfoDto:
+      type: object
+      properties:
+        remoteAddr:
+          type: string
+        user-agent:
+          type: string
+        accept-language:
+          type: string
+        accept-encoding:
+          type: string
+    CredentialInfoResponse:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+        metadata_credential_supported_id:
+          type: array
+          items:
+            type: string
+        credential_metadata:
+          $ref: "#/components/schemas/CredentialOfferMetadataDto"
+        holder_jwks:
+          type: array
+          items:
+            type: string
+        key_attestations:
+          type: array
+          items:
+            type: string
+        client_agent_info:
+          $ref: "#/components/schemas/ClientAgentInfoDto"
+        offer_expiration_timestamp:
+          type: integer
+          format: int64
+        deferred_offer_expiration_seconds:
+          type: integer
+          format: int32
+        credential_valid_from:
+          type: string
+          format: date-time
+        credential_valid_until:
+          type: string
+          format: date-time
+        offer_deeplink:
+          type: string
+        vc_hash:
+          type: array
+          items:
+            type: string
+    CredentialManagementDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+        renewal_request_count:
+          type: integer
+          format: int32
+        renewal_response_count:
+          type: integer
+          format: int32
+        credential_offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialInfoResponse"
+        dpop_key:
+          type: string
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+        templated:
+          type: boolean
     BatchCredentialIssuance:
       type: object
       properties:
@@ -1452,7 +1717,7 @@ components:
                  If missing, credential will be issued as unbound VC.
           items:
             type: string
-            pattern: ^(did:)?jwk$
+            pattern: ^jwk$
         credential_signing_alg_values_supported:
           type: array
           items:
@@ -1469,6 +1734,8 @@ components:
             $ref: "#/components/schemas/MetadataCredentialDisplayInfo"
         credential_metadata:
           $ref: "#/components/schemas/CredentialConfigurationMetadata"
+        protected_issuance_authorization_trust_statement:
+          type: string
       required:
       - format
       - vct
@@ -1620,6 +1887,8 @@ components:
             $ref: "#/components/schemas/MetadataIssuerDisplayInfo"
         profile_version:
           type: string
+        credential_issuer_identity_trust_statement:
+          type: string
       required:
       - credential_configurations_supported
       - credential_endpoint
@@ -1643,7 +1912,9 @@ components:
         how a certain claim in the Credential is displayed to the End-User.
       properties:
         path:
-          type: string
+          type: array
+          items: {}
+          minItems: 1
         mandatory:
           type: boolean
         display:
@@ -1696,8 +1967,9 @@ components:
         uri:
           type: string
           description: |-
-            tring value that contains a URI where the Wallet can obtain the logo of the Credential Issuer.
+            String value that contains a data URL containing the logo of the Credential Issuer.
             The Wallet needs to determine the scheme, since the URI value could use the https: scheme, the data: scheme, etc.
+          pattern: "^data:image/(png|jpeg);base64,.*$"
       required:
       - uri
     MetadataIssuerDisplayInfo:
@@ -1720,8 +1992,9 @@ components:
         uri:
           type: string
           description: |-
-            tring value that contains a URI where the Wallet can obtain the logo of the Credential Issuer.
+            String value that contains a data URL containing the logo of the Credential Issuer.
             The Wallet needs to determine the scheme, since the URI value could use the https: scheme, the data: scheme, etc.
+          pattern: "^data:image/(png|jpeg);base64,.*$"
         alt_text:
           type: string
           description: String value of the alternative text for the logo image
@@ -1752,88 +2025,17 @@ components:
           type: string
         pre-authorized_grant_anonymous_access_supported:
           type: boolean
-    ClientAgentInfoDto:
-      type: object
+    ApiError:
+      description: Error response object
       properties:
-        remoteAddr:
+        error:
           type: string
-        user-agent:
+        error_description:
           type: string
-        accept-language:
+        detail:
           type: string
-        accept-encoding:
+        trace_id:
           type: string
-    CredentialInfoResponse:
-      type: object
-      properties:
-        status:
-          $ref: "#/components/schemas/CredentialStatusType"
-        metadata_credential_supported_id:
-          type: array
-          items:
-            type: string
-        credential_metadata:
-          $ref: "#/components/schemas/CredentialOfferMetadataDto"
-        holder_jwks:
-          type: array
-          items:
-            type: string
-        key_attestations:
-          type: array
-          items:
-            type: string
-        client_agent_info:
-          $ref: "#/components/schemas/ClientAgentInfoDto"
-        offer_expiration_timestamp:
-          type: integer
-          format: int64
-        deferred_offer_expiration_seconds:
-          type: integer
-          format: int32
-        credential_valid_from:
-          type: string
-          format: date-time
-        credential_valid_until:
-          type: string
-          format: date-time
-        offer_deeplink:
-          type: string
-        vc_hash:
-          type: array
-          items:
-            type: string
-    CredentialManagementDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        status:
-          $ref: "#/components/schemas/CredentialStatusType"
-        renewal_request_count:
-          type: integer
-          format: int32
-        renewal_response_count:
-          type: integer
-          format: int32
-        credential_offers:
-          type: array
-          items:
-            $ref: "#/components/schemas/CredentialInfoResponse"
-        dpop_key:
-          type: string
-    StatusResponse:
-      type: object
-      properties:
-        status:
-          $ref: "#/components/schemas/CredentialStatusType"
-    Link:
-      type: object
-      properties:
-        href:
-          type: string
-        templated:
-          type: boolean
     WebhookCallback:
       description: Callback transmitting information about an event which occurred.
       properties:
@@ -1858,17 +2060,6 @@ components:
         timestamp:
           type: string
           format: date-time
-    ApiError:
-      description: Error response object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-        detail:
-          type: string
-        trace_id:
-          type: string
   securitySchemes:
     bearer-jwt:
       type: http

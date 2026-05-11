@@ -9,7 +9,6 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.credential.OpenIdIssuerConfiguration;
-import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
@@ -23,8 +22,8 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -62,7 +61,7 @@ class MetadataServiceTest {
         when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(defaultTestIssuerMetadata);
 
         // ObjectMapper not needed for tested methods here
-        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, jwsSignatureFacade, jweService, sdjwtProperties, applicationProperties, new ObjectMapper());
+        metadataService = new MetadataService(openIdIssuerConfiguration, credentialManagementService, jwsSignatureFacade, jweService, sdjwtProperties, applicationProperties, new ObjectMapper(), Optional.empty());
 
         override = new ConfigurationOverride(null, null, null, null);
         when(applicationProperties.getIssuerId()).thenReturn(issuerId);
@@ -123,7 +122,7 @@ class MetadataServiceTest {
         when(openIdIssuerConfiguration.getOpenIdConfiguration()).thenReturn(oidConfig);
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
-        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, jwsSignatureFacade, jweService, sdjwtProperties, applicationProperties, new ObjectMapper());
+        MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, jwsSignatureFacade, jweService, sdjwtProperties, applicationProperties, new ObjectMapper(), Optional.empty());
 
         JWSSigner signer = createDummySigner();
         when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
@@ -155,7 +154,8 @@ class MetadataServiceTest {
                 jweService,
                 sdjwtProperties,
                 applicationProperties,
-                new ObjectMapper()
+                new ObjectMapper(),
+                Optional.empty()
         );
 
         var result = svc.getUnsignedOAuthAuthorizationServerMetadata();

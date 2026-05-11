@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.service;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.commons.lang3.time.DateUtils;
@@ -32,6 +33,7 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.credential.OpenIdIssuerConfiguration;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
+import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementInjectionService;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,12 @@ public class MetadataService {
     private final ObjectMapper objectMapper;
 
     /**
+     * Optional service for injecting Trust Protocol 2.0 trust statements into issuer metadata.
+     * Present only when {@code swiyu.trust-registry.api-url} is configured.
+     */
+    private final Optional<TrustStatementInjectionService> trustStatementInjectionService;
+
+    /**
      * Returns the issuer metadata without signing.
      *
      * <p>Retrieves the current {@link IssuerMetadata} from the configured
@@ -62,7 +70,7 @@ public class MetadataService {
         IssuerMetadata issuerMetadata = jweService.issuerMetadataWithEncryptionOptions();
 
         // If we have a Spring Cache managed singleton, it would get serialized with the AOP wrapper when used directly
-        return issuerMetadata instanceof Advised ? (IssuerMetadata) AopProxyUtils.getSingletonTarget(issuerMetadata) : issuerMetadata;
+        return unwrapProxy(issuerMetadata);
     }
 
     /**
@@ -77,15 +85,30 @@ public class MetadataService {
      */
     public IssuerMetadata getUnsignedIssuerMetadata(UUID tenantId) {
         var baseUnsignedMetadata = getUnsignedIssuerMetadata();
-        var issuerMetadataRebuilder = baseUnsignedMetadata.toBuilder();
-        
-        var supportedCredentialConfigurations = getUpdatedSupportedCredentialConfigurations(baseUnsignedMetadata, tenantId);
-        
-        return issuerMetadataRebuilder
-                .credentialIssuer(createTenantCredentialIssuerIdentifier(tenantId))
-                .credentialConfigurationSupported(supportedCredentialConfigurations)
-                .build();
+        return buildTenantMetadata(baseUnsignedMetadata, tenantId);
     }
+
+    /**
+     * Returns an instance of the issuer metadata without signing where the credential_issuer path has been extended by the tenantId.
+     * Note: The credential issuer identifier needs to match exactly the one provided in the credential offer. <br>
+     * Append the tenant ID to the credential identifier; for example <br>
+     * https://www.example.com/oid4vci will become <br>
+     * https://www.example.com/oid4vci/00000000-0000-0000-0000-000000000000<br>
+     *
+     * @param tenantId the tenant identifier for which to produce the unsigned issuer metadata
+     * @return the unsigned {@link IssuerMetadata} instance for this issuer tenant
+     */
+    public IssuerMetadata getUnsignedIssuerMetadataWithTS(UUID tenantId) {
+        var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
+        String issuerDid = override.issuerDidOrDefault(applicationProperties.getIssuerId());
+
+        IssuerMetadata base = unwrapProxy(jweService.issuerMetadataWithEncryptionOptions());
+        IssuerMetadata result = buildTenantMetadata(base, tenantId);
+
+        trustStatementInjectionService.ifPresent(s -> s.injectTrustStatements(result, issuerDid));
+        return result;
+    }
+
 
     /**
      * Updates the supported credential configurations by merging metadata from the provided
@@ -132,6 +155,25 @@ public class MetadataService {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
         try {
             return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedIssuerMetadata(tenantId)), override, tenantId);
+        } catch (JsonProcessingException e) {
+            throw new ConfigurationException("Unsigned Issuer Metadata could not be serialized as string", e);
+        }
+    }
+
+    /**
+     * Returns a signed issuer metadata JWT including Trust Protocol 2.0 trust statements for the specified tenant.
+     *
+     * <p>The tenant's {@code ConfigurationOverride} is resolved once and reused for both
+     * building the metadata (including TS injection) and signing the JWT.</p>
+     *
+     * @param tenantId the tenant identifier for which to produce the signed issuer metadata
+     * @return a serialized JWT containing the signed issuer metadata with trust statements
+     * @throws ConfigurationException if signing the metadata fails or the key strategy cannot be created
+     */
+    public String getSignedIssuerMetadataWithTS(UUID tenantId) {
+        var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
+        try {
+            return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedIssuerMetadataWithTS(tenantId)), override, tenantId);
         } catch (JsonProcessingException e) {
             throw new ConfigurationException("Unsigned Issuer Metadata could not be serialized as string", e);
         }
@@ -271,4 +313,31 @@ public class MetadataService {
     
         return builder.build();
     }
+
+    /**
+     * Unwraps an AOP proxy to obtain the underlying {@link IssuerMetadata} target.
+     * Required when the metadata is a Spring Cache managed singleton.
+     */
+    private IssuerMetadata unwrapProxy(IssuerMetadata issuerMetadata) {
+        return issuerMetadata instanceof Advised
+                ? (IssuerMetadata) AopProxyUtils.getSingletonTarget(issuerMetadata)
+                : issuerMetadata;
+    }
+
+    /**
+     * Builds tenant-scoped issuer metadata by extending the base metadata with the tenant ID
+     * and merging any per-offer credential configuration overrides.
+     *
+     * @param base     the resolved base issuer metadata
+     * @param tenantId the tenant identifier
+     * @return the tenant-scoped {@link IssuerMetadata}
+     */
+    private IssuerMetadata buildTenantMetadata(IssuerMetadata base, UUID tenantId) {
+        var supportedCredentialConfigurations = getUpdatedSupportedCredentialConfigurations(base, tenantId);
+        return base.toBuilder()
+                .credentialIssuer(createTenantCredentialIssuerIdentifier(tenantId))
+                .credentialConfigurationSupported(supportedCredentialConfigurations)
+                .build();
+    }
 }
+

@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## next
 
 ### Added
+- **Trust Protocol 2.0 Support**: 
+  - The issuer can now fetch, validate, and cache Identity Trust Statements (idTS) and Protected Issuance Authorization Trust Statements (piaTS) from the Trust Registry.
+  - **Metadata Injection**: Trust Statements are now dynamically injected into the OID4VCI Issuer Metadata (`/.well-known/openid-credential-issuer`) based on the requested tenant/DID.
+  - **Targeted Cache Management**: Added capabilities to manually clear cached keys and metadata for specific DIDs.
 
 ### Changed
 

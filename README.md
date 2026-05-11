@@ -290,6 +290,21 @@ The Generic Issuer service is configured using environment variables.
 | SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
 | SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal.  |
 
+#### Trust Registry (optional)
+
+The Trust Registry sidechannel allows the issuer to fetch and cache Identity Trust Statements (idTS) and Protected
+Issuance Authorization Trust Statements (piaTS) from the swiyu Trust Registry. This feature is **optional** –
+if `SWIYU_TRUST_REGISTRY_API_URL` is not set, trust statement caching is disabled.
+
+| Variable                                      | Description                                                                                                                                                                                                                                                                                                       | Default  |
+|:----------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
+| SWIYU_TRUST_REGISTRY_API_URL                  | The API base URL of the Trust Registry sidechannel (Trust Protocol 2.0). If not set, trust statement caching is disabled.                                                                                                                                                                                        | _(none)_ |
+| SWIYU_TRUST_REGISTRY_CUSTOMER_KEY             | Customer key for HTTP Basic Auth against the Trust Registry API. Provided by the api self-service portal.                                                                                                                                                                                                        | _(none)_ |
+| SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET          | Customer secret for HTTP Basic Auth against the Trust Registry API. Provided by the api self-service portal.                                                                                                                                                                                                      | _(none)_ |
+| SWIYU_TRUST_REGISTRY_MAX_CACHE_SIZE           | Maximum number of distinct issuer DIDs to cache trust statements for. Prevents unbounded memory growth.                                                                                                                                                                                                           | `1000`   |
+| SWIYU_TRUST_REGISTRY_CLOCK_SKEW_BUFFER_SECONDS | Buffer in seconds subtracted from the JWT `exp` claim before caching. Ensures that served statements are still valid when received by downstream consumers, accounting for clock skew and network latency.                                                                                                       | `60`     |
+| SWIYU_TRUST_REGISTRY_MAX_CACHE_TTL_SECONDS    | Optional hard upper bound for the trust statement cache TTL in seconds. When set, the effective TTL is `min(exp-based TTL, max-cache-ttl-seconds)`. Recommended: set to the same value as `PUBLIC_KEY_CACHE_TTL_MILLI` (converted to seconds) to avoid serving trust statements whose referenced DID key has already been rotated out of the public key cache. If not set, the TTL is derived exclusively from the JWT `exp` claim. | _(none)_ |
+
 #### Refresh functionality
 
 | Variable            | Description                                     |
@@ -385,6 +400,8 @@ The Data integrity check can be enforced to be always used by setting the enviro
 | secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                   |
 | secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                |
 | secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self-service portal. |
+| secret.swiyu.trust-registry.customer-key             | The customer key for HTTP Basic Auth against the Trust Registry API (alternative to env variable).                                                  |
+| secret.swiyu.trust-registry.customer-secret          | The customer secret for HTTP Basic Auth against the Trust Registry API (alternative to env variable).                                               |
 
 #### HSM - Hardware Security Module
 
