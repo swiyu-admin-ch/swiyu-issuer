@@ -197,17 +197,34 @@ public class TrustStatementInjectionService {
     }
 
     /**
-     * Parses the JWT payload (without signature verification) and extracts the {@code vct} claim.
+     * Parses the JWT payload (without signature verification) and extracts the {@code vct}
+     * field from the {@code can_issue} claim.
+     *
+     * <p>A piaTS JWT from the Trust Registry carries the authorised credential type inside
+     * the {@code can_issue} object as {@code can_issue.vct}, not as a top-level {@code vct}
+     * claim. Example payload:</p>
+     * <pre>
+     * {
+     *   "can_issue": {
+     *     "vct": "https://example.ch/vct/my-vc",
+     *     "vct_name": "My VC"
+     *   }
+     * }
+     * </pre>
      *
      * @param jwt the compact serialized JWT string
-     * @return the {@code vct} claim value, or {@code null} if absent or if parsing fails
+     * @return the {@code can_issue.vct} value, or {@code null} if absent or if parsing fails
      */
     private String extractVctFromJwt(String jwt) {
         try {
-            Object vct = JWTParser.parse(jwt).getJWTClaimsSet().getClaim("vct");
-            return vct instanceof String s ? s : null;
+            Object canIssue = JWTParser.parse(jwt).getJWTClaimsSet().getClaim("can_issue");
+            if (canIssue instanceof Map<?, ?> map) {
+                Object vct = map.get("vct");
+                return vct instanceof String s ? s : null;
+            }
+            return null;
         } catch (ParseException e) {
-            log.warn("Failed to extract vct claim from piaTS JWT: {}", e.getMessage());
+            log.warn("Failed to extract can_issue.vct claim from piaTS JWT: {}", e.getMessage());
             return null;
         }
     }

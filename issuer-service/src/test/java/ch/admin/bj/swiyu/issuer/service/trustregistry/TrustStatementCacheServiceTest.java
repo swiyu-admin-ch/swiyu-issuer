@@ -137,26 +137,39 @@ class TrustStatementCacheServiceTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void getProtectedIssuanceAuthorizationTrustStatement_firstCall_fetchesFromApi() throws Exception {
+    void getAllProtectedIssuanceAuthorizationTrustStatements_firstCall_fetchesFromApi() throws Exception {
         var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
         when(trustProtocol20Api.listPiaTS(eq(ISSUER_DID), eq(true), isNull(), isNull(), isNull()))
                 .thenReturn(Mono.just(pagedModel(jwt)));
 
-        var result = service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        var result = service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
 
-        assertThat(result).isEqualTo(jwt);
+        assertThat(result).containsExactly(jwt);
         verify(trustProtocol20Api, times(1)).listPiaTS(any(), any(), any(), any(), any());
     }
 
     @Test
-    void getProtectedIssuanceAuthorizationTrustStatement_secondCall_usesCache() throws Exception {
+    void getAllProtectedIssuanceAuthorizationTrustStatements_secondCall_usesCache() throws Exception {
         var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
         when(trustProtocol20Api.listPiaTS(any(), any(), any(), any(), any()))
                 .thenReturn(Mono.just(pagedModel(jwt)));
 
-        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
-        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
+        service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
 
+        verify(trustProtocol20Api, times(1)).listPiaTS(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getAllProtectedIssuanceAuthorizationTrustStatements_returnsAllJwts() throws Exception {
+        var jwt1 = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
+        var jwt2 = buildJwt(Instant.now().plusSeconds(7200).getEpochSecond());
+        when(trustProtocol20Api.listPiaTS(eq(ISSUER_DID), eq(true), isNull(), isNull(), isNull()))
+                .thenReturn(Mono.just(pagedModel(jwt1, jwt2)));
+
+        var result = service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
+
+        assertThat(result).containsExactly(jwt1, jwt2);
         verify(trustProtocol20Api, times(1)).listPiaTS(any(), any(), any(), any(), any());
     }
 
@@ -183,9 +196,9 @@ class TrustStatementCacheServiceTest {
         when(trustProtocol20Api.listPiaTS(any(), any(), any(), any(), any()))
                 .thenReturn(Mono.just(pagedModel(jwt)));
 
-        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
         service.invalidateProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
-        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
 
         verify(trustProtocol20Api, times(2)).listPiaTS(any(), any(), any(), any(), any());
     }
@@ -199,12 +212,12 @@ class TrustStatementCacheServiceTest {
                 .thenReturn(Mono.just(pagedModel(jwt)));
 
         service.getIdentityTrustStatement(ISSUER_DID);
-        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
 
         service.invalidateAllTrustStatements(ISSUER_DID);
 
         service.getIdentityTrustStatement(ISSUER_DID);
-        service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
 
         verify(trustProtocol20Api, times(2)).getIdTS(any());
         verify(trustProtocol20Api, times(2)).listPiaTS(any(), any(), any(), any(), any());
@@ -257,13 +270,13 @@ class TrustStatementCacheServiceTest {
     }
 
     @Test
-    void getProtectedIssuanceAuthorizationTrustStatement_whenApiFails_returnsNull() {
+    void getAllProtectedIssuanceAuthorizationTrustStatements_whenApiFails_returnsEmptyList() {
         when(trustProtocol20Api.listPiaTS(any(), any(), any(), any(), any()))
                 .thenReturn(Mono.error(new RuntimeException("timeout")));
 
-        var result = service.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID);
+        var result = service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
 
-        assertThat(result).isNull();
+        assertThat(result).isEmpty();
     }
 
     // -------------------------------------------------------------------------

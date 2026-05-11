@@ -29,10 +29,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
@@ -93,7 +94,12 @@ class WellKnownTrustStatementIT {
     private static final String PROTECTED_CREDENTIAL_KEY =
             "university_example_high_key_attestation_required_sd_jwt";
 
-    private static final String VALID_VCT = "urn:ch.admin.fedpol.betaid";
+    /**
+     * VCT of the Protected VC entry in {@code example_issuer_metadata.json}, resolved with
+     * the test {@code external-url} ({@code http://localhost:8080}).
+     * Must match the {@code vct} claim in the piaTS JWT so that VCT-based matching succeeds.
+     */
+    private static final String VALID_VCT = "http://localhost:8080/oid4vci/vct/my-vct-v01";
 
     @Autowired
     private MockMvc mockMvc;
@@ -176,8 +182,8 @@ class WellKnownTrustStatementIT {
         String piaTsJwt = piaTs.serialize();
 
         when(trustStatementCacheService.getIdentityTrustStatement(ISSUER_DID)).thenReturn(idTsJwt);
-        when(trustStatementCacheService.getProtectedIssuanceAuthorizationTrustStatement(ISSUER_DID))
-                .thenReturn(piaTsJwt);
+        when(trustStatementCacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
+                .thenReturn(List.of(piaTsJwt));
         // Stub for any JWT string so that re-serialised or slightly-different instances still pass
         doNothing().when(trustStatementValidator).validateSignature(anyString());
     }

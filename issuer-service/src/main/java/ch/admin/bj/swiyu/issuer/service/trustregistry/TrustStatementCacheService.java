@@ -143,24 +143,6 @@ public class TrustStatementCacheService {
         return cached.orElse(List.of());
     }
 
-    /**
-     * Returns the first cached Protected Issuance Authorization Trust Statement (piaTS) JWT
-     * for the given issuer DID, fetching it from the trust registry if not yet cached
-     * or already expired.
-     *
-     * @param issuerDid the effective issuer DID for which to retrieve the trust statement
-     * @return the first piaTS JWT string, or {@code null} if unavailable
-     * @deprecated Use {@link #getAllProtectedIssuanceAuthorizationTrustStatements(String)} to
-     *             retrieve all piaTS JWTs and match them per credential type (VCT).
-     *             The Trust Registry issues one piaTS per authorised VCT; using only the first
-     *             entry may silently attach the wrong trust statement to a credential configuration.
-     */
-    @Nullable
-    @Deprecated(since = "3.1.0", forRemoval = true)
-    public String getProtectedIssuanceAuthorizationTrustStatement(String issuerDid) {
-        List<String> all = getAllProtectedIssuanceAuthorizationTrustStatements(issuerDid);
-        return all.isEmpty() ? null : all.getFirst();
-    }
 
     private Optional<String> fetchIdentityTrustStatement(String issuerDid) {
         try {

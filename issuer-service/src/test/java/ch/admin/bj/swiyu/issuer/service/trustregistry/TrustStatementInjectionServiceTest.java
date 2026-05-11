@@ -63,14 +63,14 @@ class TrustStatementInjectionServiceTest {
         trustStatementInjectionService = new TrustStatementInjectionService(cacheService, validator);
     }
 
-    /** Builds a signed piaTS JWT containing the given {@code vct} claim. */
+    /** Builds a signed piaTS JWT with the given VCT inside the {@code can_issue} claim. */
     private static String buildPiaTsJwt(String vct) throws Exception {
         var header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType("jwt"))
                 .build();
         var claims = new JWTClaimsSet.Builder()
                 .issuer("did:tdw:trust-registry:issuer")
-                .claim("vct", vct)
+                .claim("can_issue", Map.of("vct", vct, "vct_name", "Test VC"))
                 .issueTime(new Date())
                 .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
                 .build();
