@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.service.enc.CacheMaintenanceService;
 import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
@@ -84,9 +83,13 @@ public class TrustStatementCacheService {
      * <p>Note: {@code @Cacheable} is intentionally NOT used here because Spring's cache
      * abstraction only supports a static TTL per cache, not a dynamic per-entry TTL.
      * Caffeine is used directly to implement exp-based eviction.</p>
+     *
+     * <p>The piaTS cache stores a list of all active piaTS JWTs per issuer DID,
+     * because the Trust Registry issues one piaTS per authorised credential type (VCT).
+     * Callers must match individual JWTs to credential configurations by their {@code vct} claim.</p>
      */
     private final Cache<String, Optional<String>> idTsCache;
-    private final Cache<String, Optional<String>> piaTsCache;
+    private final Cache<String, Optional<List<String>>> piaTsCache;
 
     /**
      * Creates a new {@code TrustStatementCacheService}.
@@ -106,7 +109,7 @@ public class TrustStatementCacheService {
         this.clockSkewBufferSeconds = trustRegistry.clockSkewBufferSeconds();
         this.maxCacheTtlSeconds = trustRegistry.maxCacheTtlSeconds();
         this.idTsCache = buildCache();
-        this.piaTsCache = buildCache();
+        this.piaTsCache = buildPiaTsCache();
     }
 
     /**
@@ -123,17 +126,40 @@ public class TrustStatementCacheService {
     }
 
     /**
-     * Returns the cached Protected Issuance Authorization Trust Statement (piaTS) JWT
+     * Returns all cached Protected Issuance Authorization Trust Statement (piaTS) JWTs
+     * for the given issuer DID, fetching them from the trust registry if not yet cached
+     * or already expired.
+     *
+     * <p>The Trust Registry issues one piaTS per authorised credential type (VCT). The returned
+     * list therefore contains one JWT per authorisation. Callers must match each JWT to the
+     * correct {@code CredentialConfiguration} by extracting the {@code vct} claim from the
+     * JWT payload.</p>
+     *
+     * @param issuerDid the effective issuer DID for which to retrieve the trust statements
+     * @return an unmodifiable list of piaTS JWT strings; empty if none are available
+     */
+    public List<String> getAllProtectedIssuanceAuthorizationTrustStatements(String issuerDid) {
+        Optional<List<String>> cached = piaTsCache.get(issuerDid, this::fetchAllProtectedIssuanceAuthorizationTrustStatements);
+        return cached.orElse(List.of());
+    }
+
+    /**
+     * Returns the first cached Protected Issuance Authorization Trust Statement (piaTS) JWT
      * for the given issuer DID, fetching it from the trust registry if not yet cached
      * or already expired.
      *
      * @param issuerDid the effective issuer DID for which to retrieve the trust statement
-     * @return the piaTS JWT string, or {@code null} if unavailable
+     * @return the first piaTS JWT string, or {@code null} if unavailable
+     * @deprecated Use {@link #getAllProtectedIssuanceAuthorizationTrustStatements(String)} to
+     *             retrieve all piaTS JWTs and match them per credential type (VCT).
+     *             The Trust Registry issues one piaTS per authorised VCT; using only the first
+     *             entry may silently attach the wrong trust statement to a credential configuration.
      */
     @Nullable
+    @Deprecated(since = "3.1.0", forRemoval = true)
     public String getProtectedIssuanceAuthorizationTrustStatement(String issuerDid) {
-        Optional<String> cached = piaTsCache.get(issuerDid, this::fetchProtectedIssuanceAuthorizationTrustStatement);
-        return cached.isPresent() ? cached.orElse(null) : null;
+        List<String> all = getAllProtectedIssuanceAuthorizationTrustStatements(issuerDid);
+        return all.isEmpty() ? null : all.getFirst();
     }
 
     private Optional<String> fetchIdentityTrustStatement(String issuerDid) {
@@ -154,14 +180,23 @@ public class TrustStatementCacheService {
         }
     }
 
-    private Optional<String> fetchProtectedIssuanceAuthorizationTrustStatement(String issuerDid) {
+    private Optional<List<String>> fetchAllProtectedIssuanceAuthorizationTrustStatements(String issuerDid) {
         try {
             var response = trustProtocol20Api.listPiaTS(issuerDid, true, null, null, null).block();
-            String jwt = extractFirstJwt(response != null ? response.getContent() : null, "piaTS", issuerDid);
-            if (jwt != null) {
+            List<String> jwts = response != null && response.getContent() != null
+                    ? response.getContent()
+                    : List.of();
+
+            if (jwts.isEmpty()) {
+                log.warn("No piaTS trust statements found for issuer {}", issuerDid);
+                return Optional.empty();
+            }
+
+            log.debug("Fetched {} piaTS JWT(s) for issuer {}", jwts.size(), issuerDid);
+            for (String jwt : jwts) {
                 validateTrustStatement(jwt, "piaTS", issuerDid);
             }
-            return Optional.ofNullable(jwt);
+            return Optional.of(List.copyOf(jwts));
         } catch (JwtValidatorException e) {
             log.warn("piaTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
             return Optional.empty();
@@ -236,15 +271,6 @@ public class TrustStatementCacheService {
         cacheMaintenanceService.evictPublicKeyManually(issuerDid);
     }
 
-    @Nullable
-    private String extractFirstJwt(@Nullable List<String> content, String type, String issuerDid) {
-        if (content == null || content.isEmpty()) {
-            log.warn("No {} trust statement found for issuer {}", type, issuerDid);
-            return null;
-        }
-        return content.getFirst();
-    }
-
     /**
      * Builds a Caffeine cache with dynamic per-entry TTL and a bounded maximum size.
      * The expiry of each entry is calculated from the {@code exp} claim of the cached JWT,
@@ -255,6 +281,56 @@ public class TrustStatementCacheService {
                 .maximumSize(maxCacheSize)
                 .expireAfter(buildExpiry())
                 .build();
+    }
+
+    /**
+     * Builds a Caffeine cache for piaTS lists with dynamic per-entry TTL.
+     *
+     * <p>The TTL is derived from the <strong>earliest</strong> {@code exp} claim across all JWTs
+     * in the cached list. This is intentionally conservative: as soon as any single piaTS in the
+     * list expires, the entire entry is evicted and all statements are refreshed together.
+     * This prevents a JWT with a short lifetime from being served after its expiry just because
+     * another JWT in the same list has a later {@code exp}.</p>
+     */
+    private Cache<String, Optional<List<String>>> buildPiaTsCache() {
+        return Caffeine.newBuilder()
+                .maximumSize(maxCacheSize)
+                .expireAfter(new Expiry<String, Optional<List<String>>>() {
+                    @Override
+                    public long expireAfterCreate(String key, Optional<List<String>> jwtsOpt, long currentTime) {
+                        return computeMinNanosUntilExpiry(jwtsOpt);
+                    }
+
+                    @Override
+                    public long expireAfterUpdate(String key, Optional<List<String>> jwtsOpt, long currentTime, long currentDuration) {
+                        return computeMinNanosUntilExpiry(jwtsOpt);
+                    }
+
+                    @Override
+                    public long expireAfterRead(String key, Optional<List<String>> jwtsOpt, long currentTime, long currentDuration) {
+                        return currentDuration;
+                    }
+                })
+                .build();
+    }
+
+    /**
+     * Computes the cache TTL in nanoseconds for a list of piaTS JWTs by taking the
+     * <strong>minimum</strong> remaining lifetime across all JWTs in the list.
+     *
+     * <p>If the list is absent or empty (negative cache), {@link #NEGATIVE_CACHE_TTL_SECONDS} is used.</p>
+     *
+     * @param jwtsOpt the optional list of piaTS JWT strings
+     * @return TTL in nanoseconds
+     */
+    private long computeMinNanosUntilExpiry(Optional<List<String>> jwtsOpt) {
+        return jwtsOpt
+                .filter(list -> !list.isEmpty())
+                .map(list -> list.stream()
+                        .mapToLong(TrustStatementCacheService.this::computeNanosUntilExpiry)
+                        .min()
+                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS)))
+                .orElseGet(() -> TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS));
     }
 
     /**

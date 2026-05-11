@@ -3,11 +3,14 @@ package ch.admin.bj.swiyu.issuer.service.trustregistry;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
+import com.nimbusds.jwt.JWTParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -78,9 +81,17 @@ public class TrustStatementInjectionService {
     }
 
     /**
-     * Fetches the piaTS JWT, verifies its signature, and injects it into every
-     * {@link CredentialConfiguration} that requires key attestation.
-     * On signature failure the cache is invalidated.
+     * Fetches all piaTS JWTs for the issuer, verifies each signature, and injects the
+     * matching JWT into every {@link CredentialConfiguration} that requires key attestation.
+     *
+     * <p>The Trust Registry issues one piaTS per authorised credential type (VCT), so
+     * each piaTS JWT is matched to a credential configuration by comparing the {@code vct}
+     * claim in the JWT payload with {@link CredentialConfiguration#getVct()}. This prevents
+     * silently attaching an incorrect trust statement to a credential configuration.</p>
+     *
+     * <p>If a protected credential configuration has no matching piaTS (e.g. the Trust Registry
+     * has not yet issued an authorisation for that VCT), a warning is logged and no statement
+     * is injected for that configuration.</p>
      *
      * @param issuerMetadata the metadata whose credential configurations should be updated
      * @param issuerDid      the issuer DID to look up in the trust registry
@@ -96,18 +107,37 @@ public class TrustStatementInjectionService {
             return;
         }
 
-        String piaTs = trustStatementCacheService.getProtectedIssuanceAuthorizationTrustStatement(issuerDid);
-        if (piaTs == null) {
+        List<String> allPiaTs = trustStatementCacheService.getAllProtectedIssuanceAuthorizationTrustStatements(issuerDid);
+        if (allPiaTs.isEmpty()) {
             log.debug("No piaTS available for issuer {} – skipping injection into protected credential configurations", issuerDid);
-            return;
-        }
-        if (!verifySignatureOrInvalidate(piaTs, "piaTS", issuerDid)) {
             return;
         }
 
         configs.values().stream()
                 .filter(this::isProtectedVcConfiguration)
-                .forEach(config -> config.setProtectedIssuanceAuthorizationTrustStatement(piaTs));
+                .forEach(config -> injectPiaTsIntoConfig(config, allPiaTs, issuerDid));
+    }
+
+    /**
+     * Finds the matching piaTS JWT for the given credential configuration (by VCT), verifies its
+     * signature, and injects it. If no matching JWT is found or verification fails, nothing is injected.
+     *
+     * @param config    the credential configuration to update
+     * @param allPiaTs  all piaTS JWTs available for the issuer
+     * @param issuerDid the issuer DID, used for cache invalidation on signature failure
+     */
+    private void injectPiaTsIntoConfig(CredentialConfiguration config, List<String> allPiaTs, String issuerDid) {
+        String vct = config.getVct();
+        String matchingPiaTs = findMatchingPiaTsForVct(allPiaTs, vct);
+
+        if (matchingPiaTs == null) {
+            log.warn("No matching piaTS found for VCT '{}' of issuer {} – skipping injection", vct, issuerDid);
+            return;
+        }
+        if (!verifySignatureOrInvalidate(matchingPiaTs, "piaTS", issuerDid)) {
+            return;
+        }
+        config.setProtectedIssuanceAuthorizationTrustStatement(matchingPiaTs);
     }
 
     /**
@@ -144,6 +174,42 @@ public class TrustStatementInjectionService {
     private boolean isProtectedVcConfiguration(CredentialConfiguration config) {
         return config.getProofTypesSupported().values().stream()
                 .anyMatch(proofType -> proofType.getKeyAttestationRequirement() != null);
+    }
+
+    /**
+     * Finds the piaTS JWT from the given list whose {@code vct} claim matches the provided VCT value.
+     *
+     * <p>The {@code vct} claim is extracted from the JWT payload without signature verification.
+     * If no matching JWT is found, or if the VCT is {@code null}, {@code null} is returned.</p>
+     *
+     * @param allPiaTs all piaTS JWTs available for the issuer
+     * @param vct      the credential type identifier to match (e.g. {@code "https://example.ch/vct/my-vc"})
+     * @return the matching piaTS JWT string, or {@code null} if none matches
+     */
+    private String findMatchingPiaTsForVct(List<String> allPiaTs, String vct) {
+        if (vct == null) {
+            return null;
+        }
+        return allPiaTs.stream()
+                .filter(jwt -> vct.equals(extractVctFromJwt(jwt)))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Parses the JWT payload (without signature verification) and extracts the {@code vct} claim.
+     *
+     * @param jwt the compact serialized JWT string
+     * @return the {@code vct} claim value, or {@code null} if absent or if parsing fails
+     */
+    private String extractVctFromJwt(String jwt) {
+        try {
+            Object vct = JWTParser.parse(jwt).getJWTClaimsSet().getClaim("vct");
+            return vct instanceof String s ? s : null;
+        } catch (ParseException e) {
+            log.warn("Failed to extract vct claim from piaTS JWT: {}", e.getMessage());
+            return null;
+        }
     }
 }
 
