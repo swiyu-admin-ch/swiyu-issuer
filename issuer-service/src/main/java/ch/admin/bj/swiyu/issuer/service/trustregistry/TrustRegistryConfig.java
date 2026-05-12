@@ -7,7 +7,7 @@ import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
 import ch.admin.bj.swiyu.jwtvalidator.UrlRestriction;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -27,7 +27,7 @@ import java.util.Set;
 @Slf4j
 @Configuration
 @AllArgsConstructor
-@ConditionalOnProperty(prefix = "swiyu.trust-registry", name = "api-url")
+@ConditionalOnExpression("'${swiyu.trust-registry.api-url:}'.length() > 0")
 public class TrustRegistryConfig {
 
     private final SwiyuProperties swiyuProperties;

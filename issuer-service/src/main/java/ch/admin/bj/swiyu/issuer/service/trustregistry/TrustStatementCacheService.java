@@ -10,7 +10,7 @@ import com.github.benmanes.caffeine.cache.Expiry;
 import com.nimbusds.jwt.JWTParser;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-@ConditionalOnProperty(prefix = "swiyu.trust-registry", name = "api-url")
+@ConditionalOnExpression("'${swiyu.trust-registry.api-url:}'.length() > 0")
 public class TrustStatementCacheService {
 
     /**
