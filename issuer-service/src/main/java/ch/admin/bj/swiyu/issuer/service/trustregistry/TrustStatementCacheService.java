@@ -44,12 +44,6 @@ import java.util.concurrent.TimeUnit;
 public class TrustStatementCacheService {
 
     /**
-     * Fallback TTL in seconds used when the JWT {@code exp} claim cannot be parsed.
-     * Keeps the cache from growing stale indefinitely while allowing a retry after a short window.
-     */
-    private static final long FALLBACK_TTL_SECONDS = 60;
-
-    /**
      * Negative cache TTL in seconds applied when the TMS API returns empty or fails.
      * Prevents retry storms within this window.
      */
@@ -61,11 +55,11 @@ public class TrustStatementCacheService {
     private final CacheMaintenanceService cacheMaintenanceService;
 
     /**
-     * Optional hard upper bound for the cache TTL in seconds.
+     * Hard upper bound for the cache TTL in seconds.
      * When set, effective TTL = min(exp-based TTL, maxCacheTtlSeconds).
      * When null, TTL is derived exclusively from the JWT exp claim.
      */
-    private final Long maxCacheTtlSeconds;
+    private final long maxCacheTtlSeconds;
 
     /**
      * Optional validator for trust statement signatures.
@@ -350,7 +344,7 @@ public class TrustStatementCacheService {
      * trust statement cache with the DID public key cache TTL to avoid serving
      * statements whose referenced DID key has already been rotated.</p>
      *
-     * <p>If parsing fails, {@link #FALLBACK_TTL_SECONDS} is used as fallback.</p>
+     * <p>If parsing fails, maxCacheTtlSeconds is used as fallback.</p>
      *
      * @param jwt the serialized JWT string
      * @return remaining lifetime in nanoseconds (minimum 1 second)
@@ -358,24 +352,12 @@ public class TrustStatementCacheService {
     private long computeNanosUntilExpiry(String jwt) {
         return extractExpFromJwt(jwt)
                 .map(exp -> {
-                    long remainingSeconds = (exp - clockSkewBufferSeconds) - Instant.now().getEpochSecond();
-                    if (remainingSeconds <= 0) {
-                        log.warn("Trust statement JWT expires too soon or is already expired (exp={})", exp);
-                        return TimeUnit.SECONDS.toNanos(1);
-                    }
-                    // Apply optional hard upper bound
-                    if (maxCacheTtlSeconds != null && remainingSeconds > maxCacheTtlSeconds) {
-                        log.debug("Capping trust statement cache TTL at {}s (exp-based would be {}s)", maxCacheTtlSeconds, remainingSeconds);
-                        remainingSeconds = maxCacheTtlSeconds;
-                    }
-                    log.debug("Caching trust statement JWT for {} seconds (exp={}, buffer={}s)",
-                            remainingSeconds, exp, clockSkewBufferSeconds);
-                    return TimeUnit.SECONDS.toNanos(remainingSeconds);
-                })
-                .orElseGet(() -> {
-                    log.warn("Could not extract exp from trust statement JWT – using {}s fallback TTL", FALLBACK_TTL_SECONDS);
-                    return TimeUnit.SECONDS.toNanos(FALLBACK_TTL_SECONDS);
-                });
+                    final long MINIMUM_TIME = 1L;
+                    long remainingSeconds = Math.max((exp - clockSkewBufferSeconds) - Instant.now().getEpochSecond(), MINIMUM_TIME);
+                    return TimeUnit.SECONDS.toNanos(Math.min(remainingSeconds, maxCacheTtlSeconds));
+                }).orElseGet(
+                        () -> TimeUnit.SECONDS.toNanos(maxCacheTtlSeconds)
+                );
     }
 
     /**
