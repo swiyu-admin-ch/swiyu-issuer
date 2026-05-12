@@ -5,13 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## next
+## [3.1.0] - 2026-05-11
 
 ### Added
-- **Trust Protocol 2.0 Support**: 
+
+- **Trust Protocol 2.0 Support** `(#881, #882)`:
   - The issuer can now fetch, validate, and cache Identity Trust Statements (idTS) and Protected Issuance Authorization Trust Statements (piaTS) from the Trust Registry.
   - **Metadata Injection**: Trust Statements are now dynamically injected into the OID4VCI Issuer Metadata (`/.well-known/openid-credential-issuer`) based on the requested tenant/DID.
-  - **Targeted Cache Management**: Added capabilities to manually clear cached keys and metadata for specific DIDs.
+  - **Dynamic Cache Eviction**: `TrustStatementCacheService` implemented with dynamic expiration-based eviction and negative caching `(#881)`.
+  - Configurable maximum cache TTL for Trust Statements `(#881)`.
+- Added support for `iso_18045_enhanced_basic` attestation level for DPoP key attestations `(#937)`.
 
 ### Changed
 
@@ -24,8 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Replaced `HttpStatus` with `HttpStatusCode` in `RenewalException` and `ApiErrorDto` to support non-standard
     HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
   - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
+  - Removed optional springdoc-openapi dependency from `issuer-application` `(#537)`.
 
 ### Fixed
+
+- Fixed negative index handling in `TokenStatusListToken` `(#EIDOMNI-5)`.
+- Fixed DPoP `htu` claim URL rewriting to support path-based rewrites via `external_url`, enabling setups where the public URI contains a path prefix (e.g. `https://host/public/issuer/`) `(#EIDOMNI-941)`. *(Fixed via `generic-java-lib` 1.5.0)*
 
 ## 3.0.0
 
