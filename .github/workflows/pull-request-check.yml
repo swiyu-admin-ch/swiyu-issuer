@@ -96,7 +96,7 @@ jobs:
           SNYK_API: https://api.eu.snyk.io
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
       - name: Generate OpenAPI spec
-        run: mvn -B verify -P generate-doc -DskipTests
+        run: mvn -B clean verify -P generate-doc -DskipTests
 
       - name: Ensure spec is committed
         run: |
