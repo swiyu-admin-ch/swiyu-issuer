@@ -116,6 +116,24 @@
                 <version>${generic-java-lib.version}</version>
             </dependency>
 
+            <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-16643259 / 16691231 – force 11.0.22 -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>11.0.22</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>11.0.22</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>11.0.22</version>
+            </dependency>
+            <!-- end fix -->
+
             <!-- fix CVE netty compression/http2 – force 4.2.13.Final -->
             <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
             <dependency>
