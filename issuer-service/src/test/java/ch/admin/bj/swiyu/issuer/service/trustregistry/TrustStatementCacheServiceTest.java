@@ -40,6 +40,7 @@ class TrustStatementCacheServiceTest {
      * Shared EC key for the entire test class – generated once to avoid per-test crypto overhead.
      */
     private static final ECKey TEST_KEY;
+    private static final String ISSUER_DID = "did:tdw:test:issuer";
 
     static {
         try {
@@ -52,33 +53,6 @@ class TrustStatementCacheServiceTest {
     private TrustProtocol20Api trustProtocol20Api;
     private CacheMaintenanceService cacheMaintenanceService;
     private TrustStatementCacheService service;
-
-    private static final String ISSUER_DID = "did:tdw:test:issuer";
-
-    @BeforeEach
-    void setUp() throws Exception {
-        trustProtocol20Api = mock(TrustProtocol20Api.class);
-        cacheMaintenanceService = mock(CacheMaintenanceService.class);
-        service = buildService(null /* no maxCacheTtlSeconds cap */);
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    private TrustStatementCacheService buildService(Long maxCacheTtlSeconds) throws Exception {
-        var trustRegistry = new SwiyuProperties.TrustRegistryProperties(
-                new URL("https://trust-reg.example.ch/"),
-                "key",
-                "secret",
-                1_000,
-                60,
-                maxCacheTtlSeconds);
-        var props = mock(SwiyuProperties.class);
-        when(props.trustRegistry()).thenReturn(trustRegistry);
-        // No TrustStatementValidator – signature validation is skipped in unit tests
-        return new TrustStatementCacheService(trustProtocol20Api, props, Optional.empty(), cacheMaintenanceService);
-    }
 
     /**
      * Creates a signed JWT with the given exp timestamp (epoch seconds).
@@ -97,10 +71,35 @@ class TrustStatementCacheServiceTest {
         return jwt.serialize();
     }
 
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
     private static PagedModelString pagedModel(String... jwts) {
         var model = new PagedModelString();
         model.setContent(List.of(jwts));
         return model;
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
+        trustProtocol20Api = mock(TrustProtocol20Api.class);
+        cacheMaintenanceService = mock(CacheMaintenanceService.class);
+        service = buildService(5L);
+    }
+
+    private TrustStatementCacheService buildService(Long maxCacheTtlSeconds) throws Exception {
+        var trustRegistry = new SwiyuProperties.TrustRegistryProperties(
+                new URL("https://trust-reg.example.ch/"),
+                "key",
+                "secret",
+                1_000,
+                60,
+                maxCacheTtlSeconds);
+        var props = mock(SwiyuProperties.class);
+        when(props.trustRegistry()).thenReturn(trustRegistry);
+        // No TrustStatementValidator – signature validation is skipped in unit tests
+        return new TrustStatementCacheService(trustProtocol20Api, props, Optional.empty(), cacheMaintenanceService);
     }
 
     // -------------------------------------------------------------------------

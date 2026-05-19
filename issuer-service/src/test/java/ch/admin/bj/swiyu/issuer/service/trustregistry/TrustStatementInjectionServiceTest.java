@@ -36,8 +36,14 @@ import static org.mockito.Mockito.*;
  */
 class TrustStatementInjectionServiceTest {
 
-    /** Shared EC key for signing test JWTs – generated once to avoid per-test crypto overhead. */
+    /**
+     * Shared EC key for signing test JWTs – generated once to avoid per-test crypto overhead.
+     */
     private static final ECKey TEST_KEY;
+    private static final String ISSUER_DID = "did:tdw:test:issuer";
+    private static final String VCT_ELFA = "https://example.ch/vct/elfa";
+    private static final String VCT_MDL = "https://example.ch/vct/mdl";
+    private static final String ID_TS = "id.ts.jwt";
 
     static {
         try {
@@ -51,19 +57,9 @@ class TrustStatementInjectionServiceTest {
     private TrustStatementValidator validator;
     private TrustStatementInjectionService trustStatementInjectionService;
 
-    private static final String ISSUER_DID = "did:tdw:test:issuer";
-    private static final String VCT_ELFA = "https://example.ch/vct/elfa";
-    private static final String VCT_MDL = "https://example.ch/vct/mdl";
-    private static final String ID_TS = "id.ts.jwt";
-
-    @BeforeEach
-    void setUp() {
-        cacheService = mock(TrustStatementCacheService.class);
-        validator = mock(TrustStatementValidator.class);
-        trustStatementInjectionService = new TrustStatementInjectionService(cacheService, validator);
-    }
-
-    /** Builds a signed piaTS JWT with the given VCT inside the {@code can_issue} claim. */
+    /**
+     * Builds a signed piaTS JWT with the given VCT inside the {@code can_issue} claim.
+     */
     private static String buildPiaTsJwt(String vct) throws Exception {
         var header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .type(new JOSEObjectType("jwt"))
@@ -77,6 +73,13 @@ class TrustStatementInjectionServiceTest {
         var jwt = new SignedJWT(header, claims);
         jwt.sign(new ECDSASigner(TEST_KEY));
         return jwt.serialize();
+    }
+
+    @BeforeEach
+    void setUp() {
+        cacheService = mock(TrustStatementCacheService.class);
+        validator = mock(TrustStatementValidator.class);
+        trustStatementInjectionService = new TrustStatementInjectionService(cacheService, validator);
     }
 
     private IssuerMetadata createMetadata(boolean withProtectedVc, String vct) {
@@ -144,19 +147,6 @@ class TrustStatementInjectionServiceTest {
                 .thenReturn(List.of(mdlPiaTs));
 
         IssuerMetadata metadata = createMetadata(true, VCT_ELFA);
-        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
-
-        CredentialConfiguration config = metadata.getCredentialConfigurationSupported().get("TestFormat");
-        assertThat(config.getProtectedIssuanceAuthorizationTrustStatement()).isNull();
-    }
-
-    @Test
-    void injectTrustStatements_doesNotInjectPiaTs_forNonProtectedVc() throws Exception {
-        String elfaPiaTs = buildPiaTsJwt(VCT_ELFA);
-        when(cacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
-                .thenReturn(List.of(elfaPiaTs));
-
-        IssuerMetadata metadata = createMetadata(false, VCT_ELFA);
         trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
 
         CredentialConfiguration config = metadata.getCredentialConfigurationSupported().get("TestFormat");

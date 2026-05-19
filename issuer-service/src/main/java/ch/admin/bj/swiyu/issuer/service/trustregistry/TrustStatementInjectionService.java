@@ -89,21 +89,12 @@ public class TrustStatementInjectionService {
      * claim in the JWT payload with {@link CredentialConfiguration#getVct()}. This prevents
      * silently attaching an incorrect trust statement to a credential configuration.</p>
      *
-     * <p>If a protected credential configuration has no matching piaTS (e.g. the Trust Registry
-     * has not yet issued an authorisation for that VCT), a warning is logged and no statement
-     * is injected for that configuration.</p>
-     *
      * @param issuerMetadata the metadata whose credential configurations should be updated
      * @param issuerDid      the issuer DID to look up in the trust registry
      */
     private void injectProtectedIssuanceAuthorizationTrustStatements(IssuerMetadata issuerMetadata, String issuerDid) {
         Map<String, CredentialConfiguration> configs = issuerMetadata.getCredentialConfigurationSupported();
         if (configs == null || configs.isEmpty()) {
-            return;
-        }
-
-        boolean anyProtected = configs.values().stream().anyMatch(this::isProtectedVcConfiguration);
-        if (!anyProtected) {
             return;
         }
 
@@ -119,7 +110,7 @@ public class TrustStatementInjectionService {
 
     /**
      * Finds the matching piaTS JWT for the given credential configuration (by VCT), verifies its
-     * signature, and injects it. If no matching JWT is found or verification fails, nothing is injected.
+     * signature, and injects it. If no matching JWT is found, nothing is injected.
      *
      * @param config    the credential configuration to update
      * @param allPiaTs  all piaTS JWTs available for the issuer
@@ -129,10 +120,6 @@ public class TrustStatementInjectionService {
         String vct = config.getVct();
         String matchingPiaTs = findMatchingPiaTsForVct(allPiaTs, vct);
 
-        if (matchingPiaTs == null) {
-            log.warn("No matching piaTS found for VCT '{}' of issuer {} – skipping injection", vct, issuerDid);
-            return;
-        }
         if (!verifySignatureOrInvalidate(matchingPiaTs, "piaTS", issuerDid)) {
             return;
         }
@@ -149,7 +136,7 @@ public class TrustStatementInjectionService {
      * @param type      statement type label for logging ("idTS" or "piaTS")
      * @param issuerDid issuer DID for cache invalidation and logging
      * @return {@code true} if verification succeeded or no validator is configured;
-     *         {@code false} if verification failed (cache is invalidated)
+     * {@code false} if verification failed (cache is invalidated)
      */
     private boolean verifySignatureOrInvalidate(String jwt, String type, String issuerDid) {
         try {
@@ -163,17 +150,6 @@ public class TrustStatementInjectionService {
         }
     }
 
-    /**
-     * Returns {@code true} if the credential configuration represents a Protected VC,
-     * i.e. if at least one supported proof type has a {@code key_attestations_required} entry.
-     *
-     * @param config the credential configuration to inspect
-     * @return {@code true} if key attestation is required for any proof type
-     */
-    private boolean isProtectedVcConfiguration(CredentialConfiguration config) {
-        return config.getProofTypesSupported().values().stream()
-                .anyMatch(proofType -> proofType.getKeyAttestationRequirement() != null);
-    }
 
     /**
      * Finds the piaTS JWT from the given list whose {@code vct} claim matches the provided VCT value.
