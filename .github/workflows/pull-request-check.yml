@@ -97,7 +97,6 @@ jobs:
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
       - name: Generate OpenAPI spec
         run: mvn -B clean verify -P generate-doc -DskipTests
-
       - name: Ensure spec is committed
         run: |
           git diff --exit-code -- openapi.yaml || (
