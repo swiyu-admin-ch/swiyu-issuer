@@ -63,7 +63,7 @@
                 <artifactId>tomcat-embed-core</artifactId>
                 <version>11.0.22</version>
             </dependency>
-            
+
             <!-- Fixes CVE-2026-42198 -->
             <dependency>
                 <groupId>org.postgresql</groupId>
