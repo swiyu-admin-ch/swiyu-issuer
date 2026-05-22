@@ -158,7 +158,14 @@ public class IssuanceController {
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
         var headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
+        // The envelope Content-Type is always one of a fixed set of literals (see CredentialBuilder).
+        // Map it onto a constant rather than echoing the value, so no request-derived text can ever
+        // reach the response header (prevents HTTP response splitting, CWE-113).
+        if ("application/jwt".equals(credentialEnvelope.getContentType())) {
+            headers.set(HttpHeaders.CONTENT_TYPE, "application/jwt");
+        } else {
+            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        }
 
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())
                 .headers(headers)
@@ -225,7 +232,13 @@ public class IssuanceController {
         String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_TYPE, credentialEnvelope.getContentType());
+        // Map the fixed-set envelope Content-Type onto a constant rather than echoing it, so no
+        // request-derived text can reach the response header (prevents HTTP response splitting, CWE-113).
+        if ("application/jwt".equals(credentialEnvelope.getContentType())) {
+            headers.set(HttpHeaders.CONTENT_TYPE, "application/jwt");
+        } else {
+            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        }
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())
                 .headers(headers)
                 .body(credentialEnvelope.getOid4vciCredentialJson());
