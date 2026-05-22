@@ -53,6 +53,7 @@ import java.util.Set;
 @RequestMapping(value = {"/oid4vci/api"})
 public class IssuanceController {
     public static final String DPOP_HTTP_HEADER = "DPoP";
+    private static final String APPLICATION_JWT_VALUE = "application/jwt"; // OID4VCI 1.0 ch.10; single source to avoid drift
 
     private final CredentialServiceOrchestrator credentialServiceOrchestrator;
     private final JweService jweService;
@@ -97,7 +98,7 @@ public class IssuanceController {
     }
 
     @Timed
-    @PostMapping(value = {"/credential"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
+    @PostMapping(value = {"/credential"}, produces = {MediaType.APPLICATION_JSON_VALUE, APPLICATION_JWT_VALUE})
     @Operation(
             summary = "Collect credential associated with the bearer token with the requested credential properties.",
             description = "Issues a credential for a given bearer token and credential request. Supports API versioning via SWIYU-API-Version header. Returns the issued credential in JSON or JWT format.",
@@ -117,7 +118,7 @@ public class IssuanceController {
                                     schema = @Schema(implementation = CreateCredentialRequestDto.class)
                             ),
                             @Content(
-                                    mediaType = "application/jwt", // See: OID4VCI 1.0 Chapter 10
+                                    mediaType = APPLICATION_JWT_VALUE, // See: OID4VCI 1.0 Chapter 10
                                     schema = @Schema(implementation = String.class, description = """
                                             An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
                                             """)
@@ -161,8 +162,8 @@ public class IssuanceController {
         // The envelope Content-Type is always one of a fixed set of literals (see CredentialBuilder).
         // Map it onto a constant rather than echoing the value, so no request-derived text can ever
         // reach the response header (prevents HTTP response splitting, CWE-113).
-        if ("application/jwt".equals(credentialEnvelope.getContentType())) {
-            headers.set(HttpHeaders.CONTENT_TYPE, "application/jwt");
+        if (APPLICATION_JWT_VALUE.equals(credentialEnvelope.getContentType())) {
+            headers.set(HttpHeaders.CONTENT_TYPE, APPLICATION_JWT_VALUE);
         } else {
             headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         }
@@ -173,7 +174,7 @@ public class IssuanceController {
     }
 
     @Timed
-    @PostMapping(value = {"/deferred_credential"}, consumes = {"application/json", "application/jwt"}, produces = {MediaType.APPLICATION_JSON_VALUE, "application/jwt"})
+    @PostMapping(value = {"/deferred_credential"}, consumes = {"application/json", APPLICATION_JWT_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE, APPLICATION_JWT_VALUE})
     @Operation(
             summary = "Collect credential associated with the bearer token and the transaction id. This endpoint is used for deferred issuance.",
             description = "Issues a credential for a deferred transaction. Requires a valid bearer token and transaction details in the request body.",
@@ -193,7 +194,7 @@ public class IssuanceController {
                                     schema = @Schema(implementation = DeferredCredentialEndpointRequestDto.class)
                             ),
                             @Content(
-                                    mediaType = "application/jwt", // See: OID4VCI 1.0 Chapter 10
+                                    mediaType = APPLICATION_JWT_VALUE, // See: OID4VCI 1.0 Chapter 10
                                     schema = @Schema(implementation = String.class, description = """
                                             An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
                                             """)
@@ -234,8 +235,8 @@ public class IssuanceController {
         var headers = new HttpHeaders();
         // Map the fixed-set envelope Content-Type onto a constant rather than echoing it, so no
         // request-derived text can reach the response header (prevents HTTP response splitting, CWE-113).
-        if ("application/jwt".equals(credentialEnvelope.getContentType())) {
-            headers.set(HttpHeaders.CONTENT_TYPE, "application/jwt");
+        if (APPLICATION_JWT_VALUE.equals(credentialEnvelope.getContentType())) {
+            headers.set(HttpHeaders.CONTENT_TYPE, APPLICATION_JWT_VALUE);
         } else {
             headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         }
