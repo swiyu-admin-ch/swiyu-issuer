@@ -80,8 +80,8 @@ jobs:
         with:
           sarif_file: snyk.sarif
       # Build image and check for vulnerabilities with Snyk
-      - name: Build and push docker image
-        id: push
+      - name: Build and load docker image (local image, for scanning)
+        id: build_local
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
