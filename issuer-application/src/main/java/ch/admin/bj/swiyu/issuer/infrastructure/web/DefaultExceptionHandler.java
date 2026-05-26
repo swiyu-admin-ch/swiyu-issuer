@@ -168,12 +168,6 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return handleUnprocessableEntity(errors);
     }
 
-    @ExceptionHandler(io.fabric8.kubernetes.client.ResourceNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    void handleResourceNotFoundException(io.fabric8.kubernetes.client.ResourceNotFoundException e) {
-        log.warn("Resource not found", e);
-    }
-
     private ResponseEntity<Object> handleUnprocessableEntity(String errors) {
         log.info("Received bad request. Details: {}", errors);
 
