@@ -253,7 +253,7 @@ class SdJwtCredentialTest {
      * {
      * "profile_version": "swiss-profile-vc:1.0.0",
      * "alg": "ES256",
-     * "typ": "vc+sd-jwt"
+     * "typ": "dc+sd-jwt"
      * }.{
      * "iss": "did:example:issuer",
      * "iat": 1774310400,
@@ -310,7 +310,7 @@ class SdJwtCredentialTest {
      * {
      * "profile_version": "swiss-profile-vc:1.0.0",
      * "alg": "ES256",
-     * "typ": "vc+sd-jwt"
+     * "typ": "dc+sd-jwt"
      * }.{
      * "iss": "did:example:issuer",
      * "_sd": [

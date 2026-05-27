@@ -24,7 +24,7 @@
   },
   "credential_configurations_supported": {
     "${stage}university_example_sd_jwt": {
-      "format": "vc+sd-jwt",
+      "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
         "ES256"
       ],
@@ -161,7 +161,7 @@
       }
     },
     "university_example_sd_jwt": {
-      "format": "vc+sd-jwt",
+      "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
         "ES256"
       ],
@@ -250,7 +250,7 @@
       }
     },
     "university_example_sd_jwt_list": {
-      "format": "vc+sd-jwt",
+      "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
         "ES256"
       ],
@@ -291,7 +291,7 @@
       }
     },
     "unbound_example_sd_jwt": {
-      "format": "vc+sd-jwt",
+      "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
         "ES256"
       ],
@@ -326,7 +326,7 @@
       }
     },
     "university_example_high_key_attestation_required_sd_jwt": {
-      "format": "vc+sd-jwt",
+      "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
         "ES256"
       ],
@@ -420,7 +420,7 @@
       }
     },
     "university_example_any_key_attestation_required_sd_jwt": {
-      "format": "vc+sd-jwt",
+      "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
         "ES256"
       ],
@@ -510,7 +510,7 @@
       }
     },
     "test": {
-      "format": "vc+sd-jwt",
+      "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
         "ES256"
       ],
