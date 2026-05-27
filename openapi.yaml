@@ -1943,17 +1943,6 @@ components:
           type: string
         pre-authorized_grant_anonymous_access_supported:
           type: boolean
-    ApiError:
-      description: Error response object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-        detail:
-          type: string
-        trace_id:
-          type: string
     WebhookCallback:
       description: Callback transmitting information about an event which occurred.
       properties:
@@ -1978,6 +1967,17 @@ components:
         timestamp:
           type: string
           format: date-time
+    ApiError:
+      description: Error response object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        detail:
+          type: string
+        trace_id:
+          type: string
   securitySchemes:
     bearer-jwt:
       type: http
