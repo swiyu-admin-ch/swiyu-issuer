@@ -40,7 +40,7 @@ public class CredentialFormatFactory {
         }
 
         return switch (configuration.getFormat()) {
-            case "vc+sd-jwt" -> {
+            case "vc+sd-jwt", "dc+sd-jwt" -> {
                 try {
                     yield new SdJwtCredential(
                             applicationProperties,

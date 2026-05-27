@@ -81,7 +81,7 @@ class SdJwtCredentialIT {
                 String payload = new String(decoder.decode(chunks[1]));
 
                 // jwt headers
-                assertEquals("vc+sd-jwt", JsonPath.read(header, "$.typ"));
+                assertEquals("dc+sd-jwt", JsonPath.read(header, "$.typ"));
                 assertEquals(SwissProfileVersions.VC_PROFILE_VERSION, JsonPath.read(header, "$.profile_version"));
 
                 // jwt payload - required fields iss-vct-iat

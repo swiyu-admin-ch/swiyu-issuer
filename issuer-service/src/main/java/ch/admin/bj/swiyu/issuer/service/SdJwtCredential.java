@@ -34,7 +34,7 @@ import static java.util.Objects.nonNull;
 @Slf4j
 public class SdJwtCredential extends CredentialBuilder {
 
-    public static final String SD_JWT_FORMAT = "vc+sd-jwt";
+    public static final String SD_JWT_FORMAT = "dc+sd-jwt";
 
     public static final List<String> SDJWT_PROTECTED_CLAIMS = List.of("sub",
             "iss",

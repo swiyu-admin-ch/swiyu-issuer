@@ -209,7 +209,7 @@ With response:
     ],
     "credential_configurations_supported": {
         "university_example_sd_jwt": {
-            "format": "vc+sd-jwt",
+            "format": "dc+sd-jwt",
             "credential_signing_alg_values_supported": [
                 "ES256"
             ],
