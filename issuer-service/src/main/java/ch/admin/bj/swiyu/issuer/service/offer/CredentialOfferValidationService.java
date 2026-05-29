@@ -85,7 +85,7 @@ public class CredentialOfferValidationService {
      */
     public void validateCredentialFormat(CredentialConfiguration credentialConfiguration) {
         if (!List.of("vc+sd-jwt", "dc+sd-jwt").contains(credentialConfiguration.getFormat())) {
-            throw new IllegalStateException("Unsupported credential configuration format %s, only supporting dc+sd-jwt"
+            throw new IllegalStateException("Unsupported credential configuration format %s, only supporting vc+sd-jwt or dc+sd-jwt"
                     .formatted(credentialConfiguration.getFormat()));
         }
     }

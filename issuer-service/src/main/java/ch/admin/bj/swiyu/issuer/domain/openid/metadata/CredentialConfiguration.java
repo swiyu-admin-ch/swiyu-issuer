@@ -36,7 +36,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 public class CredentialConfiguration {
     // TODO EIDOMNI-284: allow only dc+sd-jwt and start throwing errors for vc+sd-jwt (after issuers had some time to migrate)
     @NotNull
-    @Pattern(regexp = "^[dv]c\\+sd-jwt$", message = "Only dc+sd-jwt format is supported")
+    @Pattern(regexp = "^[dv]c\\+sd-jwt$", message = "Only vc+sd-jwt or dc+sd-jwt is supported")
     private String format;
 
     /**
@@ -97,7 +97,7 @@ public class CredentialConfiguration {
      * Optional
      */
     @JsonProperty("credential_definition")
-    @Null(message = "Credential definition is not allowed for the vc+sd-jwt format which is the only one supported")
+    @Null(message = "Credential definition is not allowed for the sd-jwt format which is the only one supported")
     private CredentialDefinition credentialDefinition;
 
     /**

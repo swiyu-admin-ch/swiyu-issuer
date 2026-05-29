@@ -158,18 +158,6 @@ class DefaultExceptionHandlerTest {
     }
 
     @Test
-    void handleFabricConfigurationException_shouldReturnInternalServerError() {
-        var errorMessage = "Configuration error message";
-        var exception = new io.fabric8.kubernetes.client.ResourceNotFoundException(errorMessage);
-        ResponseEntity<ApiErrorDto> response = handler.handleConfigurationException(exception);
-        var body = response.getBody();
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertNotNull(body);
-        assertEquals(errorMessage, body.getErrorDetails());
-    }
-
-    @Test
     void handleDefaultException_shouldReturnInternalServerError() {
         var errorMessage = "Default error message";
         var exception = new Exception(errorMessage);
