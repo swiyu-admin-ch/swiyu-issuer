@@ -53,7 +53,6 @@ import java.util.Set;
 @RequestMapping(value = {"/oid4vci/api"})
 public class IssuanceController {
     public static final String DPOP_HTTP_HEADER = "DPoP";
-    private static final String APPLICATION_JWT_VALUE = "application/jwt"; // OID4VCI 1.0 ch.10; single source to avoid drift
 
     private final CredentialServiceOrchestrator credentialServiceOrchestrator;
     private final JweService jweService;
@@ -98,7 +97,7 @@ public class IssuanceController {
     }
 
     @Timed
-    @PostMapping(value = {"/credential"}, produces = {MediaType.APPLICATION_JSON_VALUE, APPLICATION_JWT_VALUE})
+    @PostMapping(value = {"/credential"}, produces = {MediaType.APPLICATION_JSON_VALUE, CredentialEnvelopeDto.APPLICATION_JWT_VALUE})
     @Operation(
             summary = "Collect credential associated with the bearer token with the requested credential properties.",
             description = "Issues a credential for a given bearer token and credential request. Supports API versioning via SWIYU-API-Version header. Returns the issued credential in JSON or JWT format.",
@@ -118,7 +117,7 @@ public class IssuanceController {
                                     schema = @Schema(implementation = CreateCredentialRequestDto.class)
                             ),
                             @Content(
-                                    mediaType = APPLICATION_JWT_VALUE, // See: OID4VCI 1.0 Chapter 10
+                                    mediaType = CredentialEnvelopeDto.APPLICATION_JWT_VALUE, // See: OID4VCI 1.0 Chapter 10
                                     schema = @Schema(implementation = String.class, description = """
                                             An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
                                             """)
@@ -158,15 +157,7 @@ public class IssuanceController {
         CreateCredentialRequestDto dto = parseCredentialRequestDto(unparsedRequestDto);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
-        var headers = new HttpHeaders();
-        // The envelope Content-Type is always one of a fixed set of literals (see CredentialBuilder).
-        // Map it onto a constant rather than echoing the value, so no request-derived text can ever
-        // reach the response header (prevents HTTP response splitting, CWE-113).
-        if (APPLICATION_JWT_VALUE.equals(credentialEnvelope.getContentType())) {
-            headers.set(HttpHeaders.CONTENT_TYPE, APPLICATION_JWT_VALUE);
-        } else {
-            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-        }
+        var headers = responseHeadersFor(credentialEnvelope);
 
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())
                 .headers(headers)
@@ -174,7 +165,7 @@ public class IssuanceController {
     }
 
     @Timed
-    @PostMapping(value = {"/deferred_credential"}, consumes = {"application/json", APPLICATION_JWT_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE, APPLICATION_JWT_VALUE})
+    @PostMapping(value = {"/deferred_credential"}, consumes = {"application/json", CredentialEnvelopeDto.APPLICATION_JWT_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE, CredentialEnvelopeDto.APPLICATION_JWT_VALUE})
     @Operation(
             summary = "Collect credential associated with the bearer token and the transaction id. This endpoint is used for deferred issuance.",
             description = "Issues a credential for a deferred transaction. Requires a valid bearer token and transaction details in the request body.",
@@ -194,7 +185,7 @@ public class IssuanceController {
                                     schema = @Schema(implementation = DeferredCredentialEndpointRequestDto.class)
                             ),
                             @Content(
-                                    mediaType = APPLICATION_JWT_VALUE, // See: OID4VCI 1.0 Chapter 10
+                                    mediaType = CredentialEnvelopeDto.APPLICATION_JWT_VALUE, // See: OID4VCI 1.0 Chapter 10
                                     schema = @Schema(implementation = String.class, description = """
                                             An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
                                             """)
@@ -232,19 +223,26 @@ public class IssuanceController {
 
         String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
-        var headers = new HttpHeaders();
-        // Map the fixed-set envelope Content-Type onto a constant rather than echoing it, so no
-        // request-derived text can reach the response header (prevents HTTP response splitting, CWE-113).
-        if (APPLICATION_JWT_VALUE.equals(credentialEnvelope.getContentType())) {
-            headers.set(HttpHeaders.CONTENT_TYPE, APPLICATION_JWT_VALUE);
-        } else {
-            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-        }
+        var headers = responseHeadersFor(credentialEnvelope);
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())
                 .headers(headers)
                 .body(credentialEnvelope.getOid4vciCredentialJson());
     }
 
+    /**
+     * Build response headers with a Content-Type mapped from the envelope's declared format onto a
+     * fixed literal — so no request-derived text can ever reach the response header
+     * (prevents HTTP response splitting, CWE-113).
+     */
+    private static HttpHeaders responseHeadersFor(CredentialEnvelopeDto envelope) {
+        var headers = new HttpHeaders();
+        if (CredentialEnvelopeDto.APPLICATION_JWT_VALUE.equals(envelope.getContentType())) {
+            headers.set(HttpHeaders.CONTENT_TYPE, CredentialEnvelopeDto.APPLICATION_JWT_VALUE);
+        } else {
+            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        }
+        return headers;
+    }
     private @NotNull ClientAgentInfo getClientAgentInfo(HttpServletRequest request) {
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
         return new ClientAgentInfo(
