@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.LinkedHashMap;
+import java.util.TreeMap;
 
 /**
  * Configures the OpenAPI document used by Springdoc for the issuer service.
@@ -61,10 +62,13 @@ public class OpenApiConfig {
             if (openApi.getComponents() == null) {
                 openApi.setComponents(new Components());
             }
-            if (openApi.getComponents().getSchemas() == null) {
-                openApi.getComponents().setSchemas(new LinkedHashMap<>());
+            var orderedSchemas = new TreeMap<String, io.swagger.v3.oas.models.media.Schema<?>>();
+            if (openApi.getComponents().getSchemas() != null) {
+                openApi.getComponents().getSchemas().forEach((schemaName, schema) ->
+                        orderedSchemas.put(schemaName, (io.swagger.v3.oas.models.media.Schema<?>) schema));
             }
-            openApi.getComponents().getSchemas().putAll(additionalSchemas);
+            orderedSchemas.putAll(additionalSchemas);
+            openApi.getComponents().setSchemas(new LinkedHashMap<>(orderedSchemas));
         };
     }
 }
