@@ -129,7 +129,7 @@ configs:
         },
         "credential_configurations_supported": {
           "my-test-vc": {
-            "format": "vc+sd-jwt",
+            "format": "dc+sd-jwt",
             "cryptographic_binding_methods_supported": [
               "jwk"
             ],

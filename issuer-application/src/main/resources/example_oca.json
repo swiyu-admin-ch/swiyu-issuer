@@ -26,7 +26,7 @@
     {
       "type": "extend/overlays/data_source/1.0",
       "capture_base": "IDif6Jd863C/YYjp1cHFCTAUr1/TzZSS1l+pv21Q56qs",
-      "format": "vc+sd-jwt",
+      "format": "dc+sd-jwt",
       "attribute_sources": {
         "firstname": "$.firstname",
         "lastname": "$.lastname",
@@ -39,7 +39,7 @@
     {
       "type": "extend/overlays/data_source/1.0",
       "capture_base": "IKLvtGx1NU0007DUTTmI/6Zw+hnGRFicZ5R4vAxg4j2j",
-      "format": "vc+sd-jwt",
+      "format": "dc+sd-jwt",
       "attribute_sources": {
         "name": "$.pets[*].name",
         "race": "$.pets[*].race"

@@ -55,8 +55,6 @@ paths:
               $ref: "#/components/schemas/OauthAccessTokenRequest"
         required: true
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -76,8 +74,6 @@ paths:
         Also provides a DPoP nonce. For more details towards demonstrating proof of possession refer to <a href="https://datatracker.ietf.org/doc/html/rfc9449#name-authorization-server-provid">RFC9449</a>
       operationId: createNonce
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -117,8 +113,6 @@ paths:
                 An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
         required: true
       responses:
-        "404":
-          description: Not Found
         "200":
           description: Credential issued successfully
           content:
@@ -179,8 +173,6 @@ paths:
                 An encoded JWT as described in RFC7519, with the claims as found in the unencrypted request
         required: true
       responses:
-        "404":
-          description: Not Found
         "200":
           description: Credential issued successfully.
           content:
@@ -212,8 +204,6 @@ paths:
               $ref: "#/components/schemas/StatusListCreate"
         required: true
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -234,8 +224,6 @@ paths:
           type: string
           format: uuid
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -265,8 +253,6 @@ paths:
             schema:
               $ref: "#/components/schemas/StatusListUpdate"
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -291,8 +277,6 @@ paths:
               $ref: "#/components/schemas/CreateCredentialOfferRequest"
         required: true
       responses:
-        "404":
-          description: Not Found
         "200":
           description: Credential offer created
           content:
@@ -320,8 +304,6 @@ paths:
           type: string
           format: uuid
       responses:
-        "404":
-          description: Not Found
         "200":
           description: Credential offer found
           content:
@@ -350,8 +332,6 @@ paths:
               additionalProperties: {}
         required: true
       responses:
-        "404":
-          description: Not Found
         "200":
           description: Credential status updated
           content:
@@ -380,8 +360,6 @@ paths:
           type: string
           format: uuid
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -407,8 +385,6 @@ paths:
         schema:
           $ref: "#/components/schemas/UpdateCredentialStatusRequestType"
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -427,8 +403,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -447,8 +421,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -467,8 +439,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -495,8 +465,6 @@ paths:
           type: string
           format: uuid
       responses:
-        "404":
-          description: Not Found
         "200":
           description: Credential offer found
           content:
@@ -523,8 +491,6 @@ paths:
           type: string
           format: uuid
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -538,8 +504,6 @@ paths:
       summary: Actuator root web endpoint
       operationId: links
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -584,8 +548,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -605,8 +567,6 @@ paths:
       summary: Actuator web endpoint 'info'
       operationId: info
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -626,8 +586,6 @@ paths:
       summary: Actuator web endpoint 'health'
       operationId: health
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -652,8 +610,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -679,8 +635,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -693,6 +647,8 @@ paths:
             application/json:
               schema:
                 type: object
+        "404":
+          description: Not Found
   /.well-known/openid-credential-issuer/{tenantId}:
     get:
       tags:
@@ -712,8 +668,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -739,8 +693,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -766,8 +718,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -793,8 +743,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -808,8 +756,6 @@ paths:
       summary: Information about credentials which can be issued.
       operationId: getIssuerMetadata
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -823,8 +769,6 @@ paths:
       summary: Information about credentials which can be issued.
       operationId: getIssuerMetadata_1
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -838,8 +782,6 @@ paths:
       summary: Information about credentials which can be issued.
       operationId: getIssuerMetadata_2
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -871,8 +813,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -904,8 +844,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -937,8 +875,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -970,8 +906,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -1003,8 +937,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -1036,8 +968,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -1069,8 +999,6 @@ paths:
         schema:
           type: string
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -1088,8 +1016,6 @@ paths:
         \ Credential Issuance (OID4VCI) and DPoP."
       operationId: getAuthorizationServerMetadata
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -1107,8 +1033,6 @@ paths:
         \ Credential Issuance (OID4VCI) and DPoP."
       operationId: getAuthorizationServerMetadata_1
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -1126,8 +1050,6 @@ paths:
         \ Credential Issuance (OID4VCI) and DPoP."
       operationId: getAuthorizationServerMetadata_2
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -1145,8 +1067,6 @@ paths:
         \ Credential Issuance (OID4VCI) and DPoP."
       operationId: getAuthorizationServerMetadata_3
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -1164,8 +1084,6 @@ paths:
         \ Credential Issuance (OID4VCI) and DPoP."
       operationId: getAuthorizationServerMetadata_4
       responses:
-        "404":
-          description: Not Found
         "200":
           description: OK
           content:
@@ -2025,17 +1943,6 @@ components:
           type: string
         pre-authorized_grant_anonymous_access_supported:
           type: boolean
-    ApiError:
-      description: Error response object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-        detail:
-          type: string
-        trace_id:
-          type: string
     WebhookCallback:
       description: Callback transmitting information about an event which occurred.
       properties:
@@ -2060,6 +1967,17 @@ components:
         timestamp:
           type: string
           format: date-time
+    ApiError:
+      description: Error response object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        detail:
+          type: string
+        trace_id:
+          type: string
   securitySchemes:
     bearer-jwt:
       type: http
