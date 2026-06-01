@@ -103,7 +103,7 @@ public abstract class CredentialBuilder {
         var contentType = MediaType.APPLICATION_JSON_VALUE;
         if (getCredentialResponseEncryptor().isEncryptionRequired()) {
             payloadJson = getCredentialResponseEncryptor().encryptResponse(payloadJson);
-            contentType = "application/jwt";
+            contentType = CredentialEnvelopeDto.APPLICATION_JWT_VALUE;
         }
 
         return new CredentialEnvelopeDto(contentType, payloadJson, httpStatus);

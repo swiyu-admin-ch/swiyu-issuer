@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryptio
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.jweutil.JweUtil;
 import ch.admin.bj.swiyu.jweutil.JweUtilException;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -101,7 +102,7 @@ public class JweService {
      */
     public String decryptRequest(String requestMessage, String contentType) {
         // Decrypt if holder sent an encrypted
-        if (StringUtils.equalsIgnoreCase("application/jwt", contentType)) {
+        if (StringUtils.equalsIgnoreCase(CredentialEnvelopeDto.APPLICATION_JWT_VALUE, contentType)) {
             return decrypt(requestMessage);
         } else if (isRequestEncryptionMandatory()) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
