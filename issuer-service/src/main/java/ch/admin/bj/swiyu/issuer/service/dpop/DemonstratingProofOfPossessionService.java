@@ -32,6 +32,7 @@ import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Provide functionality to embed Demonstrating Proof of Possession (DPoP) functionality in the greater application
@@ -40,6 +41,7 @@ import lombok.RequiredArgsConstructor;
  * <a href="https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/dpop-tokens.html">spring-security documentation</a>
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DemonstratingProofOfPossessionService {
 
@@ -138,6 +140,7 @@ public class DemonstratingProofOfPossessionService {
                         DemonstratingProofOfPossessionError.USE_DPOP_NONCE);
             } else {
                 // Not enforced, so not having a dpop is fine
+                log.warn("Not enforcing DPoP. This is not intended for productive use!");
                 return true;
             }
         }
