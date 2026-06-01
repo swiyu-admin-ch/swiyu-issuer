@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to align with `draft-ietf-oauth-sd-jwt-vc-09`. Issuer metadata
   configurations may declare either `vc+sd-jwt` or `dc+sd-jwt` as `format`
   during the migration period (Expand-Migrate-Contract). `(#178)`
+- Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default:
+  true).
 
 ### Removed
 - fabric8 dependency is removed due to incompatibility with spring boot 4. External configurations are now can still be used with the techniques described in https://docs.spring.io/spring-boot/reference/features/external-config.html For example using `spring.config.import`
