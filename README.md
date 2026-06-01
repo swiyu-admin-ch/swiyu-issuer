@@ -2,7 +2,7 @@
 
 # Generic issuer service
 
-This software is a web server implementing the technical standards as specified in
+This software is a web server implementing the technical standards as specified in 
 the [swiyu Trust Infrastructure Interoperability Profile](https://swiyu-admin-ch.github.io/specifications/interoperability-profile/).
 Together with the other generic components provided, this software forms a collection of APIs allowing issuance and
 verification of verifiable credentials without the need of reimplementing the standards.
