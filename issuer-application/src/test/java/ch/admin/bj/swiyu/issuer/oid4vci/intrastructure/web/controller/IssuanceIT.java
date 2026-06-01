@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -487,7 +487,7 @@ class IssuanceIT {
         // verify that only 1 status list entry has been created beforehand (as batch issuance is not allowed)
         verify(persistenceService, times(1)).saveStatusListEntries(anyList(), eq(offer.getOfferId()), eq(10));
 
-        var tokenDto = fetchOAuthTokenDpop(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString(), null, null);
+        var tokenDto = fetchOAuthTokenDpop(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString(), null, null, null);
         var token = tokenDto.get("access_token");
         var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 

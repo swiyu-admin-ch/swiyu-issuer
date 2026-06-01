@@ -13,8 +13,6 @@ import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -36,7 +34,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
@@ -46,7 +43,6 @@ import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityExampleWithKeyAttestation;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.createKeyAttestationJwt;
 import static org.junit.jupiter.api.Assertions.*;
@@ -210,10 +206,7 @@ class KeyAttestationFlowIT {
 
         String proof = createKeyAttestationJwt(jwk, jwk, AttackPotentialResistance.ISO_18045_HIGH, null);
 
-        var newOffer = TestInfrastructureUtils.createCredentialOffer(mock, getUniversityExampleWithKeyAttestation(null)).andReturn();
-        var management = getManagementJsonObject(newOffer);
-        var preAuthCode = IssuanceTestUtils.getPreAuthCodeFromDeeplink(management.get("offer_deeplink").getAsString());
-        fetchOAuthTokenDpop(mock, preAuthCode, jwk, applicationProperties.getTemplateReplacement().get("external-url"), proof);
+        fetchOAuthTokenDpop(mock, testOfferHighAttestationId.toString(), jwk, applicationProperties.getTemplateReplacement().get("external-url"), proof);
     }
 
     @Test
@@ -227,11 +220,23 @@ class KeyAttestationFlowIT {
                 .generate());
 
         String proof = createKeyAttestationJwt(jwk, jwk, AttackPotentialResistance.ISO_18045_HIGH, null);
+        var response = fetchOAuthTokenDpop(mock, testOfferHighAttestationId.toString(), unattestedKey, applicationProperties.getTemplateReplacement().get("external-url"), proof);
 
-        var newOffer = TestInfrastructureUtils.createCredentialOffer(mock, getUniversityExampleWithKeyAttestation(null)).andReturn();
-        var management = getManagementJsonObject(newOffer);
-        var preAuthCode = IssuanceTestUtils.getPreAuthCodeFromDeeplink(management.get("offer_deeplink").getAsString());
-        var response = fetchOAuthTokenDpop(mock, preAuthCode, unattestedKey, applicationProperties.getTemplateReplacement().get("external-url"), proof);
+        assertEquals(INVALID_PROOF.getErrorCode(), response.get("error"));
+    }
+
+    @Test
+    void checkDpopKeyAttestation2_thenException() throws Exception {
+        when(applicationProperties.isDpopEnforce()).thenReturn(true);
+        mockDidResolve(jwk.toPublicJWK());
+
+        var unattestedKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
+                .keyID("Different-Key")
+                .keyUse(KeyUse.SIGNATURE)
+                .generate());
+
+        String proof = createKeyAttestationJwt(unattestedKey, unattestedKey, AttackPotentialResistance.ISO_18045_HIGH, null);
+        var response = fetchOAuthTokenDpop(mock, testOfferHighAttestationId.toString(), jwk, applicationProperties.getTemplateReplacement().get("external-url"), proof);
 
         assertEquals(INVALID_PROOF.getErrorCode(), response.get("error"));
     }
@@ -261,10 +266,5 @@ class KeyAttestationFlowIT {
         var storedOffer = credentialOfferRepository.save(offer);
         credentialManagement.addCredentialOffer(storedOffer);
         credentialManagementRepository.save(credentialManagement);
-    }
-
-    private JsonObject getManagementJsonObject(MvcResult result) throws Exception {
-        return JsonParser.parseString(result.getResponse().getContentAsString())
-                .getAsJsonObject();
     }
 }
