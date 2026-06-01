@@ -32,7 +32,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # If your vendor library ships as a tarball rather than a Debian package, COPY
-# it explicitly instead, for example:
+# the shared object file (.so) explicitly instead, for example:
 #   COPY thales/libCryptoki2_64.so /vendor/libCryptoki2_64.so
 
 # Stage 2: layer onto the hardened issuer image.
