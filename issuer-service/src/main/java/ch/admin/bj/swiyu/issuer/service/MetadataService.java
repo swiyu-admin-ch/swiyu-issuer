@@ -120,7 +120,7 @@ public class MetadataService {
      *
      * @param issuerMetadata the issuer metadata to be updated
      * @param tenantId the tenant identifier for which to produce the updated credential configuration
-     * @return copy of the credential configration supported map with updated {@link CredentialConfiguration}
+     * @return copy of the credential configuration supported map with updated {@link CredentialConfiguration}
      */
     private Map<String, CredentialConfiguration> getUpdatedSupportedCredentialConfigurations(
             IssuerMetadata issuerMetadata, UUID tenantId) {
