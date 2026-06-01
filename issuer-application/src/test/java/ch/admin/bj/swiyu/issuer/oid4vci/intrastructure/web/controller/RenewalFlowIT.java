@@ -31,16 +31,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -84,6 +84,7 @@ class RenewalFlowIT {
             DockerImageName.parse("mockserver/mockserver:5.15.0"));
 
     static MockServerClient mockServerClient;
+    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     @Autowired
     MockMvc mockMvc;
     @Autowired
@@ -96,7 +97,6 @@ class RenewalFlowIT {
     SwiyuProperties swiyuProperties;
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
-    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     private StatusListTestHelper statusListTestHelper;
     private String payload;
     private Map<String, Object> payloadMap;
@@ -161,7 +161,7 @@ class RenewalFlowIT {
         var newOffer = TestInfrastructureUtils.createCredentialOffer(mockMvc, deferredPayload).andReturn();
         var management = getManagementJsonObject(newOffer);
         var preAuthCode = IssuanceTestUtils.getPreAuthCodeFromDeeplink(management.get("offer_deeplink").getAsString());
-        var oAuthToken = fetchOAuthTokenDpop(mockMvc, preAuthCode, dpopKey, "http://localhost:8080");
+        var oAuthToken = fetchOAuthTokenDpop(mockMvc, preAuthCode, dpopKey, "http://localhost:8080", null);
 
         requestCredentialWithDpop(mockMvc, (String) oAuthToken.get("access_token"), getCredentialRequestString(mockMvc, List.of(jwk), applicationProperties, "university_example_sd_jwt"), issuerMetadata, dpopKey)
                 .andExpect(status().isAccepted())

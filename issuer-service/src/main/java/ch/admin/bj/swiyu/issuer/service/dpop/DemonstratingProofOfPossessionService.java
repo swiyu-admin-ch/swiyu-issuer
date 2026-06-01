@@ -1,20 +1,5 @@
 package ch.admin.bj.swiyu.issuer.service.dpop;
 
-import java.text.ParseException;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.server.ServletServerHttpRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.nimbusds.jwt.SignedJWT;
-
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
@@ -28,10 +13,22 @@ import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.credential.KeyAttestationService;
+import com.nimbusds.jwt.SignedJWT;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Provide functionality to embed Demonstrating Proof of Possession (DPoP) functionality in the greater application
@@ -44,7 +41,7 @@ import lombok.RequiredArgsConstructor;
 public class DemonstratingProofOfPossessionService {
 
 
-    protected static final String DPOP_KEY_ATTESTATION_CLAIM = "key_attestation";
+    public static final String DPOP_KEY_ATTESTATION_CLAIM = "key_attestation";
     private final ApplicationProperties applicationProperties;
     private final NonceService nonceService;
     private final OAuthService oAuthService;
@@ -148,6 +145,7 @@ public class DemonstratingProofOfPossessionService {
     /**
      * Load the Issuer Metadata to evaluate if any the credentials offered require a certain level of AttackPotentialResistance
      * As android devices do not broadly support ISO_18045_HIGH, ISO_18045_ENHANCED_BASIC is also requiring a key attestation
+     *
      * @param credentialOffer the offer to be evaluated
      * @return true if a key attestation with iso_18045_high is required, else false
      */
@@ -161,12 +159,12 @@ public class DemonstratingProofOfPossessionService {
             return false;
         }
         return credentialOffer.getMetadataCredentialSupportedId().stream()
-            .flatMap(offerCredentialSupportedId -> metadata.getCredentialConfigurationById(offerCredentialSupportedId)
-                .getProofTypesSupported().values().stream())
-            .map(SupportedProofType::getKeyAttestationRequirement)
-            .filter(Objects::nonNull) // Key Attestation Requirement can be null
-            .flatMap(keyAttestationRequirement -> keyAttestationRequirement.getKeyStorage().stream())
-            .anyMatch(attackPotentialResistanceRequirement -> List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH).contains(attackPotentialResistanceRequirement));
+                .flatMap(offerCredentialSupportedId -> metadata.getCredentialConfigurationById(offerCredentialSupportedId)
+                        .getProofTypesSupported().values().stream())
+                .map(SupportedProofType::getKeyAttestationRequirement)
+                .filter(Objects::nonNull) // Key Attestation Requirement can be null
+                .flatMap(keyAttestationRequirement -> keyAttestationRequirement.getKeyStorage().stream())
+                .anyMatch(attackPotentialResistanceRequirement -> List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH).contains(attackPotentialResistanceRequirement));
     }
 
     /**
@@ -175,7 +173,7 @@ public class DemonstratingProofOfPossessionService {
      * @param dpopJwt the DPoP {@code SignedJWT} that must contain a {@code key_attestation}
      *                claim
      * @throws DemonstratingProofOfPossessionException if the {@code key_attestation}
-     *         claim is missing, blank, or cannot be parsed as a valid attestation JWT
+     *                                                 claim is missing, blank, or cannot be parsed as a valid attestation JWT
      */
     protected void validateDPoPKeyAttestation(SignedJWT dpopJwt) {
         /**
@@ -186,10 +184,11 @@ public class DemonstratingProofOfPossessionService {
             throw new DemonstratingProofOfPossessionException("Missing DPoP Key Attestation",
                     DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
         }
-        keyAttestationService.validateKeyAttestation(
+        var attestation = keyAttestationService.validateKeyAttestation(
                 KeyAttestationRequirement.builder()
                         .keyStorage(List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH)).build(),
                 dpopKeyAttestation.toString());
-    }
 
+        keyAttestationService.verifyKeyPresentInAttestation(dpopJwt.getHeader().getJWK(), attestation);
+    }
 }

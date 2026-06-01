@@ -13,6 +13,8 @@ import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -27,13 +29,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
@@ -41,12 +44,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityExampleWithKeyAttestation;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.createKeyAttestationJwt;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -75,7 +81,7 @@ class KeyAttestationFlowIT {
     @Autowired
     CredentialManagementRepository credentialManagementRepository;
 
-    @Autowired
+    @MockitoSpyBean
     ApplicationProperties applicationProperties;
     @MockitoSpyBean
     AsyncCredentialEventHandler testEventListener;
@@ -197,13 +203,45 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_IDENTIFIER.getErrorCode());
     }
 
+    @Test
+    void checkDpopKeyAttestation_withSameKey_thenSuccess() throws Exception {
+        when(applicationProperties.isDpopEnforce()).thenReturn(true);
+        mockDidResolve(jwk.toPublicJWK());
+
+        String proof = createKeyAttestationJwt(jwk, jwk, AttackPotentialResistance.ISO_18045_HIGH, null);
+
+        var newOffer = TestInfrastructureUtils.createCredentialOffer(mock, getUniversityExampleWithKeyAttestation(null)).andReturn();
+        var management = getManagementJsonObject(newOffer);
+        var preAuthCode = IssuanceTestUtils.getPreAuthCodeFromDeeplink(management.get("offer_deeplink").getAsString());
+        fetchOAuthTokenDpop(mock, preAuthCode, jwk, applicationProperties.getTemplateReplacement().get("external-url"), proof);
+    }
+
+    @Test
+    void checkDpopKeyAttestation_thenException() throws Exception {
+        when(applicationProperties.isDpopEnforce()).thenReturn(true);
+        mockDidResolve(jwk.toPublicJWK());
+
+        var unattestedKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
+                .keyID("Different-Key")
+                .keyUse(KeyUse.SIGNATURE)
+                .generate());
+
+        String proof = createKeyAttestationJwt(jwk, jwk, AttackPotentialResistance.ISO_18045_HIGH, null);
+
+        var newOffer = TestInfrastructureUtils.createCredentialOffer(mock, getUniversityExampleWithKeyAttestation(null)).andReturn();
+        var management = getManagementJsonObject(newOffer);
+        var preAuthCode = IssuanceTestUtils.getPreAuthCodeFromDeeplink(management.get("offer_deeplink").getAsString());
+        var response = fetchOAuthTokenDpop(mock, preAuthCode, unattestedKey, applicationProperties.getTemplateReplacement().get("external-url"), proof);
+
+        assertEquals(INVALID_PROOF.getErrorCode(), response.get("error"));
+    }
+
     private void mockDidResolve(JWK key) {
         Mockito.when(didKeyResolver.resolveKey(any())).thenReturn(key);
     }
 
     private TestInfrastructureUtils.CredentialFetchData prepareAttested(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance) throws Exception {
         var nonce = requestNonceDPopHeader(mock);
-
 
         return prepareAttestedVC(mock, preAuthCode, resistance, null, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, "university_example_sd_jwt");
     }
@@ -223,5 +261,10 @@ class KeyAttestationFlowIT {
         var storedOffer = credentialOfferRepository.save(offer);
         credentialManagement.addCredentialOffer(storedOffer);
         credentialManagementRepository.save(credentialManagement);
+    }
+
+    private JsonObject getManagementJsonObject(MvcResult result) throws Exception {
+        return JsonParser.parseString(result.getResponse().getContentAsString())
+                .getAsJsonObject();
     }
 }
