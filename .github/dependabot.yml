@@ -6,10 +6,10 @@
 version: 2
 updates:
   - package-ecosystem: "maven"
-    # Single root directory: Dependabot discovers all pom.xml files recursively in a
-    # multi-module Maven project. Specifying sub-directories separately causes duplicate
-    # PRs for the same dependency (once per manifest), so we only scan from the root.
+    # Use the Maven multi-module root only; Dependabot scans child pom.xml files recursively.
     directory: "/"
+    schedule:
+      interval: "weekly"
     groups:
       # ── Group 1 ──────────────────────────────────────────────────────────────
       # Spring ecosystem (patch + minor only; major Spring updates require manual review)
@@ -56,25 +56,11 @@ updates:
           - "com.squareup.okhttp3*"
           - "com.squareup.okio*"
 
-      # ── Group 5 ──────────────────────────────────────────────────────────────
-      # Tooling & testing: never production-critical; safe to batch into one PR.
+      # Everything else (tests, build tooling, processors, caching, scheduling, utilities, helpers).
+      # "*" ensures no Maven dependency or plugin update remains ungrouped.
       tooling:
         patterns:
-          - "org.testcontainers*"
-          - "com.tngtech.archunit*"
-          - "org.mock-server*"
-          - "org.mockito*"
-          - "org.projectlombok*"
-          - "net.javacrumbs.shedlock*"
-          - "net.java.dev.jna*"            # JNA – required by swiyu-did-resolver-adapter
-          - "com.github.ben-manes.caffeine*"
-          - "org.jetbrains*"
-          - "org.apache.commons*"
-          - "com.jayway.jsonpath*"
-          - "net.minidev*"                 # transitive via Nimbus/Spring Security
-
-    schedule:
-      interval: "weekly"
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/"
