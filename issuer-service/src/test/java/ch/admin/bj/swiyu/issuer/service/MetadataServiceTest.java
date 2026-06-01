@@ -6,6 +6,9 @@ import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.credential.OpenIdIssuerConfiguration;
@@ -23,10 +26,14 @@ import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -57,6 +64,7 @@ class MetadataServiceTest {
         defaultTestIssuerMetadata = IssuerMetadata.builder()
                 .credentialIssuer(externalUrl)
                 .profileVersion(SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                .credentialConfigurationSupported(new HashMap<>(Map.of("test", CredentialConfiguration.builder().vct("testvct").build())))
                 .build();
         when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(defaultTestIssuerMetadata);
 
@@ -105,7 +113,9 @@ class MetadataServiceTest {
     void getSignedIssuerMetadata_throwsConfigurationException_onJoseException() throws Exception {
         UUID tenantId = UUID.randomUUID();
 
-        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(IssuerMetadata.builder().build());
+        when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(
+            IssuerMetadata.builder()
+                .credentialConfigurationSupported(new HashMap<>(Map.of("test", CredentialConfiguration.builder().vct("testvct").build()))).build());
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = mock(JWSSigner.class);
@@ -164,6 +174,35 @@ class MetadataServiceTest {
         assertEquals(SwissProfileVersions.ISSUANCE_PROFILE_VERSION, result.profile_version());
         assertEquals(DpopConstants.SUPPORTED_ALGORITHMS, result.dpop_signing_alg_values_supported());
         assertTrue(result.preauthorized_grant_anonymous_access_supported());
+    }
+
+
+    @Test
+    void getMetadata_whenOverriding_shouldNotAlterDefault() {
+        // Test that when using Metadata override is used that the default values are not overridden
+        final String overrideMetadataUri = "externalUrl";
+        final String overrideMetadataUriIntegrity = "sha256-externalUrlIntegrity";
+        UUID defaultTenant = UUID.randomUUID();
+        UUID overrideTenant = UUID.randomUUID();
+        when(credentialManagementService.getCredentialOfferByTenantId(defaultTenant)).thenReturn(null);
+        when(credentialManagementService.getCredentialOfferByTenantId(overrideTenant)).thenReturn(CredentialOffer.builder()
+        .metadataCredentialSupportedId(List.of("test"))
+            .credentialMetadata(CredentialOfferMetadata.builder()
+                .vctMetadataUri(overrideMetadataUri)
+                .vctMetadataUriIntegrity(overrideMetadataUriIntegrity)
+                .build())
+            .build()
+            );
+        
+        var initialConfig = metadataService.getUnsignedIssuerMetadata(defaultTenant).getCredentialConfigurationById("test");
+        assertThat(initialConfig.getVctMetadataUri()).as("Has no value set").isNull();
+        assertThat(initialConfig.getVctMetadataUriIntegrity()).as("Has no value set").isNull();
+        var overrideConfig = metadataService.getUnsignedIssuerMetadata(overrideTenant).getCredentialConfigurationById("test");
+        assertThat(overrideConfig.getVctMetadataUri()).as("Override is used").isEqualTo(overrideMetadataUri);
+        assertThat(overrideConfig.getVctMetadataUriIntegrity()).as("Override is used").isEqualTo(overrideMetadataUriIntegrity);
+        var secondDefaultConfig = metadataService.getUnsignedIssuerMetadata(defaultTenant).getCredentialConfigurationById("test");
+        assertThat(secondDefaultConfig.getVctMetadataUri()).as("Has no value set and was not altered by override").isNull();
+        assertThat(secondDefaultConfig.getVctMetadataUriIntegrity()).as("Has no value set and was not altered by override").isNull();
     }
 
     private JWSSigner createDummySigner() throws JOSEException {
