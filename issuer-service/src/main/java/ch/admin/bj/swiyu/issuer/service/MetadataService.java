@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -119,12 +120,12 @@ public class MetadataService {
      *
      * @param issuerMetadata the issuer metadata to be updated
      * @param tenantId the tenant identifier for which to produce the updated credential configuration
-     * @return the map of updated supported {@link CredentialConfiguration}
+     * @return copy of the credential configuration supported map with updated {@link CredentialConfiguration}
      */
     private Map<String, CredentialConfiguration> getUpdatedSupportedCredentialConfigurations(
             IssuerMetadata issuerMetadata, UUID tenantId) {
         var credentialOffer = credentialManagementService.getCredentialOfferByTenantId(tenantId);
-        var supportedCredentialConfigurations = issuerMetadata.getCredentialConfigurationSupported();
+        var supportedCredentialConfigurations = new HashMap<>(issuerMetadata.getCredentialConfigurationSupported());
         if (credentialOffer == null) {
             return supportedCredentialConfigurations;
         }

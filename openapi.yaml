@@ -1092,150 +1092,37 @@ paths:
                 $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
 components:
   schemas:
-    OauthAccessTokenRequest:
+    ApiError:
+      description: Error response object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        detail:
+          type: string
+        trace_id:
+          type: string
+    BatchCredentialIssuance:
       type: object
       properties:
-        grant_type:
-          type: string
-          default: urn:ietf:params:oauth:grant-type:pre-authorized_code
-          description: The type of grant being requested. Must be 'urn:ietf:params:oauth:grant-type:pre-authorized_code'
-            or 'refresh_token.
-          minLength: 1
-        pre-authorized_code:
-          type: string
-        refresh_token:
-          type: string
-      required:
-      - grant_type
-    OAuthToken:
-      type: object
-      properties:
-        scope:
-          type: string
-        access_token:
-          type: string
-        refresh_token:
-          type: string
-        token_type:
-          type: string
-        expires_in:
-          type: integer
-          format: int64
-      required:
-      - access_token
-    NonceResponse:
-      type: object
-      properties:
-        c_nonce:
-          type: string
-          description: String containing an unpredictable challenge to be used when
-            creating a proof of possession of the key.
-      required:
-      - c_nonce
-    CredentialResponseEncryption:
-      type: object
-      properties:
-        jwk:
-          type: object
-          additionalProperties: {}
-        enc:
-          type: string
-      required:
-      - enc
-      - jwk
-    DeferredCredentialEndpointRequest:
-      type: object
-      description: Request to the deferred credential endpoint.
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
-          description: Id received from the create credential request for the deferred
-            flow.
-        credential_response_encryption:
-          $ref: "#/components/schemas/CredentialResponseEncryption"
-          description: |
-            Note that this object will be used for encrypting the response, regardless of what was sent in the initial Credential Request.
-            If this parameter is missing, the credential_response_encryption sent in the credential request will be used.
-      required:
-      - transaction_id
-    CredentialEndpointResponse:
-      type: object
-      properties:
-        credentials:
-          type: array
-          items:
-            $ref: "#/components/schemas/CredentialObjectDto"
-        transaction_id:
-          type: string
-        interval:
-          type: integer
-          format: int64
-    CredentialObjectDto:
-      type: object
-      properties:
-        credential:
-          type: string
-          description: |
-            One sdjwt credential as string, if multiple credentials are issued each is wrapped in
-            a separate CredentialObjectDto object.
-    CreateCredentialRequest:
-      type: object
-      description: Request to the Credential Endpoint as defined in OID4VCI 1.0 specification
-      properties:
-        credential_configuration_id:
-          type: string
-          description: |
-            String that uniquely identifies one of the keys in the name/value pairs stored in
-            the credential_configurations_supported Credential Issuer metadata.
-            Only used if a credential_identifiers parameter was not returned from the Token Response as part of the authorization_details parameter.
-            It MUST NOT be used otherwise.
-          example: university_example_sd_jwt
-          minLength: 1
-        proofs:
-          $ref: "#/components/schemas/ProofsDto"
-          description: |
-            Optional object providing 1+ proof of possessions of the cryptographic key material to
-            which the issued Credential instances will be bound to
-          example:
-            jwt:
-            - eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJUZXN0LUtleSIsIngiOiJrdHFJRFpoUjFmY2NlM3VGanpxdDdLRVlEdVdweFJoX3pqdkszanZsS2k4IiwieSI6Ik1UV2ZObTJ6dy1CbklqM2szbW0xZVB3Q3hqTm9DSEowdXN6V25MeHVDemsiLCJpYXQiOjE3NTMyNjkyNzZ9fQ.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvb2lkNHZjaSIsIm5vbmNlIjoiY2U5YzEzNzgtODc2Yi00OGUyLTg0ZmUtOGE0ZjUwZGFkZmJmIiwiaWF0IjoxNzUzMjY5Mjc2fQ.ck-6Oq6IAav1VdFOkq9Qh7tzrl52jJvFBU3aPcZ_20oE73Cf4izN0ECmmiJm_qUMvYJlykQFsX2sW43gFC6vCw
-        credential_response_encryption:
-          $ref: "#/components/schemas/CredentialResponseEncryption"
-          description: |
-            Optional object providing information how to encrypt the Credential Response, if present.
-          example: |
-            {
-               "enc": "A128GCM",
-               "jwk": {"kty":"EC", "alg": "ECDH-ES","crv":"P-256","kid":"transportEncKeyEC","x":"DTaouFJpyVkLvfhoOvuTDR6_nmTt7YTvEHsHzK0Ingk","y":"vOipfo61Sy64XpneRyR5g6NCGXLv_Q7f3-kEDMT-G9U"
-            }
-      required:
-      - credential_configuration_id
-    ProofsDto:
-      type: object
-      properties:
-        jwt:
-          type: array
-          description: |
-            ProofsDto represents the proofs object in the OID4VCI Credential Request.
-          example: jwt
-          items:
-            type: string
-          minItems: 1
-      required:
-      - jwt
-    DeferredData:
-      type: object
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
-        interval:
+        batch_size:
           type: integer
           format: int32
+          minimum: 10
       required:
-      - interval
-      - transaction_id
+      - batch_size
+    ClientAgentInfoDto:
+      type: object
+      properties:
+        remoteAddr:
+          type: string
+        user-agent:
+          type: string
+        accept-language:
+          type: string
+        accept-encoding:
+          type: string
     ConfigurationOverride:
       type: object
       description: Override for configuration to be use for the created entity
@@ -1255,104 +1142,6 @@ components:
           type: string
           description: "The pin which protects the key in the hsm, if any. Note that\
             \ this only the key pin, not hsm password or partition pin."
-    StatusListCreate:
-      type: object
-      properties:
-        type:
-          type: string
-          description: "[DEPRECATED] This parameter is deprecated and should not be\
-            \ sent in future requests."
-        maxLength:
-          type: integer
-          format: int32
-          description: How many status entries can be part of the status list. The
-            memory size of the status list is depending on the type and the config
-            of the status list.
-          example: 100000
-          minimum: 1
-        config:
-          $ref: "#/components/schemas/StatusListCreateConfig"
-          description: |2
-                 Additional config parameters, depending on the status list type. For Example
-                 {"bits": 2}
-                 for token status list with revocation & suspension
-                 {"purpose": "suspension"}
-                 for a bit string status list for suspension
-          example:
-            bits: 2
-        configuration_override:
-          $ref: "#/components/schemas/ConfigurationOverride"
-          description: "Optional Parameter to override configured parameters, such\
-            \ as the DID used or the HSM key used in singing the request object"
-      required:
-      - config
-      - maxLength
-    StatusListCreateConfig:
-      type: object
-      properties:
-        purpose:
-          type: string
-        bits:
-          type: integer
-          format: int32
-          description: "The number of bits used per Referenced Token. More bits allow\
-            \ additional states. 1 bit is only revocation, 2 bits is revocation and\
-            \ suspension of a credential. Possible values are 1, 2, 4, 8."
-          example: 2
-      required:
-      - bits
-    StatusList:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Id of the status list used by the business issuer.
-        statusRegistryUrl:
-          type: string
-          description: URI of the status list used by registry.
-        maxListEntries:
-          type: integer
-          format: int32
-          description: How many status entries can be part of the status list. The
-            memory size of the status list is depending on the type and the config
-            of the status list.
-          example: 100000
-        remainingListEntries:
-          type: integer
-          format: int32
-          description: How many status entries are not used in the  status list.
-          example: 12
-        config:
-          type: object
-          additionalProperties: {}
-          description: |2
-                 Additional config parameters, depending on the status list type. For Example
-                 {"bits": 2}
-                 for token status list with revocation & suspension
-                 {"purpose": "suspension"}
-                 for a bit string status list for suspension
-          example:
-            bits: 2
-    StatusListUpdate:
-      type: object
-      description: Optional overrides for status list updates.
-      properties:
-        configuration_override:
-          $ref: "#/components/schemas/ConfigurationOverride"
-          description: "Optional Parameter to override configured parameters, such\
-            \ as the DID used or the HSM key used in signing the status list"
-    CredentialWithDeeplinkResponse:
-      type: object
-      properties:
-        management_id:
-          type: string
-          format: uuid
-        offer_id:
-          type: string
-          format: uuid
-        offer_deeplink:
-          type: string
     CreateCredentialOfferRequest:
       type: object
       description: Initial credential creation request to start the offering process.
@@ -1417,168 +1206,38 @@ components:
             \ as the DID used or the HSM key used in singing the request object"
       required:
       - metadata_credential_supported_id
-    CredentialOfferMetadataDto:
+    CreateCredentialRequest:
       type: object
+      description: Request to the Credential Endpoint as defined in OID4VCI 1.0 specification
       properties:
-        deferred:
-          type: boolean
-        vct#integrity:
+        credential_configuration_id:
           type: string
-          maxLength: 2147483647
+          description: |
+            String that uniquely identifies one of the keys in the name/value pairs stored in
+            the credential_configurations_supported Credential Issuer metadata.
+            Only used if a credential_identifiers parameter was not returned from the Token Response as part of the authorization_details parameter.
+            It MUST NOT be used otherwise.
+          example: university_example_sd_jwt
           minLength: 1
-        vct_metadata_uri:
-          type: string
-          maxLength: 2147483647
-          minLength: 1
-        vct_metadata_uri#integrity:
-          type: string
-          maxLength: 2147483647
-          minLength: 1
-    CredentialStatusType:
-      type: string
-      description: |2
-            Status for the full lifecycle of a verifiable credential.
-            OFFERED - an offer link has been created, and not yet redeemed by a holder.
-            CANCELLED - the VC was revoked before being claimed.
-            IN_PROGRESS - very short lived state, if the Holder has redeemed the one-time-code, but not yet gotten their credential. To allow a holder to retry fetching the vc set the state to offered.
-            DEFERRED - the offer has been used and all necessary data from the wallet has been received but the credential is not yet issued. To use this state the credential metadata entry has to have deferred set to true.
-            READY - Status set by the business issuer to continue the issuance of the credential for the deferred flow.
-            ISSUED - the VC has been collected by the holder and is valid.
-            SUSPENDED - the VC has been temporarily suspended. To unsuspend change state to issued.
-            REVOKED - the VC has been revoked. This state is final and can not be changed.
-            EXPIRED - the lifetime of the VC expired (not used yet)
-      enum:
-      - INIT
-      - OFFERED
-      - CANCELLED
-      - IN_PROGRESS
-      - DEFERRED
-      - READY
-      - ISSUED
-      - SUSPENDED
-      - REVOKED
-      - REQUESTED
-      - EXPIRED
-      example: SUSPENDED
-    UpdateStatusResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        status:
-          $ref: "#/components/schemas/CredentialStatusType"
-        status_lists:
-          type: array
-          items:
-            type: string
-            format: uuid
-    UpdateCredentialStatusRequestType:
-      type: string
-      description: |2
-            Status for the full lifecycle of a verifiable credential.
-            CANCELLED - the VC was revoked before being claimed.
-            READY - Status set by the business issuer to continue the issuance of the credential for the deferred flow
-            SUSPENDED - the VC has been temporarily suspended. To unsuspend change state to issued.
-            REVOKED - the VC has been revoked. This state is final and can not be changed.
-      enum:
-      - CANCELLED
-      - READY
-      - ISSUED
-      - SUSPENDED
-      - REVOKED
-      example: SUSPENDED
-    ClientAgentInfoDto:
-      type: object
-      properties:
-        remoteAddr:
-          type: string
-        user-agent:
-          type: string
-        accept-language:
-          type: string
-        accept-encoding:
-          type: string
-    CredentialInfoResponse:
-      type: object
-      properties:
-        status:
-          $ref: "#/components/schemas/CredentialStatusType"
-        metadata_credential_supported_id:
-          type: array
-          items:
-            type: string
-        credential_metadata:
-          $ref: "#/components/schemas/CredentialOfferMetadataDto"
-        holder_jwks:
-          type: array
-          items:
-            type: string
-        key_attestations:
-          type: array
-          items:
-            type: string
-        client_agent_info:
-          $ref: "#/components/schemas/ClientAgentInfoDto"
-        offer_expiration_timestamp:
-          type: integer
-          format: int64
-        deferred_offer_expiration_seconds:
-          type: integer
-          format: int32
-        credential_valid_from:
-          type: string
-          format: date-time
-        credential_valid_until:
-          type: string
-          format: date-time
-        offer_deeplink:
-          type: string
-        vc_hash:
-          type: array
-          items:
-            type: string
-    CredentialManagementDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        status:
-          $ref: "#/components/schemas/CredentialStatusType"
-        renewal_request_count:
-          type: integer
-          format: int32
-        renewal_response_count:
-          type: integer
-          format: int32
-        credential_offers:
-          type: array
-          items:
-            $ref: "#/components/schemas/CredentialInfoResponse"
-        dpop_key:
-          type: string
-    StatusResponse:
-      type: object
-      properties:
-        status:
-          $ref: "#/components/schemas/CredentialStatusType"
-    Link:
-      type: object
-      properties:
-        href:
-          type: string
-        templated:
-          type: boolean
-    BatchCredentialIssuance:
-      type: object
-      properties:
-        batch_size:
-          type: integer
-          format: int32
-          minimum: 10
+        proofs:
+          $ref: "#/components/schemas/ProofsDto"
+          description: |
+            Optional object providing 1+ proof of possessions of the cryptographic key material to
+            which the issued Credential instances will be bound to
+          example:
+            jwt:
+            - eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJUZXN0LUtleSIsIngiOiJrdHFJRFpoUjFmY2NlM3VGanpxdDdLRVlEdVdweFJoX3pqdkszanZsS2k4IiwieSI6Ik1UV2ZObTJ6dy1CbklqM2szbW0xZVB3Q3hqTm9DSEowdXN6V25MeHVDemsiLCJpYXQiOjE3NTMyNjkyNzZ9fQ.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvb2lkNHZjaSIsIm5vbmNlIjoiY2U5YzEzNzgtODc2Yi00OGUyLTg0ZmUtOGE0ZjUwZGFkZmJmIiwiaWF0IjoxNzUzMjY5Mjc2fQ.ck-6Oq6IAav1VdFOkq9Qh7tzrl52jJvFBU3aPcZ_20oE73Cf4izN0ECmmiJm_qUMvYJlykQFsX2sW43gFC6vCw
+        credential_response_encryption:
+          $ref: "#/components/schemas/CredentialResponseEncryption"
+          description: |
+            Optional object providing information how to encrypt the Credential Response, if present.
+          example: |
+            {
+               "enc": "A128GCM",
+               "jwk": {"kty":"EC", "alg": "ECDH-ES","crv":"P-256","kid":"transportEncKeyEC","x":"DTaouFJpyVkLvfhoOvuTDR6_nmTt7YTvEHsHzK0Ingk","y":"vOipfo61Sy64XpneRyR5g6NCGXLv_Q7f3-kEDMT-G9U"
+            }
       required:
-      - batch_size
+      - credential_configuration_id
     CredentialClaim:
       type: object
       properties:
@@ -1690,6 +1349,178 @@ components:
             type: string
       required:
       - type
+    CredentialEndpointResponse:
+      type: object
+      properties:
+        credentials:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialObjectDto"
+        transaction_id:
+          type: string
+        interval:
+          type: integer
+          format: int64
+    CredentialInfoResponse:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+        metadata_credential_supported_id:
+          type: array
+          items:
+            type: string
+        credential_metadata:
+          $ref: "#/components/schemas/CredentialOfferMetadataDto"
+        holder_jwks:
+          type: array
+          items:
+            type: string
+        key_attestations:
+          type: array
+          items:
+            type: string
+        client_agent_info:
+          $ref: "#/components/schemas/ClientAgentInfoDto"
+        offer_expiration_timestamp:
+          type: integer
+          format: int64
+        deferred_offer_expiration_seconds:
+          type: integer
+          format: int32
+        credential_valid_from:
+          type: string
+          format: date-time
+        credential_valid_until:
+          type: string
+          format: date-time
+        offer_deeplink:
+          type: string
+        vc_hash:
+          type: array
+          items:
+            type: string
+    CredentialManagementDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+        renewal_request_count:
+          type: integer
+          format: int32
+        renewal_response_count:
+          type: integer
+          format: int32
+        credential_offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialInfoResponse"
+        dpop_key:
+          type: string
+    CredentialObjectDto:
+      type: object
+      properties:
+        credential:
+          type: string
+          description: |
+            One sdjwt credential as string, if multiple credentials are issued each is wrapped in
+            a separate CredentialObjectDto object.
+    CredentialOfferMetadataDto:
+      type: object
+      properties:
+        deferred:
+          type: boolean
+        vct#integrity:
+          type: string
+          maxLength: 2147483647
+          minLength: 1
+        vct_metadata_uri:
+          type: string
+          maxLength: 2147483647
+          minLength: 1
+        vct_metadata_uri#integrity:
+          type: string
+          maxLength: 2147483647
+          minLength: 1
+    CredentialResponseEncryption:
+      type: object
+      properties:
+        jwk:
+          type: object
+          additionalProperties: {}
+        enc:
+          type: string
+      required:
+      - enc
+      - jwk
+    CredentialStatusType:
+      type: string
+      description: |2
+            Status for the full lifecycle of a verifiable credential.
+            OFFERED - an offer link has been created, and not yet redeemed by a holder.
+            CANCELLED - the VC was revoked before being claimed.
+            IN_PROGRESS - very short lived state, if the Holder has redeemed the one-time-code, but not yet gotten their credential. To allow a holder to retry fetching the vc set the state to offered.
+            DEFERRED - the offer has been used and all necessary data from the wallet has been received but the credential is not yet issued. To use this state the credential metadata entry has to have deferred set to true.
+            READY - Status set by the business issuer to continue the issuance of the credential for the deferred flow.
+            ISSUED - the VC has been collected by the holder and is valid.
+            SUSPENDED - the VC has been temporarily suspended. To unsuspend change state to issued.
+            REVOKED - the VC has been revoked. This state is final and can not be changed.
+            EXPIRED - the lifetime of the VC expired (not used yet)
+      enum:
+      - INIT
+      - OFFERED
+      - CANCELLED
+      - IN_PROGRESS
+      - DEFERRED
+      - READY
+      - ISSUED
+      - SUSPENDED
+      - REVOKED
+      - REQUESTED
+      - EXPIRED
+      example: SUSPENDED
+    CredentialWithDeeplinkResponse:
+      type: object
+      properties:
+        management_id:
+          type: string
+          format: uuid
+        offer_id:
+          type: string
+          format: uuid
+        offer_deeplink:
+          type: string
+    DeferredCredentialEndpointRequest:
+      type: object
+      description: Request to the deferred credential endpoint.
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+          description: Id received from the create credential request for the deferred
+            flow.
+        credential_response_encryption:
+          $ref: "#/components/schemas/CredentialResponseEncryption"
+          description: |
+            Note that this object will be used for encrypting the response, regardless of what was sent in the initial Credential Request.
+            If this parameter is missing, the credential_response_encryption sent in the credential request will be used.
+      required:
+      - transaction_id
+    DeferredData:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+        interval:
+          type: integer
+          format: int32
+      required:
+      - interval
+      - transaction_id
     IssuerCredentialRequestEncryption:
       type: object
       properties:
@@ -1823,6 +1654,13 @@ components:
             - iso_18045_enhanced-basic
       required:
       - key_storage
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+        templated:
+          type: boolean
     MetadataClaimDescriptor:
       type: object
       description: |
@@ -1918,16 +1756,15 @@ components:
           description: String value of the alternative text for the logo image
       required:
       - uri
-    SupportedProofType:
+    NonceResponse:
       type: object
       properties:
-        proof_signing_alg_values_supported:
-          type: array
-          items:
-            type: string
-            pattern: ^ES256$
-        key_attestations_required:
-          $ref: "#/components/schemas/KeyAttestationRequirement"
+        c_nonce:
+          type: string
+          description: String containing an unpredictable challenge to be used when
+            creating a proof of possession of the key.
+      required:
+      - c_nonce
     OAuthAuthorizationServerMetadata:
       type: object
       properties:
@@ -1943,6 +1780,180 @@ components:
           type: string
         pre-authorized_grant_anonymous_access_supported:
           type: boolean
+    OAuthToken:
+      type: object
+      properties:
+        scope:
+          type: string
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+          format: int64
+      required:
+      - access_token
+    OauthAccessTokenRequest:
+      type: object
+      properties:
+        grant_type:
+          type: string
+          default: urn:ietf:params:oauth:grant-type:pre-authorized_code
+          description: The type of grant being requested. Must be 'urn:ietf:params:oauth:grant-type:pre-authorized_code'
+            or 'refresh_token.
+          minLength: 1
+        pre-authorized_code:
+          type: string
+        refresh_token:
+          type: string
+      required:
+      - grant_type
+    ProofsDto:
+      type: object
+      properties:
+        jwt:
+          type: array
+          description: |
+            ProofsDto represents the proofs object in the OID4VCI Credential Request.
+          example: jwt
+          items:
+            type: string
+          minItems: 1
+      required:
+      - jwt
+    StatusList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Id of the status list used by the business issuer.
+        statusRegistryUrl:
+          type: string
+          description: URI of the status list used by registry.
+        maxListEntries:
+          type: integer
+          format: int32
+          description: How many status entries can be part of the status list. The
+            memory size of the status list is depending on the type and the config
+            of the status list.
+          example: 100000
+        remainingListEntries:
+          type: integer
+          format: int32
+          description: How many status entries are not used in the  status list.
+          example: 12
+        config:
+          type: object
+          additionalProperties: {}
+          description: |2
+                 Additional config parameters, depending on the status list type. For Example
+                 {"bits": 2}
+                 for token status list with revocation & suspension
+                 {"purpose": "suspension"}
+                 for a bit string status list for suspension
+          example:
+            bits: 2
+    StatusListCreate:
+      type: object
+      properties:
+        type:
+          type: string
+          description: "[DEPRECATED] This parameter is deprecated and should not be\
+            \ sent in future requests."
+        maxLength:
+          type: integer
+          format: int32
+          description: How many status entries can be part of the status list. The
+            memory size of the status list is depending on the type and the config
+            of the status list.
+          example: 100000
+          minimum: 1
+        config:
+          $ref: "#/components/schemas/StatusListCreateConfig"
+          description: |2
+                 Additional config parameters, depending on the status list type. For Example
+                 {"bits": 2}
+                 for token status list with revocation & suspension
+                 {"purpose": "suspension"}
+                 for a bit string status list for suspension
+          example:
+            bits: 2
+        configuration_override:
+          $ref: "#/components/schemas/ConfigurationOverride"
+          description: "Optional Parameter to override configured parameters, such\
+            \ as the DID used or the HSM key used in singing the request object"
+      required:
+      - config
+      - maxLength
+    StatusListCreateConfig:
+      type: object
+      properties:
+        purpose:
+          type: string
+        bits:
+          type: integer
+          format: int32
+          description: "The number of bits used per Referenced Token. More bits allow\
+            \ additional states. 1 bit is only revocation, 2 bits is revocation and\
+            \ suspension of a credential. Possible values are 1, 2, 4, 8."
+          example: 2
+      required:
+      - bits
+    StatusListUpdate:
+      type: object
+      description: Optional overrides for status list updates.
+      properties:
+        configuration_override:
+          $ref: "#/components/schemas/ConfigurationOverride"
+          description: "Optional Parameter to override configured parameters, such\
+            \ as the DID used or the HSM key used in signing the status list"
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+    SupportedProofType:
+      type: object
+      properties:
+        proof_signing_alg_values_supported:
+          type: array
+          items:
+            type: string
+            pattern: ^ES256$
+        key_attestations_required:
+          $ref: "#/components/schemas/KeyAttestationRequirement"
+    UpdateCredentialStatusRequestType:
+      type: string
+      description: |2
+            Status for the full lifecycle of a verifiable credential.
+            CANCELLED - the VC was revoked before being claimed.
+            READY - Status set by the business issuer to continue the issuance of the credential for the deferred flow
+            SUSPENDED - the VC has been temporarily suspended. To unsuspend change state to issued.
+            REVOKED - the VC has been revoked. This state is final and can not be changed.
+      enum:
+      - CANCELLED
+      - READY
+      - ISSUED
+      - SUSPENDED
+      - REVOKED
+      example: SUSPENDED
+    UpdateStatusResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/CredentialStatusType"
+        status_lists:
+          type: array
+          items:
+            type: string
+            format: uuid
     WebhookCallback:
       description: Callback transmitting information about an event which occurred.
       properties:
@@ -1967,17 +1978,6 @@ components:
         timestamp:
           type: string
           format: date-time
-    ApiError:
-      description: Error response object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-        detail:
-          type: string
-        trace_id:
-          type: string
   securitySchemes:
     bearer-jwt:
       type: http
