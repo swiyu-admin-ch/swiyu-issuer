@@ -10,7 +10,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.JWK;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -150,20 +149,6 @@ public class KeyAttestationService {
             throw new Oid4vcException(e, INVALID_PROOF, "Proof key thumbprint computation failed during attested_keys verification!");
         }
     }
-
-
-    public void verifyKeyPresentInAttestation(JWK proofKey, AttestationJwt attestation) {
-        try {
-            if (!attestation.containsKey(proofKey.toECKey())) {
-                throw new Oid4vcException(INVALID_PROOF,
-                        "Proof key does not match any key listed in the attestation's attested_keys",
-                        Map.of("proofKeyThumbprint", proofKey.computeThumbprint().toString()));
-            }
-        } catch (JOSEException e) {
-            throw new Oid4vcException(e, INVALID_PROOF, "Proof key thumbprint computation failed during attested_keys verification!");
-        }
-    }
-
 
     private String computeThumbprintSafe(ECKey key) {
         try {

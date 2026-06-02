@@ -189,6 +189,6 @@ public class DemonstratingProofOfPossessionService {
                         .keyStorage(List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH)).build(),
                 dpopKeyAttestation.toString());
 
-        keyAttestationService.verifyKeyPresentInAttestation(dpopJwt.getHeader().getJWK(), attestation);
+        keyAttestationService.verifyKeyPresentInAttestation(dpopJwt.getHeader().getJWK().toECKey(), attestation);
     }
 }
