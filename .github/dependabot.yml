@@ -5,51 +5,75 @@
 
 version: 2
 updates:
-  - package-ecosystem: "maven" # See documentation for possible values
-    directories:
-      - "/"
-      - "/issuer-application"
-      - "/issuer-service"
+  - package-ecosystem: "maven"
+    # Use the Maven multi-module root only; Dependabot scans child pom.xml files recursively.
+    directory: "/"
+    schedule:
+      interval: "weekly"
     groups:
+      # ── Group 1 ──────────────────────────────────────────────────────────────
+      # Spring ecosystem (patch + minor only; major Spring updates require manual review)
       spring:
         patterns:
-          - "org.springframework.*"
+          - "org.springframework*"   # covers org.springframework, org.springframework.boot,
+                                     # org.springframework.cloud, org.springframework.statemachine, …
           - "org.springdoc*"
+          - "org.apache.tomcat*"     # embedded Tomcat shipped with Spring Boot
         update-types:
           - "patch"
           - "minor"
+
+      # ── Group 2 ──────────────────────────────────────────────────────────────
+      # Internal swiyu / Swiss e-ID ecosystem libraries
       swiyu:
         patterns:
           - "ch.admin.*"
           - "io.github.swiyu*"
+
+      # ── Group 3 ──────────────────────────────────────────────────────────────
+      # Security-sensitive libraries: changes here can silently break auth/encryption
+      # and must be reviewed carefully → kept in their own PR.
       cryptography:
         patterns:
           - "org.bouncycastle*"
-          - "com.nimbus*"
-      database:
+          - "com.nimbusds*"   # nimbus-jose-jwt (was incorrectly "com.nimbus*" before)
+          - "com.authlete*"   # sd-jwt library
+
+      # ── Group 4 ──────────────────────────────────────────────────────────────
+      # Infrastructure: database drivers/migrations, networking, and observability.
+      # These sit below the business logic and are low-risk to batch together.
+      infrastructure:
         patterns:
           - "org.flywaydb*"
           - "org.postgresql*"
           - "org.hibernate*"
-          - "org.testcontainers*"
-      monitoring:
-        patterns:
           - "io.micrometer*"
           - "io.prometheus*"
-      logging:
-        patterns:
+          - "io.zipkin*"             # Brave/Zipkin bridge used by micrometer-tracing
           - "ch.qos.logback*"
           - "net.logstash*"
-      utility:
+          - "io.netty*"
+          - "com.squareup.okhttp3*"
+          - "com.squareup.okio*"
+
+      # Everything else (tests, build tooling, processors, caching, scheduling, utilities, helpers).
+      # "*" ensures no Maven dependency or plugin update remains ungrouped.
+      tooling:
         patterns:
-          - "org.projectlombok*"
-          - "com.tngtech.archunit*"
-          - "org.mock-server*"
-          - "net.javacrumbs.shedlock*"
-          - "net.java.dev.jna*" # For didresolver
-    schedule:
-      interval: "weekly"
+          - "*"
+
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"

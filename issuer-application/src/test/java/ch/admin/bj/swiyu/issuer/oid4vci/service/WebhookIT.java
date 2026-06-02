@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.service.webhook.WebhookEventProducer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.QueueDispatcher;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -25,6 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
@@ -41,10 +43,21 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
+// Effectively disables the @Scheduled background tick of WebhookEventProcessor for this
+// test class only: an interval of 1h means the initialDelay=0 tick still fires once at
+// context start (harmless: DB is empty / cleaned per test), but no further tick races
+// with the explicit triggerCallBackProcess() calls below.
+@TestPropertySource(properties = "webhook.callback-interval=3600000")
 @ExtendWith(OutputCaptureExtension.class)
 class WebhookIT {
     static final String API_KEY_HEADER = "x-api-key";
     static final String API_KEY_VALUE = "1235";
+    // Generous timeout for "request must arrive" assertions: avoids flakiness on slow CI
+    // runners where the WebClient round-trip can easily exceed 100ms.
+    private static final long REQUEST_PRESENT_TIMEOUT_MS = 2_000L;
+    // Short timeout for "no request expected" assertions: the processor was already drained
+    // synchronously, so a few hundred ms is enough to detect a leaked request.
+    private static final long REQUEST_ABSENT_TIMEOUT_MS = 300L;
 
     // https://square.github.io/okhttp/#mockwebserver
     private static MockWebServer mockWebServer;
@@ -76,10 +89,20 @@ class WebhookIT {
     }
 
     @BeforeEach
-    void cleanUp() {
+    void cleanUp() throws InterruptedException {
         // Ensures no leftover CallbackEvents from previous tests remain,
         // which would cause the PESSIMISTIC_WRITE lock in triggerProcessCallback() to block indefinitely.
         callbackEventRepository.deleteAll();
+
+        // Reset the MockWebServer queue + drain any in-flight request that the startup
+        // scheduler tick may have left behind. A fresh QueueDispatcher discards enqueued
+        // but unconsumed responses from previous tests, so a test always starts with a
+        // clean request/response queue.
+        mockWebServer.setDispatcher(new QueueDispatcher());
+        //noinspection StatementWithEmptyBody
+        while (mockWebServer.takeRequest(0, TimeUnit.MILLISECONDS) != null) {
+            // drain pending recorded requests
+        }
     }
 
     @Test
@@ -91,7 +114,7 @@ class WebhookIT {
 
         // When triggered the callback event should be sent and received by our mock business server
         triggerCallBackProcess(1);
-        var request = mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS);
+        var request = mockWebServer.takeRequest(REQUEST_PRESENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         Assertions.assertThat(request).isNotNull();
         Assertions.assertThat(request.getMethod()).isEqualTo("POST");
         Assertions.assertThat(request.getHeader(API_KEY_HEADER)).isEqualTo(API_KEY_VALUE);
@@ -102,7 +125,7 @@ class WebhookIT {
         // We need to enqueue a possible successful response, if we should receive a request
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
         triggerCallBackProcess(0);
-        request = mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS);
+        request = mockWebServer.takeRequest(REQUEST_ABSENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         Assertions.assertThat(request).isNull();
         consumeEnqueued(); // cleanup the mockWebServer
 
@@ -115,14 +138,15 @@ class WebhookIT {
         this.webhookEventProcessor.triggerProcessCallback();
         for (int i = 0; i < num; i++) {
             // For each there should be a call to the webhook receiver
-            request = mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS);
+            request = mockWebServer.takeRequest(REQUEST_PRESENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             Assertions.assertThat(request).isNotNull();
         }
+
 
         // When triggered again, should not send a callback again
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
         this.webhookEventProcessor.triggerProcessCallback();
-        request = mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS);
+        request = mockWebServer.takeRequest(REQUEST_ABSENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         Assertions.assertThat(request).isNull();
         consumeEnqueued(); // cleanup the mockWebServer
 
@@ -142,7 +166,7 @@ class WebhookIT {
     private void consumeEnqueued() throws InterruptedException {
         this.webhookEventProducer.produceOfferStateChangeEvent(UUID.randomUUID(), CredentialOfferStatusType.ISSUED);
         triggerCallBackProcess(1);
-        var request = mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS);
+        var request = mockWebServer.takeRequest(REQUEST_PRESENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         Assertions.assertThat(request).isNotNull();
 
     }
@@ -150,8 +174,14 @@ class WebhookIT {
     private void triggerCallBackProcess(int numExpectedCallbacks) {
         var oldRequestCount = mockWebServer.getRequestCount();
         this.webhookEventProcessor.triggerProcessCallback();
-        var newRequestCount = mockWebServer.getRequestCount();
-        Assertions.assertThat(newRequestCount).isEqualTo(oldRequestCount + numExpectedCallbacks);
+        // MockWebServer increments its request count from the server thread, so the value
+        // can lag a few ms behind the WebClient .block() return. Poll briefly to absorb
+        // that lag and to detect any unexpected extra request.
+        org.awaitility.Awaitility.await()
+                .atMost(java.time.Duration.ofSeconds(2))
+                .pollInterval(java.time.Duration.ofMillis(25))
+                .untilAsserted(() -> Assertions.assertThat(mockWebServer.getRequestCount() - oldRequestCount)
+                        .isEqualTo(numExpectedCallbacks));
     }
 
     @AfterEach
