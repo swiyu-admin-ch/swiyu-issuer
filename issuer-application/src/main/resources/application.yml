@@ -46,7 +46,7 @@ spring:
         size: 2
 http:
   max-redirects: 5
-  object-size-limit: 1048576 # 1MB - DID log with ~400 entries.
+  object-size-limit: 20971520 # 1MB - DID log with ~400 entries.
 
 management:
   endpoint:
@@ -240,7 +240,6 @@ application:
   url-rewrite:
     mapping: "${URL_REWRITE_MAPPING:{}}"
   signed-metadata-enabled: ${ENABLE_SIGNED_METADATA:true}
-  recursive-disclosure-enabled: ${RECURSIVE_DISCLOSURE_ENABLED:false}
   automatic-status-list-synchronization-disabled: ${DISABLE_STATUS_LIST_SYNCHRONIZATION:false}
 
 
