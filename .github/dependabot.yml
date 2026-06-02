@@ -1,15 +1,16 @@
 # Dependabot version update configuration.
 # Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
-# Update strategy per ecosystem:
-#   • Weekly  → patch + minor (safe, auto-mergeable after CI)
-#   • Monthly → major only    (breaking-change risk, requires deliberate review)
+# Update strategy:
+#   • Weekly patch + minor updates are automated via Dependabot (label: patch-minor).
+#   • Major updates are intentionally excluded here and must be applied manually,
+#     because they carry breaking-change risk and require deliberate review.
 
 version: 2
 updates:
 
   # ════════════════════════════════════════════════════════════════════════════
-  # Maven – Weekly: patch + minor updates only
+  # Maven – Weekly: patch + minor only
   # ════════════════════════════════════════════════════════════════════════════
   - package-ecosystem: "maven"
     directory: "/"
@@ -65,54 +66,7 @@ updates:
         update-types: ["patch", "minor"]
 
   # ════════════════════════════════════════════════════════════════════════════
-  # Maven – Monthly: major updates only
-  # ════════════════════════════════════════════════════════════════════════════
-  - package-ecosystem: "maven"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-    labels:
-      - "dependencies"
-      - "major-upgrade"
-    commit-message:
-      prefix: "chore(deps)!: MAJOR"
-    groups:
-      spring-major:
-        patterns:
-          - "org.springframework*"
-          - "org.springdoc*"
-          - "org.apache.tomcat*"
-        update-types: ["major"]
-
-      cryptography-major:
-        patterns:
-          - "org.bouncycastle*"
-          - "com.nimbusds*"
-          - "com.authlete*"
-        update-types: ["major"]
-
-      infrastructure-major:
-        patterns:
-          - "org.flywaydb*"
-          - "org.postgresql*"
-          - "org.hibernate*"
-          - "io.micrometer*"
-          - "io.prometheus*"
-          - "io.zipkin*"
-          - "ch.qos.logback*"
-          - "net.logstash*"
-          - "io.netty*"
-          - "com.squareup.okhttp3*"
-          - "com.squareup.okio*"
-        update-types: ["major"]
-
-      tooling-major:
-        patterns:
-          - "*"
-        update-types: ["major"]
-
-  # ════════════════════════════════════════════════════════════════════════════
-  # Docker – Weekly: patch + minor / Monthly: major only
+  # Docker – Weekly: patch + minor only
   # ════════════════════════════════════════════════════════════════════════════
   - package-ecosystem: "docker"
     directory: "/"
@@ -130,24 +84,8 @@ updates:
           - "*"
         update-types: ["patch", "minor"]
 
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-    labels:
-      - "dependencies"
-      - "docker"
-      - "major-upgrade"
-    commit-message:
-      prefix: "chore(deps)!: MAJOR"
-    groups:
-      docker-major:
-        patterns:
-          - "*"
-        update-types: ["major"]
-
   # ════════════════════════════════════════════════════════════════════════════
-  # GitHub Actions – Weekly: patch + minor / Monthly: major only
+  # GitHub Actions – Weekly: patch + minor only
   # ════════════════════════════════════════════════════════════════════════════
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -164,19 +102,3 @@ updates:
         patterns:
           - "*"
         update-types: ["patch", "minor"]
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-    labels:
-      - "dependencies"
-      - "github-actions"
-      - "major-upgrade"
-    commit-message:
-      prefix: "chore(deps)!: MAJOR"
-    groups:
-      actions-major:
-        patterns:
-          - "*"
-        update-types: ["major"]
