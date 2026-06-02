@@ -2,7 +2,7 @@
 
 # Generic issuer service
 
-This software is a web server implementing the technical standards as specified in
+This software is a web server implementing the technical standards as specified in 
 the [swiyu Trust Infrastructure Interoperability Profile](https://swiyu-admin-ch.github.io/specifications/interoperability-profile/).
 Together with the other generic components provided, this software forms a collection of APIs allowing issuance and
 verification of verifiable credentials without the need of reimplementing the standards.
@@ -53,6 +53,25 @@ A possible deployment configuration of the issuer service. Issuer Business Syste
 > - Generated a DID which is registered on the identifier registry
 > - Registered yourself on the swiyuprobeta portal
 > - Registered yourself on the api self service portal
+
+## Container image variants
+
+Starting with v3.2.0 we publish **two image variants** to GHCR so existing operators have a
+transition period to adopt the hardened runtime:
+
+| Tag pattern | Base image | Entrypoint | User | Status |
+|---|---|---|---|---|
+| `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>`            | `dhi.io/eclipse-temurin:21-debian13` (hardened, no shell) | `java ...` directly | `nonroot` | **Default — recommended** |
+| `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened` | `eclipse-temurin:21-jre-ubi9-minimal`                     | `scripts/entrypoint.sh` | UID `1001` | Transitional — will be removed in a later release |
+
+- **New deployments and operators who have completed the migration** should use the default
+  (unsuffixed) tag.
+- **Operators with pipelines that still depend on the shell-based entrypoint**
+  (`HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`, `MY_SPRING_PROFILES`, `JAVA_BOOTCLASSPATH` /
+  `/lib` JCE-provider mounts) must pin to the `-unhardened` suffix while they apply the
+  changes in [`migration-guides/guide-3.1.x-to-3.2.x.md`](migration-guides/guide-3.1.x-to-3.2.x.md).
+- The two `Dockerfile`s in this repository (`Dockerfile.dhi` for the default, `Dockerfile`
+  for the `-unhardened` variant) are both built and Snyk-scanned on every PR.
 
 ## 1. Set the environment variables
 
@@ -414,9 +433,29 @@ the [Sun PKCS11 provider](https://docs.oracle.com/en/java/javase/22/security/pkc
 specific option.
 Note that for creating the keys it is expected that the public key is provided as self-signed certificate.
 
-For vendor specific options it is necessary to provide the library in the java classpath. For this mount or add the
-necessary jars to the docker container.
-Provide the environment variable `JAVA_BOOTCLASSPATH` to the directory which should be added to the classpath.
+For vendor specific options it is necessary to provide the library in the Java classpath. How
+you do this depends on the image variant you deploy (see
+[Container image variants](#container-image-variants)):
+
+- **Default hardened image** (`dhi.io`-based, distroless-style, no shell) — the entrypoint
+  invokes `java` directly, so a classpath directory cannot be expanded at startup. Vendor
+  JARs must be baked into a derived image and referenced explicitly via `-Xbootclasspath/a:`,
+  and vendor PKCS#11 native libraries (`.so`) need their transitive C-runtime dependencies
+  staged in because the hardened base image strips them. Ready-made example Dockerfiles for
+  both common setups are in [`examples/hsm/`](examples/hsm/):
+    - [`examples/hsm/Dockerfile.sunpkcs11`](examples/hsm/Dockerfile.sunpkcs11) — JDK-bundled
+      SunPKCS11 bridge against a vendor module (SoftHSM2, Thales Luna, nCipher, ...).
+    - [`examples/hsm/Dockerfile.securosys`](examples/hsm/Dockerfile.securosys) — Securosys
+      Primus JCE provider via the vendor JAR.
+
+  The pattern (multi-stage build to stage native libs into `/app/lib-native/`, vendor JAR
+  baked into `/app/lib-ext/`, explicit `-Xbootclasspath/a:` in `ENTRYPOINT`) and the common
+  pitfalls are documented in
+  [`migration-guides/v2.x-to-v3.0.0.md` §4](migration-guides/guide-3.1.x-to-3.2.x.md).
+
+- **Unhardened `-unhardened` image** (transitional) — the shell entrypoint still expands
+  `${JAVA_BOOTCLASSPATH}` (default `./lib`) into `-Xbootclasspath/a:...`, so mounting a
+  volume that contains the vendor JARs at `/app/lib` keeps working as before.
 
 | Variable                      | Description                                                                                                                                                                                |
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

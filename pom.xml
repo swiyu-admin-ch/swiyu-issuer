@@ -34,13 +34,13 @@
         <sonar.jacoco.reportPath>${project.basedir}/issuer-application/target/jacoco.exec</sonar.jacoco.reportPath>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
         <javacrumbs.shedlock.version>6.0.2</javacrumbs.shedlock.version>
-        <archunit-junit5.verion>1.4.1</archunit-junit5.verion>
+        <archunit-junit5.verion>1.4.2</archunit-junit5.verion>
         <nimbus-jose-jwt.version>10.8</nimbus-jose-jwt.version>
         <bouncycastle.version>1.84</bouncycastle.version>
         <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
         <springdoc-openapi-starter-webmvc-ui.version>3.0.0</springdoc-openapi-starter-webmvc-ui.version>
-        <openapi-generator-maven-plugin.version>7.19.0</openapi-generator-maven-plugin.version>
-        <editorconfig-maven-plugin.version>0.1.3</editorconfig-maven-plugin.version>
+        <openapi-generator-maven-plugin.version>7.22.0</openapi-generator-maven-plugin.version>
+        <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <primus-jce.version>2.4.4</primus-jce.version>
         <skip.doc-generate>true</skip.doc-generate>
         <sonar.issue.ignore.multicriteria.e1.ruleKey>xml:S3422</sonar.issue.ignore.multicriteria.e1.ruleKey>
@@ -52,7 +52,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <generic-java-lib.version>1.5.0</generic-java-lib.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
-        <netty.version>4.2.13.Final</netty.version>
+        <netty.version>4.2.15.Final</netty.version>
     </properties>
 
     <dependencyManagement>
@@ -114,7 +114,7 @@
                 <version>${generic-java-lib.version}</version>
             </dependency>
 
-            <!-- fix CVE netty compression/http2 – force 4.2.13.Final -->
+            <!-- fix CVE netty compression/http2 – force ${netty.version} -->
             <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
             <dependency>
                 <groupId>io.netty</groupId>
@@ -134,7 +134,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-http</artifactId>
-                <version>4.2.13.Final</version>
+                <version>${netty.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
@@ -178,7 +178,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.27.0</version>
+                <version>3.28.0</version>
                 <configuration>
                     <printFailingErrors>true</printFailingErrors>
                     <linkXRef>false</linkXRef>

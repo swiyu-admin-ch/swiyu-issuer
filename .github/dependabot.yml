@@ -1,55 +1,109 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# Dependabot version update configuration.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Update strategy:
+#   • Weekly: only patch + minor (label: patch-minor) — grouped per concern.
+#   • Major updates are IGNORED here and tracked manually via the monthly
+#     "Major Dependency Check" workflow which opens a tracking issue.
+#
+# Important: `ignore` at the ecosystem level is what actually suppresses major
+# PRs. Group-level `update-types` alone would still create individual PRs for
+# updates that fall outside a group.
 
 version: 2
 updates:
-  - package-ecosystem: "maven" # See documentation for possible values
-    directories:
-      - "/"
-      - "/issuer-application"
-      - "/issuer-service"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # Maven – Weekly: patch + minor only
+  # ════════════════════════════════════════════════════════════════════════════
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "patch-minor"
+    commit-message:
+      prefix: "chore(deps)"
+    # Suppress ALL major updates – handled manually via tracking issue.
+    # Exception: internal swiyu libraries may bump majors automatically.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       spring:
         patterns:
-          - "org.springframework.*"
+          - "org.springframework*"  # Boot, Cloud, Statemachine, …
           - "org.springdoc*"
-        update-types:
-          - "patch"
-          - "minor"
+          - "org.apache.tomcat*"    # embedded Tomcat
       swiyu:
+        # Internal swiyu / Swiss e-ID libraries
         patterns:
-          - "ch.admin.*"
+          - "ch.admin*"
           - "io.github.swiyu*"
       cryptography:
+        # Auth/encryption libs – silent API breaks possible; kept in their own PR
         patterns:
           - "org.bouncycastle*"
-          - "com.nimbus*"
-      database:
+          - "com.nimbusds*"   # nimbus-jose-jwt
+          - "com.authlete*"   # sd-jwt
+      infrastructure:
+        # DB drivers, migrations, networking, observability
         patterns:
           - "org.flywaydb*"
           - "org.postgresql*"
           - "org.hibernate*"
-          - "org.testcontainers*"
-      monitoring:
-        patterns:
           - "io.micrometer*"
           - "io.prometheus*"
-      logging:
-        patterns:
+          - "io.zipkin*"            # Brave/Zipkin tracing bridge
           - "ch.qos.logback*"
           - "net.logstash*"
-      utility:
+          - "io.netty*"
+          - "com.squareup.okhttp3*"
+          - "com.squareup.okio*"
+      tooling:
+        # Tests, build plugins, processors, utilities – catch-all
         patterns:
-          - "org.projectlombok*"
-          - "com.tngtech.archunit*"
-          - "org.mock-server*"
-          - "net.javacrumbs.shedlock*"
-          - "net.java.dev.jna*" # For didresolver
-    schedule:
-      interval: "weekly"
+          - "*"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # Docker – Weekly: patch + minor only
+  # ════════════════════════════════════════════════════════════════════════════
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "patch-minor"
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      docker:
+        patterns:
+          - "*"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # GitHub Actions – Weekly: patch + minor only
+  # ════════════════════════════════════════════════════════════════════════════
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "patch-minor"
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      actions:
+        patterns:
+          - "*"
