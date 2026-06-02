@@ -186,16 +186,7 @@ public class SdJwtCredential extends CredentialBuilder {
         List<Disclosure> disclosures = new ArrayList<>();
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
-
-        // If recursive disclosure is enabled, traverse nested objects and build
-        // disclosures recursively
-        // so object properties become embedded SD claims; otherwise use the
-        // non-recursive handler.
-        if (getApplicationProperties().isRecursiveDisclosureEnabled()) {
-            handleClaimsRecursive(builder, disclosures, selectivelyDiscloseableData);
-        } else {
-            handleClaims(builder, disclosures, selectivelyDiscloseableData);
-        }
+        handleClaims(builder, disclosures, selectivelyDiscloseableData);
 
         return disclosures;
     }
@@ -251,9 +242,9 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
-    protected void handleClaimsRecursive(SDObjectBuilder builder,
-                                         List<Disclosure> disclosures,
-                                         Map<String, Object> offerData) {
+    protected void handleClaims(SDObjectBuilder builder,
+                                List<Disclosure> disclosures,
+                                Map<String, Object> offerData) {
 
         offerData.forEach((entryKey, entryValue) -> handleClaimRecursive(entryKey, entryValue, disclosures, builder));
     }
@@ -264,35 +255,11 @@ public class SdJwtCredential extends CredentialBuilder {
 
         switch (entryValue) {
             case Map<?, ?> mapValue when mapValue.keySet().stream().allMatch(String.class::isInstance) ->
-                    handleNestedClaimMapRecursive(entryKey, (Map<String, Object>) mapValue, disclosures, builder);
+                    handleNestedClaimMap(entryKey, (Map<String, Object>) mapValue, disclosures, builder);
             case Collection<?> collectionValue ->
                     handleListDisclosures(builder, entryKey, collectionValue, disclosures);
             default -> handleLeafClaim(entryKey, entryValue, disclosures, builder);
         }
-    }
-
-    protected void handleClaims(SDObjectBuilder builder,
-                                List<Disclosure> disclosures,
-                                Map<String, Object> offerData) {
-
-        offerData.forEach((entryKey, entryValue) -> {
-
-            if (validateOfferData(entryKey, entryValue))
-                return;
-
-            // handles list
-            if (entryValue instanceof Collection<?> collectionValue) {
-                var disc = collectionValue.stream().map(item -> {
-                    var dis = new Disclosure(item);
-                    disclosures.add(dis);
-                    return dis.toArrayElement();
-                }).toList();
-
-                builder.putClaim(entryKey, disc);
-            } else {
-                handleLeafClaim(entryKey, entryValue, disclosures, builder);
-            }
-        });
     }
 
     private boolean validateOfferData(String entryKey, Object entryValue) {
@@ -315,16 +282,16 @@ public class SdJwtCredential extends CredentialBuilder {
         return false;
     }
 
-    private void handleNestedClaimMapRecursive(String entryKey,
-                                               Map<String, Object> mapValue,
-                                               List<Disclosure> disclosures,
-                                               SDObjectBuilder builder) {
+    private void handleNestedClaimMap(String entryKey,
+                                      Map<String, Object> mapValue,
+                                      List<Disclosure> disclosures,
+                                      SDObjectBuilder builder) {
 
         // Create a new builder for the nested map to build its disclosures
         var nestedBuilder = new SDObjectBuilder();
 
         // Recursive call for nested maps
-        handleClaimsRecursive(nestedBuilder, disclosures, mapValue);
+        handleClaims(nestedBuilder, disclosures, mapValue);
 
         // Create new Disclosure for the nested map and add it to the disclosures list
         // and the parent builder
