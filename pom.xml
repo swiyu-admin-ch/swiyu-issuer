@@ -52,7 +52,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <generic-java-lib.version>1.5.0</generic-java-lib.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
-        <netty.version>4.2.13.Final</netty.version>
+        <netty.version>4.2.15.Final</netty.version>
     </properties>
 
     <dependencyManagement>
@@ -114,7 +114,7 @@
                 <version>${generic-java-lib.version}</version>
             </dependency>
 
-            <!-- fix CVE netty compression/http2 – force 4.2.13.Final -->
+            <!-- fix CVE netty compression/http2 – force ${netty.version} -->
             <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
             <dependency>
                 <groupId>io.netty</groupId>
@@ -134,7 +134,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-http</artifactId>
-                <version>4.2.13.Final</version>
+                <version>${netty.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
