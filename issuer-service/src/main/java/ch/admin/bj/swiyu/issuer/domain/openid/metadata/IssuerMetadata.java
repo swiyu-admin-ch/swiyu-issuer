@@ -76,11 +76,13 @@ public class IssuerMetadata {
     @JsonProperty("credential_request_encryption")
     @Schema(description = "Object containing information about whether the Credential Issuer supports encryption of the Credential Request on top of TLS.")
     @Valid
+    // Note: This value will be dynamically set during runtime with generated ephemeral keys. It should never be null
     private IssuerCredentialRequestEncryption requestEncryption;
 
     @JsonProperty("credential_response_encryption")
     @Schema(description = "Object containing information about whether the Credential Issuer supports encryption of the Credential Response on top of TLS.")
     @Valid
+    // Note: This value will be dynamically set during runtime with available capabilities. It should never be null.
     private IssuerCredentialResponseEncryption responseEncryption;
 
     @JsonProperty("batch_credential_issuance")
