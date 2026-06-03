@@ -176,7 +176,7 @@ public class DemonstratingProofOfPossessionService {
      *                                                 claim is missing, blank, or cannot be parsed as a valid attestation JWT
      */
     protected void validateDPoPKeyAttestation(SignedJWT dpopJwt) {
-        /**
+        /*
          * A Key Attestation JWT in base64 serialized form
          */
         Object dpopKeyAttestation = dpopJwt.getHeader().getCustomParam(DPOP_KEY_ATTESTATION_CLAIM);
@@ -189,6 +189,11 @@ public class DemonstratingProofOfPossessionService {
                         .keyStorage(List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH)).build(),
                 dpopKeyAttestation.toString());
 
-        keyAttestationService.verifyKeyPresentInAttestation(dpopJwt.getHeader().getJWK().toECKey(), attestation);
+        var dpopJwk = dpopJwt.getHeader().getJWK();
+        if (dpopJwk == null) {
+            throw new DemonstratingProofOfPossessionException("DPoP header is missing embedded JWK",
+                    DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
+        }
+        keyAttestationService.verifyKeyPresentInAttestation(dpopJwk.toECKey(), attestation);
     }
 }
