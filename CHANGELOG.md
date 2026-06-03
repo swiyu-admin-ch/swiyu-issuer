@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `(#979)`.
 - Fix global config bean being permanently overridden by override mechanism `(#993)`.
 - Stop using key attestation for trust requirement evaluation `(#960)`.
-- Add CA certificate handling in Dockerfile and entrypoint `(#682)`.
 
 ### Changed
 - **OID4VCI Credential Format**: Newly issued SD-JWT VCs now use `typ: dc+sd-jwt`
