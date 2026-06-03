@@ -49,6 +49,14 @@ public class TestServiceUtils {
         return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, issueTime, null, null, holderPrivateKey);
     }
 
+    public static String createKeyAttestationJwt(ECKey attestationKey, ECKey holderPrivateKey, AttackPotentialResistance attestationLevel, String attestationIssuerDid) throws JOSEException {
+
+        JWSSigner attestationSigner = new ECDSASigner(attestationKey);
+        var attestation = createKeyAttestation(attestationLevel, holderPrivateKey.toPublicJWK(), attestationIssuerDid == null ? "did:test:test-attestation-builder" : attestationIssuerDid);
+        attestation.sign(attestationSigner);
+        return attestation.serialize();
+    }
+
     @NotNull
     private static String createHolderProofJWT(
             ECKey holderPrivateKey,
@@ -66,10 +74,7 @@ public class TestServiceUtils {
         headerBuilder.jwk(holderPrivateKey.toPublicJWK());
         // Add attestation if required
         if (attestationLevel != null) {
-            JWSSigner attestationSigner = new ECDSASigner(attestationKey);
-            var attestation = createKeyAttestation(attestationLevel, holderPrivateKey.toPublicJWK(), attestationIssuerDid == null ? "did:test:test-attestation-builder" : attestationIssuerDid);
-            attestation.sign(attestationSigner);
-            headerBuilder.customParam("key_attestation", attestation.serialize());
+            headerBuilder.customParam("key_attestation", createKeyAttestationJwt(attestationKey, holderPrivateKey, attestationLevel, attestationIssuerDid));
         }
         JWSHeader header = headerBuilder
                 .build();
