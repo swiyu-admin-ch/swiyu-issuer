@@ -222,6 +222,7 @@ public class CredentialOfferMapper {
                 .credentialValidUntil(request.credentialValidUntil())
                 .credentialValidFrom(request.credentialValidFrom())
                 .statusLists(request.statusLists())
+                .configurationOverride(request.configurationOverride())
                 .build();
     }
 
