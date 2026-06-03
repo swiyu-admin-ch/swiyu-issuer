@@ -128,6 +128,18 @@ public class CredentialOfferTestData {
         return objectMapper.writeValueAsString(payload);
     }
 
+    public static String getUniversityExampleWithKeyAttestation(String statusList) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("metadata_credential_supported_id", List.of("university_example_high_key_attestation_required_sd_jwt"));
+        if (statusList != null) {
+            payload.put("status_lists", List.of(statusList));
+        }
+        payload.put("credential_subject_data", getUniversityCredentialSubjectData());
+
+        return objectMapper.writeValueAsString(payload);
+    }
+
     public static Map<String, Object> getUniversityCredentialListSubjectData() {
         Map<String, Object> credentialSubjectData = new HashMap<>();
         Map<String, Object> nestedSubjectData = new HashMap<>();

@@ -186,16 +186,7 @@ public class SdJwtCredential extends CredentialBuilder {
         List<Disclosure> disclosures = new ArrayList<>();
 
         // https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.2.2
-
-        // If recursive disclosure is enabled, traverse nested objects and build
-        // disclosures recursively
-        // so object properties become embedded SD claims; otherwise use the
-        // non-recursive handler.
-        if (getApplicationProperties().isRecursiveDisclosureEnabled()) {
-            handleClaimsRecursive(builder, disclosures, selectivelyDiscloseableData);
-        } else {
-            handleClaims(builder, disclosures, selectivelyDiscloseableData);
-        }
+        selectivelyDiscloseableData.forEach((entryKey, entryValue) -> handleClaimRecursive(entryKey, entryValue, disclosures, builder));
 
         return disclosures;
     }
@@ -251,52 +242,22 @@ public class SdJwtCredential extends CredentialBuilder {
         }
     }
 
-    protected void handleClaimsRecursive(SDObjectBuilder builder,
-                                         List<Disclosure> disclosures,
-                                         Map<String, Object> offerData) {
-
-        offerData.forEach((entryKey, entryValue) -> handleClaimRecursive(entryKey, entryValue, disclosures, builder));
-    }
-
-    private void handleClaimRecursive(String entryKey, Object entryValue, List<Disclosure> disclosures, SDObjectBuilder builder) {
-        if (validateOfferData(entryKey, entryValue))
-            return;
-
-        switch (entryValue) {
+    private Disclosure handleClaimRecursive(String entryKey, Object entryValue, List<Disclosure> disclosures, SDObjectBuilder builder) {
+        return switch (entryValue) {
             case Map<?, ?> mapValue when mapValue.keySet().stream().allMatch(String.class::isInstance) ->
-                    handleNestedClaimMapRecursive(entryKey, (Map<String, Object>) mapValue, disclosures, builder);
+                    handleNestedClaimMap(entryKey, (Map<String, Object>) mapValue, disclosures, builder);
             case Collection<?> collectionValue ->
                     handleListDisclosures(builder, entryKey, collectionValue, disclosures);
             default -> handleLeafClaim(entryKey, entryValue, disclosures, builder);
-        }
-    }
-
-    protected void handleClaims(SDObjectBuilder builder,
-                                List<Disclosure> disclosures,
-                                Map<String, Object> offerData) {
-
-        offerData.forEach((entryKey, entryValue) -> {
-
-            if (validateOfferData(entryKey, entryValue))
-                return;
-
-            // handles list
-            if (entryValue instanceof Collection<?> collectionValue) {
-                var disc = collectionValue.stream().map(item -> {
-                    var dis = new Disclosure(item);
-                    disclosures.add(dis);
-                    return dis.toArrayElement();
-                }).toList();
-
-                builder.putClaim(entryKey, disc);
-            } else {
-                handleLeafClaim(entryKey, entryValue, disclosures, builder);
-            }
-        });
+        };
     }
 
     private boolean validateOfferData(String entryKey, Object entryValue) {
-        if (SDJWT_PROTECTED_CLAIMS.contains(entryKey)) {
+        return !isProtectedClaim(entryKey) && !containsNullValue(entryValue);
+    }
+
+    private boolean isProtectedClaim(String entryKey) {
+        if (entryKey != null && SDJWT_PROTECTED_CLAIMS.contains(entryKey)) {
             // We only log the issue and do not add the claim.
             log.warn(
                     "Upstream application tried to override protected claim {} in credential offer {}. Original value has been retained",
@@ -304,34 +265,46 @@ public class SdJwtCredential extends CredentialBuilder {
                     getCredentialOffer().getId());
             return true;
         }
+        return false;
+    }
 
+    private boolean containsNullValue(Object entryValue) {
         if (entryValue == null) {
             log.warn(
-                    "Null value for claim {} in credential offer {} has been ignored and will not be included in the credential",
-                    entryKey,
+                    "Null value in credential offer {} has been ignored and will not be included in the credential",
                     getCredentialOffer().getId());
             return true;
         }
         return false;
     }
 
-    private void handleNestedClaimMapRecursive(String entryKey,
-                                               Map<String, Object> mapValue,
-                                               List<Disclosure> disclosures,
-                                               SDObjectBuilder builder) {
+    private Disclosure handleNestedClaimMap(String entryKey,
+                                            Map<String, Object> mapValue,
+                                            List<Disclosure> disclosures,
+                                            SDObjectBuilder builder) {
+
+        if (this.isProtectedClaim(entryKey)) {
+            return null;
+        }
 
         // Create a new builder for the nested map to build its disclosures
         var nestedBuilder = new SDObjectBuilder();
 
         // Recursive call for nested maps
-        handleClaimsRecursive(nestedBuilder, disclosures, mapValue);
+        mapValue.forEach((key, entryValue) -> handleClaimRecursive(key, entryValue, disclosures, nestedBuilder));
 
         // Create new Disclosure for the nested map and add it to the disclosures list
         // and the parent builder
         var nestedDigest = new Disclosure(entryKey, nestedBuilder.build());
 
         disclosures.add(nestedDigest);
-        builder.putSDClaim(nestedDigest);
+
+        // Only add to parent builder if we have a key, otherwise this is a nested map within a list and should not be added as separate claim to the builder
+        if (entryKey != null) {
+            builder.putSDClaim(nestedDigest);
+        }
+
+        return nestedDigest;
     }
 
     /**
@@ -347,29 +320,59 @@ public class SdJwtCredential extends CredentialBuilder {
                 .orElse(new HashMap<>());
     }
 
-    private void handleListDisclosures(SDObjectBuilder builder,
-                                       String key,
-                                       Collection<?> collectionValue,
-                                       List<Disclosure> disclosures) {
+    private Disclosure handleListDisclosures(SDObjectBuilder builder,
+                                             String key,
+                                             Collection<?> collectionValue,
+                                             List<Disclosure> disclosures) {
 
-        var disc = collectionValue.stream().map(item -> {
-            var dis = new Disclosure(item);
-            disclosures.add(dis);
-            return dis.toArrayElement();
-        }).toList();
+        if (this.isProtectedClaim(key)) {
+            return null;
+        }
+
+        SDObjectBuilder nestedBuilder = new SDObjectBuilder();
+
+        var listDisclosures = collectionValue.stream()
+                .filter(item -> !this.containsNullValue(item))
+                .map(item -> handleClaimRecursive(null, item, disclosures, nestedBuilder))
+                .toList();
+
+        var disc = listDisclosures.stream()
+                .filter(Objects::nonNull)
+                .map(Disclosure::toArrayElement)
+                .toList();
 
         var recDisclosure = new Disclosure(key, disc);
         disclosures.add(recDisclosure);
-        builder.putSDClaim(recDisclosure);
+
+        if (key != null) {
+            builder.putSDClaim(recDisclosure);
+        }
+
+        return recDisclosure;
     }
 
-    private void handleLeafClaim(String key,
-                                 Object value,
-                                 List<Disclosure> disclosures,
-                                 SDObjectBuilder builder) {
-        var disclosure = new Disclosure(key, value);
+    private Disclosure handleLeafClaim(String key,
+                                       Object value,
+                                       List<Disclosure> disclosures,
+                                       SDObjectBuilder builder) {
+
+        if (!this.validateOfferData(key, value)) {
+            return null;
+        }
+
+        Disclosure disclosure;
+
+        if (key != null) {
+            disclosure = new Disclosure(key, value);
+            builder.putSDClaim(disclosure);
+        } else {
+            // handle array list element -> does not contain key and is not added to builder
+            disclosure = new Disclosure(value);
+        }
+
         disclosures.add(disclosure);
-        builder.putSDClaim(disclosure);
+
+        return disclosure;
     }
 
     /**

@@ -165,14 +165,14 @@ application:
 
   offer-expiration-interval: "${CREDENTIAL_OFFER_EXPIRATION_INTERVAL:PT15M}"
   encryption-key-rotation-interval: "PT15M"
-  encryption-enforce: false
+  encryption-enforce: true # swiss-profile requires encryption to be used. Do NOT disable in production!
 
   # Enforce Swiss Profile version indications (profile_version) in incoming/outgoing artifacts where applicable.
   # Default: false (transitional period).
   swiss-profile-versioning-enforcement: false
 
   # Set dpop to be mandatory. Changing this default may break interoperability with the wallet and/or impact security.
-  dpop-enforce: false
+  dpop-enforce: true # swiss-profile requires DPoP. Do NOT disable in production!
 
   template-replacement: # Hash Map of Values replaced in the templating
     external-url: "${EXTERNAL_URL:}" # URL under which this service can be reached from the web
@@ -240,7 +240,6 @@ application:
   url-rewrite:
     mapping: "${URL_REWRITE_MAPPING:{}}"
   signed-metadata-enabled: ${ENABLE_SIGNED_METADATA:true}
-  recursive-disclosure-enabled: ${RECURSIVE_DISCLOSURE_ENABLED:false}
   automatic-status-list-synchronization-disabled: ${DISABLE_STATUS_LIST_SYNCHRONIZATION:false}
 
 

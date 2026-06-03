@@ -8,13 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+### Fixed
+- **Security:** DPoP key attestation validation now verifies that the DPoP proof's signing key is listed in the
+  attestation's `attested_keys` claim. Previously, a structurally valid attestation for a *different* key was accepted,
+  allowing an attacker to obtain access and refresh tokens without possessing the required hardware-backed key
+  `(#979)`.
+
 ### Changed
 - **OID4VCI Credential Format**: Newly issued SD-JWT VCs now use `typ: dc+sd-jwt`
   to align with `draft-ietf-oauth-sd-jwt-vc-09`. Issuer metadata
   configurations may declare either `vc+sd-jwt` or `dc+sd-jwt` as `format`
   during the migration period (Expand-Migrate-Contract). `(#178)`
-- Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default:
-  true).
+- **Configuration**: Some defaults have changed with the evolving ecosystem.
+    - Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default: true).
+    - Require Encryption to be used by default.
+    - Require DPoP to be used by default.
+
 - **Docker image:** the published image is now hardened. The default
   (unsuffixed) tag `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
   `dhi.io/eclipse-temurin:21-debian13`, runs as the pre-configured `nonroot` user
@@ -57,6 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
   - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
   - Removed optional springdoc-openapi dependency from `issuer-application` `(#537)`.
+  - [Recursive disclosures](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-selective-disclosure-jwt-22?utm_source=chatgpt.com#section-4.2.6)
+    are now the default therefore `RECURSIVE_DISCLOSURE_ENABLED` is removed and the non-recursive function removed.
 
 ### Fixed
 

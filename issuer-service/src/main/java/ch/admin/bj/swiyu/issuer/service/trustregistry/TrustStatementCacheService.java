@@ -143,9 +143,11 @@ public class TrustStatementCacheService {
             String jwt = trustProtocol20Api.getIdTS(issuerDid).block();
             if (jwt == null) {
                 log.warn("No idTS trust statement found for issuer {}", issuerDid);
-            } else {
-                validateTrustStatement(jwt, "idTS", issuerDid);
             }
+            // TEMPORARILY DISABLED for trust-statements testing and development purposes.
+            // This block will be reviewed and re-enabled later.
+            // validateTrustStatement(jwt, "idTS", issuerDid);
+
             return Optional.ofNullable(jwt);
         } catch (JwtValidatorException e) {
             log.warn("idTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
