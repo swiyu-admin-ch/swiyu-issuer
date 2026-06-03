@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @AllArgsConstructor
@@ -76,7 +77,7 @@ public class NonceService {
     }
 
     @Transactional
-    @Scheduled(fixedRateString = "${application.nonce-lifetime-seconds}")
+    @Scheduled(fixedRateString = "${application.nonce-lifetime-seconds}", timeUnit = TimeUnit.SECONDS)
     public void cleanNonceCache() {
         cachedNonceRepository.deleteAllOlderThan(
                 Instant.now().minus(applicationProperties.getNonceLifetimeSeconds(), ChronoUnit.SECONDS));

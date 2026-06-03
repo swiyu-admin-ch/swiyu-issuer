@@ -128,6 +128,9 @@ class DeferredIssuanceIT {
 
     @BeforeEach
     void setUp() {
+        // Reset the spy so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null,
+        // isBatchIssuanceAllowed=false) do not bleed into subsequent tests that use the real batch size.
+        Mockito.reset(issuerMetadata);
         statusList = saveStatusList(createStatusList());
         var deferredMetadata = new CredentialOfferMetadata(true, null, null, null);
 

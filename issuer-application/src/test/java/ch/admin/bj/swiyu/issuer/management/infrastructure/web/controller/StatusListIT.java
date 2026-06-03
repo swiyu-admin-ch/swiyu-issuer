@@ -88,6 +88,10 @@ class StatusListIT {
 
     @BeforeEach
     void setUp() throws JOSEException, KeyStrategyException {
+        // Reset the spy so that stubs (e.g. isAutomaticStatusListSynchronizationDisabled=true) from
+        // previous tests do not bleed into tests that expect the real/default behaviour.
+        Mockito.reset(applicationProperties);
+
         var statusListEntryCreationDto = new StatusListEntryCreationDto();
         statusListEntryCreationDto.setId(statusListUUID);
         statusListEntryCreationDto.setStatusRegistryUrl(statusRegistryUrl);
@@ -322,7 +326,7 @@ class StatusListIT {
     @Test
     void updateStatusList_withInvalidStatusList_throwsException() throws Exception {
 
-        when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true);
+        doReturn(true).when(applicationProperties).isAutomaticStatusListSynchronizationDisabled();
 
         mvc.perform(post(STATUS_LIST_BASE_URL + "/" + statusListUUID)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -335,7 +339,7 @@ class StatusListIT {
 
         var statusList = createStatusList();
 
-        when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true);
+        doReturn(true).when(applicationProperties).isAutomaticStatusListSynchronizationDisabled();
 
         var offer = createOffer(statusList);
 
@@ -391,7 +395,7 @@ class StatusListIT {
     @Test
     void updateStatusList_checkIfRegistryCalledWithAutomaticUpdateDisabled_thenSuccess() throws Exception {
 
-        when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true);
+        doReturn(true).when(applicationProperties).isAutomaticStatusListSynchronizationDisabled();
 
         var statusList = createStatusList();
 
