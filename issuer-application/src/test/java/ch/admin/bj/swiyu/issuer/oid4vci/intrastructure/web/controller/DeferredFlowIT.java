@@ -124,6 +124,10 @@ class DeferredFlowIT {
 
     @BeforeEach
     void setUp() throws JOSEException {
+        // Reset spies so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null)
+        // do not bleed into subsequent tests that rely on the real bean behaviour.
+        Mockito.reset(issuerMetadata);
+        Mockito.reset(testEventListener);
         cleanDatabase();
         statusList = saveStatusList(createStatusList());
 

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,7 +54,7 @@ import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doReturn;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -124,6 +125,9 @@ class IssuanceControllerIT {
 
     @BeforeEach
     void setUp() throws Exception {
+        // Reset the spy so that stubs from previous tests (e.g. isSignedMetadataEnabled=true set by
+        // testGetIssuerMetadataWithSignedMetadata_thenSuccess) do not bleed into subsequent tests.
+        Mockito.reset(applicationProperties);
         testStatusList = saveStatusList(createStatusList());
         CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
         var offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt",
@@ -145,7 +149,7 @@ class IssuanceControllerIT {
     @Test
     void testGetIssuerMetadataWithSignedMetadata_thenSuccess() throws Exception {
         // Override with always enabled signed metadata
-        when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
+        doReturn(true).when(applicationProperties).isSignedMetadataEnabled();
 
         String minPayloadWithEmptySubject = getMinimalPayloadForCredentialSupportedIdTest();
 

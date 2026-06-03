@@ -295,6 +295,12 @@ We strictly follow the Test Pyramid. Copilot must adhere to the following scope,
 - **Rule for Integration & Application Tests:** Use BDD style `given_when_then` format.
     - *Example:* `givenEmptyCart_whenCalculatingTotal_thenReturnZero()`
 
+### Mockito Spy Rules (`@MockitoSpyBean`)
+- **Rule:** Always use `doReturn(...).when(spy).method()` when stubbing a spy — **never** `when(spy.method()).thenReturn(...)`.
+    - Reason: The `when(spy.method())` form invokes the real method once during stub registration. If that method internally delegates to other methods of the same bean, Mockito may fail to match the return type and throw `WrongTypeOfReturnValue` non-deterministically.
+- **Rule:** Always call `Mockito.reset(spy)` at the start of `@BeforeEach` whenever the spy is re-stubbed in individual tests.
+    - Reason: Spring Boot does **not** reset `@MockitoSpyBean` beans between tests. Without an explicit reset, stubs set in one test (e.g. `isRenewalFlowEnabled() → false`) remain active in subsequent tests, causing non-deterministic (flaky) failures depending on JUnit's execution order.
+
 ## 6. Agent Workflow & Communication
 
 - **Iterative Approach for Complex Tasks:** For large features or multi-file refactorings, briefly outline your plan (affected files, key steps) and immediately provide the code for the **first logical step**.
