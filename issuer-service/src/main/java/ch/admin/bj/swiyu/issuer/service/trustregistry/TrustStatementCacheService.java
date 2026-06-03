@@ -143,8 +143,6 @@ public class TrustStatementCacheService {
             String jwt = trustProtocol20Api.getIdTS(issuerDid).block();
             if (jwt == null) {
                 log.warn("No idTS trust statement found for issuer {}", issuerDid);
-            } else {
-                validateTrustStatement(jwt, "idTS", issuerDid);
             }
             // TEMPORARILY DISABLED for trust-statements testing and development purposes.
             // This block will be reviewed and re-enabled later.
@@ -173,11 +171,9 @@ public class TrustStatementCacheService {
             }
 
             log.debug("Fetched {} piaTS JWT(s) for issuer {}", jwts.size(), issuerDid);
-            // TEMPORARILY DISABLED for trust-statements testing and development purposes.
-            // This block will be reviewed and re-enabled later.
-            //  for (String jwt : jwts) {
-            //      validateTrustStatement(jwt, "piaTS", issuerDid);
-            //  }
+            for (String jwt : jwts) {
+                validateTrustStatement(jwt, "piaTS", issuerDid);
+            }
             return Optional.of(List.copyOf(jwts));
         } catch (JwtValidatorException e) {
             log.warn("piaTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
