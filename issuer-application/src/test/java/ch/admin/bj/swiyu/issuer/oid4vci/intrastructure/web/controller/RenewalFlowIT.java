@@ -66,6 +66,7 @@ import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.fetc
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -148,11 +149,10 @@ class RenewalFlowIT {
         // here
         assertDoesNotThrow(this::createCredential);
 
-        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(120);
-        when(applicationProperties.isRenewalFlowEnabled()).thenReturn(true);
-        when(applicationProperties.getBusinessIssuerRenewalApiEndpoint())
-                .thenReturn(mockServerContainer.getEndpoint()
-                        + TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT);
+        doReturn(120).when(applicationProperties).getNonceLifetimeSeconds();
+        doReturn(true).when(applicationProperties).isRenewalFlowEnabled();
+        doReturn(mockServerContainer.getEndpoint() + TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT)
+                .when(applicationProperties).getBusinessIssuerRenewalApiEndpoint();
     }
 
     @Test
@@ -238,7 +238,7 @@ class RenewalFlowIT {
     @Test
     void testRenewalWhenDisabled_throwsException() throws Exception {
 
-        when(applicationProperties.isRenewalFlowEnabled()).thenReturn(false);
+        doReturn(false).when(applicationProperties).isRenewalFlowEnabled();
 
         // renew token
         var tokenResponse = refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey);
