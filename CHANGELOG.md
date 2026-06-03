@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+### Fixed
+- **Security:** DPoP key attestation validation now verifies that the DPoP proof's signing key is listed in the
+  attestation's `attested_keys` claim. Previously, a structurally valid attestation for a *different* key was accepted,
+  allowing an attacker to obtain access and refresh tokens without possessing the required hardware-backed key
+  `(#979)`.
+
 ### Changed
 - **OID4VCI Credential Format**: Newly issued SD-JWT VCs now use `typ: dc+sd-jwt`
   to align with `draft-ietf-oauth-sd-jwt-vc-09`. Issuer metadata
