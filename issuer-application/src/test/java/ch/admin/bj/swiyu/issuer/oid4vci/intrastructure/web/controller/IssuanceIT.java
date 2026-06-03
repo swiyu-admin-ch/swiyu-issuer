@@ -83,6 +83,10 @@ class IssuanceIT {
 
     @BeforeEach
     void setUp() {
+        // Reset spies so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null)
+        // do not bleed into subsequent tests that rely on the real bean behaviour.
+        reset(issuerMetadata);
+        reset(persistenceService);
         testStatusList = saveStatusList(createStatusList());
         holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
