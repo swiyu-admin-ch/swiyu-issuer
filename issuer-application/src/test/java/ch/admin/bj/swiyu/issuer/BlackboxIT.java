@@ -67,7 +67,7 @@ import java.util.stream.IntStream;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doReturn;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -131,8 +131,9 @@ class BlackboxIT {
         var statusListEntry = statusListTestHelper.buildStatusListEntry();
         var statusListEntryString = mapper.writeValueAsString(statusListEntry);
 
-        when(statusRegistryTokenService.getAccessToken()).thenReturn("invalidAccessToken").thenReturn("refreshedAccessToken");
-        when(statusRegistryTokenService.forceRefreshAccessToken()).thenReturn("refreshedAccessToken");
+        doReturn("invalidAccessToken").doReturn("refreshedAccessToken")
+                .when(statusRegistryTokenService).getAccessToken();
+        doReturn("refreshedAccessToken").when(statusRegistryTokenService).forceRefreshAccessToken();
 
         mockServerClient
                 .when(
