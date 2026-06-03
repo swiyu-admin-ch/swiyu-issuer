@@ -113,6 +113,11 @@ class RenewalFlowIT {
 
     @BeforeEach
     void setUp() throws Exception {
+        // Reset the spy so that no stub from a previous test (e.g. isRenewalFlowEnabled(false)
+        // set by testRenewalWhenDisabled_throwsException) leaks into the next test through the
+        // shared bean. We re-stub everything we need below.
+        Mockito.reset(applicationProperties);
+
         mockServerClient.reset();
         statusListTestHelper = new StatusListTestHelper(mockMvc, objectMapper);
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
