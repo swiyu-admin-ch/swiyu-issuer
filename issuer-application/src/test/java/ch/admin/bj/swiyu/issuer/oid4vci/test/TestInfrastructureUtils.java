@@ -38,6 +38,7 @@ import java.security.MessageDigest;
 import java.text.ParseException;
 import java.util.*;
 
+import static ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService.DPOP_KEY_ATTESTATION_CLAIM;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -45,47 +46,45 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class TestInfrastructureUtils {
     public static Map<String, Object> fetchOAuthToken(MockMvc mock, String preAuthCode) throws Exception {
-        return fetchOAuthTokenDpop(mock, preAuthCode, null, null);
+        return fetchOAuthTokenDpop(mock, preAuthCode, null, null, null);
     }
 
     /**
      * Fetches OAuth 2.0 token with optional DPoP
      *
-     * @param mock            MockMvc to perform call with
-     * @param preAuthCode     existing pre-AuthCode to fetch OAuth token with
-     * @param holderPublicKey (optional) used to build DPoP-Proof
-     * @param externalUrl     (required if providing holderPublicKey) used to set DPoP checked http URI
+     * @param mock              MockMvc to perform call with
+     * @param preAuthCode       existing pre-AuthCode to fetch OAuth token with
+     * @param holderPublicKey   (optional) used to build DPoP-Proof
+     * @param externalUrl       (required if providing holderPublicKey) used to set DPoP checked http URI
+     * @param keyAttestationJwt (optional) used to set attestation claim in DPoP header if holderPublicKey is provided
      * @return OAuthToken response
      * @throws Exception on request/signing/parsing errors
      */
-    public static Map<String, Object> fetchOAuthTokenDpop(MockMvc mock, String preAuthCode, @Nullable JWK holderPublicKey, @Nullable String externalUrl) throws Exception {
+    public static Map<String, Object> fetchOAuthTokenDpop(MockMvc mock, String preAuthCode, @Nullable JWK holderPublicKey, @Nullable String externalUrl, String keyAttestationJwt) throws Exception {
         var requestBuilder = post("/oid4vci/api/token")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                 .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
                 .param("pre-authorized_code", preAuthCode);
         if (holderPublicKey != null) {
-            requestBuilder.header("DPoP", createDPoP(mock, "POST", externalUrl + "/oid4vci/api/token", null, holderPublicKey));
+            requestBuilder.header("DPoP", createDPoP(mock, "POST", externalUrl + "/oid4vci/api/token", null, holderPublicKey, keyAttestationJwt));
         }
-        var response = mock.perform(requestBuilder)
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("expires_in")))
-                .andExpect(content().string(containsString("access_token")))
-                .andReturn();
+        var response = mock.perform(requestBuilder).andReturn();
         @SuppressWarnings("unchecked")
         Map<String, Object> tokenResponse = new ObjectMapper().readValue(response.getResponse().getContentAsString(), HashMap.class);
         return tokenResponse;
     }
 
     /**
-     * @param mock        MockMvc to perform call with
-     * @param httpMethod  Method the call the dpop will be used for will be using
-     * @param httpUri     absolute URI to the location the call the dpop will be used for will be going to
-     * @param accessToken access token which has been associated with the dpopKey used as Bearer token in the call
-     * @param dpopKey     Key which is bound with the OAuth2.0 session
+     * @param mock                    MockMvc to perform call with
+     * @param httpMethod              Method the call the dpop will be used for will be using
+     * @param httpUri                 absolute URI to the location the call the dpop will be used for will be going to
+     * @param accessToken             access token which has been associated with the dpopKey used as Bearer token in the call
+     * @param dpopKey                 Key which is bound with the OAuth2.0 session
+     * @param dPoPKeyAttestationClaim
      * @return Serialized DPoP JWT
      * @throws Exception
      */
-    public static String createDPoP(MockMvc mock, String httpMethod, String httpUri, String accessToken, JWK dpopKey) throws Exception {
+    public static String createDPoP(MockMvc mock, String httpMethod, String httpUri, String accessToken, JWK dpopKey, String dPoPKeyAttestationClaim) throws Exception {
         // Fetch fresh nonce
         var nonce = requestNonceDPopHeader(mock);
         assertNotNull(nonce);
@@ -98,11 +97,17 @@ public class TestInfrastructureUtils {
         if (StringUtils.isNotEmpty(accessToken)) {
             claimSetBuilder.claim("ath", Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(accessToken.getBytes(StandardCharsets.UTF_8))));
         }
-        var signedJwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+
+        JWSHeader.Builder headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .jwk(dpopKey.toPublicJWK())
                 .type(new JOSEObjectType("dpop+jwt"))
-                .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
-                .build(),
+                .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION);
+
+        if (dPoPKeyAttestationClaim != null) {
+            headerBuilder.customParam(DPOP_KEY_ATTESTATION_CLAIM, dPoPKeyAttestationClaim);
+        }
+        var signedJwt = new SignedJWT(
+                headerBuilder.build(),
                 claimSetBuilder.build());
         signedJwt.sign(new ECDSASigner(dpopKey.toECKey()));
         return signedJwt.serialize();

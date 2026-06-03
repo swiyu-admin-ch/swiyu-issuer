@@ -60,6 +60,7 @@ jobs:
         with:
           rulesets: '.github/rulesets/java/pmd_omni_ruleset.xml'
       - name: Upload PMD SARIF to GitHub Code Scanning
+        if: always() && hashFiles('pmd-report.sarif') != ''
         uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4
         with:
           sarif_file: pmd-report.sarif
@@ -75,7 +76,7 @@ jobs:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           args: --maven-aggregate-project --severity-threshold=high --sarif-file-output=snyk.sarif
       - name: Upload result as sarif to GitHub Code Scanning 📦
-        if: always() # We want to upload the SARIF file even if the Snyk action fails, to have the results in the Code Scanning tab of GitHub
+        if: always() && hashFiles('snyk.sarif') != '' # We want to upload the SARIF file even if the Snyk action fails, to have the results in the Code Scanning tab of GitHub
         uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4
         with:
           sarif_file: snyk.sarif
