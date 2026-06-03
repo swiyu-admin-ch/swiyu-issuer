@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed validation of recursively nested array lists in credential claims `(#1000)`.
+- Fixed credential renewal not applying `configuration_override` to newly issued VCs `(#1002)`.
 - **Security:** DPoP key attestation validation now verifies that the DPoP proof's signing key is listed in the
   attestation's `attested_keys` claim. Previously, a structurally valid attestation for a *different* key was accepted,
   allowing an attacker to obtain access and refresh tokens without possessing the required hardware-backed key
