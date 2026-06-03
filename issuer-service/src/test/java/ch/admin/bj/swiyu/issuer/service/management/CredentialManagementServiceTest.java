@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
+import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
@@ -31,6 +32,7 @@ import java.util.*;
 
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -564,7 +566,7 @@ class CredentialManagementServiceTest {
                 validUntil,
                 validFrom,
                 List.of(statusListUri),
-                null
+                new ConfigurationOverrideDto("did:example:issuer", "did:example:issuer#key-1", "key-1", null)
         );
 
         CredentialManagement management = CredentialManagement.builder()
@@ -589,6 +591,9 @@ class CredentialManagementServiceTest {
         assertEquals(validFrom, updated.getCredentialValidFrom());
         assertEquals(validUntil, updated.getCredentialValidUntil());
         assertNotNull(updated.getOfferData());
+        assertThat(updated.getConfigurationOverride()).as("Override was provided with renewal data").isNotNull();
+        assertThat(updated.getConfigurationOverride().issuerDid()).as("issuer did was overridden").isEqualTo("did:example:issuer");
+        assertThat(updated.getConfigurationOverride().keyId()).as("HSM Key ID was set").isEqualTo("key-1");
 
         verify(validationService, times(1)).validateCredentialOfferCreateRequest(any(CreateCredentialOfferRequestDto.class), anyMap());
         verify(statusListOrchestrator, times(1)).lockAndValidateStatusListsForOffer(any(CreateCredentialOfferRequestDto.class));
