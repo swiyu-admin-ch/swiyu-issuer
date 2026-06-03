@@ -66,6 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
   - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
   - Removed optional springdoc-openapi dependency from `issuer-application` `(#537)`.
+  - [Recursive disclosures](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-selective-disclosure-jwt-22?utm_source=chatgpt.com#section-4.2.6)
+    are now the default therefore `RECURSIVE_DISCLOSURE_ENABLED` is removed and the non-recursive function removed.
 
 ### Fixed
 

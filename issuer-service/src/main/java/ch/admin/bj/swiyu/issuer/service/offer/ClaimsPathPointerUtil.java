@@ -24,8 +24,8 @@ public class ClaimsPathPointerUtil {
         List<Object> sanitizedRequestValues = requestedValues;
 
         if (requestedValues != null) {
-            // if number cast to double as the sdjwt uses GSON which unmarshals all numbers to double
-            sanitizedRequestValues = requestedValues.stream().map(value -> value instanceof Number number ? number.doubleValue() : value).toList();
+            // if int cast to long
+            sanitizedRequestValues = requestedValues.stream().map(value -> value instanceof Integer number ? number.longValue() : value).toList();
         }
 
         if (requestedValues != null && Collections.disjoint(claims, sanitizedRequestValues)) {
