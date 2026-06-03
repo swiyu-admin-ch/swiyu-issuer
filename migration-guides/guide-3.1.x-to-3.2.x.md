@@ -1,5 +1,5 @@
-# Migration Guide: v2.x to v3.0.0
-This guide helps you migrate from **v2.x** to **v3.0.0** of the Swiyu Issuer Service.
+# Migration Guide: v3.1.x to v3.2.x
+This guide helps you migrate from **v3.1.x** to **v3.2.x** of the Swiyu Issuer Service.
 It is based on the **[NEXT]** section in `CHANGELOG.md` and the migration to the hardened
 `dhi.io` base image (`#834`).
 ## Compatibility summary
