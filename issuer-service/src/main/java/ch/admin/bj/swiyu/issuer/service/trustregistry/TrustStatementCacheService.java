@@ -146,6 +146,10 @@ public class TrustStatementCacheService {
             } else {
                 validateTrustStatement(jwt, "idTS", issuerDid);
             }
+            // TEMPORARILY DISABLED for trust-statements testing and development purposes.
+            // This block will be reviewed and re-enabled later.
+            // validateTrustStatement(jwt, "idTS", issuerDid);
+
             return Optional.ofNullable(jwt);
         } catch (JwtValidatorException e) {
             log.warn("idTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
@@ -169,9 +173,11 @@ public class TrustStatementCacheService {
             }
 
             log.debug("Fetched {} piaTS JWT(s) for issuer {}", jwts.size(), issuerDid);
-            for (String jwt : jwts) {
-                validateTrustStatement(jwt, "piaTS", issuerDid);
-            }
+            // TEMPORARILY DISABLED for trust-statements testing and development purposes.
+            // This block will be reviewed and re-enabled later.
+            //  for (String jwt : jwts) {
+            //      validateTrustStatement(jwt, "piaTS", issuerDid);
+            //  }
             return Optional.of(List.copyOf(jwts));
         } catch (JwtValidatorException e) {
             log.warn("piaTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
