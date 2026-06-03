@@ -19,8 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to align with `draft-ietf-oauth-sd-jwt-vc-09`. Issuer metadata
   configurations may declare either `vc+sd-jwt` or `dc+sd-jwt` as `format`
   during the migration period (Expand-Migrate-Contract). `(#178)`
-- Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default:
-  true).
+- **Configuration**: Some defaults have changed with the evolving ecosystem.
+    - Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default: true).
+    - Require Encryption to be used by default.
+    - Require DPoP to be used by default.
+
 - **Docker image:** the published image is now hardened. The default
   (unsuffixed) tag `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
   `dhi.io/eclipse-temurin:21-debian13`, runs as the pre-configured `nonroot` user
