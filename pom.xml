@@ -38,7 +38,7 @@
         <nimbus-jose-jwt.version>10.8</nimbus-jose-jwt.version>
         <bouncycastle.version>1.84</bouncycastle.version>
         <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
-        <springdoc-openapi-starter-webmvc-ui.version>3.0.0</springdoc-openapi-starter-webmvc-ui.version>
+        <springdoc-openapi-starter-webmvc-ui.version>3.0.3</springdoc-openapi-starter-webmvc-ui.version>
         <openapi-generator-maven-plugin.version>7.22.0</openapi-generator-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <primus-jce.version>2.4.4</primus-jce.version>
