@@ -19,6 +19,7 @@ import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,8 +51,10 @@ import static org.mockito.Mockito.*;
  */
 class CredentialManagementServiceTest {
     private static final String TEST_STATUS_LIST_URI = "https://localhost:8080/status";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final Map<String, Object> offerData = Map.of("hello", "world");
+
 
     private CredentialManagementService credentialService;
 
@@ -101,7 +104,8 @@ class CredentialManagementServiceTest {
                 validationService,
                 stateService,
                 persistenceService,
-                statusListOrchestrator
+                statusListOrchestrator,
+                objectMapper
         );
 
         createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
