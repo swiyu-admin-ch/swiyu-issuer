@@ -14,12 +14,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.MultiValueMap;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.server.NotAcceptableStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.List;
@@ -150,6 +150,16 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
                 .errorDescription(ex.getMessage())
                 .build(), responseHeaders, responseStatus);
     }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> handleSignedMetadataUnsupportedException(final SignedMetadataUnsupportedException ex) {
+            ErrorResponse err = new NotAcceptableStatusException(
+            "Only supports application/json for the used endpoint");
+
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+                         .body(err);
+    }
+
 
     @NotNull
     @Override

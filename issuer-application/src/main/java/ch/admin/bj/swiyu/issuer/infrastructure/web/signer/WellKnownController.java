@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
@@ -9,7 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.aop.framework.AopProxyUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -34,10 +33,18 @@ import java.util.UUID;
 @RequestMapping
 public class WellKnownController {
 
-    private final JweService jweService;
     private static final MediaType CONTENT_TYPE_APPLICATION_JWT = MediaType.parseMediaType("application/jwt");
+    private final JweService jweService;
     private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final MetadataService metadataService;
+
+    private static boolean expectsSignedResponse(String acceptHeader) {
+        if (StringUtils.isEmpty(acceptHeader)) {
+            return false;
+        }
+        List<MediaType> mediaTypes = MediaType.parseMediaTypes(acceptHeader);
+        return mediaTypes.stream().anyMatch(m -> m.equalsTypeAndSubtype(CONTENT_TYPE_APPLICATION_JWT) && m.getQualityValue() != 0);
+    }
 
     /**
      * Returns OAuth 2.0 / OpenID Connect Authorization Server metadata.
@@ -51,12 +58,12 @@ public class WellKnownController {
      * configuration metadata, enriched with the signing algorithms supported for DPoP.
      */
     @GetMapping(value = {
-        "/oid4vci/.well-known/openid-configuration",
-        "/.well-known/openid-configuration",
-        "/.well-known/oauth-authorization-server",
-        "/oid4vci/.well-known/oauth-authorization-server",
-        "/.well-known/oauth-authorization-server/oid4vci",
-        })
+            "/oid4vci/.well-known/openid-configuration",
+            "/.well-known/openid-configuration",
+            "/.well-known/oauth-authorization-server",
+            "/oid4vci/.well-known/oauth-authorization-server",
+            "/.well-known/oauth-authorization-server/oid4vci",
+    })
     @Operation(summary = "Retrieve OAuth 2.0 Authorization Server Metadata",
             description = "Returns the configuration metadata of the Authorization Server in accordance with RFC 8414. " +
                     "This includes URLs to endpoints (e.g., token endpoint), supported grant types, as well as " +
@@ -72,20 +79,23 @@ public class WellKnownController {
      * @return Issuer Metadata as defined by OID4VCI
      */
     @GetMapping(value = {
-        "/oid4vci/.well-known/openid-credential-issuer",
-        "/.well-known/openid-credential-issuer",
-        "/.well-known/openid-credential-issuer/oid4vci"})
+            "/oid4vci/.well-known/openid-credential-issuer",
+            "/.well-known/openid-credential-issuer",
+            "/.well-known/openid-credential-issuer/oid4vci"})
     @Operation(summary = "Information about credentials which can be issued.")
-    public IssuerMetadata getIssuerMetadata() {
+    public Object getIssuerMetadata(@RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {
         // Unwrap the object from the spring cache object.
+        if (expectsSignedResponse(acceptHeader)) {
+            return metadataService.getSignedIssuerMetadataWithTS();
+        }
         return metadataService.getUnsignedIssuerMetadata();
     }
 
     @GetMapping(value = {
-        "/{tenantId}/.well-known/openid-credential-issuer",
-        "/oid4vci/{tenantId}/.well-known/openid-credential-issuer",
-        "/.well-known/openid-credential-issuer/{tenantId}",
-        "/.well-known/openid-credential-issuer/oid4vci/{tenantId}"})
+            "/{tenantId}/.well-known/openid-credential-issuer",
+            "/oid4vci/{tenantId}/.well-known/openid-credential-issuer",
+            "/.well-known/openid-credential-issuer/{tenantId}",
+            "/.well-known/openid-credential-issuer/oid4vci/{tenantId}"})
     @Operation(summary = "Information about credentials which can be issued.")
     public Object getIssuerMetadataByTenantId(
             @PathVariable UUID tenantId,
@@ -111,16 +121,16 @@ public class WellKnownController {
      * @param acceptHeader value of the {@code Accept} HTTP header used to determine whether a
      *                     signed (JWT) or unsigned JSON response is expected.
      * @return signed or unsigned tenant-specific Authorization Server metadata, matching the
-     *         requested content type.
+     * requested content type.
      */
     @GetMapping(value = {
-        "/{tenantId}/.well-known/openid-configuration",
-        "/oid4vci/{tenantId}/.well-known/openid-configuration",
-        "/oid4vci/{tenantId}/.well-known/oauth-authorization-server",
-        "/{tenantId}/.well-known/oauth-authorization-server",
-        "/{tenantId}/.well-known/oauth-authorization-server/oid4vci",
-        "/.well-known/oauth-authorization-server/{tenantId}",
-        "/.well-known/oauth-authorization-server/{tenantId}/oid4vci"})
+            "/{tenantId}/.well-known/openid-configuration",
+            "/oid4vci/{tenantId}/.well-known/openid-configuration",
+            "/oid4vci/{tenantId}/.well-known/oauth-authorization-server",
+            "/{tenantId}/.well-known/oauth-authorization-server",
+            "/{tenantId}/.well-known/oauth-authorization-server/oid4vci",
+            "/.well-known/oauth-authorization-server/{tenantId}",
+            "/.well-known/oauth-authorization-server/{tenantId}/oid4vci"})
     @Operation(
             summary = "Retrieve tenant-specific OAuth 2.0 Authorization Server Metadata",
             description = "Returns the Authorization Server configuration metadata for the given tenant in accordance with RFC 8414. " +
@@ -136,10 +146,5 @@ public class WellKnownController {
         }
 
         return metadataService.getUnsignedOAuthAuthorizationServerMetadata(tenantId);
-    }
-
-    private static boolean expectsSignedResponse(String acceptHeader) {
-        List<MediaType> mediaTypes = MediaType.parseMediaTypes(acceptHeader);
-        return mediaTypes.stream().anyMatch(m -> m.equalsTypeAndSubtype(CONTENT_TYPE_APPLICATION_JWT) && m.getQualityValue()!=0);
     }
 }
