@@ -76,8 +76,11 @@ public class WellKnownController {
         "/.well-known/openid-credential-issuer",
         "/.well-known/openid-credential-issuer/oid4vci"})
     @Operation(summary = "Information about credentials which can be issued.")
-    public IssuerMetadata getIssuerMetadata() {
+    public Object getIssuerMetadata(@RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {
         // Unwrap the object from the spring cache object.
+        if (expectsSignedResponse(acceptHeader)) {
+            return metadataService.getSignedIssuerMetadataWithTS();
+        }
         return metadataService.getUnsignedIssuerMetadata();
     }
 
