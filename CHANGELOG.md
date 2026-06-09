@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Added null handling to SD-JWT recursive claim processing to avoid NPEs when offer data contains null values.
+- **Security:** Fixed Inefficient Algorithmic Complexity in spring-expression by pinning to 7.0.8 
+- **Security:** Fixed Missing Release of Memory in spring-web by pinning to 7.0.8 
 
 
 ## [3.2.2] - 2026-06-09
@@ -16,10 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated didresolver dependency to the latest version.
 - **Docker image:** Improved hardened image robustness. See `examples/Dockerfile.dhi.integrator` and `examples/README.md` for detailed information on the hardening enhancements `(#XXXX)`.
-
-### Fixed
-- **Security:** Fixed Inefficient Algorithmic Complexity in spring-expression by pinning to 7.0.8 
-- **Security:** Fixed Missing Release of Memory in spring-web by pinning to 7.0.8 
 
 ## [3.2.1] - 2026-06-08
 - Add support for signed metadata to the openid-credential-issuer without `{tenantId}`
