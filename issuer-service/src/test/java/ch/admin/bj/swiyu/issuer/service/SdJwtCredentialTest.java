@@ -329,7 +329,8 @@ class SdJwtCredentialTest {
                       }
                     ],
                     "object": {
-                      "claim": "Nested element"
+                      "claim": "Nested element",
+                      "null_value": null
                     }
                   }
                 }
@@ -338,7 +339,7 @@ class SdJwtCredentialTest {
         var objectMapper = new ObjectMapper();
 
         Map<String, Object> credentialSubject = objectMapper.readValue(offerDataString, Map.class);
-        
+
         when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
         when(dataIntegrityService.getVerifiedOfferData(any(), any())).thenReturn(credentialSubject);
 
