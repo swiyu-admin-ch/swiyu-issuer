@@ -14,7 +14,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-issuer-parent</artifactId>
-    <version>3.2.0-SNAPSHOT</version>
+    <version>3.3.0-SNAPSHOT</version>
     <name>Swiyu issuer parent pom</name>
     <description>Generic issuer for public beta</description>
 
@@ -50,13 +50,45 @@
         <springframework.cloud.version>2025.1.1</springframework.cloud.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <generic-java-lib.version>1.6.1</generic-java-lib.version>
+        <generic-java-lib.version>1.6.3</generic-java-lib.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
         <netty.version>4.2.15.Final</netty.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORK-17253311 (Inefficient Algorithmic Complexity in spring-expression) -->
+            <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORK-17253520 (Missing Release of Memory in spring-web) -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>7.0.8</version>
+            </dependency>
+            <!-- CVE fix: Inefficient Algorithmic Complexity (https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-17253311)-->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-expression</artifactId>
+                <version>7.0.8</version>
+            </dependency>
+            <!-- CVE fix: Missing Release of Memory after Effective Lifetime (https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-17253520)-->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-web</artifactId>
+                <version>7.0.8</version>
+            </dependency>
+            <!-- CVE fix: Directory Traversal (https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-17254115)-->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-webflux</artifactId>
+                <version>7.0.8</version>
+            </dependency>
+            <!-- CVE fix: Directory Traversal (https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-17254116)-->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-webmvc</artifactId>
+                <version>7.0.8</version>
+            </dependency>
+
             <!-- fix CVE-2026-43512 -->
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>

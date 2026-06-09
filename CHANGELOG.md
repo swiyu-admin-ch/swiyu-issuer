@@ -4,15 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-
 ## [NEXT]
 
+## [3.2.3] - 2026-06-09
+
 ### Fixed
+- Added null handling to SD-JWT recursive claim processing to avoid NPEs when offer data contains null values.
+- **Security:** Fixed Inefficient Algorithmic Complexity in spring-expression by pinning to 7.0.8 
+- **Security:** Fixed Missing Release of Memory in spring-web by pinning to 7.0.8 
+
+
+## [3.2.2] - 2026-06-09
+
+### Changed
+- Updated didresolver dependency to the latest version.
+- **Docker image:** Improved hardened image robustness. See `examples/Dockerfile.dhi.integrator` and `examples/README.md` for detailed information on the hardening enhancements `(#XXXX)`.
+
+## [3.2.1] - 2026-06-08
+- Add support for signed metadata to the openid-credential-issuer without `{tenantId}`
+
+## [3.2.0] - 2026-06-03
+
+### Fixed
+- Fixed validation of recursively nested array lists in credential claims `(#1000)`.
+- Fixed credential renewal not applying `configuration_override` to newly issued VCs `(#1002)`.
 - **Security:** DPoP key attestation validation now verifies that the DPoP proof's signing key is listed in the
   attestation's `attested_keys` claim. Previously, a structurally valid attestation for a *different* key was accepted,
   allowing an attacker to obtain access and refresh tokens without possessing the required hardware-backed key
   `(#979)`.
+- Fix global config bean being permanently overridden by override mechanism `(#993)`.
+- Stop using key attestation for trust requirement evaluation `(#960)`.
 
 ### Changed
 - **OID4VCI Credential Format**: Newly issued SD-JWT VCs now use `typ: dc+sd-jwt`
@@ -23,7 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default: true).
     - Require Encryption to be used by default.
     - Require DPoP to be used by default.
-
 - **Docker image:** the published image is now hardened. The default
   (unsuffixed) tag `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
   `dhi.io/eclipse-temurin:21-debian13`, runs as the pre-configured `nonroot` user
@@ -34,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   they have completed the migration steps in
   [`migration-guides/guide-3.1.x-to-3.2.x.md`](migration-guides/guide-3.1.x-to-3.2.x.md);
   the `-unhardened` variant will be removed in a later release. `(#834)`.
+- Update OpenAPI specification and local configuration `(#914)`.
 
 ### Removed
 - fabric8 dependency is removed due to incompatibility with spring boot 4. External configurations are now can still be used with the techniques described in https://docs.spring.io/spring-boot/reference/features/external-config.html For example using `spring.config.import`
