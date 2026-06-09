@@ -61,16 +61,34 @@
             <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORK-17253520 (Missing Release of Memory in spring-web) -->
             <dependency>
                 <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>7.0.8</version>
+            </dependency>
+            <!-- CVE fix: Inefficient Algorithmic Complexity (https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-17253311)-->
+            <dependency>
+                <groupId>org.springframework</groupId>
                 <artifactId>spring-expression</artifactId>
                 <version>7.0.8</version>
             </dependency>
+            <!-- CVE fix: Missing Release of Memory after Effective Lifetime (https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-17253520)-->
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-web</artifactId>
                 <version>7.0.8</version>
             </dependency>
+            <!-- CVE fix: Directory Traversal (https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-17254115)-->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-webflux</artifactId>
+                <version>7.0.8</version>
+            </dependency>
+            <!-- CVE fix: Directory Traversal (https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-17254116)-->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-webmvc</artifactId>
+                <version>7.0.8</version>
+            </dependency>
 
-            <!-- ...existing code... -->
             <!-- fix CVE-2026-43512 -->
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
