@@ -57,6 +57,20 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORK-17253311 (Inefficient Algorithmic Complexity in spring-expression) -->
+            <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORK-17253520 (Missing Release of Memory in spring-web) -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-expression</artifactId>
+                <version>7.0.8</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-web</artifactId>
+                <version>7.0.8</version>
+            </dependency>
+
+            <!-- ...existing code... -->
             <!-- fix CVE-2026-43512 -->
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
