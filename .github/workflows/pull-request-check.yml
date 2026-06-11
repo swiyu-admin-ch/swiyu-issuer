@@ -1,5 +1,5 @@
 name: Pull Request Check
-run-name: ${{ github.repository }} is evaluating pull request
+run-name: ${{ github.repository }} is evaluating ${{ github.event_name == 'pull_request' && 'pull request' || format('push to {0}', github.ref_name) }}
 on:
   pull_request:
   # Also run on push to main so CodeQL/PMD findings populate the Security tab
