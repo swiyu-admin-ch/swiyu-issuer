@@ -52,8 +52,10 @@ class JweServiceTest {
         encryptionKeyService.rotateEncryptionKeys();
     }
 
+    /**
+     * Ensures issuer metadata exposes supported enc/zip values populated by the service
+     */
     @Test
-        // Ensures issuer metadata exposes supported enc/zip values populated by the service
     void testIssuerMetadataWithEncryptionOptions() {
         jweService.issuerMetadataWithEncryptionOptions();
         assertThat(issuerMetadata.getRequestEncryption()).isNotNull();
@@ -66,8 +68,10 @@ class JweServiceTest {
         }
     }
 
+    /**
+     * Verifies decrypt succeeds when using an active key from the published JWKS
+     */
     @Test
-        // Verifies decrypt succeeds when using an active key from the published JWKS
     void decryptsWithActiveKey() {
         jweService.issuerMetadataWithEncryptionOptions();
         var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
@@ -79,8 +83,10 @@ class JweServiceTest {
         assertEquals(plaintext, decrypted);
     }
 
+    /**
+     * Confirms decryption fails for a JWE encrypted with an unknown/foreign key ID
+     */
     @Test
-        // Confirms decryption fails for a JWE encrypted with an unknown/foreign key ID
     void rejectsUnknownKeyId() throws JOSEException {
         jweService.issuerMetadataWithEncryptionOptions();
         ECKey foreignKey = new ECKeyGenerator(Curve.P_256)
