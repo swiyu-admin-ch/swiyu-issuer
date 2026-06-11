@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -78,9 +79,9 @@ class WellKnownControllerIT {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "/.well-known/oauth-authorization-server",
-        "/oid4vci/.well-known/oauth-authorization-server",
-        "/.well-known/oauth-authorization-server/oid4vci"})
+            "/.well-known/oauth-authorization-server",
+            "/oid4vci/.well-known/oauth-authorization-server",
+            "/.well-known/oauth-authorization-server/oid4vci"})
     void testGetOauthAuthorizationServer_thenSuccess(String uri) throws Exception {
         mock.perform(get(uri))
                 .andExpect(status().isOk())
@@ -91,11 +92,11 @@ class WellKnownControllerIT {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "/.well-known/openid-credential-issuer",
-        "/oid4vci/.well-known/openid-credential-issuer",
-        "/.well-known/openid-credential-issuer/oid4vci"})
+            "/.well-known/openid-credential-issuer",
+            "/oid4vci/.well-known/openid-credential-issuer",
+            "/.well-known/openid-credential-issuer/oid4vci"})
     void testGetIssuerMetadata_thenSuccess(String uri) throws Exception {
-        mock.perform(get(uri))
+        mock.perform(get(uri).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile_version").value(SwissProfileVersions.ISSUANCE_PROFILE_VERSION))
                 .andExpect(content().string(not(containsString("${external-url}"))))
@@ -110,11 +111,11 @@ class WellKnownControllerIT {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "%s/.well-known/openid-credential-issuer",
-        "/oid4vci/%s/.well-known/openid-credential-issuer",
-        "/.well-known/openid-credential-issuer/%s",
-        "/.well-known/openid-credential-issuer/oid4vci/%s",
-        })
+            "%s/.well-known/openid-credential-issuer",
+            "/oid4vci/%s/.well-known/openid-credential-issuer",
+            "/.well-known/openid-credential-issuer/%s",
+            "/.well-known/openid-credential-issuer/oid4vci/%s",
+    })
     void testGetIssuerMetadataByTenantIdSigned_thenSuccess(String uri) throws Exception {
         var tenantId = testHelper.createBasicOfferJsonAndGetTenantID();
 
@@ -135,11 +136,11 @@ class WellKnownControllerIT {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "%s/.well-known/openid-credential-issuer",
-        "/oid4vci/%s/.well-known/openid-credential-issuer",
-        "/.well-known/openid-credential-issuer/%s",
-        "/.well-known/openid-credential-issuer/oid4vci/%s",
-        })
+            "%s/.well-known/openid-credential-issuer",
+            "/oid4vci/%s/.well-known/openid-credential-issuer",
+            "/.well-known/openid-credential-issuer/%s",
+            "/.well-known/openid-credential-issuer/oid4vci/%s",
+    })
     void testGetIssuerMetadataByTenantIdUnsigned_thenSuccess() throws Exception {
         var url = testHelper.createBasicOfferJsonAndGetTenantID();
 
@@ -153,7 +154,7 @@ class WellKnownControllerIT {
 
     @Test
     void testWellknownJwksComplete() {
-        assertDoesNotThrow(() -> mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
+        assertDoesNotThrow(() -> mock.perform(get("/oid4vci/.well-known/openid-credential-issuer").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].kty").value("EC"))
                 .andExpect(jsonPath("$.credential_request_encryption.jwks.keys[0].crv").value("P-256"))

@@ -138,11 +138,11 @@ class KeycloakJWTTest {
 
     @Test
     void testPublicAccessWellKnown() throws Exception {
-        mvc.perform(get("/oid4vci/.well-known/openid-configuration"))
+        mvc.perform(get("/oid4vci/.well-known/openid-configuration").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
-        mvc.perform(get("/oid4vci/.well-known/oauth-authorization-server"))
+        mvc.perform(get("/oid4vci/.well-known/oauth-authorization-server").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
-        mvc.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
+        mvc.perform(get("/oid4vci/.well-known/openid-credential-issuer").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 
