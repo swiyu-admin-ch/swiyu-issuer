@@ -57,6 +57,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>1.16.6</version>
+            </dependency>
             <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORK-17253311 (Inefficient Algorithmic Complexity in spring-expression) -->
             <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORK-17253520 (Missing Release of Memory in spring-web) -->
             <dependency>
