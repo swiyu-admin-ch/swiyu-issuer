@@ -21,6 +21,8 @@ import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +63,7 @@ public class CredentialManagementService {
     private final CredentialStateService stateService;
     private final CredentialPersistenceService persistenceService;
     private final StatusListOrchestrator statusListOrchestrator;
+    private final ObjectMapper objectMapper;
 
     /**
      * Validates that only READY event is allowed in INIT state of credential
@@ -440,7 +443,7 @@ public class CredentialManagementService {
      *
      * @param credentialManagementId the id of the credential management offer to
      *                               update
-     * @param offerDataMap           the credential subject data to apply to the
+     * @param unparsedOfferData      the credential subject data to apply to the
      *                               deferred offer
      * @return an {@link UpdateStatusResponseDto} describing the updated credential
      * status
@@ -451,7 +454,7 @@ public class CredentialManagementService {
      */
     @Transactional
     public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialManagementId,
-                                                              Map<String, Object> offerDataMap) {
+                                                              Object unparsedOfferData) {
         var mgmt = getCredentialManagementWithExpirationCheck(credentialManagementId);
         var storedCredentialOffer = mgmt.getCredentialOffers().stream()
                 .filter(CredentialOffer::isDeferredOffer)
@@ -464,9 +467,10 @@ public class CredentialManagementService {
             throw new BadRequestException(
                     "Credential is either not deferred or has an incorrect status, cannot update offer data");
         }
+        Object rawOfferData = parseOfferData(unparsedOfferData);
 
         // check if offerData matches the expected metadata claims
-        var offerData = readOfferData(offerDataMap, false);
+        var offerData = readOfferData(rawOfferData, false);
         var credentialOfferMetadata = storedCredentialOffer.getMetadataCredentialSupportedId().getFirst();
         var credentialConfig = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
 
@@ -478,6 +482,28 @@ public class CredentialManagementService {
         persistenceService.saveCredentialOffer(storedCredentialOffer);
 
         return toUpdateStatusResponseDto(storedCredentialOffer);
+    }
+
+    /**
+     * @param unparsedOfferData The offer data, potentially a JSON String or JWT String
+     * @return the offerdata as String or as Map
+     */
+    private Object parseOfferData(Object unparsedOfferData) {
+        if (!(unparsedOfferData instanceof String)) {
+            // Already parsed or cannot be further parsed here
+            return unparsedOfferData;
+        }
+        String unparsedOfferDataString = unparsedOfferData.toString();
+        // The offer data is a json map
+        if (unparsedOfferDataString.startsWith("{")) {
+            try {
+                return objectMapper.readValue(unparsedOfferDataString, new TypeReference<Map<String, String>>() {
+                });
+            } catch (JsonProcessingException e) {
+                throw new BadRequestException("Offer Data %s cannot be parsed".formatted(unparsedOfferDataString), e);
+            }
+        }
+        return unparsedOfferDataString;
     }
 
     /**
