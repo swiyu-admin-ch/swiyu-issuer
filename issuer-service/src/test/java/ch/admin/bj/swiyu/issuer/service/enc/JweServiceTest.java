@@ -33,7 +33,6 @@ class JweServiceTest {
     static final Duration KEY_ROTATION_INTERVAL = Duration.ofSeconds(10);
     private JweService jweService;
     private EncryptionKeyRepository encryptionKeyRepository;
-    private EncryptionKeyService encryptionKeyService;
     private List<EncryptionKey> encryptionKeyTestCache;
     private IssuerMetadata issuerMetadata;
 
@@ -42,11 +41,11 @@ class JweServiceTest {
         setupMockRepository();
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
         issuerMetadata = IssuerMetadata.builder()
-            .requestEncryption(IssuerCredentialRequestEncryption.builder()
-                .encRequired(true)
-                .build())
-            .build();
-        encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository);
+                .requestEncryption(IssuerCredentialRequestEncryption.builder()
+                        .encRequired(true)
+                        .build())
+                .build();
+        EncryptionKeyService encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository);
         jweService = new JweService(applicationProperties, issuerMetadata, encryptionKeyService);
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())
                 .thenReturn(KEY_ROTATION_INTERVAL);
@@ -54,7 +53,7 @@ class JweServiceTest {
     }
 
     @Test
-    // Ensures issuer metadata exposes supported enc/zip values populated by the service
+        // Ensures issuer metadata exposes supported enc/zip values populated by the service
     void testIssuerMetadataWithEncryptionOptions() {
         jweService.issuerMetadataWithEncryptionOptions();
         assertThat(issuerMetadata.getRequestEncryption()).isNotNull();
@@ -62,13 +61,13 @@ class JweServiceTest {
         var requestEncryption = issuerMetadata.getRequestEncryption();
         var responseEncryption = issuerMetadata.getResponseEncryption();
         for (var encryptionSpec : List.of(requestEncryption, responseEncryption)) {
-            assertThat(encryptionSpec.getEncValuesSupported()).contains("A128GCM");
+            assertThat(encryptionSpec.getEncValuesSupported()).contains("A128GCM").contains("A256GCM");
             assertThat(encryptionSpec.getZipValuesSupported()).contains("DEF");
         }
     }
 
     @Test
-    // Verifies decrypt succeeds when using an active key from the published JWKS
+        // Verifies decrypt succeeds when using an active key from the published JWKS
     void decryptsWithActiveKey() {
         jweService.issuerMetadataWithEncryptionOptions();
         var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
@@ -81,7 +80,7 @@ class JweServiceTest {
     }
 
     @Test
-    // Confirms decryption fails for a JWE encrypted with an unknown/foreign key ID
+        // Confirms decryption fails for a JWE encrypted with an unknown/foreign key ID
     void rejectsUnknownKeyId() throws JOSEException {
         jweService.issuerMetadataWithEncryptionOptions();
         ECKey foreignKey = new ECKeyGenerator(Curve.P_256)
