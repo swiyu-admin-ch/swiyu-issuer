@@ -8,13 +8,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.6</version>
+        <version>4.0.7</version>
         <relativePath/>
     </parent>
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-issuer-parent</artifactId>
-    <version>3.2.0-SNAPSHOT</version>
+    <version>3.3.0-SNAPSHOT</version>
     <name>Swiyu issuer parent pom</name>
     <description>Generic issuer for public beta</description>
 
@@ -50,20 +50,13 @@
         <springframework.cloud.version>2025.1.1</springframework.cloud.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <generic-java-lib.version>1.6.1</generic-java-lib.version>
+        <generic-java-lib.version>1.6.3</generic-java-lib.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
         <netty.version>4.2.15.Final</netty.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- fix CVE-2026-43512 -->
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-core</artifactId>
-                <version>11.0.22</version>
-            </dependency>
-
             <!-- Fixes CVE-2026-42198 -->
             <dependency>
                 <groupId>org.postgresql</groupId>
@@ -113,40 +106,6 @@
                 <artifactId>swiyu-dpop-util</artifactId>
                 <version>${generic-java-lib.version}</version>
             </dependency>
-
-            <!-- fix CVE netty compression/http2 – force ${netty.version} -->
-            <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport-native-epoll</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-compression</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-resolver-dns</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http2</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http3</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <!-- end fix -->
         </dependencies>
     </dependencyManagement>
 

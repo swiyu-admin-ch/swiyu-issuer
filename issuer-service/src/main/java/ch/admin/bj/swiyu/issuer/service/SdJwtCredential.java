@@ -248,7 +248,7 @@ public class SdJwtCredential extends CredentialBuilder {
                     handleNestedClaimMap(entryKey, (Map<String, Object>) mapValue, disclosures, builder);
             case Collection<?> collectionValue ->
                     handleListDisclosures(builder, entryKey, collectionValue, disclosures);
-            default -> handleLeafClaim(entryKey, entryValue, disclosures, builder);
+            case null, default -> handleLeafClaim(entryKey, entryValue, disclosures, builder);
         };
     }
 
