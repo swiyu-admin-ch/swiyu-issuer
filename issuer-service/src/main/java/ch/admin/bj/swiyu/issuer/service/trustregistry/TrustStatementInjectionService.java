@@ -104,26 +104,36 @@ public class TrustStatementInjectionService {
             return;
         }
 
-        configs.values()
-                .forEach(config -> injectPiaTsIntoConfig(config, allPiaTs, issuerDid));
+        // Replace each entry with a freshly-built CredentialConfiguration so we never
+        // mutate the singleton bean returned by JweService#issuerMetadataWithEncryptionOptions.
+        // Without this, tenant A's piaTS would persist on the shared instance and leak into
+        // tenant B's response on the next request (cross-tenant data exposure, CWE-488).
+        configs.replaceAll((key, config) -> injectPiaTsIntoConfig(config, allPiaTs, issuerDid));
     }
 
     /**
-     * Finds the matching piaTS JWT for the given credential configuration (by VCT), verifies its
-     * signature, and injects it. If no matching JWT is found, nothing is injected.
+     * Finds the matching piaTS JWT for the given credential configuration (by VCT) and verifies
+     * its signature. Returns either the original {@code config} (when no matching JWT exists or
+     * signature validation fails) or a freshly-built {@link CredentialConfiguration} carrying the
+     * matched piaTS. The original instance is never mutated — see
+     * {@link #injectProtectedIssuanceAuthorizationTrustStatements} for the rationale.
      *
-     * @param config    the credential configuration to update
+     * @param config    the credential configuration to inspect (never mutated)
      * @param allPiaTs  all piaTS JWTs available for the issuer
      * @param issuerDid the issuer DID, used for cache invalidation on signature failure
      */
-    private void injectPiaTsIntoConfig(CredentialConfiguration config, List<String> allPiaTs, String issuerDid) {
+    private CredentialConfiguration injectPiaTsIntoConfig(CredentialConfiguration config, List<String> allPiaTs, String issuerDid) {
         String vct = config.getVct();
         String matchingPiaTs = findMatchingPiaTsForVct(allPiaTs, vct);
-
-        if (!verifySignatureOrInvalidate(matchingPiaTs, "piaTS", issuerDid)) {
-            return;
+        if (matchingPiaTs == null) {
+            return config;
         }
-        config.setProtectedIssuanceAuthorizationTrustStatement(matchingPiaTs);
+        if (!verifySignatureOrInvalidate(matchingPiaTs, "piaTS", issuerDid)) {
+            return config;
+        }
+        return config.toBuilder()
+                .protectedIssuanceAuthorizationTrustStatement(matchingPiaTs)
+                .build();
     }
 
     /**
