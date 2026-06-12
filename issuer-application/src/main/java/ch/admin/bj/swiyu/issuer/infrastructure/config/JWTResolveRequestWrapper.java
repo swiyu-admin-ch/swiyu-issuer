@@ -42,11 +42,10 @@ public class JWTResolveRequestWrapper extends HttpServletRequestWrapper {
     private JWTResolveRequestWrapper(HttpServletRequest request, JWKSet allowedKeys)
             throws IOException, ParseException, JOSEException {
         super(request);
-        var mapper = new ObjectMapper();
         String jwtString = request.getReader().lines().collect(Collectors.joining());
         this.jwt = SignedJWT.parse(jwtString);
         verifyJwt(this.jwt, allowedKeys);
-        this.dataClaim = mapper.readTree(jwt.getJWTClaimsSet().getStringClaim("data")).toString();
+        this.dataClaim = jwt.getJWTClaimsSet().getStringClaim("data");
     }
 
     private static JWSVerifier buildVerifier(KeyType kty, JWK key) throws JOSEException {

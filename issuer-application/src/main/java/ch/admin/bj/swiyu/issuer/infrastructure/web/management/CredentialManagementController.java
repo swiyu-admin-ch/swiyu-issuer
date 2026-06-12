@@ -122,7 +122,7 @@ public class CredentialManagementController {
                     )
             }
     )
-    public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialManagementId, @RequestBody Map<String, Object> credentialOffer) {
+    public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialManagementId, @RequestBody String credentialOffer) {
 
         return this.credentialManagementService.updateOfferDataForDeferred(credentialManagementId, credentialOffer);
     }

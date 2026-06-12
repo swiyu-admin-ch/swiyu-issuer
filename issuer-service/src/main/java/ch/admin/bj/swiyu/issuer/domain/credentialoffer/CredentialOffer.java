@@ -183,6 +183,9 @@ public class CredentialOffer {
         }
     }
 
+    /**
+     * Data Integrity Protected Data
+     */
     private static Map<String, Object> readOfferDataString(String offerData) {
         var metadata = new LinkedHashMap<String, Object>();
 
