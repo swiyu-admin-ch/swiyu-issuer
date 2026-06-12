@@ -5,26 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.2.3] - 2026-06-09
+## [3.2.4] - 2026-06-12
 
 ### Fixed
-- Added null handling to SD-JWT recursive claim processing to avoid NPEs when offer data contains null values.
-- **Security:** Fixed Inefficient Algorithmic Complexity in spring-expression by pinning to 7.0.8 
-- **Security:** Fixed Missing Release of Memory in spring-web by pinning to 7.0.8 
 
+- update generic-java-lib to 1.6.4 for didresolver security updates.
+
+## [3.2.3] - 2026-06-10
+
+### Fixed
+
+- Added null handling to SD-JWT recursive claim processing to avoid NPEs when offer data contains null values.
+- **Security:** Fixed Inefficient Algorithmic Complexity in spring-expression by pinning to 7.0.8
+- **Security:** Fixed Missing Release of Memory in spring-web by pinning to 7.0.8
 
 ## [3.2.2] - 2026-06-09
 
 ### Changed
+
 - Updated didresolver dependency to the latest version.
-- **Docker image:** Improved hardened image robustness. See `examples/Dockerfile.dhi.integrator` and `examples/README.md` for detailed information on the hardening enhancements `(#XXXX)`.
+- **Docker image:** Improved hardened image robustness. See `examples/Dockerfile.dhi.integrator` and
+  `examples/README.md` for detailed information on the hardening enhancements `(#XXXX)`.
 
 ## [3.2.1] - 2026-06-08
+
 - Add support for signed metadata to the openid-credential-issuer without `{tenantId}`
 
 ## [3.2.0] - 2026-06-03
 
 ### Fixed
+
 - Fixed validation of recursively nested array lists in credential claims `(#1000)`.
 - Fixed credential renewal not applying `configuration_override` to newly issued VCs `(#1002)`.
 - **Security:** DPoP key attestation validation now verifies that the DPoP proof's signing key is listed in the
@@ -35,12 +45,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stop using key attestation for trust requirement evaluation `(#960)`.
 
 ### Changed
+
 - **OID4VCI Credential Format**: Newly issued SD-JWT VCs now use `typ: dc+sd-jwt`
   to align with `draft-ietf-oauth-sd-jwt-vc-09`. Issuer metadata
   configurations may declare either `vc+sd-jwt` or `dc+sd-jwt` as `format`
   during the migration period (Expand-Migrate-Contract). `(#178)`
 - **Configuration**: Some defaults have changed with the evolving ecosystem.
-    - Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default: true).
+    - Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default:
+      true).
     - Require Encryption to be used by default.
     - Require DPoP to be used by default.
 - **Docker image:** the published image is now hardened. The default
@@ -56,43 +68,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update OpenAPI specification and local configuration `(#914)`.
 
 ### Removed
-- fabric8 dependency is removed due to incompatibility with spring boot 4. External configurations are now can still be used with the techniques described in https://docs.spring.io/spring-boot/reference/features/external-config.html For example using `spring.config.import`
+
+- fabric8 dependency is removed due to incompatibility with spring boot 4. External configurations are now can still be
+  used with the techniques described in https://docs.spring.io/spring-boot/reference/features/external-config.html For
+  example using `spring.config.import`
 
 ## [3.1.1] - 2026-05-15
 
 ### Fixed
-- Further opened up DPoP `htu` claim URL rewriting to support partial path-based rewrites via `external_url`, enabling setups where the public URI contains a path prefix  `(#EIDOMNI-971)`. *(Fixed via `generic-java-lib` 1.6.0)*
+
+- Further opened up DPoP `htu` claim URL rewriting to support partial path-based rewrites via `external_url`, enabling
+  setups where the public URI contains a path prefix  `(#EIDOMNI-971)`. *(Fixed via `generic-java-lib` 1.6.0)*
 
 ## [3.1.0] - 2026-05-11
 
 ### Added
 
 - **Trust Protocol 2.0 Support** `(#881, #882)`:
-  - The issuer can now fetch, validate, and cache Identity Trust Statements (idTS) and Protected Issuance Authorization Trust Statements (piaTS) from the Trust Registry.
-  - **Metadata Injection**: Trust Statements are now dynamically injected into the OID4VCI Issuer Metadata (`/.well-known/openid-credential-issuer`) based on the requested tenant/DID.
-  - **Dynamic Cache Eviction**: `TrustStatementCacheService` implemented with dynamic expiration-based eviction and negative caching `(#881)`.
-  - Configurable maximum cache TTL for Trust Statements `(#881)`.
+    - The issuer can now fetch, validate, and cache Identity Trust Statements (idTS) and Protected Issuance
+      Authorization Trust Statements (piaTS) from the Trust Registry.
+    - **Metadata Injection**: Trust Statements are now dynamically injected into the OID4VCI Issuer Metadata (
+      `/.well-known/openid-credential-issuer`) based on the requested tenant/DID.
+    - **Dynamic Cache Eviction**: `TrustStatementCacheService` implemented with dynamic expiration-based eviction and
+      negative caching `(#881)`.
+    - Configurable maximum cache TTL for Trust Statements `(#881)`.
 - Added support for `iso_18045_enhanced_basic` attestation level for DPoP key attestations `(#937)`.
 
 ### Changed
 
 - Migrated to Spring Boot 4.0.6 (Spring Framework 7) `(#537)`:
-  - Upgraded Spring Cloud to 2025.1.1 and springdoc-openapi to 3.0.0.
-  - Added dedicated starters for extracted autoconfiguration modules: `spring-boot-starter-webclient`,
-    `spring-boot-starter-flyway`, and `spring-boot-health`.
-  - Retained Jackson 2 (`com.fasterxml.jackson`) via `spring-boot-jackson2` and
-    `spring.http.converters.preferred-json-mapper=jackson2` (Boot 4 defaults to Jackson 3).
-  - Replaced `HttpStatus` with `HttpStatusCode` in `RenewalException` and `ApiErrorDto` to support non-standard
-    HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
-  - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
-  - Removed optional springdoc-openapi dependency from `issuer-application` `(#537)`.
-  - [Recursive disclosures](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-selective-disclosure-jwt-22?utm_source=chatgpt.com#section-4.2.6)
-    are now the default therefore `RECURSIVE_DISCLOSURE_ENABLED` is removed and the non-recursive function removed.
+    - Upgraded Spring Cloud to 2025.1.1 and springdoc-openapi to 3.0.0.
+    - Added dedicated starters for extracted autoconfiguration modules: `spring-boot-starter-webclient`,
+      `spring-boot-starter-flyway`, and `spring-boot-health`.
+    - Retained Jackson 2 (`com.fasterxml.jackson`) via `spring-boot-jackson2` and
+      `spring.http.converters.preferred-json-mapper=jackson2` (Boot 4 defaults to Jackson 3).
+    - Replaced `HttpStatus` with `HttpStatusCode` in `RenewalException` and `ApiErrorDto` to support non-standard
+      HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
+    - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
+    - Removed optional springdoc-openapi dependency from `issuer-application` `(#537)`.
+    - [Recursive disclosures](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-selective-disclosure-jwt-22?utm_source=chatgpt.com#section-4.2.6)
+      are now the default therefore `RECURSIVE_DISCLOSURE_ENABLED` is removed and the non-recursive function removed.
 
 ### Fixed
 
 - Fixed negative index handling in `TokenStatusListToken` `(#EIDOMNI-5)`.
-- Fixed DPoP `htu` claim URL rewriting to support path-based rewrites via `external_url`, enabling setups where the public URI contains a path prefix (e.g. `https://host/public/issuer/`) `(#EIDOMNI-941)`. *(Fixed via `generic-java-lib` 1.5.0)*
+- Fixed DPoP `htu` claim URL rewriting to support path-based rewrites via `external_url`, enabling setups where the
+  public URI contains a path prefix (e.g. `https://host/public/issuer/`) `(#EIDOMNI-941)`. *(Fixed
+  via `generic-java-lib` 1.5.0)*
 
 ## 3.0.0
 

@@ -9,7 +9,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-issuer-parent</artifactId>
-        <version>3.2.3</version>
+        <version>3.2.4</version>
     </parent>
 
     <artifactId>swiyu-issuer-application</artifactId>
@@ -79,7 +79,7 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
-        
+
 
         <!-- Database Drivers and Migration -->
         <dependency>
@@ -142,7 +142,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>3.2.3</version>
+            <version>3.2.4</version>
         </dependency>
 
         <!-- Miscellaneous / Utility -->
@@ -225,7 +225,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>3.2.3</version>
+            <version>3.2.4</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -244,7 +244,7 @@
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-ts-builder</artifactId>
-            <version>1.6.1</version>
+            <version>1.6.4</version>
             <scope>test</scope>
         </dependency>
 
