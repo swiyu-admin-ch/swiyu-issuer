@@ -32,8 +32,8 @@ import java.time.Instant;
 import java.util.*;
 
 import static java.time.Instant.now;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -478,6 +478,40 @@ class CredentialManagementServiceTest {
         doNothing().when(stateService).markOfferAsReady(deferredOffer);
 
         credentialService.updateOfferDataForDeferred(mgmtId, offerDataMap);
+
+        verify(stateService, times(1)).markOfferAsReady(deferredOffer);
+        verify(deferredOffer, times(1)).setOfferData(anyMap());
+        verify(persistenceService, times(1)).saveCredentialOffer(deferredOffer);
+    }
+
+    @Test
+    void updateOfferDataForDeferred_whenNestedArray_updateOfferData_andPersist() {
+        UUID mgmtId = UUID.randomUUID();
+        String offerData = """
+                {
+                  "helo": ["world"]
+                }
+                """;
+
+        var credConfig = mock(CredentialConfiguration.class);
+        when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credConfig);
+
+        doNothing().when(validationService).validateCredentialRequestOfferData(any(), eq(true), eq(credConfig));
+
+        CredentialOffer deferredOffer = mock(CredentialOffer.class);
+        when(deferredOffer.isDeferredOffer()).thenReturn(true);
+        when(deferredOffer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.DEFERRED);
+        when(deferredOffer.getMetadataCredentialSupportedId()).thenReturn(List.of("test"));
+
+        var mgmt = mock(CredentialManagement.class);
+        when(mgmt.getCredentialOffers()).thenReturn(Set.of(deferredOffer));
+
+        when(persistenceService.findCredentialManagementById(mgmtId)).thenReturn(mgmt);
+        when(persistenceService.saveCredentialManagement(any())).thenAnswer(i -> i.getArgument(0));
+
+        doNothing().when(stateService).markOfferAsReady(deferredOffer);
+
+        credentialService.updateOfferDataForDeferred(mgmtId, offerData);
 
         verify(stateService, times(1)).markOfferAsReady(deferredOffer);
         verify(deferredOffer, times(1)).setOfferData(anyMap());
