@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+### Changed
+
+- Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM.
+
 ## [3.2.3] - 2026-06-10
 
 ### Fixed

@@ -1120,6 +1120,14 @@ components:
           type: string
         trace_id:
           type: string
+    BatchCredentialIssuance:
+      properties:
+        batch_size:
+          type: integer
+          format: int32
+          minimum: 10
+      required:
+      - batch_size
     ClientAgentInfoDto:
       type: object
       properties:
@@ -1246,6 +1254,104 @@ components:
             }
       required:
       - credential_configuration_id
+    CredentialConfiguration:
+      properties:
+        format:
+          type: string
+          pattern: "^[dv]c\\+sd-jwt$"
+        vct:
+          type: string
+          description: |
+            String designating the type of the Credential, as defined in sd-jwt-vc
+        vct_metadata_uri:
+          type: string
+          description: |
+            Allowing for an indirection if using urn:vct resolver
+        vct_metadata_uri#integrity:
+          type: string
+          description: |
+            Allowing for validating content received from vct_metadata_uri as defined in W3C SRI (Subresource Integrity)
+        vct_version:
+          type: string
+          description: |
+            The vct_version indicates the version of the vct. It is recommended to use semver-notation
+        vct_subtype:
+          type: string
+          description: |
+            An optional value that can describe an adaption of the vct.
+            This value can then be used by verifiers who require the adoption of the vct standard.
+        vct_subtype_version:
+          type: string
+          description: |
+            The vct_subtype_version indicates the version of the vct_subtype. It is recommended to use semver-notation
+        claims:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CredentialClaim"
+        credential_definition:
+          $ref: "#/components/schemas/CredentialDefinition"
+        cryptographic_binding_methods_supported:
+          type: array
+          description: |2
+                 A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound.
+                 If missing, credential will be issued as unbound VC.
+          items:
+            type: string
+            description: |2
+                   A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound.
+                   If missing, credential will be issued as unbound VC.
+            pattern: ^jwk$
+        credential_signing_alg_values_supported:
+          type: array
+          items:
+            type: string
+            pattern: ^ES256$
+        proof_types_supported:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/SupportedProofType"
+        display:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetadataCredentialDisplayInfo"
+        credential_metadata:
+          $ref: "#/components/schemas/CredentialConfigurationMetadata"
+        protected_issuance_authorization_trust_statement:
+          type: string
+      required:
+      - format
+      - vct
+    CredentialConfigurationMetadata:
+      description: |
+        Object containing information relevant to the usage and display of issued Credentials.
+        Credential Format-specific mechanisms can overwrite the information in this object to convey
+        Credential metadata. Format-specific mechanisms, such as SD-JWT VC display metadata are always
+        preferred by the Wallet over the information in this object, which serves as the default fallback.
+      properties:
+        display:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetadataCredentialDisplayInfo"
+        claims:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetadataClaimDescriptor"
+    CredentialDefinition:
+      properties:
+        type:
+          type: array
+          items:
+            type: string
+        credentialSubject:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CredentialClaim"
+        '@context':
+          type: array
+          items:
+            type: string
+      required:
+      - type
     CredentialEndpointResponse:
       type: object
       properties:
@@ -1418,6 +1524,146 @@ components:
       required:
       - interval
       - transaction_id
+    IssuerCredentialRequestEncryption:
+      properties:
+        enc_values_supported:
+          type: array
+          description: List of supported JWE encryption algorithms
+          items:
+            type: string
+            description: List of supported JWE encryption algorithms
+            pattern: ^(A128GCM|A256GCM)$
+          minItems: 1
+        zip_values_supported:
+          type: array
+          description: If present must be a non-empty array of JWE compression algorithms
+          items:
+            type: string
+            description: If present must be a non-empty array of JWE compression algorithms
+        encryption_required:
+          type: boolean
+          description: Boolean value specifying whether the Credential Issuer requires
+            the additional encryption on top of TLS
+        jwks:
+          type: object
+          additionalProperties:
+            type: object
+            description: "A JSON Web Key Set that contains one or more public keys,\
+              \ to be used by the Wallet as an input to a key agreement for encryption\
+              \ of the Credential Request."
+            example:
+              keys:
+              - kty: EC
+                crv: P-256
+                kid: ec91e148-974d-47f1-9891-4b89d8bad57c
+                x: rm2YkWAJ2V84gS00DqeGR6MXHgW3FWISG45Vop0cWv4
+                "y": ktSScp7s2fWSdq_7c6iOUI9AYFwQahXG60Nr9SL68mY
+          description: "A JSON Web Key Set that contains one or more public keys,\
+            \ to be used by the Wallet as an input to a key agreement for encryption\
+            \ of the Credential Request."
+          example:
+            keys:
+            - kty: EC
+              crv: P-256
+              kid: ec91e148-974d-47f1-9891-4b89d8bad57c
+              x: rm2YkWAJ2V84gS00DqeGR6MXHgW3FWISG45Vop0cWv4
+              "y": ktSScp7s2fWSdq_7c6iOUI9AYFwQahXG60Nr9SL68mY
+      required:
+      - enc_values_supported
+      - encryption_required
+    IssuerCredentialResponseEncryption:
+      properties:
+        enc_values_supported:
+          type: array
+          description: List of supported JWE encryption algorithms
+          items:
+            type: string
+            description: List of supported JWE encryption algorithms
+            pattern: ^(A128GCM|A256GCM)$
+          minItems: 1
+        zip_values_supported:
+          type: array
+          description: If present must be a non-empty array of JWE compression algorithms
+          items:
+            type: string
+            description: If present must be a non-empty array of JWE compression algorithms
+        encryption_required:
+          type: boolean
+          description: Boolean value specifying whether the Credential Issuer requires
+            the additional encryption on top of TLS
+        alg_values_supported:
+          type: array
+          items:
+            type: string
+            pattern: ^ECDH-ES$
+          minItems: 1
+      required:
+      - alg_values_supported
+      - enc_values_supported
+      - encryption_required
+    IssuerMetadata:
+      description: |
+        The OID4VCI Credential Issuer Metadata contains information on the Credential Issuer's technical capabilities,
+        supported Credentials, and (internationalized) display information.
+      properties:
+        credential_issuer:
+          type: string
+          description: The Credential Issuer's identifier
+        authorization_servers:
+          type: array
+          items:
+            type: string
+        credential_endpoint:
+          type: string
+          description: |
+            Information for the holder where to get the credential.
+          pattern: ^.+/credential$
+        nonce_endpoint:
+          type: string
+          description: |
+            Nonce for proof of possessions. Required for VCs to be bound to a holder.
+          pattern: ^.+/nonce$
+        deferred_credential_endpoint:
+          type: string
+        notification_endpoint:
+          type: string
+          maxLength: 0
+          minLength: 0
+        credential_configurations_supported:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CredentialConfiguration"
+        credential_request_encryption:
+          $ref: "#/components/schemas/IssuerCredentialRequestEncryption"
+        credential_response_encryption:
+          $ref: "#/components/schemas/IssuerCredentialResponseEncryption"
+        batch_credential_issuance:
+          $ref: "#/components/schemas/BatchCredentialIssuance"
+        display:
+          type: array
+          description: "Array of objects, where each object contains display properties\
+            \ of a Credential Issuer for a certain language"
+          items:
+            $ref: "#/components/schemas/MetadataIssuerDisplayInfo"
+        profile_version:
+          type: string
+        credential_issuer_identity_trust_statement:
+          type: string
+      required:
+      - credential_configurations_supported
+      - credential_endpoint
+      - credential_issuer
+    KeyAttestationRequirement:
+      properties:
+        key_storage:
+          type: array
+          items:
+            type: string
+            enum:
+            - iso_18045_high
+            - iso_18045_enhanced-basic
+      required:
+      - key_storage
     Link:
       type: object
       properties:
@@ -1425,6 +1671,92 @@ components:
           type: string
         templated:
           type: boolean
+    MetadataClaimDescriptor:
+      description: |
+        A claims description object as used in the Credential Issuer metadata is an object used to describe
+        how a certain claim in the Credential is displayed to the End-User.
+      properties:
+        path:
+          type: array
+          items:
+            type: object
+          minItems: 1
+        mandatory:
+          type: boolean
+        display:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetadataDisplayInfo"
+      required:
+      - path
+    MetadataCredentialDisplayInfo:
+      properties:
+        locale:
+          type: string
+          description: |
+            String value that identifies the language of this object represented as a language tag taken
+            from values defined in BCP47 [RFC5646]. There MUST be only one object for each language identifier.
+          example: de-CH
+        name:
+          type: string
+        logo:
+          $ref: "#/components/schemas/MetadataLogo"
+        description:
+          type: string
+        background_color:
+          type: string
+          description: |-
+            String value of a background color of the Credential represented as numerical color values defined
+            in CSS Color Module Level 3
+        background_image:
+          $ref: "#/components/schemas/MetadataImage"
+        text_color:
+          type: string
+    MetadataDisplayInfo:
+      properties:
+        locale:
+          type: string
+          description: |
+            String value that identifies the language of this object represented as a language tag taken
+            from values defined in BCP47 [RFC5646]. There MUST be only one object for each language identifier.
+          example: de-CH
+        name:
+          type: string
+    MetadataImage:
+      properties:
+        uri:
+          type: string
+          description: |-
+            String value that contains a data URL containing the logo of the Credential Issuer.
+            The Wallet needs to determine the scheme, since the URI value could use the https: scheme, the data: scheme, etc.
+          pattern: "^data:image/(png|jpeg);base64,.*$"
+      required:
+      - uri
+    MetadataIssuerDisplayInfo:
+      properties:
+        locale:
+          type: string
+          description: |
+            String value that identifies the language of this object represented as a language tag taken
+            from values defined in BCP47 [RFC5646]. There MUST be only one object for each language identifier.
+          example: de-CH
+        name:
+          type: string
+        logo:
+          $ref: "#/components/schemas/MetadataLogo"
+    MetadataLogo:
+      properties:
+        uri:
+          type: string
+          description: |-
+            String value that contains a data URL containing the logo of the Credential Issuer.
+            The Wallet needs to determine the scheme, since the URI value could use the https: scheme, the data: scheme, etc.
+          pattern: "^data:image/(png|jpeg);base64,.*$"
+        alt_text:
+          type: string
+          description: String value of the alternative text for the logo image
+      required:
+      - uri
     NonceResponse:
       type: object
       properties:
@@ -1585,6 +1917,15 @@ components:
       properties:
         status:
           $ref: "#/components/schemas/CredentialStatusType"
+    SupportedProofType:
+      properties:
+        proof_signing_alg_values_supported:
+          type: array
+          items:
+            type: string
+            pattern: ^ES256$
+        key_attestations_required:
+          $ref: "#/components/schemas/KeyAttestationRequirement"
     UpdateCredentialStatusRequestType:
       type: string
       description: |2

@@ -283,7 +283,7 @@ class IssuanceIT {
                             "enc": "%s",
                             "jwk": %s
                         }
-                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
+                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A256GCM.getName(),
                 encryptionKey.toPublicJWK().toJSONString());
         var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, responseEncryptionJson, "university_example_sd_jwt");
 
