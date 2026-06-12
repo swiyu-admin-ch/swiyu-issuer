@@ -65,6 +65,14 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-tracing-bridge-brave</artifactId>
+            <exclusions>
+                <!-- Attack Surface Reduction: AWS X-Ray B3 header propagation is not needed
+                     on non-AWS infrastructure (Swiss government deployment). -->
+                <exclusion>
+                    <groupId>io.zipkin.aws</groupId>
+                    <artifactId>brave-propagation-aws</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Security & JWT / Crypto -->

@@ -21,6 +21,15 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <exclusions>
+                <!-- Attack Surface Reduction: No WebSocket endpoints exist in this REST API.
+                     Spring Boot 4 registers WebSocket config via @ConditionalOnClass(WsServerContainer.class);
+                     removing the JAR is sufficient — no AutoConfig exclusion needed. -->
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-websocket</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -53,6 +62,22 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webclient</artifactId>
+            <exclusions>
+                <!-- Attack Surface Reduction: HTTP/3 and QUIC are not used.
+                     Excluding netty-codec-http3 also removes all 5 platform-specific
+                     netty-codec-native-quic JARs (linux-x86_64, linux-aarch_64,
+                     osx-x86_64, osx-aarch_64, windows-x86_64) transitively. -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec-http3</artifactId>
+                </exclusion>
+                <!-- Attack Surface Reduction: macOS-native DNS resolver is irrelevant
+                     in production Linux Docker containers. -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns-native-macos</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Spring Boot Tools -->
@@ -114,6 +139,14 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-tracing-bridge-brave</artifactId>
+            <exclusions>
+                <!-- Attack Surface Reduction: AWS X-Ray B3 header propagation is not needed
+                     on non-AWS infrastructure (Swiss government deployment). -->
+                <exclusion>
+                    <groupId>io.zipkin.aws</groupId>
+                    <artifactId>brave-propagation-aws</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Logging -->
