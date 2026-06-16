@@ -1,10 +1,13 @@
 package ch.admin.bj.swiyu.issuer.common.config;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+
+import java.time.Duration;
 
 @Slf4j
 @Validated
@@ -17,5 +20,22 @@ public class StatusListProperties extends SignatureConfiguration {
      * preventing accidental creation of status lists too large for sensible use.
      */
     private int statusListSizeLimit;
+
+    /**
+     * Time-to-live for cached status list entries.
+     * This value is used by the wallets cache to determine
+     * how long a retrieved or computed status list should be kept before it
+     * is considered stale.
+     */
+    @NotNull
+    private Duration statusListCacheTime = Duration.ofMinutes(15);
+
+    /**
+     * Expiration duration for a status list artifact itself.
+     * Represents how long a generated status list remains valid.
+     */
+    @NotNull
+    private Duration statusListExpirationTime = Duration.ofDays(365);
+
 
 }
