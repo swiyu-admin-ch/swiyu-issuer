@@ -85,6 +85,8 @@ management:
         application.authentication-jwks,
         application.status-list.hsm.host,
         application.status-list.hsm.port,
+        application.status-list.status-list-cache-time,
+        application.status-list.status-list-expiration-time,
         application.offer-expiration-interval,
         application.openid-file,
         application.metadata-file,
@@ -136,10 +138,10 @@ application:
     private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY:}}"
     # value to be added to the kid of the created status list; should be available in the published did document.
     verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD:}"
-
     key-management-method: "${SIGNING_KEY_MANAGEMENT_METHOD:key}"
-
     status-list-size-limit: 204800 # 200KiB
+    status-list-cache-time: ${STATUS_LIST_CACHE_TIME:15m}
+    status-list-expiration-time: ${STATUS_LIST_EXPIRATION_TIME:365d}
     # Pin to unlock the hsm
     hsm:
       user-pin: "${secret.key.hsm.pin.user:${HSM_USER_PIN:}}"

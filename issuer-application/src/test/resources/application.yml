@@ -1,4 +1,3 @@
-
 spring:
   jackson:
     constructor-detector: use-properties-based
@@ -31,6 +30,8 @@ application:
     verification-method: "did:tdw:example#12345"
     key-management-method: "key"
     status-list-size-limit: 204800 # 200KiB
+    status-list-cache-time: 15m
+    status-list-expiration-time: 365d
   offer-expiration-interval: "PT15M"
   encryption-key-rotation-interval: "PT15M"
   encryption-enforce: false
