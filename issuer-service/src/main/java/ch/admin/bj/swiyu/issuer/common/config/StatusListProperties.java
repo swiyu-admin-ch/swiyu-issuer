@@ -7,13 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-/**
- * Configuration properties for status list handling.
- * <p>
- * Holds settings that control caching and expiry semantics for status lists
- * used by the Issuer (e.g. caching TTL and how long a generated status list
- * is considered valid).
- */
 @Slf4j
 @Validated
 @Getter
