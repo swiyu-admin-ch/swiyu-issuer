@@ -1,10 +1,9 @@
 package ch.admin.bj.swiyu.issuer.service.statuslist;
 
-import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
-
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
@@ -63,6 +62,8 @@ public class StatusListSigningService {
                 .build();
 
         JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
+                .claim("ttl", statusListProperties.getStatusListCacheTimeSeconds())
+                .expirationTime(Date.from(Instant.now().plusSeconds(statusListProperties.getStatusListExpirationSeconds())))
                 .subject(statusList.getUri())
                 .issuer(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
                 .issueTime(Date.from(Instant.now()))

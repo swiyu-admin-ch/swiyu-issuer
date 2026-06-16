@@ -2,7 +2,7 @@
 
 # Generic issuer service
 
-This software is a web server implementing the technical standards as specified in 
+This software is a web server implementing the technical standards as specified in
 the [swiyu Trust Infrastructure Interoperability Profile](https://swiyu-admin-ch.github.io/specifications/interoperability-profile/).
 Together with the other generic components provided, this software forms a collection of APIs allowing issuance and
 verification of verifiable credentials without the need of reimplementing the standards.
@@ -59,9 +59,9 @@ A possible deployment configuration of the issuer service. Issuer Business Syste
 Starting with v3.2.0 we publish **two image variants** to GHCR so existing operators have a
 transition period to adopt the hardened runtime:
 
-| Tag pattern | Base image | Entrypoint | User | Status |
-|---|---|---|---|---|
-| `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>`            | `dhi.io/eclipse-temurin:21-debian13` (hardened, no shell) | `java ...` directly | `nonroot` | **Default — recommended** |
+| Tag pattern                                            | Base image                                                | Entrypoint              | User       | Status                                            |
+|--------------------------------------------------------|-----------------------------------------------------------|-------------------------|------------|---------------------------------------------------|
+| `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>`            | `dhi.io/eclipse-temurin:21-debian13` (hardened, no shell) | `java ...` directly     | `nonroot`  | **Default — recommended**                         |
 | `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened` | `eclipse-temurin:21-jre-ubi9-minimal`                     | `scripts/entrypoint.sh` | UID `1001` | Transitional — will be removed in a later release |
 
 - **New deployments and operators who have completed the migration** should use the default
@@ -300,17 +300,19 @@ The Generic Issuer service is configured using environment variables.
 
 #### Status List
 
-| Variable                                             | Description                                                                                                                                             |
-|:-----------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| STATUS_LIST_KEY                                      | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                            |
-| DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment |
-| SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                         |
-| SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                       |
-| SWIYU_STATUS_REGISTRY_TOKEN_URL                      | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                               |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                       |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                    |
-| SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
-| SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal.  |
+| Variable                                             | Description                                                                                                                                                                                                              | Default            |
+|:-----------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------|
+| STATUS_LIST_KEY                                      | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                                                                                             | _(none)_           |
+| DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment                                                                  | _(none)_           |
+| SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                                                                                          | _(none)_           |
+| SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                                                                                        | _(none)_           |
+| SWIYU_STATUS_REGISTRY_TOKEN_URL                      | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                                                                                                | _(none)_           |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                                                                                        | _(none)_           |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                                                                                     | _(none)_           |
+| SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                                                                                  | _(none)_           |
+| SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal.                                                                   | _(none)_           |
+| STATUS_LIST_CACHE_TIME_SECONDS                       | Time-to-live (in seconds) for cached status list entries. This value is not used by the issuer, but is used by the cache of the wallet to determine how long a status list should be kept before it is considered stale. | `900 (15min)       |
+| STATUS_LIST_EXPIRATION_SECONDS                       | Expiration duration (in seconds) for a status list artifact itself. Represents how long a generated status list remains valid.                                                                                           | `31536000 (1 year) |
 
 #### Trust Registry (optional)
 
