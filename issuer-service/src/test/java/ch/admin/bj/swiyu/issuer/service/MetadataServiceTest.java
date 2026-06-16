@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -114,8 +115,8 @@ class MetadataServiceTest {
         UUID tenantId = UUID.randomUUID();
 
         when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(
-            IssuerMetadata.builder()
-                .credentialConfigurationSupported(new HashMap<>(Map.of("test", CredentialConfiguration.builder().vct("testvct").build()))).build());
+                IssuerMetadata.builder()
+                        .credentialConfigurationSupported(new HashMap<>(Map.of("test", CredentialConfiguration.builder().vct("testvct").build()))).build());
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = mock(JWSSigner.class);
@@ -144,6 +145,7 @@ class MetadataServiceTest {
         String credentialIssuerIdentifier = String.format("%s/%s", externalUrl, tenantId);
         assertEquals(credentialIssuerIdentifier, parsed.getJWTClaimsSet().getSubject(), "Subject claim must be the credential issuer identifier");
         assertEquals(credentialIssuerIdentifier, parsed.getJWTClaimsSet().getStringClaim("issuer"), "Issuer claim must be the credential issuer identifier");
+        assertThat(parsed.getJWTClaimsSet().getIssuer()).as("Issuer must be the issuer's did").isEqualTo(issuerId);
         assertEquals("token_endpoint", parsed.getJWTClaimsSet().getStringClaim("token_endpoint"));
     }
 
@@ -186,14 +188,14 @@ class MetadataServiceTest {
         UUID overrideTenant = UUID.randomUUID();
         when(credentialManagementService.getCredentialOfferByTenantId(defaultTenant)).thenReturn(null);
         when(credentialManagementService.getCredentialOfferByTenantId(overrideTenant)).thenReturn(CredentialOffer.builder()
-        .metadataCredentialSupportedId(List.of("test"))
-            .credentialMetadata(CredentialOfferMetadata.builder()
-                .vctMetadataUri(overrideMetadataUri)
-                .vctMetadataUriIntegrity(overrideMetadataUriIntegrity)
-                .build())
-            .build()
-            );
-        
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialMetadata(CredentialOfferMetadata.builder()
+                        .vctMetadataUri(overrideMetadataUri)
+                        .vctMetadataUriIntegrity(overrideMetadataUriIntegrity)
+                        .build())
+                .build()
+        );
+
         var initialConfig = metadataService.getUnsignedIssuerMetadata(defaultTenant).getCredentialConfigurationById("test");
         assertThat(initialConfig.getVctMetadataUri()).as("Has no value set").isNull();
         assertThat(initialConfig.getVctMetadataUriIntegrity()).as("Has no value set").isNull();
@@ -205,10 +207,58 @@ class MetadataServiceTest {
         assertThat(secondDefaultConfig.getVctMetadataUriIntegrity()).as("Has no value set and was not altered by override").isNull();
     }
 
+    @Test
+    void getSignedIssuerMetadataWithTS_successfulSigning_returnsJwt() throws Exception {
+        // ---------- arrange ----------
+
+
+        // Use a real ES256 signer (the same helper used in other tests)
+        JWSSigner signer = createDummySigner();
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null))
+                .thenReturn(signer);
+
+        // ---------- act ----------
+        String jwt = metadataService.getSignedIssuerMetadataWithTS();
+
+        // ---------- assert ----------
+        assertThat(jwt).isNotNull();
+
+        SignedJWT parsed = SignedJWT.parse(jwt);
+
+        // subject (and credential_issuer) must contain the tenant id
+        assertThat(parsed.getJWTClaimsSet().getSubject())
+                .as("Subject claim must be credential issuer url")
+                .isEqualTo(externalUrl);
+
+        // issuer claim comes from the global ApplicationProperties (no override supplied)
+        assertThat(parsed.getJWTClaimsSet().getIssuer())
+                .as("Issuer claim must be the global issuer DID")
+                .isEqualTo(issuerId);
+    }
+
+    @Test
+    void getSignedIssuerMetadataWithTS_throwsConfigurationException_onSigningError() throws Exception {
+        // ---------- arrange ----------
+
+        // Mock a signer that fails when sign() is called
+        JWSSigner failingSigner = mock(JWSSigner.class);
+        when(failingSigner.sign(any(), any()))
+                .thenThrow(new JOSEException("simulated signing failure"));
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null))
+                .thenReturn(failingSigner);
+
+        // ---------- act & assert ----------
+        assertThatThrownBy(() -> metadataService.getSignedIssuerMetadataWithTS())
+                .as("JOSEException during signing should be wrapped in a ConfigurationException")
+                .isInstanceOf(ConfigurationException.class);
+    }
+
     private JWSSigner createDummySigner() throws JOSEException {
         ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
                 .keyID("123")
                 .generate();
         return new ECDSASigner(ecJWK);
     }
+
+
 }

@@ -754,39 +754,57 @@ paths:
       - Well-known endpoints API
       summary: Information about credentials which can be issued.
       operationId: getIssuerMetadata
+      parameters:
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/IssuerMetadata"
+                type: object
   /oid4vci/.well-known/openid-credential-issuer:
     get:
       tags:
       - Well-known endpoints API
       summary: Information about credentials which can be issued.
       operationId: getIssuerMetadata_1
+      parameters:
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/IssuerMetadata"
+                type: object
   /.well-known/openid-credential-issuer:
     get:
       tags:
       - Well-known endpoints API
       summary: Information about credentials which can be issued.
       operationId: getIssuerMetadata_2
+      parameters:
+      - name: Accept
+        in: header
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/IssuerMetadata"
+                type: object
   /oid4vci/{tenantId}/.well-known/oauth-authorization-server:
     get:
       tags:
@@ -1103,7 +1121,6 @@ components:
         trace_id:
           type: string
     BatchCredentialIssuance:
-      type: object
       properties:
         batch_size:
           type: integer
@@ -1237,19 +1254,7 @@ components:
             }
       required:
       - credential_configuration_id
-    CredentialClaim:
-      type: object
-      properties:
-        mandatory:
-          type: boolean
-        value_type:
-          type: string
-        display:
-          type: array
-          items:
-            $ref: "#/components/schemas/MetadataDisplayInfo"
     CredentialConfiguration:
-      type: object
       properties:
         format:
           type: string
@@ -1283,7 +1288,6 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/CredentialClaim"
-          deprecated: true
         credential_definition:
           $ref: "#/components/schemas/CredentialDefinition"
         cryptographic_binding_methods_supported:
@@ -1293,6 +1297,9 @@ components:
                  If missing, credential will be issued as unbound VC.
           items:
             type: string
+            description: |2
+                   A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound.
+                   If missing, credential will be issued as unbound VC.
             pattern: ^jwk$
         credential_signing_alg_values_supported:
           type: array
@@ -1305,7 +1312,6 @@ components:
             $ref: "#/components/schemas/SupportedProofType"
         display:
           type: array
-          deprecated: true
           items:
             $ref: "#/components/schemas/MetadataCredentialDisplayInfo"
         credential_metadata:
@@ -1316,7 +1322,6 @@ components:
       - format
       - vct
     CredentialConfigurationMetadata:
-      type: object
       description: |
         Object containing information relevant to the usage and display of issued Credentials.
         Credential Format-specific mechanisms can overwrite the information in this object to convey
@@ -1332,7 +1337,6 @@ components:
           items:
             $ref: "#/components/schemas/MetadataClaimDescriptor"
     CredentialDefinition:
-      type: object
       properties:
         type:
           type: array
@@ -1521,27 +1525,39 @@ components:
       - interval
       - transaction_id
     IssuerCredentialRequestEncryption:
-      type: object
       properties:
         enc_values_supported:
           type: array
           description: List of supported JWE encryption algorithms
           items:
             type: string
-            pattern: ^A128GCM$
+            description: List of supported JWE encryption algorithms
+            pattern: ^(A128GCM|A256GCM)$
           minItems: 1
         zip_values_supported:
           type: array
           description: If present must be a non-empty array of JWE compression algorithms
           items:
             type: string
+            description: If present must be a non-empty array of JWE compression algorithms
         encryption_required:
           type: boolean
           description: Boolean value specifying whether the Credential Issuer requires
             the additional encryption on top of TLS
         jwks:
           type: object
-          additionalProperties: {}
+          additionalProperties:
+            type: object
+            description: "A JSON Web Key Set that contains one or more public keys,\
+              \ to be used by the Wallet as an input to a key agreement for encryption\
+              \ of the Credential Request."
+            example:
+              keys:
+              - kty: EC
+                crv: P-256
+                kid: ec91e148-974d-47f1-9891-4b89d8bad57c
+                x: rm2YkWAJ2V84gS00DqeGR6MXHgW3FWISG45Vop0cWv4
+                "y": ktSScp7s2fWSdq_7c6iOUI9AYFwQahXG60Nr9SL68mY
           description: "A JSON Web Key Set that contains one or more public keys,\
             \ to be used by the Wallet as an input to a key agreement for encryption\
             \ of the Credential Request."
@@ -1556,20 +1572,21 @@ components:
       - enc_values_supported
       - encryption_required
     IssuerCredentialResponseEncryption:
-      type: object
       properties:
         enc_values_supported:
           type: array
           description: List of supported JWE encryption algorithms
           items:
             type: string
-            pattern: ^A128GCM$
+            description: List of supported JWE encryption algorithms
+            pattern: ^(A128GCM|A256GCM)$
           minItems: 1
         zip_values_supported:
           type: array
           description: If present must be a non-empty array of JWE compression algorithms
           items:
             type: string
+            description: If present must be a non-empty array of JWE compression algorithms
         encryption_required:
           type: boolean
           description: Boolean value specifying whether the Credential Issuer requires
@@ -1585,7 +1602,6 @@ components:
       - enc_values_supported
       - encryption_required
     IssuerMetadata:
-      type: object
       description: |
         The OID4VCI Credential Issuer Metadata contains information on the Credential Issuer's technical capabilities,
         supported Credentials, and (internationalized) display information.
@@ -1619,12 +1635,8 @@ components:
             $ref: "#/components/schemas/CredentialConfiguration"
         credential_request_encryption:
           $ref: "#/components/schemas/IssuerCredentialRequestEncryption"
-          description: Object containing information about whether the Credential
-            Issuer supports encryption of the Credential Request on top of TLS.
         credential_response_encryption:
           $ref: "#/components/schemas/IssuerCredentialResponseEncryption"
-          description: Object containing information about whether the Credential
-            Issuer supports encryption of the Credential Response on top of TLS.
         batch_credential_issuance:
           $ref: "#/components/schemas/BatchCredentialIssuance"
         display:
@@ -1642,7 +1654,6 @@ components:
       - credential_endpoint
       - credential_issuer
     KeyAttestationRequirement:
-      type: object
       properties:
         key_storage:
           type: array
@@ -1661,14 +1672,14 @@ components:
         templated:
           type: boolean
     MetadataClaimDescriptor:
-      type: object
       description: |
         A claims description object as used in the Credential Issuer metadata is an object used to describe
         how a certain claim in the Credential is displayed to the End-User.
       properties:
         path:
           type: array
-          items: {}
+          items:
+            type: object
           minItems: 1
         mandatory:
           type: boolean
@@ -1679,7 +1690,6 @@ components:
       required:
       - path
     MetadataCredentialDisplayInfo:
-      type: object
       properties:
         locale:
           type: string
@@ -1691,7 +1701,6 @@ components:
           type: string
         logo:
           $ref: "#/components/schemas/MetadataLogo"
-          description: Object with information about the logo of the Credential.
         description:
           type: string
         background_color:
@@ -1701,12 +1710,9 @@ components:
             in CSS Color Module Level 3
         background_image:
           $ref: "#/components/schemas/MetadataImage"
-          description: |
-            Object with information about the background image of the Credential. At least the following parameter
         text_color:
           type: string
     MetadataDisplayInfo:
-      type: object
       properties:
         locale:
           type: string
@@ -1717,7 +1723,6 @@ components:
         name:
           type: string
     MetadataImage:
-      type: object
       properties:
         uri:
           type: string
@@ -1728,7 +1733,6 @@ components:
       required:
       - uri
     MetadataIssuerDisplayInfo:
-      type: object
       properties:
         locale:
           type: string
@@ -1740,9 +1744,7 @@ components:
           type: string
         logo:
           $ref: "#/components/schemas/MetadataLogo"
-          description: Object with information about the logo of the Credential Issuer.
     MetadataLogo:
-      type: object
       properties:
         uri:
           type: string
@@ -1916,7 +1918,6 @@ components:
         status:
           $ref: "#/components/schemas/CredentialStatusType"
     SupportedProofType:
-      type: object
       properties:
         proof_signing_alg_values_supported:
           type: array

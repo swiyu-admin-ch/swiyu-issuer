@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.*;
 import ch.admin.bj.swiyu.issuer.dto.callback.WebhookCallbackDto;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import io.swagger.v3.core.converter.ModelConverters;
@@ -58,6 +59,21 @@ public class OpenApiConfig {
         var additionalSchemas = new LinkedHashMap<String, io.swagger.v3.oas.models.media.Schema<?>>();
         additionalSchemas.put("ApiError", ModelConverters.getInstance().readAllAsResolvedSchema(ApiErrorDto.class).schema);
         additionalSchemas.put("WebhookCallback", ModelConverters.getInstance().readAllAsResolvedSchema(WebhookCallbackDto.class).schema);
+        additionalSchemas.put("IssuerMetadata", ModelConverters.getInstance().readAllAsResolvedSchema(IssuerMetadata.class).schema);
+        additionalSchemas.put("CredentialConfiguration", ModelConverters.getInstance().readAllAsResolvedSchema(CredentialConfiguration.class).schema);
+        additionalSchemas.put("IssuerCredentialRequestEncryption", ModelConverters.getInstance().readAllAsResolvedSchema(IssuerCredentialRequestEncryption.class).schema);
+        additionalSchemas.put("IssuerCredentialResponseEncryption", ModelConverters.getInstance().readAllAsResolvedSchema(IssuerCredentialResponseEncryption.class).schema);
+        additionalSchemas.put("BatchCredentialIssuance", ModelConverters.getInstance().readAllAsResolvedSchema(BatchCredentialIssuance.class).schema);
+        additionalSchemas.put("MetadataIssuerDisplayInfo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataIssuerDisplayInfo.class).schema);
+        additionalSchemas.put("MetadataLogo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataLogo.class).schema);
+        additionalSchemas.put("CredentialDefinition", ModelConverters.getInstance().readAllAsResolvedSchema(CredentialDefinition.class).schema);
+        additionalSchemas.put("SupportedProofType", ModelConverters.getInstance().readAllAsResolvedSchema(SupportedProofType.class).schema);
+        additionalSchemas.put("MetadataCredentialDisplayInfo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataCredentialDisplayInfo.class).schema);
+        additionalSchemas.put("CredentialConfigurationMetadata", ModelConverters.getInstance().readAllAsResolvedSchema(CredentialConfigurationMetadata.class).schema);
+        additionalSchemas.put("MetadataClaimDescriptor", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataClaimDescriptor.class).schema);
+        additionalSchemas.put("MetadataImage", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataImage.class).schema);
+        additionalSchemas.put("KeyAttestationRequirement", ModelConverters.getInstance().readAllAsResolvedSchema(KeyAttestationRequirement.class).schema);
+        additionalSchemas.put("MetadataDisplayInfo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataDisplayInfo.class).schema);
         return openApi -> {
             if (openApi.getComponents() == null) {
                 openApi.setComponents(new Components());
