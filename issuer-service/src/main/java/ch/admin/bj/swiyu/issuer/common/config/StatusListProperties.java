@@ -28,7 +28,7 @@ public class StatusListProperties extends SignatureConfiguration {
 
     /**
      * Time-to-live (in seconds) for cached status list entries.
-     * This value is used by the in-memory cache to determine
+     * This value is used by the wallets cache to determine
      * how long a retrieved or computed status list should be kept before it
      * is considered stale.
      */

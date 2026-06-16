@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Status list tokens (`statuslist+jwt`) now include a `ttl` claim and proper `exp`/`iat` timestamps derived from the new
+- Status list tokens (`statuslist+jwt`) now include a `ttl` claim and proper `exp`/`iat` timestamps derived from the
   `application.status-list` properties. This allows operators to control how long published status lists are considered
-  valid and how long cached status list entries are retained. New properties are:
+  valid and how long cached status list entries are retained by the wallet. New properties are:
     - `statusListCacheTimeSeconds` — TTL (in seconds) used by the wallets status list cache.
-    - `statusListExpirationSeconds` — Expiration (in seconds) used when generating status list tokens/artifacts.
+    - `statusListExpirationSeconds` — Expiration (in seconds) used when generating status lists.
 
 ### Fixed
 
