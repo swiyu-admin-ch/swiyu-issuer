@@ -26,6 +26,7 @@ import ch.admin.bj.swiyu.dpop.DpopConstants;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.common.exception.SignedMetadataUnsupportedException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
@@ -110,6 +111,24 @@ public class MetadataService {
         return result;
     }
 
+    /**
+     * Returns an instance of the issuer metadata without signing that includes any
+     * Trust Protocol 2.0 trust statements configured for the current deployment.
+     * <p>
+     * It uses the issuer DID from the global {@link ApplicationProperties#getIssuerId()} configuration,
+     * injects trust statements (if a {@link TrustStatementInjectionService} is present), and
+     * returns the resulting {@link IssuerMetadata} instance.
+     *
+     * @return the unsigned {@link IssuerMetadata} enriched with trust statements
+     * when the Trust Registry integration is active
+     */
+    public IssuerMetadata getUnsignedIssuerMetadataWithTS() {
+        String issuerDid = applicationProperties.getIssuerId();
+        IssuerMetadata base = unwrapProxy(jweService.issuerMetadataWithEncryptionOptions());
+        trustStatementInjectionService.ifPresent(s -> s.injectTrustStatements(base, issuerDid));
+        return base;
+    }
+
 
     /**
      * Updates the supported credential configurations by merging metadata from the provided
@@ -119,7 +138,7 @@ public class MetadataService {
      * The method then returns the updated map of supported credential configurations.
      *
      * @param issuerMetadata the issuer metadata to be updated
-     * @param tenantId the tenant identifier for which to produce the updated credential configuration
+     * @param tenantId       the tenant identifier for which to produce the updated credential configuration
      * @return copy of the credential configuration supported map with updated {@link CredentialConfiguration}
      */
     private Map<String, CredentialConfiguration> getUpdatedSupportedCredentialConfigurations(
@@ -134,9 +153,9 @@ public class MetadataService {
             var configurationId = credentialOffer.getMetadataCredentialSupportedId().getFirst();
             var baseCredentialConfiguration = issuerMetadata.getCredentialConfigurationById(configurationId);
             supportedCredentialConfigurations.put(configurationId, baseCredentialConfiguration.toBuilder()
-                .vctMetadataUri(credentialMetadata.getVctMetadataUriOrDefault(baseCredentialConfiguration.getVctMetadataUri()))
-                .vctMetadataUriIntegrity(credentialMetadata.getVctMetadataUriIntegrityOrDefault(baseCredentialConfiguration.getVctMetadataUriIntegrity()))
-                .build());
+                    .vctMetadataUri(credentialMetadata.getVctMetadataUriOrDefault(baseCredentialConfiguration.getVctMetadataUri()))
+                    .vctMetadataUriIntegrity(credentialMetadata.getVctMetadataUriIntegrityOrDefault(baseCredentialConfiguration.getVctMetadataUriIntegrity()))
+                    .build());
         }
         return supportedCredentialConfigurations;
     }
@@ -181,6 +200,31 @@ public class MetadataService {
     }
 
     /**
+     * Returns a signed issuer‑metadata JWT that also contains any applicable
+     * Trust Protocol 2.0 trust statements.
+     * <p>
+     * The method works with the default configuration:
+     * it builds the unsigned metadata including trust statements via
+     * {@link #getUnsignedIssuerMetadataWithTS()}, serialises it to JSON and finally
+     * signs the payload with the configured signing key.
+     *
+     * @return a compact, signed JWT string representing the issuer metadata together
+     * with the injected trust statements
+     * @throws ConfigurationException if the metadata cannot be serialised to JSON or
+     *                                if the signing operation fails (e.g. key‑strategy or JOSE errors)
+     */
+
+    public String getSignedIssuerMetadataWithTS() {
+        IssuerMetadata unsignedMetadata = getUnsignedIssuerMetadataWithTS();
+
+        try {
+            return signMetadataJwt(objectMapper.writeValueAsString(unsignedMetadata), new ConfigurationOverride(null, null, null, null), null);
+        } catch (JsonProcessingException e) {
+            throw new ConfigurationException("Unsigned Issuer Metadata could not be serialized as string", e);
+        }
+    }
+
+    /**
      * Returns the OpenID Provider Configuration as a DTO without signing.
      *
      * <p>The configuration is retrieved from {@code openIdIssuerConfiguration} and is returned
@@ -190,8 +234,8 @@ public class MetadataService {
      */
     public OAuthAuthorizationServerMetadataDto getUnsignedOAuthAuthorizationServerMetadata() {
         return addSigningAlgorithmsSupportedAndSwissprofileVersion(
-                    openIdIssuerConfiguration.getOpenIdConfiguration()
-                );
+                openIdIssuerConfiguration.getOpenIdConfiguration()
+        );
     }
 
     /**
@@ -214,7 +258,7 @@ public class MetadataService {
         }
     }
 
-        /**
+    /**
      * Returns the Authorization Server Metadata as a DTO without signing.
      *
      * <p>The configuration is retrieved from {@code OAuthAuthorizationServerMetadata} and is returned
@@ -238,6 +282,9 @@ public class MetadataService {
      */
     private String createTenantCredentialIssuerIdentifier(UUID tenantId) {
         String commonCredentialIssuerIdentifier = jweService.issuerMetadataWithEncryptionOptions().getCredentialIssuer();
+        if (tenantId == null) {
+            return commonCredentialIssuerIdentifier;
+        }
         return String.format("%s/%s", commonCredentialIssuerIdentifier, tenantId);
     }
 
@@ -247,6 +294,9 @@ public class MetadataService {
             JWSSigner signer;
 
             signer = jwsSignatureFacade.createSigner(sdjwtProperties, override.keyId(), override.keyPin());
+            if (signer == null) {
+                throw new SignedMetadataUnsupportedException();
+            }
 
             /*
              * alg: Must be ES256
@@ -311,7 +361,7 @@ public class MetadataService {
         builder.dpop_signing_alg_values_supported(DpopConstants.SUPPORTED_ALGORITHMS)
                 .profile_version(SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .preauthorized_grant_anonymous_access_supported(true);
-    
+
         return builder.build();
     }
 

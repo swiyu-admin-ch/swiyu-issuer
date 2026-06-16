@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+### Changed
+
+- Status list tokens (`statuslist+jwt`) now include a `ttl` claim and proper `exp`/`iat` timestamps derived from the
+  `application.status-list` properties. This allows operators to control how long published status lists are considered
+  valid and how long cached status list entries are retained by the wallet. New properties are:
+    - `statusListCacheTime` — TTL used by the wallets status list cache.
+    - `statusListExpirationTime` — Expiration used when generating status lists.
+- Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM.
+
+### Fixed
+
+- Fixed "cannot be parsed exception" with nested arrays in credential subject data update
+
+## [3.2.4] - 2026-06-12
+
+### Fixed
+
+- update generic-java-lib to 1.6.4 for didresolver security updates.
+
 ## [3.2.3] - 2026-06-10
 
 ### Fixed

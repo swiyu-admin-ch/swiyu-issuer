@@ -1,7 +1,5 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
@@ -11,6 +9,8 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -140,7 +140,7 @@ class CredentialBuilderTest {
 
         builder.holderBindings(privateKeys.stream().map(ECKey::toPublicJWK).map(Object::toString).toList());
         List<HolderKeyBinding> holderKeyBindings = list.stream()
-                .map(key -> new HolderKeyBinding(key))
+                .map(HolderKeyBinding::new)
                 .toList();
 
         doReturn(List.of("credential1")).when(builder).getCredential(List.of(holderKeyBindings.getFirst()));
@@ -189,16 +189,17 @@ class CredentialBuilderTest {
         verify(builder).buildEnvelopeDto(credentialResponseDto, HttpStatus.OK);
     }
 
-    @Test
-    void buildEnvelopeDto_withEncryption_thenSuccess() throws JOSEException, ParseException {
+    @ParameterizedTest
+    @ValueSource(strings = {"A128GCM", "A256GCM"})
+    void buildEnvelopeDto_withEncryption_thenSuccess(String encAlg) throws JOSEException {
 
         var issuerCredentialResponseEncryption = new IssuerCredentialResponseEncryption();
         issuerCredentialResponseEncryption.setAlgValuesSupported(List.of("ECDH-ES"));
-        issuerCredentialResponseEncryption.setEncValuesSupported(List.of("A128GCM"));
+        issuerCredentialResponseEncryption.setEncValuesSupported(List.of("A128GCM", "A256GCM"));
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
         var jwk = createPrivateKey().toPublicJWK().toJSONObject();
-        CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, "A128GCM");
+        CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, encAlg);
 
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), encryptor);
 

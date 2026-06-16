@@ -37,8 +37,8 @@ import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.service.management.CredentialManagementMapper.*;
-import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toUpdateStatusResponseDto;
 import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.*;
+import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toUpdateStatusResponseDto;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
 /**
@@ -497,7 +497,7 @@ public class CredentialManagementService {
         // The offer data is a json map
         if (unparsedOfferDataString.startsWith("{")) {
             try {
-                return objectMapper.readValue(unparsedOfferDataString, new TypeReference<Map<String, String>>() {
+                return objectMapper.readValue(unparsedOfferDataString, new TypeReference<Map<String, Object>>() {
                 });
             } catch (JsonProcessingException e) {
                 throw new BadRequestException("Offer Data %s cannot be parsed".formatted(unparsedOfferDataString), e);
