@@ -85,6 +85,8 @@ management:
         application.authentication-jwks,
         application.status-list.hsm.host,
         application.status-list.hsm.port,
+        application.status-list.status-list-cache-time-seconds,
+        application.status-list.status-list-expiration-seconds,
         application.offer-expiration-interval,
         application.openid-file,
         application.metadata-file,
