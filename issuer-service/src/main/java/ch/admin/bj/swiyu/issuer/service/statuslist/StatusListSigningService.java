@@ -62,8 +62,8 @@ public class StatusListSigningService {
                 .build();
 
         JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
-                .claim("ttl", statusListProperties.getStatusListCacheTimeSeconds())
-                .expirationTime(Date.from(Instant.now().plusSeconds(statusListProperties.getStatusListExpirationSeconds())))
+                .claim("ttl", statusListProperties.getStatusListCacheTime().toSeconds())
+                .expirationTime(Date.from(Instant.now().plusSeconds(statusListProperties.getStatusListExpirationTime().toSeconds())))
                 .subject(statusList.getUri())
                 .issuer(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
                 .issueTime(Date.from(Instant.now()))

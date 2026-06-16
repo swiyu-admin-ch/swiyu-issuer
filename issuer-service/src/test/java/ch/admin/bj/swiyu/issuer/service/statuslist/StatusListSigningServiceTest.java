@@ -43,8 +43,6 @@ class StatusListSigningServiceTest {
         statusListProperties = mock(StatusListProperties.class);
         jwsSignatureFacade = mock(JwsSignatureFacade.class);
 
-        when(statusListProperties.getStatusListCacheTimeSeconds()).thenReturn(900);
-        when(statusListProperties.getStatusListExpirationSeconds()).thenReturn(31536000L);
         when(applicationProperties.getIssuerId()).thenReturn("did:example:issuer");
         when(statusListProperties.getVerificationMethod()).thenReturn("did:example:vm#1");
 
@@ -80,7 +78,7 @@ class StatusListSigningServiceTest {
         var claims = signed.getJWTClaimsSet();
         assertEquals(applicationProperties.getIssuerId(), claims.getIssuer());
         assertEquals(statusList.getUri(), claims.getSubject());
-        assertEquals(statusListProperties.getStatusListCacheTimeSeconds(), ((Number) claims.getClaim("ttl")).intValue());
+        assertEquals(statusListProperties.getStatusListCacheTime().toSeconds(), ((Number) claims.getClaim("ttl")).intValue());
         assertNotNull(claims.getClaim("status_list"));
         assertTrue(((Map<?, ?>) claims.getClaim("status_list")).containsKey("bits"));
         assertTrue(((Map<?, ?>) claims.getClaim("status_list")).containsKey("lst"));

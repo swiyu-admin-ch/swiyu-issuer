@@ -30,8 +30,8 @@ application:
     verification-method: "did:tdw:example#12345"
     key-management-method: "key"
     status-list-size-limit: 204800 # 200KiB
-    status-list-cache-time-seconds: 900 # 15 * 60 => 15 minutes
-    status-list-expiration-seconds: 31536000 # 60 * 60 * 24 * 365 => 1 year
+    status-list-cache-time: 15m
+    status-list-expiration-time: 365d
   offer-expiration-interval: "PT15M"
   encryption-key-rotation-interval: "PT15M"
   encryption-enforce: false

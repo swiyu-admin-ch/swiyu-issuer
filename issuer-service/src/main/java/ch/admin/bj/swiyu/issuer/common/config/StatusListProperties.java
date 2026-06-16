@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Duration;
+
 @Slf4j
 @Validated
 @Getter
@@ -20,20 +22,20 @@ public class StatusListProperties extends SignatureConfiguration {
     private int statusListSizeLimit;
 
     /**
-     * Time-to-live (in seconds) for cached status list entries.
+     * Time-to-live for cached status list entries.
      * This value is used by the wallets cache to determine
      * how long a retrieved or computed status list should be kept before it
      * is considered stale.
      */
     @NotNull
-    private Integer statusListCacheTimeSeconds;
+    private Duration statusListCacheTime = Duration.ofMinutes(15);
 
     /**
-     * Expiration duration (in seconds) for a status list artifact itself.
+     * Expiration duration for a status list artifact itself.
      * Represents how long a generated status list remains valid.
      */
     @NotNull
-    private Long statusListExpirationSeconds;
+    private Duration statusListExpirationTime = Duration.ofDays(365);
 
 
 }
