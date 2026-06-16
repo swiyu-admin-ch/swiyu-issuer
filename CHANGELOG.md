@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM.
 
+### Fixed
+
+- Fixed "cannot be parsed exception" with nested arrays in credential subject data update
+
 ## [3.2.3] - 2026-06-10
 
 ### Fixed
