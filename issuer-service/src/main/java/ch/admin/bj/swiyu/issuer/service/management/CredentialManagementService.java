@@ -415,7 +415,7 @@ public class CredentialManagementService {
         var issuerDid = validationService.determineIssuerDid(newOffer, applicationProperties.getIssuerId());
         validationService.ensureMatchingIssuerDids(issuerDid, applicationProperties.getIssuerId(), statusLists);
 
-        CredentialOfferMapper.updateOfferFromDto(existingOffer, newOffer, offerData, applicationProperties);
+        CredentialOfferMapper.updateOfferFromDto(existingOffer, newOffer, offerData);
 
         CredentialOffer entity = persistenceService.saveCredentialOffer(existingOffer);
 

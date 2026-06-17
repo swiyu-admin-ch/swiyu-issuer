@@ -1,5 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.offer;
 
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.ClientAgentInfoDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
@@ -7,8 +9,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -48,7 +48,6 @@ class CredentialOfferMapperTest {
                 .build();
         CredentialOfferMetadata credentialOfferMetadata = CredentialOfferMetadata.builder()
                 .deferred(false)
-                .vctIntegrity("vct#integrity")
                 .build();
         CredentialOffer offer = getCredentialOffer(credentialOfferMetadata, mgmt);
 
@@ -61,7 +60,6 @@ class CredentialOfferMapperTest {
         assertEquals("ip", dto.clientAgentInfo().remoteAddr());
 
         assertEquals(false, dto.credentialMetadata().deferred());
-        assertEquals("vct#integrity", dto.credentialMetadata().vctIntegrity());
     }
 
     @ParameterizedTest
@@ -82,7 +80,6 @@ class CredentialOfferMapperTest {
         CredentialInfoResponseDto dto = CredentialOfferMapper.toCredentialInfoResponseDto(offer, props);
 
         assertEquals(deferred, dto.credentialMetadata().deferred());
-        assertNull(dto.credentialMetadata().vctIntegrity());
     }
 
     @Test
@@ -150,11 +147,10 @@ class CredentialOfferMapperTest {
 
     @Test
     void toCredentialOfferMetadataDto_mapsFieldsCorrectly() {
-        CredentialOfferMetadataDto dto = new CredentialOfferMetadataDto(true, "integrity", null, null);
+        CredentialOfferMetadataDto dto = new CredentialOfferMetadataDto(true, null, null);
         CredentialOfferMetadata metadata = CredentialOfferMapper.toCredentialOfferMetadataDto(dto);
         assertNotNull(metadata);
         assertEquals(true, metadata.deferred());
-        assertEquals("integrity", metadata.vctIntegrity());
     }
 
     @Test
@@ -162,16 +158,14 @@ class CredentialOfferMapperTest {
         CredentialOfferMetadataDto result = CredentialOfferMapper.toCredentialOfferMetadata(null);
         assertNotNull(result);
         assertNull(result.deferred());
-        assertNull(result.vctIntegrity());
     }
 
     @Test
     void toCredentialOfferMetadata_mapsFieldsCorrectly() {
-        CredentialOfferMetadata metadata = new CredentialOfferMetadata(false, "vct#test", null, null);
+        CredentialOfferMetadata metadata = new CredentialOfferMetadata(false, null, null);
         CredentialOfferMetadataDto dto = CredentialOfferMapper.toCredentialOfferMetadata(metadata);
         assertNotNull(dto);
         assertEquals(false, dto.deferred());
-        assertEquals("vct#test", dto.vctIntegrity());
     }
 
     private CredentialOffer getCredentialOffer(CredentialOfferMetadata deferred, CredentialManagement mgmt) {
