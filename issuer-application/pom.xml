@@ -63,14 +63,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webclient</artifactId>
             <exclusions>
-                <!-- Attack Surface Reduction: HTTP/3 and QUIC are not used.
-                     Excluding netty-codec-http3 also removes all 5 platform-specific
-                     netty-codec-native-quic JARs (linux-x86_64, linux-aarch_64,
-                     osx-x86_64, osx-aarch_64, windows-x86_64) transitively. -->
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-codec-http3</artifactId>
-                </exclusion>
                 <!-- Attack Surface Reduction: macOS-native DNS resolver is irrelevant
                      in production Linux Docker containers. -->
                 <exclusion>
