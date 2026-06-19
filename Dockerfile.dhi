@@ -48,7 +48,7 @@ EXPOSE 8080
 WORKDIR /app
 
 # 1. Inject native libraries (owned by root, read-only for the application)
-COPY --from=libs --chown=root:root --chmod=644 /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 /app/lib-native/libgcc_s.so.1
+COPY --from=libs --chown=root:root --chmod=644 /usr/lib/*-linux-gnu/libgcc_s.so.1 /usr/lib/
 
 # 2. Inject certificates (owned by root, read-only for the application)
 # NOTE: Path is derived from JAVA_HOME set in the SOURCE_IMAGE (dhi.io/eclipse-temurin:21-debian13).
@@ -62,10 +62,6 @@ COPY --chown=1001:1001 --chmod=644 ${JAR_FILE} /app/app.jar
 
 # If you have external config files:
 # COPY --chown=1001:1001 --chmod=644 cfg-files/ /app/cfg-files/
-
-
-# Tell the dynamic linker where to find the native library for the did-resolver
-ENV LD_LIBRARY_PATH=/app/lib-native
 
 # Switch to non-root user (security hardening)
 USER 1001
