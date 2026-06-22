@@ -349,13 +349,13 @@ if `SWIYU_TRUST_REGISTRY_API_URL` is not set, trust statement caching is disable
 
 #### Security
 
-Management Endpoints can be secured as OAuth2 Resource Server using Spring Security.
+The management endpoints for both the issuer/verifier (generic component) might seem like they're unprotected and that there is a lack of controls securing them. This is because they are meant to be used exclusively by the business issuer/verifier (business component) that are built on top of them by each participant in the ecosystem. The generic component should be considered closer to a library than to stand-alone services. As such these endpoints are meant to be deployed in a way where they can only be accessed by the business component of the software. The threat model therefore excludes attackers being able to send crafted payloads to these management endpoints. If attackers can send anything to these endpoints, they must have completely taken over the business component and can already do everything.
 
-For more details see the
-official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
+Management Endpoints can be secured as OAuth2 Resource Server using Spring Security, if required. The generic component leaves user management to the business component.
 
-For easy playground setup security starts deactivated. It is activated when the appropriate environment variables are
-set.
+For more details see the official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
+
+For easy playground setup or when using the component in an isolated zone security starts deactivated. It is activated when the appropriate environment variables are set.
 
 ##### Fixed single asymmetric key
 
