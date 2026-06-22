@@ -67,7 +67,6 @@ class CredentialServiceOrchestratorTest {
 
     @BeforeEach
     void setUp() {
-        CredentialOfferStatusRepository credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         statusListOrchestrator = Mockito.mock(StatusListOrchestrator.class);
         issuerMetadata = Mockito.mock(IssuerMetadata.class);
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);

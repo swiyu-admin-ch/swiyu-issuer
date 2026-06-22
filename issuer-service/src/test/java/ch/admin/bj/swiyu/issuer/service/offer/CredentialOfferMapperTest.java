@@ -141,29 +141,29 @@ class CredentialOfferMapperTest {
     }
 
     @Test
-    void toCredentialOfferMetadataDto_returnsNullIfInputNull() {
-        assertNull(CredentialOfferMapper.toCredentialOfferMetadataDto(null));
+    void toCredentialOfferMetadataDtoFromDto_returnsNullIfInputNull() {
+        assertNull(CredentialOfferMapper.toCredentialOfferMetadata(null));
     }
 
     @Test
-    void toCredentialOfferMetadataDto_mapsFieldsCorrectly() {
+    void toCredentialOfferMetadataDtoFromDto_mapsFieldsCorrectly() {
         CredentialOfferMetadataDto dto = new CredentialOfferMetadataDto(true, null, null);
-        CredentialOfferMetadata metadata = CredentialOfferMapper.toCredentialOfferMetadataDto(dto);
+        CredentialOfferMetadata metadata = CredentialOfferMapper.toCredentialOfferMetadata(dto);
         assertNotNull(metadata);
         assertEquals(true, metadata.deferred());
     }
 
     @Test
-    void toCredentialOfferMetadata_returnsDefaultIfInputNull() {
-        CredentialOfferMetadataDto result = CredentialOfferMapper.toCredentialOfferMetadata(null);
+    void toCredentialOfferMetadata_Dto_returnsDefaultIfInputNull() {
+        CredentialOfferMetadataDto result = CredentialOfferMapper.toCredentialOfferMetadataDto(null);
         assertNotNull(result);
         assertNull(result.deferred());
     }
 
     @Test
-    void toCredentialOfferMetadata_mapsFieldsCorrectly() {
+    void toCredentialOfferMetadata_Dto_mapsFieldsCorrectly() {
         CredentialOfferMetadata metadata = new CredentialOfferMetadata(false, null, null);
-        CredentialOfferMetadataDto dto = CredentialOfferMapper.toCredentialOfferMetadata(metadata);
+        CredentialOfferMetadataDto dto = CredentialOfferMapper.toCredentialOfferMetadataDto(metadata);
         assertNotNull(dto);
         assertEquals(false, dto.deferred());
     }

@@ -48,7 +48,7 @@ public class CredentialOfferMapper {
         return new CredentialInfoResponseDto(
                 toCredentialStatusTypeDto(credential.getCredentialStatus()),
                 credential.getMetadataCredentialSupportedId(),
-                toCredentialOfferMetadata(credential.getCredentialMetadata()),
+                toCredentialOfferMetadataDto(credential.getCredentialMetadata()),
                 nullIfEmptyList(credential.getHolderJWKs()),
                 nullIfEmptyList(credential.getKeyAttestations()),
                 toClientAgentInfoDto(credential.getClientAgentInfo()),
@@ -158,14 +158,14 @@ public class CredentialOfferMapper {
         return new ConfigurationOverride(source.issuerDid(), source.verificationMethod(), source.keyId(), source.keyPin());
     }
 
-    public static CredentialOfferMetadata toCredentialOfferMetadataDto(CredentialOfferMetadataDto dto) {
+    public static CredentialOfferMetadata toCredentialOfferMetadata(CredentialOfferMetadataDto dto) {
         if (dto == null) {
             return null;
         }
         return new CredentialOfferMetadata(dto.deferred(), dto.vctMetadataUri(), dto.vctMetadataUriIntegrity());
     }
 
-    public static CredentialOfferMetadataDto toCredentialOfferMetadata(CredentialOfferMetadata metadata) {
+    public static CredentialOfferMetadataDto toCredentialOfferMetadataDto(CredentialOfferMetadata metadata) {
         if (metadata == null) {
             return new CredentialOfferMetadataDto(null, null, null);
         }
@@ -241,7 +241,7 @@ public class CredentialOfferMapper {
         existingOffer.setOfferData(offerData);
         existingOffer.setCredentialValidFrom(newOffer.getCredentialValidFrom());
         existingOffer.setCredentialValidUntil(newOffer.getCredentialValidUntil());
-        existingOffer.setCredentialMetadata(toCredentialOfferMetadataDto(newOffer.getCredentialMetadata()));
+        existingOffer.setCredentialMetadata(toCredentialOfferMetadata(newOffer.getCredentialMetadata()));
         existingOffer.setConfigurationOverride(toConfigurationOverride(newOffer.getConfigurationOverride()));
     }
 
