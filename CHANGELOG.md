@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+## Added
+- Integrate `pgpverify-maven-plugin` to cryptographically verify PGP signatures of all third-party dependencies during the build. The build fails if an artifact has no signature or an invalid signature. PGP keys are cached in CI/CD to avoid redundant downloads `(#836)`.
+
 ### Changed
 
 - Status list tokens (`statuslist+jwt`) now include a `ttl` claim and proper `exp`/`iat` timestamps derived from the
