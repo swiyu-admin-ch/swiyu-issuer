@@ -168,7 +168,7 @@ jobs:
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
 
       - name: Create SBOM
-        run: snyk sbom --format=cyclonedx1.6+json > sbom.json
+        run: sbom --format=cyclonedx1.6+json > sbom.json
       - name: Upload SBOM to release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
