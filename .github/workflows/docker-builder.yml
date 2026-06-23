@@ -172,6 +172,10 @@ jobs:
         with:
           command: sbom
           args: --format=cyclonedx1.6+json --json-file-output=sbom.json
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}
       - name: Upload SBOM to release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
