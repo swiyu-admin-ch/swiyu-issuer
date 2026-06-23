@@ -450,20 +450,8 @@ class SdJwtCredentialTest {
         return Map.of("foo", "bar");
     }
 
-    private Map<String, Object> getNestedSubjectData() {
-        var offerAddressData = Map.of("street_address", "123 Main St", "locality", "Anytown", "region", "Anystate", "country", "US");
-        return Map.of("test", "test", "address", offerAddressData);
-    }
-
     private Map<String, Object> getOfferDataList() {
         return Map.of("foo", List.of("bar1", "bar2"));
-    }
-
-    private Map<String, Object> getNestedOfferDataList() {
-        Map<String, Object> nestedObject1 = Map.of("nestedKey1", "nestedValue1");
-        Map<String, Object> nestedObject2 = Map.of("nestedKey2", "nestedValue2");
-
-        return Map.of("foo", List.of(nestedObject1, nestedObject2));
     }
 
     private CredentialOffer createCredentialOffer(Map<String, Object> offerData) {
@@ -489,11 +477,10 @@ class SdJwtCredentialTest {
     void shouldAddCredentialMetadataAndNbfExpClaims() throws Exception {
         when(applicationProperties.isEnableVcHashStorage()).thenReturn(false);
 
-        var vctIntegrity = "vct-int";
         var vctMetadataUri = "https://example/vct.json";
         var vctMetadataUriIntegrity = "vct-uri-int";
 
-        var credentialMetadata = new CredentialOfferMetadata(null, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
+        var credentialMetadata = new CredentialOfferMetadata(null, vctMetadataUri, vctMetadataUriIntegrity);
 
         CredentialOffer offer = createCredentialOffer(getSubjectData());
         offer.setCredentialMetadata(credentialMetadata);
@@ -511,7 +498,6 @@ class SdJwtCredentialTest {
         String signedPart = sdjwt.contains("~") ? sdjwt.split("~")[0] : sdjwt;
         SignedJWT parsed = SignedJWT.parse(signedPart);
 
-        assertEquals(vctIntegrity, parsed.getJWTClaimsSet().getStringClaim("vct#integrity"));
         assertEquals(vctMetadataUri, parsed.getJWTClaimsSet().getStringClaim("vct_metadata_uri"));
         assertEquals(vctMetadataUriIntegrity, parsed.getJWTClaimsSet().getStringClaim("vct_metadata_uri#integrity"));
 

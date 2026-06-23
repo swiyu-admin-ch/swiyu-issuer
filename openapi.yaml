@@ -1183,7 +1183,6 @@ components:
           description: |
             Various metadata to be used for credential creation.
           example:
-            vct#integrity: sha256-0000000000000000000000000000000000000000000=
             deferred: false
         offer_validity_seconds:
           type: integer
@@ -1436,10 +1435,6 @@ components:
       properties:
         deferred:
           type: boolean
-        vct#integrity:
-          type: string
-          maxLength: 2147483647
-          minLength: 1
         vct_metadata_uri:
           type: string
           maxLength: 2147483647

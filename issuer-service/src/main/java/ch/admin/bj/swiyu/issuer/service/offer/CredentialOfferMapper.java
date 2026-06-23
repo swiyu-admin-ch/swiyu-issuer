@@ -48,7 +48,7 @@ public class CredentialOfferMapper {
         return new CredentialInfoResponseDto(
                 toCredentialStatusTypeDto(credential.getCredentialStatus()),
                 credential.getMetadataCredentialSupportedId(),
-                toCredentialOfferMetadata(credential.getCredentialMetadata()),
+                toCredentialOfferMetadataDto(credential.getCredentialMetadata()),
                 nullIfEmptyList(credential.getHolderJWKs()),
                 nullIfEmptyList(credential.getKeyAttestations()),
                 toClientAgentInfoDto(credential.getClientAgentInfo()),
@@ -158,18 +158,18 @@ public class CredentialOfferMapper {
         return new ConfigurationOverride(source.issuerDid(), source.verificationMethod(), source.keyId(), source.keyPin());
     }
 
-    public static CredentialOfferMetadata toCredentialOfferMetadataDto(CredentialOfferMetadataDto dto) {
+    public static CredentialOfferMetadata toCredentialOfferMetadata(CredentialOfferMetadataDto dto) {
         if (dto == null) {
             return null;
         }
-        return new CredentialOfferMetadata(dto.deferred(), dto.vctIntegrity(), dto.vctMetadataUri(), dto.vctMetadataUriIntegrity());
+        return new CredentialOfferMetadata(dto.deferred(), dto.vctMetadataUri(), dto.vctMetadataUriIntegrity());
     }
 
-    public static CredentialOfferMetadataDto toCredentialOfferMetadata(CredentialOfferMetadata metadata) {
+    public static CredentialOfferMetadataDto toCredentialOfferMetadataDto(CredentialOfferMetadata metadata) {
         if (metadata == null) {
-            return new CredentialOfferMetadataDto(null, null, null, null);
+            return new CredentialOfferMetadataDto(null, null, null);
         }
-        return new CredentialOfferMetadataDto(metadata.deferred(), metadata.vctIntegrity(), metadata.vctMetadataUri(), metadata.vctMetadataUriIntegrity());
+        return new CredentialOfferMetadataDto(metadata.deferred(), metadata.vctMetadataUri(), metadata.vctMetadataUriIntegrity());
     }
 
     private static String getCredentialIssuer(ApplicationProperties props, CredentialOffer credential) {
@@ -229,21 +229,19 @@ public class CredentialOfferMapper {
     /**
      * Updates an existing CredentialOffer with data from a CreateCredentialOfferRequestDto and supporting parameters.
      *
-     * @param existingOffer         the offer to update
-     * @param newOffer              the DTO with new data
-     * @param offerData             the parsed offer data
-     * @param applicationProperties the application properties
+     * @param existingOffer the offer to update
+     * @param newOffer      the DTO with new data
+     * @param offerData     the parsed offer data
      */
     public static void updateOfferFromDto(
             CredentialOffer existingOffer,
             CreateCredentialOfferRequestDto newOffer,
-            Map<String, Object> offerData,
-            ApplicationProperties applicationProperties) {
+            Map<String, Object> offerData) {
         existingOffer.setMetadataCredentialSupportedId(newOffer.getMetadataCredentialSupportedId());
         existingOffer.setOfferData(offerData);
         existingOffer.setCredentialValidFrom(newOffer.getCredentialValidFrom());
         existingOffer.setCredentialValidUntil(newOffer.getCredentialValidUntil());
-        existingOffer.setCredentialMetadata(toCredentialOfferMetadataDto(newOffer.getCredentialMetadata()));
+        existingOffer.setCredentialMetadata(toCredentialOfferMetadata(newOffer.getCredentialMetadata()));
         existingOffer.setConfigurationOverride(toConfigurationOverride(newOffer.getConfigurationOverride()));
     }
 

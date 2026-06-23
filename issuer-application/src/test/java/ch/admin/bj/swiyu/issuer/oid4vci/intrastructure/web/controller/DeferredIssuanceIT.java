@@ -38,8 +38,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -132,7 +132,7 @@ class DeferredIssuanceIT {
         // isBatchIssuanceAllowed=false) do not bleed into subsequent tests that use the real batch size.
         Mockito.reset(issuerMetadata);
         statusList = saveStatusList(createStatusList());
-        var deferredMetadata = new CredentialOfferMetadata(true, null, null, null);
+        var deferredMetadata = new CredentialOfferMetadata(true, null, null);
 
         CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED,
                 "university_example_sd_jwt",
@@ -674,7 +674,7 @@ class DeferredIssuanceIT {
 
         var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(),
                 CredentialOfferStatusType.IN_PROGRESS,
-                "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null),
+                "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null),
                 expirationInSeconds);
         saveStatusListLinkedOffer(offerWithDynamicExpiration, statusList, 3);
 
@@ -790,13 +790,11 @@ class DeferredIssuanceIT {
     }
 
     private CredentialOfferMetadataDto getCredentialMetadataDto() {
-        return new CredentialOfferMetadataDto(true, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null,
-                null);
+        return new CredentialOfferMetadataDto(true, null, null);
     }
 
     private CredentialOffer createUnboundCredentialOffer() throws Exception {
-        var offerMetadata = new CredentialOfferMetadataDto(true,
-                "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null, null);
+        var offerMetadata = new CredentialOfferMetadataDto(true, null, null);
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
                 .credentialSubjectData(Map.of("animal", "animal"))
