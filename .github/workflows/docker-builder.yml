@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 30
 
     permissions:
-      contents: read
+      contents: write
       packages: write
       attestations: write
       id-token: write
@@ -89,13 +89,14 @@ jobs:
             type=raw,value=dev,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
             type=raw,value=${{ inputs.environment_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.environment_tag != 'none' }}
             type=raw,value=${{ inputs.version_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.version_tag != '' }}
+
       - name: Build and push hardened (default) docker image
         id: push-dhi
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
-          # provenance: mode=max
-          # sbom: true
+          provenance: mode=max
+          sbom: true
           push: true
           pull: true
           tags: ${{ steps.meta-dhi.outputs.tags }}
@@ -122,8 +123,8 @@ jobs:
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
-          # provenance: mode=max
-          # sbom: true
+          provenance: mode=max
+          sbom: true
           push: true
           pull: true
           tags: ${{ steps.meta-unhardened.outputs.tags }}
@@ -165,3 +166,13 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_API: https://api.eu.snyk.io
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
+
+      - name: Create SBOM
+        run: snyk sbom --format=cyclonedx1.6+json > sbom.json
+      - name: Upload SBOM to release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload \
+            "${{ env.IMAGE_VERSION_TAG }}" \
+            sbom.json
