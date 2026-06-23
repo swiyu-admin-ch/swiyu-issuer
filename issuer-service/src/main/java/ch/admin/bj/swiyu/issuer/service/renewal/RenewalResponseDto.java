@@ -1,8 +1,8 @@
 package ch.admin.bj.swiyu.issuer.service.renewal;
 
+import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
-import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -45,7 +45,7 @@ public record RenewalResponseDto(
                 Various metadata to be used for credential creation.
                 """,
                 example = """
-                        {"vct#integrity": "sha256-0000000000000000000000000000000000000000000="
+                        {"deferred": true
                         }""")
         CredentialOfferMetadataDto credentialMetadata,
 

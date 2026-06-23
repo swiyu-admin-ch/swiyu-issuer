@@ -40,8 +40,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -505,7 +505,7 @@ class DeferredFlowIT {
                         .contentType("application/json")
                         .content(deferredCredentialRequestString))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value( CredentialRequestErrorDto.INVALID_TRANSACTION_ID.getErrorCode()))
+                .andExpect(jsonPath("$.error").value(CredentialRequestErrorDto.INVALID_TRANSACTION_ID.getErrorCode()))
                 .andExpect(jsonPath("$.error_description").value("Invalid transaction id"))
                 .andReturn();
     }
@@ -698,7 +698,7 @@ class DeferredFlowIT {
 
         var expirationInSeconds = 1728000; // 20 days
 
-        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null, null), expirationInSeconds);
+        var offerWithDynamicExpiration = createTestOffer(UUID.randomUUID(), CredentialOfferStatusType.IN_PROGRESS, "university_example_sd_jwt", new CredentialOfferMetadata(true, null, null), expirationInSeconds);
 
         var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
                 .id(UUID.randomUUID())
@@ -797,7 +797,7 @@ class DeferredFlowIT {
 
     private CredentialOffer createUnboundCredentialOffer() throws Exception {
         var offerMetadata = new CredentialOfferMetadataDto(true,
-                "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null, null);
+                "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null);
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
                 .credentialSubjectData(Map.of("animal", "animal"))
