@@ -168,7 +168,10 @@ jobs:
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
 
       - name: Create SBOM
-        run: sbom --format=cyclonedx1.6+json > sbom.json
+        uses: snyk/actions/maven-3-jdk-21@8e119fbb6c251787721d34ba683ed48eba792766 # master
+        with:
+          command: sbom
+          args: --format=cyclonedx1.6+json --json-file-output=sbom.json
       - name: Upload SBOM to release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
