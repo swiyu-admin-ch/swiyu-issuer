@@ -157,11 +157,10 @@ class IssuanceIT {
     @Test
     void testSdJwtOffer_withMetadata_thenSuccess() throws Exception {
 
-        var vctIntegrity = "vct#integrity";
         var vctMetadataUri = "vct_metadata_uri";
         var vctMetadataUriIntegrity = "vct_metadata_uri#integrity";
 
-        var metadata = new CredentialOfferMetadataDto(false, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
+        var metadata = new CredentialOfferMetadataDto(false, vctMetadataUri, vctMetadataUriIntegrity);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -186,8 +185,7 @@ class IssuanceIT {
         var credential = credentials.get(0).getAsJsonObject();
         var credentialString = credential.get("credential").getAsString();
         var claims = getVcClaims(credentialString);
-
-        assertEquals(vctIntegrity, claims.get(vctIntegrity).getAsString());
+        
         assertEquals(vctMetadataUri, claims.get(vctMetadataUri).getAsString());
         assertEquals(vctMetadataUriIntegrity, claims.get(vctMetadataUriIntegrity).getAsString());
     }

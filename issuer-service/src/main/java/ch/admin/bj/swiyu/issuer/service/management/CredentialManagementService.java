@@ -69,8 +69,11 @@ public class CredentialManagementService {
      * Validates that only READY event is allowed in INIT state of credential
      * management.
      *
-     * @param offerEvent
-     * @param mgmt
+     * @param offerEvent the credential offer event being processed
+     * @param mgmt       the credential management instance to check
+     * @throws IllegalStateException if a {@code READY} event is requested while
+     *                               the management object is not in the
+     *                               {@code INIT} state
      */
     private static void validateReadyOnlyInInit(CredentialStateMachineConfig.CredentialOfferEvent offerEvent,
                                                 CredentialManagement mgmt) {
@@ -415,7 +418,7 @@ public class CredentialManagementService {
         var issuerDid = validationService.determineIssuerDid(newOffer, applicationProperties.getIssuerId());
         validationService.ensureMatchingIssuerDids(issuerDid, applicationProperties.getIssuerId(), statusLists);
 
-        CredentialOfferMapper.updateOfferFromDto(existingOffer, newOffer, offerData, applicationProperties);
+        CredentialOfferMapper.updateOfferFromDto(existingOffer, newOffer, offerData);
 
         CredentialOffer entity = persistenceService.saveCredentialOffer(existingOffer);
 
@@ -524,8 +527,7 @@ public class CredentialManagementService {
 
     @Transactional
     public CredentialOffer getCredentialOfferByTenantId(UUID tenantId) {
-        var offer = persistenceService.findCredentialOfferByMetadataTenantId(tenantId);
-        return offer;
+        return persistenceService.findCredentialOfferByMetadataTenantId(tenantId);
     }
 
     /**
@@ -607,7 +609,7 @@ public class CredentialManagementService {
                         .credentialValidFrom(requestDto.getCredentialValidFrom())
                         .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
                         .credentialValidUntil(requestDto.getCredentialValidUntil())
-                        .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
+                        .credentialMetadata(toCredentialOfferMetadata(requestDto.getCredentialMetadata()))
                         .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
                         .credentialManagement(credentialManagement)
                         .build());

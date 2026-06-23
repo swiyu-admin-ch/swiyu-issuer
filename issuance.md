@@ -90,9 +90,9 @@ With the response:
 ### Create credential offer
 
 > [!NOTE]
-> If `vct#integrity`, `vct_metadata_uri` or `vct_metadata_uri#integrity` are added to the
+> If `vct_metadata_uri` or `vct_metadata_uri#integrity` are added to the
 > credential-offer-request:
-`"credential_metadata": { "vct#integrity": "sha256-0000000000000000000000000000000000000000000=", "vct_metadata_uri": "vct_metadata_uri",  "vct_metadata_uri#integrity": "sha256-0000000000000000000000000000000000000000000="}, `
+`"credential_metadata": { "vct_metadata_uri": "vct_metadata_uri",  "vct_metadata_uri#integrity": "sha256-0000000000000000000000000000000000000000000="}, `
 > is set then the claims are added to the final credential.
 
 The integrity hash is provided with each created credential offer in the offer metadata while issuing the credential.

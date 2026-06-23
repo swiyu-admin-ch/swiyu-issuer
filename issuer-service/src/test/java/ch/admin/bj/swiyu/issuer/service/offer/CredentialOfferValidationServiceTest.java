@@ -206,7 +206,7 @@ class CredentialOfferValidationServiceTest {
                 .credentialSubjectData(Map.of("hello", "world"))
                 .credentialValidFrom(Instant.now().plusSeconds(10))
                 .credentialValidUntil(Instant.now().plusSeconds(3600))
-                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null))
                 .build();
 
         Map<String, Object> offerData = Map.of("hello", "world");
@@ -245,7 +245,7 @@ class CredentialOfferValidationServiceTest {
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialValidFrom(Instant.now().plusSeconds(10))
                 .credentialValidUntil(Instant.now().plusSeconds(3600))
-                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null))
                 .build();
 
         when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(validatedOfferData);
@@ -278,7 +278,7 @@ class CredentialOfferValidationServiceTest {
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialValidFrom(Instant.now().plusSeconds(10))
                 .credentialValidUntil(Instant.now().plusSeconds(3600))
-                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null))
                 .build();
 
         when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(validatedOfferData);
@@ -310,7 +310,7 @@ class CredentialOfferValidationServiceTest {
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialValidFrom(Instant.now().plusSeconds(10))
                 .credentialValidUntil(Instant.now().plusSeconds(3600))
-                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null))
                 .build();
 
         when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(validatedOfferData);
@@ -342,7 +342,7 @@ class CredentialOfferValidationServiceTest {
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialValidFrom(Instant.now().plusSeconds(10))
                 .credentialValidUntil(Instant.now().plusSeconds(3600))
-                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null, null))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null))
                 .build();
         when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(offerData);
 
@@ -383,7 +383,7 @@ class CredentialOfferValidationServiceTest {
                 .metadataCredentialSupportedId(List.of("test"))
                 .credentialValidFrom(Instant.now().plusSeconds(10))
                 .credentialValidUntil(Instant.now().plusSeconds(3600))
-                .credentialMetadata(new CredentialOfferMetadataDto(true, null, null, null))
+                .credentialMetadata(new CredentialOfferMetadataDto(true, null, null))
                 .build();
 
         when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(validatedOfferData);

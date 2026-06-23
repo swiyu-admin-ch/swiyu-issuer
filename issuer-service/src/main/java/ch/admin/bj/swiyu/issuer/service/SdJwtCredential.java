@@ -404,11 +404,9 @@ public class SdJwtCredential extends CredentialBuilder {
                 .ifPresent(o -> alwaysDisclosedData.put("vct_metadata_uri", o));
         Optional.ofNullable(credentailConfiguration.getVctMetadataUriIntegrity())
                 .ifPresent(o -> alwaysDisclosedData.put("vct_metadata_uri#integrity", o));
-        // if we have dynamically overriden vct#integrity or such, add it
+        
         var credentialMetadata = getCredentialOffer().getCredentialMetadata();
         if (nonNull(credentialMetadata)) {
-            Optional.ofNullable(credentialMetadata.vctIntegrity())
-                    .ifPresent(o -> alwaysDisclosedData.put("vct#integrity", o));
             Optional.ofNullable(credentialMetadata.vctMetadataUri())
                     .ifPresent(o -> alwaysDisclosedData.put("vct_metadata_uri", o));
             Optional.ofNullable(credentialMetadata.vctMetadataUriIntegrity())

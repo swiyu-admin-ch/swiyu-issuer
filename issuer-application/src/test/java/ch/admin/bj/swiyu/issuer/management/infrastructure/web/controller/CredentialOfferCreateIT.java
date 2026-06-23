@@ -6,7 +6,6 @@ import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreati
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferDto;
@@ -24,13 +23,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +63,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CredentialOfferCreateIT {
 
     private static final String BASE_URL = "/management/api/credentials";
+    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     @Autowired
     protected SwiyuProperties swiyuProperties;
     protected StatusListTestHelper statusListTestHelper;
@@ -77,9 +77,6 @@ class CredentialOfferCreateIT {
     private MockMvc mvc;
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
-    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
-    @Autowired
-    private IssuerMetadata issuerMetadata;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
 
@@ -275,53 +272,6 @@ class CredentialOfferCreateIT {
     }
 
     @Test
-    void testCreateOfferVcMetadata_thenSuccess() throws Exception {
-        String testIntegrity = "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=";
-        String jsonPayload = String.format("""
-                {
-                  "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": %s,
-                  "offer_validity_seconds": 36000,
-                  "credential_metadata": {
-                    "vct#integrity": "%s"
-                  }
-                }
-                """, getMinimalCredentialSubjectDataStringForCredentialSupportedIdTest(), testIntegrity);
-
-        MvcResult result = mvc.perform(post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPayload))
-                .andExpect(status().isOk())
-                .andReturn();
-        String id = JsonPath.read(result.getResponse().getContentAsString(), "$.offer_id");
-        assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().vctIntegrity());
-    }
-
-    @Test
-    void testCreateOfferVcMetadata_whenDeferredNoData_thenSuccess() throws Exception {
-        String testIntegrity = "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=";
-        String jsonPayload = String.format("""
-                {
-                  "metadata_credential_supported_id": ["test"],
-                  "credential_subject_data": null,
-                  "offer_validity_seconds": 36000,
-                  "credential_metadata": {
-                    "vct#integrity": "%s",
-                    "deferred": true
-                  }
-                }
-                """, testIntegrity);
-
-        MvcResult result = mvc.perform(post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPayload))
-                .andExpect(status().isOk())
-                .andReturn();
-        String id = JsonPath.read(result.getResponse().getContentAsString(), "$.offer_id");
-        assertEquals(testIntegrity, credentialOfferRepository.findById(UUID.fromString(id)).orElseThrow().getCredentialMetadata().vctIntegrity());
-    }
-
-    @Test
     void testCreateOfferVcMetadata_metadataIntegration_thenSuccess() throws Exception {
         String jsonPayload = """
                 {
@@ -368,7 +318,7 @@ class CredentialOfferCreateIT {
         var response = mvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andReturn();
 
         var responseJson = JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject();

@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed "cannot be parsed exception" with nested arrays in credential subject data update
 
+### Removed
+
+- Removed `vct#integrity` from issuer metadata as it is no longer used -> use `vct_metadata_uri` and
+  `vct_metadata_uri#integrity` instead.
+
 ## [3.2.4] - 2026-06-12
 
 ### Fixed
