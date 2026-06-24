@@ -1,21 +1,21 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.StateMachineEventResult;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
-import org.springframework.statemachine.StateMachine;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class CredentialStateMachine {
-    private final StateMachine<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> credentialManagementStateMachine;
-    private final StateMachine<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> credentialOfferStateMachine;
+    private final CredentialStateMachineFactory stateMachineFactory;
 
 
     /**
@@ -36,7 +36,8 @@ public class CredentialStateMachine {
 
         var oldStatus = credentialManagement.getCredentialManagementStatus();
 
-        credentialManagementStateMachine.getStateMachineAccessor()
+        var managementStateMachine = stateMachineFactory.createManagementStateMachine();
+        managementStateMachine.getStateMachineAccessor()
                 .doWithAllRegions(access ->
                         access.resetStateMachineReactively(
                                 new DefaultStateMachineContext<>(
@@ -48,7 +49,7 @@ public class CredentialStateMachine {
                         ).block()
                 );
 
-        StateMachineEventResult<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> stateMachineResult = credentialManagementStateMachine
+        StateMachineEventResult<CredentialStatusManagementType, CredentialStateMachineConfig.CredentialManagementEvent> stateMachineResult = managementStateMachine
                 .sendEvent(
                         Mono.just(
                                 MessageBuilder
@@ -63,7 +64,7 @@ public class CredentialStateMachine {
 
         assert stateMachineResult != null;
         if (stateMachineResult.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
-            var newStatus = credentialManagementStateMachine.getState().getId();
+            var newStatus = managementStateMachine.getState().getId();
             credentialManagement.setCredentialManagementStatus(newStatus);
             boolean stateChanged = oldStatus != newStatus;
             log.info("Transaction accepted for: {}. New state = {} (changed: {})",
@@ -93,7 +94,8 @@ public class CredentialStateMachine {
 
         var oldStatus = credentialOffer.getCredentialStatus();
 
-        credentialOfferStateMachine.getStateMachineAccessor()
+        var offerStateMachine = stateMachineFactory.createOfferStateMachine();
+        offerStateMachine.getStateMachineAccessor()
                 .doWithAllRegions(access ->
                         access.resetStateMachineReactively(
                                 new DefaultStateMachineContext<>(
@@ -105,7 +107,7 @@ public class CredentialStateMachine {
                         ).block()
                 );
 
-        StateMachineEventResult<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> stateMachineResult = credentialOfferStateMachine
+        StateMachineEventResult<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> stateMachineResult = offerStateMachine
                 .sendEvent(
                         Mono.just(
                                 MessageBuilder
@@ -120,7 +122,7 @@ public class CredentialStateMachine {
 
         assert stateMachineResult != null;
         if (stateMachineResult.getResultType().equals(StateMachineEventResult.ResultType.ACCEPTED)) {
-            var newStatus = credentialOfferStateMachine.getState().getId();
+            var newStatus = offerStateMachine.getState().getId();
             credentialOffer.setCredentialOfferStatus(newStatus);
             boolean stateChanged = oldStatus != newStatus;
             log.info("Transaction accepted for: {}. New state = {} (changed: {})",
