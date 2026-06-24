@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed race condition in `CredentialStateMachine`: state machines were shared singletons, causing state corruption under concurrent requests. Replaced with `CredentialStateMachineFactory` so each transition operates on an isolated instance.
 - Fixed "cannot be parsed exception" with nested arrays in credential subject data update
 
 ### Removed
