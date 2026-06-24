@@ -12,8 +12,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
@@ -40,6 +42,13 @@ class NonceServiceIT {
 
     @Autowired
     private CacheManager cacheManager;
+
+    /**
+     * Prevents background {@code @Scheduled} jobs from running while this test
+     * controls nonce cleanup explicitly through {@link NonceService#cleanNonceCache()}.
+     */
+    @MockitoBean
+    private TaskScheduler taskScheduler;
 
     /**
      * The PostgreSQL Testcontainer is shared across all integration tests, so leftover
