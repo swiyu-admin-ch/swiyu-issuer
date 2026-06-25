@@ -196,30 +196,35 @@
       },
       "vct": "${external-url}/oid4vci/vct/my-vct-v01",
       "credential_metadata": {
-        "claims": {
-          "nested": {
-            "name": {
-              "mandatory": true,
-              "value_type": "string",
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Universitätsname"
-                }
-              ]
-            },
-            "type": {
-              "mandatory": true,
-              "value_type": "array",
-              "display": [
-                {
-                  "locale": "de-CH",
-                  "name": "Abschluss Typen"
-                }
-              ]
-            }
+        "claims": [
+          {
+            "mandatory": true,
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Universitätsname"
+              }
+            ],
+            "path": [
+              "nested",
+              "name"
+            ]
+          },
+          {
+            "mandatory": true,
+            "value_type": "array",
+            "path": [
+              "nested",
+              "type"
+            ],
+            "display": [
+              {
+                "locale": "de-CH",
+                "name": "Abschluss Typen"
+              }
+            ]
           }
-        }
+        ]
       }
     },
     "unbound_example_sd_jwt": {

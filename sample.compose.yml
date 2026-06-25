@@ -188,10 +188,12 @@ configs:
             ],
             "vct": "betaid-sdjw-v2",
             "credential_metadata": {
-              "claims": {
-                "family_name": {
+              "claims": [
+                {
+                  "path": [
+                    "family_name"
+                  ],
                   "mandatory": true,
-                  "value_type": "string",
                   "display": [
                     {
                       "locale": "de-CH",
@@ -215,9 +217,11 @@ configs:
                     }
                   ]
                 },
-                "given_name": {
+                {
+                  "path": [
+                    "given_name"
+                  ],
                   "mandatory": true,
-                  "value_type": "string",
                   "display": [
                     {
                       "locale": "de-CH",
@@ -241,9 +245,11 @@ configs:
                     }
                   ]
                 },
-                "birth_date": {
+                {
+                  "path": [
+                    "birth_date"
+                  ],
                   "mandatory": true,
-                  "value_type": "string",
                   "display": [
                     {
                       "locale": "de-CH",
@@ -267,7 +273,7 @@ configs:
                     }
                   ]
                 }
-              }
+              ]
             },
             "order": [
               "family_name",

@@ -9,14 +9,12 @@ import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
 import org.springframework.validation.annotation.Validated;
 
 import java.util.HashMap;
@@ -83,14 +81,6 @@ public class CredentialConfiguration {
             The vct_subtype_version indicates the version of the vct_subtype. It is recommended to use semver-notation
             """)
     private String vctSubtypeVersion;
-
-    /**
-     * Field for VC not SD-JWT (VC Signed as JWT or JSON-LD)
-     * Optional
-     */
-    @JsonProperty("credential_definition")
-    @Null(message = "Credential definition is not allowed for the sd-jwt format which is the only one supported")
-    private CredentialDefinition credentialDefinition;
 
     /**
      * A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound to.
