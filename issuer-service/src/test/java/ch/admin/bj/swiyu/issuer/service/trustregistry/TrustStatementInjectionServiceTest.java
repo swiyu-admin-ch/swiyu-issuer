@@ -155,6 +155,34 @@ class TrustStatementInjectionServiceTest {
     }
 
     @Test
+    void injectTrustStatements_doesNotMutateOriginalCredentialConfiguration() throws Exception {
+        // Regression test for cross-tenant data leak (CWE-488).
+        // The IssuerMetadata bean from JweService is a Spring-managed singleton and
+        // the CredentialConfiguration instances inside its map are shared across all
+        // tenants. Mutating one via a setter (as the previous code did via
+        // setProtectedIssuanceAuthorizationTrustStatement) would persist tenant A's
+        // piaTS JWT onto the shared instance and bleed it into tenant B's response.
+        // The fix replaces map entries with freshly-built instances instead.
+        String elfaPiaTs = buildPiaTsJwt(VCT_ELFA);
+        when(cacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
+                .thenReturn(List.of(elfaPiaTs));
+
+        IssuerMetadata metadata = createMetadata(true, VCT_ELFA);
+        CredentialConfiguration originalConfig =
+                metadata.getCredentialConfigurationSupported().get("TestFormat");
+
+        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
+
+        assertThat(originalConfig.getProtectedIssuanceAuthorizationTrustStatement())
+                .as("Original (singleton-shared) CredentialConfiguration must not be mutated")
+                .isNull();
+        assertThat(metadata.getCredentialConfigurationSupported().get("TestFormat")
+                .getProtectedIssuanceAuthorizationTrustStatement())
+                .as("Map entry should now point to a new instance carrying the injected piaTS")
+                .isEqualTo(elfaPiaTs);
+    }
+
+    @Test
     void injectTrustStatements_injectsCorrectPiaTs_perVct_whenMultipleConfigsPresent() throws Exception {
         String elfaPiaTs = buildPiaTsJwt(VCT_ELFA);
         String mdlPiaTs = buildPiaTsJwt(VCT_MDL);
