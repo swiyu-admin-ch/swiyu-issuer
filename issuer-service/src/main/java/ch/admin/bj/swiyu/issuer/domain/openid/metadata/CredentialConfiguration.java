@@ -72,7 +72,7 @@ public class CredentialConfiguration {
     @Nullable
     @JsonProperty("vct_subtype")
     @Schema(description = """
-            An optional value that can describe an adaption of the vct. 
+            An optional value that can describe an adaption of the vct.
             This value can then be used by verifiers who require the adoption of the vct standard.
             """)
     private String vctSubtype;
@@ -83,14 +83,6 @@ public class CredentialConfiguration {
             The vct_subtype_version indicates the version of the vct_subtype. It is recommended to use semver-notation
             """)
     private String vctSubtypeVersion;
-
-    /**
-     * SD-JWT specific field <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#appendix-A.3.2">see specs</a>
-     * Optional
-     */
-    @JsonProperty("claims")
-    @Deprecated(since = "OID4VCI 1.0") // Replaced by credential_metadata.claims Contract later
-    private Map<String, CredentialClaim> claims;
 
     /**
      * Field for VC not SD-JWT (VC Signed as JWT or JSON-LD)

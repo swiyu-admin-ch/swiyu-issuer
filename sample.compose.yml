@@ -187,84 +187,86 @@ configs:
               }
             ],
             "vct": "betaid-sdjw-v2",
-            "claims": {
-              "family_name": {
-                "mandatory": true,
-                "value_type": "string",
-                "display": [
-                  {
-                    "locale": "de-CH",
-                    "name": "Name"
-                  },
-                  {
-                    "locale": "fr-CH",
-                    "name": "Nom"
-                  },
-                  {
-                    "locale": "it-CH",
-                    "name": "Cognome"
-                  },
-                  {
-                    "locale": "rm-CH",
-                    "name": "Num"
-                  },
-                  {
-                    "locale": "en-GB",
-                    "name": "Surname"
-                  }
-                ]
-              },
-              "given_name": {
-                "mandatory": true,
-                "value_type": "string",
-                "display": [
-                  {
-                    "locale": "de-CH",
-                    "name": "Vorname(n)"
-                  },
-                  {
-                    "locale": "fr-CH",
-                    "name": "Prénom(s)"
-                  },
-                  {
-                    "locale": "it-CH",
-                    "name": "Nome(i)"
-                  },
-                  {
-                    "locale": "rm-CH",
-                    "name": "Prenum(s)"
-                  },
-                  {
-                    "locale": "en-GB",
-                    "name": "Given name(s)"
-                  }
-                ]
-              },
-              "birth_date": {
-                "mandatory": true,
-                "value_type": "string",
-                "display": [
-                  {
-                    "locale": "de-CH",
-                    "name": "Geburtsdatum"
-                  },
-                  {
-                    "locale": "fr-CH",
-                    "name": "Date de naissance"
-                  },
-                  {
-                    "locale": "it-CH",
-                    "name": "Data di nascita"
-                  },
-                  {
-                    "locale": "rm-CH",
-                    "name": "Data di naschientscha"
-                  },
-                  {
-                    "locale": "en-GB",
-                    "name": "Date of birth"
-                  }
-                ]
+            "credential_metadata": {
+              "claims": {
+                "family_name": {
+                  "mandatory": true,
+                  "value_type": "string",
+                  "display": [
+                    {
+                      "locale": "de-CH",
+                      "name": "Name"
+                    },
+                    {
+                      "locale": "fr-CH",
+                      "name": "Nom"
+                    },
+                    {
+                      "locale": "it-CH",
+                      "name": "Cognome"
+                    },
+                    {
+                      "locale": "rm-CH",
+                      "name": "Num"
+                    },
+                    {
+                      "locale": "en-GB",
+                      "name": "Surname"
+                    }
+                  ]
+                },
+                "given_name": {
+                  "mandatory": true,
+                  "value_type": "string",
+                  "display": [
+                    {
+                      "locale": "de-CH",
+                      "name": "Vorname(n)"
+                    },
+                    {
+                      "locale": "fr-CH",
+                      "name": "Prénom(s)"
+                    },
+                    {
+                      "locale": "it-CH",
+                      "name": "Nome(i)"
+                    },
+                    {
+                      "locale": "rm-CH",
+                      "name": "Prenum(s)"
+                    },
+                    {
+                      "locale": "en-GB",
+                      "name": "Given name(s)"
+                    }
+                  ]
+                },
+                "birth_date": {
+                  "mandatory": true,
+                  "value_type": "string",
+                  "display": [
+                    {
+                      "locale": "de-CH",
+                      "name": "Geburtsdatum"
+                    },
+                    {
+                      "locale": "fr-CH",
+                      "name": "Date de naissance"
+                    },
+                    {
+                      "locale": "it-CH",
+                      "name": "Data di nascita"
+                    },
+                    {
+                      "locale": "rm-CH",
+                      "name": "Data di naschientscha"
+                    },
+                    {
+                      "locale": "en-GB",
+                      "name": "Date of birth"
+                    }
+                  ]
+                }
               }
             },
             "order": [

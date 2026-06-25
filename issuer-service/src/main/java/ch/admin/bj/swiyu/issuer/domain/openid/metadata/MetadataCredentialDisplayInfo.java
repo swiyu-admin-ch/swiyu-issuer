@@ -23,12 +23,21 @@ public class MetadataCredentialDisplayInfo extends MetadataDisplayInfo {
 
     @Nullable
     @JsonProperty(value = "background_image")
-    @Schema(description = """
-            Object with information about the background image of the Credential. At least the following parameter
-            """)
+    @Schema(
+            deprecated = true,
+            description = """
+                    Currently not processed by the wallet. Any provided value is ignored.
+                    Object with information about the background image of the Credential.
+                    """)
     private MetadataImage backgroundImage;
 
     @Nullable
     @JsonProperty(value = "text_color")
+    @Schema(
+            deprecated = true,
+            description = """
+                    Currently not processed by the wallet. Any provided value is ignored.
+                    String with information in which colour to display texts.
+                    """)
     private String textColor;
 }
