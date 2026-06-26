@@ -26,8 +26,8 @@ public class MetadataCredentialDisplayInfo extends MetadataDisplayInfo {
     @Schema(
             deprecated = true,
             description = """
-                    Currently not processed by the wallet. Any provided value is ignored.
-                    Object with information about the background image of the Credential.
+                    Not supported in swiss-profile-issuance 1.0. Wallets may choose ignored to ignore this value.
+                     Object with information about the background image of the Credential.
                     """)
     private MetadataImage backgroundImage;
 
@@ -36,7 +36,7 @@ public class MetadataCredentialDisplayInfo extends MetadataDisplayInfo {
     @Schema(
             deprecated = true,
             description = """
-                    Currently not processed by the wallet. Any provided value is ignored.
+                    Not supported in swiss-profile-issuance 1.0. Wallets may choose ignored to ignore this value.
                     String with information in which colour to display texts.
                     """)
     private String textColor;

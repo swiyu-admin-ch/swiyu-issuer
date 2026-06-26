@@ -1690,8 +1690,8 @@ components:
           type: string
           deprecated: true
           description: |
-            Currently not processed by the wallet. Any provided value is ignored.
-            String with information in which colour to display texts.
+            Not supported in swiss-profile-issuance 1.0. Wallets may choose ignored to ignore this value.
+             String with information in which colour to display texts.
       required:
       - name
     MetadataDisplayInfo:

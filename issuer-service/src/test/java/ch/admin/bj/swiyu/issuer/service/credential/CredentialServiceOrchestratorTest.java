@@ -133,8 +133,6 @@ class CredentialServiceOrchestratorTest {
                 .build();
 
         credentialConfiguration = mock(CredentialConfiguration.class);
-        // when(credentialConfiguration.getCredentialDefinition()).thenReturn(null);
-        // when(credentialConfiguration.getClaims()).thenReturn(Map.of("claim1", new CredentialClaim()));
         when(credentialConfiguration.getFormat()).thenReturn("vc+sd-jwt");
         when(credentialConfiguration.getVct()).thenReturn("test-vct");
 
