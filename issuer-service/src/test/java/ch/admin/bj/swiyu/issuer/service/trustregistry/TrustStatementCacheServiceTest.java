@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
 import ch.admin.bj.swiyu.core.trust.client.model.PagedModelString;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.service.enc.CacheMaintenanceService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -18,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
-import java.net.URL;
+import java.net.URI;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -90,9 +89,7 @@ class TrustStatementCacheServiceTest {
 
     private TrustStatementCacheService buildService(Long maxCacheTtlSeconds) throws Exception {
         var trustRegistry = new SwiyuProperties.TrustRegistryProperties(
-                new URL("https://trust-reg.example.ch/"),
-                "key",
-                "secret",
+                URI.create("https://trust-reg.example.ch/").toURL(),
                 1_000,
                 60,
                 maxCacheTtlSeconds);

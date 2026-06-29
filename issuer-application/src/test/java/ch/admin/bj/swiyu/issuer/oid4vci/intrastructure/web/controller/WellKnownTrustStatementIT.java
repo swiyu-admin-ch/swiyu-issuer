@@ -15,9 +15,9 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -57,9 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code swiyu-ts-builder} library.</p>
  */
 @SpringBootTest(properties = {
-        "swiyu.trust-registry.api-url=https://trust-registry.example.ch",
-        "swiyu.trust-registry.customer-key=test-key",
-        "swiyu.trust-registry.customer-secret=test-secret"
+        "swiyu.trust-registry.api-url=https://trust-registry.example.ch"
 })
 @AutoConfigureMockMvc
 @Testcontainers
@@ -113,6 +111,19 @@ class WellKnownTrustStatementIT {
     private StatusListRepository statusListRepository;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
+    private CredentialOfferTestHelper testHelper;
+    /**
+     * Replaces the real Caffeine-backed cache so that trust statements are returned
+     * directly without any Trust Registry network call.
+     */
+    @MockitoBean
+    private TrustStatementCacheService trustStatementCacheService;
+    /**
+     * Replaces the DID-JWT validator so that signature verification always succeeds
+     * without resolving a DID Document from the network.
+     */
+    @MockitoBean
+    private TrustStatementValidator trustStatementValidator;
 
     /**
      * Creates a credential offer and returns the {@code metadataTenantId} UUID that is embedded
@@ -125,22 +136,6 @@ class WellKnownTrustStatementIT {
                 .orElseThrow(() -> new IllegalStateException("CredentialManagement not found for id " + managementId))
                 .getMetadataTenantId();
     }
-
-    private CredentialOfferTestHelper testHelper;
-
-    /**
-     * Replaces the real Caffeine-backed cache so that trust statements are returned
-     * directly without any Trust Registry network call.
-     */
-    @MockitoBean
-    private TrustStatementCacheService trustStatementCacheService;
-
-    /**
-     * Replaces the DID-JWT validator so that signature verification always succeeds
-     * without resolving a DID Document from the network.
-     */
-    @MockitoBean
-    private TrustStatementValidator trustStatementValidator;
 
     @BeforeEach
     void setUp() {
@@ -202,7 +197,7 @@ class WellKnownTrustStatementIT {
         doNothing().when(trustStatementValidator).validateSignature(anyString());
     }
 
-/**
+    /**
      * Verifies the happy path for the tenant-scoped issuer metadata endpoint:
      * both idTS and piaTS are injected into
      * {@code GET /{tenantId}/.well-known/openid-credential-issuer}.

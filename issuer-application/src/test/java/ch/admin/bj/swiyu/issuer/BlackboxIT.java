@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer;
 
 
-import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -36,14 +35,13 @@ import com.nimbusds.jwt.SignedJWT;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -76,7 +74,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests taking the whole application as blackbox, emulating partially a business issuer and a wallet
  */
 @SpringBootTest()
-@Nested
 @DisplayName("Blackbox Test")
 @AutoConfigureMockMvc
 @Testcontainers
@@ -117,7 +114,6 @@ class BlackboxIT {
     @BeforeEach
     void setUp() {
         statusListTestHelper = new StatusListTestHelper(mvc, objectMapper);
-        final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
     }
 
     /**
@@ -229,7 +225,7 @@ class BlackboxIT {
         assertThat(parsedDeeplink.getScheme()).as("The swiyu wallet expects the deeplink to have the correct scheme")
                 .isEqualTo("swiyu");
         var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
-        var credentialOffer = offerQuery.get(0);
+        var credentialOffer = offerQuery.getFirst();
         assertThat(credentialOffer.getName()).as("Offer has the value credential_offer")
                 .isEqualTo("credential_offer");
 
