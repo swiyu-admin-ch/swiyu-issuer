@@ -1,19 +1,19 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.MetadataClaimDescriptor;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.SdJwtCredential;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
@@ -43,10 +43,7 @@ import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.getCredenti
 import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.getCredentialOffer;
 import static java.time.Instant.now;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class CredentialServiceOrchestratorTest {
@@ -56,7 +53,6 @@ class CredentialServiceOrchestratorTest {
     CredentialOfferRepository credentialOfferRepository;
     CredentialManagementRepository credentialManagementRepository;
     CredentialServiceOrchestrator credentialServiceOrchestrator;
-    private CredentialOfferStatusRepository credentialOfferStatusRepository;
     private StatusListOrchestrator statusListOrchestrator;
     private IssuerMetadata issuerMetadata;
     private StatusList statusList;
@@ -71,7 +67,6 @@ class CredentialServiceOrchestratorTest {
 
     @BeforeEach
     void setUp() {
-        credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         statusListOrchestrator = Mockito.mock(StatusListOrchestrator.class);
         issuerMetadata = Mockito.mock(IssuerMetadata.class);
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);
@@ -138,8 +133,6 @@ class CredentialServiceOrchestratorTest {
                 .build();
 
         credentialConfiguration = mock(CredentialConfiguration.class);
-        when(credentialConfiguration.getCredentialDefinition()).thenReturn(null);
-        when(credentialConfiguration.getClaims()).thenReturn(Map.of("claim1", new CredentialClaim()));
         when(credentialConfiguration.getFormat()).thenReturn("vc+sd-jwt");
         when(credentialConfiguration.getVct()).thenReturn("test-vct");
 
@@ -214,7 +207,7 @@ class CredentialServiceOrchestratorTest {
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 offerData,
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null, null, null),
+                new CredentialOfferMetadata(true, null, null),
                 null);
         var mgmt = CredentialManagement.builder()
                 .accessToken(UUID.randomUUID())
@@ -236,12 +229,12 @@ class CredentialServiceOrchestratorTest {
         when(sdJwtCredential.credentialType(anyList())).thenReturn(sdJwtCredential);
         when(statusListOrchestrator.lockAndValidateStatusListsForOffer(any())).thenReturn(List.of(statusList));
 
-        var claim = new CredentialClaim();
+        var claim = new MetadataClaimDescriptor();
         claim.setMandatory(true);
-        claim.setValueType("string");
+        // claim.setValueType("string");
         var credConfig = mock(CredentialConfiguration.class);
-        when(credConfig.getCredentialDefinition()).thenReturn(null);
-        when(credConfig.getClaims()).thenReturn(Map.of("hello", claim));
+        // when(credConfig.getCredentialDefinition()).thenReturn(null);
+        // when(credConfig.getCredentialMetadata().getClaimDescriptor()).thenReturn(Map.of("hello", claim));
         when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
         when(credConfig.getVct()).thenReturn("test-vct");
 
@@ -269,7 +262,7 @@ class CredentialServiceOrchestratorTest {
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 Map.of(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null, null, null),
+                new CredentialOfferMetadata(true, null, null),
                 UUID.randomUUID());
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
@@ -309,7 +302,7 @@ class CredentialServiceOrchestratorTest {
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 Map.of(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null, null, null),
+                new CredentialOfferMetadata(true, null, null),
                 UUID.randomUUID());
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
@@ -344,7 +337,7 @@ class CredentialServiceOrchestratorTest {
                 Instant.now().minusSeconds(600).getEpochSecond(),
                 Map.of(),
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null, null, null),
+                new CredentialOfferMetadata(true, null, null),
                 transactionId);
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
@@ -375,7 +368,7 @@ class CredentialServiceOrchestratorTest {
                 Instant.now().plusSeconds(600).getEpochSecond(),
                 offerData,
                 UUID.randomUUID(),
-                new CredentialOfferMetadata(true, null, null, null),
+                new CredentialOfferMetadata(true, null, null),
                 transactionId));
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
@@ -667,12 +660,6 @@ class CredentialServiceOrchestratorTest {
 
         CredentialEnvelopeDto issuedEnvelope = mock(CredentialEnvelopeDto.class);
         when(vcBuilder.buildCredentialEnvelope()).thenReturn(issuedEnvelope);
-    }
-
-    private CredentialOfferStatus getCredentialOfferStatus(UUID offerId, UUID statusId) {
-        return CredentialOfferStatus.builder()
-                .id(new CredentialOfferStatusKey(offerId, statusId, 1))
-                .build();
     }
 
     private @NotNull CreateCredentialRequestDto getCredentialRequestDto(String credentialConfigurationId, ProofsDto proofs) {

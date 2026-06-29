@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -134,6 +134,7 @@ class WellKnownControllerIT {
         assertEquals(SwissProfileVersions.ISSUANCE_PROFILE_VERSION, header.getCustomParam(SwissProfileVersions.PROFILE_VERSION_PARAM));
     }
 
+
     @ParameterizedTest
     @ValueSource(strings = {
             "%s/.well-known/openid-credential-issuer",
@@ -151,6 +152,17 @@ class WellKnownControllerIT {
                 .andExpect(content().string(not(containsString("${external-url}"))))
                 .andExpect(content().string(containsString("credential_endpoint")));
     }
+
+
+    @Test
+    void testGetIssuerMetadataByUnknownTenantIdUnsigned_thenError() throws Exception {
+        var url = "0-0-0-0";
+
+        mock.perform(get("/oid4vci/%s/.well-known/openid-credential-issuer".formatted(url))
+                        .accept("Application/json,application/jwt;q=0.0"))
+                .andExpect(status().isBadRequest());
+    }
+
 
     @Test
     void testWellknownJwksComplete() {

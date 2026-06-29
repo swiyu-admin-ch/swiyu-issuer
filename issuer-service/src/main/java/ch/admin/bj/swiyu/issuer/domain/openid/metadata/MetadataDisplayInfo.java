@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
@@ -21,7 +22,7 @@ public class MetadataDisplayInfo {
             from values defined in BCP47 [RFC5646]. There MUST be only one object for each language identifier.
             """, example = "de-CH")
     private String locale;
-    @Nullable
+    @NotBlank
     @JsonProperty(value = "name")
     private String name;
 }

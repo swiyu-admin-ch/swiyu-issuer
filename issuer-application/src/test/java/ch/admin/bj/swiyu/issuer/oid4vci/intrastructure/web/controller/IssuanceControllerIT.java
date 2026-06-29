@@ -28,8 +28,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -129,7 +129,7 @@ class IssuanceControllerIT {
         // testGetIssuerMetadataWithSignedMetadata_thenSuccess) do not bleed into subsequent tests.
         Mockito.reset(applicationProperties);
         testStatusList = saveStatusList(createStatusList());
-        CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
+        CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, null, null);
         var offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt",
                 metadata);
         saveStatusListLinkedOffer(offer, testStatusList, 0);

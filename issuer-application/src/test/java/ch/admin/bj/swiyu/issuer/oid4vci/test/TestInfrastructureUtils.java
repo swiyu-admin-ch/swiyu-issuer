@@ -39,7 +39,6 @@ import java.text.ParseException;
 import java.util.*;
 
 import static ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService.DPOP_KEY_ATTESTATION_CLAIM;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -80,9 +79,10 @@ public class TestInfrastructureUtils {
      * @param httpUri                 absolute URI to the location the call the dpop will be used for will be going to
      * @param accessToken             access token which has been associated with the dpopKey used as Bearer token in the call
      * @param dpopKey                 Key which is bound with the OAuth2.0 session
-     * @param dPoPKeyAttestationClaim
+     * @param dPoPKeyAttestationClaim Optional attestation JWT to include in the DPoP JWS header under the
+     *                                {@code DPOP_KEY_ATTESTATION_CLAIM} parameter. May be {@code null} when no attestation
+     *                                is required.
      * @return Serialized DPoP JWT
-     * @throws Exception
      */
     public static String createDPoP(MockMvc mock, String httpMethod, String httpUri, String accessToken, JWK dpopKey, String dPoPKeyAttestationClaim) throws Exception {
         // Fetch fresh nonce
@@ -137,16 +137,6 @@ public class TestInfrastructureUtils {
         var nonceResponse = mock.perform(post("/oid4vci/api/nonce")).andExpect(status().isOk()).andReturn();
         var nonceDto = objectMapper.readValue(nonceResponse.getResponse().getContentAsString(), NonceResponseDto.class);
         return nonceDto.nonce();
-    }
-
-    public static String getCredential(MockMvc mock, Object token, String credentialRequestString) throws Exception {
-        var response = requestCredential(mock, (String) token, credentialRequestString)
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("credential")))
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
-                .andReturn();
-
-        return JsonParser.parseString(response.getResponse().getContentAsString()).getAsJsonObject().get("credential").getAsString();
     }
 
     public static JsonObject requestFailingCredential(MockMvc mock, Object token, String credentialRequestString) throws Exception {
@@ -250,8 +240,7 @@ public class TestInfrastructureUtils {
     }
 
     public static CredentialOfferMetadataDto getDeferredCredentialMetadataDto() {
-        return new CredentialOfferMetadataDto(true, "sha256-SVHLfKfcZcBrw+d9EL/1EXxvGCdkQ7tMGvZmd0ysMck=", null,
-                null);
+        return new CredentialOfferMetadataDto(true, null, null);
     }
 
     public static ECKey createEcKey(String keyId) throws JOSEException {

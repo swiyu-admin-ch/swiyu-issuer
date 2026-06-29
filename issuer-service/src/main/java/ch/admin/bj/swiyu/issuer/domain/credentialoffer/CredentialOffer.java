@@ -86,7 +86,7 @@ public class CredentialOffer {
 
     /**
      * VC Type specific metadata which is dynamically provisioned.
-     * For example vct#integrity for SD-JWT VC.
+     * For example vct_metadata_uri for SD-JWT VC.
      */
     @JdbcTypeCode(SqlTypes.JSON)
     private CredentialOfferMetadata credentialMetadata;

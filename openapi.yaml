@@ -1183,7 +1183,6 @@ components:
           description: |
             Various metadata to be used for credential creation.
           example:
-            vct#integrity: sha256-0000000000000000000000000000000000000000000=
             deferred: false
         offer_validity_seconds:
           type: integer
@@ -1284,12 +1283,6 @@ components:
           type: string
           description: |
             The vct_subtype_version indicates the version of the vct_subtype. It is recommended to use semver-notation
-        claims:
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/CredentialClaim"
-        credential_definition:
-          $ref: "#/components/schemas/CredentialDefinition"
         cryptographic_binding_methods_supported:
           type: array
           description: |2
@@ -1336,22 +1329,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MetadataClaimDescriptor"
-    CredentialDefinition:
-      properties:
-        type:
-          type: array
-          items:
-            type: string
-        credentialSubject:
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/CredentialClaim"
-        '@context':
-          type: array
-          items:
-            type: string
-      required:
-      - type
     CredentialEndpointResponse:
       type: object
       properties:
@@ -1436,10 +1413,6 @@ components:
       properties:
         deferred:
           type: boolean
-        vct#integrity:
-          type: string
-          maxLength: 2147483647
-          minLength: 1
         vct_metadata_uri:
           type: string
           maxLength: 2147483647
@@ -1687,6 +1660,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MetadataDisplayInfo"
+          maxItems: 2147483647
+          minItems: 1
       required:
       - path
     MetadataCredentialDisplayInfo:
@@ -1699,6 +1674,7 @@ components:
           example: de-CH
         name:
           type: string
+          minLength: 1
         logo:
           $ref: "#/components/schemas/MetadataLogo"
         description:
@@ -1712,6 +1688,12 @@ components:
           $ref: "#/components/schemas/MetadataImage"
         text_color:
           type: string
+          deprecated: true
+          description: |
+            Not supported in swiss-profile-issuance 1.0. Wallets may choose ignored to ignore this value.
+            String with information in which colour to display texts.
+      required:
+      - name
     MetadataDisplayInfo:
       properties:
         locale:
@@ -1722,6 +1704,9 @@ components:
           example: de-CH
         name:
           type: string
+          minLength: 1
+      required:
+      - name
     MetadataImage:
       properties:
         uri:
@@ -1742,8 +1727,11 @@ components:
           example: de-CH
         name:
           type: string
+          minLength: 1
         logo:
           $ref: "#/components/schemas/MetadataLogo"
+      required:
+      - name
     MetadataLogo:
       properties:
         uri:
