@@ -58,6 +58,15 @@
 
     <dependencyManagement>
         <dependencies>
+
+            <!-- Fixes CVE-2026-13006 -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>1.5.37</version>
+                <scope>compile</scope>
+            </dependency>
+
             <!-- Fixes CVE-2026-42198 -->
             <dependency>
                 <groupId>org.postgresql</groupId>
