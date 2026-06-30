@@ -274,11 +274,13 @@ Actor: Wallet
 The wallet decodes the `offer_deeplink` and extracts the `pre-authorized_code` value. The wallet then uses this code to
 get a Bearer Token. The request body must be URL-encoded and the `grant_type` must be set
 to `urn:ietf:params:oauth:grant-type:pre-authorized_code`.
+In the call a key is registered for future DPoP (Demonstrating Proof of Possession) uses. For creating the DPoP a nonce is needed from the nonce endpoint.
 
 ```bash
 curl -X 'POST' \
   'http://localhost:8080/oid4vci/api/token' \
   -H 'accept: application/json' \
+  -H 'DPoP: eyJ0eXAi...' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code&pre-authorized_code=THIS_IS_THE_PRE_AUTHORIZED_CODE_FROM_THE_OFFER_DEEPLINK'
 ```
@@ -305,7 +307,13 @@ curl -X 'POST' 'http://localhost:8080/oid4vci/api/nonce' -H 'accept: application
 ```
 
 With response:
-
+Header 
+```json
+{
+    "DPoP-Nonce": "c9c737f3-f37b-4331-a23c-313dc821fac5::2025-08-07T16:30:19.021045078Z"
+}
+```
+Body
 ```json
 {
     "c_nonce": "c9c737f3-f37b-4331-a23c-313dc821fac5::2025-08-07T16:30:19.021045078Z"
@@ -330,12 +338,11 @@ ISS-->>-WALLET:
 WALLET->>+ISS: Get issuer metadata
 ISS-->>-WALLET:
 
-WALLET->>+ISS: Get oauth token
-ISS-->>-WALLET : Oauth token
-
+WALELT->>+ISS: Get DPoP Nonce
+ISS-->>-WALLET:
+WALLET->>+ISS: Call token_endpoint with DPoP registration
+ISS-->>-WALLET : access_token & refresh_token
 WALLET->>+ISS: Get Nonce
-ISS->>+DB: Store Nonce
-DB-->>-ISS:
 ISS-->>-WALLET:
 
 WALLET->>+ISS: Get credential
@@ -359,6 +366,7 @@ curl -X 'POST' \
   'http://localhost:8080/oid4vci/api/credential' \
   -H 'accept: application/json' \
   -H 'SWIYU-API-Version: 2' \
+  -H 'DPoP: eyJ0eXAi...' \
   -H 'Authorization: Bearer $ACCESS_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{

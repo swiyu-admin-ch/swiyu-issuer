@@ -326,6 +326,7 @@ curl -X 'POST' \
   'http://localhost:8080/oid4vci/api/token' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
+  -H 'DPoP: eyJ0eXAi...' \
   -d 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code&pre-authorized_code=THIS_IS_THE_PRE_AUTHORIZED_CODE_FROM_THE_OFFER_DEEPLINK'
 ```
 
@@ -380,6 +381,7 @@ curl -X 'POST' \
   'http://localhost:8080/oid4vci/api/credential' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
+  -H 'DPoP: eyJ0eXAi...' \
   -H 'Authorization: Bearer $ACCESS_TOKEN' \
   -H 'SWIYU-API-Version: 2' \
   -d '{
@@ -456,6 +458,7 @@ curl -X 'POST' \git
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer $ACCESS_TOKEN' \
+  -H 'DPoP: eyJ0eXAi...' \
   -H 'SWIYU-API-Version: 2' \
   -d '{ "transaction_id": "$TRANSACTION_ID"}'
 ```
