@@ -84,6 +84,11 @@ public class OpenApiConfig {
                         orderedSchemas.put(schemaName, (io.swagger.v3.oas.models.media.Schema<?>) schema));
             }
             orderedSchemas.putAll(additionalSchemas);
+            orderedSchemas.forEach((name, schema) -> {
+                if (schema.getTypes() == null && schema.getProperties() != null && !schema.getProperties().isEmpty()) {
+                    schema.addType("object");
+                }
+            });
             openApi.getComponents().setSchemas(new LinkedHashMap<>(orderedSchemas));
         };
     }

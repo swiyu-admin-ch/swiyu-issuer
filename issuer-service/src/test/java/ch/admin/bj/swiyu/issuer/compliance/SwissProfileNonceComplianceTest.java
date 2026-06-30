@@ -68,7 +68,6 @@ class SwissProfileNonceComplianceTest extends AbstractSwissProfileComplianceTest
                 .isNotNull();
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Content-Type: Successful response MUST use 'application/json'")
     void testNonceResponseUsesApplicationJson() {

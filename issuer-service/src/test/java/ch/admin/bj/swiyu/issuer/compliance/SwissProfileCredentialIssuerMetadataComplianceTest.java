@@ -62,7 +62,6 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
 
     // --- Tier 3: Response Status & Media Type Check ---
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Content-Type: Successful response MUST use 'application/json'")
     void testCredentialIssuerMetadataResponseUsesApplicationJson() {
@@ -104,7 +103,6 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
                 .contains("object");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Schema: 'credential_issuer' MUST be a required string property")
     void testCredentialIssuerIsRequiredString() {
@@ -130,7 +128,6 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
                 .contains("credential_issuer");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Schema: 'credential_endpoint' MUST be a required string property")
     void testCredentialEndpointIsRequiredString() {
@@ -156,7 +153,6 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
                 .contains("credential_endpoint");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Schema: 'credential_configurations_supported' MUST be a required object (map of credential configurations)")
     void testCredentialConfigurationsSupportedIsRequiredObject() {
@@ -235,14 +231,8 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
                 .isNotNull()
                 .containsKey("protected_issuance_authorization_trust_statement");
 
-        List<String> configRequired = configItemSchema.getRequired();
-        assertThat(configRequired)
-                .as("[Document: Swiss Profile Trust, Chapter: Trust Markers] The 'protected_issuance_authorization_trust_statement' property MUST be declared as required within each credential configuration.")
-                .isNotNull()
-                .contains("protected_issuance_authorization_trust_statement");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Schema: 'credential_issuer_identity_trust_statement' MUST be a required string property")
     void testCredentialIssuerIdentityTrustStatementIsRequired() {

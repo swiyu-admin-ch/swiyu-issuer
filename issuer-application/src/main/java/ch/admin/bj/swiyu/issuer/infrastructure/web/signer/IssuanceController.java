@@ -83,7 +83,7 @@ public class IssuanceController {
     }
 
     @Timed
-    @PostMapping(value = {"/nonce"})
+    @PostMapping(value = {"/nonce"}, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Provide a self-contained nonce in a publicly accessible endpoint.",
             description = """
                     Provide nonces for proof of possessions in a manner not requiring the service to save it.

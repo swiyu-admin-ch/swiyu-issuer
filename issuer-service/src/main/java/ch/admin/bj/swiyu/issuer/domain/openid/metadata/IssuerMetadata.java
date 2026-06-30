@@ -27,7 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Validated
-@Schema(name = "IssuerMetadata", description = """
+@Schema(name = "IssuerMetadata", type = "object", description = """
         The OID4VCI Credential Issuer Metadata contains information on the Credential Issuer's technical capabilities,
         supported Credentials, and (internationalized) display information.
         """)
@@ -107,6 +107,8 @@ public class IssuerMetadata {
      */
     @Nullable
     @JsonProperty("credential_issuer_identity_trust_statement")
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, type = "string",
+            description = "Identity Trust Statement (idTS) JWT proving the issuer's identity within the Swiss Trust ecosystem.")
     private String credentialIssuerIdentityTrustStatement;
 
     public @NotNull CredentialConfiguration getCredentialConfigurationById(String credentialConfigurationSupportedId) {

@@ -59,7 +59,6 @@ class SwissProfileOpenIDConfigurationComplianceTest extends AbstractSwissProfile
                 .isNotNull();
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Content-Type: Successful response MUST use 'application/json'")
     void testResponseContentTypeIsApplicationJson() {
@@ -114,7 +113,6 @@ class SwissProfileOpenIDConfigurationComplianceTest extends AbstractSwissProfile
                 .contains("object");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Schema: 'issuer' MUST be a required string property")
     void testIssuerIsRequiredString() {
@@ -162,7 +160,6 @@ class SwissProfileOpenIDConfigurationComplianceTest extends AbstractSwissProfile
                 .contains("authorization_endpoint");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Schema: 'token_endpoint' MUST be a required string property")
     void testTokenEndpointIsRequiredString() {

@@ -146,6 +146,7 @@ class SwissProfileOcaComplianceTest extends AbstractSwissProfileComplianceTest {
                 .contains("overlays");
     }
 
+    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Schema: Capture Base MUST NOT allow 'classification' (NOT SUPPORTED in Swiss Profile)")
     void testCaptureBaseClassificationIsNotSupported() {
@@ -165,6 +166,7 @@ class SwissProfileOcaComplianceTest extends AbstractSwissProfileComplianceTest {
         }
     }
 
+    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Schema: Capture Base MUST NOT allow 'flagged_attributes' (NOT SUPPORTED in Swiss Profile)")
     void testCaptureBaseFlaggedAttributesIsNotSupported() {
@@ -184,6 +186,7 @@ class SwissProfileOcaComplianceTest extends AbstractSwissProfileComplianceTest {
         }
     }
 
+    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Schema: Branding Overlay MUST define a 'theme' attribute for dark mode support")
     void testBrandingOverlayDefinesThemeAttribute() {

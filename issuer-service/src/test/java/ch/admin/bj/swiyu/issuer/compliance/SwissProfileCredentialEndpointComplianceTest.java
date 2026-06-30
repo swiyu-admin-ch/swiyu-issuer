@@ -249,7 +249,6 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
                 .containsKey("proofs");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Request Schema: 'proofs.jwt' array MUST allow a minimum of 10 items")
     void testProofsJwtMinItems() {

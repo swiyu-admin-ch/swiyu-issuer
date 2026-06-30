@@ -1,6 +1,9 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialMetadataService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ public class CredentialMetadataController {
     private CredentialMetadataService credentialMetadataService;
 
     @GetMapping(path = "/vct/{metadataKey}", produces = {MediaType.APPLICATION_JSON_VALUE})
+    @Operation(responses = @ApiResponse(responseCode = "200", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)))
     public String getCredentialTypeMetadata(@PathVariable String metadataKey) {
         return credentialMetadataService.getCredentialTypeMetadata(metadataKey);
     }
@@ -31,6 +35,7 @@ public class CredentialMetadataController {
     }
 
     @GetMapping(path = "/oca/{ocaKey}", produces = {MediaType.APPLICATION_JSON_VALUE})
+    @Operation(responses = @ApiResponse(responseCode = "200", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)))
     public String getOverlaysCaptureArchitecture(@PathVariable String ocaKey) {
         return credentialMetadataService.getOverlaysCaptureArchitecture(ocaKey);
     }

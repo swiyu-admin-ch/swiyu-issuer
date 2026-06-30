@@ -77,7 +77,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/NonceResponse"
   /oid4vci/api/deferred_credential:
@@ -405,9 +405,7 @@ paths:
         "200":
           description: OK
           content:
-            application/json:
-              schema:
-                type: string
+            application/json: {}
   /oid4vci/oca/{ocaKey}:
     get:
       tags:
@@ -423,9 +421,7 @@ paths:
         "200":
           description: OK
           content:
-            application/json:
-              schema:
-                type: string
+            application/json: {}
   /oid4vci/json-schema/{schemaKey}:
     get:
       tags:
@@ -762,11 +758,15 @@ paths:
           type: string
       responses:
         "200":
-          description: OK
+          description: Credential Issuer Metadata
           content:
-            '*/*':
+            application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/IssuerMetadata"
+            application/jwt:
+              schema:
+                type: string
+                description: Signed issuer metadata as JWT
   /oid4vci/.well-known/openid-credential-issuer:
     get:
       tags:
@@ -781,11 +781,15 @@ paths:
           type: string
       responses:
         "200":
-          description: OK
+          description: Credential Issuer Metadata
           content:
-            '*/*':
+            application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/IssuerMetadata"
+            application/jwt:
+              schema:
+                type: string
+                description: Signed issuer metadata as JWT
   /.well-known/openid-credential-issuer:
     get:
       tags:
@@ -800,11 +804,15 @@ paths:
           type: string
       responses:
         "200":
-          description: OK
+          description: Credential Issuer Metadata
           content:
-            '*/*':
+            application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/IssuerMetadata"
+            application/jwt:
+              schema:
+                type: string
+                description: Signed issuer metadata as JWT
   /oid4vci/{tenantId}/.well-known/oauth-authorization-server:
     get:
       tags:
@@ -1036,7 +1044,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
   /.well-known/oauth-authorization-server/oid4vci:
@@ -1053,7 +1061,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
   /.well-known/oauth-authorization-server:
@@ -1070,7 +1078,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
   /oid4vci/.well-known/oauth-authorization-server:
@@ -1087,7 +1095,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
   /oid4vci/.well-known/openid-configuration:
@@ -1104,12 +1112,13 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/OAuthAuthorizationServerMetadata"
 components:
   schemas:
     ApiError:
+      type: object
       description: Error response object
       properties:
         error:
@@ -1121,6 +1130,7 @@ components:
         trace_id:
           type: string
     BatchCredentialIssuance:
+      type: object
       properties:
         batch_size:
           type: integer
@@ -1253,7 +1263,19 @@ components:
             }
       required:
       - credential_configuration_id
+    CredentialClaim:
+      type: object
+      properties:
+        mandatory:
+          type: boolean
+        value_type:
+          type: string
+        display:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetadataDisplayInfo"
     CredentialConfiguration:
+      type: object
       properties:
         format:
           type: string
@@ -1317,10 +1339,13 @@ components:
           $ref: "#/components/schemas/CredentialConfigurationMetadata"
         protected_issuance_authorization_trust_statement:
           type: string
+          description: Protected Issuance Authorization Trust Statement (piaTS) JWT
+            proving issuance authorization for protected VC formats.
       required:
       - format
       - vct
     CredentialConfigurationMetadata:
+      type: object
       description: |
         Object containing information relevant to the usage and display of issued Credentials.
         Credential Format-specific mechanisms can overwrite the information in this object to convey
@@ -1336,6 +1361,7 @@ components:
           items:
             $ref: "#/components/schemas/MetadataClaimDescriptor"
     CredentialDefinition:
+      type: object
       properties:
         type:
           type: array
@@ -1520,6 +1546,7 @@ components:
       - interval
       - transaction_id
     IssuerCredentialRequestEncryption:
+      type: object
       properties:
         enc_values_supported:
           type: array
@@ -1567,6 +1594,7 @@ components:
       - enc_values_supported
       - encryption_required
     IssuerCredentialResponseEncryption:
+      type: object
       properties:
         enc_values_supported:
           type: array
@@ -1597,6 +1625,7 @@ components:
       - enc_values_supported
       - encryption_required
     IssuerMetadata:
+      type: object
       description: |
         The OID4VCI Credential Issuer Metadata contains information on the Credential Issuer's technical capabilities,
         supported Credentials, and (internationalized) display information.
@@ -1644,11 +1673,15 @@ components:
           type: string
         credential_issuer_identity_trust_statement:
           type: string
+          description: Identity Trust Statement (idTS) JWT proving the issuer's identity
+            within the Swiss Trust ecosystem.
       required:
       - credential_configurations_supported
       - credential_endpoint
       - credential_issuer
+      - credential_issuer_identity_trust_statement
     KeyAttestationRequirement:
+      type: object
       properties:
         key_storage:
           type: array
@@ -1667,6 +1700,7 @@ components:
         templated:
           type: boolean
     MetadataClaimDescriptor:
+      type: object
       description: |
         A claims description object as used in the Credential Issuer metadata is an object used to describe
         how a certain claim in the Credential is displayed to the End-User.
@@ -1685,6 +1719,7 @@ components:
       required:
       - path
     MetadataCredentialDisplayInfo:
+      type: object
       properties:
         locale:
           type: string
@@ -1708,6 +1743,7 @@ components:
         text_color:
           type: string
     MetadataDisplayInfo:
+      type: object
       properties:
         locale:
           type: string
@@ -1718,6 +1754,7 @@ components:
         name:
           type: string
     MetadataImage:
+      type: object
       properties:
         uri:
           type: string
@@ -1728,6 +1765,7 @@ components:
       required:
       - uri
     MetadataIssuerDisplayInfo:
+      type: object
       properties:
         locale:
           type: string
@@ -1740,6 +1778,7 @@ components:
         logo:
           $ref: "#/components/schemas/MetadataLogo"
     MetadataLogo:
+      type: object
       properties:
         uri:
           type: string
@@ -1766,8 +1805,10 @@ components:
       properties:
         issuer:
           type: string
+          description: The Issuer Identifier
         token_endpoint:
           type: string
+          description: URL of the OAuth 2.0 Token Endpoint
         dpop_signing_alg_values_supported:
           type: array
           items:
@@ -1776,6 +1817,9 @@ components:
           type: string
         pre-authorized_grant_anonymous_access_supported:
           type: boolean
+      required:
+      - issuer
+      - token_endpoint
     OAuthToken:
       type: object
       properties:
@@ -1817,7 +1861,7 @@ components:
           example: jwt
           items:
             type: string
-          minItems: 1
+          minItems: 10
       required:
       - jwt
     StatusList:
@@ -1913,6 +1957,7 @@ components:
         status:
           $ref: "#/components/schemas/CredentialStatusType"
     SupportedProofType:
+      type: object
       properties:
         proof_signing_alg_values_supported:
           type: array
@@ -1950,6 +1995,7 @@ components:
             type: string
             format: uuid
     WebhookCallback:
+      type: object
       description: Callback transmitting information about an event which occurred.
       properties:
         subject_id:
