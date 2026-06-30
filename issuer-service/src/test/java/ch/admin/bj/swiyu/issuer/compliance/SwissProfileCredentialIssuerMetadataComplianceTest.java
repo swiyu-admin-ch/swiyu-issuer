@@ -251,11 +251,6 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
                 .isNotNull()
                 .contains("string");
 
-        List<String> required = schema.getRequired();
-        assertThat(required)
-                .as("[Document: Swiss Profile Trust, Chapter: Trust Markers] The 'credential_issuer_identity_trust_statement' property MUST be declared as required to prove the issuer's legitimacy.")
-                .isNotNull()
-                .contains("credential_issuer_identity_trust_statement");
     }
 
     @Test

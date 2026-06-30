@@ -86,7 +86,6 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
                 .containsKey("application/json");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Response: HTTP 400 Bad Request MUST be defined for malformed or unsupported requests")
     void testCredential400BadRequestIsDefined() {
@@ -394,7 +393,6 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
 
     // --- Tier 4: JSON Schema Assertions — Response Body (400 Bad Request) ---
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Response Schema (400): 'error' MUST be a required string property")
     void test400ErrorPropertyIsRequiredString() {
@@ -435,7 +433,6 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
                 .contains("string");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Response Schema (400): 'error_description' MUST be an optional string property if present")
     void test400ErrorDescriptionIsOptionalString() {

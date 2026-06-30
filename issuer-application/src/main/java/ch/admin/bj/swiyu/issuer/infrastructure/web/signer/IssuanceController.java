@@ -4,8 +4,10 @@ import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
+import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialPendingResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.service.AuthorizationService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
@@ -140,6 +142,14 @@ public class IssuanceController {
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = DeferredDataDto.class)
                             )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid request or validation error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
                     )
             }
     )
@@ -202,8 +212,20 @@ public class IssuanceController {
                             )
                     ),
                     @ApiResponse(
+                            responseCode = "202",
+                            description = "Credential issuance still pending — retry with the transaction_id",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = DeferredCredentialPendingResponseDto.class)
+                            )
+                    ),
+                    @ApiResponse(
                             responseCode = "400",
-                            description = "Invalid request or validation error"
+                            description = "Invalid request or validation error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "401",

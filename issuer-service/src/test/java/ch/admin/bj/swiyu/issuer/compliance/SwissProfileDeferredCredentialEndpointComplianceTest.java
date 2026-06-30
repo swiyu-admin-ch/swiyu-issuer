@@ -69,7 +69,6 @@ class SwissProfileDeferredCredentialEndpointComplianceTest extends AbstractSwiss
                 .containsKey("application/json");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Response: HTTP 202 Accepted MUST be defined for still-pending credential issuance")
     void testDeferredCredentialResponseIs202() {
@@ -213,7 +212,6 @@ class SwissProfileDeferredCredentialEndpointComplianceTest extends AbstractSwiss
 
     // --- Tier 4: JSON Schema Assertions — Response Body (202 Accepted) ---
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Response Schema (202): 'transaction_id' MUST be a required string property")
     void testTransactionIdIsRequiredIn202() {
@@ -237,7 +235,6 @@ class SwissProfileDeferredCredentialEndpointComplianceTest extends AbstractSwiss
                 .contains("transaction_id");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Response Schema (202): 'interval' MUST be a required integer property")
     void testIntervalIsRequiredIn202() {
@@ -263,7 +260,6 @@ class SwissProfileDeferredCredentialEndpointComplianceTest extends AbstractSwiss
                 .contains("integer");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Response Schema (202): MUST NOT contain a 'credential' property")
     void testCredentialNotPresentIn202() {
@@ -291,7 +287,6 @@ class SwissProfileDeferredCredentialEndpointComplianceTest extends AbstractSwiss
 
     // --- Tier 4: JSON Schema Assertions — Response Body (400 Bad Request) ---
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Response Schema (400): MUST be a JSON object with an 'error' required string property")
     void test400ErrorPropertyIsRequiredString() {

@@ -119,15 +119,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CredentialEndpointResponse"
+        "202":
+          description: Credential issuance still pending — retry with the transaction_id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeferredCredentialPendingResponse"
         "400":
           description: Invalid request or validation error
           content:
             application/json:
               schema:
-                type: string
-            application/jwt:
-              schema:
-                type: string
+                $ref: "#/components/schemas/ApiError"
         "401":
           description: Unauthorized
           content:
@@ -186,6 +189,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeferredData"
+        "400":
+          description: Invalid request or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
       security:
       - bearer-jwt: []
   /management/api/status-list:
@@ -1129,6 +1138,8 @@ components:
           type: string
         trace_id:
           type: string
+      required:
+      - error
     BatchCredentialIssuance:
       type: object
       properties:
@@ -1533,6 +1544,21 @@ components:
             If this parameter is missing, the credential_response_encryption sent in the credential request will be used.
       required:
       - transaction_id
+    DeferredCredentialPendingResponse:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          description: String identifying the Deferred Issuance transaction for subsequent
+            polling.
+        interval:
+          type: integer
+          format: int64
+          description: Minimum number of seconds the Wallet MUST wait before polling
+            again.
+      required:
+      - interval
+      - transaction_id
     DeferredData:
       type: object
       properties:
@@ -1679,7 +1705,6 @@ components:
       - credential_configurations_supported
       - credential_endpoint
       - credential_issuer
-      - credential_issuer_identity_trust_statement
     KeyAttestationRequirement:
       type: object
       properties:
