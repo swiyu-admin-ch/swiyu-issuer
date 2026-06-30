@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+### Added
+
+- Added static compliance tests for the Swiss Profile / OID4VCI contract (OpenID Configuration, Credential Issuer
+  Metadata, Credential Endpoint, Deferred Credential Endpoint, Nonce, VCT, OCA, JSON Schema endpoints) verifying the
+  OpenAPI specification against the OID4VCI spec and Swiss Profile requirements. Tests that require outstanding fixes
+  in the OpenAPI contract are disabled and tracked in EIDOMNI-1127.
+
 ### Changed
 
 - Status list tokens (`statuslist+jwt`) now include a `ttl` claim and proper `exp`/`iat` timestamps derived from the
