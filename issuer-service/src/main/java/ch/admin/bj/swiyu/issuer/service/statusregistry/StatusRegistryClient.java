@@ -74,11 +74,14 @@ public class StatusRegistryClient {
                             statusListJWT)
                     .block();
         } catch (HttpClientErrorException e) {
+
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                log.error("Failed to update status list {} - unauthorized. Check Swiyu Status API access configuration.", target.getRegistryId(), e);
                 throw new ConfigurationException(
                         "Failed to update status list - Please check your Swiyu Status API access configuration.",
                         e);
             } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
+                log.error("Failed to update status list {} - forbidden for business partner {}.", target.getRegistryId(), swiyuProperties.businessPartnerId(), e);
                 throw new ConfigurationException(
                         String.format(
                                 "Failed to update status list - the status list %s does not belong to swiyu partner %s.",
@@ -86,18 +89,21 @@ public class StatusRegistryClient {
                                 swiyuProperties.businessPartnerId()),
                         e);
             } else if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                log.error("Failed to update status list {} - not found on swiyu status registry.", target.getRegistryId(), e);
                 throw new ResourceNotFoundException(
                         String.format(
                                 "Failed to update status list - does the status list %s exist on swiyu status registry?",
                                 target.getRegistryId()),
                         e);
             }
+            log.error("Failed to update status list {} - external system {} responded with: {}.", target.getRegistryId(), statusBusinessApi.getApiClient().getBasePath(), e.getStatusCode(), e);
             throw new UpdateStatusListException(
                     String.format("Failed to update status list. External system %s responded with: %s",
                             statusBusinessApi.getApiClient().getBasePath(),
                             e.getStatusCode()),
                     e);
         } catch (Exception e) {
+            log.error("Failed to update status list {}.", target.getRegistryId(), e);
             throw new UpdateStatusListException(
                     "Failed to update status list.", e);
         }

@@ -66,7 +66,6 @@ public class OpenApiConfig {
         additionalSchemas.put("BatchCredentialIssuance", ModelConverters.getInstance().readAllAsResolvedSchema(BatchCredentialIssuance.class).schema);
         additionalSchemas.put("MetadataIssuerDisplayInfo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataIssuerDisplayInfo.class).schema);
         additionalSchemas.put("MetadataLogo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataLogo.class).schema);
-        additionalSchemas.put("CredentialDefinition", ModelConverters.getInstance().readAllAsResolvedSchema(CredentialDefinition.class).schema);
         additionalSchemas.put("SupportedProofType", ModelConverters.getInstance().readAllAsResolvedSchema(SupportedProofType.class).schema);
         additionalSchemas.put("MetadataCredentialDisplayInfo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataCredentialDisplayInfo.class).schema);
         additionalSchemas.put("CredentialConfigurationMetadata", ModelConverters.getInstance().readAllAsResolvedSchema(CredentialConfigurationMetadata.class).schema);

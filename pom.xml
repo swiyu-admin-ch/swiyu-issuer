@@ -31,6 +31,7 @@
         <maven.compiler.proc>full</maven.compiler.proc>
         <sonar.jacoco.itReportPath>${project.basedir}/issuer-application/target/jacoco-it.exec
         </sonar.jacoco.itReportPath>
+        <pgpverify-maven-plugin.version>1.19.1</pgpverify-maven-plugin.version>
         <sonar.jacoco.reportPath>${project.basedir}/issuer-application/target/jacoco.exec</sonar.jacoco.reportPath>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <javacrumbs.shedlock.version>6.10.0</javacrumbs.shedlock.version>
@@ -53,6 +54,8 @@
         <generic-java-lib.version>1.6.4</generic-java-lib.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
         <netty.version>4.2.15.Final</netty.version>
+        <!-- Fixes CVE-2026-13006 -->
+        <logback-core.version>1.5.37</logback-core.version>
     </properties>
 
     <dependencyManagement>
@@ -111,6 +114,34 @@
 
     <build>
         <plugins>
+
+            <!-- PGP provenance verification for all third-party dependencies.-->
+            <plugin>
+                <groupId>org.simplify4u.plugins</groupId>
+                <artifactId>pgpverify-maven-plugin</artifactId>
+                <version>${pgpverify-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>pgp-verify-dependencies</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- Path to the curated trust map (artifact coords → PGP fingerprint).
+                         ${maven.multiModuleProjectDirectory} always resolves to the root
+                         of the multi-module project, regardless of which sub-module runs. -->
+                    <keysMapLocation>${maven.multiModuleProjectDirectory}/pgp/keys.list</keysMapLocation>
+                    <verifyPomFiles>true</verifyPomFiles>
+                    <!--  To skip verification locally mvn -Dpgpverify.skip=true -->
+                    <pgpKeyServer>hkps://keys.openpgp.org, hkps://keyserver.ubuntu.com</pgpKeyServer>
+                    <pgpKeyServerLoadBalance>true</pgpKeyServerLoadBalance>
+                    <failWeakSignature>true</failWeakSignature>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
