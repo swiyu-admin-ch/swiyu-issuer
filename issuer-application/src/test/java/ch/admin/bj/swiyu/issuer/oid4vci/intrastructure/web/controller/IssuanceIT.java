@@ -185,7 +185,7 @@ class IssuanceIT {
         var credential = credentials.get(0).getAsJsonObject();
         var credentialString = credential.get("credential").getAsString();
         var claims = getVcClaims(credentialString);
-        
+
         assertEquals(vctMetadataUri, claims.get(vctMetadataUri).getAsString());
         assertEquals(vctMetadataUriIntegrity, claims.get(vctMetadataUriIntegrity).getAsString());
     }
@@ -322,6 +322,48 @@ class IssuanceIT {
         var vc = credential.get("credential").getAsString();
 
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, offerData);
+    }
+
+
+    @Test
+    void testSdJwtOffer_withRMissingequestAndResponseEncryption_thenBadRequest() throws Exception {
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
+        var token = tokenResponse.get("access_token");
+
+        // Response Encryption
+        ECKey encryptionKey = new ECKeyGenerator(Curve.P_256)
+                .keyID("transportEncKeyEC")
+                .keyUse(KeyUse.ENCRYPTION)
+                .algorithm(JWEAlgorithm.ECDH_ES)
+                .generate();
+
+        var responseEncryptionJson = String.format("""
+                        {
+                            "alg": "%s",
+                            "enc": "%s",
+                            "jwk": %s
+                        }
+                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A256GCM.getName(),
+                encryptionKey.toPublicJWK().toJSONString());
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, responseEncryptionJson, "university_example_sd_jwt");
+        mock.perform(post("/oid4vci/api/credential")
+                        .header("Authorization", String.format("BEARER %s", token))
+                        .header("SWIYU-API-Version", "2")
+                        .content(credentialRequestString)
+                        .contentType("application/jwt") // For encrypted credential request must be application/jwt
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("invalid_encryption_parameters"))
+                .andExpect(jsonPath("$.error_description").value("Message is not a correct JWE object"));
     }
 
     @ParameterizedTest

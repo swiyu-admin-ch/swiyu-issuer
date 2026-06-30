@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialManagementAction;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialOfferAction;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineFactory;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.EventProducerAction;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListPersistenceService;
@@ -32,8 +33,8 @@ public class CredentialStateMachineTest {
         EventProducerAction eventActions = new EventProducerAction(eventProducerService);
         CredentialManagementAction managementActions = new CredentialManagementAction(credentialPersistenceService, statusListPersistenceService);
         CredentialOfferAction offerActions = new CredentialOfferAction();
-        CredentialStateMachineConfig config = new CredentialStateMachineConfig(eventActions, offerActions, managementActions);
-        this.stateMachine = new CredentialStateMachine(config.credentialManagementStateMachine(), config.credentialOfferStateMachine());
+        CredentialStateMachineFactory factory = new CredentialStateMachineFactory(eventActions, offerActions, managementActions);
+        this.stateMachine = new CredentialStateMachine(factory);
     }
 
     @Test
