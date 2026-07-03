@@ -56,6 +56,8 @@
         <netty.version>4.2.15.Final</netty.version>
         <!-- Fixes CVE-2026-13006 -->
         <logback-core.version>1.5.37</logback-core.version>
+        <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
+        <tomcat.version>11.0.23</tomcat.version>
     </properties>
 
     <dependencyManagement>
