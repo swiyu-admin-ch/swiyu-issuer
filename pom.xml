@@ -60,6 +60,7 @@
 
     <dependencyManagement>
         <dependencies>
+
             <!-- Fixes CVE-2026-42198 -->
             <dependency>
                 <groupId>org.postgresql</groupId>
