@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `statusListExpirationTime` — Expiration used when generating status lists.
 - Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM.
 
+### Removed
+
+- Removed the vars `SWIYU_TRUST_REGISTRY_CUSTOMER_KEY` and `SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET` as they are not
+  required by the read-only trust registry.
+
 ### Fixed
 
 - Fixed race condition in `CredentialStateMachine`: state machines were shared singletons, causing state corruption
