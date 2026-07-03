@@ -78,7 +78,7 @@ class SwissProfileVctComplianceTest extends AbstractSwissProfileComplianceTest {
 
     // --- Tier 4: JSON Schema Assertions ---
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
+    @Disabled("TODO EIDOMNI-1151 Fix and enhance VCT interface compliance tests")
     @Test
     @DisplayName("Schema: Response body MUST be a JSON object (not a primitive)")
     void testVctResponseBodyIsObject() {
@@ -92,7 +92,7 @@ class SwissProfileVctComplianceTest extends AbstractSwissProfileComplianceTest {
                 .contains("object");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
+    @Disabled("TODO EIDOMNI-1151 Fix and enhance VCT interface compliance tests")
     @Test
     @DisplayName("Schema: 'vct' MUST be a required string property")
     void testVctPropertyIsRequiredAndString() {

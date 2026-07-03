@@ -78,7 +78,7 @@ class SwissProfileOcaComplianceTest extends AbstractSwissProfileComplianceTest {
 
     // --- Tier 4: JSON Schema Assertions ---
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
+    @Disabled("TODO EIDOMNI-1152 Fix and enhance OCA interface compliance tests")
     @Test
     @DisplayName("Schema: OCA Bundle response MUST be a JSON object")
     void testOcaResponseBodyIsObject() {
@@ -92,7 +92,7 @@ class SwissProfileOcaComplianceTest extends AbstractSwissProfileComplianceTest {
                 .contains("object");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
+    @Disabled("TODO EIDOMNI-1152 Fix and enhance OCA interface compliance tests")
     @Test
     @DisplayName("Schema: 'capture_bases' MUST be a required array containing Capture Base objects")
     void testCaptureBasesIsRequiredArray() {
@@ -119,7 +119,7 @@ class SwissProfileOcaComplianceTest extends AbstractSwissProfileComplianceTest {
                 .contains("capture_bases");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
+    @Disabled("TODO EIDOMNI-1152 Fix and enhance OCA interface compliance tests")
     @Test
     @DisplayName("Schema: 'overlays' MUST be a required array (may be empty)")
     void testOverlaysIsRequiredArray() {
@@ -210,7 +210,7 @@ class SwissProfileOcaComplianceTest extends AbstractSwissProfileComplianceTest {
                 .containsKey("theme");
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
+    @Disabled("TODO EIDOMNI-1152 Fix and enhance OCA interface compliance tests")
     @Test
     @DisplayName("Schema: 'Data Source Mapping Overlay' MUST be supported to map Capture Base attributes to VC data paths")
     void testDataSourceMappingOverlayIsSupported() {

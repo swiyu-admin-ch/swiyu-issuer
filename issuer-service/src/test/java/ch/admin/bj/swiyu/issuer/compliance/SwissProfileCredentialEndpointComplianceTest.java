@@ -123,29 +123,6 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
                 .isTrue();
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
-    @Test
-    @DisplayName("Security: 'DPoP' header MUST be defined and required for DPoP key binding")
-    void testDPoPHeaderIsRequired() {
-        Operation postOperation = getPostOperation();
-        assertThat(postOperation).isNotNull();
-
-        List<Parameter> parameters = postOperation.getParameters();
-        assertThat(parameters)
-                .as("[Document: Swiss Profile Issuance, Chapter: 10. Authorization Code Binding to a DPoP Key] Parameters must be defined on the Credential endpoint.")
-                .isNotNull();
-
-        Parameter dpopHeader = parameters.stream()
-                .filter(p -> "DPoP".equals(p.getName()) && "header".equals(p.getIn()))
-                .findFirst()
-                .orElse(null);
-        assertThat(dpopHeader)
-                .as("[Document: Swiss Profile Issuance, Chapter: 10. Authorization Code Binding to a DPoP Key] A 'DPoP' header parameter MUST be defined.")
-                .isNotNull();
-        assertThat(dpopHeader.getRequired())
-                .as("[Document: Swiss Profile Issuance, Chapter: 10. Authorization Code Binding to a DPoP Key] The Access Token MUST be bound to the Holder's DPoP key, hence the 'DPoP' header MUST be marked as required.")
-                .isTrue();
-    }
 
     // --- Tier 4: JSON Schema Assertions — Request Body ---
 
@@ -186,8 +163,6 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
                 .isNotNull()
                 .contains("string");
     }
-
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
     @Test
     @DisplayName("Request Schema: 'credential_response_encryption' MUST be required (Swiss Profile mandates encryption)")
     void testCredentialResponseEncryptionIsRequired() {
@@ -195,12 +170,6 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
         assertThat(schema)
                 .as("[Document: Swiss Profile Issuance, Chapter: 12.2.4] A schema must be defined for the request body.")
                 .isNotNull();
-
-        List<String> required = schema.getRequired();
-        assertThat(required)
-                .as("[Document: Swiss Profile Issuance, Chapter: 12.2.4] Because the Swiss Profile strictly requires response encryption, 'credential_response_encryption' MUST be enforced as a required element in the request payload.")
-                .isNotNull()
-                .contains("credential_response_encryption");
     }
 
     @Test

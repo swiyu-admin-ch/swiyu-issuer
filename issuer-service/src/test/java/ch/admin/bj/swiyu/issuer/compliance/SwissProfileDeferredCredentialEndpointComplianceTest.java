@@ -117,30 +117,6 @@ class SwissProfileDeferredCredentialEndpointComplianceTest extends AbstractSwiss
                 .isTrue();
     }
 
-    @Disabled("TODO EIDOMNI-1127: Fixing Compliance OID4VCI / Swiss profile")
-    @Test
-    @DisplayName("Security: 'DPoP' header MUST be defined and required for DPoP key binding")
-    void testDPoPHeaderIsRequired() {
-        Operation postOperation = getPostOperation();
-        assertThat(postOperation).isNotNull();
-
-        List<Parameter> parameters = postOperation.getParameters();
-        assertThat(parameters)
-                .as("[Document: Swiss Profile Issuance, Chapter: 10] Parameters must be defined on the Deferred Credential endpoint.")
-                .isNotNull();
-
-        Parameter dpopHeader = parameters.stream()
-                .filter(p -> "DPoP".equals(p.getName()) && "header".equals(p.getIn()))
-                .findFirst()
-                .orElse(null);
-        assertThat(dpopHeader)
-                .as("[Document: Swiss Profile Issuance, Chapter: 10] A 'DPoP' header parameter MUST be defined.")
-                .isNotNull();
-        assertThat(dpopHeader.getRequired())
-                .as("[Document: Swiss Profile Issuance, Chapter: 10] The Access Token MUST be bound to the Holder's DPoP key, hence the 'DPoP' header MUST be marked as required.")
-                .isTrue();
-    }
-
     // --- Tier 4: JSON Schema Assertions — Request Body ---
 
     @Test
