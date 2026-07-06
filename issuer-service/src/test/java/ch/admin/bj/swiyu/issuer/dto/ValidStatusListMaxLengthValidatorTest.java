@@ -76,6 +76,32 @@ class ValidStatusListMaxLengthValidatorTest {
     }
 
     @Test
+    void isValid_negativeSize_invalid() {
+        var context = mock(ConstraintValidatorContext.class);
+        var contextBuilder = mock(ConstraintValidatorContext.ConstraintViolationBuilder.class);
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        when(context.buildConstraintViolationWithTemplate(messageCaptor.capture())).thenReturn(contextBuilder);
+
+        // Given
+        var statusListCreate = new StatusListCreateDto();
+        statusListCreate.setType("some type");
+        statusListCreate.setMaxLength(-1);
+
+        var config = new StatusListConfigDto();
+        config.setBits(2);
+        statusListCreate.setConfig(config);
+
+        // When
+        when(properties.getStatusListSizeLimit()).thenReturn(1000);
+        var isValid = this.validator.isValid(statusListCreate, context);
+
+        // Then
+        assertFalse(isValid);
+        var message = messageCaptor.getValue();
+        assertTrue(message.contains("cannot be negative"));
+    }
+
+    @Test
     void isValid_missingConfig_invalid() {
         // Given
         var context = mock(ConstraintValidatorContext.class);

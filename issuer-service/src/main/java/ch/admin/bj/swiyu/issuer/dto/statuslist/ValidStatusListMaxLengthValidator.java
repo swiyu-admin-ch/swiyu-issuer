@@ -32,6 +32,11 @@ public class ValidStatusListMaxLengthValidator implements ConstraintValidator<Va
             return false;
         }
 
+        if (calculatedListSize < 0) {
+            setMessageForValidation(constraintValidatorContext, "Status list has invalid size %s cannot be negative".formatted(calculatedListSize));
+            return false;
+        }
+
         return true;
     }
 
