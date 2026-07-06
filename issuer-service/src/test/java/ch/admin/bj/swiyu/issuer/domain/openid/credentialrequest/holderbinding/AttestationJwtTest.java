@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
+import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -100,6 +101,79 @@ class AttestationJwtTest {
 
         Assertions.assertThrows(IllegalArgumentException.class,
                 () -> AttestationJwt.parseJwt(parsedJwt, true));
+    }
+
+    @Test
+    void whenExpired_thenThrowIllegalArgumentException() throws JOSEException {
+        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .keyID(signingKey.getKeyID())
+                .type(new JOSEObjectType("key-attestation+jwt"))
+                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                // intentionally no profile_version
+                .build(),
+                new JWTClaimsSet.Builder()
+                        .issuer("did:example:issuer")
+                        .issueTime(new Date())
+                        .expirationTime(Date.from(Instant.now().plusSeconds(-5))) // Expired in the past
+                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
+                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
+                        .build());
+        attestation.sign(new ECDSASigner(signingKey));
+        var parsedJwt = attestation.serialize();
+
+        var ex = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> AttestationJwt.parseJwt(parsedJwt, true));
+        assertThat(ex.getMessage()).contains("expired");
+    }
+
+    @Test
+    void whenNotYetReady_thenThrowIllegalArgumentException() throws JOSEException {
+        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .keyID(signingKey.getKeyID())
+                .type(new JOSEObjectType("key-attestation+jwt"))
+                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                // intentionally no profile_version
+                .build(),
+                new JWTClaimsSet.Builder()
+                        .issuer("did:example:issuer")
+                        .issueTime(new Date())
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5)))
+                        .notBeforeTime(Date.from(Instant.now().plusSeconds(5))) // Not yet valid
+                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
+                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
+                        .build());
+        attestation.sign(new ECDSASigner(signingKey));
+        var parsedJwt = attestation.serialize();
+
+        var ex = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> AttestationJwt.parseJwt(parsedJwt, true));
+        assertThat(ex.getMessage()).contains("Attestation not yet valid");
+    }
+
+    @Test
+    void whenIssuedInFuture_thenThrowIllegalArgumentException() throws JOSEException {
+        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .keyID(signingKey.getKeyID())
+                .type(new JOSEObjectType("key-attestation+jwt"))
+                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                // intentionally no profile_version
+                .build(),
+                new JWTClaimsSet.Builder()
+                        .issuer("did:example:issuer")
+                        .issueTime(Date.from(Instant.now().plusSeconds(5)))
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5)))
+                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
+                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
+                        .build());
+        attestation.sign(new ECDSASigner(signingKey));
+        var parsedJwt = attestation.serialize();
+
+        var ex = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> AttestationJwt.parseJwt(parsedJwt, true));
+        assertThat(ex.getMessage()).contains("IssueTime is in the future");
     }
 
     /**

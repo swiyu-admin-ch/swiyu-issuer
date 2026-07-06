@@ -22,17 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `statusListExpirationTime` — Expiration used when generating status lists.
 - Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM.
 
-### Removed
-
-- Removed the vars `SWIYU_TRUST_REGISTRY_CUSTOMER_KEY` and `SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET` as they are not
-  required by the read-only trust registry.
-
 ### Fixed
 
 - Fixed race condition in `CredentialStateMachine`: state machines were shared singletons, causing state corruption
   under concurrent requests. Replaced with `CredentialStateMachineFactory` so each transition operates on an isolated
   instance.
-- Fixed "cannot be parsed exception" with nested arrays in credential subject data update
+- Fixed "cannot be parsed exception" with nested arrays in credential subject data update.
+- Fixed missing claim validation, now also validates the attestation claims `nbf` and `iat`.
 
 ### Removed
 
@@ -47,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       the [OID4VCI specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-issuer-metadata-p)
 - Removed `vct#integrity` from issuer metadata as it is no longer used -> use `vct_metadata_uri` and
   `vct_metadata_uri#integrity` instead.
+- Removed the vars `SWIYU_TRUST_REGISTRY_CUSTOMER_KEY` and `SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET` as they are not
+  required by the read-only trust registry.
 
 ## [3.2.4] - 2026-06-12
 

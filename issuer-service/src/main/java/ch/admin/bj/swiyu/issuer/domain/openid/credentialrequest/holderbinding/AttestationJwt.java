@@ -68,16 +68,32 @@ public final class AttestationJwt {
         if (StringUtils.isEmpty(jwtClaimsSet.getIssuer())) {
             throw new IllegalArgumentException("Issuer is required");
         }
-        if (jwtClaimsSet.getIssueTime() == null) {
+        var now = new Date();
+
+        // iat
+        var issuedAtTime = jwtClaimsSet.getIssueTime();
+        if (issuedAtTime == null) {
             throw new IllegalArgumentException("IssueTime is required");
         }
+        if (issuedAtTime.after(now)) {
+            throw new IllegalArgumentException("IssueTime is in the future");
+        }
+
+        // exp
         var expirationTime = jwtClaimsSet.getExpirationTime();
         if (expirationTime == null) {
             throw new IllegalArgumentException("ExpirationTime is required");
         }
-        if (expirationTime.before(new Date())) {
+        if (expirationTime.before(now)) {
             throw new IllegalArgumentException("Attestation is expired");
         }
+
+        // nbf
+        var notBeforeTime = jwtClaimsSet.getNotBeforeTime();
+        if (notBeforeTime != null && notBeforeTime.after(now)) {
+            throw new IllegalArgumentException("Attestation not yet valid");
+        }
+
         if (jwtClaimsSet.getClaim("attested_keys") == null) {
             throw new IllegalArgumentException("attested_keys is required");
         }
