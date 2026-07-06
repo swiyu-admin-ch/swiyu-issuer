@@ -25,8 +25,8 @@ public class ValidStatusListMaxLengthValidator implements ConstraintValidator<Va
             return false;
         }
 
-        int calculatedListSize = statusListCreateDto.getMaxLength() * config.getBits();
 
+        long calculatedListSize = (long)statusListCreateDto.getMaxLength() * (long)config.getBits(); // convert to long, preventing integer overflow
         if (calculatedListSize > statusListSizeLimit) {
             setMessageForValidation(constraintValidatorContext, "Status list has invalid size %s cannot exceed the maximum size limit of %s".formatted(calculatedListSize, statusListSizeLimit));
             return false;
