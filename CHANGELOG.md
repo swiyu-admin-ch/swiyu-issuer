@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+## Added
+
+- Integrate `pgpverify-maven-plugin` to cryptographically verify PGP signatures of all third-party dependencies during
+  the build. The build fails if an artifact has no signature or an invalid signature. PGP keys are cached in CI/CD to
+  avoid redundant downloads `(#836)`.
+
 ### Changed
 
 - Status list tokens (`statuslist+jwt`) now include a `ttl` claim and proper `exp`/`iat` timestamps derived from the
@@ -16,12 +22,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `statusListExpirationTime` — Expiration used when generating status lists.
 - Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM.
 
+### Removed
+
+- Removed the vars `SWIYU_TRUST_REGISTRY_CUSTOMER_KEY` and `SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET` as they are not
+  required by the read-only trust registry.
+
 ### Fixed
 
+- Fixed race condition in `CredentialStateMachine`: state machines were shared singletons, causing state corruption
+  under concurrent requests. Replaced with `CredentialStateMachineFactory` so each transition operates on an isolated
+  instance.
 - Fixed "cannot be parsed exception" with nested arrays in credential subject data update
 
 ### Removed
 
+- Removed support for `claims` in `credential_configurations_supported` details for claims can now be found in
+  `credential_metadata.claims` instead as announced earlier. Please update your metadata accordingly. Additional changes
+  are:
+    - in `client_metadata.display` the `background_image` and `text_color` are now marked as deprecated as they are not
+      used and marked as `NOT SUPPORTED` in the Swiss Profile.
+    - `client_metadata.display` can no longer be an empty list -> if you do not want to use it, set it to `null` instead
+      of an empty list.
+    - `client_metadata.display.name` is not nullable anymore in compliance with
+      the [OID4VCI specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-issuer-metadata-p)
 - Removed `vct#integrity` from issuer metadata as it is no longer used -> use `vct_metadata_uri` and
   `vct_metadata_uri#integrity` instead.
 

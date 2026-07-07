@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.issuer.common.config;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialManagementAction;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialOfferAction;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineFactory;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.EventProducerAction;
 
 import org.junit.jupiter.api.Test;
@@ -45,25 +45,25 @@ class PlantUmlGeneratorTest {
     @Test
     void exportStateMachinesToPlantUmlFiles() throws Exception {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
-            CredentialStateMachineConfig.class, 
-            CredentialOfferAction.class, 
-            CredentialManagementAction.class, 
-            EventProducerAction.class, 
+            CredentialStateMachineFactory.class,
+            CredentialOfferAction.class,
+            CredentialManagementAction.class,
+            EventProducerAction.class,
             ObjectMapper.class,
             StateMachineMockConfig.class);
+
+        CredentialStateMachineFactory factory = context.getBean(CredentialStateMachineFactory.class);
 
         // Target directory for PlantUML files
         String outputDir = "src/main/resources/plantuml/";
         java.nio.file.Files.createDirectories(java.nio.file.Paths.get(outputDir));
 
         // Export CredentialManagementStateMachine
-        StateMachine<?, ?> credentialManagementStateMachine =
-                context.getBean("credentialManagementStateMachine", StateMachine.class);
+        StateMachine<?, ?> credentialManagementStateMachine = factory.createManagementStateMachine();
         boolean mgmtExported = exportToFile(credentialManagementStateMachine, outputDir + "credentialManagementStateMachine.puml");
 
         // Export CredentialOfferStateMachine
-        StateMachine<?, ?> credentialOfferStateMachine =
-                context.getBean("credentialOfferStateMachine", StateMachine.class);
+        StateMachine<?, ?> credentialOfferStateMachine = factory.createOfferStateMachine();
         boolean offerExported = exportToFile(credentialOfferStateMachine, outputDir + "credentialOfferStateMachine.puml");
 
         context.close();
