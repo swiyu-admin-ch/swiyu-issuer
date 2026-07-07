@@ -34,7 +34,7 @@ class AttestationJwtTest {
             "did:example:12345#key-1, did:example:9876",
             "did:example:trusted-fake#key-1, did:example:trusted"
     })
-    void whenDivergingIssuerAndKid_thenThrowIllegalArgumentException(String attackerKeyID, String issuerDid) throws JOSEException {
+    void parseJwt_withDivergingIssuerAndKid_throwsIllegalArgumentException(String attackerKeyID, String issuerDid) throws JOSEException {
         var signingKey = new ECKeyGenerator(Curve.P_256).keyID(attackerKeyID).keyUse(KeyUse.SIGNATURE).generate();
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
@@ -61,7 +61,7 @@ class AttestationJwtTest {
             "did:example:12345#key-1, did:example:9876",
             "did:example:trusted-fake#key-1, did:example:trusted"
     })
-    void whenDivergingIssuerAndKidUsingKeyStorage_thenThrowIllegalArgumentException(String attackerKeyID, String issuerDid) throws JOSEException {
+    void parseJwt_withDivergingIssuerAndKidUsingKeyStorage_throwsIllegalArgumentException(String attackerKeyID, String issuerDid) throws JOSEException {
         var signingKey = new ECKeyGenerator(Curve.P_256).keyID(attackerKeyID).keyUse(KeyUse.SIGNATURE).generate();
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
@@ -82,7 +82,7 @@ class AttestationJwtTest {
     }
 
     @Test
-    void whenMissingProfileVersionHeader_thenThrowIllegalArgumentException() throws JOSEException {
+    void parseJwt_withMissingProfileVersionHeader_throwsIllegalArgumentException() throws JOSEException {
         var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
@@ -104,75 +104,32 @@ class AttestationJwtTest {
     }
 
     @Test
-    void whenExpired_thenThrowIllegalArgumentException() throws JOSEException {
-        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
-        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(signingKey.getKeyID())
-                .type(new JOSEObjectType("key-attestation+jwt"))
-                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
-                // intentionally no profile_version
-                .build(),
-                new JWTClaimsSet.Builder()
-                        .issuer("did:example:issuer")
-                        .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(-5))) // Expired in the past
-                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
-                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
-                        .build());
-        attestation.sign(new ECDSASigner(signingKey));
-        var parsedJwt = attestation.serialize();
-
-        var ex = Assertions.assertThrows(IllegalArgumentException.class,
-                () -> AttestationJwt.parseJwt(parsedJwt, true));
-        assertThat(ex.getMessage()).contains("expired");
+    void parseJwt_expiresNow_success() throws JOSEException {
+        var jwt = buildJwt(new Date(), new Date(), new Date());
+        Assertions.assertDoesNotThrow(() -> AttestationJwt.parseJwt(jwt, true));
     }
 
     @Test
-    void whenNotYetReady_thenThrowIllegalArgumentException() throws JOSEException {
-        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
-        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(signingKey.getKeyID())
-                .type(new JOSEObjectType("key-attestation+jwt"))
-                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
-                // intentionally no profile_version
-                .build(),
-                new JWTClaimsSet.Builder()
-                        .issuer("did:example:issuer")
-                        .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5)))
-                        .notBeforeTime(Date.from(Instant.now().plusSeconds(5))) // Not yet valid
-                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
-                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
-                        .build());
-        attestation.sign(new ECDSASigner(signingKey));
-        var parsedJwt = attestation.serialize();
-
+    void parseJwt_withExpiredToken_throwsIllegalArgumentException() throws JOSEException {
+        var jwt = buildJwt(new Date(), Date.from(Instant.now().plusSeconds(-5)), new Date());
         var ex = Assertions.assertThrows(IllegalArgumentException.class,
-                () -> AttestationJwt.parseJwt(parsedJwt, true));
+                () -> AttestationJwt.parseJwt(jwt, true));
+        assertThat(ex.getMessage()).contains("Attestation is expired");
+    }
+
+    @Test
+    void parseJwt_withTokenNotYetReady_throwsIllegalArgumentException() throws JOSEException {
+        var jwt = buildJwt(new Date(), Date.from(Instant.now().plusSeconds(5)), Date.from(Instant.now().plusSeconds(5)));
+        var ex = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> AttestationJwt.parseJwt(jwt, true));
         assertThat(ex.getMessage()).contains("Attestation not yet valid");
     }
 
     @Test
-    void whenIssuedInFuture_thenThrowIllegalArgumentException() throws JOSEException {
-        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
-        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(signingKey.getKeyID())
-                .type(new JOSEObjectType("key-attestation+jwt"))
-                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
-                // intentionally no profile_version
-                .build(),
-                new JWTClaimsSet.Builder()
-                        .issuer("did:example:issuer")
-                        .issueTime(Date.from(Instant.now().plusSeconds(5)))
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5)))
-                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
-                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
-                        .build());
-        attestation.sign(new ECDSASigner(signingKey));
-        var parsedJwt = attestation.serialize();
-
+    void parseJwt_withTokenIssuedInFuture_throwsIllegalArgumentException() throws JOSEException {
+        var jwt = buildJwt(Date.from(Instant.now().plusSeconds(5)), Date.from(Instant.now().plusSeconds(5)), new Date());
         var ex = Assertions.assertThrows(IllegalArgumentException.class,
-                () -> AttestationJwt.parseJwt(parsedJwt, true));
+                () -> AttestationJwt.parseJwt(jwt, true));
         assertThat(ex.getMessage()).contains("IssueTime is in the future");
     }
 
@@ -253,5 +210,25 @@ class AttestationJwtTest {
         signedJwt.sign(new ECDSASigner(issuerKey));
 
         return AttestationJwt.parseJwt(signedJwt.serialize(), false);
+    }
+
+    private String buildJwt(Date iat, Date exp, Date nbf) throws JOSEException {
+        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .keyID(signingKey.getKeyID())
+                .type(new JOSEObjectType("key-attestation+jwt"))
+                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                // intentionally no profile_version
+                .build(),
+                new JWTClaimsSet.Builder()
+                        .issuer("did:example:issuer")
+                        .issueTime(iat)
+                        .expirationTime(exp)
+                        .notBeforeTime(nbf)
+                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
+                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
+                        .build());
+        attestation.sign(new ECDSASigner(signingKey));
+        return attestation.serialize();
     }
 }

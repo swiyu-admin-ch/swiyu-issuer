@@ -23,11 +23,13 @@ import java.util.stream.Collectors;
 
 @Getter
 public final class AttestationJwt {
+    private static final long CLOCK_SKEW_MS = 1000; // 1s margin of error, as timestamps in jwt have accuracy of 1s
 
     @Deprecated(since = "OID4VCI 1.0") // remove later
     private static final String KEY_ATTESTATION_TYPE_ID1 = "keyattestation+jwt";
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
     private static final Set<String> ALLOWED_TYPES = Set.of(KEY_ATTESTATION_TYPE_ID1, "key-attestation+jwt");
+
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
     private final SignedJWT signedJWT;
@@ -68,14 +70,14 @@ public final class AttestationJwt {
         if (StringUtils.isEmpty(jwtClaimsSet.getIssuer())) {
             throw new IllegalArgumentException("Issuer is required");
         }
-        var now = new Date();
+        long now = System.currentTimeMillis();
 
         // iat
         var issuedAtTime = jwtClaimsSet.getIssueTime();
         if (issuedAtTime == null) {
             throw new IllegalArgumentException("IssueTime is required");
         }
-        if (issuedAtTime.after(now)) {
+        if (issuedAtTime.getTime() - CLOCK_SKEW_MS > now) {
             throw new IllegalArgumentException("IssueTime is in the future");
         }
 
@@ -84,13 +86,13 @@ public final class AttestationJwt {
         if (expirationTime == null) {
             throw new IllegalArgumentException("ExpirationTime is required");
         }
-        if (expirationTime.before(now)) {
+        if (expirationTime.getTime() + CLOCK_SKEW_MS < now) {
             throw new IllegalArgumentException("Attestation is expired");
         }
 
         // nbf
         var notBeforeTime = jwtClaimsSet.getNotBeforeTime();
-        if (notBeforeTime != null && notBeforeTime.after(now)) {
+        if (notBeforeTime != null && notBeforeTime.getTime() - CLOCK_SKEW_MS > now) {
             throw new IllegalArgumentException("Attestation not yet valid");
         }
 
