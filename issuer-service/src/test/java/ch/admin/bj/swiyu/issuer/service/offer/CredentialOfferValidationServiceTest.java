@@ -3,10 +3,10 @@ package ch.admin.bj.swiyu.issuer.service.offer;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfigurationMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.MetadataClaimDescriptor;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
@@ -17,13 +17,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mockito;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -42,8 +42,8 @@ class CredentialOfferValidationServiceTest {
 
     @BeforeEach
     void setUp() {
-        issuerMetadata = Mockito.mock(IssuerMetadata.class);
-        dataIntegrityService = Mockito.mock(DataIntegrityService.class);
+        issuerMetadata = mock(IssuerMetadata.class);
+        dataIntegrityService = mock(DataIntegrityService.class);
         validationService = new CredentialOfferValidationService(issuerMetadata, dataIntegrityService);
     }
 
@@ -52,7 +52,7 @@ class CredentialOfferValidationServiceTest {
      */
     @Test
     void validateCredentialFormat_shouldPassForValidFormat() {
-        var credentialConfiguration = Mockito.mock(CredentialConfiguration.class);
+        var credentialConfiguration = mock(CredentialConfiguration.class);
         when(credentialConfiguration.getFormat()).thenReturn("dc+sd-jwt");
 
         assertDoesNotThrow(() -> validationService.validateCredentialFormat(credentialConfiguration));
@@ -63,7 +63,7 @@ class CredentialOfferValidationServiceTest {
      */
     @Test
     void validateCredentialFormat_shouldThrowForInvalidFormat() {
-        var credentialConfiguration = Mockito.mock(CredentialConfiguration.class);
+        var credentialConfiguration = mock(CredentialConfiguration.class);
         when(credentialConfiguration.getFormat()).thenReturn("invalid-format");
 
         assertThrows(IllegalStateException.class,
@@ -112,8 +112,7 @@ class CredentialOfferValidationServiceTest {
      */
     @Test
     void validateCredentialRequestOfferData_shouldAllowEmptyOfferData_whenDeferred() {
-        var credConfig = Mockito.mock(CredentialConfiguration.class);
-        when(credConfig.getClaims()).thenReturn(Map.of());
+        var credConfig = mock(CredentialConfiguration.class);
 
         assertDoesNotThrow(() ->
                 validationService.validateCredentialRequestOfferData(Map.of(), true, credConfig));
@@ -126,8 +125,7 @@ class CredentialOfferValidationServiceTest {
      */
     @Test
     void validateCredentialRequestOfferData_shouldThrow_whenOfferDataEmptyAndNotDeferred() {
-        var credConfig = Mockito.mock(CredentialConfiguration.class);
-        when(credConfig.getClaims()).thenReturn(Map.of());
+        var credConfig = mock(CredentialConfiguration.class);
 
         assertThrows(BadRequestException.class, () ->
                 validationService.validateCredentialRequestOfferData(Map.of(), false, credConfig));
@@ -138,8 +136,7 @@ class CredentialOfferValidationServiceTest {
      */
     @Test
     void validateCredentialRequestOfferData_shouldThrow_whenOfferDataContainsProtectedClaim() {
-        var credConfig = Mockito.mock(CredentialConfiguration.class);
-        when(credConfig.getClaims()).thenReturn(Map.of("hello", new CredentialClaim()));
+        var credConfig = mock(CredentialConfiguration.class);
 
         Map<String, Object> offerData = Map.of("iss", "did:example:bad");
         when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(offerData);
@@ -150,17 +147,19 @@ class CredentialOfferValidationServiceTest {
 
     @Test
     void validateCredentialRequestOfferData_shouldThrow_whenMandatoryClaimMissing() {
-        var mandatory = new CredentialClaim();
+        var mandatory = new MetadataClaimDescriptor();
         mandatory.setMandatory(true);
+        mandatory.setPath(List.of("must"));
 
-        var optional = new CredentialClaim();
+        var optional = new MetadataClaimDescriptor();
         optional.setMandatory(false);
+        optional.setPath(List.of("opt"));
 
-        var credConfig = Mockito.mock(CredentialConfiguration.class);
-        when(credConfig.getClaims()).thenReturn(Map.of(
-                "must", mandatory,
-                "opt", optional
-        ));
+        CredentialConfigurationMetadata credentialConfigurationMetadata = new CredentialConfigurationMetadata();
+        credentialConfigurationMetadata.setClaimDescriptor(List.of(mandatory, optional));
+
+        var credConfig = mock(CredentialConfiguration.class);
+        when(credConfig.getCredentialMetadata()).thenReturn(credentialConfigurationMetadata);
 
         Map<String, Object> offerData = Map.of("opt", "present");
         when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(offerData);
@@ -173,31 +172,31 @@ class CredentialOfferValidationServiceTest {
     }
 
     @Test
-    void validateCredentialRequestOfferData_shouldThrow_whenSurplusClaimPresent() {
-        var claim = new CredentialClaim();
+    void validateCredentialRequestOfferData_shouldSucceed_whenSurplusClaimPresent() {
+        var claim = new MetadataClaimDescriptor();
+        claim.setPath(List.of("allowed"));
         claim.setMandatory(true);
 
-        var credConfig = Mockito.mock(CredentialConfiguration.class);
-        when(credConfig.getClaims()).thenReturn(Map.of("allowed", claim));
+        CredentialConfigurationMetadata credentialConfigurationMetadata = new CredentialConfigurationMetadata();
+        credentialConfigurationMetadata.setClaimDescriptor(List.of(claim));
+
+        var credConfig = mock(CredentialConfiguration.class);
+        when(credConfig.getCredentialMetadata()).thenReturn(credentialConfigurationMetadata);
 
         Map<String, Object> offerData = Map.of("allowed", "ok", "unexpected", "nope");
         when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(offerData);
 
-        BadRequestException ex = assertThrows(BadRequestException.class, () ->
+        assertDoesNotThrow(() ->
                 validationService.validateCredentialRequestOfferData(offerData, false, credConfig));
-
-        assertTrue(ex.getMessage().contains("Unexpected credential claims found"));
-        assertTrue(ex.getMessage().contains("unexpected"));
     }
 
     @Test
     void validateCredentialOfferCreateRequest_shouldValidateFormatDatesAndClaims() {
-        var mandatory = new CredentialClaim();
+        var mandatory = new MetadataClaimDescriptor();
         mandatory.setMandatory(true);
 
-        var credConfig = Mockito.mock(CredentialConfiguration.class);
+        var credConfig = mock(CredentialConfiguration.class);
         when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
-        when(credConfig.getClaims()).thenReturn(Map.of("hello", mandatory));
 
         when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credConfig);
 
@@ -251,7 +250,7 @@ class CredentialOfferValidationServiceTest {
         when(dataIntegrityService.getVerifiedOfferData(eq(offerData), isNull())).thenReturn(validatedOfferData);
 
         var ex = assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
-        assertEquals(ex.getMessage(), "Mandatory credential claims are missing: [mandatory]");
+        assertEquals("Mandatory credential claims are missing: [mandatory]", ex.getMessage());
     }
 
     @ParameterizedTest
@@ -319,7 +318,7 @@ class CredentialOfferValidationServiceTest {
     }
 
     @Test
-    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsIllegalArgumentException() throws JsonProcessingException {
+    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsBadRequestException() throws JsonProcessingException {
 
         var additionalInfoList = new ArrayList<>();
         additionalInfoList.add(null);
@@ -348,6 +347,34 @@ class CredentialOfferValidationServiceTest {
 
 
         assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
+    }
+
+    @Test
+    void validateCredentialOfferCreateRequest_withUnsupportedMetadataCredentialId_throwsIllegalArgumentException() {
+        var mandatory = new MetadataClaimDescriptor();
+        mandatory.setMandatory(true);
+
+        var credConfig = mock(CredentialConfiguration.class);
+        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+
+        when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credConfig);
+        when(issuerMetadata.getCredentialConfigurationById("unsupported")).thenThrow(new BadRequestException("Unsupported credential offer metadata"));
+
+        var request = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test", "unsupported"))
+                .credentialSubjectData(Map.of("hello", "world"))
+                .credentialValidFrom(Instant.now().plusSeconds(10))
+                .credentialValidUntil(Instant.now().plusSeconds(3600))
+                .credentialMetadata(new CredentialOfferMetadataDto(false, null, null))
+                .build();
+
+        Map<String, Object> offerData = Map.of("hello", "world");
+
+        var ex = assertThrows(BadRequestException.class, () -> validationService.validateCredentialOfferCreateRequest(request, offerData));
+        assertThat(ex.getMessage()).contains("Unsupported credential offer metadata");
+
+        verify(issuerMetadata, atLeastOnce()).getCredentialConfigurationById(any());
+        verify(dataIntegrityService, atMostOnce()).getVerifiedOfferData(eq(offerData), isNull());
     }
 
     @Test
@@ -440,7 +467,7 @@ class CredentialOfferValidationServiceTest {
 
     private void mockCredentialConfigInteractions(String credentialMetadata) throws JsonProcessingException {
         var objectMapper = new ObjectMapper();
-        var credConfig = Mockito.mock(CredentialConfiguration.class);
+        var credConfig = mock(CredentialConfiguration.class);
         when(credConfig.getCredentialMetadata()).thenReturn(objectMapper.readValue(credentialMetadata, CredentialConfigurationMetadata.class));
         when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
         when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credConfig);

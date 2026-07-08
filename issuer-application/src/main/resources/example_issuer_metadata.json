@@ -120,44 +120,6 @@
             ]
           }
         ]
-      },
-      "claims": {
-        "type": {
-          "mandatory": true,
-          "path": [
-            "type"
-          ],
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Abschluss Typ"
-            }
-          ]
-        },
-        "name": {
-          "mandatory": true,
-          "path": [
-            "name"
-          ],
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Diplomtitle"
-            }
-          ]
-        },
-        "average_grade": {
-          "mandatory": false,
-          "path": [
-            "average_grade"
-          ],
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Notendurchschnitt"
-            }
-          ]
-        }
       }
     },
     "university_example_sd_jwt": {
@@ -215,38 +177,6 @@
             ]
           }
         ]
-      },
-      "claims": {
-        "type": {
-          "mandatory": true,
-          "value_type": "string",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Abschluss Typ"
-            }
-          ]
-        },
-        "name": {
-          "mandatory": true,
-          "value_type": "string",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Diplomtitle"
-            }
-          ]
-        },
-        "average_grade": {
-          "mandatory": false,
-          "value_type": "number",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Notendurchschnitt"
-            }
-          ]
-        }
       }
     },
     "university_example_sd_jwt_list": {
@@ -265,21 +195,28 @@
         }
       },
       "vct": "${external-url}/oid4vci/vct/my-vct-v01",
-      "claims": {
-        "nested": {
-          "name": {
+      "credential_metadata": {
+        "claims": [
+          {
             "mandatory": true,
-            "value_type": "string",
             "display": [
               {
                 "locale": "de-CH",
                 "name": "Universitätsname"
               }
+            ],
+            "path": [
+              "nested",
+              "name"
             ]
           },
-          "type": {
+          {
             "mandatory": true,
             "value_type": "array",
+            "path": [
+              "nested",
+              "type"
+            ],
             "display": [
               {
                 "locale": "de-CH",
@@ -287,7 +224,7 @@
               }
             ]
           }
-        }
+        ]
       }
     },
     "unbound_example_sd_jwt": {
@@ -311,18 +248,6 @@
             ]
           }
         ]
-      },
-      "claims": {
-        "animal": {
-          "mandatory": true,
-          "value_type": "string",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Tier"
-            }
-          ]
-        }
       }
     },
     "university_example_high_key_attestation_required_sd_jwt": {
@@ -385,38 +310,6 @@
             ]
           }
         ]
-      },
-      "claims": {
-        "type": {
-          "mandatory": true,
-          "value_type": "string",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Abschluss Typ"
-            }
-          ]
-        },
-        "name": {
-          "mandatory": true,
-          "value_type": "string",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Diplomtitle"
-            }
-          ]
-        },
-        "average_grade": {
-          "mandatory": false,
-          "value_type": "number",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Notendurchschnitt"
-            }
-          ]
-        }
       }
     },
     "university_example_any_key_attestation_required_sd_jwt": {
@@ -475,38 +368,6 @@
             ]
           }
         ]
-      },
-      "claims": {
-        "type": {
-          "mandatory": true,
-          "value_type": "string",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Abschluss Typ"
-            }
-          ]
-        },
-        "name": {
-          "mandatory": true,
-          "value_type": "string",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Diplomtitle"
-            }
-          ]
-        },
-        "average_grade": {
-          "mandatory": false,
-          "value_type": "number",
-          "display": [
-            {
-              "locale": "de-CH",
-              "name": "Notendurchschnitt"
-            }
-          ]
-        }
       }
     },
     "test": {
@@ -546,28 +407,6 @@
             ]
           }
         ]
-      },
-      "claims": {
-        "hello": {
-          "mandatory": false,
-          "value_type": "string"
-        },
-        "lastName": {
-          "mandatory": true,
-          "value_type": "string"
-        },
-        "firstName": {
-          "mandatory": false,
-          "value_type": "string"
-        },
-        "dateOfBirth": {
-          "mandatory": false,
-          "value_type": "string"
-        },
-        "credential_subject_data": {
-          "mandatory": false,
-          "value_type": "string"
-        }
       }
     }
   }
