@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `statusListCacheTime` — TTL used by the wallets status list cache.
     - `statusListExpirationTime` — Expiration used when generating status lists.
 - Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM.
+- Re-enabled jwt checks for trust statements, which were temporarily disabled. Do not use trust statements yet, as the
+  checks are not yet fully implemented and may cause issues.
 
 ### Removed
 
@@ -33,7 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under concurrent requests. Replaced with `CredentialStateMachineFactory` so each transition operates on an isolated
   instance.
 - Fixed "cannot be parsed exception" with nested arrays in credential subject data update
-- Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`. Issuance though keeps supporting only a single credential type per offer.
+- Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`.
+  Issuance though keeps supporting only a single credential type per offer.
 
 ### Removed
 
