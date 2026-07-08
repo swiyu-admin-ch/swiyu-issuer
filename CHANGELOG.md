@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+### Added
+
+- **Security:** Published container images (hardened and unhardened variants) are now automatically signed with
+  [Cosign](https://docs.sigstore.dev/) using keyless OIDC signing in the GitHub Actions build workflow. Signatures are
+  bound to the immutable image digest and published to the Sigstore transparency log, allowing consumers to verify image
+  authenticity via `cosign verify` (#838).
+
 ### Changed
 
 - Status list tokens (`statuslist+jwt`) now include a `ttl` claim and proper `exp`/`iat` timestamps derived from the
