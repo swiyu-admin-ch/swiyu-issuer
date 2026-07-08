@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under concurrent requests. Replaced with `CredentialStateMachineFactory` so each transition operates on an isolated
   instance.
 - Fixed "cannot be parsed exception" with nested arrays in credential subject data update
-- Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`.
+- Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`. Issuance though keeps supporting only a single credential type per offer.
 
 ### Removed
 
