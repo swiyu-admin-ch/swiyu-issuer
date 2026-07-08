@@ -140,9 +140,7 @@ public class TrustStatementInjectionService {
      */
     private boolean verifySignatureOrInvalidate(String jwt, String type, String issuerDid) {
         try {
-            // TEMPORARILY DISABLED for trust-statements testing and development purposes.
-            // This block will be reviewed and re-enabled later.
-            // trustStatementValidator.validateSignature(jwt);
+            trustStatementValidator.validateSignature(jwt);
             return true;
         } catch (JwtValidatorException e) {
             log.warn("{} signature verification failed for issuer {} – invalidating cache: {}", type, issuerDid, e.getMessage());
@@ -183,7 +181,7 @@ public class TrustStatementInjectionService {
      * <pre>
      * {
      *   "can_issue": {
-     *     "vct": "https://example.ch/vct/my-vc",
+     *     "vct": "<a href="https://example.ch/vct/my-vc">...</a>",
      *     "vct_name": "My VC"
      *   }
      * }

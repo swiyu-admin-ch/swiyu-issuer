@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
 import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
 import ch.admin.bj.swiyu.core.trust.client.invoker.ApiClient;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
 import ch.admin.bj.swiyu.jwtvalidator.UrlRestriction;
@@ -12,7 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Spring configuration for the Trust Registry sidechannel API client.
@@ -27,6 +28,7 @@ public class TrustRegistryConfig {
 
     private final SwiyuProperties swiyuProperties;
     private final WebClient webClient;
+    private final ApplicationProperties applicationProperties;
 
     /**
      * Creates the WebClient-backed {@link ApiClient} for the Trust Registry sidechannel,
@@ -65,8 +67,10 @@ public class TrustRegistryConfig {
      */
     @Bean
     public DidJwtValidator trustStatementDidJwtValidator() {
-        String trustRegistryHost = swiyuProperties.trustRegistry().apiUrl().getHost();
-        log.info("Configuring trust statement JWT validator with allowed DID host: {}", trustRegistryHost);
-        return new DidJwtValidator(new UrlRestriction(Set.of(trustRegistryHost)));
+        var hosts = new HashSet<>(applicationProperties.getAcceptedRegistryHosts());
+        for (String host : hosts) {
+            log.info("Configuring trust statement JWT validator with allowed DID host: {}", host);
+        }
+        return new DidJwtValidator(new UrlRestriction(hosts));
     }
 }
