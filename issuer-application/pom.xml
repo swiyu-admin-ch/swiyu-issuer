@@ -156,10 +156,12 @@
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-jws-signature-service</artifactId>
+            <version>${generic-java-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-did-resolver-adapter</artifactId>
+            <version>${generic-java-lib.version}</version>
         </dependency>
 
 
@@ -245,7 +247,7 @@
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-ts-builder</artifactId>
-            <version>1.6.4</version>
+            <version>${generic-java-lib.version}</version>
             <scope>test</scope>
         </dependency>
 

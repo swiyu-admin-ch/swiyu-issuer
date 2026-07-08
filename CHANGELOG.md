@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [NEXT]
+## [4.0.0] - 2026-07-08
 
 ### Added
 
@@ -26,11 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `statusListCacheTime` — TTL used by the wallets status list cache.
     - `statusListExpirationTime` — Expiration used when generating status lists.
 - Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM.
-
-### Removed
-
-- Removed the vars `SWIYU_TRUST_REGISTRY_CUSTOMER_KEY` and `SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET` as they are not
-  required by the read-only trust registry.
+- Update generic-java-lib to 1.7.0
 
 ### Fixed
 
@@ -38,10 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under concurrent requests. Replaced with `CredentialStateMachineFactory` so each transition operates on an isolated
   instance.
 - Fixed "cannot be parsed exception" with nested arrays in credential subject data update
-- Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`. Issuance though keeps supporting only a single credential type per offer.
+- Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`.
+  Issuance though keeps supporting only a single credential type per offer.
 
 ### Removed
 
+- Removed the vars `SWIYU_TRUST_REGISTRY_CUSTOMER_KEY` and `SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET` as they are not
+  required by the read-only trust registry.
 - Removed support for `claims` in `credential_configurations_supported` details for claims can now be found in
   `credential_metadata.claims` instead as announced earlier. Please update your metadata accordingly. Additional changes
   are:

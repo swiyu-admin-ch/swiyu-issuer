@@ -64,7 +64,7 @@ asked.
     - **JsonPath** (`2.10.0`) for JSON assertions and processing.
     - **Primus JCE** (`2.4.4`, system scope) – HSM provider integrated via the Spring Boot Maven plugin (
       `includeSystemScope=true`).
-    - **DID / SWIYU-specific libraries** (all under group `ch.admin.swiyu`, currently version `1.6.4`):
+    - **DID / SWIYU-specific libraries** (all under group `ch.admin.swiyu`, currently version `1.7.0`):
         - `swiyu-jws-signature-service`
         - `swiyu-did-resolver-adapter`
         - `swiyu-jwe-util`
