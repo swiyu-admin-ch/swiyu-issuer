@@ -241,6 +241,10 @@ application:
       verification-method: "${DID_SDJWT_VERIFICATION_METHOD:}"
   url-rewrite:
     mapping: "${URL_REWRITE_MAPPING:{}}"
+  accepted-registry-hosts:
+    - "trust-reg.trust-infra.swiyu.admin.ch"
+    - "status-reg.trust-infra.swiyu.admin.ch"
+    - "identifier-reg.trust-infra.swiyu.admin.ch"
   signed-metadata-enabled: ${ENABLE_SIGNED_METADATA:true}
   automatic-status-list-synchronization-disabled: ${DISABLE_STATUS_LIST_SYNCHRONIZATION:false}
 
