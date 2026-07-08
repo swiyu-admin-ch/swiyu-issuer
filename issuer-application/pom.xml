@@ -9,7 +9,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-issuer-parent</artifactId>
-        <version>3.3.0-SNAPSHOT</version>
+        <version>4.0.0</version>
     </parent>
 
     <artifactId>swiyu-issuer-application</artifactId>
@@ -143,7 +143,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>3.3.0-SNAPSHOT</version>
+            <version>4.0.0</version>
         </dependency>
 
         <!-- Miscellaneous / Utility -->
@@ -228,7 +228,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>3.3.0-SNAPSHOT</version>
+            <version>4.0.0</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
