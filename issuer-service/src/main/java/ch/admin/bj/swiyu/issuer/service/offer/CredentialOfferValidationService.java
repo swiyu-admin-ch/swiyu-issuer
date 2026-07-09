@@ -63,20 +63,20 @@ public class CredentialOfferValidationService {
             @Valid CreateCredentialOfferRequestDto createCredentialRequest,
             Map<String, Object> offerData) {
 
-        var metadataCredentialSupportedId = createCredentialRequest.getMetadataCredentialSupportedId().getFirst();
-
         // Date checks, if exists
         validateOfferedCredentialValiditySpan(createCredentialRequest);
 
-        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(metadataCredentialSupportedId);
+        for (String metadataCredentialSupportedId : createCredentialRequest.getMetadataCredentialSupportedId()) {
+            var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(metadataCredentialSupportedId);
 
-        // Check if credential format is supported otherwise throw error
-        validateCredentialFormat(credentialConfiguration);
+            // Check if credential format is supported otherwise throw error
+            validateCredentialFormat(credentialConfiguration);
 
-        var metadata = createCredentialRequest.getCredentialMetadata();
-        var isDeferredRequest = (metadata != null && Boolean.TRUE.equals(metadata.deferred()));
+            var metadata = createCredentialRequest.getCredentialMetadata();
+            var isDeferredRequest = (metadata != null && Boolean.TRUE.equals(metadata.deferred()));
 
-        validateCredentialRequestOfferData(offerData, isDeferredRequest, credentialConfiguration);
+            validateCredentialRequestOfferData(offerData, isDeferredRequest, credentialConfiguration);
+        }
     }
 
     /**
