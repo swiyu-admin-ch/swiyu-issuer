@@ -13,7 +13,7 @@ import java.util.List;
  */
 public record ProofsDto(
         @NotEmpty
-        @ArraySchema(minItems = 10, schema = @Schema(type = "string"))
+        @ArraySchema(minItems = 1, schema = @Schema(type = "string"))
         @Schema(description = """
                 ProofsDto represents the proofs object in the OID4VCI Credential Request.
                 """, example = """

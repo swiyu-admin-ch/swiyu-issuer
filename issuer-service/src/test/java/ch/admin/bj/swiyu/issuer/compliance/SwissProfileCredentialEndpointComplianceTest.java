@@ -218,7 +218,7 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
     }
 
     @Test
-    @DisplayName("Request Schema: 'proofs.jwt' array MUST allow a minimum of 10 items")
+    @DisplayName("Request Schema: 'proofs.jwt' array MUST allow a single proof (a fixed minimum of 10 MUST NOT be enforced)")
     void testProofsJwtMinItems() {
         Schema<?> proofsSchema = getProofsDtoSchema();
         assertThat(proofsSchema)
@@ -233,12 +233,13 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
 
         Schema<?> jwtArraySchema = properties.get("jwt");
         Integer minItems = jwtArraySchema.getMinItems();
-        assertThat(minItems)
-                .as("[Document: Swiss Profile Issuance, Chapter: 12.2.4] The schema MUST allow the 'proofs' array to accept a minimum size of 10 items. Current minItems is too restrictive.")
-                .isNotNull();
-        assertThat(minItems)
-                .as("[Document: Swiss Profile Issuance, Chapter: 12.2.4] The 'proofs.jwt' array minItems MUST be at least 10 to support batch credential issuance.")
-                .isGreaterThanOrEqualTo(10);
+        // The Wallet MAY request fewer credentials than the maximum. A non-batch (single) request contains exactly
+        // 1 proof, therefore a fixed minimum of 10 MUST NOT be enforced.
+        if (minItems != null) {
+            assertThat(minItems)
+                    .as("[Document: Swiss Profile Issuance, Chapter: 12.2.4] The 'proofs.jwt' array MUST allow between 1 and batch_size items. The Wallet MAY request fewer credentials, so a fixed minimum of 10 MUST NOT be enforced.")
+                    .isLessThanOrEqualTo(1);
+        }
     }
 
     // --- Tier 4: JSON Schema Assertions — Response Body (200 OK) ---
@@ -313,50 +314,61 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
     }
 
     @Test
-    @DisplayName("Response Schema (200): 'c_nonce' MUST be a string and MUST NOT be required if present")
-    void testCNonceIsOptionalString() {
+    @DisplayName("Response Schema (200): 'transaction_id' and 'interval' MUST be defined to support Deferred Issuance")
+    void testDeferredTransactionIdAndIntervalDefined() {
         Schema<?> schema = getResponseSchema("200");
         assertThat(schema)
                 .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] A schema must be defined for the 200 response.")
                 .isNotNull();
 
         Map<String, Schema> properties = schema.getProperties();
-        if (properties != null && properties.containsKey("c_nonce")) {
-            assertThat(properties.get("c_nonce").getTypes())
-                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] If 'c_nonce' is defined, it MUST be of type 'string'.")
-                    .isNotNull()
-                    .contains("string");
-        }
+        assertThat(properties)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] For Deferred Credential Issuance flows the 'transaction_id' property MUST be defined in the response schema.")
+                .isNotNull()
+                .containsKey("transaction_id");
+        assertThat(properties.get("transaction_id").getTypes())
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] The 'transaction_id' property MUST be defined as a string.")
+                .isNotNull()
+                .contains("string");
 
-        List<String> required = schema.getRequired();
-        if (required != null) {
-            assertThat(required)
-                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] The 'c_nonce' property is OPTIONAL and MUST NOT be declared as required.")
-                    .doesNotContain("c_nonce");
+        assertThat(properties)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] Whenever 'transaction_id' is present, the 'interval' property (seconds) is REQUIRED; the schema MUST therefore define 'interval'.")
+                .containsKey("interval");
+        assertThat(properties.get("interval").getTypes())
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] The 'interval' property MUST be defined as an integer representing seconds.")
+                .isNotNull()
+                .contains("integer");
+    }
+
+    @Test
+    @DisplayName("Response Schema (200): 'c_nonce' MUST NOT be present (Draft 13 legacy)")
+    void testCNonceMustNotBePresent() {
+        Schema<?> schema = getResponseSchema("200");
+        assertThat(schema)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] A schema must be defined for the 200 response.")
+                .isNotNull();
+
+        Map<String, Schema> properties = schema.getProperties();
+        if (properties != null) {
+            assertThat(properties)
+                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] The 'c_nonce' property is a Draft 13 legacy field and MUST NOT be present in the final OID4VCI 1.0 Credential Response (nonces are obtained from the Nonce Endpoint).")
+                    .doesNotContainKey("c_nonce");
         }
     }
 
     @Test
-    @DisplayName("Response Schema (200): 'c_nonce_expires_in' MUST be an integer and MUST NOT be required if present")
-    void testCNonceExpiresInIsOptionalInteger() {
+    @DisplayName("Response Schema (200): 'c_nonce_expires_in' MUST NOT be present (Draft 13 legacy)")
+    void testCNonceExpiresInMustNotBePresent() {
         Schema<?> schema = getResponseSchema("200");
         assertThat(schema)
                 .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] A schema must be defined for the 200 response.")
                 .isNotNull();
 
         Map<String, Schema> properties = schema.getProperties();
-        if (properties != null && properties.containsKey("c_nonce_expires_in")) {
-            assertThat(properties.get("c_nonce_expires_in").getTypes())
-                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] If 'c_nonce_expires_in' is defined, it MUST be of type 'integer' representing seconds.")
-                    .isNotNull()
-                    .contains("integer");
-        }
-
-        List<String> required = schema.getRequired();
-        if (required != null) {
-            assertThat(required)
-                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] The 'c_nonce_expires_in' property is OPTIONAL and MUST NOT be declared as required.")
-                    .doesNotContain("c_nonce_expires_in");
+        if (properties != null) {
+            assertThat(properties)
+                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] The 'c_nonce_expires_in' property is a Draft 13 legacy field and MUST NOT be present in the final OID4VCI 1.0 Credential Response.")
+                    .doesNotContainKey("c_nonce_expires_in");
         }
     }
 

@@ -19,21 +19,21 @@ This endpoint represents the Credential Endpoint where the Wallet requests the i
 **JSON Schema / Request Body Assertions**
 * The Credential Request document MUST be formatted as a JSON object. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
 * The `credential_configuration_id` property (String) MUST be expected by the schema to identify the requested credential type. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
-* Because the Swiss Profile strictly requires response encryption, the `credential_response_encryption` object SHOULD be enforced as a required element in the request payload. [Document: Swiss Profile Issuance, Chapter: 12.2.4]
-* Inside the `credential_response_encryption` object, the `jwk` property (containing the public key as JWK) MUST be required. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
-* Inside the `credential_response_encryption` object, the `enc` property (JWE content-encryption algorithm) MUST be required. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
-* Inside the `credential_response_encryption` object, the `zip` property (JWE compression algorithm) is OPTIONAL. There is NO `alg` property — `alg` belongs to the Signed Metadata JOSE header (Section 12.2.3), not to credential response encryption. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
+* The Credential Request DTO carries its own `credential_response_encryption` object (the Holder's ephemeral encryption parameters). This MUST NOT be confused with the `credential_response_encryption` object exposed in the Credential Issuer Metadata, which only advertises the *supported* algorithms (`alg_values_supported`, `enc_values_supported`, `zip_values_supported`, `encryption_required`). [Document: Swiss Profile Issuance, Chapter: 12.2.4]
+* Because the Swiss Profile strictly requires response encryption, the request's `credential_response_encryption` object SHOULD be enforced as a required element in the request payload. [Document: Swiss Profile Issuance, Chapter: 12.2.4]
+* Inside the request's `credential_response_encryption` object, the `jwk` property (containing the Holder's public key as JWK) MUST be required. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
+* Inside the request's `credential_response_encryption` object, the `enc` property (JWE content-encryption algorithm) MUST be required. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
+* Inside the request's `credential_response_encryption` object, the `zip` property (JWE compression algorithm) is OPTIONAL. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
 * The schema MUST support the `proofs` property to allow batch credential issuance. [Document: Swiss Profile Issuance, Chapter: 12.2.4]
-* The schema MUST allow the `proofs` array to accept a minimum size of 10 items. [Document: Swiss Profile Issuance, Chapter: 12.2.4]
-* The `proofs` object uses the proof type name as the **key** (e.g., `"jwt"`, `"di_vp"`), and the value is a non-empty array of proof strings. There is NO `proof_type` property — the key itself identifies the proof type. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
+* The schema MUST allow the `proofs` array to hold between 1 and the issuer's advertised `batch_size` items. The Wallet MAY request fewer credentials than the maximum, and a non-batch (single) request contains exactly 1 proof. A fixed minimum of 10 items MUST NOT be enforced. [Document: Swiss Profile Issuance, Chapter: 12.2.4]
+* The `proofs` object uses the proof type name as the **key** (e.g., `"jwt"`), and the value is a non-empty array of proof strings. There is NO `proof_type` property — the key itself identifies the proof type. Note that `di_vp` is NOT supported. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
 * The `proofs.jwt` property MUST be defined as an array of strings, each carrying one JWT proof. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.2. Credential Request]
 
 **JSON Schema / Response Body Assertions (HTTP 200 OK)**
 * The Credential Response document MUST be formatted as a JSON object. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
-* The `credential` property MUST be supported and defined (typically as a String for SD-JWT VC format) for immediate issuance. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
-* The `transaction_id` property (String) MAY be supported for Deferred Credential Issuance flows. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
-* The `c_nonce` property is OPTIONAL and MUST be defined as a string if present. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
-* The `c_nonce_expires_in` property is OPTIONAL and MUST be defined as an integer representing seconds. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
+* For immediate issuance, the response MUST provide a `credentials` property defined as an **array of objects**. Each object MUST support and define the `credential` key (typically a String for the SD-JWT VC format). A top-level singular `credential` property is Draft 13 legacy and MUST NOT be used. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
+* For Deferred Credential Issuance flows, the `transaction_id` property (String) MUST be present. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
+* Whenever the `transaction_id` property is present, the `interval` property (integer, seconds) is REQUIRED. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
 
 **JSON Schema / Response Body Assertions (HTTP 400 Bad Request)**
 * For error responses, the schema MUST require an `error` property. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3.1.2. Credential Error Response]

@@ -21,8 +21,8 @@ This endpoint is used by the Wallet to retrieve one or multiple Verifiable Crede
 * The `transaction_id` property MUST be defined as a string type. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.1]
 
 **JSON Schema / Response Body Assertions (HTTP 200 OK)**
-* The response schema MUST define either a `credential` property at the top level (singular, immediate issuance) OR a `credentials` property as an array (batch issuance). At least one of these MUST be present. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2]
-* The `c_nonce` property is OPTIONAL and MUST be defined as a string if present. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2]
+* The response schema MUST define a `credentials` property as an array of objects. Single issuance is modeled as batch issuance with `batch_size` = 1. A top-level singular `credential` property is Draft 13 legacy and MUST NOT be present. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2]
+* The `transaction_id` and `interval` properties MUST NOT be present in the 200 (OK) success response; they belong exclusively to the 202 (Accepted) pending response. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2]
 
 **JSON Schema / Response Body Assertions (HTTP 202 Accepted)**
 * The response schema MUST require the `transaction_id` parameter to identify the ongoing transaction. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2]

@@ -88,6 +88,31 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
                 .containsKey("application/json");
     }
 
+    @Test
+    @DisplayName("Content-Type: Signed Metadata MUST additionally be offered via 'application/jwt'")
+    void testCredentialIssuerMetadataResponseSupportsApplicationJwt() {
+        PathItem pathItem = openAPI.getPaths().get(ENDPOINT);
+        assertThat(pathItem)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 12.2.2] Path item for " + ENDPOINT + " must exist.")
+                .isNotNull();
+
+        Operation getOperation = pathItem.getGet();
+        assertThat(getOperation)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 12.2.2] GET operation must exist.")
+                .isNotNull();
+
+        ApiResponse response200 = getOperation.getResponses().get("200");
+        assertThat(response200)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 12.2.2] A '200 OK' response MUST be defined for the Credential Issuer Metadata endpoint.")
+                .isNotNull();
+        assertThat(response200.getContent())
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 12.2.2] The 200 response MUST define content.")
+                .isNotNull();
+        assertThat(response200.getContent())
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 12.2.2] Because the Swiss Profile relies on Signed Metadata, the endpoint MUST additionally support the 'application/jwt' media type.")
+                .containsKey("application/jwt");
+    }
+
     // --- Tier 4: JSON Schema Assertions ---
 
     @Test
@@ -209,6 +234,47 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
     }
 
     @Test
+    @DisplayName("Schema: Each credential configuration MUST define binding, proof-type and key-attestation properties")
+    void testCredentialConfigurationBindingAndProofProperties() {
+        Schema<?> schema = getResponseSchema();
+        assertThat(schema)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] A schema must be defined for the 200 application/json response.")
+                .isNotNull();
+
+        Map<String, Schema> properties = schema.getProperties();
+        if (properties == null || !properties.containsKey("credential_configurations_supported")) return;
+
+        Schema<?> configMapSchema = properties.get("credential_configurations_supported");
+        Schema<?> configItemSchema = configMapSchema.getAdditionalProperties() instanceof Schema<?>
+                ? (Schema<?>) configMapSchema.getAdditionalProperties()
+                : null;
+        if (configItemSchema == null) return;
+
+        Map<String, Schema> configProperties = configItemSchema.getProperties();
+        assertThat(configProperties)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] Each credential configuration MUST define 'cryptographic_binding_methods_supported'.")
+                .isNotNull()
+                .containsKey("cryptographic_binding_methods_supported");
+        assertThat(configProperties)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] Each credential configuration MUST define 'proof_types_supported'.")
+                .containsKey("proof_types_supported");
+
+        // 'key_attestations_required' is NOT a top-level credential configuration property. Per OID4VCI 1.0 it is
+        // defined per proof type, i.e. inside each entry of 'proof_types_supported' (SupportedProofType).
+        Schema<?> proofTypesSchema = configProperties.get("proof_types_supported");
+        Schema<?> proofTypeItemSchema = proofTypesSchema.getAdditionalProperties() instanceof Schema<?>
+                ? (Schema<?>) proofTypesSchema.getAdditionalProperties()
+                : null;
+        assertThat(proofTypeItemSchema)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] 'proof_types_supported' MUST map proof type names to proof type objects.")
+                .isNotNull();
+        assertThat(proofTypeItemSchema.getProperties())
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] Each proof type in 'proof_types_supported' MUST define 'key_attestations_required'.")
+                .isNotNull()
+                .containsKey("key_attestations_required");
+    }
+
+    @Test
     @DisplayName("Schema: Each credential configuration MUST define 'protected_issuance_authorization_trust_statement' as required")
     void testCredentialConfigurationTrustStatementIsRequired() {
         Schema<?> schema = getResponseSchema();
@@ -238,16 +304,16 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
     void testCredentialIssuerIdentityTrustStatementIsRequired() {
         Schema<?> schema = getResponseSchema();
         assertThat(schema)
-                .as("[Document: Swiss Profile Trust, Chapter: Trust Markers] A schema must be defined for the 200 application/json response.")
+                .as("[Document: Trust Protocol 2.0, Chapter: Trust Markers] A schema must be defined for the 200 application/json response.")
                 .isNotNull();
 
         Map<String, Schema> properties = schema.getProperties();
         assertThat(properties)
-                .as("[Document: Swiss Profile Trust, Chapter: Trust Markers] Schema properties must be defined and include 'credential_issuer_identity_trust_statement'.")
+                .as("[Document: Trust Protocol 2.0, Chapter: Trust Markers] Schema properties must be defined and include 'credential_issuer_identity_trust_statement'.")
                 .isNotNull()
                 .containsKey("credential_issuer_identity_trust_statement");
         assertThat(properties.get("credential_issuer_identity_trust_statement").getTypes())
-                .as("[Document: Swiss Profile Trust, Chapter: Trust Markers] The 'credential_issuer_identity_trust_statement' property MUST be of type 'string' (a JWT proving the issuer's identity within the Swiss Trust ecosystem).")
+                .as("[Document: Trust Protocol 2.0, Chapter: Trust Markers] The 'credential_issuer_identity_trust_statement' property MUST be of type 'string' (a JWT proving the issuer's identity within the Swiss Trust ecosystem).")
                 .isNotNull()
                 .contains("string");
 
@@ -326,26 +392,88 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
     }
 
     @Test
-    @DisplayName("Schema: 'notification_endpoint' is OPTIONAL; if present MUST be a string and MUST NOT be required")
-    void testNotificationEndpointIsOptionalString() {
+    @DisplayName("Schema: 'nonce_endpoint' MUST be a required string property (proofs are mandatory)")
+    void testNonceEndpointIsRequiredString() {
         Schema<?> schema = getResponseSchema();
         assertThat(schema)
                 .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] A schema must be defined for the 200 application/json response.")
                 .isNotNull();
 
         Map<String, Schema> properties = schema.getProperties();
-        if (properties != null && properties.containsKey("notification_endpoint")) {
-            assertThat(properties.get("notification_endpoint").getTypes())
-                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] If 'notification_endpoint' is defined, it MUST be of type 'string' (URL of the Notification Endpoint).")
-                    .isNotNull()
-                    .contains("string");
-        }
+        assertThat(properties)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] Since the Swiss Profile requires cryptographic proofs, the 'nonce_endpoint' property MUST be defined.")
+                .isNotNull()
+                .containsKey("nonce_endpoint");
+        assertThat(properties.get("nonce_endpoint").getTypes())
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] The 'nonce_endpoint' property MUST be of type 'string' (URL of the Nonce Endpoint).")
+                .isNotNull()
+                .contains("string");
 
         List<String> required = schema.getRequired();
-        if (required != null) {
-            assertThat(required)
-                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] The 'notification_endpoint' is OPTIONAL and MUST NOT be declared as required.")
-                    .doesNotContain("notification_endpoint");
+        assertThat(required)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] The 'nonce_endpoint' property MUST be declared as required.")
+                .isNotNull()
+                .contains("nonce_endpoint");
+    }
+
+    @Test
+    @DisplayName("Schema: 'credential_request_encryption' and 'credential_response_encryption' MUST be defined")
+    void testEncryptionMetadataIsDefined() {
+        Schema<?> schema = getResponseSchema();
+        assertThat(schema)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] A schema must be defined for the 200 application/json response.")
+                .isNotNull();
+
+        Map<String, Schema> properties = schema.getProperties();
+        assertThat(properties)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] The schema MUST define 'credential_request_encryption' advertising the supported request-encryption parameters.")
+                .isNotNull()
+                .containsKey("credential_request_encryption");
+        assertThat(properties)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] The schema MUST define 'credential_response_encryption' advertising the supported response-encryption parameters.")
+                .containsKey("credential_response_encryption");
+    }
+
+    @Test
+    @DisplayName("Schema: If 'batch_credential_issuance' is present, 'batch_size' MUST be >= 10")
+    void testBatchCredentialIssuanceBatchSize() {
+        Schema<?> schema = getResponseSchema();
+        assertThat(schema)
+                .as("[Document: Swiss Profile Issuance, Chapter: 12.2.4] A schema must be defined for the 200 application/json response.")
+                .isNotNull();
+
+        Map<String, Schema> properties = schema.getProperties();
+        if (properties == null || !properties.containsKey("batch_credential_issuance")) return;
+
+        Schema<?> batchSchema = properties.get("batch_credential_issuance");
+        Map<String, Schema> batchProperties = batchSchema.getProperties();
+        assertThat(batchProperties)
+                .as("[Document: Swiss Profile Issuance, Chapter: 12.2.4] The 'batch_credential_issuance' object MUST define a 'batch_size' property.")
+                .isNotNull()
+                .containsKey("batch_size");
+
+        Schema<?> batchSizeSchema = batchProperties.get("batch_size");
+        assertThat(batchSizeSchema.getMinimum())
+                .as("[Document: Swiss Profile Issuance, Chapter: 12.2.4] If 'batch_credential_issuance' is present, its 'batch_size' MUST be constrained to a minimum of 10.")
+                .isNotNull();
+        assertThat(batchSizeSchema.getMinimum().intValue())
+                .as("[Document: Swiss Profile Issuance, Chapter: 12.2.4] The 'batch_size' minimum MUST be greater than or equal to 10.")
+                .isGreaterThanOrEqualTo(10);
+    }
+
+    @Test
+    @DisplayName("Schema: 'notification_endpoint' MUST NOT be present (forbidden for privacy reasons)")
+    void testNotificationEndpointMustNotExist() {
+        Schema<?> schema = getResponseSchema();
+        assertThat(schema)
+                .as("[Document: Swiss Profile Issuance 1.0, Chapter: 12.2] A schema must be defined for the 200 application/json response.")
+                .isNotNull();
+
+        Map<String, Schema> properties = schema.getProperties();
+        if (properties != null) {
+            assertThat(properties)
+                    .as("[Document: Swiss Profile Issuance 1.0, Chapter: 12.2] The 'notification_endpoint' property MUST NOT be present, as its usage is explicitly forbidden for privacy reasons.")
+                    .doesNotContainKey("notification_endpoint");
         }
     }
 

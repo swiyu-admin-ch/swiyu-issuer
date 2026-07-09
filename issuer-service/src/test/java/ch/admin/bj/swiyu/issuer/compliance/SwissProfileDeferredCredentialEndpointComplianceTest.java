@@ -147,8 +147,8 @@ class SwissProfileDeferredCredentialEndpointComplianceTest extends AbstractSwiss
     // --- Tier 4: JSON Schema Assertions — Response Body (200 OK) ---
 
     @Test
-    @DisplayName("Response Schema (200): MUST define either 'credential' at top level or 'credentials' as an array")
-    void testCredentialOrCredentialsExistsInResponse() {
+    @DisplayName("Response Schema (200): MUST define 'credentials' as an array (singular 'credential' is Draft 13 legacy)")
+    void testCredentialsArrayExistsInResponse() {
         Schema<?> schema = getResponseSchema("200");
         assertThat(schema)
                 .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] A schema must be defined for the 200 response.")
@@ -156,33 +156,48 @@ class SwissProfileDeferredCredentialEndpointComplianceTest extends AbstractSwiss
 
         Map<String, Schema> properties = schema.getProperties();
         assertThat(properties)
-                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] The response schema MUST define either a 'credential' property (top-level singular) or a 'credentials' property (array) to carry the issued credential(s).")
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] The response schema MUST define a 'credentials' array. Single issuance is modeled as batch issuance with batch_size = 1.")
                 .isNotNull()
-                .matches(p -> p.containsKey("credential") || p.containsKey("credentials"),
-                        "must contain either 'credential' or 'credentials'");
+                .containsKey("credentials");
+        assertThat(properties.get("credentials").getTypes())
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] The 'credentials' property MUST be of type 'array'.")
+                .isNotNull()
+                .contains("array");
+        assertThat(properties)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] The top-level singular 'credential' property is Draft 13 legacy and MUST NOT be present.")
+                .doesNotContainKey("credential");
     }
 
     @Test
-    @DisplayName("Response Schema (200): 'c_nonce' MUST be a string and MUST NOT be required if present")
-    void testCNonceIsOptionalString() {
+    @DisplayName("Response Schema (200): 'c_nonce' MUST NOT be present (Draft 13 legacy)")
+    void testCNonceMustNotBePresent() {
         Schema<?> schema = getResponseSchema("200");
         assertThat(schema)
                 .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] A schema must be defined for the 200 response.")
                 .isNotNull();
 
         Map<String, Schema> properties = schema.getProperties();
-        if (properties != null && properties.containsKey("c_nonce")) {
-            assertThat(properties.get("c_nonce").getTypes())
-                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] If 'c_nonce' is defined, it MUST be of type 'string'.")
-                    .isNotNull()
-                    .contains("string");
+        if (properties != null) {
+            assertThat(properties)
+                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] The 'c_nonce' property is a Draft 13 legacy field and MUST NOT be present in the final OID4VCI 1.0 Deferred Credential Response.")
+                    .doesNotContainKey("c_nonce");
         }
+    }
 
-        List<String> required = schema.getRequired();
-        if (required != null) {
-            assertThat(required)
-                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] The 'c_nonce' property is OPTIONAL and MUST NOT be declared as required.")
-                    .doesNotContain("c_nonce");
+    @Test
+    @DisplayName("Response Schema (200): 'transaction_id' and 'interval' MUST NOT be present (they belong to the 202 response)")
+    void testTransactionIdAndIntervalNotPresentIn200() {
+        Schema<?> schema = getResponseSchema("200");
+        assertThat(schema)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] A schema must be defined for the 200 response.")
+                .isNotNull();
+
+        Map<String, Schema> properties = schema.getProperties();
+        if (properties != null) {
+            assertThat(properties)
+                    .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 9.2] The 'transaction_id' and 'interval' properties MUST NOT be present in the 200 (OK) success response; they belong exclusively to the 202 (Accepted) pending response.")
+                    .doesNotContainKey("transaction_id")
+                    .doesNotContainKey("interval");
         }
     }
 

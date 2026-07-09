@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialPendingResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialSuccessResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
 import ch.admin.bj.swiyu.issuer.service.AuthorizationService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
@@ -208,7 +209,7 @@ public class IssuanceController {
                             description = "Credential issued successfully",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = CredentialEndpointResponseDto.class)
+                                    schema = @Schema(implementation = DeferredCredentialSuccessResponseDto.class)
                             )
                     ),
                     @ApiResponse(

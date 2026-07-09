@@ -51,9 +51,8 @@ public class IssuerMetadata {
     private String credentialEndpoint;
 
     @JsonProperty("nonce_endpoint")
-    @Nullable
     @Pattern(regexp = "^.+/nonce$", message = "nonce endpoint for this issuer is /nonce")
-    @Schema(description = """
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = """
             Nonce for proof of possessions. Required for VCs to be bound to a holder.
             """)
     private String nonceEndpoint;
@@ -65,6 +64,7 @@ public class IssuerMetadata {
 
     @JsonProperty("notification_endpoint")
     @Size(min = 0, max = 0, message = "Notification Endpoint is not yet supported by the issuer")
+    @Schema(hidden = true, description = "The notification endpoint is explicitly forbidden by the Swiss Profile for privacy reasons and MUST NOT be advertised.")
     private String notificationEndpoint;
 
     @JsonProperty("credential_configurations_supported")

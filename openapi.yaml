@@ -118,7 +118,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CredentialEndpointResponse"
+                $ref: "#/components/schemas/DeferredCredentialSuccessResponse"
         "202":
           description: Credential issuance still pending — retry with the transaction_id
           content:
@@ -1525,6 +1525,13 @@ components:
       required:
       - interval
       - transaction_id
+    DeferredCredentialSuccessResponse:
+      type: object
+      properties:
+        credentials:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialObjectDto"
     DeferredData:
       type: object
       properties:
@@ -1641,10 +1648,6 @@ components:
           pattern: ^.+/nonce$
         deferred_credential_endpoint:
           type: string
-        notification_endpoint:
-          type: string
-          maxLength: 0
-          minLength: 0
         credential_configurations_supported:
           type: object
           additionalProperties:
@@ -1671,6 +1674,7 @@ components:
       - credential_configurations_supported
       - credential_endpoint
       - credential_issuer
+      - nonce_endpoint
     KeyAttestationRequirement:
       type: object
       properties:
@@ -1867,7 +1871,7 @@ components:
           example: jwt
           items:
             type: string
-          minItems: 10
+          minItems: 1
       required:
       - jwt
     StatusList:
