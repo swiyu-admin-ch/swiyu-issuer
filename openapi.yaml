@@ -118,7 +118,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeferredCredentialSuccessResponse"
+                $ref: "#/components/schemas/CredentialEndpointResponse"
         "202":
           description: Credential issuance still pending — retry with the transaction_id
           content:
@@ -188,7 +188,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeferredData"
+                $ref: "#/components/schemas/DeferredCredentialPendingResponse"
         "400":
           description: Invalid request or validation error
           content:
@@ -1361,11 +1361,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CredentialObjectDto"
-        transaction_id:
-          type: string
-        interval:
-          type: integer
-          format: int64
     CredentialInfoResponse:
       type: object
       properties:
@@ -1522,25 +1517,6 @@ components:
           format: int64
           description: Minimum number of seconds the Wallet MUST wait before polling
             again.
-      required:
-      - interval
-      - transaction_id
-    DeferredCredentialSuccessResponse:
-      type: object
-      properties:
-        credentials:
-          type: array
-          items:
-            $ref: "#/components/schemas/CredentialObjectDto"
-    DeferredData:
-      type: object
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
-        interval:
-          type: integer
-          format: int32
       required:
       - interval
       - transaction_id
