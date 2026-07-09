@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed "cannot be parsed exception" with nested arrays in credential subject data update `(#1006)`.
 - Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`.
   Issuance though keeps supporting only a single credential type per offer `(#985)`.
+- Fixed Prometheus metrics authentication with Basic Auth `(#1003)`.
 
 ### Removed
 
