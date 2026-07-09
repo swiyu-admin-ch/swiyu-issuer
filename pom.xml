@@ -68,7 +68,7 @@
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <scope>runtime</scope>
-                <version>42.7.12</version>
+                <version>42.7.13</version>
             </dependency>
 
             <!-- Todo check again on spring boot upgrade-->
