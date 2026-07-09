@@ -201,7 +201,7 @@ jobs:
         uses: snyk/actions/maven-3-jdk-21@8e119fbb6c251787721d34ba683ed48eba792766 # master
         with:
           command: sbom
-          args: --format=cyclonedx1.6+json --json-file-output=sbom.json
+          args: --format=cyclonedx1.6+json --maven-aggregate-project --json-file-output=sbom.json
         env:
           JAVA_HOME: '' # Snyk action sets JAVA_HOME to a path that is not compatible with the setup-java action, so we need to reset it here
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
