@@ -6,10 +6,8 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialPendingResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialSuccessResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.service.AuthorizationService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
 
@@ -65,6 +63,20 @@ public class IssuanceController {
 
     private final AuthorizationService authorizationSerivce;
 
+    /**
+     * Build response headers with a Content-Type mapped from the envelope's declared format onto a
+     * fixed literal — so no request-derived text can ever reach the response header
+     * (prevents HTTP response splitting, CWE-113).
+     */
+    private static HttpHeaders responseHeadersFor(CredentialEnvelopeDto envelope) {
+        var headers = new HttpHeaders();
+        if (CredentialEnvelopeDto.APPLICATION_JWT_VALUE.equals(envelope.getContentType())) {
+            headers.set(HttpHeaders.CONTENT_TYPE, CredentialEnvelopeDto.APPLICATION_JWT_VALUE);
+        } else {
+            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        }
+        return headers;
+    }
 
     @Timed
     @PostMapping(value = {"/token"}, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -133,7 +145,7 @@ public class IssuanceController {
                             description = "Credential issued successfully.",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = CredentialEndpointResponseDto.class)
+                                    schema = @Schema(implementation = CredentialResponseDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -141,7 +153,7 @@ public class IssuanceController {
                             description = "Successful deferred credential. The credential will be issued later",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = DeferredDataDto.class)
+                                    schema = @Schema(implementation = DeferredCredentialResponseDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -209,7 +221,7 @@ public class IssuanceController {
                             description = "Credential issued successfully",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = DeferredCredentialSuccessResponseDto.class)
+                                    schema = @Schema(implementation = CredentialResponseDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -217,7 +229,7 @@ public class IssuanceController {
                             description = "Credential issuance still pending — retry with the transaction_id",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = DeferredCredentialPendingResponseDto.class)
+                                    schema = @Schema(implementation = DeferredCredentialResponseDto.class)
                             )
                     ),
                     @ApiResponse(
@@ -252,20 +264,6 @@ public class IssuanceController {
                 .body(credentialEnvelope.getOid4vciCredentialJson());
     }
 
-    /**
-     * Build response headers with a Content-Type mapped from the envelope's declared format onto a
-     * fixed literal — so no request-derived text can ever reach the response header
-     * (prevents HTTP response splitting, CWE-113).
-     */
-    private static HttpHeaders responseHeadersFor(CredentialEnvelopeDto envelope) {
-        var headers = new HttpHeaders();
-        if (CredentialEnvelopeDto.APPLICATION_JWT_VALUE.equals(envelope.getContentType())) {
-            headers.set(HttpHeaders.CONTENT_TYPE, CredentialEnvelopeDto.APPLICATION_JWT_VALUE);
-        } else {
-            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-        }
-        return headers;
-    }
     private @NotNull ClientAgentInfo getClientAgentInfo(HttpServletRequest request) {
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
         return new ClientAgentInfo(

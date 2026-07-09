@@ -10,8 +10,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredDataDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
@@ -179,7 +178,7 @@ class DeferredIssuanceIT {
 
         var deferredResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(),
-                CredentialEndpointResponseDto.class);
+                DeferredCredentialResponseDto.class);
         // Wallet starts polling
         String transactionId = deferredResponseDto.transactionId();
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
@@ -255,7 +254,7 @@ class DeferredIssuanceIT {
 
         var deferredResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(),
-                CredentialEndpointResponseDto.class);
+                DeferredCredentialResponseDto.class);
         // Wallet starts polling
         String transactionId = deferredResponseDto.transactionId();
         String deferredCredentialRequestString = getDeferredCredentialRequestString(transactionId);
@@ -329,7 +328,7 @@ class DeferredIssuanceIT {
 
         var deferredResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(),
-                CredentialEndpointResponseDto.class);
+                DeferredCredentialResponseDto.class);
         // Wallet starts polling
         String transactionId = deferredResponseDto.transactionId();
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
@@ -379,13 +378,13 @@ class DeferredIssuanceIT {
                 .andExpect(jsonPath("$.interval").isNotEmpty())
                 .andReturn();
 
-        DeferredDataDto deferredDataDto = objectMapper.readValue(
+        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(),
-                DeferredDataDto.class);
+                DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                deferredDataDto.transactionId()
+                DeferredCredentialResponseDto.transactionId()
                         .toString());
 
         mock.perform(post("/oid4vci/api/deferred_credential")
@@ -545,13 +544,13 @@ class DeferredIssuanceIT {
         // check status from business issuer perspective
         updateStatus(mock, offerManagementId.toString(), UpdateCredentialStatusRequestTypeDto.CANCELLED);
 
-        DeferredDataDto deferredDataDto = objectMapper.readValue(
+        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(),
-                DeferredDataDto.class);
+                DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                deferredDataDto.transactionId()
+                DeferredCredentialResponseDto.transactionId()
                         .toString());
 
         mock.perform(post("/oid4vci/api/deferred_credential")
@@ -584,13 +583,13 @@ class DeferredIssuanceIT {
         updateStatus(mock, offer.getCredentialManagement().getId().toString(),
                 UpdateCredentialStatusRequestTypeDto.READY);
 
-        DeferredDataDto deferredDataDto = objectMapper.readValue(
+        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(),
-                DeferredDataDto.class);
+                DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                deferredDataDto.transactionId()
+                DeferredCredentialResponseDto.transactionId()
                         .toString());
 
         mock.perform(post("/oid4vci/api/deferred_credential")
@@ -622,13 +621,13 @@ class DeferredIssuanceIT {
         updateStatus(mock, offer.getCredentialManagement().getId().toString(),
                 UpdateCredentialStatusRequestTypeDto.READY);
 
-        DeferredDataDto deferredDataDto = objectMapper.readValue(
+        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(),
-                DeferredDataDto.class);
+                DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                deferredDataDto.transactionId()
+                DeferredCredentialResponseDto.transactionId()
                         .toString());
 
         mock.perform(post("/oid4vci/api/deferred_credential")
