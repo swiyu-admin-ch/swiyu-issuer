@@ -654,7 +654,7 @@ class DeferredFlowIT {
                 UpdateCredentialStatusRequestTypeDto.READY);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId().toString());
+                DeferredCredentialResponseDto.transactionId());
 
         mock.perform(post(deferredCredentialEndpoint)
                         .header("Authorization", String.format("BEARER %s", token))
