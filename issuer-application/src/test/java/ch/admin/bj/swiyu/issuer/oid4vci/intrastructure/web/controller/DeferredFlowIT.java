@@ -173,10 +173,10 @@ class DeferredFlowIT {
                 .andReturn();
         awaitHandleDeferredEvent(1);
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredCredentialResponseDto.class);
 
-        assertNotNull(DeferredCredentialResponseDto.transactionId());
+        assertNotNull(deferredCredentialResponseDto.transactionId());
 
         // check status from business issuer perspective
         mock.perform(get("/management/api/credentials/" + credentialWithDeeplinkResponseDto.getManagementId()
@@ -203,7 +203,7 @@ class DeferredFlowIT {
                 .andReturn();
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId().toString());
+                deferredCredentialResponseDto.transactionId());
 
         var credentialResponse = requestCredentialFromDeferred(mock, token, deferredCredentialRequestString)
                 .andExpect(status().isOk())
@@ -246,11 +246,11 @@ class DeferredFlowIT {
                 .andReturn();
         awaitHandleDeferredEvent(1);
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId().toString());
+                deferredCredentialResponseDto.transactionId());
 
         updateStatus(mock, credentialWithDeeplinkResponseDto.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.READY);
 
@@ -294,11 +294,11 @@ class DeferredFlowIT {
                 .andReturn();
         awaitHandleDeferredEvent(1);
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId().toString());
+                deferredCredentialResponseDto.transactionId());
 
         updateStatus(mock, credentialWithDeeplinkResponseDto.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.READY);
 
@@ -345,10 +345,10 @@ class DeferredFlowIT {
                 .andExpect(status().isAccepted())
                 .andReturn();
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredCredentialResponseDto.class);
 
-        assertNotNull(DeferredCredentialResponseDto.transactionId());
+        assertNotNull(deferredCredentialResponseDto.transactionId());
 
         // check status from business issuer perspective
         mock.perform(get("/management/api/credentials/" + credentialWithDeeplinkResponseDto.getManagementId()
@@ -376,7 +376,7 @@ class DeferredFlowIT {
                 .andReturn();
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId().toString());
+                deferredCredentialResponseDto.transactionId());
 
         var credentialResponse = mock.perform(post(deferredCredentialEndpoint)
                         .header("Authorization", String.format("BEARER %s", tokenDto.get("access_token")))
@@ -606,7 +606,7 @@ class DeferredFlowIT {
                 .andExpect(jsonPath("$.transaction_id").isNotEmpty())
                 .andReturn();
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredCredentialResponseDto.class);
 
         // check status from business issuer perspective
@@ -614,7 +614,7 @@ class DeferredFlowIT {
                 UpdateCredentialStatusRequestTypeDto.READY);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId().toString());
+                deferredCredentialResponseDto.transactionId());
 
         mock.perform(post(deferredCredentialEndpoint)
                         .header("Authorization", String.format("BEARER %s", token))
@@ -640,7 +640,7 @@ class DeferredFlowIT {
                 .andExpect(jsonPath("$.transaction_id").isNotEmpty())
                 .andReturn();
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredCredentialResponseDto.class);
 
         // check status from business issuer perspective
@@ -654,7 +654,7 @@ class DeferredFlowIT {
                 UpdateCredentialStatusRequestTypeDto.READY);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId().toString());
+                deferredCredentialResponseDto.transactionId());
 
         mock.perform(post(deferredCredentialEndpoint)
                         .header("Authorization", String.format("BEARER %s", token))

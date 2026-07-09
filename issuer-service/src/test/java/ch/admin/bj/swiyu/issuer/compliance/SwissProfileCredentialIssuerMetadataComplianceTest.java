@@ -268,6 +268,7 @@ class SwissProfileCredentialIssuerMetadataComplianceTest extends AbstractSwissPr
         assertThat(proofTypeItemSchema)
                 .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] 'proof_types_supported' MUST map proof type names to proof type objects.")
                 .isNotNull();
+        if (proofTypeItemSchema == null) return;
         assertThat(proofTypeItemSchema.getProperties())
                 .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 11.2.3] Each proof type in 'proof_types_supported' MUST define 'key_attestations_required'.")
                 .isNotNull()

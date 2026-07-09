@@ -378,14 +378,13 @@ class DeferredIssuanceIT {
                 .andExpect(jsonPath("$.interval").isNotEmpty())
                 .andReturn();
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(),
                 DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId()
-                        .toString());
+                deferredCredentialResponseDto.transactionId());
 
         mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
@@ -544,14 +543,13 @@ class DeferredIssuanceIT {
         // check status from business issuer perspective
         updateStatus(mock, offerManagementId.toString(), UpdateCredentialStatusRequestTypeDto.CANCELLED);
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(),
                 DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId()
-                        .toString());
+                deferredCredentialResponseDto.transactionId());
 
         mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
@@ -583,14 +581,13 @@ class DeferredIssuanceIT {
         updateStatus(mock, offer.getCredentialManagement().getId().toString(),
                 UpdateCredentialStatusRequestTypeDto.READY);
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(),
                 DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId()
-                        .toString());
+                deferredCredentialResponseDto.transactionId());
 
         mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
@@ -621,14 +618,13 @@ class DeferredIssuanceIT {
         updateStatus(mock, offer.getCredentialManagement().getId().toString(),
                 UpdateCredentialStatusRequestTypeDto.READY);
 
-        DeferredCredentialResponseDto DeferredCredentialResponseDto = objectMapper.readValue(
+        DeferredCredentialResponseDto deferredCredentialResponseDto = objectMapper.readValue(
                 deferredCredentialResponse.getResponse()
                         .getContentAsString(),
                 DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId()
-                        .toString());
+                deferredCredentialResponseDto.transactionId());
 
         mock.perform(post("/oid4vci/api/deferred_credential")
                         .header("Authorization", String.format("BEARER %s", token))
