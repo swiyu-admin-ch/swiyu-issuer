@@ -250,7 +250,7 @@ class DeferredFlowIT {
                 deferredCredentialResponse.getResponse().getContentAsString(), DeferredCredentialResponseDto.class);
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId().toString());
+                DeferredCredentialResponseDto.transactionId());
 
         updateStatus(mock, credentialWithDeeplinkResponseDto.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.READY);
 
