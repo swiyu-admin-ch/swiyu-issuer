@@ -44,7 +44,7 @@ class AttestationJwtTest {
                 new JWTClaimsSet.Builder()
                         .issuer(issuerDid)
                         .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5)))
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5 * 60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
                         .build());
         attestation.sign(new ECDSASigner(signingKey));
@@ -71,7 +71,7 @@ class AttestationJwtTest {
                 new JWTClaimsSet.Builder()
                         .issuer(issuerDid)
                         .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5)))
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5 * 60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
                         .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
                         .build());
@@ -92,7 +92,7 @@ class AttestationJwtTest {
                 new JWTClaimsSet.Builder()
                         .issuer("did:example:issuer")
                         .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5)))
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
                         .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
                         .build());
@@ -111,7 +111,7 @@ class AttestationJwtTest {
 
     @Test
     void parseJwt_withExpiredToken_throwsIllegalArgumentException() throws JOSEException {
-        var jwt = buildJwt(new Date(), Date.from(Instant.now().plusSeconds(-5)), new Date());
+        var jwt = buildJwt(new Date(), Date.from(Instant.now().plusSeconds(-5 * 60)), new Date());
         var ex = Assertions.assertThrows(IllegalArgumentException.class,
                 () -> AttestationJwt.parseJwt(jwt, true));
         assertThat(ex.getMessage()).contains("Attestation is expired");
@@ -119,7 +119,7 @@ class AttestationJwtTest {
 
     @Test
     void parseJwt_withTokenNotYetReady_throwsIllegalArgumentException() throws JOSEException {
-        var jwt = buildJwt(new Date(), Date.from(Instant.now().plusSeconds(5)), Date.from(Instant.now().plusSeconds(5)));
+        var jwt = buildJwt(new Date(), Date.from(Instant.now().plusSeconds(5 * 60)), Date.from(Instant.now().plusSeconds(5 * 60)));
         var ex = Assertions.assertThrows(IllegalArgumentException.class,
                 () -> AttestationJwt.parseJwt(jwt, true));
         assertThat(ex.getMessage()).contains("Attestation not yet valid");
@@ -127,7 +127,7 @@ class AttestationJwtTest {
 
     @Test
     void parseJwt_withTokenIssuedInFuture_throwsIllegalArgumentException() throws JOSEException {
-        var jwt = buildJwt(Date.from(Instant.now().plusSeconds(5)), Date.from(Instant.now().plusSeconds(5)), new Date());
+        var jwt = buildJwt(Date.from(Instant.now().plusSeconds(5 * 60)), Date.from(Instant.now().plusSeconds(5 * 60)), new Date());
         var ex = Assertions.assertThrows(IllegalArgumentException.class,
                 () -> AttestationJwt.parseJwt(jwt, true));
         assertThat(ex.getMessage()).contains("IssueTime is in the future");
@@ -203,7 +203,7 @@ class AttestationJwtTest {
                 new JWTClaimsSet.Builder()
                         .issuer(issuerKey.getKeyID().split("#")[0])
                         .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(60)))
+                        .expirationTime(Date.from(Instant.now().plusSeconds(120)))
                         .claim("attested_keys", attestedKeyObjects)
                         .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_HIGH.getValue()))
                         .build());

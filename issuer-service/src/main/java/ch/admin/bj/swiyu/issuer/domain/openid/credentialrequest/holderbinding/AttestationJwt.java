@@ -1,6 +1,9 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
+import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustRegistryConfig;
+import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+import ch.admin.bj.swiyu.jwtvalidator.UrlRestriction;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -23,7 +26,7 @@ import java.util.stream.Collectors;
 
 @Getter
 public final class AttestationJwt {
-    private static final long CLOCK_SKEW_MS = 1000; // 1s margin of error, as timestamps in jwt have accuracy of 1s
+    private static final long CLOCK_SKEW_MS = 60000; // 1 min margin of error for time validation, same as default in generic lib.
 
     @Deprecated(since = "OID4VCI 1.0") // remove later
     private static final String KEY_ATTESTATION_TYPE_ID1 = "keyattestation+jwt";
@@ -81,6 +84,7 @@ public final class AttestationJwt {
             throw new IllegalArgumentException("IssueTime is in the future");
         }
 
+        // TODO EIDOMNI-1164: replace exp and nbf validation with logic from the generic java lib, once it's made accessible.
         // exp
         var expirationTime = jwtClaimsSet.getExpirationTime();
         if (expirationTime == null) {
