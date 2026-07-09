@@ -203,7 +203,7 @@ class DeferredFlowIT {
                 .andReturn();
 
         String deferredCredentialRequestString = getDeferredCredentialRequestString(
-                DeferredCredentialResponseDto.transactionId().toString());
+                DeferredCredentialResponseDto.transactionId());
 
         var credentialResponse = requestCredentialFromDeferred(mock, token, deferredCredentialRequestString)
                 .andExpect(status().isOk())
