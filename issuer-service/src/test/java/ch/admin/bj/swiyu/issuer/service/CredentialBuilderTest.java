@@ -9,8 +9,9 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -34,6 +35,7 @@ import java.text.ParseException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class CredentialBuilderTest {
@@ -101,7 +103,7 @@ class CredentialBuilderTest {
     void credentialOffer_buildCredentialEnvelope_thenSuccess(String input) throws IOException {
 
         List<CredentialObjectDto> credentialObjectDto = List.of(new CredentialObjectDto(input));
-        CredentialEndpointResponseDto credentialResponseDto = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
+        CredentialResponseDto credentialResponseDto = new CredentialResponseDto(credentialObjectDto);
         var expectedCredentialWrapper = objectMapper.writeValueAsString(credentialResponseDto);
 
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
@@ -118,7 +120,7 @@ class CredentialBuilderTest {
         assertEquals("application/json", result.getContentType());
 
         // can only contain 1 credential
-        assertEquals(1, objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialEndpointResponseDto.class).credentials().size());
+        assertEquals(1, objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialResponseDto.class).credentials().size());
         assertEquals(expectedCredentialWrapper, result.getOid4vciCredentialJson());
     }
 
@@ -154,7 +156,7 @@ class CredentialBuilderTest {
         assertEquals(HttpStatus.OK, result.getHttpStatus());
 
         // can only contain 1 credential
-        assertEquals(2, objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialEndpointResponseDto.class).credentials().size());
+        assertEquals(2, objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialResponseDto.class).credentials().size());
     }
 
     @Test
@@ -170,7 +172,7 @@ class CredentialBuilderTest {
         // status must be accepted
         assertEquals(HttpStatus.ACCEPTED, result.getHttpStatus());
         assertEquals("application/json", result.getContentType());
-        var payload = objectMapper.readValue(result.getOid4vciCredentialJson(), CredentialEndpointResponseDto.class);
+        var payload = objectMapper.readValue(result.getOid4vciCredentialJson(), DeferredCredentialResponseDto.class);
         // transaction id and interval must be set
         assertEquals(transactionId.toString(), payload.transactionId());
         assertEquals(expectedInterval, payload.interval());
@@ -180,7 +182,7 @@ class CredentialBuilderTest {
     void buildEnvelopeDto_thenSuccess() {
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), null);
         List<CredentialObjectDto> credentialObjectDto = List.of(new CredentialObjectDto("credential"));
-        CredentialEndpointResponseDto credentialResponseDto = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
+        CredentialResponseDto credentialResponseDto = new CredentialResponseDto(credentialObjectDto);
         var response = builder.buildEnvelopeDto(credentialResponseDto);
 
         assertEquals("application/json", response.getContentType());
@@ -206,7 +208,7 @@ class CredentialBuilderTest {
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
 
         List<CredentialObjectDto> credentialObjectDto = List.of(new CredentialObjectDto("credential"));
-        CredentialEndpointResponseDto credentialResponseDto = new CredentialEndpointResponseDto(credentialObjectDto, null, null);
+        CredentialResponseDto credentialResponseDto = new CredentialResponseDto(credentialObjectDto);
         var response = builder.buildEnvelopeDto(credentialResponseDto);
 
         assertEquals("application/jwt", response.getContentType());
