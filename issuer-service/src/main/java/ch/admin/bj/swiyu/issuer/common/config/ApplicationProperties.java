@@ -115,6 +115,9 @@ public class ApplicationProperties {
 
     private boolean automaticStatusListSynchronizationDisabled;
 
+    @NotEmpty
+    private List<String> acceptedRegistryHosts;
+
     private String dataIntegrityJwks;
     private JWKSet dataIntegrityKeySet;
     private boolean dataIntegrityEnforced;
