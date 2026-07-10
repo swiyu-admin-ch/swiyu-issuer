@@ -1,7 +1,8 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
@@ -77,12 +78,12 @@ public abstract class CredentialBuilder {
         List<CredentialObjectDto> credentials = getCredential(holderKeyBindings).stream()
                 .map(CredentialObjectDto::new)
                 .toList();
-        var credentialResponseDto = new CredentialEndpointResponseDto(credentials, null, null);
+        var credentialResponseDto = new CredentialResponseDto(credentials);
         return buildEnvelopeDto(credentialResponseDto);
     }
 
     public CredentialEnvelopeDto buildDeferredCredential(UUID transactionId) {
-        var credentialResponseDto = new CredentialEndpointResponseDto(null, transactionId.toString(),
+        var credentialResponseDto = new DeferredCredentialResponseDto(transactionId.toString(),
                 applicationProperties.getMinDeferredOfferIntervalSeconds());
 
         return buildEnvelopeDto(credentialResponseDto, HttpStatus.ACCEPTED);

@@ -125,6 +125,8 @@ public class CredentialConfiguration {
      */
     @Nullable
     @JsonProperty("protected_issuance_authorization_trust_statement")
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, type = "string",
+            description = "Protected Issuance Authorization Trust Statement (piaTS) JWT proving issuance authorization for protected VC formats.")
     private String protectedIssuanceAuthorizationTrustStatement;
 
 

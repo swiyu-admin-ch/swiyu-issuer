@@ -9,7 +9,7 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
@@ -213,7 +213,7 @@ class RenewalFlowIT {
                     .getResponse()
                     .getContentAsString();
             var credentialResponse = assertDoesNotThrow(() -> objectMapper
-                    .readValue(credentialResponseString, CredentialEndpointResponseDto.class));
+                    .readValue(credentialResponseString, CredentialResponseDto.class));
             var credentialClaims = credentialResponse.credentials().stream()
                     .map(this::getCredentialClaimsSet)
                     .toList();
