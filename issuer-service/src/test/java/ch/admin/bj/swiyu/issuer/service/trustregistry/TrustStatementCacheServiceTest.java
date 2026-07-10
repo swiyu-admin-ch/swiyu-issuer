@@ -15,6 +15,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
@@ -128,6 +129,20 @@ class TrustStatementCacheServiceTest {
         verify(trustProtocol20Api, times(1)).getIdTS(any());
     }
 
+    @Test
+    void getIdentityTrustStatement_secondCallWhen503_cacheIsNotUsed() {
+        var numberOfCalls = 2;
+        when(trustProtocol20Api.getIdTS(any()))
+                .thenReturn(Mono.error(WebClientResponseException.create(503, "Service Unavailable", null, null, null)));
+
+        for (int i = 0; i < numberOfCalls; i++) {
+            service.getIdentityTrustStatement(ISSUER_DID);
+        }
+
+        // API must only be called once – second call hits the cache
+        verify(trustProtocol20Api, times(numberOfCalls)).getIdTS(any());
+    }
+
     // -------------------------------------------------------------------------
     // piaTS – basic fetch & cache hit
     // -------------------------------------------------------------------------
@@ -167,6 +182,19 @@ class TrustStatementCacheServiceTest {
 
         assertThat(result).containsExactly(jwt1, jwt2);
         verify(trustProtocol20Api, times(1)).listPiaTS(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getAllProtectedIssuanceAuthorizationTrustStatements_secondCallWhen503_cacheIsNotUsed() {
+        var numberOfCalls = 2;
+        when(trustProtocol20Api.listPiaTS(eq(ISSUER_DID), eq(true), isNull(), isNull(), isNull()))
+                .thenReturn(Mono.error(WebClientResponseException.create(503, "Service Unavailable", null, null, null)));
+
+        for (int i = 0; i < numberOfCalls; i++) {
+            service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
+        }
+
+        verify(trustProtocol20Api, times(2)).listPiaTS(any(), any(), any(), any(), any());
     }
 
     // -------------------------------------------------------------------------
