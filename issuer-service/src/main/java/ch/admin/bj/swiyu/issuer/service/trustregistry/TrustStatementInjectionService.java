@@ -181,7 +181,7 @@ public class TrustStatementInjectionService {
      * <pre>
      * {
      *   "can_issue": {
-     *     "vct": "<a href="https://example.ch/vct/my-vc">...</a>",
+     *     "vct": "https://example.ch/vct/my-vc",
      *     "vct_name": "My VC"
      *   }
      * }
