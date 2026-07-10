@@ -79,6 +79,7 @@ public class TrustStatementValidator {
         log.debug("Verifying trust statement signature for DID: {}", didString);
 
         var didDoc = didResolverAdapter.resolveDid(didString, urlRewriteProperties.getUrlMappings());
+        // Experimental - trust statement checks not finished yet
         trustStatementDidJwtValidator.validateJwt(jwtString, didDoc);
         log.debug("Trust statement signature verification succeeded for DID: {}", didString);
     }

@@ -144,6 +144,7 @@ public class TrustStatementCacheService {
             if (jwt == null) {
                 log.warn("No idTS trust statement found for issuer {}", issuerDid);
             }
+            // Experimental - trust statement checks not finished yet
             validateTrustStatement(jwt, "idTS", issuerDid);
 
             return Optional.ofNullable(jwt);
@@ -170,6 +171,7 @@ public class TrustStatementCacheService {
 
             log.debug("Fetched {} piaTS JWT(s) for issuer {}", jwts.size(), issuerDid);
             for (String jwt : jwts) {
+                // Experimental - trust statement checks not finished yet
                 validateTrustStatement(jwt, "piaTS", issuerDid);
             }
             return Optional.of(List.copyOf(jwts));

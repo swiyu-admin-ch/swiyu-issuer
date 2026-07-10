@@ -140,6 +140,7 @@ public class TrustStatementInjectionService {
      */
     private boolean verifySignatureOrInvalidate(String jwt, String type, String issuerDid) {
         try {
+            // Experimental - trust statement checks not finished yet
             trustStatementValidator.validateSignature(jwt);
             return true;
         } catch (JwtValidatorException e) {
