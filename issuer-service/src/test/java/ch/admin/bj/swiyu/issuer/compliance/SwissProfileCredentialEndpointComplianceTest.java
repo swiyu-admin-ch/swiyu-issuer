@@ -314,16 +314,24 @@ class SwissProfileCredentialEndpointComplianceTest extends AbstractSwissProfileC
     }
 
     @Test
-    @DisplayName("Response Schema (200): 'transaction_id' and 'interval' MUST be defined to support Deferred Issuance")
+    @DisplayName("Response Schema (202): 'transaction_id' and 'interval' MUST be defined for the Deferred Issuance handoff")
     void testDeferredTransactionIdAndIntervalDefined() {
-        Schema<?> schema = getResponseSchema("200");
+        Operation postOperation = getPostOperation();
+        assertThat(postOperation).isNotNull();
+
+        ApiResponse response202 = postOperation.getResponses().get("202");
+        assertThat(response202)
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] For Deferred Credential Issuance the Credential Endpoint MUST define an HTTP 202 (Accepted) response.")
+                .isNotNull();
+
+        Schema<?> schema = getResponseSchema("202");
         assertThat(schema)
-                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] A schema must be defined for the 200 response.")
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] A schema must be defined for the 202 response.")
                 .isNotNull();
 
         Map<String, Schema> properties = schema.getProperties();
         assertThat(properties)
-                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] For Deferred Credential Issuance flows the 'transaction_id' property MUST be defined in the response schema.")
+                .as("[Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response] The Deferred Issuance (202) response MUST define the 'transaction_id' property.")
                 .isNotNull()
                 .containsKey("transaction_id");
         assertThat(properties.get("transaction_id").getTypes())

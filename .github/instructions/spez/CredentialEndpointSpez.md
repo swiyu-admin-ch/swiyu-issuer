@@ -32,7 +32,9 @@ This endpoint represents the Credential Endpoint where the Wallet requests the i
 **JSON Schema / Response Body Assertions (HTTP 200 OK)**
 * The Credential Response document MUST be formatted as a JSON object. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
 * For immediate issuance, the response MUST provide a `credentials` property defined as an **array of objects**. Each object MUST support and define the `credential` key (typically a String for the SD-JWT VC format). A top-level singular `credential` property is Draft 13 legacy and MUST NOT be used. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
-* For Deferred Credential Issuance flows, the `transaction_id` property (String) MUST be present. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
+
+**JSON Schema / Response Body Assertions (HTTP 202 Accepted — Deferred Issuance)**
+* When issuance is deferred, the Credential Endpoint MUST return HTTP 202 (Accepted) with the `transaction_id` property (String) present. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
 * Whenever the `transaction_id` property is present, the `interval` property (integer, seconds) is REQUIRED. [Document: OpenID for Verifiable Credential Issuance 1.0, Chapter: 8.3. Credential Response]
 
 **JSON Schema / Response Body Assertions (HTTP 400 Bad Request)**
