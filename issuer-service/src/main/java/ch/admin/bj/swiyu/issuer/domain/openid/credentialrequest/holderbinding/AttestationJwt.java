@@ -1,6 +1,9 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
+import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustRegistryConfig;
+import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+import ch.admin.bj.swiyu.jwtvalidator.UrlRestriction;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -23,11 +26,13 @@ import java.util.stream.Collectors;
 
 @Getter
 public final class AttestationJwt {
+    private static final long CLOCK_SKEW_MS = 60000; // 1 min margin of error for time validation, same as default in generic lib.
 
     @Deprecated(since = "OID4VCI 1.0") // remove later
     private static final String KEY_ATTESTATION_TYPE_ID1 = "keyattestation+jwt";
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
     private static final Set<String> ALLOWED_TYPES = Set.of(KEY_ATTESTATION_TYPE_ID1, "key-attestation+jwt");
+
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
     private final SignedJWT signedJWT;
@@ -68,16 +73,33 @@ public final class AttestationJwt {
         if (StringUtils.isEmpty(jwtClaimsSet.getIssuer())) {
             throw new IllegalArgumentException("Issuer is required");
         }
-        if (jwtClaimsSet.getIssueTime() == null) {
+        long now = System.currentTimeMillis();
+
+        // iat
+        var issuedAtTime = jwtClaimsSet.getIssueTime();
+        if (issuedAtTime == null) {
             throw new IllegalArgumentException("IssueTime is required");
         }
+        if (issuedAtTime.getTime() - CLOCK_SKEW_MS > now) {
+            throw new IllegalArgumentException("IssueTime is in the future");
+        }
+
+        // TODO EIDOMNI-1164: replace exp and nbf validation with logic from the generic java lib, once it's made accessible.
+        // exp
         var expirationTime = jwtClaimsSet.getExpirationTime();
         if (expirationTime == null) {
             throw new IllegalArgumentException("ExpirationTime is required");
         }
-        if (expirationTime.before(new Date())) {
+        if (expirationTime.getTime() + CLOCK_SKEW_MS < now) {
             throw new IllegalArgumentException("Attestation is expired");
         }
+
+        // nbf
+        var notBeforeTime = jwtClaimsSet.getNotBeforeTime();
+        if (notBeforeTime != null && notBeforeTime.getTime() - CLOCK_SKEW_MS > now) {
+            throw new IllegalArgumentException("Attestation not yet valid");
+        }
+
         if (jwtClaimsSet.getClaim("attested_keys") == null) {
             throw new IllegalArgumentException("attested_keys is required");
         }
