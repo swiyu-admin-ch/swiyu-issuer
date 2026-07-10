@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed missing claim validation, now also validates the attestation claims `nbf` and `iat` (#1066).
 - Re-enabled jwt checks for trust statements, which were temporarily disabled. Do not use trust statements yet, as the
   checks are not yet fully implemented and may cause issues.
+- The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value (
+  #1116).
 
 ## [4.0.1] - 2026-07-09
 
