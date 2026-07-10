@@ -88,7 +88,7 @@ public class JweService {
         var isEncryptionEnforced = applicationProperties.isEncryptionEnforce();
         IssuerCredentialRequestEncryption encryptionOptions = issuerMetadata.getRequestEncryption();
 
-        if (isEncryptionEnforced && (encryptionOptions == null || encryptionOptions.isEncRequired())) {
+        if (isEncryptionEnforced && (encryptionOptions == null || !encryptionOptions.isEncRequired())) {
             log.warn("RequestEncryption options are not mandatory, but there is a problem with the issuer metadata configuration. Please check the issuer metadata configuration and ensure that the requestEncryption options are set correctly.");
         }
 
