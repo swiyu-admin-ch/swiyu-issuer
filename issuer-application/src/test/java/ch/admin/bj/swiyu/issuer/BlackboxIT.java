@@ -12,8 +12,8 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
@@ -400,12 +400,10 @@ class BlackboxIT {
         assertDoesNotThrow(() -> credentialResponseJwt.decrypt(new ECDHDecrypter(holderEncryptionKeys.toECKey())));
         var credentialResponseDto = assertDoesNotThrow(() -> objectMapper.readValue(credentialResponseJwt.getJWTClaimsSet()
                         .toString(),
-                CredentialEndpointResponseDto.class));
+                CredentialResponseDto.class));
         assertThat(credentialResponseDto.credentials()).as(
                         "The flow is not deferred, the credentials should be directly returned")
                 .hasSize(issuerMetadata.getIssuanceBatchSize());
-        assertThat(credentialResponseDto.interval()).isNull();
-        assertThat(credentialResponseDto.transactionId()).isNull();
         var verifiableCredentialClaims = credentialResponseDto.credentials()
                 .stream()
                 .map(CredentialObjectDto::credential)

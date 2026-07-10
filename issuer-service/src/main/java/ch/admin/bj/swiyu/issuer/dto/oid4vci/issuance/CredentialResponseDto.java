@@ -6,20 +6,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
+/**
+ * Successful (HTTP 200) response of the Credential or Deferred Credential Endpoint.
+ * <p>
+ * A response with code 200 only carries the issued
+ * {@code credentials}. The {@code transaction_id} and {@code interval} fields belong exclusively to the
+ * pending (HTTP 202) response and MUST NOT be present here. Single issuance is modeled as batch issuance
+ * with {@code batch_size = 1}.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(name = "CredentialEndpointResponse")
-public record CredentialEndpointResponseDto(
+public record CredentialResponseDto(
 
         // OPTIONAL. Contains an array of one or more issued Credentials. MUST NOT be used if the transaction_id parameter is present.
         @JsonProperty("credentials")
-        List<CredentialObjectDto> credentials,
-
-        // OPTIONAL. String identifying a Deferred Issuance transaction
-        @JsonProperty("transaction_id")
-        String transactionId,
-
-        //  REQUIRED if transaction_id is present. Contains a positive number that represents the minimum amount of time in seconds that the Wallet
-        @JsonProperty("interval")
-        Long interval
+        List<CredentialObjectDto> credentials
 ) {
 }

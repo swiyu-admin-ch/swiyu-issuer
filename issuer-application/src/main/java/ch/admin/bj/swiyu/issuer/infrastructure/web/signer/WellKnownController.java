@@ -1,10 +1,14 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +67,7 @@ public class WellKnownController {
             "/.well-known/oauth-authorization-server",
             "/oid4vci/.well-known/oauth-authorization-server",
             "/.well-known/oauth-authorization-server/oid4vci",
-    })
+    }, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Retrieve OAuth 2.0 Authorization Server Metadata",
             description = "Returns the configuration metadata of the Authorization Server in accordance with RFC 8414. " +
                     "This includes URLs to endpoints (e.g., token endpoint), supported grant types, as well as " +
@@ -82,7 +86,14 @@ public class WellKnownController {
             "/oid4vci/.well-known/openid-credential-issuer",
             "/.well-known/openid-credential-issuer",
             "/.well-known/openid-credential-issuer/oid4vci"})
-    @Operation(summary = "Information about credentials which can be issued.")
+    @Operation(summary = "Information about credentials which can be issued.",
+            responses = @ApiResponse(responseCode = "200", description = "Credential Issuer Metadata",
+                    content = {
+                            @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = IssuerMetadata.class)),
+                            @Content(mediaType = "application/jwt",
+                                    schema = @Schema(type = "string", description = "Signed issuer metadata as JWT"))
+                    }))
     public Object getIssuerMetadata(@RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {
         // Unwrap the object from the spring cache object.
         if (expectsSignedResponse(acceptHeader)) {
