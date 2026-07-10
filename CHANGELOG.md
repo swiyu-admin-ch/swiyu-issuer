@@ -8,11 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [NEXT]
 
 ### Added
+
 - Added static compliance tests for the Swiss Profile / OID4VCI contract (OpenID Configuration, Credential Issuer
   Metadata, Credential Endpoint, Deferred Credential Endpoint, Nonce, VCT, OCA, JSON Schema endpoints) verifying the
   OpenAPI specification against the OID4VCI spec and Swiss Profile requirements. Tests that require outstanding fixes
   in the OpenAPI contract are disabled and tracked in (#1127).
+- Added new config `application.accepted-registry-hosts` to allow restricting the allowed hosts for the trust registry.
+  Don't change this unless you know what you are doing, as it may break the trust registry and
+  status registry functionality.
+
 ### Fixed
+
 - Fixed missing claim validation, now also validates the attestation claims `nbf` and `iat` (#1066).
 - Re-enabled jwt checks for trust statements, which were temporarily disabled. Do not use trust statements yet, as the
   checks are not yet fully implemented and may cause issues.
@@ -32,7 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bound to the immutable image digest and published to the Sigstore transparency log, allowing consumers to verify image
   authenticity via `cosign verify` (#838).
 
-- Integrate `pgpverify-maven-plugin` to cryptographically verify PGP signatures of all third-party dependencies during the build. The build fails if an artifact has no signature or an invalid signature. PGP keys are cached in CI/CD to avoid redundant downloads `(#836)`.
+- Integrate `pgpverify-maven-plugin` to cryptographically verify PGP signatures of all third-party dependencies during
+  the build. The build fails if an artifact has no signature or an invalid signature. PGP keys are cached in CI/CD to
+  avoid redundant downloads `(#836)`.
 
 ### Changed
 
