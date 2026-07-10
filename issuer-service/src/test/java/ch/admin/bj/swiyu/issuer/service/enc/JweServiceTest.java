@@ -40,6 +40,7 @@ class JweServiceTest {
     void setUp() {
         setupMockRepository();
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
+        Mockito.when(applicationProperties.isEncryptionEnforce()).thenReturn(true);
         issuerMetadata = IssuerMetadata.builder()
                 .requestEncryption(IssuerCredentialRequestEncryption.builder()
                         .encRequired(true)
