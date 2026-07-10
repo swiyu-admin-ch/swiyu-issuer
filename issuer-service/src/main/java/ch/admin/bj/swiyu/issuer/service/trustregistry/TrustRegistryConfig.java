@@ -17,8 +17,7 @@ import java.util.Set;
 /**
  * Spring configuration for the Trust Registry sidechannel API client.
  *
- * <p>Only active when {@code swiyu.trust-registry.api-url} is configured.
- * Uses HTTP Basic Auth (customer key / secret) to authenticate against the trust registry.</p>
+ * <p>Only active when {@code swiyu.trust-registry.api-url} is configured.</p>
  */
 @Slf4j
 @Configuration
@@ -31,7 +30,7 @@ public class TrustRegistryConfig {
 
     /**
      * Creates the WebClient-backed {@link ApiClient} for the Trust Registry sidechannel,
-     * injecting HTTP Basic Auth credentials from configuration.
+     * using the configured Trust Registry base URL.
      *
      * @return configured {@link ApiClient}
      */
