@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Metadata, Credential Endpoint, Deferred Credential Endpoint, Nonce, VCT, OCA, JSON Schema endpoints) verifying the
   OpenAPI specification against the OID4VCI spec and Swiss Profile requirements. Tests that require outstanding fixes
   in the OpenAPI contract are disabled and tracked in (#1127).
+### Fixed
+- Fixed missing claim validation, now also validates the attestation claims `nbf` and `iat` (#1066).
 
 ## [4.0.1] - 2026-07-09
 
