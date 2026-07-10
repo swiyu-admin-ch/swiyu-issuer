@@ -90,6 +90,7 @@ management:
         application.offer-expiration-interval,
         application.openid-file,
         application.metadata-file,
+        application.accepted-registry-hosts,
         application.data-integrity-jwks,
         application.data-integrity-enforced,
         application.key.sdjwt.hsm.host,

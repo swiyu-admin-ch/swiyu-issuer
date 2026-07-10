@@ -5,3 +5,9 @@ spring:
       minimum-idle: 3
       idle-timeout: 100
       connection-timeout: 10000
+
+application:
+  accepted-registry-hosts:
+    - "trust-reg.trust-infra.swiyu.admin.ch"
+    - "status-reg.trust-infra.swiyu.admin.ch"
+    - "identifier-reg.trust-infra.swiyu.admin.ch"
