@@ -113,7 +113,7 @@ public class JweService {
 
         if (isRequestEncryptionMandatory()) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
-                    "Request encryption is mandatory with content type set to application/jwt",
+                    "Request encryption is mandatory. Content type must be set to application/jwt",
                     Map.of("contentType", contentType != null ? contentType : "null"));
         }
         return requestMessage;
