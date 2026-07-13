@@ -224,6 +224,11 @@
             <version>5.10.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>au.com.dius.pact.consumer</groupId>
+            <artifactId>junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
@@ -373,6 +378,20 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.6</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <pact.rootDir>${project.build.directory}/pacts</pact.rootDir>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>au.com.dius.pact.provider</groupId>
+                <artifactId>maven</artifactId>
+                <version>${pact.version}</version>
+                <configuration>
+                    <pactDirectory>${project.build.directory}/pacts</pactDirectory>
+                    <trimSnapshot>false</trimSnapshot>
+                </configuration>
             </plugin>
         </plugins>
     </build>
