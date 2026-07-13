@@ -171,7 +171,7 @@ public class TrustStatementCacheService {
 
             if (jwts.isEmpty()) {
                 log.warn("No piaTS trust statements found for issuer {}", issuerDid);
-                return null;
+                return jwts;
             }
 
             log.debug("Fetched {} piaTS JWT(s) for issuer {}", jwts.size(), issuerDid);
@@ -307,8 +307,12 @@ public class TrustStatementCacheService {
      * @return TTL in nanoseconds
      */
     private long computeMinNanosUntilExpiry(List<String> jwt) {
-        if (jwt == null || jwt.isEmpty()) {
+        if (jwt == null) {
             return TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS);
+        }
+
+        if (jwt.isEmpty()) {
+            return TimeUnit.SECONDS.toNanos(maxCacheTtlSeconds);
         }
 
         return jwt.stream()

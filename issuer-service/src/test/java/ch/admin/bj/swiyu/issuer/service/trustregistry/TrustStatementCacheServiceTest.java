@@ -197,6 +197,19 @@ class TrustStatementCacheServiceTest {
         verify(trustProtocol20Api, times(2)).listPiaTS(any(), any(), any(), any(), any());
     }
 
+    @Test
+    void getAllProtectedIssuanceAuthorizationTrustStatements_whenEmptyListResponse_thenCached() {
+        var numberOfCalls = 2;
+        when(trustProtocol20Api.listPiaTS(eq(ISSUER_DID), eq(true), isNull(), isNull(), isNull()))
+                .thenReturn(Mono.just(pagedModel()));
+
+        for (int i = 0; i < numberOfCalls; i++) {
+            service.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID);
+        }
+
+        verify(trustProtocol20Api, times(1)).listPiaTS(any(), any(), any(), any(), any());
+    }
+
     // -------------------------------------------------------------------------
     // Invalidation
     // -------------------------------------------------------------------------
