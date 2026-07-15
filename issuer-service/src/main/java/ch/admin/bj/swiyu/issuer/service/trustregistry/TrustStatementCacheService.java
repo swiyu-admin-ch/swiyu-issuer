@@ -138,7 +138,7 @@ public class TrustStatementCacheService {
     }
 
     /**
-     * Returns either a JWT (String) or null if the fetch failed. Anything but null will be cached.
+     * Returns either a JWT (String) or null if the fetch failed.
      */
     private String fetchIdentityTrustStatement(String issuerDid) {
         try {
