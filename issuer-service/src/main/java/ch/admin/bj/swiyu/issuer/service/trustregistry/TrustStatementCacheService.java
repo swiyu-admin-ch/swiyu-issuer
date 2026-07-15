@@ -160,7 +160,7 @@ public class TrustStatementCacheService {
     }
 
     /**
-     * Returns either a List<String> of jwts or null if the fetch failed. Anything but null will be cached.
+     * Returns either a List<String> of jwts or null if the fetch failed.
      */
     private List<String> fetchAllProtectedIssuanceAuthorizationTrustStatements(String issuerDid) {
         try {
