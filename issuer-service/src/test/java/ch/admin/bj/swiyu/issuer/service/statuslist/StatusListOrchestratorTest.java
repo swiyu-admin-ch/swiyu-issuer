@@ -26,67 +26,52 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class StatusListOrchestratorTest {
+    private final UUID statusRegistryEntryId = UUID.randomUUID();
     private StatusListOrchestrator statusListOrchestrator;
-    private ApplicationProperties applicationProperties;
-    private StatusListProperties statusListProperties;
-    private StatusRegistryClient statusRegistryClient;
     private StatusListPersistenceService statusListPersistenceService;
     private StatusListRepository statusListRepository;
-    private TransactionTemplate transaction;
-    private JwsSignatureFacade jwsSignatureFacade;
-    private ECKey ecKey;
-    private JWSSigner signer;
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
-
-    private StatusListSigningService signingService;
-
-    private UUID statusRegistryEntryId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() throws JOSEException, KeyStrategyException {
-        applicationProperties = Mockito.mock(ApplicationProperties.class);
+        ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
         when(applicationProperties.getIssuerId()).thenReturn("did:example:mock");
-        statusListProperties = Mockito.mock(StatusListProperties.class);
+        StatusListProperties statusListProperties = Mockito.mock(StatusListProperties.class);
         when(statusListProperties.getVerificationMethod()).thenReturn("did:example:mock#key1");
-        statusRegistryClient = Mockito.mock(StatusRegistryClient.class);
+        StatusRegistryClient statusRegistryClient = Mockito.mock(StatusRegistryClient.class);
         when(statusRegistryClient.createStatusListEntry()).thenReturn(new StatusListEntryCreationDto()
                 .id(statusRegistryEntryId)
                 .statusRegistryUrl("https://www.example.com/" + statusRegistryEntryId));
 
         statusListRepository = Mockito.mock(StatusListRepository.class);
         when(statusListRepository.save(Mockito.any())).thenAnswer(invocation -> invocation.getArgument(0));
-        transaction = Mockito.mock(TransactionTemplate.class);
+        TransactionTemplate transaction = Mockito.mock(TransactionTemplate.class);
         when(transaction.execute(Mockito.any())).then(invocation -> {
             TransactionCallback<StatusList> callback = invocation.getArgument(0);
             return callback.doInTransaction(null);
         });
-        jwsSignatureFacade = Mockito.mock(JwsSignatureFacade.class);
-        ecKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:mock#key1").generate();
-        signer = new ECDSASigner(ecKey);
+        JwsSignatureFacade jwsSignatureFacade = Mockito.mock(JwsSignatureFacade.class);
+        ECKey ecKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:mock#key1").generate();
+        JWSSigner signer = new ECDSASigner(ecKey);
         when(jwsSignatureFacade.createSigner(Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(signer);
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         when(credentialOfferStatusRepository.countByStatusListId(Mockito.any())).thenReturn(0);
 
         statusListPersistenceService = Mockito.mock(StatusListPersistenceService.class);
-
-        signingService = new StatusListSigningService(applicationProperties, statusListProperties, jwsSignatureFacade);
 
         statusListOrchestrator = new StatusListOrchestrator(
                 statusListProperties,
@@ -101,18 +86,16 @@ class StatusListOrchestratorTest {
 
     @ParameterizedTest
     @CsvSource({",", ",did:example:mock#overridekey1", "did:example:override,did:example:override#key1"})
-    void whenTokenStatusListIsCreated_thenSuccess(String overrideDid, String overrideVerificationMethod) throws ParseException, JOSEException {
+    void whenTokenStatusListIsCreated_thenSuccess(String overrideDid, String overrideVerificationMethod) {
         StatusListCreateDto request = StatusListCreateDto.builder()
                 .maxLength(10)
                 .config(StatusListConfigDto.builder().bits(2).build())
                 .configurationOverride(new ConfigurationOverrideDto(overrideDid, overrideVerificationMethod, null, null))
                 .build();
-        var statusListCaptor = ArgumentCaptor.forClass(StatusList.class);
 
         statusListOrchestrator.createStatusList(request);
 
-        verify(statusListPersistenceService).publishToRegistry(statusListCaptor.capture(), any());
-
+        verify(statusListPersistenceService).publishToRegistry(any(StatusListPersistenceService.StatusListRegistryUpdate.class));
     }
 
 
