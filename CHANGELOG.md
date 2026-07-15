@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   checks are not yet fully implemented and may cause issues.
 - The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value (
   #1116).
+- Send status list update to registry after the entity has been persisted to the database, to avoid race conditions
+  (#830).
 
 ## [4.0.1] - 2026-07-09
 
