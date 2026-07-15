@@ -72,13 +72,6 @@
                 <version>2.21.5</version>
             </dependency>
 
-            <!-- Fixes CVE-2026-59889 -->
-            <dependency>
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>3.2.1</version>
-            </dependency>
-
             <!-- Fixes CVE-2026-42198 -->
             <dependency>
                 <groupId>org.postgresql</groupId>
