@@ -134,7 +134,7 @@
             <exclusions>
                 <exclusion>
                     <groupId>tools.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
+                    <artifactId>jackson-databind</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
