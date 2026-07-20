@@ -109,51 +109,6 @@ public class TrustStatementValidator {
         }
     }
 
-
-
-
-
-    /**
-     * Phase 1 – pre-cache allowlist check (no HTTP call).
-     *
-     * <p>Extracts the DID resolution URL from the JWT's {@code kid} header and validates
-     * it against the configured Trust Registry host allowlist. Call this before storing
-     * a freshly fetched trust statement in the cache.</p>
-     *
-     * @param jwtString the compact serialized Trust Statement JWT
-     * @throws JwtValidatorException if the JWT is malformed, the {@code kid} is missing /
-     *                               not absolute, or the resolved DID URL is not on the allowlist
-     */
-    public void validateAllowlist(String jwtString) {
-        String didUrl = trustStatementDidJwtValidator.getAndValidateResolutionUrl(jwtString);
-        String didString = trustStatementDidJwtValidator.getDidString(jwtString);
-        log.debug("Trust statement allowlist check passed – DID: {}, URL: {}", didString, didUrl);
-    }
-
-    /**
-     * Phase 2 – pre-inject signature verification (HTTP call to DID resolver).
-     *
-     * <p>Resolves the Trust Registry's DID Document fresh (via {@link DidResolverAdapter})
-     * and verifies the JWT signature against the current public key. Call this every time
-     * a cached trust statement is about to be injected into the issuer metadata response.</p>
-     *
-     * <p>Because the DID Document is fetched on every call, key rotations on the Trust
-     * Registry side are detected immediately – without waiting for the cache TTL to expire.
-     * Note: {@link DidResolverAdapter} may cache the DID Document internally via
-     * {@code PUBLIC_KEY_CACHE} to limit redundant HTTP calls.</p>
-     *
-     * @param jwtString the compact serialized Trust Statement JWT
-     * @throws JwtValidatorException if the DID Document cannot be fetched, the key is not
-     *                               found in the document, or the signature verification fails
-     */
-    public void validateSignature(String jwtString) {
-        String kid = didKidParser.extractKidFromHeader(jwtString);
-        log.debug("Verifying trust statement signature for DID: {}", kid);
-        JWK key = keyLoader.resolveKey(kid);;
-        trustStatementDidJwtValidator.validateJwt(jwtString, new JWKSet(List.of(key)));
-        log.debug("Trust statement signature verification succeeded for DID: {}", kid);
-    }
-
     /**
      * @param isValid is the statement validated valid & to be used
      * @param valditiyWindow how long this validation result may be used in nanoseconds

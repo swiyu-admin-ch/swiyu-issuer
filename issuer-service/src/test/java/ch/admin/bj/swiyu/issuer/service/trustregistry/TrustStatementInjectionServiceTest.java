@@ -5,7 +5,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
-import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -16,7 +15,6 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -55,7 +53,6 @@ class TrustStatementInjectionServiceTest {
     }
 
     private TrustStatementCacheService cacheService;
-    private TrustStatementValidator validator;
     private TrustStatementInjectionService trustStatementInjectionService;
 
     /**
@@ -79,8 +76,7 @@ class TrustStatementInjectionServiceTest {
     @BeforeEach
     void setUp() {
         cacheService = mock(TrustStatementCacheService.class);
-        validator = mock(TrustStatementValidator.class);
-        trustStatementInjectionService = new TrustStatementInjectionService(cacheService, validator);
+        trustStatementInjectionService = new TrustStatementInjectionService(cacheService);
     }
 
     private IssuerMetadata createMetadata(boolean withProtectedVc, String vct) {
@@ -184,43 +180,5 @@ class TrustStatementInjectionServiceTest {
                 .getProtectedIssuanceAuthorizationTrustStatement()).isEqualTo(mdlPiaTs);
     }
 
-    @Disabled // todo check when jwt verification re-enabled
-    @Test
-    void injectTrustStatements_withValidator_injectsWhenValidationPasses() throws Exception {
-        String elfaPiaTs = buildPiaTsJwt(VCT_ELFA);
-        when(cacheService.getIdentityTrustStatement(ISSUER_DID)).thenReturn(ID_TS);
-        when(cacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
-                .thenReturn(List.of(elfaPiaTs));
-
-        IssuerMetadata metadata = createMetadata(true, VCT_ELFA);
-        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
-
-        verify(validator).validateSignature(ID_TS);
-        verify(validator).validateSignature(elfaPiaTs);
-
-        assertThat(metadata.getCredentialIssuerIdentityTrustStatement()).isEqualTo(ID_TS);
-        assertThat(metadata.getCredentialConfigurationSupported().get("TestFormat")
-                .getProtectedIssuanceAuthorizationTrustStatement()).isEqualTo(elfaPiaTs);
-    }
-
-    @Disabled // todo check when jwt verification re-enabled
-    @Test
-    void injectTrustStatements_withValidator_invalidatesCacheWhenValidationFails() throws Exception {
-        String elfaPiaTs = buildPiaTsJwt(VCT_ELFA);
-        when(cacheService.getIdentityTrustStatement(ISSUER_DID)).thenReturn(ID_TS);
-        when(cacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
-                .thenReturn(List.of(elfaPiaTs));
-
-        doThrow(new JwtValidatorException("Invalid ID TS Signature")).when(validator).validateSignature(ID_TS);
-        doThrow(new JwtValidatorException("Invalid PIA TS Signature")).when(validator).validateSignature(elfaPiaTs);
-
-        IssuerMetadata metadata = createMetadata(true, VCT_ELFA);
-        trustStatementInjectionService.injectTrustStatements(metadata, ISSUER_DID);
-
-        verify(cacheService, times(2)).invalidateAllTrustStatements(ISSUER_DID); // once for idTS, once for piaTS
-
-        assertThat(metadata.getCredentialIssuerIdentityTrustStatement()).isNull();
-        assertThat(metadata.getCredentialConfigurationSupported().get("TestFormat")
-                .getProtectedIssuanceAuthorizationTrustStatement()).isNull();
-    }
+    
 }

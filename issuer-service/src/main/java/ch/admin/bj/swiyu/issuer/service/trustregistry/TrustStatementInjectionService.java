@@ -38,15 +38,6 @@ public class TrustStatementInjectionService {
     private final TrustStatementCacheService trustStatementCacheService;
 
     /**
-     * Validator for signature verification at inject time.
-     * When present, each cached trust statement JWT is verified against the
-     * Trust Registry's current DID Document before injection. This ensures
-     * key rotations are detected immediately, without waiting for cache expiry.
-     * On failure the cache entry is invalidated so a fresh statement is fetched next time.
-     */
-    private final TrustStatementValidator trustStatementValidator;
-
-    /**
      * Injects the idTS and piaTS trust statement JWTs into the given issuer metadata.
      *
      * <p>Before each injection, the cached JWT's signature is re-verified against the
@@ -72,9 +63,6 @@ public class TrustStatementInjectionService {
         String idTs = trustStatementCacheService.getIdentityTrustStatement(issuerDid);
         if (idTs == null) {
             log.debug("No idTS available for issuer {} – skipping injection", issuerDid);
-            return;
-        }
-        if (!verifySignatureOrInvalidate(idTs, "idTS", issuerDid)) {
             return;
         }
         issuerMetadata.setCredentialIssuerIdentityTrustStatement(idTs);
@@ -119,36 +107,7 @@ public class TrustStatementInjectionService {
     private void injectPiaTsIntoConfig(CredentialConfiguration config, List<String> allPiaTs, String issuerDid) {
         String vct = config.getVct();
         String matchingPiaTs = findMatchingPiaTsForVct(allPiaTs, vct);
-
-        if (!verifySignatureOrInvalidate(matchingPiaTs, "piaTS", issuerDid)) {
-            return;
-        }
         config.setProtectedIssuanceAuthorizationTrustStatement(matchingPiaTs);
-    }
-
-    /**
-     * Verifies the signature of the given trust statement JWT via
-     * {@link TrustStatementValidator#validateSignature(String)}.
-     * If verification fails, the cache entry for the issuer DID is invalidated
-     * so that a fresh statement is fetched on the next request.
-     *
-     * @param jwt       the trust statement JWT to verify
-     * @param type      statement type label for logging ("idTS" or "piaTS")
-     * @param issuerDid issuer DID for cache invalidation and logging
-     * @return {@code true} if verification succeeded or no validator is configured;
-     * {@code false} if verification failed (cache is invalidated)
-     */
-    private boolean verifySignatureOrInvalidate(String jwt, String type, String issuerDid) {
-        try {
-            // Experimental - trust statement checks not finished yet
-            trustStatementValidator.validateSignature(jwt);
-            return true;
-        } catch (JwtValidatorException e) {
-            log.warn("{} signature verification failed for issuer {} – invalidating cache: {}", type, issuerDid, e.getMessage());
-            trustStatementCacheService.invalidateAllTrustStatements(issuerDid);
-
-            return false;
-        }
     }
 
 

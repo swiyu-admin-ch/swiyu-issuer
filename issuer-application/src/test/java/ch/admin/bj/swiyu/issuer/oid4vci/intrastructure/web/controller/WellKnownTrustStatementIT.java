@@ -193,8 +193,6 @@ class WellKnownTrustStatementIT {
         when(trustStatementCacheService.getIdentityTrustStatement(ISSUER_DID)).thenReturn(idTsJwt);
         when(trustStatementCacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
                 .thenReturn(List.of(piaTsJwt));
-        // Stub for any JWT string so that re-serialised or slightly-different instances still pass
-        doNothing().when(trustStatementValidator).validateSignature(anyString());
     }
 
     /**

@@ -1,14 +1,11 @@
 package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -34,7 +31,6 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties.TrustRegistryPrope
 import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
-import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
 import ch.admin.bj.swiyu.statuslist.TokenStatusListVerifier;
 import ch.admin.bj.swiyu.statuslist.dto.StatusVerificationResultDto;
 import ch.admin.bj.swiyu.statuslist.dto.TokenStatusListTokenDto;
@@ -125,29 +121,6 @@ class TrustStatementValidatorTest {
         var validity = assertDoesNotThrow(() -> validator.trustStatementValidityWindow(testJwt));
         assertThat(validity.isValid()).isTrue();
         assertThat(validity.valditiyWindow()).isGreaterThan(0).isLessThanOrEqualTo(TimeUnit.SECONDS.toNanos(ttl));
-    }
-
-    @Test
-    void validateAllowlist_passesWhenUnderlyingValidatorPasses() {
-        String jwt = "dummy.jwt.string";
-        when(trustStatementDidJwtValidator.getAndValidateResolutionUrl(jwt)).thenReturn("https://trust-registry.example.com");
-        when(trustStatementDidJwtValidator.getDidString(jwt)).thenReturn("did:tdw:trust-registry.example.com");
-
-        validator.validateAllowlist(jwt);
-
-        verify(trustStatementDidJwtValidator, times(1)).getAndValidateResolutionUrl(jwt);
-        verify(trustStatementDidJwtValidator, times(1)).getDidString(jwt);
-    }
-
-    @Test
-    void validateAllowlist_throwsWhenUnderlyingValidatorThrows() {
-        String jwt = "dummy.jwt.string";
-        when(trustStatementDidJwtValidator.getAndValidateResolutionUrl(jwt))
-                .thenThrow(new JwtValidatorException("Validation failed"));
-
-        assertThatThrownBy(() -> validator.validateAllowlist(jwt))
-                .isInstanceOf(JwtValidatorException.class)
-                .hasMessage("Validation failed");
     }
 
     private String buildExpiringJWT(long expiry) {
