@@ -197,6 +197,11 @@
             <artifactId>swiyu-dpop-util</artifactId>
             <version>${generic-java-lib.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-token-status-list</artifactId>
+            <version>${generic-java-lib.version}</version>
+        </dependency>
         <!-- JWT validation via DID-based Flow B for Trust Statement signature verification -->
         <dependency>
             <groupId>ch.admin.swiyu</groupId>

@@ -11,3 +11,10 @@ application:
     - "trust-reg.trust-infra.swiyu.admin.ch"
     - "status-reg.trust-infra.swiyu.admin.ch"
     - "identifier-reg.trust-infra.swiyu.admin.ch"
+
+trust-registry:
+  api-url: "https://www.example.com/mocked"
+  max-cache-size: 1000
+  clock-skew-buffer-seconds: 0
+  max-cache-ttl-seconds: 600
+  request-backoff-seconds: 600 # 10 minutes

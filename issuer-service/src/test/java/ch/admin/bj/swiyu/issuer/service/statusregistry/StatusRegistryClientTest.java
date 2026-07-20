@@ -4,7 +4,9 @@ package ch.admin.bj.swiyu.issuer.service.statusregistry;
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.exception.CreateStatusListException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
@@ -20,25 +22,36 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class StatusRegistryClientTest {
 
-    private SwiyuProperties swiyuProperties;
     private StatusBusinessApiApi statusBusinessApi;
+    private SwiyuProperties swiyuProperties;
+    private UrlRewriteProperties rewriteProperties;
+    private ApplicationProperties applicationProperties;
     private StatusRegistryTokenService tokenDomainService;
     private StatusRegistryClient client;
     private ApiClient apiClient;
+    private static final String TEST_URI = "https://example.com/";
 
     @BeforeEach
     void setUp() {
         swiyuProperties = Mockito.mock(SwiyuProperties.class);
         when(swiyuProperties.businessPartnerId()).thenReturn(UUID.randomUUID());
+        applicationProperties = Mockito.mock(ApplicationProperties.class);
+        when(applicationProperties.getAcceptedRegistryHosts()).thenReturn(List.of(TEST_URI));
+        rewriteProperties = Mockito.mock(UrlRewriteProperties.class);
+        // Return unaltered URL
+        when(rewriteProperties.getRewrittenUrl(anyString())).thenAnswer(a -> a.getArguments()[0]);
+        
 
         statusBusinessApi = Mockito.mock(StatusBusinessApiApi.class);
         apiClient = Mockito.mock(ApiClient.class);
@@ -47,7 +60,7 @@ class StatusRegistryClientTest {
         tokenDomainService = Mockito.mock(StatusRegistryTokenService.class);
         when(tokenDomainService.getAccessToken()).thenReturn("access-token");
 
-        client = new StatusRegistryClient(swiyuProperties, statusBusinessApi, tokenDomainService);
+        client = new StatusRegistryClient(statusBusinessApi, swiyuProperties, rewriteProperties, applicationProperties);
     }
 
     @Test

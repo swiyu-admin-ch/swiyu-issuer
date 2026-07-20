@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.common.utils;
 
-import ch.admin.bj.swiyu.issuer.common.date.TimeUtils;
+import ch.admin.bj.swiyu.issuer.common.date.TimeUtil;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -16,7 +16,7 @@ class TimeUtilsTest {
     @Test
     void testInstantToRoundedUpUnixTimestamp() {
         Instant now = Instant.now();
-        Long timestamp = TimeUtils.instantToRoundedUpUnixTimestamp(now);
+        Long timestamp = TimeUtil.instantToRoundedUpUnixTimestamp(now);
         assertNotNull(timestamp);
         assertTrue(now.getEpochSecond() <= timestamp);
         assertTrue(now.plus(1, ChronoUnit.DAYS).getEpochSecond() > timestamp);
@@ -33,13 +33,13 @@ class TimeUtilsTest {
         var date = LocalDate.parse("2026-12-31");
         var instant1 = date.atStartOfDay(ZoneOffset.UTC).withHour(12).withMinute(30).withSecond(29).withNano(10).toInstant();
         var instant2 = date.atStartOfDay(ZoneOffset.UTC).withHour(7).withMinute(54).withSecond(13).withNano(928).toInstant();
-        assertThat(TimeUtils.instantToRoundedUpUnixTimestamp(instant1)).isEqualTo(TimeUtils.instantToRoundedUpUnixTimestamp(instant2));
+        assertThat(TimeUtil.instantToRoundedUpUnixTimestamp(instant1)).isEqualTo(TimeUtil.instantToRoundedUpUnixTimestamp(instant2));
     }
 
     @Test
     void testInstantToRoundedDownUnixTimestamp() {
         Instant now = Instant.now();
-        Long timestamp = TimeUtils.instantToRoundedDownUnixTimestamp(now);
+        Long timestamp = TimeUtil.instantToRoundedDownUnixTimestamp(now);
         assertNotNull(timestamp);
         assertTrue(now.getEpochSecond() >= timestamp);
         assertTrue(now.plus(-1, ChronoUnit.DAYS).getEpochSecond() < timestamp);
@@ -56,23 +56,23 @@ class TimeUtilsTest {
         var date = LocalDate.parse("2026-12-31");
         var instant1 = date.atStartOfDay(ZoneOffset.UTC).withHour(12).withMinute(30).withSecond(29).withNano(10).toInstant();
         var instant2 = date.atStartOfDay(ZoneOffset.UTC).withHour(7).withMinute(54).withSecond(13).withNano(928).toInstant();
-        assertThat(TimeUtils.instantToRoundedDownUnixTimestamp(instant1)).isEqualTo(TimeUtils.instantToRoundedDownUnixTimestamp(instant2));
+        assertThat(TimeUtil.instantToRoundedDownUnixTimestamp(instant1)).isEqualTo(TimeUtil.instantToRoundedDownUnixTimestamp(instant2));
     }
 
     @Test
     void testInstantToUnixTimestampWithNull() {
-        assertNull(TimeUtils.instantToRoundedUpUnixTimestamp(null));
+        assertNull(TimeUtil.instantToRoundedUpUnixTimestamp(null));
     }
 
     @Test
     void testInstantToISO8601() {
-        String iso8601 = TimeUtils.instantToISO8601(Instant.now());
+        String iso8601 = TimeUtil.instantToISO8601(Instant.now());
         assertNotNull(iso8601);
         assertTrue(iso8601.matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"));
     }
 
     @Test
     void testInstantToISO8601WithNull() {
-        assertNull(TimeUtils.instantToISO8601(null));
+        assertNull(TimeUtil.instantToISO8601(null));
     }
 }

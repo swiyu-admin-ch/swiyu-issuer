@@ -1,39 +1,130 @@
 package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
-import ch.admin.bj.swiyu.didresolveradapter.DidResolverAdapter;
-import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
-import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
-import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
-import ch.admin.eid.did_sidekicks.DidDoc;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties.TrustRegistryProperties;
+import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
+import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
+import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
+import ch.admin.bj.swiyu.statuslist.TokenStatusListVerifier;
+import ch.admin.bj.swiyu.statuslist.dto.StatusVerificationResultDto;
+import ch.admin.bj.swiyu.statuslist.dto.TokenStatusListTokenDto;
 
 class TrustStatementValidatorTest {
 
     private DidJwtValidator trustStatementDidJwtValidator;
-    private DidResolverAdapter didResolverAdapter;
+    private TrustRegistryProperties trustRegistryProperties;
+    private DidKeyResolverFacade didResolverAdapter;
+    private StatusListCacheService statusListCacheService;
     private UrlRewriteProperties urlRewriteProperties;
+    private TokenStatusListVerifier statusListVerifier;
     private TrustStatementValidator validator;
 
+    private ECKey testKey;
+    private TokenStatusListTokenDto statusListTokenDto;
+    private String testJwt;
+    private long expiry;
+    private static final int DEFAULT_VALIDITY_SECONDS = 3000;
+    private static final String ISS = "did:example";
+    private static final String KID = "did:example#key-1";
+    private static final String STATUS_LIST_URI = "https://www.example.com/statuslist/1";
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws JOSEException, IOException {
+        testKey = new ECKeyGenerator(Curve.P_256).algorithm(JWSAlgorithm.ES256).keyID(KID).keyUse(KeyUse.SIGNATURE).generate();
         trustStatementDidJwtValidator = mock(DidJwtValidator.class);
-        didResolverAdapter = mock(DidResolverAdapter.class);
+        didResolverAdapter = mock(DidKeyResolverFacade.class);
         urlRewriteProperties = mock(UrlRewriteProperties.class);
-
+        trustRegistryProperties = mock(TrustRegistryProperties.class);
+        statusListCacheService = mock(StatusListCacheService.class);
+        statusListVerifier = mock(TokenStatusListVerifier.class);
         when(urlRewriteProperties.getUrlMappings()).thenReturn(Map.of());
+        validator = new TrustStatementValidator(trustStatementDidJwtValidator, trustRegistryProperties,
+                statusListCacheService, didResolverAdapter, statusListVerifier);
+                        when(trustStatementDidJwtValidator.getAndValidateResolutionUrl(anyString())).thenReturn("TEST");
+        when(trustStatementDidJwtValidator.getDidString(anyString())).thenReturn("TEST");
+        when(didResolverAdapter.resolveKey(eq(KID))).thenReturn(testKey.toPublicJWK());
+        statusListTokenDto = mock(TokenStatusListTokenDto.class);
+        when(statusListCacheService.getTokenStatusListTokenByUri(eq(STATUS_LIST_URI))).thenReturn(statusListTokenDto);
+        expiry = Instant.now().plusSeconds(DEFAULT_VALIDITY_SECONDS).getEpochSecond();
+        when(statusListTokenDto.getExp()).thenReturn(expiry+100); // Adding some seconds here to use by default expiry form token status list 
+        when(statusListTokenDto.getTtl()).thenReturn(DEFAULT_VALIDITY_SECONDS);
+        var verificationResult = mock(StatusVerificationResultDto.class);
+        when(statusListVerifier.verifyStatus(any(), any())).thenReturn(verificationResult);
+        when(verificationResult.valid()).thenReturn(true);
 
-        validator = new TrustStatementValidator(
-                trustStatementDidJwtValidator,
-                didResolverAdapter,
-                urlRewriteProperties
-        );
+        when(trustRegistryProperties.maxCacheTtlSeconds()).thenReturn(Long.valueOf(DEFAULT_VALIDITY_SECONDS));
+        testJwt = buildExpiringJWT(expiry);
+    }
+
+@Test
+    void testTrustStatementValidityWindow_whenValid_minimumGivenFromExpiry() {
+        var validity = assertDoesNotThrow(() -> validator.trustStatementValidityWindow(testJwt));
+        assertThat(validity.isValid()).isTrue();
+        assertThat(validity.valditiyWindow())
+                .isGreaterThanOrEqualTo(
+                        TimeUnit.SECONDS.toNanos(expiry) - TimeUnit.MILLISECONDS.toNanos(Instant.now().toEpochMilli()))
+                .isLessThanOrEqualTo(TimeUnit.SECONDS.toNanos(DEFAULT_VALIDITY_SECONDS));
+    }
+
+    @Test
+    void testTrustStatementValidityWindow_whenValid_minimumGivenFromStatusListTTL() {
+        int ttl = 2; // 2 Seconds
+        when(statusListTokenDto.getTtl()).thenReturn(ttl);
+        var validity = assertDoesNotThrow(() -> validator.trustStatementValidityWindow(testJwt));
+        assertThat(validity.isValid()).isTrue();
+        assertThat(validity.valditiyWindow()).isGreaterThan(0).isLessThanOrEqualTo(TimeUnit.SECONDS.toNanos(ttl));
+    }
+
+    @Test
+    void testTrustStatementValidityWindow_whenValid_minimumGivenFromStatusListExpiry() {
+        int closerExpirySeconds = 2;
+        var closerExpiry = Instant.now().plusSeconds(closerExpirySeconds).getEpochSecond();
+        when(statusListTokenDto.getExp()).thenReturn(closerExpiry);
+        var validity = assertDoesNotThrow(() -> validator.trustStatementValidityWindow(testJwt));
+        assertThat(validity.isValid()).isTrue();
+        assertThat(validity.valditiyWindow())
+                .isGreaterThanOrEqualTo(
+                        TimeUnit.SECONDS.toNanos(closerExpiry) - TimeUnit.MILLISECONDS.toNanos(Instant.now().toEpochMilli()))
+                .isLessThanOrEqualTo(TimeUnit.SECONDS.toNanos(closerExpirySeconds));
+    }
+
+    @Test
+    void testTrustStatementValidityWindow_whenValid_minimumGivenFromMaxCacheTTLConfig(){
+        int ttl = 2;
+        when(trustRegistryProperties.maxCacheTtlSeconds()).thenReturn(Long.valueOf(ttl));
+        var validity = assertDoesNotThrow(() -> validator.trustStatementValidityWindow(testJwt));
+        assertThat(validity.isValid()).isTrue();
+        assertThat(validity.valditiyWindow()).isGreaterThan(0).isLessThanOrEqualTo(TimeUnit.SECONDS.toNanos(ttl));
     }
 
     @Test
@@ -59,52 +150,22 @@ class TrustStatementValidatorTest {
                 .hasMessage("Validation failed");
     }
 
-    @Disabled // todo check when jwt verification re-enabled
-    @Test
-    void validateSignature_fetchesDidDocAndValidates() {
-        String jwt = "dummy.jwt.string";
-        String did = "did:tdw:trust-registry.example.com";
-        DidDoc didDoc = mock(DidDoc.class);
-
-        when(trustStatementDidJwtValidator.getDidString(jwt)).thenReturn(did);
-        when(didResolverAdapter.resolveDid(eq(did), anyMap())).thenReturn(didDoc);
-
-        validator.validateSignature(jwt);
-
-        verify(didResolverAdapter, times(1)).resolveDid(eq(did), anyMap());
-        verify(trustStatementDidJwtValidator, times(1)).validateJwt(jwt, didDoc);
+    private String buildExpiringJWT(long expiry) {
+        SignedJWT jwt = new SignedJWT(
+                new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(testKey.getKeyID()).build(),
+                new JWTClaimsSet.Builder()
+                    .issuer(ISS)
+                    .claim("exp", expiry)
+                    .claim("status", Map.of(
+                        "status_list", Map.of(
+                            "idx", 1,
+                            "uri", STATUS_LIST_URI
+                        )
+                    ))
+                    .build());
+        assertDoesNotThrow(() -> jwt.sign(new ECDSASigner(testKey)));
+        return jwt.serialize();
     }
-
-    @Disabled // todo check when jwt verification re-enabled
-    @Test
-    void validateSignature_throwsWhenDidResolutionFails() {
-        String jwt = "dummy.jwt.string";
-        String did = "did:tdw:trust-registry.example.com";
-
-        when(trustStatementDidJwtValidator.getDidString(jwt)).thenReturn(did);
-        when(didResolverAdapter.resolveDid(eq(did), anyMap()))
-                .thenThrow(new RuntimeException("DID resolution failed"));
-
-        assertThatThrownBy(() -> validator.validateSignature(jwt))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("DID resolution failed");
-    }
-
-    @Disabled // todo check when jwt verification re-enabled
-    @Test
-    void validateSignature_throwsWhenSignatureIsInvalid() {
-        String jwt = "dummy.jwt.string";
-        String did = "did:tdw:trust-registry.example.com";
-        DidDoc didDoc = mock(DidDoc.class);
-
-        when(trustStatementDidJwtValidator.getDidString(jwt)).thenReturn(did);
-        when(didResolverAdapter.resolveDid(eq(did), anyMap())).thenReturn(didDoc);
-        doThrow(new JwtValidatorException("Invalid signature"))
-                .when(trustStatementDidJwtValidator).validateJwt(jwt, didDoc);
-
-        assertThatThrownBy(() -> validator.validateSignature(jwt))
-                .isInstanceOf(JwtValidatorException.class)
-                .hasMessage("Invalid signature");
-    }
+    
 }
 
