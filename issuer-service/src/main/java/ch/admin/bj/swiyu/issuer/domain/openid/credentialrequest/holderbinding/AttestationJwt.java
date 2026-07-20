@@ -143,8 +143,8 @@ public final class AttestationJwt {
     }
 
     private static void validateType(JWSHeader header) {
-        var type = header.getAlgorithm();
-        if (type == null || !ALLOWED_TYPES.contains(header.getType().getType())) {
+        var type = header.getType();
+        if (type == null || !ALLOWED_TYPES.contains(type.getType())) {
             throw new IllegalArgumentException("Typ must be one of " + String.join(", ", ALLOWED_TYPES));
         }
     }
