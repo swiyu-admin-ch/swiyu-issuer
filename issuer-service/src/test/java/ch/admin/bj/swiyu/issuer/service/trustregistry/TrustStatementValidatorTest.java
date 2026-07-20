@@ -6,7 +6,6 @@ import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
 import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
 import ch.admin.eid.did_sidekicks.DidDoc;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -59,7 +58,6 @@ class TrustStatementValidatorTest {
                 .hasMessage("Validation failed");
     }
 
-    @Disabled // todo check when jwt verification re-enabled
     @Test
     void validateSignature_fetchesDidDocAndValidates() {
         String jwt = "dummy.jwt.string";
@@ -75,7 +73,6 @@ class TrustStatementValidatorTest {
         verify(trustStatementDidJwtValidator, times(1)).validateJwt(jwt, didDoc);
     }
 
-    @Disabled // todo check when jwt verification re-enabled
     @Test
     void validateSignature_throwsWhenDidResolutionFails() {
         String jwt = "dummy.jwt.string";
@@ -90,7 +87,6 @@ class TrustStatementValidatorTest {
                 .hasMessage("DID resolution failed");
     }
 
-    @Disabled // todo check when jwt verification re-enabled
     @Test
     void validateSignature_throwsWhenSignatureIsInvalid() {
         String jwt = "dummy.jwt.string";
