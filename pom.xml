@@ -57,7 +57,7 @@
         <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
         <tomcat.version>11.0.23</tomcat.version>
         <!-- Fixes CVE-2026-13006 -->
-        <logback-core.version>1.5.37</logback-core.version>
+        <logback-core.version>1.5.38</logback-core.version>
         <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
         <tomcat.version>11.0.23</tomcat.version>
     </properties>
@@ -97,7 +97,7 @@
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <scope>runtime</scope>
-                <version>42.7.12</version>
+                <version>42.7.13</version>
             </dependency>
 
             <!-- Todo check again on spring boot upgrade-->
