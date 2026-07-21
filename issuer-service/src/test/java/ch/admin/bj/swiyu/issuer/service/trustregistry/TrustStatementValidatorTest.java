@@ -72,7 +72,7 @@ class TrustStatementValidatorTest {
         statusListTokenDto = mock(TokenStatusListTokenDto.class);
         when(statusListCacheService.getTokenStatusListTokenByUri(eq(STATUS_LIST_URI))).thenReturn(statusListTokenDto);
         expiry = Instant.now().plusSeconds(DEFAULT_VALIDITY_SECONDS).getEpochSecond();
-        when(statusListTokenDto.getExp()).thenReturn(expiry+100); // Adding some seconds here to use by default expiry form token status list 
+        when(statusListTokenDto.getExp()).thenReturn(expiry+100); // Adding some seconds here to use by default the expiry form testJwt
         when(statusListTokenDto.getTtl()).thenReturn(DEFAULT_VALIDITY_SECONDS);
         var verificationResult = mock(StatusVerificationResultDto.class);
         when(statusListVerifier.verifyStatus(any(), any())).thenReturn(verificationResult);

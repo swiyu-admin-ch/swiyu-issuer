@@ -97,7 +97,7 @@ public class TrustStatementCacheService {
      * fetching it from the trust registry if not yet cached or already expired.
      *
      * @param issuerDid the effective issuer DID for which to retrieve the trust statement
-     * @return the idTS JWT string, or {@code null} if unavailable
+     * @return the idTS JWT string, or {@code null} if unavailable or not valid.
      */
     @Nullable
     public String getIdentityTrustStatement(String issuerDid) {
@@ -139,9 +139,6 @@ public class TrustStatementCacheService {
                 log.warn("No idTS trust statement found for issuer {}", issuerDid);
             }
             return validateTrustStatement(jwt);
-        } catch (JwtValidatorException e) {
-            log.warn("idTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
-            return new ValidatedSingleTrustStatement(Optional.empty(), false, 0);
         } catch (RuntimeException e) {
             log.warn("Failed to fetch idTS for issuer {}: {}", issuerDid, e.getMessage());
             return null;
@@ -156,15 +153,11 @@ public class TrustStatementCacheService {
             var response = trustProtocol20Api.listPiaTS(issuerDid, true, null, null, null).block();
             List<String> jwts = getListOfStatements(response);
 
-
             log.debug("Fetched {} piaTS JWT(s) for issuer {}", jwts.size(), issuerDid);
             return jwts.stream()
                 .map(this::validateTrustStatement)
                 .filter(vts -> vts.valid)
                 .toList();
-        } catch (JwtValidatorException e) {
-            log.warn("piaTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
-            return List.of();
         } catch (RuntimeException e) {
             log.warn("An error occured while fetching piaTS for issuer {}: {}", issuerDid, e.getMessage());
             return null;

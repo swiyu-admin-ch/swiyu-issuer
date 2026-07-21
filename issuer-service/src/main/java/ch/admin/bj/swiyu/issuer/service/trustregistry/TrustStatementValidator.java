@@ -103,9 +103,9 @@ public class TrustStatementValidator {
             // If we reached this point the status list state hold the information whether the trust statement can be used. Either way we should not reprocess it until the timeout is through
             return new TrustStatementValidationResult(statusListState.valid(), minimumTimeoutNs);
 
-        } catch (IllegalArgumentException | ParseException | IOException e) {
+        } catch (IllegalArgumentException | ParseException | IOException | JwtValidatorException e) {
             log.info("Malformed or invalid Trust Statement detected: {} - Ignoring it", jwtString, e);
-            return new TrustStatementValidationResult(false, 0);
+            return new TrustStatementValidationResult(false, TimeUtil.secondsToNanos(trustRegistryProperties.requestBackoffSeconds()));
         }
     }
 
