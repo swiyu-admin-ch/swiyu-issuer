@@ -156,7 +156,7 @@ public class StatusListOrchestrator {
 
         mergeAndPersistConfigurationOverrideIfPresent(overrideDto, statusList);
 
-        statusListPersistenceService.publishToRegistry(statusList, token);
+        statusListPersistenceService.publishToRegistry(new StatusListPersistenceService.StatusListRegistryUpdate(statusList, token));
 
         return toStatusListDto(statusList,
                 statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusList.getId()));
@@ -222,7 +222,7 @@ public class StatusListOrchestrator {
                 .build();
         log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits() * statusList.getMaxLength());
 
-        statusListPersistenceService.publishToRegistry(statusList, token);
+        statusListPersistenceService.publishToRegistry(new StatusListPersistenceService.StatusListRegistryUpdate(statusList, token));
         return statusList;
     }
 
