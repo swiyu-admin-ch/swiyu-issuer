@@ -127,7 +127,7 @@ public class StatusRegistryClient {
      */
     public String resolveStatusList(String uri) {
         var rewrittenUrl = urlRewriteProperties.getRewrittenUrl(uri);
-        var statusListWebClient = statusBusinessApi.getApiClient().getWebClient();       
+        var statusListWebClient = statusBusinessApi.getApiClient().getWebClient();
         log.debug("HTTP Request after url rewrite to status list from {}", rewrittenUrl);
         try {
             // check if https request otherwise throw exception

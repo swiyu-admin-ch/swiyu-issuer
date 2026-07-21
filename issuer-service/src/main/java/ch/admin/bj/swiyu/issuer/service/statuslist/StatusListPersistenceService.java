@@ -4,11 +4,13 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
+import ch.admin.bj.swiyu.issuer.common.exception.UpdateStatusListException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,7 @@ public class StatusListPersistenceService {
     private final StatusListRepository statusListRepository;
     private final StatusRegistryClient statusRegistryClient;
     private final StatusListSigningService signingService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Marks the given credential entries as revoked in their respective status lists.
@@ -142,9 +145,9 @@ public class StatusListPersistenceService {
         // Batch save all updates
         statusListRepository.saveAll(updated);
 
-        // Publish to registry after successful save
-        if (!registryUpdates.isEmpty()) {
-            publishUpdatesToRegistry(registryUpdates);
+        // Publish events for registry updates (will fire AFTER commit)
+        for (StatusListRegistryUpdate update : registryUpdates) {
+            eventPublisher.publishEvent(update);
         }
 
         return updated;
@@ -171,25 +174,17 @@ public class StatusListPersistenceService {
      *
      * @param update the status list update containing the status list entity and the token
      */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void publishToRegistry(StatusListPersistenceService.StatusListRegistryUpdate update) {
-        SignedJWT jwt = signingService.buildSignedStatusListJwt(update.statusList(), update.token());
-        statusRegistryClient.updateStatusListEntry(update.statusList(), jwt.serialize());
-    }
 
-    /**
-     * Publishes the status list to the external registry.
-     *
-     * @param updates the list of status list updates
-     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void publishUpdatesToRegistry(List<StatusListPersistenceService.StatusListRegistryUpdate> updates) {
-        for (StatusListRegistryUpdate update : updates) {
+    public void publishToRegistry(StatusListRegistryUpdate update) {
+        try {
             SignedJWT jwt = signingService.buildSignedStatusListJwt(update.statusList(), update.token());
             statusRegistryClient.updateStatusListEntry(update.statusList(), jwt.serialize());
+        } catch (UpdateStatusListException e) {
+            log.error("Failed to publish status list {} to registry.", update.statusList().getId(), e);
         }
     }
-
+    
     public record StatusListRegistryUpdate(StatusList statusList, TokenStatusListToken token) {
     }
 }

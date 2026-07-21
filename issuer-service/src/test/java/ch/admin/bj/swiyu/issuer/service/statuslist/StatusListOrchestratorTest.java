@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -41,12 +42,13 @@ import static org.mockito.Mockito.*;
 class StatusListOrchestratorTest {
     private final UUID statusRegistryEntryId = UUID.randomUUID();
     private StatusListOrchestrator statusListOrchestrator;
-    private StatusListPersistenceService statusListPersistenceService;
     private StatusListRepository statusListRepository;
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
+    private ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void setUp() throws JOSEException, KeyStrategyException {
+        eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
         when(applicationProperties.getIssuerId()).thenReturn("did:example:mock");
         StatusListProperties statusListProperties = Mockito.mock(StatusListProperties.class);
@@ -70,8 +72,9 @@ class StatusListOrchestratorTest {
                 .thenReturn(signer);
         credentialOfferStatusRepository = Mockito.mock(CredentialOfferStatusRepository.class);
         when(credentialOfferStatusRepository.countByStatusListId(Mockito.any())).thenReturn(0);
+        doNothing().when(eventPublisher).publishEvent(Mockito.any());
 
-        statusListPersistenceService = Mockito.mock(StatusListPersistenceService.class);
+        StatusListPersistenceService statusListPersistenceService = Mockito.mock(StatusListPersistenceService.class);
 
         statusListOrchestrator = new StatusListOrchestrator(
                 statusListProperties,
@@ -79,7 +82,8 @@ class StatusListOrchestratorTest {
                 statusListPersistenceService,
                 statusListRepository,
                 transaction,
-                credentialOfferStatusRepository);
+                credentialOfferStatusRepository,
+                eventPublisher);
 
         when(statusListProperties.getStatusListSizeLimit()).thenReturn(1000);
     }
@@ -95,7 +99,7 @@ class StatusListOrchestratorTest {
 
         statusListOrchestrator.createStatusList(request);
 
-        verify(statusListPersistenceService).publishToRegistry(any(StatusListPersistenceService.StatusListRegistryUpdate.class));
+        verify(eventPublisher).publishEvent(any(StatusListPersistenceService.StatusListRegistryUpdate.class));
     }
 
 
