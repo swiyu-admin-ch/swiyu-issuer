@@ -36,3 +36,6 @@ config/*
 /codeql/
 /codeql-results.sarif
 /swiyu-issuer-codeql-db/
+
+### Pact ###
+**/pact.log
