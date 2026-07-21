@@ -16,7 +16,6 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -184,7 +183,6 @@ class TrustStatementInjectionServiceTest {
                 .getProtectedIssuanceAuthorizationTrustStatement()).isEqualTo(mdlPiaTs);
     }
 
-    @Disabled // todo check when jwt verification re-enabled
     @Test
     void injectTrustStatements_withValidator_injectsWhenValidationPasses() throws Exception {
         String elfaPiaTs = buildPiaTsJwt(VCT_ELFA);
@@ -203,7 +201,6 @@ class TrustStatementInjectionServiceTest {
                 .getProtectedIssuanceAuthorizationTrustStatement()).isEqualTo(elfaPiaTs);
     }
 
-    @Disabled // todo check when jwt verification re-enabled
     @Test
     void injectTrustStatements_withValidator_invalidatesCacheWhenValidationFails() throws Exception {
         String elfaPiaTs = buildPiaTsJwt(VCT_ELFA);
