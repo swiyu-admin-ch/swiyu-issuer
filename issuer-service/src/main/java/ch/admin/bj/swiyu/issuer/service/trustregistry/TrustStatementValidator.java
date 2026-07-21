@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
 import ch.admin.bj.swiyu.didresolveradapter.DidResolverAdapter;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties.TrustRegistryProperties;
 import ch.admin.bj.swiyu.issuer.common.date.TimeUtil;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
@@ -56,7 +57,7 @@ import com.nimbusds.jwt.SignedJWT;
 public class TrustStatementValidator {
 
     private final DidJwtValidator trustStatementDidJwtValidator;
-    private final TrustRegistryProperties trustRegistryProperties;
+    private final SwiyuProperties swiyuProperties;
 
     private final StatusListCacheService statusListCacheService;
     private final DidKeyResolverFacade keyLoader;
@@ -92,11 +93,11 @@ public class TrustStatementValidator {
             StatusVerificationResultDto statusListState = statusListVerifier.verifyStatus(reference, statusList);
             
             // Compute TTL in Nanoseconds
-            long minimumTimeoutNs = TimeUnit.SECONDS.toNanos(trustRegistryProperties.maxCacheTtlSeconds());
+            long minimumTimeoutNs = TimeUnit.SECONDS.toNanos(swiyuProperties.trustRegistry().maxCacheTtlSeconds());
             minimumTimeoutNs = TimeUtil.minNanosUntilExpiry(minimumTimeoutNs, TimeUtil.secondsToNanos(statusList.getExp()));
             minimumTimeoutNs = TimeUtil.minNanosUntilExpiry(minimumTimeoutNs, trustStatementJWT.getJWTClaimsSet().getExpirationTime());
             // Substract the clock skew from expiration time to ensure that we fetch sufficiently soon the new Trust Statement
-            minimumTimeoutNs = Math.max(0, minimumTimeoutNs - trustRegistryProperties.clockSkewBufferSeconds());
+            minimumTimeoutNs = Math.max(0, minimumTimeoutNs - swiyuProperties.trustRegistry().clockSkewBufferSeconds());
             minimumTimeoutNs = TimeUtil.minWithNullable(minimumTimeoutNs, TimeUtil.secondsToNanos(statusList.getTtl()));
             log.debug("Trust statement state validation completed - Validity: {} Cache TTL {} - DID: {}, URL: {}", statusListState.valid(), minimumTimeoutNs, didString, didUrl);
 
@@ -105,7 +106,7 @@ public class TrustStatementValidator {
 
         } catch (IllegalArgumentException | ParseException | IOException | JwtValidatorException e) {
             log.info("Malformed or invalid Trust Statement detected: {} - Ignoring it", jwtString, e);
-            return new TrustStatementValidationResult(false, TimeUtil.secondsToNanos(trustRegistryProperties.requestBackoffSeconds()));
+            return new TrustStatementValidationResult(false, TimeUtil.secondsToNanos(swiyuProperties.trustRegistry().requestBackoffSeconds()));
         }
     }
 

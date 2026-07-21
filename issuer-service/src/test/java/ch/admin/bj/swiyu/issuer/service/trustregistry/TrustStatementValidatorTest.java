@@ -28,6 +28,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties.TrustRegistryProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
@@ -63,8 +64,10 @@ class TrustStatementValidatorTest {
         trustRegistryProperties = mock(TrustRegistryProperties.class);
         statusListCacheService = mock(StatusListCacheService.class);
         statusListVerifier = mock(TokenStatusListVerifier.class);
+        var swiyuProperties = mock(SwiyuProperties.class);
+        when(swiyuProperties.trustRegistry()).thenReturn(trustRegistryProperties);
         when(urlRewriteProperties.getUrlMappings()).thenReturn(Map.of());
-        validator = new TrustStatementValidator(trustStatementDidJwtValidator, trustRegistryProperties,
+        validator = new TrustStatementValidator(trustStatementDidJwtValidator, swiyuProperties,
                 statusListCacheService, didResolverAdapter, statusListVerifier);
                         when(trustStatementDidJwtValidator.getAndValidateResolutionUrl(anyString())).thenReturn("TEST");
         when(trustStatementDidJwtValidator.getDidString(anyString())).thenReturn("TEST");
