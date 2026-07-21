@@ -51,7 +51,7 @@
         <springframework.cloud.version>2025.1.1</springframework.cloud.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <generic-java-lib.version>1.7.0</generic-java-lib.version>
+        <generic-java-lib.version>1.8.1</generic-java-lib.version>
         <pact.version>4.7.3</pact.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
         <netty.version>4.2.15.Final</netty.version>
@@ -142,6 +142,14 @@
                 <artifactId>swiyu-dpop-util</artifactId>
                 <version>${generic-java-lib.version}</version>
             </dependency>
+            <dependency>
+                <groupId>ch.admin.swiyu</groupId>
+                <artifactId>swiyu-token-status-list</artifactId>
+                <version>${generic-java-lib.version}</version>
+            </dependency>
+            
+            
+            <!-- PACT TEST -->
             <dependency>
                 <groupId>au.com.dius.pact.consumer</groupId>
                 <artifactId>junit5</artifactId>

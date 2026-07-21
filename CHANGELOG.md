@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added new config `application.accepted-registry-hosts` to allow restricting the allowed hosts for the trust registry.
   Don't change this unless you know what you are doing, as it may break the trust registry and
   status registry functionality.
+- Verification of Trust Statements with Status Lists using caching according to exp, ttl or maximum cache ttl.
 
 ### Fixed
 
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed incorrect caching of invalid trust statement responses (#996).
 - The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value (
   #1116).
+
 
 ## [4.0.1] - 2026-07-09
 
