@@ -54,9 +54,9 @@ public class TimeUtil {
     /**
      * Returns the minimum of two values, treating null as "no comparison".
      * 
-     * @param accumulator   The base value (in nanoseconds).
-     * @param nullableValue The nullable value to compare (in nanoseconds).
-     * @return The smaller of the two values, or accumulator if nullableValue is
+     * @param accumulator  The base value (in nanoseconds).
+     * @param nullableLong The nullable value to compare (in nanoseconds).
+     * @return The smaller of the two values, or accumulator if nullableLong is
      *         null.
      */
     public long minWithNullable(long accumulator, @Nullable Long nullableLong) {

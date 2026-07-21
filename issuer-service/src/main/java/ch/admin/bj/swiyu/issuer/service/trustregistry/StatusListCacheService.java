@@ -112,7 +112,7 @@ private final DidKidParser didKidParser = new DidKidParser();
             @Override
             public long expireAfterRead(String key, Optional<TokenStatusListTokenDto> value, long currentTime,
                     long currentDuration) {
-                return currentTime;
+                return currentDuration;
             }
             
             private long getTtlOrBackoff(Optional<TokenStatusListTokenDto> value) {
