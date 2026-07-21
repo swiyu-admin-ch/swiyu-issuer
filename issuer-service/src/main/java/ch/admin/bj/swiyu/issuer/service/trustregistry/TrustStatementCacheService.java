@@ -10,6 +10,7 @@ import com.github.benmanes.caffeine.cache.Expiry;
 import com.nimbusds.jwt.JWTParser;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 
@@ -82,8 +83,8 @@ public class TrustStatementCacheService {
      * because the Trust Registry issues one piaTS per authorised credential type (VCT).
      * Callers must match individual JWTs to credential configurations by their {@code vct} claim.</p>
      */
-    private final Cache<String, Optional<String>> idTsCache;
-    private final Cache<String, Optional<List<String>>> piaTsCache;
+    private final Cache<String, String> idTsCache;
+    private final Cache<String, List<String>> piaTsCache;
 
     /**
      * Creates a new {@code TrustStatementCacheService}.
@@ -115,8 +116,7 @@ public class TrustStatementCacheService {
      */
     @Nullable
     public String getIdentityTrustStatement(String issuerDid) {
-        Optional<String> cached = idTsCache.get(issuerDid, this::fetchIdentityTrustStatement);
-        return cached.isPresent() ? cached.orElse(null) : null;
+        return idTsCache.get(issuerDid, this::fetchIdentityTrustStatement);
     }
 
     /**
@@ -133,12 +133,14 @@ public class TrustStatementCacheService {
      * @return an unmodifiable list of piaTS JWT strings; empty if none are available
      */
     public List<String> getAllProtectedIssuanceAuthorizationTrustStatements(String issuerDid) {
-        Optional<List<String>> cached = piaTsCache.get(issuerDid, this::fetchAllProtectedIssuanceAuthorizationTrustStatements);
-        return cached.orElse(List.of());
+        var cached = piaTsCache.get(issuerDid, this::fetchAllProtectedIssuanceAuthorizationTrustStatements);
+        return cached != null ? cached : List.of();
     }
 
-
-    private Optional<String> fetchIdentityTrustStatement(String issuerDid) {
+    /**
+     * Returns either a JWT (String) or null if the fetch failed.
+     */
+    private String fetchIdentityTrustStatement(String issuerDid) {
         try {
             String jwt = trustProtocol20Api.getIdTS(issuerDid).block();
             if (jwt == null) {
@@ -147,17 +149,20 @@ public class TrustStatementCacheService {
             // Experimental - trust statement checks not finished yet
             validateTrustStatement(jwt, "idTS", issuerDid);
 
-            return Optional.ofNullable(jwt);
+            return jwt;
         } catch (JwtValidatorException e) {
             log.warn("idTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
-            return Optional.empty();
+            return null;
         } catch (RuntimeException e) {
             log.warn("Failed to fetch idTS for issuer {}: {}", issuerDid, e.getMessage());
-            return Optional.empty();
+            return null;
         }
     }
 
-    private Optional<List<String>> fetchAllProtectedIssuanceAuthorizationTrustStatements(String issuerDid) {
+    /**
+     * Returns either a List<String> of jwts or null if the fetch failed.
+     */
+    private List<String> fetchAllProtectedIssuanceAuthorizationTrustStatements(String issuerDid) {
         try {
             var response = trustProtocol20Api.listPiaTS(issuerDid, true, null, null, null).block();
             List<String> jwts = response != null && response.getContent() != null
@@ -166,7 +171,7 @@ public class TrustStatementCacheService {
 
             if (jwts.isEmpty()) {
                 log.warn("No piaTS trust statements found for issuer {}", issuerDid);
-                return Optional.empty();
+                return jwts;
             }
 
             log.debug("Fetched {} piaTS JWT(s) for issuer {}", jwts.size(), issuerDid);
@@ -174,13 +179,13 @@ public class TrustStatementCacheService {
                 // Experimental - trust statement checks not finished yet
                 validateTrustStatement(jwt, "piaTS", issuerDid);
             }
-            return Optional.of(List.copyOf(jwts));
+            return List.copyOf(jwts);
         } catch (JwtValidatorException e) {
             log.warn("piaTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
-            return Optional.empty();
+            return null;
         } catch (RuntimeException e) {
             log.warn("API or network error fetching piaTS for issuer {}: {}", issuerDid, e.getMessage());
-            return Optional.empty();
+            return null;
         }
 
     }
@@ -254,7 +259,7 @@ public class TrustStatementCacheService {
      * The expiry of each entry is calculated from the {@code exp} claim of the cached JWT,
      * minus a clock-skew buffer to ensure served statements are still valid upon receipt.
      */
-    private Cache<String, Optional<String>> buildCache() {
+    private Cache<String, String> buildCache() {
         return Caffeine.newBuilder()
                 .maximumSize(maxCacheSize)
                 .expireAfter(buildExpiry())
@@ -270,22 +275,22 @@ public class TrustStatementCacheService {
      * This prevents a JWT with a short lifetime from being served after its expiry just because
      * another JWT in the same list has a later {@code exp}.</p>
      */
-    private Cache<String, Optional<List<String>>> buildPiaTsCache() {
+    private Cache<String, List<String>> buildPiaTsCache() {
         return Caffeine.newBuilder()
                 .maximumSize(maxCacheSize)
-                .expireAfter(new Expiry<String, Optional<List<String>>>() {
+                .expireAfter(new Expiry<String, List<String>>() {
                     @Override
-                    public long expireAfterCreate(String key, Optional<List<String>> jwtsOpt, long currentTime) {
-                        return computeMinNanosUntilExpiry(jwtsOpt);
+                    public long expireAfterCreate(@NonNull String key, List<String> jwt, long currentTime) {
+                        return computeMinNanosUntilExpiry(jwt);
                     }
 
                     @Override
-                    public long expireAfterUpdate(String key, Optional<List<String>> jwtsOpt, long currentTime, long currentDuration) {
-                        return computeMinNanosUntilExpiry(jwtsOpt);
+                    public long expireAfterUpdate(@NonNull String key, List<String> jwt, long currentTime, long currentDuration) {
+                        return computeMinNanosUntilExpiry(jwt);
                     }
 
                     @Override
-                    public long expireAfterRead(String key, Optional<List<String>> jwtsOpt, long currentTime, long currentDuration) {
+                    public long expireAfterRead(@NonNull String key, List<String> jwt, long currentTime, long currentDuration) {
                         return currentDuration;
                     }
                 })
@@ -298,16 +303,21 @@ public class TrustStatementCacheService {
      *
      * <p>If the list is absent or empty (negative cache), {@link #NEGATIVE_CACHE_TTL_SECONDS} is used.</p>
      *
-     * @param jwtsOpt the optional list of piaTS JWT strings
+     * @param jwt the optional list of piaTS JWT strings
      * @return TTL in nanoseconds
      */
-    private long computeMinNanosUntilExpiry(Optional<List<String>> jwtsOpt) {
-        return jwtsOpt
-                .filter(list -> !list.isEmpty())
-                .map(list -> list.stream()
-                        .mapToLong(TrustStatementCacheService.this::computeNanosUntilExpiry)
-                        .min()
-                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS)))
+    private long computeMinNanosUntilExpiry(List<String> jwt) {
+        if (jwt == null) {
+            return TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS);
+        }
+
+        if (jwt.isEmpty()) {
+            return TimeUnit.SECONDS.toNanos(maxCacheTtlSeconds);
+        }
+
+        return jwt.stream()
+                .mapToLong(this::computeNanosUntilExpiry)
+                .min()
                 .orElseGet(() -> TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS));
     }
 
@@ -315,23 +325,28 @@ public class TrustStatementCacheService {
      * Returns a Caffeine {@link Expiry} that derives the per-entry TTL from the JWT {@code exp} claim.
      * On read, the remaining duration is preserved unchanged.
      */
-    private Expiry<String, Optional<String>> buildExpiry() {
+    private Expiry<String, String> buildExpiry() {
         return new Expiry<>() {
             @Override
-            public long expireAfterCreate(String key, Optional<String> jwtOpt, long currentTime) {
-                return jwtOpt.map(TrustStatementCacheService.this::computeNanosUntilExpiry)
-                        // Negative Caching: Bei API-Fehler für 30 Sekunden nicht mehr probieren!
-                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS));
+            public long expireAfterCreate(@NonNull String key, String jwt, long currentTime) {
+                if (jwt == null) {
+                    // Negative Caching: Do not try it again for 30s
+                    return TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS);
+                }
+                return computeNanosUntilExpiry(jwt);
             }
 
             @Override
-            public long expireAfterUpdate(String key, Optional<String> jwtOpt, long currentTime, long currentDuration) {
-                return jwtOpt.map(TrustStatementCacheService.this::computeNanosUntilExpiry)
-                        .orElseGet(() -> TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS));
+            public long expireAfterUpdate(@NonNull String key, String jwt, long currentTime, long currentDuration) {
+                if (jwt == null) {
+                    // Negative Caching: Do not try it again for 30s
+                    return TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS);
+                }
+                return computeNanosUntilExpiry(jwt);
             }
 
             @Override
-            public long expireAfterRead(String key, Optional<String> jwtOpt, long currentTime, long currentDuration) {
+            public long expireAfterRead(@NonNull String key, String jwt, long currentTime, long currentDuration) {
                 return currentDuration;
             }
         };

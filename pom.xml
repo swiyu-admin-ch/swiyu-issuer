@@ -37,7 +37,7 @@
         <javacrumbs.shedlock.version>6.10.0</javacrumbs.shedlock.version>
         <archunit-junit5.verion>1.4.2</archunit-junit5.verion>
         <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
-        <bouncycastle.version>1.84</bouncycastle.version>
+        <bouncycastle.version>1.85</bouncycastle.version>
         <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
         <springdoc-openapi-starter-webmvc-ui.version>3.0.0</springdoc-openapi-starter-webmvc-ui.version>
         <openapi-generator-maven-plugin.version>7.23.0</openapi-generator-maven-plugin.version>
@@ -52,12 +52,13 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <generic-java-lib.version>1.7.0</generic-java-lib.version>
+        <pact.version>4.7.3</pact.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
         <netty.version>4.2.15.Final</netty.version>
         <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
         <tomcat.version>11.0.23</tomcat.version>
         <!-- Fixes CVE-2026-13006 -->
-        <logback-core.version>1.5.37</logback-core.version>
+        <logback-core.version>1.5.38</logback-core.version>
         <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
         <tomcat.version>11.0.23</tomcat.version>
     </properties>
@@ -65,12 +66,39 @@
     <dependencyManagement>
         <dependencies>
 
+            <!-- Fixes CVE-2026-59889 -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.21.5</version>
+            </dependency>
+
+            <!-- COMPLETELY EXCLUDE Jackson 3.x to prevent CVE-2026-59889 -->
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>3.1.5</version>
+                <scope>provided</scope> <!-- Mark as provided so it's never included -->
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>3.1.5</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>3.1.5</version>
+                <scope>provided</scope>
+            </dependency>
+
             <!-- Fixes CVE-2026-42198 -->
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <scope>runtime</scope>
-                <version>42.7.12</version>
+                <version>42.7.13</version>
             </dependency>
 
             <!-- Todo check again on spring boot upgrade-->
@@ -113,6 +141,12 @@
                 <groupId>ch.admin.swiyu</groupId>
                 <artifactId>swiyu-dpop-util</artifactId>
                 <version>${generic-java-lib.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>au.com.dius.pact.consumer</groupId>
+                <artifactId>junit5</artifactId>
+                <version>${pact.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

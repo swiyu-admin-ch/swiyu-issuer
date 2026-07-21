@@ -53,7 +53,7 @@ jobs:
           java-version: '21'
           cache: 'maven'
       - name: Cache PGP keys for pgpverify-maven-plugin
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ~/.m2/repository/pgpkeys-cache
           key: pgp-keys-${{ hashFiles('pgp/keys.list') }}
@@ -75,7 +75,7 @@ jobs:
       # This enables consumers to verify that an image was genuinely built and
       # published by this GitHub Actions workflow.
       - name: Install Cosign
-        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
 
       # During the dual-image transition period we publish two variants:
       #   - Default (unsuffixed):  hardened dhi.io image, no shell, nonroot user.
