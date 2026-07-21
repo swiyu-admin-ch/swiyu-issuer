@@ -6,6 +6,8 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
 import ch.admin.bj.swiyu.jwtvalidator.UrlRestriction;
+import ch.admin.bj.swiyu.statuslist.TokenStatusListVerifier;
+import ch.admin.bj.swiyu.statuslist.TokenStatusListVerifierConfig;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -72,5 +74,17 @@ public class TrustRegistryConfig {
             log.info("Configuring trust statement JWT validator with allowed DID host: {}", host);
         }
         return new DidJwtValidator(new UrlRestriction(hosts));
+    }
+
+    /**
+     * Creates a {@link TokenStatusListVerifier} which can be configured using the application properties
+     * @return the {@link TokenStatusListVerifier} bean named {@code tokenStatusListVerifier}
+     */
+    @Bean
+    public TokenStatusListVerifier tokenStatusListVerifier() {
+        return new TokenStatusListVerifier(
+            TokenStatusListVerifierConfig.builder()
+                .issuerMustMatch(true)
+                .build());
     }
 }
