@@ -25,7 +25,6 @@ public class StatusRegistryClient {
 
     private final SwiyuProperties swiyuProperties;
     private final StatusBusinessApiApi statusBusinessApi;
-    private final StatusRegistryTokenService statusRegistryTokenService;
 
     /**
      * Creates a status list entry for the configured business partner
@@ -64,7 +63,7 @@ public class StatusRegistryClient {
         }
     }
 
-    public void updateStatusListEntry(StatusList target, String statusListJWT) {
+    public void updateStatusListEntry(StatusList target, String statusListJWT) throws UpdateStatusListException {
 
         try {
             log.debug("Updating status list entry {} for business partner id {} on {}", target.getUri(), swiyuProperties.businessPartnerId(), statusBusinessApi.getApiClient().getBasePath());

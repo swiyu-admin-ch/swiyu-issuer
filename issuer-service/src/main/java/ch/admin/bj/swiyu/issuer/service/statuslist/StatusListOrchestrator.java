@@ -17,6 +17,7 @@ import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,11 +74,11 @@ public class StatusListOrchestrator {
     private final StatusListProperties statusListProperties;
 
     private final StatusRegistryClient statusRegistryClient;
-    private final StatusListPersistenceService statusListPersistenceService;
 
     private final StatusListRepository statusListRepository;
     private final TransactionTemplate transaction;
     private final CredentialOfferStatusRepository credentialOfferStatusRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     /**
@@ -156,7 +157,10 @@ public class StatusListOrchestrator {
 
         mergeAndPersistConfigurationOverrideIfPresent(overrideDto, statusList);
 
-        statusListPersistenceService.publishToRegistry(new StatusListPersistenceService.StatusListRegistryUpdate(statusList, token));
+        // Publish event instead of direct call
+        eventPublisher.publishEvent(
+                new StatusListPersistenceService.StatusListRegistryUpdate(statusList, token)
+        );
 
         return toStatusListDto(statusList,
                 statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusList.getId()));
@@ -222,7 +226,10 @@ public class StatusListOrchestrator {
                 .build();
         log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits() * statusList.getMaxLength());
 
-        statusListPersistenceService.publishToRegistry(new StatusListPersistenceService.StatusListRegistryUpdate(statusList, token));
+        // Publish event instead of direct call
+        eventPublisher.publishEvent(
+                new StatusListPersistenceService.StatusListRegistryUpdate(statusList, token)
+        );
         return statusList;
     }
 
