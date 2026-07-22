@@ -1,32 +1,26 @@
 package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
-import ch.admin.bj.swiyu.didresolveradapter.DidResolverAdapter;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties.TrustRegistryProperties;
 import ch.admin.bj.swiyu.issuer.common.date.TimeUtil;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
+import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+import ch.admin.bj.swiyu.jwtvalidator.DidKidParser;
+import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
 import ch.admin.bj.swiyu.statuslist.TokenStatusListVerifier;
 import ch.admin.bj.swiyu.statuslist.dto.StatusVerificationResultDto;
 import ch.admin.bj.swiyu.statuslist.dto.TokenStatusListMapper;
 import ch.admin.bj.swiyu.statuslist.dto.TokenStatusListReferenceDto;
 import ch.admin.bj.swiyu.statuslist.dto.TokenStatusListTokenDto;
-import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
-import ch.admin.bj.swiyu.jwtvalidator.DidKidParser;
-import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jwt.SignedJWT;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Validates Trust Statement JWTs (idTS and piaTS) using the two-step Flow B of
@@ -63,14 +57,15 @@ public class TrustStatementValidator {
     private final DidKeyResolverFacade keyLoader;
     private final TokenStatusListVerifier statusListVerifier;
     private final DidKidParser didKidParser = new DidKidParser();
-    
+
 
     /**
-     * Validates the Trust Statement JWT and (if any) associated Status Lists. Computes the validity window 
-     * (the time the trust statement can be cached for) from the 
+     * Validates the Trust Statement JWT and (if any) associated Status Lists. Computes the validity window
+     * (the time the trust statement can be cached for) from the
      * minimum validity of the Trust Statement expiry, Status List Expiry, Status List TTL or Trust Statement Cache TTL.
      * <br>
      * Does NOT validate if the Trust Statement is correct in the context it is being used!
+     *
      * @param jwtString
      * @return TrustStatementValidationResult containing if the trust statement has a valid state and the milliseconds the trust statement can be cached
      */
@@ -86,12 +81,12 @@ public class TrustStatementValidator {
             String kid = didKidParser.extractKidFromHeader(jwtString);
             SignedJWT trustStatementJWT = SignedJWT.parse(jwtString);
             JWK trustStatementKey = keyLoader.resolveKey(kid);
-            trustStatementDidJwtValidator.validateJwt(jwtString, new JWKSet(trustStatementKey));
+            trustStatementDidJwtValidator.validateJwt(jwtString, trustStatementKey);
             log.debug("Trust statement validation passed - DID: {}, URL: {}", didString, didUrl);
             TokenStatusListReferenceDto reference = TokenStatusListMapper.toTokenStatusListReference(trustStatementJWT.getJWTClaimsSet().getClaims());
             TokenStatusListTokenDto statusList = statusListCacheService.getTokenStatusListTokenByUri(reference.getReferencedStatusListUri());
             StatusVerificationResultDto statusListState = statusListVerifier.verifyStatus(reference, statusList);
-            
+
             // Compute TTL in Nanoseconds
             long minimumTimeoutNs = TimeUnit.SECONDS.toNanos(swiyuProperties.trustRegistry().maxCacheTtlSeconds());
             minimumTimeoutNs = TimeUtil.minNanosUntilExpiry(minimumTimeoutNs, TimeUtil.secondsToNanos(statusList.getExp()));
@@ -111,7 +106,7 @@ public class TrustStatementValidator {
     }
 
     /**
-     * @param isValid is the statement validated valid & to be used
+     * @param isValid        is the statement validated valid & to be used
      * @param valditiyWindow how long this validation result may be used in nanoseconds
      */
     public record TrustStatementValidationResult(boolean isValid, long valditiyWindow) {

@@ -78,13 +78,15 @@ public class TrustRegistryConfig {
 
     /**
      * Creates a {@link TokenStatusListVerifier} which can be configured using the application properties
+     *
      * @return the {@link TokenStatusListVerifier} bean named {@code tokenStatusListVerifier}
      */
     @Bean
     public TokenStatusListVerifier tokenStatusListVerifier() {
         return new TokenStatusListVerifier(
-            TokenStatusListVerifierConfig.builder()
-                .issuerMustMatch(true)
-                .build());
+                TokenStatusListVerifierConfig.builder()
+                        // TODO EIDOMNI-1185 temporarily switched off as iss is used in lib but should be kid
+                        .issuerMustMatch(false)
+                        .build());
     }
 }
