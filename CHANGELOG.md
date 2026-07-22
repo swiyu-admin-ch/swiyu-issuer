@@ -24,9 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-enabled jwt checks for trust statements, which were temporarily disabled. Do not use trust statements yet, as the
   checks are not yet fully implemented and may cause issues.
 - Fixed incorrect caching of invalid trust statement responses `(#996)`.
-- The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value `(#1116)`.
+- The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value
+  `(#1116)`.
 - NullPointerException on missing Type during JWTAttestation parsing `(#1129)`.
 
+### Changed
+
+- Updated generic-java-lib to 1.8.3
 
 ## [4.0.1] - 2026-07-09
 

@@ -85,8 +85,7 @@ public class TrustRegistryConfig {
     public TokenStatusListVerifier tokenStatusListVerifier() {
         return new TokenStatusListVerifier(
                 TokenStatusListVerifierConfig.builder()
-                        // TODO EIDOMNI-1185 temporarily switched off as iss is used in lib but should be kid
-                        .issuerMustMatch(false)
+                        .issuerMustMatch(true)
                         .build());
     }
 }
