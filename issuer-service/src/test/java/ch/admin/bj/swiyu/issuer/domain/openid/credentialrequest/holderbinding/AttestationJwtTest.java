@@ -26,6 +26,28 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AttestationJwtTest {
+
+    @Test
+    void parseJwt_withValidJwt_returnsAttestationJwt() throws JOSEException {
+        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .keyID(signingKey.getKeyID())
+                .type(new JOSEObjectType("key-attestation+jwt"))
+                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                .build(),
+                new JWTClaimsSet.Builder()
+                        .issuer("did:example:issuer")
+                        .issueTime(new Date())
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
+                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
+                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
+                        .build());
+        attestation.sign(new ECDSASigner(signingKey));
+        var parsedJwt = attestation.serialize();
+
+        Assertions.assertDoesNotThrow(() -> AttestationJwt.parseJwt(parsedJwt, true));
+    }
+
     /**
      * If only the issuer is checked for being trusted and the key id is used to resolve the public key, it is
      */
@@ -88,6 +110,50 @@ class AttestationJwtTest {
                 .keyID(signingKey.getKeyID())
                 .type(new JOSEObjectType("key-attestation+jwt"))
                 // intentionally no profile_version
+                .build(),
+                new JWTClaimsSet.Builder()
+                        .issuer("did:example:issuer")
+                        .issueTime(new Date())
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
+                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
+                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
+                        .build());
+        attestation.sign(new ECDSASigner(signingKey));
+        var parsedJwt = attestation.serialize();
+
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> AttestationJwt.parseJwt(parsedJwt, true));
+    }
+
+    @Test
+    void parseJwt_withMissingTypeHeader_throwsIllegalArgumentException() throws JOSEException {
+        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .keyID(signingKey.getKeyID())
+                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                // intentionally no profile_version
+                .build(),
+                new JWTClaimsSet.Builder()
+                        .issuer("did:example:issuer")
+                        .issueTime(new Date())
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
+                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
+                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
+                        .build());
+        attestation.sign(new ECDSASigner(signingKey));
+        var parsedJwt = attestation.serialize();
+
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> AttestationJwt.parseJwt(parsedJwt, true));
+    }
+
+    @Test
+    void parseJwt_withInvalidTypeHeader_throwsIllegalArgumentException() throws JOSEException {
+        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .keyID(signingKey.getKeyID())
+                .type(new JOSEObjectType("unsupported type"))
+                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build(),
                 new JWTClaimsSet.Builder()
                         .issuer("did:example:issuer")
@@ -218,7 +284,6 @@ class AttestationJwtTest {
                 .keyID(signingKey.getKeyID())
                 .type(new JOSEObjectType("key-attestation+jwt"))
                 .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
-                // intentionally no profile_version
                 .build(),
                 new JWTClaimsSet.Builder()
                         .issuer("did:example:issuer")

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added static compliance tests for the Swiss Profile / OID4VCI contract (OpenID Configuration, Credential Issuer
   Metadata, Credential Endpoint, Deferred Credential Endpoint, Nonce, VCT, OCA, JSON Schema endpoints) verifying the
   OpenAPI specification against the OID4VCI spec and Swiss Profile requirements. Tests that require outstanding fixes
-  in the OpenAPI contract are disabled and tracked in (#1127).
+  in the OpenAPI contract are disabled and tracked in `(#1127)`.
 - Added new config `application.accepted-registry-hosts` to allow restricting the allowed hosts for the trust registry.
   Don't change this unless you know what you are doing, as it may break the trust registry and
   status registry functionality.
@@ -20,12 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed missing claim validation, now also validates the attestation claims `nbf` and `iat` (#1066).
+- Fixed missing claim validation, now also validates the attestation claims `nbf` and `iat` `(#1066)`.
 - Re-enabled jwt checks for trust statements, which were temporarily disabled. Do not use trust statements yet, as the
   checks are not yet fully implemented and may cause issues.
-- Fixed incorrect caching of invalid trust statement responses (#996).
-- The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value (
-  #1116).
+- Fixed incorrect caching of invalid trust statement responses `(#996)`.
+- The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value `(#1116)`.
+- NullPointerException on missing Type during JWTAttestation parsing `(#1129)`.
 
 
 ## [4.0.1] - 2026-07-09
@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security:** Published container images (hardened and unhardened variants) are now automatically signed with
   [Cosign](https://docs.sigstore.dev/) using keyless OIDC signing in the GitHub Actions build workflow. Signatures are
   bound to the immutable image digest and published to the Sigstore transparency log, allowing consumers to verify image
-  authenticity via `cosign verify` (#838).
+  authenticity via `cosign verify` `(#838)`.
 
 - Integrate `pgpverify-maven-plugin` to cryptographically verify PGP signatures of all third-party dependencies during
   the build. The build fails if an artifact has no signature or an invalid signature. PGP keys are cached in CI/CD to
@@ -156,7 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Further opened up DPoP `htu` claim URL rewriting to support partial path-based rewrites via `external_url`, enabling
-  setups where the public URI contains a path prefix  `(#EIDOMNI-971)`. *(Fixed via `generic-java-lib` 1.6.0)*
+  setups where the public URI contains a path prefix  `(#971)`. *(Fixed via `generic-java-lib` 1.6.0)*
 
 ## [3.1.0] - 2026-05-11
 
@@ -343,23 +343,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added optional support for DPoP for wallets to begin adopting DPoP for more secure communication.
   As operator of an issuer there is action needed. This feature is added automatically.
   Note: In the future this will be enforced
-- Implemented Refresh Flow as Draft implementation according spez. Should not yet used in production (#292)
+- Implemented Refresh Flow as Draft implementation according spez. Should not yet used in production `(#292)`
 - Integrated Spring State Machine for credential offer and management lifecycles, improving state management and error
   handling (#292).
-- Added option to disable/enable refresh_token rotation after usage (#464).
-- Added test coverage for signed metadata usage and renewal flow (#200, #292).
+- Added option to disable/enable refresh_token rotation after usage `(#464)`.
+- Added test coverage for signed metadata usage and renewal flow `(#200, #292)`.
 
 ### Fixed
 
-- Fixed missing alg field in JWKS keys for metadata endpoint (#597).
-- Corrected subject claim in signed metadata and improved metadata endpoint to prefer signed data (#570).
-- Fixed size limitations for incoming token calls and responses (#363).
-- Fixed edge case with ephemeral signing keys causing server errors (#426).
+- Fixed missing alg field in JWKS keys for metadata endpoint `(#597)`.
+- Corrected subject claim in signed metadata and improved metadata endpoint to prefer signed data `(#570)`.
+- Fixed size limitations for incoming token calls and responses `(#363)`.
+- Fixed edge case with ephemeral signing keys causing server errors `(#426)`.
 - Fixed logs displaying management id incorrectly.
-- Fixed tests and improved code for signed metadata (#570, #597).
-- Fixed response size limitation for token calls (#363).
-- Fixed error handling for credential requests missing JWT proof (#425).
-- Fixed IT tests for RFC6749 compliance (#504).
+- Fixed tests and improved code for signed metadata `(#570, #597)`.
+- Fixed response size limitation for token calls `(#363)`.
+- Fixed error handling for credential requests missing JWT proof `(#425)`.
+- Fixed IT tests for RFC6749 compliance `(#504)`.
 
 ## 2.2.0
 
