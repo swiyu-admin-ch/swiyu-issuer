@@ -66,7 +66,7 @@ public class StatusListCacheService {
             String statusListJWT = statusRegistryClient.resolveStatusList(uri);
             SignedJWT tokenStatusListJWT = SignedJWT.parse(statusListJWT);
             TokenStatusListVerifier.hasValidTokenStatusListTokenHeader(tokenStatusListJWT.getHeader());
-            TokenStatusListTokenDto statusList = TokenStatusListMapper.toTokenStatusListToken(tokenStatusListJWT.getJWTClaimsSet().getClaims());
+            TokenStatusListTokenDto statusList = TokenStatusListMapper.toTokenStatusListToken(tokenStatusListJWT.getJWTClaimsSet().getClaims(), tokenStatusListJWT.getHeader());
             String kid = didKidParser.extractKidFromHeader(statusListJWT);
             JWK statusListKey = keyResolver.resolveKey(kid);
             didJwtValidator.validateJwt(statusListJWT, statusListKey);
