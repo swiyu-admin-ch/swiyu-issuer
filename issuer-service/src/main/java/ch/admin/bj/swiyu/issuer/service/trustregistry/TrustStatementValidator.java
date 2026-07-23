@@ -83,7 +83,7 @@ public class TrustStatementValidator {
             JWK trustStatementKey = keyLoader.resolveKey(kid);
             trustStatementDidJwtValidator.validateJwt(jwtString, trustStatementKey);
             log.debug("Trust statement validation passed - DID: {}, URL: {}", didString, didUrl);
-            TokenStatusListReferenceDto reference = TokenStatusListMapper.toTokenStatusListReference(trustStatementJWT.getJWTClaimsSet().getClaims());
+            TokenStatusListReferenceDto reference = TokenStatusListMapper.toTokenStatusListReference(trustStatementJWT.getJWTClaimsSet().getClaims(), trustStatementJWT.getHeader());
             TokenStatusListTokenDto statusList = statusListCacheService.getTokenStatusListTokenByUri(reference.getReferencedStatusListUri());
             StatusVerificationResultDto statusListState = statusListVerifier.verifyStatus(reference, statusList);
 
