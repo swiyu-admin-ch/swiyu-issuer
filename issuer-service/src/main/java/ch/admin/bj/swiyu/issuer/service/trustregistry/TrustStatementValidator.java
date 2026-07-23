@@ -79,10 +79,10 @@ public class TrustStatementValidator {
             String didString = trustStatementDidJwtValidator.getDidString(jwtString);
             log.debug("Trust statement allowlist check passed - DID: {}, URL: {}", didString, didUrl);
             String kid = didKidParser.extractKidFromHeader(jwtString);
-            SignedJWT trustStatementJWT = SignedJWT.parse(jwtString);
             JWK trustStatementKey = keyLoader.resolveKey(kid);
             trustStatementDidJwtValidator.validateJwt(jwtString, trustStatementKey);
             log.debug("Trust statement validation passed - DID: {}, URL: {}", didString, didUrl);
+            SignedJWT trustStatementJWT = SignedJWT.parse(jwtString);
             TokenStatusListReferenceDto reference = TokenStatusListMapper.toTokenStatusListReference(trustStatementJWT.getJWTClaimsSet().getClaims(), trustStatementJWT.getHeader());
             TokenStatusListTokenDto statusList = statusListCacheService.getTokenStatusListTokenByUri(reference.getReferencedStatusListUri());
             StatusVerificationResultDto statusListState = statusListVerifier.verifyStatus(reference, statusList);

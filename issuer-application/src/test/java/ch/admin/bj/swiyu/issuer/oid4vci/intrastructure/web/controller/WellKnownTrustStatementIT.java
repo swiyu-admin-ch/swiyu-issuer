@@ -35,8 +35,6 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -232,5 +230,69 @@ class WellKnownTrustStatementIT {
         log.info("[DEMO] Full response body:\n{}", responseBody);
         log.info("[DEMO] credential_issuer_identity_trust_statement (idTS):\n{}", idTs);
         log.info("[DEMO] protected_issuance_authorization_trust_statement (piaTS) for '{}':\n{}", PROTECTED_CREDENTIAL_KEY, piaTs);
+    }
+
+    @Test
+    void testTenantEndpoint_testCache_TrustStatementsAreInjected() throws Exception {
+        UUID tenantId = createOfferAndGetMetadataTenantId();
+        stubTrustStatements();
+
+        var result = mockMvc.perform(get("/" + tenantId + "/.well-known/openid-credential-issuer")
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                // EIDOMNI-881: idTS field is present and populated at root level
+                .andExpect(jsonPath("$.credential_issuer_identity_trust_statement").value(not(emptyOrNullString())))
+                // EIDOMNI-882: piaTS field is present and populated in Protected VC configuration
+                .andExpect(jsonPath(
+                        "$.credential_configurations_supported."
+                                + PROTECTED_CREDENTIAL_KEY
+                                + ".protected_issuance_authorization_trust_statement")
+                        .value(not(emptyOrNullString())))
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        String idTs = com.jayway.jsonpath.JsonPath.read(responseBody, "$.credential_issuer_identity_trust_statement");
+        String piaTs = com.jayway.jsonpath.JsonPath.read(responseBody,
+                "$.credential_configurations_supported." + PROTECTED_CREDENTIAL_KEY + ".protected_issuance_authorization_trust_statement");
+
+        log.info("[DEMO] Full response body:\n{}", responseBody);
+        log.info("[DEMO] credential_issuer_identity_trust_statement (idTS):\n{}", idTs);
+        log.info("[DEMO] protected_issuance_authorization_trust_statement (piaTS) for '{}':\n{}", PROTECTED_CREDENTIAL_KEY, piaTs);
+    }
+
+    @Test
+    void testTenantEndpoint_testCacheWithError_TrustStatementsAreInjected() throws Exception {
+        UUID tenantId = createOfferAndGetMetadataTenantId();
+        UUID tenantId2 = createOfferAndGetMetadataTenantId();
+        stubTrustStatements();
+
+        mockMvc.perform(get("/" + tenantId + "/.well-known/openid-credential-issuer")
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                // EIDOMNI-881: idTS field is present and populated at root level
+                .andExpect(jsonPath("$.credential_issuer_identity_trust_statement").value(not(emptyOrNullString())))
+                // EIDOMNI-882: piaTS field is present and populated in Protected VC configuration
+                .andExpect(jsonPath(
+                        "$.credential_configurations_supported."
+                                + PROTECTED_CREDENTIAL_KEY
+                                + ".protected_issuance_authorization_trust_statement")
+                        .value(not(emptyOrNullString())))
+                .andReturn();
+
+        when(trustStatementCacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/" + tenantId2 + "/.well-known/openid-credential-issuer")
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                // EIDOMNI-881: idTS field is present and populated at root level
+                .andExpect(jsonPath("$.credential_issuer_identity_trust_statement").value(not(emptyOrNullString())))
+                // EIDOMNI-882: piaTS field is present and populated in Protected VC configuration
+                .andExpect(jsonPath(
+                        "$.credential_configurations_supported."
+                                + PROTECTED_CREDENTIAL_KEY
+                                + ".protected_issuance_authorization_trust_statement")
+                        .doesNotExist())
+                .andReturn();
     }
 }

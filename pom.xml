@@ -14,7 +14,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-issuer-parent</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
+    <version>4.1.0</version>
     <name>Swiyu issuer parent pom</name>
     <description>Generic issuer for public beta</description>
 
@@ -54,7 +54,7 @@
         <generic-java-lib.version>1.8.3</generic-java-lib.version>
         <pact.version>4.7.3</pact.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
-        <netty.version>4.2.15.Final</netty.version>
+        <netty.version>4.2.16.Final</netty.version>
         <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
         <tomcat.version>11.0.23</tomcat.version>
         <!-- Fixes CVE-2026-13006 -->
