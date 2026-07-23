@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
+        uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           languages: java
           config-file: ./.github/codeql/codeql-config.yml
@@ -57,7 +57,7 @@ jobs:
         run: node .github/scripts/coverage-summary.js
         #CodeQL and PMD analysis
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
+        uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           category: "/language:java"
       - name: Run PMD static analysis
@@ -67,7 +67,7 @@ jobs:
           rulesets: '.github/rulesets/java/pmd_omni_ruleset.xml'
       - name: Upload PMD SARIF to GitHub Code Scanning
         if: always() && hashFiles('pmd-report.sarif') != ''
-        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           sarif_file: pmd-report.sarif
       - name: Run Snyk to check for vulnerabilities 🔍
@@ -83,7 +83,7 @@ jobs:
           args: --maven-aggregate-project --severity-threshold=high --sarif-file-output=snyk.sarif
       - name: Upload result as sarif to GitHub Code Scanning 📦
         if: always() && hashFiles('snyk.sarif') != '' # We want to upload the SARIF file even if the Snyk action fails, to have the results in the Code Scanning tab of GitHub
-        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           sarif_file: snyk.sarif
       # Build and scan both image variants on every PR so a regression
