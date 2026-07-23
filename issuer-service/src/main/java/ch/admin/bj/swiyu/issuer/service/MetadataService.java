@@ -1,27 +1,5 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import java.text.ParseException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.apache.commons.lang3.time.DateUtils;
-import org.springframework.aop.framework.Advised;
-import org.springframework.aop.framework.AopProxyUtils;
-import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-
 import ch.admin.bj.swiyu.dpop.DpopConstants;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
@@ -37,8 +15,20 @@ import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementInjectionService;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.*;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.DateUtils;
+import org.springframework.aop.framework.Advised;
+import org.springframework.aop.framework.AopProxyUtils;
+import org.springframework.stereotype.Service;
+
+import java.text.ParseException;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -144,10 +134,17 @@ public class MetadataService {
     private Map<String, CredentialConfiguration> getUpdatedSupportedCredentialConfigurations(
             IssuerMetadata issuerMetadata, UUID tenantId) {
         var credentialOffer = credentialManagementService.getCredentialOfferByTenantId(tenantId);
-        var supportedCredentialConfigurations = new HashMap<>(issuerMetadata.getCredentialConfigurationSupported());
+
+        // Deep copy: new Map AND new CredentialConfiguration instances
+        var supportedCredentialConfigurations = new HashMap<String, CredentialConfiguration>();
+        issuerMetadata.getCredentialConfigurationSupported().forEach((key, config) ->
+                supportedCredentialConfigurations.put(key, config.toBuilder().build())
+        );
+
         if (credentialOffer == null) {
             return supportedCredentialConfigurations;
         }
+
         var credentialMetadata = credentialOffer.getCredentialMetadata();
         if (credentialMetadata != null) {
             var configurationId = credentialOffer.getMetadataCredentialSupportedId().getFirst();
