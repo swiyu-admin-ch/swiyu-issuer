@@ -2,7 +2,6 @@ package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
 import com.nimbusds.jwt.JWTParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,18 +92,17 @@ public class TrustStatementInjectionService {
         }
 
         configs.values()
-                .forEach(config -> injectPiaTsIntoConfig(config, allPiaTs, issuerDid));
+                .forEach(config -> injectPiaTsIntoConfig(config, allPiaTs));
     }
 
     /**
      * Finds the matching piaTS JWT for the given credential configuration (by VCT), verifies its
      * signature, and injects it. If no matching JWT is found, nothing is injected.
      *
-     * @param config    the credential configuration to update
-     * @param allPiaTs  all piaTS JWTs available for the issuer
-     * @param issuerDid the issuer DID, used for cache invalidation on signature failure
+     * @param config   the credential configuration to update
+     * @param allPiaTs all piaTS JWTs available for the issuer
      */
-    private void injectPiaTsIntoConfig(CredentialConfiguration config, List<String> allPiaTs, String issuerDid) {
+    private void injectPiaTsIntoConfig(CredentialConfiguration config, List<String> allPiaTs) {
         String vct = config.getVct();
         String matchingPiaTs = findMatchingPiaTsForVct(allPiaTs, vct);
         config.setProtectedIssuanceAuthorizationTrustStatement(matchingPiaTs);

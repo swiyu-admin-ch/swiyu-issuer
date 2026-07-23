@@ -259,4 +259,40 @@ class WellKnownTrustStatementIT {
         log.info("[DEMO] credential_issuer_identity_trust_statement (idTS):\n{}", idTs);
         log.info("[DEMO] protected_issuance_authorization_trust_statement (piaTS) for '{}':\n{}", PROTECTED_CREDENTIAL_KEY, piaTs);
     }
+
+    @Test
+    void testTenantEndpoint_testCacheWithError_TrustStatementsAreInjected() throws Exception {
+        UUID tenantId = createOfferAndGetMetadataTenantId();
+        UUID tenantId2 = createOfferAndGetMetadataTenantId();
+        stubTrustStatements();
+
+        mockMvc.perform(get("/" + tenantId + "/.well-known/openid-credential-issuer")
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                // EIDOMNI-881: idTS field is present and populated at root level
+                .andExpect(jsonPath("$.credential_issuer_identity_trust_statement").value(not(emptyOrNullString())))
+                // EIDOMNI-882: piaTS field is present and populated in Protected VC configuration
+                .andExpect(jsonPath(
+                        "$.credential_configurations_supported."
+                                + PROTECTED_CREDENTIAL_KEY
+                                + ".protected_issuance_authorization_trust_statement")
+                        .value(not(emptyOrNullString())))
+                .andReturn();
+
+        when(trustStatementCacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/" + tenantId2 + "/.well-known/openid-credential-issuer")
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                // EIDOMNI-881: idTS field is present and populated at root level
+                .andExpect(jsonPath("$.credential_issuer_identity_trust_statement").value(not(emptyOrNullString())))
+                // EIDOMNI-882: piaTS field is present and populated in Protected VC configuration
+                .andExpect(jsonPath(
+                        "$.credential_configurations_supported."
+                                + PROTECTED_CREDENTIAL_KEY
+                                + ".protected_issuance_authorization_trust_statement")
+                        .doesNotExist())
+                .andReturn();
+    }
 }
