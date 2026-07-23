@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [NEXT]
+## [4.1.0] - 2026-07-23
 
 ### Added
 
@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in the OpenAPI contract are disabled and tracked in `(#1127)`.
 - Added new config `application.accepted-registry-hosts` to allow restricting the allowed hosts for the trust registry.
   Don't change this unless you know what you are doing, as it may break the trust registry and
-  status registry functionality.
-- Verification of Trust Statements with Status Lists using caching according to exp, ttl or maximum cache ttl.
+  status registry functionality `(#1105)`.
+- Verification of Trust Statements with Status Lists using caching according to exp, ttl or maximum cache ttl `(#1105)`.
 
 ### Fixed
 
