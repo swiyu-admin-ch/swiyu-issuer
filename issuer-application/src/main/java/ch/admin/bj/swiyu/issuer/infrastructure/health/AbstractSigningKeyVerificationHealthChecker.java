@@ -4,8 +4,9 @@ import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.jwtutil.JwtUtil;
+
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
@@ -65,17 +66,13 @@ public abstract class AbstractSigningKeyVerificationHealthChecker<T extends Sign
     private boolean verifySigningCapability(JWK jwk) throws KeyStrategyException, JOSEException {
         var signer = jwsSignatureFacade.createSigner(properties, null, null);
 
-        SignedJWT testJwt = createTestJwt();
-        testJwt.sign(signer);
-        return verifySignature(testJwt, jwk);
-    }
-
-    private SignedJWT createTestJwt() {
-        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
+        JWSHeader header = JwtUtil.prepareHeaderBuilder(signer).build();
         JWTClaimsSet payload = new JWTClaimsSet.Builder()
             .subject(TEST_JWT_SUBJECT)
             .build();
-        return new SignedJWT(header, payload);
+        SignedJWT testJwt = new SignedJWT(header, payload);
+        testJwt.sign(signer);
+        return verifySignature(testJwt, jwk);
     }
 
     private boolean verifySignature(SignedJWT signedJwt, JWK jwk) throws JOSEException{
