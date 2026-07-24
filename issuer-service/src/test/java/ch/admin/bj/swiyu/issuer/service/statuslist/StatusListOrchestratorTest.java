@@ -74,12 +74,9 @@ class StatusListOrchestratorTest {
         when(credentialOfferStatusRepository.countByStatusListId(Mockito.any())).thenReturn(0);
         doNothing().when(eventPublisher).publishEvent(Mockito.any());
 
-        StatusListPersistenceService statusListPersistenceService = Mockito.mock(StatusListPersistenceService.class);
-
         statusListOrchestrator = new StatusListOrchestrator(
                 statusListProperties,
                 statusRegistryClient,
-                statusListPersistenceService,
                 statusListRepository,
                 transaction,
                 credentialOfferStatusRepository,
