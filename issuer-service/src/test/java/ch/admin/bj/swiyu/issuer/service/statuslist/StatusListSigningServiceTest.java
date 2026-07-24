@@ -10,17 +10,23 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.crypto.Ed25519Signer;
 import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,8 +55,9 @@ class StatusListSigningServiceTest {
         sut = new StatusListSigningService(applicationProperties, statusListProperties, jwsSignatureFacade);
     }
 
-    @Test
-    void buildSignedStatusListJwt_successfulSigning_returnsSignedJwt() throws Exception {
+    @ParameterizedTest
+    @MethodSource("createTestSigner")
+    void buildSignedStatusListJwt_successfulSigning_returnsSignedJwt(JWSSigner signer) throws Exception {
         // Arrange
         var statusList = StatusList.builder()
                 .uri("https://registry.example/status/uuid-1234")
@@ -60,7 +67,6 @@ class StatusListSigningServiceTest {
         TokenStatusListToken token = new TokenStatusListToken(2, 8);
 
         // Use a real ES256 signer to exercise Nimbus signing flow
-        JWSSigner signer = createDummySigner();
         when(jwsSignatureFacade.createSigner(statusListProperties, null, null)).thenReturn(signer);
 
         // Act
@@ -110,11 +116,21 @@ class StatusListSigningServiceTest {
         assertThrows(ConfigurationException.class, () -> sut.buildSignedStatusListJwt(statusList, token));
     }
 
-    private JWSSigner createDummySigner() throws JOSEException {
-        ECKey ecJWK = new ECKeyGenerator(Curve.P_256)
-                .keyID("test-key")
-                .generate();
-        return new ECDSASigner(ecJWK);
+    private static Stream<JWSSigner> createTestSigner() throws JOSEException {
+        return Stream.of(
+            new ECDSASigner(
+                new ECKeyGenerator(Curve.P_256)
+                    .keyID("test-key")
+                    .algorithm(JWSAlgorithm.ES256)
+                    .keyUse(KeyUse.SIGNATURE)
+                    .generate()),
+            new Ed25519Signer(
+                new OctetKeyPairGenerator(Curve.Ed25519)
+                    .keyID("test-key")
+                    .algorithm(JWSAlgorithm.Ed25519)
+                    .keyUse(KeyUse.SIGNATURE)
+                    .generate())
+            );
     }
 }
 

@@ -15,6 +15,8 @@ import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementInjectionService;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.jwtutil.JwtUtil;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.*;
@@ -300,7 +302,7 @@ public class MetadataService {
              * typ: Must be openidvci-issuer-metadata+jwt
              * kid: Must be the time when the JWT was issued
              */
-            JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
+            JWSHeader header = JwtUtil.prepareHeaderBuilder(signer)
                     .keyID(override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()))
                     .type(new JOSEObjectType("openidvci-issuer-metadata+jwt"))
                     .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)

@@ -4,14 +4,17 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.jwtutil.JwtUtil;
+
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
@@ -41,35 +44,31 @@ public class StatusListSigningService {
     private final JwsSignatureFacade jwsSignatureFacade;
 
     public SignedJWT buildSignedStatusListJwt(StatusList statusList, TokenStatusListToken token) {
-        SignedJWT jwt = buildUnsignedStatusListJwt(statusList, token);
-        var override = statusList.getConfigurationOverride();
         try {
-            jwt.sign(jwsSignatureFacade.createSigner(statusListProperties, override.keyId(), override.keyPin()));
+            ConfigurationOverride override = statusList.getConfigurationOverride();
+            JWSSigner signer = jwsSignatureFacade.createSigner(statusListProperties, override.keyId(), override.keyPin());
+            
+            JWSHeader header = JwtUtil.prepareHeaderBuilder(signer)
+                    .keyID(override.verificationMethodOrDefault(statusListProperties.getVerificationMethod()))
+                    .type(new JOSEObjectType("statuslist+jwt"))
+                    .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.VC_PROFILE_VERSION)
+                    .build();
+        
+            JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
+                    .claim("ttl", statusListProperties.getStatusListCacheTime().toSeconds())
+                    .expirationTime(Date.from(Instant.now().plusSeconds(statusListProperties.getStatusListExpirationTime().toSeconds())))
+                    .subject(statusList.getUri())
+                    .issuer(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
+                    .issueTime(Date.from(Instant.now()))
+                    .claim("status_list", token.getStatusListClaims())
+                    .build();
+        
+            SignedJWT jwt = new SignedJWT(header, claimSet);
+            jwt.sign(signer);
             return jwt;
         } catch (JOSEException | KeyStrategyException e) {
             log.error("Failed to sign status list JWT with the provided key.");
             throw new ConfigurationException("Failed to sign status list JWT with the provided key.", e);
         }
-    }
-
-    private SignedJWT buildUnsignedStatusListJwt(StatusList statusList, TokenStatusListToken token) {
-        var override = statusList.getConfigurationOverride();
-
-        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(override.verificationMethodOrDefault(statusListProperties.getVerificationMethod()))
-                .type(new JOSEObjectType("statuslist+jwt"))
-                .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.VC_PROFILE_VERSION)
-                .build();
-
-        JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
-                .claim("ttl", statusListProperties.getStatusListCacheTime().toSeconds())
-                .expirationTime(Date.from(Instant.now().plusSeconds(statusListProperties.getStatusListExpirationTime().toSeconds())))
-                .subject(statusList.getUri())
-                .issuer(override.issuerDidOrDefault(applicationProperties.getIssuerId()))
-                .issueTime(Date.from(Instant.now()))
-                .claim("status_list", token.getStatusListClaims())
-                .build();
-
-        return new SignedJWT(header, claimSet);
     }
 }
