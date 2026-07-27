@@ -2,9 +2,9 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 4.1.x   | ✅         |
+| Version                     | Supported |
+|-----------------------------|-----------|
+| Latest tagged release 4.1.x | ✅         |
 
 The configurations listed in [EXPERIMENTAL.md](https://github.com/swiyu-admin-ch/swiyu-issuer/blob/main/EXPERIMENTAL.md)
 are considered experimental and should be used at your own risk.
