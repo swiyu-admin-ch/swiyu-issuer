@@ -6,6 +6,9 @@
 |---------|-----------|
 | 4.1.x   | ✅         |
 
+The configurations listed in [EXPERIMENTAL.md](https://github.com/swiyu-admin-ch/swiyu-issuer/blob/main/EXPERIMENTAL.md)
+are considered experimental and should be used at your own risk.
+
 ## Reporting a Vulnerability
 
 Incoming security reports will be taken seriously and checked on a regular basis. If you think you have found a security
@@ -16,7 +19,7 @@ Please do not publicly disclose any vulnerabilities until they have been analyze
 
 Thank you for helping us to make our project more secure.
 
-## Scope
+## Bug Bounty
 
 The bug bounty program is limited to the following branches and the newest tagged release on that branch. The relevant
 branches are:
