@@ -36,6 +36,7 @@ public record SwiyuProperties(
             @NotNull URL apiUrl,
             long maxCacheSize,
             long clockSkewBufferSeconds,
-            long maxCacheTtlSeconds) {
+            long maxCacheTtlSeconds,
+            long requestBackoffSeconds) {
     }
 }

@@ -1,24 +1,24 @@
 package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
-import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
-import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
-import ch.admin.bj.swiyu.issuer.service.enc.CacheMaintenanceService;
-import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Expiry;
-import com.nimbusds.jwt.JWTParser;
-import jakarta.annotation.Nullable;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 import org.jspecify.annotations.NonNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 
-import java.text.ParseException;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
+
+import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
+import ch.admin.bj.swiyu.core.trust.client.model.PagedModelString;
+import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.service.enc.CacheMaintenanceService;
+import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
+import jakarta.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service that fetches and caches Trust Statements (idTS and piaTS) from the
@@ -44,31 +44,16 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnExpression("'${swiyu.trust-registry.api-url:}'.length() > 0")
 public class TrustStatementCacheService {
 
-    /**
-     * Negative cache TTL in seconds applied when the TMS API returns empty or fails.
-     * Prevents retry storms within this window.
-     */
-    private static final long NEGATIVE_CACHE_TTL_SECONDS = 30;
-
     private final TrustProtocol20Api trustProtocol20Api;
     private final long maxCacheSize;
-    private final long clockSkewBufferSeconds;
     private final CacheMaintenanceService cacheMaintenanceService;
 
     /**
-     * Hard upper bound for the cache TTL in seconds.
-     * When set, effective TTL = min(exp-based TTL, maxCacheTtlSeconds).
-     * When null, TTL is derived exclusively from the JWT exp claim.
+     * Time after which when receiving no valid trust statements no further attempts should be made
      */
-    private final long maxCacheTtlSeconds;
+    private final long requestBackoffSeconds;
 
-    /**
-     * Optional validator for trust statement signatures.
-     * Present only when {@code swiyu.trust-registry.api-url} is configured AND
-     * {@code trustStatementDidJwtValidator} bean is available.
-     * When absent, trust statements are cached without signature verification.
-     */
-    private final Optional<TrustStatementValidator> trustStatementValidator;
+    private final TrustStatementValidator trustStatementValidator;
 
     /**
      * Two separate caches keyed by issuer DID – one per statement type (idTS / piaTS).
@@ -83,8 +68,9 @@ public class TrustStatementCacheService {
      * because the Trust Registry issues one piaTS per authorised credential type (VCT).
      * Callers must match individual JWTs to credential configurations by their {@code vct} claim.</p>
      */
-    private final Cache<String, String> idTsCache;
-    private final Cache<String, List<String>> piaTsCache;
+    private final Cache<String, ValidatedSingleTrustStatement> idTsCache;
+    private final Cache<String, List<ValidatedSingleTrustStatement>> piaTsCache;
+
 
     /**
      * Creates a new {@code TrustStatementCacheService}.
@@ -94,17 +80,16 @@ public class TrustStatementCacheService {
      */
     public TrustStatementCacheService(TrustProtocol20Api trustProtocol20Api,
                                       SwiyuProperties swiyuProperties,
-                                      Optional<TrustStatementValidator> trustStatementValidator,
+                                      TrustStatementValidator trustStatementValidator,
                                       CacheMaintenanceService cacheMaintenanceService) {
         this.trustProtocol20Api = trustProtocol20Api;
         this.trustStatementValidator = trustStatementValidator;
         this.cacheMaintenanceService = cacheMaintenanceService;
         var trustRegistry = swiyuProperties.trustRegistry();
         this.maxCacheSize = trustRegistry.maxCacheSize();
-        this.clockSkewBufferSeconds = trustRegistry.clockSkewBufferSeconds();
-        this.maxCacheTtlSeconds = trustRegistry.maxCacheTtlSeconds();
-        this.idTsCache = buildCache();
-        this.piaTsCache = buildPiaTsCache();
+        this.requestBackoffSeconds = trustRegistry.requestBackoffSeconds();
+        this.idTsCache = buildTrustStatementCache();
+        this.piaTsCache = buildTrustStatementListCache();
     }
 
     /**
@@ -112,11 +97,12 @@ public class TrustStatementCacheService {
      * fetching it from the trust registry if not yet cached or already expired.
      *
      * @param issuerDid the effective issuer DID for which to retrieve the trust statement
-     * @return the idTS JWT string, or {@code null} if unavailable
+     * @return the idTS JWT string, or {@code null} if unavailable or not valid.
      */
     @Nullable
     public String getIdentityTrustStatement(String issuerDid) {
-        return idTsCache.get(issuerDid, this::fetchIdentityTrustStatement);
+        ValidatedSingleTrustStatement cached = idTsCache.get(issuerDid, this::fetchIdentityTrustStatement);
+        return cached!=null && cached.trustStatement.isPresent() && cached.valid ? cached.trustStatement.orElse(null) : null;
     }
 
     /**
@@ -133,26 +119,26 @@ public class TrustStatementCacheService {
      * @return an unmodifiable list of piaTS JWT strings; empty if none are available
      */
     public List<String> getAllProtectedIssuanceAuthorizationTrustStatements(String issuerDid) {
-        var cached = piaTsCache.get(issuerDid, this::fetchAllProtectedIssuanceAuthorizationTrustStatements);
-        return cached != null ? cached : List.of();
+        List<ValidatedSingleTrustStatement> statements = piaTsCache.get(issuerDid, this::fetchProtectedIssuanceAuthorizationTrustStatements);
+        if (statements == null) {
+            return List.of();
+        }
+        return statements
+                .stream().map(vts -> vts.trustStatement)
+                .filter(ts -> ts.isPresent())
+                .map(ts -> ts.get()).toList();
     }
 
     /**
      * Returns either a JWT (String) or null if the fetch failed.
      */
-    private String fetchIdentityTrustStatement(String issuerDid) {
+    private ValidatedSingleTrustStatement fetchIdentityTrustStatement(String issuerDid) {
         try {
             String jwt = trustProtocol20Api.getIdTS(issuerDid).block();
             if (jwt == null) {
                 log.warn("No idTS trust statement found for issuer {}", issuerDid);
             }
-            // Experimental - trust statement checks not finished yet
-            validateTrustStatement(jwt, "idTS", issuerDid);
-
-            return jwt;
-        } catch (JwtValidatorException e) {
-            log.warn("idTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
-            return null;
+            return validateTrustStatement(jwt);
         } catch (RuntimeException e) {
             log.warn("Failed to fetch idTS for issuer {}: {}", issuerDid, e.getMessage());
             return null;
@@ -162,29 +148,18 @@ public class TrustStatementCacheService {
     /**
      * Returns either a List<String> of jwts or null if the fetch failed.
      */
-    private List<String> fetchAllProtectedIssuanceAuthorizationTrustStatements(String issuerDid) {
+    private List<ValidatedSingleTrustStatement> fetchProtectedIssuanceAuthorizationTrustStatements(String issuerDid) {
         try {
             var response = trustProtocol20Api.listPiaTS(issuerDid, true, null, null, null).block();
-            List<String> jwts = response != null && response.getContent() != null
-                    ? response.getContent()
-                    : List.of();
-
-            if (jwts.isEmpty()) {
-                log.warn("No piaTS trust statements found for issuer {}", issuerDid);
-                return jwts;
-            }
+            List<String> jwts = getListOfStatements(response);
 
             log.debug("Fetched {} piaTS JWT(s) for issuer {}", jwts.size(), issuerDid);
-            for (String jwt : jwts) {
-                // Experimental - trust statement checks not finished yet
-                validateTrustStatement(jwt, "piaTS", issuerDid);
-            }
-            return List.copyOf(jwts);
-        } catch (JwtValidatorException e) {
-            log.warn("piaTS signature validation failed for issuer {}: {}", issuerDid, e.getMessage());
-            return null;
+            return jwts.stream()
+                .map(this::validateTrustStatement)
+                .filter(vts -> vts.valid)
+                .toList();
         } catch (RuntimeException e) {
-            log.warn("API or network error fetching piaTS for issuer {}: {}", issuerDid, e.getMessage());
+            log.warn("An error occured while fetching piaTS for issuer {}: {}", issuerDid, e.getMessage());
             return null;
         }
 
@@ -199,13 +174,9 @@ public class TrustStatementCacheService {
      * @param issuerDid the issuer DID for logging context
      * @throws JwtValidatorException if the DID URL resolved from the JWT is not on the allowlist
      */
-    private void validateTrustStatement(String jwt, String type, String issuerDid) {
-        if (trustStatementValidator.isEmpty()) {
-            log.warn("No TrustStatementValidator configured – skipping allowlist check for {} of issuer {}", type, issuerDid);
-            return;
-        }
-        trustStatementValidator.get().validateAllowlist(jwt);
-        log.debug("{} allowlist check passed for issuer {}", type, issuerDid);
+    private ValidatedSingleTrustStatement validateTrustStatement(String jwt) {
+        var validationResult = trustStatementValidator.trustStatementValidityWindow(jwt);
+        return new ValidatedSingleTrustStatement(Optional.ofNullable(jwt), validationResult.isValid(), validationResult.valditiyWindow());
     }
 
     /**
@@ -255,141 +226,102 @@ public class TrustStatementCacheService {
     }
 
     /**
-     * Builds a Caffeine cache with dynamic per-entry TTL and a bounded maximum size.
-     * The expiry of each entry is calculated from the {@code exp} claim of the cached JWT,
-     * minus a clock-skew buffer to ensure served statements are still valid upon receipt.
+     * Builds a Caffeine cache for single valid trust statement with dynamic TTL.
+     * derived from the minimum of JWT {@code exp} claims and Status List TTL claim.
      */
-    private Cache<String, String> buildCache() {
+    private Cache<String, ValidatedSingleTrustStatement> buildTrustStatementCache() {
         return Caffeine.newBuilder()
-                .maximumSize(maxCacheSize)
-                .expireAfter(buildExpiry())
+                .maximumSize(this.maxCacheSize)
+                .expireAfter(buildSingleTrustStatementExpiry())
                 .build();
     }
 
-    /**
-     * Builds a Caffeine cache for piaTS lists with dynamic per-entry TTL.
-     *
-     * <p>The TTL is derived from the <strong>earliest</strong> {@code exp} claim across all JWTs
-     * in the cached list. This is intentionally conservative: as soon as any single piaTS in the
-     * list expires, the entire entry is evicted and all statements are refreshed together.
-     * This prevents a JWT with a short lifetime from being served after its expiry just because
-     * another JWT in the same list has a later {@code exp}.</p>
-     */
-    private Cache<String, List<String>> buildPiaTsCache() {
-        return Caffeine.newBuilder()
-                .maximumSize(maxCacheSize)
-                .expireAfter(new Expiry<String, List<String>>() {
-                    @Override
-                    public long expireAfterCreate(@NonNull String key, List<String> jwt, long currentTime) {
-                        return computeMinNanosUntilExpiry(jwt);
-                    }
-
-                    @Override
-                    public long expireAfterUpdate(@NonNull String key, List<String> jwt, long currentTime, long currentDuration) {
-                        return computeMinNanosUntilExpiry(jwt);
-                    }
-
-                    @Override
-                    public long expireAfterRead(@NonNull String key, List<String> jwt, long currentTime, long currentDuration) {
-                        return currentDuration;
-                    }
-                })
-                .build();
-    }
-
-    /**
-     * Computes the cache TTL in nanoseconds for a list of piaTS JWTs by taking the
-     * <strong>minimum</strong> remaining lifetime across all JWTs in the list.
-     *
-     * <p>If the list is absent or empty (negative cache), {@link #NEGATIVE_CACHE_TTL_SECONDS} is used.</p>
-     *
-     * @param jwt the optional list of piaTS JWT strings
-     * @return TTL in nanoseconds
-     */
-    private long computeMinNanosUntilExpiry(List<String> jwt) {
-        if (jwt == null) {
-            return TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS);
-        }
-
-        if (jwt.isEmpty()) {
-            return TimeUnit.SECONDS.toNanos(maxCacheTtlSeconds);
-        }
-
-        return jwt.stream()
-                .mapToLong(this::computeNanosUntilExpiry)
-                .min()
-                .orElseGet(() -> TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS));
-    }
-
-    /**
-     * Returns a Caffeine {@link Expiry} that derives the per-entry TTL from the JWT {@code exp} claim.
-     * On read, the remaining duration is preserved unchanged.
-     */
-    private Expiry<String, String> buildExpiry() {
+    private @NonNull Expiry<String, ValidatedSingleTrustStatement> buildSingleTrustStatementExpiry() {
         return new Expiry<>() {
             @Override
-            public long expireAfterCreate(@NonNull String key, String jwt, long currentTime) {
-                if (jwt == null) {
-                    // Negative Caching: Do not try it again for 30s
-                    return TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS);
-                }
-                return computeNanosUntilExpiry(jwt);
+            public long expireAfterCreate(String key, ValidatedSingleTrustStatement ts, long currentTime) {
+                return getValidTtlOrBackoff(ts);
             }
 
             @Override
-            public long expireAfterUpdate(@NonNull String key, String jwt, long currentTime, long currentDuration) {
-                if (jwt == null) {
-                    // Negative Caching: Do not try it again for 30s
-                    return TimeUnit.SECONDS.toNanos(NEGATIVE_CACHE_TTL_SECONDS);
-                }
-                return computeNanosUntilExpiry(jwt);
+            public long expireAfterUpdate(String key, ValidatedSingleTrustStatement ts, long currentTime,
+                    long currentDuration) {
+                return getValidTtlOrBackoff(ts);
             }
 
             @Override
-            public long expireAfterRead(@NonNull String key, String jwt, long currentTime, long currentDuration) {
+            public long expireAfterRead(String key, ValidatedSingleTrustStatement ts, long currentTime,
+                    long currentDuration) {
                 return currentDuration;
+            }
+
+            private long getValidTtlOrBackoff(ValidatedSingleTrustStatement value) {
+                return value.valid ? value.ttl : TimeUnit.SECONDS.toNanos(requestBackoffSeconds);
             }
         };
     }
 
     /**
-     * Parses the JWT payload to extract the {@code exp} claim and computes
-     * the remaining lifetime in nanoseconds, minus a clock-skew buffer.
-     *
-     * <p>If {@code maxCacheTtlSeconds} is configured, the effective TTL is
-     * {@code min(exp-based TTL, maxCacheTtlSeconds)} – this allows aligning the
-     * trust statement cache with the DID public key cache TTL to avoid serving
-     * statements whose referenced DID key has already been rotated.</p>
-     *
-     * <p>If parsing fails, maxCacheTtlSeconds is used as fallback.</p>
-     *
-     * @param jwt the serialized JWT string
-     * @return remaining lifetime in nanoseconds (minimum 1 second)
+     * Builds a Caffeine cache for a lists of valid trust statements with dynamic
+     * TTL.
+     * The TTL of the list is the <em>minimum</em> remaining lifetime across all
+     * JWTs and their Status Lists in the list,
+     * so the list is evicted and re-fetched as soon as the earliest statement
+     * expires.
+     * Invalid Statements or no statments use a fixed TTL until fetch is
+     * reattempted.
      */
-    private long computeNanosUntilExpiry(String jwt) {
-        return extractExpFromJwt(jwt)
-                .map(exp -> {
-                    final long MINIMUM_TIME = 1L;
-                    long remainingSeconds = Math.max((exp - clockSkewBufferSeconds) - Instant.now().getEpochSecond(), MINIMUM_TIME);
-                    return TimeUnit.SECONDS.toNanos(Math.min(remainingSeconds, maxCacheTtlSeconds));
-                }).orElseGet(
-                        () -> TimeUnit.SECONDS.toNanos(maxCacheTtlSeconds)
-                );
+    private Cache<String, List<ValidatedSingleTrustStatement>> buildTrustStatementListCache() {
+        return Caffeine.newBuilder()
+                .maximumSize(this.maxCacheSize)
+                .expireAfter(buildListTrustStatementExpiry())
+                .build();
     }
 
-    /**
-     * Parses the JWT (without signature verification) and extracts the {@code exp} claim.
-     *
-     * @param jwt the serialized JWT string
-     * @return the {@code exp} epoch-second value, or empty if parsing fails
-     */
-    private Optional<Long> extractExpFromJwt(String jwt) {
-        try {
-            return Optional.ofNullable(JWTParser.parse(jwt).getJWTClaimsSet().getExpirationTime())
-                    .map(expirationDate -> expirationDate.getTime() / 1000);
-        } catch (ParseException e) {
-            log.warn("Failed to parse JWT payload for exp extraction: {}", e.getMessage());
-            return Optional.empty();
+    private @NonNull Expiry<String, List<ValidatedSingleTrustStatement>> buildListTrustStatementExpiry() {
+        return new Expiry<String, List<ValidatedSingleTrustStatement>>() {
+
+            @Override
+            public long expireAfterCreate(String key, List<ValidatedSingleTrustStatement> value, long currentTime) {
+                return getValidTtlOrBackoff(value);
+            }
+
+            @Override
+            public long expireAfterUpdate(String key, List<ValidatedSingleTrustStatement> value, long currentTime,
+                    long currentDuration) {
+                return getValidTtlOrBackoff(value);
+            }
+
+            @Override
+            public long expireAfterRead(String key, List<ValidatedSingleTrustStatement> value, long currentTime,
+                    long currentDuration) {
+                return currentDuration;
+            }
+
+            /**
+             * Cache the list of trust statements for the ttl. If no valid trust statement is found, cache the empty list for
+             * backoff seconds to prevent spamming the registry
+             * @param value the list of trust statements to be cached
+             * @return cache duration in nanoseconds
+             */
+            private long getValidTtlOrBackoff(List<ValidatedSingleTrustStatement> value) {
+                return value.stream()
+                        .filter(v -> v.valid)
+                        .mapToLong(v -> v.ttl)
+                        .min()
+                        .orElse(TimeUnit.SECONDS.toNanos(requestBackoffSeconds));
+            }
+
+        };
+    }
+
+    private List<String> getListOfStatements(PagedModelString pagedModelString) {
+        if (pagedModelString == null || pagedModelString.getContent() == null) {
+            return List.of();
         }
+        return pagedModelString.getContent();
+    }
+
+    public record ValidatedSingleTrustStatement(@NonNull Optional<String> trustStatement, boolean valid, long ttl) {
     }
 }
