@@ -273,6 +273,7 @@ swiyu:
     max-cache-size: ${SWIYU_TRUST_REGISTRY_MAX_CACHE_SIZE:1000}
     clock-skew-buffer-seconds: ${SWIYU_TRUST_REGISTRY_CLOCK_SKEW_BUFFER_SECONDS:60}
     max-cache-ttl-seconds: ${SWIYU_TRUST_REGISTRY_MAX_CACHE_TTL_SECONDS:60}
+    request-backoff-seconds: 600 # 10 minutes
 
 webhook:
   callback-uri: "${WEBHOOK_CALLBACK_URI:}"

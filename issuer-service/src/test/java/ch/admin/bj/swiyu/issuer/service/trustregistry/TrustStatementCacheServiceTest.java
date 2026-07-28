@@ -4,6 +4,8 @@ import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
 import ch.admin.bj.swiyu.core.trust.client.model.PagedModelString;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.service.enc.CacheMaintenanceService;
+import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementValidator.TrustStatementValidationResult;
+
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -22,7 +24,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -52,6 +54,7 @@ class TrustStatementCacheServiceTest {
 
     private TrustProtocol20Api trustProtocol20Api;
     private CacheMaintenanceService cacheMaintenanceService;
+    private TrustStatementValidator validator;
     private TrustStatementCacheService service;
 
     /**
@@ -85,19 +88,18 @@ class TrustStatementCacheServiceTest {
     void setUp() throws Exception {
         trustProtocol20Api = mock(TrustProtocol20Api.class);
         cacheMaintenanceService = mock(CacheMaintenanceService.class);
-        service = buildService(5L);
-    }
-
-    private TrustStatementCacheService buildService(Long maxCacheTtlSeconds) throws Exception {
-        var trustRegistry = new SwiyuProperties.TrustRegistryProperties(
+            var trustRegistry = new SwiyuProperties.TrustRegistryProperties(
                 URI.create("https://trust-reg.example.ch/").toURL(),
-                1_000,
-                60,
-                maxCacheTtlSeconds);
+                1_000l,
+                60l,
+                5l,
+            60l);
         var props = mock(SwiyuProperties.class);
         when(props.trustRegistry()).thenReturn(trustRegistry);
+        validator = mock(TrustStatementValidator.class);
         // No TrustStatementValidator – signature validation is skipped in unit tests
-        return new TrustStatementCacheService(trustProtocol20Api, props, Optional.empty(), cacheMaintenanceService);
+        service = new TrustStatementCacheService(trustProtocol20Api, props, validator, cacheMaintenanceService);
+        when(validator.trustStatementValidityWindow(anyString())).thenReturn(new TrustStatementValidationResult(true, TimeUnit.SECONDS.toNanos(5l)));
     }
 
     // -------------------------------------------------------------------------
@@ -109,7 +111,6 @@ class TrustStatementCacheServiceTest {
         var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
         when(trustProtocol20Api.getIdTS(eq(ISSUER_DID)))
                 .thenReturn(Mono.just(jwt));
-
         var result = service.getIdentityTrustStatement(ISSUER_DID);
 
         assertThat(result).isEqualTo(jwt);
@@ -322,8 +323,7 @@ class TrustStatementCacheServiceTest {
 
     @Test
     void getIdentityTrustStatement_withMaxCacheTtlCap_jwtIsReturnedCorrectly() throws Exception {
-        // JWT valid for 1 day, but cap is 10 seconds – cap only affects eviction, not the returned value
-        service = buildService(10L);
+        // JWT valid for 1 day, but cap is 5 seconds – cap only affects eviction, not the returned value
         var jwt = buildJwt(Instant.now().plusSeconds(86400).getEpochSecond());
         when(trustProtocol20Api.getIdTS(any()))
                 .thenReturn(Mono.just(jwt));

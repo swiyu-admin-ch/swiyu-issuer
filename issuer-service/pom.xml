@@ -9,7 +9,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-issuer-parent</artifactId>
-        <version>4.1.0-SNAPSHOT</version>
+        <version>4.2.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>swiyu-issuer-service</artifactId>
@@ -195,6 +195,11 @@
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-dpop-util</artifactId>
+            <version>${generic-java-lib.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-token-status-list</artifactId>
             <version>${generic-java-lib.version}</version>
         </dependency>
         <!-- JWT validation via DID-based Flow B for Trust Statement signature verification -->

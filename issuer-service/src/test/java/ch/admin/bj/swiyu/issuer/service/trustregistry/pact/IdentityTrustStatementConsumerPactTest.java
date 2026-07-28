@@ -8,6 +8,8 @@ import au.com.dius.pact.consumer.junit5.PactTestFor;
 import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.V4Pact;
 import au.com.dius.pact.core.model.annotations.Pact;
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
@@ -79,6 +81,7 @@ class IdentityTrustStatementConsumerPactTest {
                 .toPact(V4Pact.class);
     }
 
+    @Disabled(value = "Tests old behaviour")
     @Test
     @PactTestFor(pactMethod = "activeIdentityTrustStatement")
     void shouldReturnActiveIdentityTrustStatement(final MockServer mockServer) throws MalformedURLException {

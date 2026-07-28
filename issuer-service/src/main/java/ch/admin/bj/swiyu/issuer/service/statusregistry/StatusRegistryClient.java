@@ -2,7 +2,9 @@ package ch.admin.bj.swiyu.issuer.service.statusregistry;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.exception.CreateStatusListException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
@@ -10,10 +12,18 @@ import ch.admin.bj.swiyu.issuer.common.exception.UpdateStatusListException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
+
+import java.net.MalformedURLException;
+import java.net.URI;
+
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 /**
  * A service to interact with the status registry from the swiyu ecosystem.
@@ -23,9 +33,10 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @Service
 public class StatusRegistryClient {
 
-    private final SwiyuProperties swiyuProperties;
     private final StatusBusinessApiApi statusBusinessApi;
-    private final StatusRegistryTokenService statusRegistryTokenService;
+    private final SwiyuProperties swiyuProperties;
+    private final UrlRewriteProperties urlRewriteProperties;
+    private final ApplicationProperties applicationProperties;
 
     /**
      * Creates a status list entry for the configured business partner
@@ -107,5 +118,70 @@ public class StatusRegistryClient {
             throw new UpdateStatusListException(
                     "Failed to update status list.", e);
         }
+    }
+
+    /**
+     * Resolve Status Lists, skipping verification where the status is from. Should only be used
+     * @param uri
+     * @return
+     */
+    public String resolveStatusList(String uri) {
+        var rewrittenUrl = urlRewriteProperties.getRewrittenUrl(uri);
+        var statusListWebClient = statusBusinessApi.getApiClient().getWebClient();       
+        log.debug("HTTP Request after url rewrite to status list from {}", rewrittenUrl);
+        try {
+            // check if https request otherwise throw exception
+            if (!isHttpsUrl(uri)) {
+                throw new IllegalArgumentException("StatusList %s does not use HTTPS"
+                        .formatted(uri));
+            }
+            if (!containsValidHost(rewrittenUrl)) {
+                throw new IllegalArgumentException("StatusList %s does not contain a valid host from %s"
+                        .formatted(rewrittenUrl, applicationProperties.getAcceptedRegistryHosts()));
+            }
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Malformed URL %s in StatusList".formatted(rewrittenUrl), e);
+        }
+
+        var result = statusListWebClient
+                .get()
+                .uri(rewrittenUrl)
+                .retrieve()
+                .onStatus(status -> status != HttpStatusCode.valueOf(200), response ->
+                        Mono.error(new StatusListFetchFailedException(
+                                "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl))))
+                .bodyToMono(String.class)
+                .onErrorResume(WebClientResponseException.class, ex -> {
+                    if (ex.getCause().toString().contains("DataBufferLimitException")) {
+                        return Mono.error(new StatusListFetchFailedException(
+                                "Status list size from %s exceeds maximum allowed size".formatted(rewrittenUrl)));
+                    }
+                    log.error("Error while fetching status list from {}: {}", rewrittenUrl, ex.getMessage());
+                    return Mono.error(new StatusListFetchFailedException(
+                            "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl)));
+                })
+                .block();
+
+        if (result == null) {
+            throw new StatusListFetchFailedException(
+                    "Status list with uri: %s returned an empty response".formatted(rewrittenUrl));
+        }
+        return result;
+    }
+
+    private boolean isHttpsUrl(String url) {
+        return url.startsWith("https://");
+    }
+
+    private boolean containsValidHost(String rewrittenUrl) throws MalformedURLException {
+
+        var acceptedStatusListHosts = applicationProperties.getAcceptedRegistryHosts();
+        var url = URI.create(rewrittenUrl).toURL();
+
+        if (isEmpty(acceptedStatusListHosts)) {
+            return true;
+        }
+
+        return applicationProperties.getAcceptedRegistryHosts().contains(url.getHost());
     }
 }

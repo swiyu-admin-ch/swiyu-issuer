@@ -28,8 +28,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedDownUnixTimestamp;
-import static ch.admin.bj.swiyu.issuer.common.date.TimeUtils.instantToRoundedUpUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtil.instantToRoundedDownUnixTimestamp;
+import static ch.admin.bj.swiyu.issuer.common.date.TimeUtil.instantToRoundedUpUnixTimestamp;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.JwtTestUtils.getJWTPayload;

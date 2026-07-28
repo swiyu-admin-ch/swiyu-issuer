@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.core.trust.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.service.enc.CacheMaintenanceService;
 import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementCacheService;
+import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementValidator;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -37,16 +38,17 @@ final class TrustRegistryConsumerPactSupport {
         final SwiyuProperties.TrustRegistryProperties trustRegistryProperties =
                 new SwiyuProperties.TrustRegistryProperties(
                         URI.create(mockServer.getUrl()).toURL(),
-                        100,
-                        60,
-                        300);
+                        100l,
+                        60l,
+                        300l,
+                        30l);
         final SwiyuProperties swiyuProperties = mock(SwiyuProperties.class);
         when(swiyuProperties.trustRegistry()).thenReturn(trustRegistryProperties);
 
         return new TrustStatementCacheService(
                 new TrustProtocol20Api(apiClient),
                 swiyuProperties,
-                Optional.empty(),
+                mock(TrustStatementValidator.class),
                 mock(CacheMaintenanceService.class));
     }
 }
