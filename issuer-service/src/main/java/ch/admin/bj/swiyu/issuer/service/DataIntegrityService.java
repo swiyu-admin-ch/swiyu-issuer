@@ -5,14 +5,12 @@ import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.jwtutil.JwtUtil;
 import ch.admin.bj.swiyu.jwtutil.JwtUtilException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JOSEException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
-import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +28,7 @@ public class DataIntegrityService {
 
     /**
      * Checks if data integrity verification is required for the offer.
+     *
      * @param offerData offer data map
      * @return true if required
      */
@@ -43,8 +42,9 @@ public class DataIntegrityService {
     /**
      * Verifies the JWT signature and returns claims as a map.
      * Throws BadRequestException on failure.
+     *
      * @param jwtString JWT string
-     * @param offerId offer identifier (for logging)
+     * @param offerId   offer identifier (for logging)
      * @return claims as map
      */
     private Map<String, Object> verifyDataIntegrityJWT(String jwtString, UUID offerId) {
@@ -64,7 +64,8 @@ public class DataIntegrityService {
     /**
      * Parses offer data from JSON string to map.
      * Throws CredentialException on failure.
-     * @param data JSON string
+     *
+     * @param data    JSON string
      * @param offerId offer identifier (for logging)
      * @return offer data map
      */
@@ -76,7 +77,7 @@ public class DataIntegrityService {
                 throw new CredentialException("Offer data is missing or empty");
             }
             return objectMapper.readValue(data, objectMapper.getTypeFactory().constructMapType(HashMap.class, String.class, Object.class));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Could not load offer data of offer {}", offerIdentifier);
             throw new CredentialException("Failed to parse offer data", e);
         }
@@ -85,8 +86,9 @@ public class DataIntegrityService {
     /**
      * Unpacks and verifies credential offer data.
      * Performs data integrity check if required.
+     *
      * @param offerData offer data map
-     * @param offerId offer identifier (for logging)
+     * @param offerId   offer identifier (for logging)
      * @return verified offer data map
      */
     public Map<String, Object> getVerifiedOfferData(Map<String, Object> offerData, UUID offerId) {

@@ -1,8 +1,10 @@
 package ch.admin.bj.swiyu.issuer.dto.statuslist;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +12,8 @@ import java.util.UUID;
 @Data
 @Builder
 @Schema(name = "StatusList")
+@NoArgsConstructor
+@AllArgsConstructor
 public class StatusListDto {
 
     @Schema(description = "Id of the status list used by the business issuer.")

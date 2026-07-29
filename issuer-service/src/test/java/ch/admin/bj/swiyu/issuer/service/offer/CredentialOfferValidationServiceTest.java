@@ -11,12 +11,12 @@ import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.DataIntegrityService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -218,7 +218,7 @@ class CredentialOfferValidationServiceTest {
     }
 
     @Test
-    void validateCredentialOfferCreateRequest_withMissingValue_throwsIllegalArgumentException() throws JsonProcessingException {
+    void validateCredentialOfferCreateRequest_withMissingValue_throwsIllegalArgumentException() throws JacksonException {
 
         Map<String, Object> validatedOfferData = Map.of("path", List.of());
         Map<String, Object> offerData = Map.of("data", validatedOfferData);
@@ -255,7 +255,7 @@ class CredentialOfferValidationServiceTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void validateCredentialOfferCreateRequest_withEmptyArray_throwsIllegalArgumentException(boolean mandatory) throws JsonProcessingException {
+    void validateCredentialOfferCreateRequest_withEmptyArray_throwsIllegalArgumentException(boolean mandatory) throws JacksonException {
 
         Map<String, Object> validatedOfferData = Map.of("path", List.of());
         Map<String, Object> offerData = Map.of("data", validatedOfferData);
@@ -287,7 +287,7 @@ class CredentialOfferValidationServiceTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void validateCredentialOfferCreateRequest_withEmptyObject_throwsIllegalArgumentException(boolean mandatory) throws JsonProcessingException {
+    void validateCredentialOfferCreateRequest_withEmptyObject_throwsIllegalArgumentException(boolean mandatory) throws JacksonException {
 
         Map<String, Object> validatedOfferData = Map.of("additional_info_map", Map.of());
         Map<String, Object> offerData = Map.of("data", validatedOfferData);
@@ -318,7 +318,7 @@ class CredentialOfferValidationServiceTest {
     }
 
     @Test
-    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsBadRequestException() throws JsonProcessingException {
+    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsBadRequestException() throws JacksonException {
 
         var additionalInfoList = new ArrayList<>();
         additionalInfoList.add(null);
@@ -378,7 +378,7 @@ class CredentialOfferValidationServiceTest {
     }
 
     @Test
-    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsIllegalArgumentException2() throws JsonProcessingException {
+    void validateCredentialOfferCreateRequest_withListAndNullValue_throwsIllegalArgumentException2() throws JacksonException {
 
         var additionalInfoList = new ArrayList<>();
         additionalInfoList.add("test");
@@ -465,7 +465,7 @@ class CredentialOfferValidationServiceTest {
         assertTrue(ex.getMessage().contains("https://example.com/status"));
     }
 
-    private void mockCredentialConfigInteractions(String credentialMetadata) throws JsonProcessingException {
+    private void mockCredentialConfigInteractions(String credentialMetadata) throws JacksonException {
         var objectMapper = new ObjectMapper();
         var credConfig = mock(CredentialConfiguration.class);
         when(credConfig.getCredentialMetadata()).thenReturn(objectMapper.readValue(credentialMetadata, CredentialConfigurationMetadata.class));
