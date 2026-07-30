@@ -20,12 +20,12 @@ import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URLDecoder;
 import java.time.Instant;

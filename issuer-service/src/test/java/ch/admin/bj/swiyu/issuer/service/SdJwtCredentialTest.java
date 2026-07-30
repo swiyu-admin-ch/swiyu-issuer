@@ -10,7 +10,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.offer.ClaimsPathPointerUtil;
 import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDObjectDecoder;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 import java.util.stream.Stream;

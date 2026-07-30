@@ -1,9 +1,9 @@
 package ch.admin.bj.swiyu.issuer.common.date;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -28,7 +28,7 @@ class CustomInstantDeserializerTest {
     @Test
     void testDeserialize_withMilliseconds() throws IOException {
         String dateTimeWithMs = "2023-02-25T16:50:48.123Z";
-        when(jsonParser.getText()).thenReturn(dateTimeWithMs);
+        when(jsonParser.getString()).thenReturn(dateTimeWithMs);
 
         Instant expectedInstant = Instant.parse(dateTimeWithMs);
         Instant actualInstant = deserializer.deserialize(jsonParser, deserializationContext);
@@ -37,9 +37,9 @@ class CustomInstantDeserializerTest {
     }
 
     @Test
-    void testDeserialize_withoutMilliseconds() throws IOException {
+    void testDeserialize_withoutMilliseconds() {
         String dateTimeWithoutMs = "2023-02-25T16:50:48Z";
-        when(jsonParser.getText()).thenReturn(dateTimeWithoutMs);
+        when(jsonParser.getString()).thenReturn(dateTimeWithoutMs);
 
         Instant expectedInstant = Instant.parse(dateTimeWithoutMs);
         Instant actualInstant = deserializer.deserialize(jsonParser, deserializationContext);
@@ -48,9 +48,9 @@ class CustomInstantDeserializerTest {
     }
 
     @Test
-    void testDeserialize_invalidFormat() throws IOException {
+    void testDeserialize_invalidFormat() {
         String invalidDateTime = "invalid-date-time";
-        when(jsonParser.getText()).thenReturn(invalidDateTime);
+        when(jsonParser.getString()).thenReturn(invalidDateTime);
 
         try {
             deserializer.deserialize(jsonParser, deserializationContext);
