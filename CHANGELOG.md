@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Send status list update to registry after the entity has been persisted to the database, to avoid race conditions
-  (#830).
+  `(#830)`.
 
 ## [4.1.0] - 2026-07-23
 
