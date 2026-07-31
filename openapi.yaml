@@ -1320,7 +1320,7 @@ components:
           type: array
           items:
             type: string
-            pattern: ^ES256$
+            pattern: ^ES256|Ed25519$
         proof_types_supported:
           type: object
           additionalProperties:
@@ -1949,7 +1949,7 @@ components:
           type: array
           items:
             type: string
-            pattern: ^ES256$
+            pattern: ^ES256|Ed25519$
         key_attestations_required:
           $ref: "#/components/schemas/KeyAttestationRequirement"
     UpdateCredentialStatusRequestType:
