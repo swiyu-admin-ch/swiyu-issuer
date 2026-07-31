@@ -59,7 +59,7 @@ public class TestServiceUtils {
 
         JWSHeader header = new JWSHeader.Builder(attestationSigner.alg)
                 .type(new JOSEObjectType("key-attestation+jwt"))
-                .keyID(attestationIssuerDid + attestationKey.getKeyID() == null ? "#key-1" : attestationKey.getKeyID())
+                .keyID(attestationIssuerDid + (attestationKey.getKeyID() == null ? "#key-1" : attestationKey.getKeyID()))
                 .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build();
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
