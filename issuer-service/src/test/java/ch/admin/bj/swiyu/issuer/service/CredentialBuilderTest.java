@@ -17,6 +17,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -201,7 +202,7 @@ class CredentialBuilderTest {
         issuerCredentialResponseEncryption.setEncValuesSupported(List.of("A128GCM", "A256GCM"));
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
-        var jwk = createPrivateKey().toPublicJWK().toJSONObject();
+        var jwk = createEncryptionKey().toPublicJWK().toJSONObject();
         CredentialResponseEncryptionClass encryptor = new CredentialResponseEncryptionClass(jwk, encAlg);
 
         builder.credentialResponseEncryption(issuerMetadata.getResponseEncryption(), encryptor);
@@ -302,12 +303,21 @@ class CredentialBuilderTest {
         assertTrue(deleted.contains(status2));
     }
 
+    private ECKey createEncryptionKey() throws JOSEException {
+        return new ECKeyGenerator(Curve.P_256)
+                .keyUse(KeyUse.ENCRYPTION)
+                .keyID("Test-Key")
+                .issueTime(new Date())
+                .algorithm(JWEAlgorithm.ECDH_ES)
+                .generate();
+    }
+
     private ECKey createPrivateKey() throws JOSEException {
         return new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
                 .issueTime(new Date())
-                .algorithm(JWEAlgorithm.ECDH_ES)
+                .algorithm(JWSAlgorithm.ES256)
                 .generate();
     }
 
