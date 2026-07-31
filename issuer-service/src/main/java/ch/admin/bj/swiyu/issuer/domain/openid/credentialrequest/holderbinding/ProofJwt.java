@@ -4,6 +4,8 @@ import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
 import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.jwtutil.JwtUtil;
+
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -111,6 +113,7 @@ public class ProofJwt extends Proof implements AttestableProof {
     }
 
     private JWK verifySignature(SignedJWT signedJWT) throws JOSEException {
+        // TODO EIDOMNI-1205 -> Extract this logic to the generic library
         JWSAlgorithm algorithm = signedJWT.getHeader().getAlgorithm();
         if (JWSAlgorithm.Family.EC.contains(algorithm)) {
             return verifyECSignature(signedJWT);
