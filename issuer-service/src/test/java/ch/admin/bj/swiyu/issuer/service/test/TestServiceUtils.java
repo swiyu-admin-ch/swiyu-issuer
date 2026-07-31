@@ -55,11 +55,11 @@ public class TestServiceUtils {
     public static String createKeyAttestationJwt(JWK attestationKey, JWK holderPrivateKey, AttackPotentialResistance attestationLevel, String attestationIssuerDid) throws JOSEException {
 
         var attestationSigner = prepareSigner(attestationKey);
-        attestationIssuerDid = attestationIssuerDid == null ? "did:test:test-attestation-builder" : attestationIssuerDid;
+        attestationIssuerDid = attestationIssuerDid == null ? "did:webvh:scid:test-attestation-builder" : attestationIssuerDid;
 
         JWSHeader header = new JWSHeader.Builder(attestationSigner.alg)
                 .type(new JOSEObjectType("key-attestation+jwt"))
-                .keyID(attestationIssuerDid + (attestationKey.getKeyID() == null ? "#key-1" : attestationKey.getKeyID()))
+                .keyID(attestationIssuerDid + "#" + (attestationKey.getKeyID() == null ? "key-1" : attestationKey.getKeyID()))
                 .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build();
         JWTClaimsSet claims = new JWTClaimsSet.Builder()

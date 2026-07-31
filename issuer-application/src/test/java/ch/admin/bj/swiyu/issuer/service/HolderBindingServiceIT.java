@@ -87,7 +87,7 @@ class HolderBindingServiceIT {
 
     @BeforeEach
     void setUp() throws JOSEException {
-        attestationKey = new ECKeyGenerator(Curve.P_256).keyID("did:test:test-attestation-builder#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        attestationKey = new ECKeyGenerator(Curve.P_256).keyID("key-1").keyUse(KeyUse.SIGNATURE).generate();
         Mockito.when(didKeyResolver.resolveKey(Mockito.any())).thenReturn(attestationKey);
         nonceSecret = nonceSecretRepository.findAll().getFirst();
     }
