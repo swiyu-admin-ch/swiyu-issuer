@@ -211,7 +211,7 @@ public final class AttestationJwt {
      * @return {@code true} if the proof key matches one of the attested keys, {@code false} otherwise
      * @throws JOSEException if a thumbprint cannot be computed
      */
-    public boolean containsKey(@NotNull ECKey proofKey) throws JOSEException {
+    public boolean containsKey(@NotNull JWK proofKey) throws JOSEException {
         var proofThumbprint = proofKey.toPublicJWK().computeThumbprint().toString();
         var rawAttestedKeys = claims.getClaim("attested_keys");
 

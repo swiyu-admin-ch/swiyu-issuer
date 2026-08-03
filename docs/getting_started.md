@@ -5,11 +5,10 @@
   {{ notice-text | markdownify }}
 </div>
 
-The swiyu Generic Issuer is a web server implementing the technical standards as specified in
-the ["Swiss Profile Issuance"](https://swiyu-admin-ch.github.io/specifications/swiss-profile-issuance/). Together with
-the other generic components provided, this software forms a collection of APIs allowing issuance and verification of
-verifiable credentials without the need of reimplementing the standards. You'll find additional documentation in
-this [GitHub repository](https://github.com/swiyu-admin-ch/swiyu-issuer).
+This software, together with the other generic components provided, forms a collection of APIs allowing the issuance and
+verification of verifiable credentials, as visualized in the image below.
+Additional documentation can be found in this GitHub
+repository.[GitHub repository](https://github.com/swiyu-admin-ch/swiyu-issuer).
 
 > [!IMPORTANT]
 > Please be advised that the current system and its operations are provided on a best-effort basis and will continue to
@@ -28,7 +27,8 @@ this [GitHub repository](https://github.com/swiyu-admin-ch/swiyu-issuer).
 > - Generated a DID which is registered on the identifier registry
 >
 > The required steps are explained more thoroughly in
-> the [Base- and Trust Registry Cookbook](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/)
+>
+the [Base- and Trust Registry Cookbook](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/)
 
 ## Set the environment variables
 
@@ -36,48 +36,27 @@ A sample compose file for an entire setup of both components and a database can 
 `sample.compose.yml`](https://github.com/swiyu-admin-ch/swiyu-issuer/blob/main/sample.compose.yml) file. You will need
 to configure a list of environment variables in the `.env` file.
 
-|---
-| Name | Description | Example
-| --- | --- |---
-|`EXTERNAL_URL`| An URL which is used to build the correct deeplink (You must provide the /oid4vci and .well-known
-endpoints at this) -> must use https-protocol and it must be reachable for the wallet otherwise the wallet will refuse
-tp connect. | |
-|`SPRING_APPLICATION_NAME`|Name of your application|
-|`ISSUER_ID`|The DID you created in
-the [onboarding process](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#create-a-did-or-create-the-did-log-you-need-to-continue)|
-did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:
-ff8eb859-6996-4e51-a976-be1ca584c124 |
-|`DID_STATUS_LIST_VERIFICATION_METHOD`|The Verification method, which can be taken from the did log response. The
-Verification Method must match the selected
-SIGNING_KEY! [onboarding process](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#create-a-did-or-create-the-did-log-you-need-to-continue)
-|did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:
-ff8eb859-6996-4e51-a976-be1ca584c124#assert-key-01|
-|`STATUS_LIST_KEY`|EC Private key can be taken
-from [onboarding process](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#create-a-did-or-create-the-did-log-you-need-to-continue)
-you can use any generated key but it must match the `DID_STATUS_LIST_VERIFICATION_METHOD`|
-|`SWIYU_PARTNER_ID`|The partner id you created in
-the [swiyu Trust Infrastructure business partner ID](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#business-partner-registration)
-|d33fab52-1657-4240-9189-97c33b949739|
-|`SWIYU_STATUS_REGISTRY_CUSTOMER_KEY`| Customer key
-from [Status Registry API Key](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#get-api-keys-to-access-swiyu-apis)||
-|`SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET`| Customer Secret
-from [Status Registry API Secret](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#get-api-keys-to-access-swiyu-apis)|
-|`SWIYU_STATUS_REGISTRY_ACCESS_TOKEN`|Access token
-from [Status Registry API ACCESS Token](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#get-api-keys-to-access-swiyu-apis)|
-|`SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN`| Refresh token
-from [Status Registry API Refresh Token](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#get-api-keys-to-access-swiyu-apis)|
-|
-`SWIYU_STATUS_REGISTRY_TOKEN_URL`|[OAuth Refresh URL](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#authenticate-with-oauth2)|https://keymanager-prd.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect|
-|
-`SWIYU_STATUS_REGISTRPY_API_URL`|[Status Registry Base URL](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#base-urls)|https://status-reg-api.trust-infra.swiyu-int.admin.ch|
-|`DID_SDJWT_VERIFICATION_METHOD`| Verification method, which can be taken from the did log response. The Verification
-Method must match the selected SIGNING_KEY! | did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:
-identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:ff8eb859-6996-4e51-a976-be1ca584c124#assert-key-02 |
-|`SDJWT_KEY`| EC Private key can be taken
+| Name                                            | Description                                                                                                                                                                                                                                                                                     | Example                                                                                                                                                            
+|-------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| `EXTERNAL_URL`                                  | An URL which is used to build the correct deeplink (You must provide the /oid4vci and .well-known endpoints at this) -> must use https-protocol and it must be reachable for the wallet otherwise the wallet will refuse tp connect.                                                            |                                                                                                                                                                    |
+| `SPRING_APPLICATION_NAME`                       | Name of your application                                                                                                                                                                                                                                                                        |
+| `ISSUER_ID`                                     | The DID you created in the [onboarding process](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#create-a-did-or-create-the-did-log-you-need-to-continue)                                                                                                         | did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:ff8eb859-6996-4e51-a976-be1ca584c124               |
+| `DID_STATUS_LIST_VERIFICATION_METHOD`           | The Verification method, which can be taken from the did log response. The Verification Method must match the selectedSIGNING_KEY! [onboarding process](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#create-a-did-or-create-the-did-log-you-need-to-continue) | did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:ff8eb859-6996-4e51-a976-be1ca584c124#assert-key-01 |
+| `STATUS_LIST_KEY`                               | EC Private key can be taken from [onboarding process](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#create-a-did-or-create-the-did-log-you-need-to-continue) you can use any generated key but it must match the `DID_STATUS_LIST_VERIFICATION_METHOD`         |
+| `SWIYU_PARTNER_ID`                              | The partner id you created in the [swiyu Trust Infrastructure business partner ID](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#business-partner-registration)                                                                                                | d33fab52-1657-4240-9189-97c33b949739                                                                                                                               | |`SWIYU_STATUS_REGISTRY_CUSTOMER_KEY`| Customer key from [Status Registry API Key](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#get-api-keys-to-access-swiyu-apis)           |                                                                                                                                                                                                                                                                                                 |
+| `SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET`         | Customer Secret from [Status Registry API Secret](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#get-api-keys-to-access-swiyu-apis)                                                                                                                             |
+| `SWIYU_STATUS_REGISTRY_ACCESS_TOKEN`            | Access token from [Status Registry API ACCESS Token](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#get-api-keys-to-access-swiyu-apis)                                                                                                                          |
+| `SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN` | Refresh token from [Status Registry API Refresh Token](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#get-api-keys-to-access-swiyu-apis)                                                                                                                        |
+| `SWIYU_STATUS_REGISTRY_TOKEN_URL`               | [OAuth Refresh URL](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#authenticate-with-oauth2)                                                                                                                                                                    | https://keymanager-prd.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect                                                                                  ||
+ `SWIYU_STATUS_REGISTRPY_API_URL`                | [Status Registry Base URL](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#base-urls)                                                                                                                                                                            | https://status-reg-api.trust-infra.swiyu-int.admin.ch                                                                                                              |
+| `DID_SDJWT_VERIFICATION_METHOD`                 | Verification method, which can be taken from the did log response. The Verification Method must match the selected SIGNING_KEY!                                                                                                                                                                 | did:tdw:QmejrSkusQgeM6FfA23L6NPoLy3N8aaiV6X5Ysvb47WSj8:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:ff8eb859-6996-4e51-a976-be1ca584c124#assert-key-02 |
+| `SDJWT_KEY`                                     | EC Private key can be taken                                                                                                                                                                                                                                                                     
+
 from [onboarding process](https://swiyu-admin-ch.github.io/cookbooks/onboarding-base-and-trust-registry/#create-a-did-or-create-the-did-log-you-need-to-continue)
 you can use any generated key but it must match the `DID_SDJWT_VERIFICATION_METHOD` | |
 
-Please note that in the default configuration the issuer service is set up in a way to easily gain experience with the
+Please note that the default configuration of the issuer service is geared towards easily gaining experience with the
+verification process and is NOT intended for production use.
 verification process, not intended for production use. For additional information on how to securely deploy the
 swiyu-issuer check out
 the [Deployment considerations](https://github.com/swiyu-admin-ch/swiyu-issuer/blob/main/README.md#deployment-considerations)
