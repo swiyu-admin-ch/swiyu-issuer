@@ -124,7 +124,7 @@ curl -X 'POST' \
 }'
 ```
 
-With response:
+With the response:
 
 ```json
 {
