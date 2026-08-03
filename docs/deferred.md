@@ -168,7 +168,7 @@ curl -X 'POST' \
 }'
 ```
 
-The response will look like this:
+The response looks like this:
 
 ```json
 {
