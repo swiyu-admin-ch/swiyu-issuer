@@ -6,7 +6,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -21,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -93,16 +93,16 @@ public class IssuanceTestUtils {
 
     /**
      * Tests that the public components of the holderPrivateKey are in the VC's cnf claim
-     * 
+     * <p>
      * "cnf":{
-     *   "jwk":{
-     *     "kty": "EC",
-     *     "use": "sig",
-     *     "crv": "P-256",
-     *     "x": "18wHLeIgW9wVN6VD1Txgpqy2LszYkMf6J8njVAibvhM",
-     *     "y": "-V4dS4UaLMgP_4fY4j8ir7cl1TXlFdAgcx55o7TkcSA"
-     *    }
-     *  }
+     * "jwk":{
+     * "kty": "EC",
+     * "use": "sig",
+     * "crv": "P-256",
+     * "x": "18wHLeIgW9wVN6VD1Txgpqy2LszYkMf6J8njVAibvhM",
+     * "y": "-V4dS4UaLMgP_4fY4j8ir7cl1TXlFdAgcx55o7TkcSA"
+     * }
+     * }
      */
     public void testHolderBinding(String vc, ECKey holderPrivateKey) throws ParseException {
         JsonObject claims = getVcClaims(vc);

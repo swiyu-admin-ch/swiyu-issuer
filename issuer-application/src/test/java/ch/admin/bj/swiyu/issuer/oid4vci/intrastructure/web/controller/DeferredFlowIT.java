@@ -24,7 +24,6 @@ import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JOSEException;
@@ -52,6 +51,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.UnsupportedEncodingException;
 import java.time.Clock;
@@ -534,7 +534,7 @@ class DeferredFlowIT {
         // Mock issuer management interaction
         updateStatus(mock, offer.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.READY);
 
-        String deferredCredentialRequestString = String.format("{ \"transaction_id\": \"%s\"}}", transactionId);
+        String deferredCredentialRequestString = String.format("{ \"transaction_id\": \"%s\"}", transactionId);
 
         var credentialResponse = getDeferredCallResultActions(token, deferredCredentialRequestString)
                 .andExpect(status().isOk())
@@ -573,7 +573,7 @@ class DeferredFlowIT {
         // Mock issuer management interaction
         updateStatus(mock, offer.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.READY);
 
-        String deferredCredentialRequestString = String.format("{ \"transaction_id\": \"%s\"}}", transactionId);
+        String deferredCredentialRequestString = String.format("{ \"transaction_id\": \"%s\"}", transactionId);
 
         // change status to CANCELLED
         updateStatus(mock, offer.getManagementId().toString(), UpdateCredentialStatusRequestTypeDto.CANCELLED);

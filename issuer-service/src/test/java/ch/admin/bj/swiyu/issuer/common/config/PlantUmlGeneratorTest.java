@@ -8,7 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.EventProduce
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.statemachine.StateMachine;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -45,12 +45,12 @@ class PlantUmlGeneratorTest {
     @Test
     void exportStateMachinesToPlantUmlFiles() throws Exception {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
-            CredentialStateMachineFactory.class,
-            CredentialOfferAction.class,
-            CredentialManagementAction.class,
-            EventProducerAction.class,
-            ObjectMapper.class,
-            StateMachineMockConfig.class);
+                CredentialStateMachineFactory.class,
+                CredentialOfferAction.class,
+                CredentialManagementAction.class,
+                EventProducerAction.class,
+                ObjectMapper.class,
+                StateMachineMockConfig.class);
 
         CredentialStateMachineFactory factory = context.getBean(CredentialStateMachineFactory.class);
 

@@ -3,17 +3,14 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.service.AuthorizationService;
 import ch.admin.bj.swiyu.issuer.service.credential.CredentialServiceOrchestrator;
-
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,8 +31,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -177,7 +175,7 @@ public class IssuanceController {
         ClientAgentInfo clientInfo = getClientAgentInfo(request);
 
         String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
-        CreateCredentialRequestDto dto = parseCredentialRequestDto(unparsedRequestDto);
+        CreateCredentialRequestDto dto = parseRequestDto(unparsedRequestDto, CreateCredentialRequestDto.class, true);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
         var headers = responseHeadersFor(credentialEnvelope);
@@ -250,11 +248,11 @@ public class IssuanceController {
     public ResponseEntity<String> createDeferredCredential(@RequestHeader("Authorization") String bearerToken,
                                                            @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
                                                            @NotNull @RequestBody String requestMessage,
-                                                           HttpServletRequest request) throws IOException {
+                                                           HttpServletRequest request) {
         String unparsedRequestDto = jweService.decryptRequest(requestMessage, request.getContentType());
 
-        DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = parseDeferredCredentialRequestDto(
-                unparsedRequestDto);
+        DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = parseRequestDto(
+                unparsedRequestDto, DeferredCredentialEndpointRequestDto.class, false);
 
         String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
@@ -285,20 +283,19 @@ public class IssuanceController {
         }
     }
 
-    private CreateCredentialRequestDto parseCredentialRequestDto(String unparsedRequestDto) {
-        try {
-            var dto = objectMapper.readValue(unparsedRequestDto, CreateCredentialRequestDto.class);
-            validateRequestDtoOrThrow(dto, validator);
-            return dto;
-        } catch (IOException | ConstraintViolationException e) {
-            throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
-        }
-    }
+    private <T> T parseRequestDto(String unparsedRequestDto,
+                                  Class<T> dtoClass,
+                                  boolean validate) {
 
-    private DeferredCredentialEndpointRequestDto parseDeferredCredentialRequestDto(String unparsedRequestDto) {
         try {
-            return objectMapper.readValue(unparsedRequestDto, DeferredCredentialEndpointRequestDto.class);
-        } catch (IOException | ConstraintViolationException e) {
+            T dto = objectMapper.readValue(unparsedRequestDto, dtoClass);
+
+            if (validate) {
+                validateRequestDtoOrThrow(dto, validator);
+            }
+
+            return dto;
+        } catch (ConstraintViolationException | StreamReadException e) {
             throw new Oid4vcException(e, CredentialRequestError.INVALID_CREDENTIAL_REQUEST, e.getMessage());
         }
     }

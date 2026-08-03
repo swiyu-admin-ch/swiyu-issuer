@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,19 +26,15 @@ import static org.mockito.Mockito.when;
 
 class IssuanceControllerTest {
     private static final String ACCESS_TOKEN = "00000000-0000-0000-0000-000000000000";
-
+    private static final String INVALID_REQUEST_REASON = "When the Credential Request is missing a required parameter, includes an unsupported parameter or parameter value, repeats the same parameter, or is otherwise malformed, the error 'invalid_credential_request' must be returned.";
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private CredentialServiceOrchestrator credentialServiceOrchestrator;
     private JweService jweService;
     private OAuthService oAuthService;
-
     // Relevant mocks for the tests in this class
     private HttpServletRequest httpRequest;
     private AuthorizationService authorizationService;
     private IssuanceController controller;
-
-    private ObjectMapper objectMapper = new ObjectMapper();
-
-    private static final String INVALID_REQUEST_REASON = "When the Credential Request is missing a required parameter, includes an unsupported parameter or parameter value, repeats the same parameter, or is otherwise malformed, the error 'invalid_credential_request' must be returned.";
 
     @BeforeEach
     void setup() {

@@ -14,7 +14,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.ECKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Set;
@@ -61,39 +61,27 @@ class CredentialManagementStatusIT {
 
     private static final int STATUS_LIST_MAX_LENGTH = 9;
     private static final String CREDENTIAL_MANAGEMENT_BASE_URL = "/management/api/credentials";
-
-    @Autowired
-    private SwiyuProperties swiyuProperties;
-
-    @Autowired
-    private ApplicationProperties applicationProperties;
-
-    @Autowired
-    private IssuerMetadata issuerMetadata;
-
-    @Autowired
-    private MockMvc mvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private CredentialOfferRepository credentialOfferRepository;
-
-    @Autowired
-    private CredentialOfferStatusRepository credentialOfferStatusRepository;
-
-    @Autowired
-    private StatusListRepository statusListRepository;
-
-    private StatusListTestHelper statusListTestHelper;
-
-    @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
-
     @MockitoBean
     private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
-
+    @Autowired
+    private SwiyuProperties swiyuProperties;
+    @Autowired
+    private ApplicationProperties applicationProperties;
+    @Autowired
+    private IssuerMetadata issuerMetadata;
+    @Autowired
+    private MockMvc mvc;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private CredentialOfferRepository credentialOfferRepository;
+    @Autowired
+    private CredentialOfferStatusRepository credentialOfferStatusRepository;
+    @Autowired
+    private StatusListRepository statusListRepository;
+    private StatusListTestHelper statusListTestHelper;
+    @MockitoBean
+    private StatusBusinessApiApi statusBusinessApi;
     private CredentialWithDeeplinkResponseDto credentialManagementOffer;
 
     private String statusListUri;

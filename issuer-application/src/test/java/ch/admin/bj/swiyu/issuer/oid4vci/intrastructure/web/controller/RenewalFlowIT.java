@@ -9,13 +9,12 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import com.authlete.sd.SDJWT;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.jwk.Curve;
@@ -50,6 +49,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mockserver.MockServerContainer;
 import org.testcontainers.utility.DockerImageName;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -100,7 +100,6 @@ class RenewalFlowIT {
     private StatusBusinessApiApi statusBusinessApi;
     private StatusListTestHelper statusListTestHelper;
     private String payload;
-    private Map<String, Object> payloadMap;
     private OAuthTokenDto oauthTokenResponse;
     private ECKey dpopKey;
     private String managementId;
@@ -144,8 +143,7 @@ class RenewalFlowIT {
         var statusListUri = statusListDto.getStatusRegistryUrl();
 
         payload = getMinimalPayloadForUniversityCredential(statusListUri);
-
-        payloadMap = Map.of("name", "name", "type", "type");
+        
         // here
         assertDoesNotThrow(this::createCredential);
 
