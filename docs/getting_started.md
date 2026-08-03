@@ -217,7 +217,7 @@ the [GitHub repository](https://github.com/swiyu-admin-ch/swiyu-issuer?tab=readm
 In order to optimize the image for ARM based systems, you first have to check out
 the [repository](https://github.com/swiyu-admin-ch/swiyu-issuer).
 
-To create an image you to run the following command in the repository to create a local images of the service:
+Run the following command in the repository to create a local image of the service:
 
 ```bash
 ./mvnw install:install-file -Dfile=lib/primusX-java11-2.4.4.jar -DgroupId=com.securosys.primus -DartifactId=jce -Dversion=2.4.4 -Dpackaging=jar spring-boot:build-image
