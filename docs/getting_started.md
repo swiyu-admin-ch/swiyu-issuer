@@ -191,7 +191,7 @@ the [documentation](https://github.com/swiyu-admin-ch/swiyu-issuer?tab=readme-ov
 Using the Issuer Management service the status can be updated
 
 <div class="notice--warning">
-  ⚙️ Please, ensure the shell variable <code>CREDENTIAL_ID</code> has already been set accordingly (see above).
+  ⚙️ Please, ensure the shell variable <code>CREDENTIAL_ID</code> has been set accordingly (see above).
 </div>
 
 ```bash
