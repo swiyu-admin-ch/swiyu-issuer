@@ -142,7 +142,7 @@ With the response:
 
 > [!IMPORTANT]
 > It's recommended to store the value of `"statusRegistryUrl"` response field, as it is needed in later steps and will
-> be referenced as `${STATUS_REGISTRY_URL}`.
+> be referenced as `$STATUS_REGISTRY_URL`.
 
 More details about the status list creation can be found [here](issuance.md#create-status-list-entry).
 
