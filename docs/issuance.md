@@ -143,7 +143,7 @@ The response looks like this:
 curl -X 'GET' 'http://localhost:8080/management/api/credentials/$MANAGEMENT_ID/status' -H 'accept: application/json'
 ```
 
-The response will look like this:
+The response looks like this:
 
 ```json
 {
