@@ -139,7 +139,7 @@ With the response:
 > [!NOTE]  
 > In order to create a deferred credential offer, you need to set `"deferred": true` in the `credential_metadata`.
 > In contrast to the normal credential offer, the `credential_subject_data` is not required in the request body, as it
-> can be set later, as the content might not be known beforehand (`"credential_subject_data": {}`).
+> can be set later, because the content might not be known beforehand (`"credential_subject_data": {}`).
 
 ```bash
 curl -X 'POST' \
