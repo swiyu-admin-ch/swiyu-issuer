@@ -171,7 +171,7 @@ curl -X 'POST' \
 }'
 ```
 
-With response:
+With the response:
 
 The request above should produce the following response (the placeholders `${CREDENTIAL_ID}` and
 `${SWIYU_OFFER_DEEPLINK}` denote concrete values):
