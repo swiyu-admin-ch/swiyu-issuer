@@ -214,7 +214,7 @@ the [GitHub repository](https://github.com/swiyu-admin-ch/swiyu-issuer?tab=readm
 
 ## Create Images for ARM based processors
 
-In order to optimize the image for arm based systems, you first have to check out
+In order to optimize the image for ARM based systems, you first have to check out
 the [repository](https://github.com/swiyu-admin-ch/swiyu-issuer).
 
 To create an image you to run the following command in the repository to create a local images of the service:
