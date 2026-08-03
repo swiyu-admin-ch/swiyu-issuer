@@ -216,7 +216,7 @@ With response:
 }
 ```
 
-The wallet will also fetch the Issuer metadata to know which credential configurations are supported and witch
+The wallet will also fetch the Issuer metadata to know which credential configurations are supported and which
 requirements like Proof Types, Cryptographic Binding Methods, and Claims are available.
 
 ```bash
