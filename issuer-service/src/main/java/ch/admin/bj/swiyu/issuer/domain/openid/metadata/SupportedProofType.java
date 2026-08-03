@@ -29,7 +29,7 @@ public class SupportedProofType {
      * The Wallet uses one of them to sign the proof. Algorithm names used are determined by the key proof type
      */
     @JsonProperty(value = "proof_signing_alg_values_supported")
-    List<@Pattern(regexp = "^ES256$", message = "Only ES256 is supported for holder binding proofs") String> supportedSigningAlgorithms;
+    List<@Pattern(regexp = "^ES256|Ed25519$", message = "Only ES256 or Ed25519 is supported for holder binding proofs") String> supportedSigningAlgorithms;
 
     /**
      * If the Credential Issuer does not require a key attestation, this parameter MUST NOT be present in the metadata.

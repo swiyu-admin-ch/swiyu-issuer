@@ -6,11 +6,14 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.crypto.Ed25519Signer;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.time.Instant;
 import java.util.Date;
@@ -20,12 +23,12 @@ import java.util.UUID;
 
 public class TestServiceUtils {
 
-    public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString) throws JOSEException {
+    public static String createHolderProof(JWK holderPrivateKey, String issuerUri, String nonce, String proofTypeString) throws JOSEException {
         return createHolderProof(holderPrivateKey, issuerUri, nonce, proofTypeString, Date.from(Instant.now()));
     }
 
     public static String createAttestedHolderProof(
-            ECKey holderPrivateKey,
+            JWK holderPrivateKey,
             String issuerUri,
             String nonce,
             String proofTypeString,
@@ -35,41 +38,56 @@ public class TestServiceUtils {
     }
 
     public static String createAttestedHolderProof(
-            ECKey holderPrivateKey,
+            JWK holderPrivateKey,
             String issuerUri,
             String nonce,
             String proofTypeString,
             AttackPotentialResistance attestationLevel,
             String attestationIssuerDid,
-            ECKey attestationKey) throws JOSEException {
+            JWK attestationKey) throws JOSEException {
         return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, Date.from(Instant.now()), attestationLevel, attestationIssuerDid, attestationKey);
     }
 
-    public static String createHolderProof(ECKey holderPrivateKey, String issuerUri, String nonce, String proofTypeString, Date issueTime) throws JOSEException {
+    public static String createHolderProof(JWK holderPrivateKey, String issuerUri, String nonce, String proofTypeString, Date issueTime) throws JOSEException {
         return createHolderProofJWT(holderPrivateKey, issuerUri, nonce, proofTypeString, issueTime, null, null, holderPrivateKey);
     }
 
-    public static String createKeyAttestationJwt(ECKey attestationKey, ECKey holderPrivateKey, AttackPotentialResistance attestationLevel, String attestationIssuerDid) throws JOSEException {
+    public static String createKeyAttestationJwt(JWK attestationKey, JWK holderPrivateKey, AttackPotentialResistance attestationLevel, String attestationIssuerDid) throws JOSEException {
 
-        JWSSigner attestationSigner = new ECDSASigner(attestationKey);
-        var attestation = createKeyAttestation(attestationLevel, holderPrivateKey.toPublicJWK(), attestationIssuerDid == null ? "did:test:test-attestation-builder" : attestationIssuerDid);
-        attestation.sign(attestationSigner);
+        var attestationSigner = prepareSigner(attestationKey);
+        attestationIssuerDid = attestationIssuerDid == null ? "did:webvh:scid:test-attestation-builder" : attestationIssuerDid;
+
+        JWSHeader header = new JWSHeader.Builder(attestationSigner.alg)
+                .type(new JOSEObjectType("key-attestation+jwt"))
+                .keyID(attestationIssuerDid + "#" + (attestationKey.getKeyID() == null ? "key-1" : attestationKey.getKeyID()))
+                .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                .build();
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer(attestationIssuerDid)
+                .issueTime(Date.from(Instant.now()))
+                .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
+                .claim("key_storage", List.of(attestationLevel.getValue()))
+                .claim("attested_keys", List.of(holderPrivateKey.toPublicJWK().toJSONObject()))
+                .build();
+        var attestation = new SignedJWT(header, claims);
+        attestation.sign(attestationSigner.signer);
         return attestation.serialize();
     }
 
     @NotNull
     private static String createHolderProofJWT(
-            ECKey holderPrivateKey,
+            JWK holderPrivateKey,
             String issuerUri,
             String nonce,
             String proofTypeString,
             Date issueTime,
             @Nullable AttackPotentialResistance attestationLevel,
             @Nullable String attestationIssuerDid,
-            ECKey attestationKey) throws JOSEException {
-        JWSSigner signer = new ECDSASigner(holderPrivateKey);
+            JWK attestationKey) throws JOSEException {
+        var holderSignerSupport = assertDoesNotThrow(() -> prepareSigner(holderPrivateKey));
+        JWSSigner signer = holderSignerSupport.signer;
 
-        var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.ES256)
+        var headerBuilder = new JWSHeader.Builder(holderSignerSupport.alg)
                 .type(new JOSEObjectType(proofTypeString));
         headerBuilder.jwk(holderPrivateKey.toPublicJWK());
         // Add attestation if required
@@ -87,22 +105,6 @@ public class TestServiceUtils {
         SignedJWT jwt = new SignedJWT(header, claims);
         jwt.sign(signer);
         return jwt.serialize();
-    }
-
-    private static SignedJWT createKeyAttestation(AttackPotentialResistance attestationLevel, ECKey publicJWK, String attestationIssuerDid) {
-        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .type(new JOSEObjectType("key-attestation+jwt"))
-                .keyID(attestationIssuerDid + "#key-1")
-                .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
-                .build();
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .issuer(attestationIssuerDid)
-                .issueTime(Date.from(Instant.now()))
-                .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
-                .claim("key_storage", List.of(attestationLevel.getValue()))
-                .claim("attested_keys", List.of(publicJWK.toJSONObject()))
-                .build();
-        return new SignedJWT(header, claims);
     }
 
     public static CredentialManagement getCredentialManagement(CredentialStatusManagementType status, UUID accessToken) {
@@ -128,5 +130,20 @@ public class TestServiceUtils {
                 .credentialValidUntil(Instant.now().plusSeconds(200))
                 .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
                 .build();
+    }
+
+    public static SignerSupport prepareSigner(JWK jwk) throws JOSEException {
+        JWSSigner signer = null;
+        JWSAlgorithm algorithm = JWSAlgorithm.ES256;
+        if (jwk.getAlgorithm() == null || JWSAlgorithm.Family.EC.contains(jwk.getAlgorithm())) {
+            signer = new ECDSASigner(jwk.toECKey());
+        } else if (JWSAlgorithm.Ed25519.equals(jwk.getAlgorithm())) {
+            signer = new Ed25519Signer(jwk.toOctetKeyPair());
+            algorithm = JWSAlgorithm.Ed25519;
+        }
+        return new SignerSupport(signer, algorithm);
+    }
+
+    public record SignerSupport(JWSSigner signer, JWSAlgorithm alg) {
     }
 }

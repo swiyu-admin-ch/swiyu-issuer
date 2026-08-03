@@ -537,8 +537,8 @@ the [OpenID4VCI specification](https://openid.net/specs/openid-4-verifiable-cred
 |-------------------------------------------------------------------------------|------------------------------------------------------------------|----------|-----------------------------------------------------------|
 | version                                                                       | "1.0"                                                            | Yes      |                                                           |
 | credential_configurations_supported.*.format                                  | "dc+sd-jwt" / "vc+sd-jwt" (deprecated)                           | Yes      |                                                           |
-| credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256"]                                                        | Yes      |                                                           |
-| credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256"]} ``` | No       | When set only the exact object shown as sample is allowed |
+| credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256", "Ed25519"]                                             | Yes      | Must be matching the configured singing key               |
+| credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256", "Ed25519"]} ``` | No       | When set must be ES256 Ed25519 or both         |
 | credential_configurations_supported.*.cryptographic_binding_methods_supported | ["jwk"]                                                          | No       |                                                           |
 
 The configuration `proof_types_supported` allows specifying the required security specification the wallet should store
@@ -551,7 +551,8 @@ Example value
 "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
-            "ES256"
+            "ES256",
+            "Ed25519"
           ],
           "key_attestations_required": {
             "key_storage": ["iso_18045_high"]

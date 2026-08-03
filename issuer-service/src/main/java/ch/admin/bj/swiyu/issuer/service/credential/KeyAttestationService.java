@@ -9,7 +9,10 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Pr
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -115,14 +118,14 @@ public class KeyAttestationService {
         if (bindingJson == null) {
             throw new Oid4vcException(INVALID_PROOF, "Proof has no binding key – cannot verify against attested_keys");
         }
-
-        ECKey proofKey = parseProofKey(bindingJson);
+        
+        JWK proofKey = parseProofKey(bindingJson);
         verifyKeyPresentInAttestation(proofKey, attestation);
     }
 
-    private ECKey parseProofKey(String bindingJson) {
+    private JWK parseProofKey(String bindingJson) {
         try {
-            return ECKey.parse(bindingJson);
+            return JWK.parse(bindingJson);
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Proof binding key could not be parsed for attested_keys verification!");
         }
@@ -138,7 +141,7 @@ public class KeyAttestationService {
      * @throws Oid4vcException with {@code INVALID_PROOF} if the proof key does not
      *                         match any key in the attestation or if thumb‑print computation fails
      */
-    public void verifyKeyPresentInAttestation(ECKey proofKey, AttestationJwt attestation) {
+    public void verifyKeyPresentInAttestation(JWK proofKey, AttestationJwt attestation) {
         try {
             if (!attestation.containsKey(proofKey)) {
                 throw new Oid4vcException(INVALID_PROOF,
@@ -150,7 +153,7 @@ public class KeyAttestationService {
         }
     }
 
-    private String computeThumbprintSafe(ECKey key) {
+    private String computeThumbprintSafe(JWK key) {
         try {
             return key.toPublicJWK().computeThumbprint().toString();
         } catch (JOSEException e) {
