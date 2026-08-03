@@ -408,7 +408,7 @@ And the wallet receives a transaction ID in the response:
 
 Actor: Business Issuer
 
-The business issuer can then either update the status of the offer (if the offer data is already set or not)
+The business issuer can then decide to update the status of the offer (if the offer data is already set) or not.
 
 ```bash
 curl -X 'PATCH' 'http://localhost:8080/management/api/credentials/$MANAGEMENT_ID/status?credentialStatus=READY' -H 'accept: application/json'
