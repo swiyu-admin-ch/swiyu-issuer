@@ -96,7 +96,7 @@ With the response:
 > is set then the claims are added to the final credential.
 
 The integrity hash is provided with each created credential offer in the offer metadata while issuing the credential.
-The integrity can be calculated using shell commands.
+The integrity can be calculated using this shell commands:
 `echo "sha256-$(wget -O- http://localhost:8080/oid4vci/vct/my-vct-v01 | openssl dgst -binary -sha256 | openssl base64 -A)"`
 
 ```bash
