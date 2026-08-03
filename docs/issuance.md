@@ -177,7 +177,7 @@ requirements like Proof Types, Cryptographic Binding Methods, and Claims are ava
 curl -X 'GET' 'http://localhost:8080/oid4vci/.well-known/openid-credential-issuer' -H 'accept: application/json'
 ```
 
-With response:
+With the response:
 
 ```json
 {
