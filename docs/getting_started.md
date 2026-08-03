@@ -83,7 +83,7 @@ swiyu-issuer check out
 the [Deployment considerations](https://github.com/swiyu-admin-ch/swiyu-issuer/blob/main/README.md#deployment-considerations)
 in the readme.
 
-The provided images can be used with arm based processors, but they are not optimized.
+The provided images can be used with ARM based processors, but they are not optimized.
 
 The latest image is available here:
 
