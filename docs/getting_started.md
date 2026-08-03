@@ -202,7 +202,7 @@ The response then looks like:
 
 ```json
 {
-    "id": "${CREDENTIAL_ID}",
+    "id": "$CREDENTIAL_ID",
     "status": "CANCELLED"
 }
 ```
