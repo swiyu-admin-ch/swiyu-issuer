@@ -46,7 +46,7 @@ ISS-->>-WALLET:
 Actor: Business Issuer
 
 > [!NOTE]  
-> In order to create an offer first you have to initialize a status list. Please store the `statusRegistryUrl` as it is
+> In order to create an offer you first have to initialize a status list. Please store the `statusRegistryUrl` as it is
 > needed in later steps and will be referenced as `$STATUS_REGISTRY_URL`.
 
 Explanation of params:
