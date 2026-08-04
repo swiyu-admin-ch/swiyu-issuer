@@ -10,6 +10,8 @@ import ch.admin.bj.swiyu.statuslist.TokenStatusListVerifier;
 import ch.admin.bj.swiyu.statuslist.TokenStatusListVerifierConfig;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -68,6 +70,7 @@ public class TrustRegistryConfig {
      * @return a {@link DidJwtValidator} scoped to the Trust Registry's DID domain
      */
     @Bean
+    @Qualifier("trustStatementValidator")
     public DidJwtValidator trustStatementDidJwtValidator() {
         var hosts = new HashSet<>(applicationProperties.getAcceptedRegistryHosts());
         for (String host : hosts) {
