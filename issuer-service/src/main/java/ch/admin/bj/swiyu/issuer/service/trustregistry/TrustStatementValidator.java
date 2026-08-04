@@ -15,6 +15,8 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 
@@ -50,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnExpression("'${swiyu.trust-registry.api-url:}'.length() > 0")
 public class TrustStatementValidator {
 
+    @Qualifier("trustStatementValidator")
     private final DidJwtValidator trustStatementDidJwtValidator;
     private final SwiyuProperties swiyuProperties;
 
