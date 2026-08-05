@@ -126,6 +126,23 @@ public class ApplicationProperties {
      */
     private boolean swissProfileVersioningEnforcement = false;
 
+    /**
+     * Limits the maximum length of compressed JWE ciphertext accepted by the application
+     * to avoid excessive memory usage or potential DoS via decompression bombs.
+     */
+    @NotNull
+    @Min(1)
+    private Integer maxCompressedCipherTextLength;
+
+    /**
+     * Limits the maximum length of the decrypted/decompressed JWE plaintext payload.
+     * Acts as an additional defense-in-depth limit against decompression bomb attacks,
+     * rejecting oversized payloads before JSON parsing.
+     */
+    @NotNull
+    @Min(1)
+    private Integer maxDecompressedPayloadLength;
+
     @PostConstruct
     public void init() {
         try {

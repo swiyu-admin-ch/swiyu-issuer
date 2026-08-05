@@ -35,11 +35,12 @@ class JweServiceTest {
     private EncryptionKeyRepository encryptionKeyRepository;
     private List<EncryptionKey> encryptionKeyTestCache;
     private IssuerMetadata issuerMetadata;
+    private ApplicationProperties applicationProperties;
 
     @BeforeEach
     void setUp() {
         setupMockRepository();
-        ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
+        applicationProperties = Mockito.mock(ApplicationProperties.class);
         issuerMetadata = IssuerMetadata.builder()
                 .requestEncryption(IssuerCredentialRequestEncryption.builder()
                         .encRequired(true)
@@ -49,6 +50,10 @@ class JweServiceTest {
         jweService = new JweService(applicationProperties, issuerMetadata, encryptionKeyService);
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())
                 .thenReturn(KEY_ROTATION_INTERVAL);
+        Mockito.when(applicationProperties.getMaxCompressedCipherTextLength())
+                .thenReturn(20_971_520);
+        Mockito.when(applicationProperties.getMaxDecompressedPayloadLength())
+                .thenReturn(20_971_520);
         encryptionKeyService.rotateEncryptionKeys();
     }
 
@@ -100,6 +105,29 @@ class JweServiceTest {
     @Test
     void rejectMissingEncryption() {
         assertThrows(Oid4vcException.class, () -> jweService.decryptRequest("Anything", "application/json"));
+    }
+
+    /**
+     * Verifies that JWE decryption is rejected once the decrypted/decompressed payload exceeds the
+     * configured {@code maxDecompressedPayloadLength}. This is a defense-in-depth mitigation against
+     * JWE decompression bomb attacks (EIDOMNI-1117 / EIDSEC-843), where a small, highly-compressible
+     * ciphertext expands into a disproportionately large plaintext payload.
+     */
+    @Test
+    void decrypt_whenDecompressedPayloadExceedsLimit_thenThrowsOid4vcException() {
+        jweService.issuerMetadataWithEncryptionOptions();
+        var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
+        var activeKey = jwks.getKeys().getFirst();
+
+        // Highly repetitive payload compresses well, allowing a small ciphertext to expand
+        // into a decompressed payload larger than the configured limit.
+        String plaintext = "a".repeat(50_000);
+        Mockito.when(applicationProperties.getMaxDecompressedPayloadLength())
+                .thenReturn(plaintext.length() - 1);
+        String encrypted = createEncryptedMessage(plaintext, activeKey);
+
+        Oid4vcException exception = assertThrows(Oid4vcException.class, () -> jweService.decrypt(encrypted));
+        assertThat(exception.getMessage()).contains("JWE Object could not be decrypted");
     }
 
     private void setupMockRepository() {
