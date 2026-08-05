@@ -28,7 +28,21 @@ Ask the user to run it and paste the output back to you.
 git log --since="[DATE_FROM_STEP_1]" --oneline`
 ```
 
-## Step 4: Generate the Changelog
+## Step 4: Verify "Upstream First" Policy Compliance
+
+Before generating the changelog, you must verify that no commits exist on the current release branch that are missing from the `main` branch. This enforces the architecture policy that all fixes must go to `main` first.
+
+Provide the following git command in a bash block and ask the user to run it:
+
+` ``bash
+git log main..HEAD --oneline
+` ``
+
+Stop and wait for the user's reply. Do not proceed to the next step.
+- If the output is empty: The branch is compliant. Proceed to generate the changelog.
+- If the output contains commits: **STOP** the release process immediately. Inform the user that the "Upstream First" policy has been violated. Tell them they must cherry-pick or forward-port these specific commits into the `main` branch before the release can proceed.
+
+## Step 5: Generate the Changelog
 
 Once the user provides the commit messages, generate the changelog using STRICTLY the following instructions:
 
@@ -39,7 +53,7 @@ Once the user provides the commit messages, generate the changelog using STRICTL
 - Format the output in Markdown, following the "Keep a Changelog" style.
 - Only include user-facing changes, skip refactoring, documentation, and merge commits unless they affect functionality.
 
-## Step 5: Update the pom.xml Files
+## Step 6: Update the pom.xml Files
 
 Directly after presenting the changelog, provide the code to update the `pom.xml` files.
 Provide the exact XML snippets to update the `<version>` tags for `swiyu-issuer-parent` and `swiyu-issuer-service` to
@@ -47,7 +61,7 @@ the new version defined in Step 1.
 Also, suggest the command `mvn versions:set -DnewVersion=[VERSION_FROM_STEP_1]` as a quick alternative to update all
 Maven modules automatically.
 
-## Step 6: Commit and Push Version Changes
+## Step 7: Commit and Push Version Changes
 
 Tell the user to commit and push the changed pom.xml files. Provide the following git commands in a bash code block,
 automatically inserting the version from Step 1 into the commit message:
@@ -57,14 +71,14 @@ git commit -am "chore(release): bump version to [VERSION_FROM_STEP_1]"
 git push
 ```
 
-## Step 7: GitHub Release Instructions
+## Step 8: GitHub Release Instructions
 
 Provide the user with a step-by-step checklist to publish the release on GitHub.
 Extract the major and minor version from Step 1 to suggest the correct release branch (e.g., if the version is 2.4.3,
 the branch is release/2.4.x).
 Output exactly this guide in German, filling in the correct variables based on the user's input:
 
-**Schritt 7: GitHub Release erstellen**
+**GitHub Release erstellen**
 Bitte führe nun die folgenden Schritte auf GitHub aus:
 
 1. Öffne die
@@ -76,14 +90,14 @@ Bitte führe nun die folgenden Schritte auf GitHub aus:
 6. **Describe this release:** Kopiere das oben generierte Changelog und füge es hier ein.
 7. Klicke auf **"Publish release"**.
 
-## Step 8: Confluence Documentation & Jira Filter
+## Step 9: Confluence Documentation & Jira Filter
 
 Extract all unique Jira ticket IDs (e.g., EIDOMNI-123 or similar formats) from the commit messages provided in Step 3.
 Remove any duplicate ticket IDs.
 Generate a JQL string formatted exactly like this: `key IN (TICKET-1, TICKET-2, TICKET-3)`
 Output exactly this guide in German, filling in the generated JQL filter and version:
 
-**Schritt 8: Confluence Dokumentation**
+**Confluence Dokumentation**
 Bitte trage das neue Release nun im Confluence ein:
 
 1. Gehe auf die Seite: **7.2. Generic Components Releases - e-ID Teamspace - Confluence**.
