@@ -97,8 +97,14 @@ public class JweService {
      * @return true, if credential requests MUST be encrypted
      */
     public boolean isRequestEncryptionMandatory() {
+        var isEncryptionEnforced = applicationProperties.isEncryptionEnforce();
         IssuerCredentialRequestEncryption encryptionOptions = issuerMetadata.getRequestEncryption();
-        return encryptionOptions != null && encryptionOptions.isEncRequired();
+
+        if (isEncryptionEnforced && (encryptionOptions == null || !encryptionOptions.isEncRequired())) {
+            log.warn("RequestEncryption options are not mandatory, but there is a problem with the issuer metadata configuration. Please check the issuer metadata configuration and ensure that the requestEncryption options are set correctly.");
+        }
+
+        return isEncryptionEnforced;
     }
 
 
@@ -115,9 +121,11 @@ public class JweService {
         // Decrypt if holder sent an encrypted
         if (StringUtils.equalsIgnoreCase("application/jwt", contentType)) {
             return decrypt(requestMessage);
-        } else if (isRequestEncryptionMandatory()) {
+        }
+
+        if (isRequestEncryptionMandatory()) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
-                    "Request encryption is mandatory with content type set to application/jwt",
+                    "Request encryption is mandatory. Content type must be set to application/jwt",
                     Map.of("contentType", contentType != null ? contentType : "null"));
         }
         return requestMessage;

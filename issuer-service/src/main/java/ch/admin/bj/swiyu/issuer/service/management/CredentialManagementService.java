@@ -20,15 +20,15 @@ import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.Map;
@@ -165,7 +165,7 @@ public class CredentialManagementService {
                 .collect(Collectors.toSet());
         try {
             return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Failed to parse management object with DPoP key", e);
         }
     }
@@ -502,7 +502,7 @@ public class CredentialManagementService {
             try {
                 return objectMapper.readValue(unparsedOfferDataString, new TypeReference<Map<String, Object>>() {
                 });
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 throw new BadRequestException("Offer Data %s cannot be parsed".formatted(unparsedOfferDataString), e);
             }
         }

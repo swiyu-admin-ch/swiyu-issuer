@@ -6,9 +6,9 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
-import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialClaim;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.MetadataClaimDescriptor;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
@@ -23,8 +23,6 @@ import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +31,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.*;
@@ -133,8 +133,6 @@ class CredentialServiceOrchestratorTest {
                 .build();
 
         credentialConfiguration = mock(CredentialConfiguration.class);
-        when(credentialConfiguration.getCredentialDefinition()).thenReturn(null);
-        when(credentialConfiguration.getClaims()).thenReturn(Map.of("claim1", new CredentialClaim()));
         when(credentialConfiguration.getFormat()).thenReturn("vc+sd-jwt");
         when(credentialConfiguration.getVct()).thenReturn("test-vct");
 
@@ -199,7 +197,7 @@ class CredentialServiceOrchestratorTest {
 
 
     @Test
-    void testCreateCredential_deferred() throws JsonProcessingException {
+    void testCreateCredential_deferred() throws JacksonException {
 
         var credentialRequestDto = getCredentialRequestDto("test", null);
         var clientInfo = getClientInfo();
@@ -231,12 +229,12 @@ class CredentialServiceOrchestratorTest {
         when(sdJwtCredential.credentialType(anyList())).thenReturn(sdJwtCredential);
         when(statusListOrchestrator.lockAndValidateStatusListsForOffer(any())).thenReturn(List.of(statusList));
 
-        var claim = new CredentialClaim();
+        var claim = new MetadataClaimDescriptor();
         claim.setMandatory(true);
-        claim.setValueType("string");
+        // claim.setValueType("string");
         var credConfig = mock(CredentialConfiguration.class);
-        when(credConfig.getCredentialDefinition()).thenReturn(null);
-        when(credConfig.getClaims()).thenReturn(Map.of("hello", claim));
+        // when(credConfig.getCredentialDefinition()).thenReturn(null);
+        // when(credConfig.getCredentialMetadata().getClaimDescriptor()).thenReturn(Map.of("hello", claim));
         when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
         when(credConfig.getVct()).thenReturn("test-vct");
 
@@ -456,7 +454,7 @@ class CredentialServiceOrchestratorTest {
     }
 
     @Test
-    void createCredential_deferred_thenSuccess() throws JsonProcessingException {
+    void createCredential_deferred_thenSuccess() throws JacksonException {
         // Arrange
         CreateCredentialRequestDto requestDto = mock(CreateCredentialRequestDto.class);
         UUID accessToken = UUID.randomUUID();

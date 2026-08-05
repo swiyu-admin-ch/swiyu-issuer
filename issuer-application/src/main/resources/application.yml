@@ -4,12 +4,6 @@ spring:
     # USE_PROPERTIES_BASED matches Jackson 2 default behavior, needed for Lombok @Data + @Builder DTOs.
     constructor-detector: use-properties-based
   http:
-    converters:
-      # Use Jackson 2 (com.fasterxml.jackson) for HTTP message conversion so all @JsonProperty,
-      # @JsonIgnoreProperties etc. annotations on existing DTOs continue to work.
-      # Jackson2HttpMessageConvertersConfiguration is deprecated since Boot 4.0 for removal in 4.3 –
-      # migrate DTOs to Jackson 3 (tools.jackson) before upgrading to Boot 4.3.
-      preferred-json-mapper: jackson2
     clients:
       connect-timeout: 10000 # 10 seconds
       read-timeout: 30000 # 30 seconds
@@ -90,6 +84,7 @@ management:
         application.offer-expiration-interval,
         application.openid-file,
         application.metadata-file,
+        application.accepted-registry-hosts,
         application.data-integrity-jwks,
         application.data-integrity-enforced,
         application.key.sdjwt.hsm.host,
@@ -245,6 +240,10 @@ application:
       verification-method: "${DID_SDJWT_VERIFICATION_METHOD:}"
   url-rewrite:
     mapping: "${URL_REWRITE_MAPPING:{}}"
+  accepted-registry-hosts:
+    - "trust-reg.trust-infra.swiyu.admin.ch"
+    - "status-reg.trust-infra.swiyu.admin.ch"
+    - "identifier-reg.trust-infra.swiyu.admin.ch"
   signed-metadata-enabled: ${ENABLE_SIGNED_METADATA:true}
   automatic-status-list-synchronization-disabled: ${DISABLE_STATUS_LIST_SYNCHRONIZATION:false}
 
@@ -269,11 +268,10 @@ swiyu:
   # If not set, trust statement caching is disabled.
   trust-registry:
     api-url: "${SWIYU_TRUST_REGISTRY_API_URL:}"
-    customer-key: ${secret.swiyu.trust-registry.customer-key:${SWIYU_TRUST_REGISTRY_CUSTOMER_KEY:}}
-    customer-secret: ${secret.swiyu.trust-registry.customer-secret:${SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET:}}
     max-cache-size: ${SWIYU_TRUST_REGISTRY_MAX_CACHE_SIZE:1000}
     clock-skew-buffer-seconds: ${SWIYU_TRUST_REGISTRY_CLOCK_SKEW_BUFFER_SECONDS:60}
     max-cache-ttl-seconds: ${SWIYU_TRUST_REGISTRY_MAX_CACHE_TTL_SECONDS:60}
+    request-backoff-seconds: 600 # 10 minutes
 
 webhook:
   callback-uri: "${WEBHOOK_CALLBACK_URI:}"

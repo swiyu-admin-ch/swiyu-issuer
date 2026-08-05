@@ -109,11 +109,14 @@ public class ApplicationProperties {
     private int nonceLifetimeSeconds;
     @NotNull
     private Duration encryptionKeyRotationInterval;
-    private boolean encryptionEnforce;
+    private boolean encryptionEnforce = true;
 
     private boolean dpopEnforce;
 
     private boolean automaticStatusListSynchronizationDisabled;
+
+    @NotEmpty
+    private List<String> acceptedRegistryHosts;
 
     private String dataIntegrityJwks;
     private JWKSet dataIntegrityKeySet;

@@ -73,6 +73,20 @@ transition period to adopt the hardened runtime:
 - The two `Dockerfile`s in this repository (`Dockerfile.dhi` for the default, `Dockerfile`
   for the `-unhardened` variant) are both built and Snyk-scanned on every PR.
 
+### Verifying image signatures
+
+All published images are signed with [Cosign](https://docs.sigstore.dev/) using keyless
+(OIDC) signing directly in the GitHub Actions build workflow. The signature is bound to the
+image digest and recorded in the public Sigstore transparency log. You can verify the
+authenticity of an image before deploying it:
+
+```bash
+cosign verify \
+  --certificate-identity-regexp "https://github.com/swiyu-admin-ch/swiyu-issuer/.github/workflows/docker-builder.yml@.*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>
+```
+
 ## 1. Set the environment variables
 
 A sample compose file for an entire setup of both components and a database can be found
@@ -321,9 +335,7 @@ if `SWIYU_TRUST_REGISTRY_API_URL` is not set, trust statement caching is disable
 
 | Variable                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                         | Default  |
 |:-----------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
-| SWIYU_TRUST_REGISTRY_API_URL                   | The API base URL of the Trust Registry sidechannel (Trust Protocol 2.0). If not set, trust statement caching is disabled.                                                                                                                                                                                                                                                                                                           | _(none)_ |
-| SWIYU_TRUST_REGISTRY_CUSTOMER_KEY              | Customer key for HTTP Basic Auth against the Trust Registry API. Provided by the api self-service portal.                                                                                                                                                                                                                                                                                                                           | _(none)_ |
-| SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET           | Customer secret for HTTP Basic Auth against the Trust Registry API. Provided by the api self-service portal.                                                                                                                                                                                                                                                                                                                        | _(none)_ |
+| SWIYU_TRUST_REGISTRY_API_URL                   | Trust registry API URL (read-only, IF-007). If set, the issuer can fetch its own trust statements. Currently intended for testing purposes only. If not set, trust statement caching is disabled.                                                                                                                                                                                                                                 | _(none)_ |                                                                         | _(none)_ |
 | SWIYU_TRUST_REGISTRY_MAX_CACHE_SIZE            | Maximum number of distinct issuer DIDs to cache trust statements for. Prevents unbounded memory growth.                                                                                                                                                                                                                                                                                                                             | `1000`   |
 | SWIYU_TRUST_REGISTRY_CLOCK_SKEW_BUFFER_SECONDS | Buffer in seconds subtracted from the JWT `exp` claim before caching. Ensures that served statements are still valid when received by downstream consumers, accounting for clock skew and network latency.                                                                                                                                                                                                                          | `60`     |
 | SWIYU_TRUST_REGISTRY_MAX_CACHE_TTL_SECONDS     | Optional hard upper bound for the trust statement cache TTL in seconds. When set, the effective TTL is `min(exp-based TTL, max-cache-ttl-seconds)`. Recommended: set to the same value as `PUBLIC_KEY_CACHE_TTL_MILLI` (converted to seconds) to avoid serving trust statements whose referenced DID key has already been rotated out of the public key cache. If not set, the TTL is derived exclusively from the JWT `exp` claim. | _(none)_ |
@@ -351,13 +363,22 @@ if `SWIYU_TRUST_REGISTRY_API_URL` is not set, trust statement caching is disable
 
 #### Security
 
-The management endpoints for both the issuer/verifier (generic component) might seem like they're unprotected and that there is a lack of controls securing them. This is because they are meant to be used exclusively by the business issuer/verifier (business component) that are built on top of them by each participant in the ecosystem. The generic component should be considered closer to a library than to stand-alone services. As such these endpoints are meant to be deployed in a way where they can only be accessed by the business component of the software. The threat model therefore excludes attackers being able to send crafted payloads to these management endpoints. If attackers can send anything to these endpoints, they must have completely taken over the business component and can already do everything.
+The management endpoints for both the issuer/verifier (generic component) might seem like they're unprotected and that
+there is a lack of controls securing them. This is because they are meant to be used exclusively by the business
+issuer/verifier (business component) that are built on top of them by each participant in the ecosystem. The generic
+component should be considered closer to a library than to stand-alone services. As such these endpoints are meant to be
+deployed in a way where they can only be accessed by the business component of the software. The threat model therefore
+excludes attackers being able to send crafted payloads to these management endpoints. If attackers can send anything to
+these endpoints, they must have completely taken over the business component and can already do everything.
 
-Management Endpoints can be secured as OAuth2 Resource Server using Spring Security, if required. The generic component leaves user management to the business component.
+Management Endpoints can be secured as OAuth2 Resource Server using Spring Security, if required. The generic component
+leaves user management to the business component.
 
-For more details see the official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
+For more details see the
+official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
 
-For easy playground setup or when using the component in an isolated zone security starts deactivated. It is activated when the appropriate environment variables are set.
+For easy playground setup or when using the component in an isolated zone security starts deactivated. It is activated
+when the appropriate environment variables are set.
 
 ##### Fixed single asymmetric key
 
@@ -423,8 +444,6 @@ The Data integrity check can be enforced to be always used by setting the enviro
 | secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                   |
 | secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                |
 | secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self-service portal. |
-| secret.swiyu.trust-registry.customer-key             | The customer key for HTTP Basic Auth against the Trust Registry API (alternative to env variable).                                                  |
-| secret.swiyu.trust-registry.customer-secret          | The customer secret for HTTP Basic Auth against the Trust Registry API (alternative to env variable).                                               |
 
 #### HSM - Hardware Security Module
 
@@ -520,8 +539,8 @@ the [OpenID4VCI specification](https://openid.net/specs/openid-4-verifiable-cred
 |-------------------------------------------------------------------------------|------------------------------------------------------------------|----------|-----------------------------------------------------------|
 | version                                                                       | "1.0"                                                            | Yes      |                                                           |
 | credential_configurations_supported.*.format                                  | "dc+sd-jwt" / "vc+sd-jwt" (deprecated)                           | Yes      |                                                           |
-| credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256"]                                                        | Yes      |                                                           |
-| credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256"]} ``` | No       | When set only the exact object shown as sample is allowed |
+| credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256", "Ed25519"]                                             | Yes      | Must be matching the configured singing key               |
+| credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256", "Ed25519"]} ``` | No       | When set must be ES256 Ed25519 or both         |
 | credential_configurations_supported.*.cryptographic_binding_methods_supported | ["jwk"]                                                          | No       |                                                           |
 
 The configuration `proof_types_supported` allows specifying the required security specification the wallet should store
@@ -534,7 +553,8 @@ Example value
 "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
-            "ES256"
+            "ES256",
+            "Ed25519"
           ],
           "key_attestations_required": {
             "key_storage": ["iso_18045_high"]

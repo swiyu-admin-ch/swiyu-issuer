@@ -35,7 +35,7 @@ asked.
         - Spring Cloud Kubernetes Config (`spring-cloud-starter-kubernetes-fabric8-config`, in `issuer-application`
           only)
         - Spring Cloud Bootstrap (`spring-cloud-starter-bootstrap`, in `issuer-application` only)
-        - **Spring Statemachine 4.0.1** – used in `issuer-service` to drive the credential offer / issuance lifecycle.
+        - **Spring Statemachine 4.0.2** – used in `issuer-service` to drive the credential offer / issuance lifecycle.
         - Note: `spring-webflux` is a direct dependency of `issuer-service` (used by `WebClient` and reactive
           utilities), but the `spring-boot-starter-webflux` starter is **not** used — the web layer is Spring MVC.
 
@@ -64,7 +64,7 @@ asked.
     - **JsonPath** (`2.10.0`) for JSON assertions and processing.
     - **Primus JCE** (`2.4.4`, system scope) – HSM provider integrated via the Spring Boot Maven plugin (
       `includeSystemScope=true`).
-    - **DID / SWIYU-specific libraries** (all under group `ch.admin.swiyu`, currently version `1.6.4`):
+    - **DID / SWIYU-specific libraries** (all under group `ch.admin.swiyu`, currently version `1.7.0`):
         - `swiyu-jws-signature-service`
         - `swiyu-did-resolver-adapter`
         - `swiyu-jwe-util`

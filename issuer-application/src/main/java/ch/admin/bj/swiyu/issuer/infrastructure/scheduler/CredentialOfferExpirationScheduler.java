@@ -1,8 +1,8 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.scheduler;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
-import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
+import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -42,7 +42,5 @@ public class CredentialOfferExpirationScheduler {
         var expiredOffers = persistenceService.findExpiredOffers(expireStates, expireTimeStamp);
         expiredOffers.forEach(stateService::expireOfferAndPublish);
     }
-
-
 }
 

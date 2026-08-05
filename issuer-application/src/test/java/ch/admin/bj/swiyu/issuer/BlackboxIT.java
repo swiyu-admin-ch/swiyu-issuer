@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer;
 
 
-import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -13,15 +12,13 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryTokenService;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
@@ -36,14 +33,13 @@ import com.nimbusds.jwt.SignedJWT;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -56,6 +52,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mockserver.MockServerContainer;
 import org.testcontainers.utility.DockerImageName;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -76,7 +74,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests taking the whole application as blackbox, emulating partially a business issuer and a wallet
  */
 @SpringBootTest()
-@Nested
 @DisplayName("Blackbox Test")
 @AutoConfigureMockMvc
 @Testcontainers
@@ -117,7 +114,6 @@ class BlackboxIT {
     @BeforeEach
     void setUp() {
         statusListTestHelper = new StatusListTestHelper(mvc, objectMapper);
-        final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
     }
 
     /**
@@ -126,7 +122,7 @@ class BlackboxIT {
      * For details see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-pre-authorized-code-flow">OID4VCI 1.0 Spec</a>
      */
     @Test
-    void preauthorizedCodeFlow_thenSuccess() throws JsonProcessingException {
+    void preauthorizedCodeFlow_thenSuccess() throws JacksonException {
 
         var statusListEntry = statusListTestHelper.buildStatusListEntry();
         var statusListEntryString = mapper.writeValueAsString(statusListEntry);
@@ -229,7 +225,7 @@ class BlackboxIT {
         assertThat(parsedDeeplink.getScheme()).as("The swiyu wallet expects the deeplink to have the correct scheme")
                 .isEqualTo("swiyu");
         var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
-        var credentialOffer = offerQuery.get(0);
+        var credentialOffer = offerQuery.getFirst();
         assertThat(credentialOffer.getName()).as("Offer has the value credential_offer")
                 .isEqualTo("credential_offer");
 
@@ -404,12 +400,10 @@ class BlackboxIT {
         assertDoesNotThrow(() -> credentialResponseJwt.decrypt(new ECDHDecrypter(holderEncryptionKeys.toECKey())));
         var credentialResponseDto = assertDoesNotThrow(() -> objectMapper.readValue(credentialResponseJwt.getJWTClaimsSet()
                         .toString(),
-                CredentialEndpointResponseDto.class));
+                CredentialResponseDto.class));
         assertThat(credentialResponseDto.credentials()).as(
                         "The flow is not deferred, the credentials should be directly returned")
                 .hasSize(issuerMetadata.getIssuanceBatchSize());
-        assertThat(credentialResponseDto.interval()).isNull();
-        assertThat(credentialResponseDto.transactionId()).isNull();
         var verifiableCredentialClaims = credentialResponseDto.credentials()
                 .stream()
                 .map(CredentialObjectDto::credential)

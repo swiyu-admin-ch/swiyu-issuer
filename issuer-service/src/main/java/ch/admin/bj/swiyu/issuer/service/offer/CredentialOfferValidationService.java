@@ -15,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.service.SdJwtCredential.SDJWT_PROTECTED_CLAIMS;
@@ -61,20 +63,20 @@ public class CredentialOfferValidationService {
             @Valid CreateCredentialOfferRequestDto createCredentialRequest,
             Map<String, Object> offerData) {
 
-        var metadataCredentialSupportedId = createCredentialRequest.getMetadataCredentialSupportedId().getFirst();
-
         // Date checks, if exists
         validateOfferedCredentialValiditySpan(createCredentialRequest);
 
-        var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(metadataCredentialSupportedId);
+        for (String metadataCredentialSupportedId : createCredentialRequest.getMetadataCredentialSupportedId()) {
+            var credentialConfiguration = issuerMetadata.getCredentialConfigurationById(metadataCredentialSupportedId);
 
-        // Check if credential format is supported otherwise throw error
-        validateCredentialFormat(credentialConfiguration);
+            // Check if credential format is supported otherwise throw error
+            validateCredentialFormat(credentialConfiguration);
 
-        var metadata = createCredentialRequest.getCredentialMetadata();
-        var isDeferredRequest = (metadata != null && Boolean.TRUE.equals(metadata.deferred()));
+            var metadata = createCredentialRequest.getCredentialMetadata();
+            var isDeferredRequest = (metadata != null && Boolean.TRUE.equals(metadata.deferred()));
 
-        validateCredentialRequestOfferData(offerData, isDeferredRequest, credentialConfiguration);
+            validateCredentialRequestOfferData(offerData, isDeferredRequest, credentialConfiguration);
+        }
     }
 
     /**
@@ -118,21 +120,17 @@ public class CredentialOfferValidationService {
         // check if credentialSubjectData contains protected claims
         validateProtectedClaims(validatedOfferData);
 
-        if (credentialConfiguration.getCredentialMetadata() != null &&
-                credentialConfiguration.getCredentialMetadata().getClaimDescriptor() != null) {
+        var metadata = credentialConfiguration.getCredentialMetadata();
 
-            List<MetadataClaimDescriptor> claimDescriptor = credentialConfiguration.getCredentialMetadata().getClaimDescriptor();
-
-            // validate missing and surplus using dedicated helpers
-            validatePathClaimsMissing(claimDescriptor, validatedOfferData);
-        } else {
-            var metadataClaims = Optional.ofNullable(credentialConfiguration.getClaims())
-                    .orElseGet(HashMap::new)
-                    .keySet();
-
-            validateClaimsMissing(metadataClaims, validatedOfferData, credentialConfiguration);
-            validateClaimsSurplus(metadataClaims, validatedOfferData);
+        if (metadata == null || metadata.getClaimDescriptor() == null) {
+            log.warn("Credential metadata or credential claims is missing! - Therefore input is not validated");
+            return;
         }
+
+        List<MetadataClaimDescriptor> metadataClaimsDescriptors = metadata.getClaimDescriptor();
+
+        // validate missing and surplus using dedicated helpers
+        validatePathClaimsMissing(metadataClaimsDescriptors, validatedOfferData);
     }
 
     /**
@@ -161,7 +159,7 @@ public class CredentialOfferValidationService {
         var missing = claimDescriptors.stream()
                 .filter(claimDescriptor -> {
                     try {
-                        if (Boolean.TRUE.equals(claimDescriptor.isMandatory())) {
+                        if (claimDescriptor.isMandatory()) {
                             ClaimsPathPointerUtil.validateRequestedClaims(offerData, claimDescriptor.getPath(), null);
                         }
                         return false;
@@ -193,50 +191,6 @@ public class CredentialOfferValidationService {
             sb.append(o);
         }
         return sb.toString();
-    }
-
-    /**
-     * Checks if all claims published as mandatory in the metadata are present in the offer.
-     *
-     * @param metadataClaims          the expected metadata claims
-     * @param offerData               the offer data
-     * @param credentialConfiguration the credential configuration
-     * @throws BadRequestException if mandatory claims are missing
-     */
-    private void validateClaimsMissing(
-            Set<String> metadataClaims,
-            Map<String, Object> offerData,
-            CredentialConfiguration credentialConfiguration) {
-
-        var missingOfferedClaims = new HashSet<>(metadataClaims);
-        missingOfferedClaims.removeAll(offerData.keySet());
-        // Remove optional claims
-        missingOfferedClaims.removeIf(claimKey ->
-                !credentialConfiguration.getClaims().get(claimKey).isMandatory());
-
-        if (!missingOfferedClaims.isEmpty()) {
-            throw new BadRequestException(
-                    "Mandatory credential claims are missing! %s"
-                            .formatted(String.join(",", missingOfferedClaims)));
-        }
-    }
-
-    /**
-     * Checks the offerData for claims not expected in the metadata.
-     *
-     * @param metadataClaims the expected metadata claims
-     * @param offerData      the offer data
-     * @throws BadRequestException if unexpected claims are found
-     */
-    private void validateClaimsSurplus(Set<String> metadataClaims, Map<String, Object> offerData) {
-        var surplusOfferedClaims = new HashSet<>(offerData.keySet());
-        surplusOfferedClaims.removeAll(metadataClaims);
-
-        if (!surplusOfferedClaims.isEmpty()) {
-            throw new BadRequestException(
-                    "Unexpected credential claims found! %s"
-                            .formatted(String.join(",", surplusOfferedClaims)));
-        }
     }
 
     /**

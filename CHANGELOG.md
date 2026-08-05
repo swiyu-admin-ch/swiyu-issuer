@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+### Added
+
+- Support for EdDSA signed VCs. When using EdDSA `credential_signing_alg_values_supported` MUST be updated to `Ed25519`
+  Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used by the wallet for proofs.
+
+
+### Fixed
+
+- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that rejects oversized decrypted/decompressed payloads before JSON parsing (EIDOMNI-1117 / EIDSEC-843)
+
+## Changed use jackson 3 instead of 2
+
+## [4.1.0] - 2026-07-23
+
+### Added
+
+- Added static compliance tests for the Swiss Profile / OID4VCI contract (OpenID Configuration, Credential Issuer
+  Metadata, Credential Endpoint, Deferred Credential Endpoint, Nonce, VCT, OCA, JSON Schema endpoints) verifying the
+  OpenAPI specification against the OID4VCI spec and Swiss Profile requirements. Tests that require outstanding fixes
+  in the OpenAPI contract are disabled and tracked in `(#1127)`.
+- Added new config `application.accepted-registry-hosts` to allow restricting the allowed hosts for the trust registry.
+  Don't change this unless you know what you are doing, as it may break the trust registry and
+  status registry functionality `(#1105)`.
+- Verification of Trust Statements with Status Lists using caching according to exp, ttl or maximum cache ttl `(#1105)`.
+
+### Fixed
+
+- Fixed missing claim validation, now also validates the attestation claims `nbf` and `iat` `(#1066)`.
+- Re-enabled jwt checks for trust statements, which were temporarily disabled. Do not use trust statements yet, as the
+  checks are not yet fully implemented and may cause issues.
+- Fixed incorrect caching of invalid trust statement responses `(#996)`.
+- The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value
+  `(#1116)`.
+- NullPointerException on missing Type during JWTAttestation parsing `(#1129)`.
+
+### Changed
+
+- Updated generic-java-lib to 1.8.3
+
+## [4.0.1] - 2026-07-09
+
+### Fixed
+
+- Fixed SBOM to contain information about all modules.
+
+## [4.0.0] - 2026-07-08
+
+### Added
+
+- **Security:** Published container images (hardened and unhardened variants) are now automatically signed with
+  [Cosign](https://docs.sigstore.dev/) using keyless OIDC signing in the GitHub Actions build workflow. Signatures are
+  bound to the immutable image digest and published to the Sigstore transparency log, allowing consumers to verify image
+  authenticity via `cosign verify` `(#838)`.
+
+- Integrate `pgpverify-maven-plugin` to cryptographically verify PGP signatures of all third-party dependencies during
+  the build. The build fails if an artifact has no signature or an invalid signature. PGP keys are cached in CI/CD to
+  avoid redundant downloads `(#836)`.
+
 ### Changed
 
 - Status list tokens (`statuslist+jwt`) now include a `ttl` claim and proper `exp`/`iat` timestamps derived from the
@@ -14,15 +72,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   valid and how long cached status list entries are retained by the wallet. New properties are:
     - `statusListCacheTime` — TTL used by the wallets status list cache.
     - `statusListExpirationTime` — Expiration used when generating status lists.
-- Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM.
+- Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM `(#877)`.
+- Update generic-java-lib to 1.7.0
 
 ### Fixed
 
-- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that rejects oversized decrypted/decompressed payloads before JSON parsing (EIDOMNI-1117 / EIDSEC-843)
-- Fixed "cannot be parsed exception" with nested arrays in credential subject data update
+- Fixed race condition in `CredentialStateMachine`: state machines were shared singletons, causing state corruption
+  under concurrent requests. Replaced with `CredentialStateMachineFactory` so each transition operates on an isolated
+  instance `(#1021)`.
+- Fixed "cannot be parsed exception" with nested arrays in credential subject data update `(#1006)`.
+- Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`.
+  Issuance though keeps supporting only a single credential type per offer `(#985)`.
+- Fixed Prometheus metrics authentication with Basic Auth `(#1003)`.
 
 ### Removed
 
+- Removed the vars `SWIYU_TRUST_REGISTRY_CUSTOMER_KEY` and `SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET` as they are not
+  required by the read-only trust registry `(#1075)`.
+- Removed support for `claims` in `credential_configurations_supported` details for claims can now be found in
+  `credential_metadata.claims` instead as announced earlier. Please update your metadata accordingly. Additional changes
+  are:
+    - in `client_metadata.display` the `background_image` and `text_color` are now marked as deprecated as they are not
+      used and marked as `NOT SUPPORTED` in the Swiss Profile.
+    - `client_metadata.display` can no longer be an empty list -> if you do not want to use it, set it to `null` instead
+      of an empty list.
+    - `client_metadata.display.name` is not nullable anymore in compliance with
+      the [OID4VCI specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-issuer-metadata-p)
 - Removed `vct#integrity` from issuer metadata as it is no longer used -> use `vct_metadata_uri` and
   `vct_metadata_uri#integrity` instead.
 
@@ -99,7 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Further opened up DPoP `htu` claim URL rewriting to support partial path-based rewrites via `external_url`, enabling
-  setups where the public URI contains a path prefix  `(#EIDOMNI-971)`. *(Fixed via `generic-java-lib` 1.6.0)*
+  setups where the public URI contains a path prefix  `(#971)`. *(Fixed via `generic-java-lib` 1.6.0)*
 
 ## [3.1.0] - 2026-05-11
 
@@ -286,23 +361,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added optional support for DPoP for wallets to begin adopting DPoP for more secure communication.
   As operator of an issuer there is action needed. This feature is added automatically.
   Note: In the future this will be enforced
-- Implemented Refresh Flow as Draft implementation according spez. Should not yet used in production (#292)
+- Implemented Refresh Flow as Draft implementation according spez. Should not yet used in production `(#292)`
 - Integrated Spring State Machine for credential offer and management lifecycles, improving state management and error
   handling (#292).
-- Added option to disable/enable refresh_token rotation after usage (#464).
-- Added test coverage for signed metadata usage and renewal flow (#200, #292).
+- Added option to disable/enable refresh_token rotation after usage `(#464)`.
+- Added test coverage for signed metadata usage and renewal flow `(#200, #292)`.
 
 ### Fixed
 
-- Fixed missing alg field in JWKS keys for metadata endpoint (#597).
-- Corrected subject claim in signed metadata and improved metadata endpoint to prefer signed data (#570).
-- Fixed size limitations for incoming token calls and responses (#363).
-- Fixed edge case with ephemeral signing keys causing server errors (#426).
+- Fixed missing alg field in JWKS keys for metadata endpoint `(#597)`.
+- Corrected subject claim in signed metadata and improved metadata endpoint to prefer signed data `(#570)`.
+- Fixed size limitations for incoming token calls and responses `(#363)`.
+- Fixed edge case with ephemeral signing keys causing server errors `(#426)`.
 - Fixed logs displaying management id incorrectly.
-- Fixed tests and improved code for signed metadata (#570, #597).
-- Fixed response size limitation for token calls (#363).
-- Fixed error handling for credential requests missing JWT proof (#425).
-- Fixed IT tests for RFC6749 compliance (#504).
+- Fixed tests and improved code for signed metadata `(#570, #597)`.
+- Fixed response size limitation for token calls `(#363)`.
+- Fixed error handling for credential requests missing JWT proof `(#425)`.
+- Fixed IT tests for RFC6749 compliance `(#504)`.
 
 ## 2.2.0
 

@@ -225,36 +225,38 @@ With response:
                 }
             },
             "vct": "http://localhost:8080/vct/my-vct-v01",
-            "claims": {
-                "type": {
-                    "mandatory": true,
-                    "value_type": "string",
-                    "display": [
-                        {
-                            "locale": "de-CH",
-                            "name": "Abschluss Typ"
-                        }
-                    ]
-                },
-                "name": {
-                    "mandatory": true,
-                    "value_type": "string",
-                    "display": [
-                        {
-                            "locale": "de-CH",
-                            "name": "Diplomtitle"
-                        }
-                    ]
-                },
-                "average_grade": {
-                    "mandatory": false,
-                    "value_type": "number",
-                    "display": [
-                        {
-                            "locale": "de-CH",
-                            "name": "Notendurchschnitt"
-                        }
-                    ]
+            "credential_metadata": {
+                "claims": {
+                    "type": {
+                        "mandatory": true,
+                        "value_type": "string",
+                        "display": [
+                            {
+                                "locale": "de-CH",
+                                "name": "Abschluss Typ"
+                            }
+                        ]
+                    },
+                    "name": {
+                        "mandatory": true,
+                        "value_type": "string",
+                        "display": [
+                            {
+                                "locale": "de-CH",
+                                "name": "Diplomtitle"
+                            }
+                        ]
+                    },
+                    "average_grade": {
+                        "mandatory": false,
+                        "value_type": "number",
+                        "display": [
+                            {
+                                "locale": "de-CH",
+                                "name": "Notendurchschnitt"
+                            }
+                        ]
+                    }
                 }
             }
         }

@@ -15,9 +15,9 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -35,8 +35,6 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -57,9 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code swiyu-ts-builder} library.</p>
  */
 @SpringBootTest(properties = {
-        "swiyu.trust-registry.api-url=https://trust-registry.example.ch",
-        "swiyu.trust-registry.customer-key=test-key",
-        "swiyu.trust-registry.customer-secret=test-secret"
+        "swiyu.trust-registry.api-url=https://trust-registry.example.ch"
 })
 @AutoConfigureMockMvc
 @Testcontainers
@@ -113,6 +109,19 @@ class WellKnownTrustStatementIT {
     private StatusListRepository statusListRepository;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
+    private CredentialOfferTestHelper testHelper;
+    /**
+     * Replaces the real Caffeine-backed cache so that trust statements are returned
+     * directly without any Trust Registry network call.
+     */
+    @MockitoBean
+    private TrustStatementCacheService trustStatementCacheService;
+    /**
+     * Replaces the DID-JWT validator so that signature verification always succeeds
+     * without resolving a DID Document from the network.
+     */
+    @MockitoBean
+    private TrustStatementValidator trustStatementValidator;
 
     /**
      * Creates a credential offer and returns the {@code metadataTenantId} UUID that is embedded
@@ -125,22 +134,6 @@ class WellKnownTrustStatementIT {
                 .orElseThrow(() -> new IllegalStateException("CredentialManagement not found for id " + managementId))
                 .getMetadataTenantId();
     }
-
-    private CredentialOfferTestHelper testHelper;
-
-    /**
-     * Replaces the real Caffeine-backed cache so that trust statements are returned
-     * directly without any Trust Registry network call.
-     */
-    @MockitoBean
-    private TrustStatementCacheService trustStatementCacheService;
-
-    /**
-     * Replaces the DID-JWT validator so that signature verification always succeeds
-     * without resolving a DID Document from the network.
-     */
-    @MockitoBean
-    private TrustStatementValidator trustStatementValidator;
 
     @BeforeEach
     void setUp() {
@@ -198,11 +191,9 @@ class WellKnownTrustStatementIT {
         when(trustStatementCacheService.getIdentityTrustStatement(ISSUER_DID)).thenReturn(idTsJwt);
         when(trustStatementCacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
                 .thenReturn(List.of(piaTsJwt));
-        // Stub for any JWT string so that re-serialised or slightly-different instances still pass
-        doNothing().when(trustStatementValidator).validateSignature(anyString());
     }
 
-/**
+    /**
      * Verifies the happy path for the tenant-scoped issuer metadata endpoint:
      * both idTS and piaTS are injected into
      * {@code GET /{tenantId}/.well-known/openid-credential-issuer}.
@@ -239,5 +230,69 @@ class WellKnownTrustStatementIT {
         log.info("[DEMO] Full response body:\n{}", responseBody);
         log.info("[DEMO] credential_issuer_identity_trust_statement (idTS):\n{}", idTs);
         log.info("[DEMO] protected_issuance_authorization_trust_statement (piaTS) for '{}':\n{}", PROTECTED_CREDENTIAL_KEY, piaTs);
+    }
+
+    @Test
+    void testTenantEndpoint_testCache_TrustStatementsAreInjected() throws Exception {
+        UUID tenantId = createOfferAndGetMetadataTenantId();
+        stubTrustStatements();
+
+        var result = mockMvc.perform(get("/" + tenantId + "/.well-known/openid-credential-issuer")
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                // EIDOMNI-881: idTS field is present and populated at root level
+                .andExpect(jsonPath("$.credential_issuer_identity_trust_statement").value(not(emptyOrNullString())))
+                // EIDOMNI-882: piaTS field is present and populated in Protected VC configuration
+                .andExpect(jsonPath(
+                        "$.credential_configurations_supported."
+                                + PROTECTED_CREDENTIAL_KEY
+                                + ".protected_issuance_authorization_trust_statement")
+                        .value(not(emptyOrNullString())))
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        String idTs = com.jayway.jsonpath.JsonPath.read(responseBody, "$.credential_issuer_identity_trust_statement");
+        String piaTs = com.jayway.jsonpath.JsonPath.read(responseBody,
+                "$.credential_configurations_supported." + PROTECTED_CREDENTIAL_KEY + ".protected_issuance_authorization_trust_statement");
+
+        log.info("[DEMO] Full response body:\n{}", responseBody);
+        log.info("[DEMO] credential_issuer_identity_trust_statement (idTS):\n{}", idTs);
+        log.info("[DEMO] protected_issuance_authorization_trust_statement (piaTS) for '{}':\n{}", PROTECTED_CREDENTIAL_KEY, piaTs);
+    }
+
+    @Test
+    void testTenantEndpoint_testCacheWithError_TrustStatementsAreInjected() throws Exception {
+        UUID tenantId = createOfferAndGetMetadataTenantId();
+        UUID tenantId2 = createOfferAndGetMetadataTenantId();
+        stubTrustStatements();
+
+        mockMvc.perform(get("/" + tenantId + "/.well-known/openid-credential-issuer")
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                // EIDOMNI-881: idTS field is present and populated at root level
+                .andExpect(jsonPath("$.credential_issuer_identity_trust_statement").value(not(emptyOrNullString())))
+                // EIDOMNI-882: piaTS field is present and populated in Protected VC configuration
+                .andExpect(jsonPath(
+                        "$.credential_configurations_supported."
+                                + PROTECTED_CREDENTIAL_KEY
+                                + ".protected_issuance_authorization_trust_statement")
+                        .value(not(emptyOrNullString())))
+                .andReturn();
+
+        when(trustStatementCacheService.getAllProtectedIssuanceAuthorizationTrustStatements(ISSUER_DID))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/" + tenantId2 + "/.well-known/openid-credential-issuer")
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                // EIDOMNI-881: idTS field is present and populated at root level
+                .andExpect(jsonPath("$.credential_issuer_identity_trust_statement").value(not(emptyOrNullString())))
+                // EIDOMNI-882: piaTS field is present and populated in Protected VC configuration
+                .andExpect(jsonPath(
+                        "$.credential_configurations_supported."
+                                + PROTECTED_CREDENTIAL_KEY
+                                + ".protected_issuance_authorization_trust_statement")
+                        .doesNotExist())
+                .andReturn();
     }
 }

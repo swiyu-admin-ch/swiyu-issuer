@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.issuer.dto.type_metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -22,6 +24,9 @@ public record OcaDto(
          */
         @NotEmpty
         @JsonProperty("capture_bases")
+        @ArraySchema(schema = @Schema(type = "object"))
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
+                description = "Array containing one or more Capture Base objects. There MUST only be one root Capture Base.")
         List<Object> captureBases,
 
         /*
@@ -29,6 +34,9 @@ public record OcaDto(
          */
         @NotEmpty
         @JsonProperty("overlays")
+        @ArraySchema(schema = @Schema(type = "object"))
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
+                description = "Array containing one or more Overlay objects.")
         List<Object> overlays
 ) {
 }

@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,6 +42,7 @@ class JweServiceTest {
     void setUp() {
         setupMockRepository();
         applicationProperties = Mockito.mock(ApplicationProperties.class);
+        Mockito.when(applicationProperties.isEncryptionEnforce()).thenReturn(true);
         issuerMetadata = IssuerMetadata.builder()
                 .requestEncryption(IssuerCredentialRequestEncryption.builder()
                         .encRequired(true)
@@ -105,6 +107,16 @@ class JweServiceTest {
     @Test
     void rejectMissingEncryption() {
         assertThrows(Oid4vcException.class, () -> jweService.decryptRequest("Anything", "application/json"));
+    }
+
+    @Test
+    void rejectsPlaintextBeforeIssuerMetadataIsRenderedWhenEncryptionIsEnforced() {
+        issuerMetadata.setRequestEncryption(null);
+
+        var exception = assertThrows(Oid4vcException.class,
+                () -> jweService.decryptRequest("{}", "application/json"));
+
+        assertThat(exception.getError()).isEqualTo(INVALID_ENCRYPTION_PARAMETERS);
     }
 
     /**

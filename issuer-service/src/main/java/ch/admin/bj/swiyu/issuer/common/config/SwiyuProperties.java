@@ -34,10 +34,9 @@ public record SwiyuProperties(
      */
     public record TrustRegistryProperties(
             @NotNull URL apiUrl,
-            @NotNull String customerKey,
-            @NotNull String customerSecret,
             long maxCacheSize,
             long clockSkewBufferSeconds,
-            long maxCacheTtlSeconds) {
+            long maxCacheTtlSeconds,
+            long requestBackoffSeconds) {
     }
 }

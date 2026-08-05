@@ -9,7 +9,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-issuer-parent</artifactId>
-        <version>3.3.0-SNAPSHOT</version>
+        <version>4.2.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>swiyu-issuer-application</artifactId>
@@ -41,10 +41,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-health</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-jackson2</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -120,6 +116,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
+            <version>${logback-core.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -142,7 +139,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>3.3.0-SNAPSHOT</version>
+            <version>4.2.0-SNAPSHOT</version>
         </dependency>
 
         <!-- Miscellaneous / Utility -->
@@ -155,10 +152,12 @@
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-jws-signature-service</artifactId>
+            <version>${generic-java-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-did-resolver-adapter</artifactId>
+            <version>${generic-java-lib.version}</version>
         </dependency>
 
 
@@ -182,7 +181,7 @@
         <dependency>
             <groupId>com.squareup.okio</groupId>
             <artifactId>okio</artifactId>
-            <version>3.17.0</version>
+            <version>3.18.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -204,7 +203,7 @@
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
-            <version>${archunit-junit5.verion}</version>
+            <version>${archunit-junit5.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -225,7 +224,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>3.3.0-SNAPSHOT</version>
+            <version>4.2.0-SNAPSHOT</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -244,7 +243,7 @@
         <dependency>
             <groupId>ch.admin.swiyu</groupId>
             <artifactId>swiyu-ts-builder</artifactId>
-            <version>1.6.4</version>
+            <version>${generic-java-lib.version}</version>
             <scope>test</scope>
         </dependency>
 

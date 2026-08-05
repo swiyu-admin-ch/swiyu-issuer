@@ -2,27 +2,27 @@ package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
 import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
 import ch.admin.bj.swiyu.core.trust.client.invoker.ApiClient;
+import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
 import ch.admin.bj.swiyu.jwtvalidator.UrlRestriction;
+import ch.admin.bj.swiyu.statuslist.TokenStatusListVerifier;
+import ch.admin.bj.swiyu.statuslist.TokenStatusListVerifierConfig;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Spring configuration for the Trust Registry sidechannel API client.
  *
- * <p>Only active when {@code swiyu.trust-registry.api-url} is configured.
- * Uses HTTP Basic Auth (customer key / secret) to authenticate against the trust registry.</p>
+ * <p>Only active when {@code swiyu.trust-registry.api-url} is configured.</p>
  */
 @Slf4j
 @Configuration
@@ -32,27 +32,19 @@ public class TrustRegistryConfig {
 
     private final SwiyuProperties swiyuProperties;
     private final WebClient webClient;
+    private final ApplicationProperties applicationProperties;
 
     /**
      * Creates the WebClient-backed {@link ApiClient} for the Trust Registry sidechannel,
-     * injecting HTTP Basic Auth credentials from configuration.
+     * using the configured Trust Registry base URL.
      *
      * @return configured {@link ApiClient}
      */
     @Bean
     public ApiClient trustRegistryApiClient() {
         var props = swiyuProperties.trustRegistry();
-        var credentials = props.customerKey() + ":" + props.customerSecret();
-        var encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
 
-        var reConfigured = webClient.mutate()
-                .filter((request, next) -> next.exchange(
-                        ClientRequest.from(request)
-                                .header(HttpHeaders.AUTHORIZATION, "Basic " + encoded)
-                                .build()))
-                .build();
-
-        var client = new ApiClient(reConfigured);
+        ApiClient client = new ApiClient(webClient);
         client.setBasePath(props.apiUrl().toExternalForm());
         log.info("Initializing Trust Registry sidechannel API client for {}", props.apiUrl());
         return client;
@@ -78,9 +70,25 @@ public class TrustRegistryConfig {
      * @return a {@link DidJwtValidator} scoped to the Trust Registry's DID domain
      */
     @Bean
+    @Qualifier("trustStatementValidator")
     public DidJwtValidator trustStatementDidJwtValidator() {
-        String trustRegistryHost = swiyuProperties.trustRegistry().apiUrl().getHost();
-        log.info("Configuring trust statement JWT validator with allowed DID host: {}", trustRegistryHost);
-        return new DidJwtValidator(new UrlRestriction(Set.of(trustRegistryHost)));
+        var hosts = new HashSet<>(applicationProperties.getAcceptedRegistryHosts());
+        for (String host : hosts) {
+            log.info("Configuring trust statement JWT validator with allowed DID host: {}", host);
+        }
+        return new DidJwtValidator(new UrlRestriction(hosts));
+    }
+
+    /**
+     * Creates a {@link TokenStatusListVerifier} which can be configured using the application properties
+     *
+     * @return the {@link TokenStatusListVerifier} bean named {@code tokenStatusListVerifier}
+     */
+    @Bean
+    public TokenStatusListVerifier tokenStatusListVerifier() {
+        return new TokenStatusListVerifier(
+                TokenStatusListVerifierConfig.builder()
+                        .issuerMustMatch(true)
+                        .build());
     }
 }
