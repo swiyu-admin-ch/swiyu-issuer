@@ -23,8 +23,6 @@ import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +31,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.*;
@@ -197,7 +197,7 @@ class CredentialServiceOrchestratorTest {
 
 
     @Test
-    void testCreateCredential_deferred() throws JsonProcessingException {
+    void testCreateCredential_deferred() throws JacksonException {
 
         var credentialRequestDto = getCredentialRequestDto("test", null);
         var clientInfo = getClientInfo();
@@ -454,7 +454,7 @@ class CredentialServiceOrchestratorTest {
     }
 
     @Test
-    void createCredential_deferred_thenSuccess() throws JsonProcessingException {
+    void createCredential_deferred_thenSuccess() throws JacksonException {
         // Arrange
         CreateCredentialRequestDto requestDto = mock(CreateCredentialRequestDto.class);
         UUID accessToken = UUID.randomUUID();

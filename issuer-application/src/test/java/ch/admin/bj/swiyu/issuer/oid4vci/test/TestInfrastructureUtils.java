@@ -11,7 +11,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.authlete.sd.Disclosure;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.*;
@@ -31,6 +30,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -172,7 +172,7 @@ public class TestInfrastructureUtils {
         return objectMapper.readValue(response.getResponse().getContentAsString(), CredentialWithDeeplinkResponseDto.class);
     }
 
-    public static CredentialOfferDto extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(CredentialWithDeeplinkResponseDto credentialWithDeeplinkResponseDto) throws Exception {
+    public static CredentialOfferDto extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(CredentialWithDeeplinkResponseDto credentialWithDeeplinkResponseDto) {
 
         var objectMapper = new ObjectMapper();
         var decodedDeeplink = URLDecoder.decode(credentialWithDeeplinkResponseDto.getOfferDeeplink(), StandardCharsets.UTF_8);

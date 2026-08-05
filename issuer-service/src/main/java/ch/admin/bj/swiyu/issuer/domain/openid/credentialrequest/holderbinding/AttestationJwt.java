@@ -1,14 +1,13 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
-import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustRegistryConfig;
 import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
-import ch.admin.bj.swiyu.jwtvalidator.UrlRestriction;
+import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
+
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -17,7 +16,6 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.ParseException;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -186,11 +184,13 @@ public final class AttestationJwt {
      * @return true if the attestation is valid and the resistance is matching
      * @throws JOSEException if the fetched Key can not be parsed as a supported JWSVerifier
      */
-    public boolean isValidAttestation(@NotNull KeyResolver keyResolver, @NotNull List<AttackPotentialResistance> resistance) throws JOSEException {
+    public boolean isValidAttestation(@NotNull KeyResolver keyResolver, @NotNull List<AttackPotentialResistance> resistance, DidJwtValidator validator) throws JOSEException {
         var header = signedJWT.getHeader();
         var key = keyResolver.resolveKey(header.getKeyID());
-        if (!signedJWT.verify(new ECDSAVerifier(key.toECKey()))) {
-            throw new JOSEException("JWT verification failed");
+        try {
+            validator.validateJwt(signedJWT.getParsedString(), key);
+        } catch (JwtValidatorException e) {
+            throw new JOSEException("JWT verification failed", e);
         }
         if (resistance.isEmpty()) {
             return true;
@@ -211,7 +211,7 @@ public final class AttestationJwt {
      * @return {@code true} if the proof key matches one of the attested keys, {@code false} otherwise
      * @throws JOSEException if a thumbprint cannot be computed
      */
-    public boolean containsKey(@NotNull ECKey proofKey) throws JOSEException {
+    public boolean containsKey(@NotNull JWK proofKey) throws JOSEException {
         var proofThumbprint = proofKey.toPublicJWK().computeThumbprint().toString();
         var rawAttestedKeys = claims.getClaim("attested_keys");
 

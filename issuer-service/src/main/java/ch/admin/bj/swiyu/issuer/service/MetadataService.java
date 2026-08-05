@@ -15,8 +15,8 @@ import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementInjectionService;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ch.admin.bj.swiyu.jwtutil.JwtUtil;
+
 import com.nimbusds.jose.*;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -26,6 +26,8 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.text.ParseException;
 import java.util.*;
@@ -172,7 +174,7 @@ public class MetadataService {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
         try {
             return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedIssuerMetadata(tenantId)), override, tenantId);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new ConfigurationException("Unsigned Issuer Metadata could not be serialized as string", e);
         }
     }
@@ -191,7 +193,7 @@ public class MetadataService {
         var override = credentialManagementService.getConfigurationOverrideByTenantId(tenantId);
         try {
             return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedIssuerMetadataWithTS(tenantId)), override, tenantId);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new ConfigurationException("Unsigned Issuer Metadata could not be serialized as string", e);
         }
     }
@@ -216,7 +218,7 @@ public class MetadataService {
 
         try {
             return signMetadataJwt(objectMapper.writeValueAsString(unsignedMetadata), new ConfigurationOverride(null, null, null, null), null);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new ConfigurationException("Unsigned Issuer Metadata could not be serialized as string", e);
         }
     }
@@ -250,7 +252,7 @@ public class MetadataService {
 
         try {
             return signMetadataJwt(objectMapper.writeValueAsString(getUnsignedOAuthAuthorizationServerMetadata(tenantId)), override, tenantId);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new ConfigurationException("Unsigned OAuth 2.0 configuration could not be serialized as string", e);
         }
     }
@@ -300,7 +302,7 @@ public class MetadataService {
              * typ: Must be openidvci-issuer-metadata+jwt
              * kid: Must be the time when the JWT was issued
              */
-            JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
+            JWSHeader header = JwtUtil.prepareHeaderBuilder(signer)
                     .keyID(override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()))
                     .type(new JOSEObjectType("openidvci-issuer-metadata+jwt"))
                     .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.ISSUANCE_PROFILE_VERSION)

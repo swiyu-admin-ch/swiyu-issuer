@@ -9,11 +9,11 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -198,7 +198,7 @@ public class CredentialOfferMapper {
         try {
             credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOfferDto),
                     Charset.defaultCharset());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new JsonException(
                     "Error processing credential offer for credential with id %s".formatted(credentialOffer.getId()), e);
         }

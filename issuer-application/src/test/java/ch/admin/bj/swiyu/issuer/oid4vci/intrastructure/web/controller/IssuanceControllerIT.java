@@ -13,7 +13,6 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.jwk.Curve;
@@ -39,6 +38,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -497,7 +497,7 @@ class IssuanceControllerIT {
         );
     }
 
-    private String getCredentialRequestString(String proof) throws Exception {
+    private String getCredentialRequestString(String proof) {
         var request = new CreateCredentialRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),

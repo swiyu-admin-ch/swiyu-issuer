@@ -1,20 +1,20 @@
 package ch.admin.bj.swiyu.issuer.service.management;
 
-import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
-import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
+import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
 import lombok.experimental.UtilityClass;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Set;
@@ -30,7 +30,7 @@ public class CredentialManagementMapper {
     public static CredentialManagementDto toCredentialManagementDto(ApplicationProperties props,
                                                                     CredentialManagement credentialManagement,
                                                                     Set<CredentialOffer> credentialOffers
-    ) throws JsonProcessingException {
+    ) throws JacksonException {
         return new CredentialManagementDto(
                 credentialManagement.getId(),
                 toCredentialStatusTypeDto(credentialManagement),
@@ -41,7 +41,7 @@ public class CredentialManagementMapper {
         );
     }
 
-    private static @Nullable String serializeDpopKeyIfPresent(CredentialManagement credentialManagement) throws JsonProcessingException {
+    private static @Nullable String serializeDpopKeyIfPresent(CredentialManagement credentialManagement) throws JacksonException {
         return !CollectionUtils.isEmpty(credentialManagement.getDpopKey()) ? mapper.writeValueAsString(credentialManagement.getDpopKey()) : null;
     }
 

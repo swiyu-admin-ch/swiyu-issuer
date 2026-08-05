@@ -25,7 +25,6 @@
         <module>issuer-application</module>
     </modules>
 
-
     <properties>
         <java.version>21</java.version>
         <maven.compiler.proc>full</maven.compiler.proc>
@@ -35,12 +34,12 @@
         <sonar.jacoco.reportPath>${project.basedir}/issuer-application/target/jacoco.exec</sonar.jacoco.reportPath>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <javacrumbs.shedlock.version>6.10.0</javacrumbs.shedlock.version>
-        <archunit-junit5.verion>1.4.2</archunit-junit5.verion>
+        <archunit-junit5.version>1.4.2</archunit-junit5.version>
         <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
         <bouncycastle.version>1.85</bouncycastle.version>
-        <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
+        <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
         <springdoc-openapi-starter-webmvc-ui.version>3.0.0</springdoc-openapi-starter-webmvc-ui.version>
-        <openapi-generator-maven-plugin.version>7.23.0</openapi-generator-maven-plugin.version>
+        <openapi-generator-maven-plugin.version>7.24.0</openapi-generator-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <primus-jce.version>2.4.4</primus-jce.version>
         <skip.doc-generate>true</skip.doc-generate>
@@ -51,7 +50,7 @@
         <springframework.cloud.version>2025.1.1</springframework.cloud.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <generic-java-lib.version>1.8.3</generic-java-lib.version>
+        <generic-java-lib.version>2.0.0</generic-java-lib.version>
         <pact.version>4.7.3</pact.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
         <netty.version>4.2.16.Final</netty.version>
@@ -73,24 +72,11 @@
                 <version>2.21.5</version>
             </dependency>
 
-            <!-- COMPLETELY EXCLUDE Jackson 3.x to prevent CVE-2026-59889 -->
+            <!-- Fixes CVE-2026-59889 -->
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>3.1.5</version>
-                <scope>provided</scope> <!-- Mark as provided so it's never included -->
-            </dependency>
-            <dependency>
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>3.1.5</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>3.1.5</version>
-                <scope>provided</scope>
             </dependency>
 
             <!-- Fixes CVE-2026-42198 -->

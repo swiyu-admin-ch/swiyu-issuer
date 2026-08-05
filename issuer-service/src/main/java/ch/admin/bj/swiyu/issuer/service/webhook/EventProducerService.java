@@ -7,11 +7,11 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
 import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
 
@@ -75,7 +75,7 @@ public class EventProducerService {
             );
             applicationEventPublisher.publishEvent(deferredEvent);
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new JsonException("Error processing client info for deferred credential offer", e);
         }
     }

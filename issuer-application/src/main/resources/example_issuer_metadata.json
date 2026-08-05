@@ -26,7 +26,7 @@
     "${stage}university_example_sd_jwt": {
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
-        "ES256"
+        "ES256", "Ed25519"
       ],
       "cryptographic_binding_methods_supported": [
         "jwk"
@@ -34,7 +34,7 @@
       "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
-            "ES256"
+            "ES256", "Ed25519"
           ]
         }
       },
@@ -125,7 +125,7 @@
     "university_example_sd_jwt": {
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
-        "ES256"
+        "ES256", "Ed25519"
       ],
       "cryptographic_binding_methods_supported": [
         "jwk"
@@ -133,7 +133,7 @@
       "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
-            "ES256"
+            "ES256", "Ed25519"
           ]
         }
       },
@@ -182,7 +182,7 @@
     "university_example_sd_jwt_list": {
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
-        "ES256"
+        "ES256", "Ed25519"
       ],
       "cryptographic_binding_methods_supported": [
         "jwk"
@@ -190,7 +190,7 @@
       "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
-            "ES256"
+            "ES256", "Ed25519"
           ]
         }
       },
@@ -230,7 +230,7 @@
     "unbound_example_sd_jwt": {
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
-        "ES256"
+        "ES256", "Ed25519"
       ],
       "vct": "unbound_example_sd_jwt",
       "credential_metadata": {
@@ -253,7 +253,7 @@
     "university_example_high_key_attestation_required_sd_jwt": {
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
-        "ES256"
+        "ES256", "Ed25519"
       ],
       "cryptographic_binding_methods_supported": [
         "jwk"
@@ -261,7 +261,7 @@
       "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
-            "ES256"
+            "ES256", "Ed25519"
           ],
           "key_attestations_required": {
             "key_storage": [
@@ -315,7 +315,7 @@
     "university_example_any_key_attestation_required_sd_jwt": {
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
-        "ES256"
+        "ES256", "Ed25519"
       ],
       "cryptographic_binding_methods_supported": [
         "jwk"
@@ -323,7 +323,7 @@
       "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
-            "ES256"
+            "ES256", "Ed25519"
           ],
           "key_attestations_required": {}
         }
@@ -373,7 +373,7 @@
     "test": {
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
-        "ES256"
+        "ES256", "Ed25519"
       ],
       "cryptographic_binding_methods_supported": [
         "jwk"
@@ -381,7 +381,7 @@
       "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
-            "ES256"
+            "ES256", "Ed25519"
           ]
         }
       },

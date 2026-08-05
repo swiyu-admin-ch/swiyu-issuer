@@ -2,8 +2,6 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -20,6 +18,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.text.ParseException;
 import java.util.HashMap;
@@ -65,7 +65,7 @@ class DataIntegrityServiceTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void testMissingSignatureData_whenEnforced_thenFailure(boolean informDataIntegrity) throws JsonProcessingException {
+    void testMissingSignatureData_whenEnforced_thenFailure(boolean informDataIntegrity) throws JacksonException {
         var offerData = wrapTestData(getTestData());
         if (informDataIntegrity) {
             offerData.put("data_integrity", "jwt");
@@ -92,7 +92,7 @@ class DataIntegrityServiceTest {
         return Map.of("hello", 1, "world", 2);
     }
 
-    private Map<String, Object> wrapTestData(Map<String, Object> data) throws JsonProcessingException {
+    private Map<String, Object> wrapTestData(Map<String, Object> data) throws JacksonException {
         Map<String, Object> wrapped = new HashMap<>();
         wrapped.put("data", objectMapper.writeValueAsString(data));
         return wrapped;

@@ -7,7 +7,6 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.dto.type_metadata.OcaDto;
 import ch.admin.bj.swiyu.issuer.dto.type_metadata.TypeMetadataDto;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.PropertyPlaceholderHelper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
