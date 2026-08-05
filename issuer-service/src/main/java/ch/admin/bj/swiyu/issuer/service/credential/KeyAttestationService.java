@@ -8,9 +8,9 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Ke
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Proof;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
+import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 
 import jakarta.validation.constraints.NotNull;
@@ -26,6 +26,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @AllArgsConstructor
 public class KeyAttestationService {
     private final KeyResolver keyResolver;
+    private final DidJwtValidator jwtValidator;
     private final ApplicationProperties applicationProperties;
 
     public String validateAndGetHolderKeyAttestation(SupportedProofType supportedProofType, Proof requestProof) throws Oid4vcException {
@@ -90,7 +91,7 @@ public class KeyAttestationService {
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
             attestation.throwIfNotTrustedAttestationProvider(trustedAttestationServices);
 
-            if (!attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage())) {
+            if (!attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage(), jwtValidator)) {
                 throw new Oid4vcException(INVALID_PROOF, "Key attestation was invalid or not matching the attack resistance for the credential!");
             }
 
