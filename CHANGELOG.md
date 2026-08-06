@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value
   `(#1116)`.
 - NullPointerException on missing Type during JWTAttestation parsing `(#1129)`.
+- Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
 
 ### Changed
 
