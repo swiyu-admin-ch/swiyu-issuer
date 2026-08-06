@@ -249,7 +249,7 @@ public class CredentialManagementService {
             @NotNull UUID credentialManagementId,
             @NotNull UpdateCredentialStatusRequestTypeDto requestedNewStatus) {
 
-        var mgmt = getCredentialManagementWithExpirationCheck(credentialManagementId);
+        var mgmt = getCredentialManagementWithExpirationCheckForUpdate(credentialManagementId);
 
         var managementEvent = toCredentialManagementEvent(requestedNewStatus);
         var offerEvent = toCredentialOfferEvent(requestedNewStatus);
@@ -538,8 +538,29 @@ public class CredentialManagementService {
      * @return the credential management with updated offer states
      */
     private CredentialManagement getCredentialManagementWithExpirationCheck(UUID managementId) {
-        var mgmt = persistenceService.findCredentialManagementById(managementId);
+        return applyExpirationCheck(persistenceService.findCredentialManagementById(managementId));
+    }
 
+    /**
+     * Same as {@link #getCredentialManagementWithExpirationCheck(UUID)}, but takes a
+     * pessimistic write lock on the aggregate first.
+     *
+     * <p>Must be used before any management status transition (revoke/suspend/reactivate):
+     * it serializes against a concurrently running renewal, which holds the same row
+     * lock (via {@code findByAccessToken}/{@code findByRefreshToken}) for the whole
+     * renewal transaction. Without this lock, a status change can read the aggregate
+     * before the renewal's new credential offer is committed, decide its status-list
+     * updates from that stale snapshot, and then commit "REVOKED"/"SUSPENDED" without
+     * ever touching the renewed offer's status-list entry.</p>
+     *
+     * @param managementId the management ID
+     * @return the locked credential management with updated offer states
+     */
+    private CredentialManagement getCredentialManagementWithExpirationCheckForUpdate(UUID managementId) {
+        return applyExpirationCheck(persistenceService.findCredentialManagementByIdForUpdate(managementId));
+    }
+
+    private CredentialManagement applyExpirationCheck(CredentialManagement mgmt) {
         mgmt.getCredentialOffers().forEach(offer -> {
             // Make sure only offer is returned if it is not expired
             if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())

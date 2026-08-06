@@ -230,7 +230,7 @@ class CredentialManagementServiceTest {
     void updateCredentialStatus_shouldRouteToPostIssuanceHandler_whenMgmtIsPostIssuance() {
         var mgmt = issued.getCredentialManagement();
 
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
         when(stateService.handleStatusChange(any(), any(), any()))
                 .thenReturn(new UpdateStatusResponseDto(mgmt.getId(), CredentialStatusTypeDto.SUSPENDED, null));
 
