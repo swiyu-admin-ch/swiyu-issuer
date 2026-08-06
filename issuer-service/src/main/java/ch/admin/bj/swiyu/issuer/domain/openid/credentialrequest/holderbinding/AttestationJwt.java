@@ -2,20 +2,26 @@ package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+import ch.admin.bj.swiyu.jwtvalidator.DidKidParser;
 import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jwt.JWTClaimNames;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.ParseException;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +30,6 @@ import java.util.stream.Collectors;
 
 @Getter
 public final class AttestationJwt {
-    private static final long CLOCK_SKEW_MS = 60000; // 1 min margin of error for time validation, same as default in generic lib.
 
     @Deprecated(since = "OID4VCI 1.0") // remove later
     private static final String KEY_ATTESTATION_TYPE_ID1 = "keyattestation+jwt";
@@ -33,6 +38,7 @@ public final class AttestationJwt {
 
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
+    private static final DidKidParser kidParser = new DidKidParser();
     private final SignedJWT signedJWT;
     private final List<AttackPotentialResistance> attestedAttackPotentialResistance;
     private final JWTClaimsSet claims;
@@ -54,12 +60,8 @@ public final class AttestationJwt {
         var parsedJwt = SignedJWT.parse(jwt);
         var claims = parsedJwt.getJWTClaimsSet();
         // Check required Headers & Payload
-        validateHeader(parsedJwt.getHeader(), enforceSwissProfileVersioning);
-        validateBody(claims);
-        // Validation between Header and body
-        if (!parsedJwt.getHeader().getKeyID().split("#")[0].equals(claims.getIssuer())) {
-            throw new IllegalArgumentException("The key id must conform to the did syntax (did:webvh ...)");
-        }
+        String issuerDid = validateHeader(parsedJwt.getHeader(), enforceSwissProfileVersioning);
+        validateBody(claims, issuerDid);
         return new AttestationJwt(parsedJwt, extractSupportedAttackPotentialResistance(claims));
     }
 
@@ -67,39 +69,28 @@ public final class AttestationJwt {
      * @param jwtClaimsSet The JWT Body to be checked for Attestation JWT Required attributes
      * @throws IllegalArgumentException if one of the checks fails
      */
-    private static void validateBody(JWTClaimsSet jwtClaimsSet) throws IllegalArgumentException {
-        if (StringUtils.isEmpty(jwtClaimsSet.getIssuer())) {
-            throw new IllegalArgumentException("Issuer is required");
-        }
-        long now = System.currentTimeMillis();
-
-        // iat
-        var issuedAtTime = jwtClaimsSet.getIssueTime();
-        if (issuedAtTime == null) {
-            throw new IllegalArgumentException("IssueTime is required");
-        }
-        if (issuedAtTime.getTime() - CLOCK_SKEW_MS > now) {
-            throw new IllegalArgumentException("IssueTime is in the future");
-        }
-
-        // TODO EIDOMNI-1164: replace exp and nbf validation with logic from the generic java lib, once it's made accessible.
-        // exp
-        var expirationTime = jwtClaimsSet.getExpirationTime();
-        if (expirationTime == null) {
-            throw new IllegalArgumentException("ExpirationTime is required");
-        }
-        if (expirationTime.getTime() + CLOCK_SKEW_MS < now) {
-            throw new IllegalArgumentException("Attestation is expired");
-        }
-
-        // nbf
-        var notBeforeTime = jwtClaimsSet.getNotBeforeTime();
-        if (notBeforeTime != null && notBeforeTime.getTime() - CLOCK_SKEW_MS > now) {
-            throw new IllegalArgumentException("Attestation not yet valid");
-        }
-
-        if (jwtClaimsSet.getClaim("attested_keys") == null) {
-            throw new IllegalArgumentException("attested_keys is required");
+    private static void validateBody(JWTClaimsSet jwtClaimsSet, String expectedAttestationIssuerDid) throws IllegalArgumentException {
+        DefaultJWTClaimsVerifier<SecurityContext> verifier = new DefaultJWTClaimsVerifier<>(
+                    null,                  // no required audience
+                    new JWTClaimsSet.Builder().issuer(expectedAttestationIssuerDid).build(), // Issuer MUST match DID.
+                    Set.of( // Fields Requried to be present according to Swiss Profile 1.0
+                        JWTClaimNames.ISSUER, 
+                        JWTClaimNames.ISSUED_AT,
+                        JWTClaimNames.EXPIRATION_TIME,
+                        "attested_keys",
+                        "key_storage"
+                    ),
+                    Set.of()               // no prohibited claims – iss is ignored, not forbidden
+            );
+        try {
+            verifier.verify(jwtClaimsSet, null);
+            // iat should not be after now with clock skew considered
+            var issuedAtTime = jwtClaimsSet.getIssueTime().toInstant();
+            if (issuedAtTime.isAfter(Instant.now().plusSeconds(verifier.getMaxClockSkew()))) {
+                throw new IllegalArgumentException("IssueTime is in the future");
+            }
+        } catch (BadJWTException e) {
+            throw new IllegalArgumentException("Bad Attestation JWT - " + e.getMessage(), e);
         }
     }
 
@@ -129,7 +120,7 @@ public final class AttestationJwt {
      * @param header the JWT header
      * @param enforceSwissProfileVersioning whether to enforce Swiss Profile versioning
      */
-    static void validateHeader(JWSHeader header, boolean enforceSwissProfileVersioning) {
+    static String validateHeader(JWSHeader header, boolean enforceSwissProfileVersioning) {
 
         validateType(header);
 
@@ -138,7 +129,21 @@ public final class AttestationJwt {
         if (enforceSwissProfileVersioning) {
             validateSwissProfileVersion(header);
         }
+        return validateKid(header);
     }
+
+    private static String validateKid(JWSHeader header) {
+        var kid = header.getKeyID();
+        if (kid == null) {
+            throw new IllegalArgumentException("Key ID (kid) must be present");
+        }
+        try {
+            return kidParser.getDidFromAbsoluteKid(kid);
+        } catch (JwtValidatorException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
 
     private static void validateType(JWSHeader header) {
         var type = header.getType();
@@ -173,7 +178,9 @@ public final class AttestationJwt {
      * @throws IllegalArgumentException if the issuer of the jwt is not matching the list of trusted attestation providers
      */
     public void throwIfNotTrustedAttestationProvider(@NotNull List<String> trustedAttestationProviders) throws IllegalArgumentException {
-        if (!trustedAttestationProviders.contains(claims.getIssuer())) {
+        String attestationKeyId = signedJWT.getHeader().getKeyID();
+        String attestationProviderDid = kidParser.getDidFromAbsoluteKid(attestationKeyId);
+        if (!trustedAttestationProviders.contains(attestationProviderDid)) {
             throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted attestation providers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
         }
     }

@@ -13,6 +13,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -27,16 +28,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AttestationJwtTest {
 
+    ECKey signingKey;
+    static final String DEFAULT_ISSUER = "did:webvh:scid:example.issuer";
+
+    @BeforeEach
+    void setup() throws JOSEException {
+        signingKey = new ECKeyGenerator(Curve.P_256).keyID(DEFAULT_ISSUER+"#key-1").keyUse(KeyUse.SIGNATURE).generate();
+
+    }
+
     @Test
     void parseJwt_withValidJwt_returnsAttestationJwt() throws JOSEException {
-        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
                 .type(new JOSEObjectType("key-attestation+jwt"))
                 .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build(),
                 new JWTClaimsSet.Builder()
-                        .issuer("did:example:issuer")
+                        .issuer(DEFAULT_ISSUER)
                         .issueTime(new Date())
                         .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
@@ -53,8 +62,8 @@ class AttestationJwtTest {
      */
     @ParameterizedTest(name = "should reject JWT when attackerKeyID={0}, issuerDid={1}")
     @CsvSource({
-            "did:example:12345#key-1, did:example:9876",
-            "did:example:trusted-fake#key-1, did:example:trusted"
+            "did:webvh:scid:12345#key-1, did:webvh:scid:9876",
+            "did:webvh:scid:trusted-fake#key-1, did:webvh:scid:trusted"
     })
     void parseJwt_withDivergingIssuerAndKid_throwsIllegalArgumentException(String attackerKeyID, String issuerDid) throws JOSEException {
         var signingKey = new ECKeyGenerator(Curve.P_256).keyID(attackerKeyID).keyUse(KeyUse.SIGNATURE).generate();
@@ -80,8 +89,8 @@ class AttestationJwtTest {
      */
     @ParameterizedTest(name = "should reject JWT when attackerKeyID={0}, issuerDid={1}")
     @CsvSource({
-            "did:example:12345#key-1, did:example:9876",
-            "did:example:trusted-fake#key-1, did:example:trusted"
+            "did:webvh:scid:12345#key-1, did:webvh:scid:9876",
+            "did:webvh:scid:trusted-fake#key-1, did:webvh:scid:trusted"
     })
     void parseJwt_withDivergingIssuerAndKidUsingKeyStorage_throwsIllegalArgumentException(String attackerKeyID, String issuerDid) throws JOSEException {
         var signingKey = new ECKeyGenerator(Curve.P_256).keyID(attackerKeyID).keyUse(KeyUse.SIGNATURE).generate();
@@ -105,14 +114,13 @@ class AttestationJwtTest {
 
     @Test
     void parseJwt_withMissingProfileVersionHeader_throwsIllegalArgumentException() throws JOSEException {
-        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
                 .type(new JOSEObjectType("key-attestation+jwt"))
                 // intentionally no profile_version
                 .build(),
                 new JWTClaimsSet.Builder()
-                        .issuer("did:example:issuer")
+                        .issuer(DEFAULT_ISSUER)
                         .issueTime(new Date())
                         .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
@@ -127,14 +135,13 @@ class AttestationJwtTest {
 
     @Test
     void parseJwt_withMissingTypeHeader_throwsIllegalArgumentException() throws JOSEException {
-        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
                 .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 // intentionally no profile_version
                 .build(),
                 new JWTClaimsSet.Builder()
-                        .issuer("did:example:issuer")
+                        .issuer(DEFAULT_ISSUER)
                         .issueTime(new Date())
                         .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
@@ -149,14 +156,13 @@ class AttestationJwtTest {
 
     @Test
     void parseJwt_withInvalidTypeHeader_throwsIllegalArgumentException() throws JOSEException {
-        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
                 .type(new JOSEObjectType("unsupported type"))
                 .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build(),
                 new JWTClaimsSet.Builder()
-                        .issuer("did:example:issuer")
+                        .issuer(DEFAULT_ISSUER)
                         .issueTime(new Date())
                         .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
@@ -180,7 +186,7 @@ class AttestationJwtTest {
         var jwt = buildJwt(new Date(), Date.from(Instant.now().plusSeconds(-5 * 60)), new Date());
         var ex = Assertions.assertThrows(IllegalArgumentException.class,
                 () -> AttestationJwt.parseJwt(jwt, true));
-        assertThat(ex.getMessage()).contains("Attestation is expired");
+        assertThat(ex.getMessage()).containsIgnoringCase("expired");
     }
 
     @Test
@@ -188,7 +194,7 @@ class AttestationJwtTest {
         var jwt = buildJwt(new Date(), Date.from(Instant.now().plusSeconds(5 * 60)), Date.from(Instant.now().plusSeconds(5 * 60)));
         var ex = Assertions.assertThrows(IllegalArgumentException.class,
                 () -> AttestationJwt.parseJwt(jwt, true));
-        assertThat(ex.getMessage()).contains("Attestation not yet valid");
+        assertThat(ex.getMessage()).containsIgnoringCase("before use time");
     }
 
     @Test
@@ -207,7 +213,7 @@ class AttestationJwtTest {
     @Test
     @DisplayName("containsKey returns true when proof key is the second attested key (multi-key iteration)")
     void containsKey_proofKeyIsSecondAttestedKey_returnsTrue() throws JOSEException, ParseException {
-        var issuerKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var issuerKey = new ECKeyGenerator(Curve.P_256).keyID("did:webvh:scid:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
         var firstAttestedKey = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
         var secondAttestedKey = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
 
@@ -222,7 +228,7 @@ class AttestationJwtTest {
     @Test
     @DisplayName("containsKey returns true when proof key is the first attested key")
     void containsKey_proofKeyIsFirstAttestedKey_returnsTrue() throws JOSEException, ParseException {
-        var issuerKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var issuerKey = new ECKeyGenerator(Curve.P_256).keyID("did:webvh:scid:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
         var firstAttestedKey = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
         var secondAttestedKey = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
 
@@ -238,7 +244,7 @@ class AttestationJwtTest {
     @Test
     @DisplayName("containsKey returns false when proof key is absent from all attested keys")
     void containsKey_proofKeyNotInAttestedKeys_returnsFalse() throws JOSEException, ParseException {
-        var issuerKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        var issuerKey = new ECKeyGenerator(Curve.P_256).keyID("did:webvh:scid:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
         var firstAttestedKey = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
         var secondAttestedKey = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
         var attackerKey = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
@@ -279,14 +285,13 @@ class AttestationJwtTest {
     }
 
     private String buildJwt(Date iat, Date exp, Date nbf) throws JOSEException {
-        var signingKey = new ECKeyGenerator(Curve.P_256).keyID("did:example:issuer#key-1").keyUse(KeyUse.SIGNATURE).generate();
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
                 .type(new JOSEObjectType("key-attestation+jwt"))
                 .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build(),
                 new JWTClaimsSet.Builder()
-                        .issuer("did:example:issuer")
+                        .issuer(DEFAULT_ISSUER)
                         .issueTime(iat)
                         .expirationTime(exp)
                         .notBeforeTime(nbf)

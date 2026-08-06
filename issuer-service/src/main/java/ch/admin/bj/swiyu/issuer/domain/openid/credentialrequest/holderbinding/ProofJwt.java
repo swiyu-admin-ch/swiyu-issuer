@@ -4,18 +4,14 @@ import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.ExpiredNonceException;
 import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import ch.admin.bj.swiyu.jwtutil.JwtUtil;
+import ch.admin.bj.swiyu.jwtutil.JwtUtilException;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jose.crypto.Ed25519Verifier;
-import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.OctetKeyPair;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-
 
 import org.springframework.util.StringUtils;
 
@@ -88,7 +84,6 @@ public class ProofJwt extends Proof implements AttestableProof {
             validateJwtClaims(issuerId);
 
             JWK holderKey = verifySignature(signedJWT);
-
             validateNonce();
 
             if (tokenExpirationTimestamp != null && Instant.now().isAfter(Instant.ofEpochSecond(tokenExpirationTimestamp))) {
@@ -112,36 +107,15 @@ public class ProofJwt extends Proof implements AttestableProof {
     }
 
     private JWK verifySignature(SignedJWT signedJWT) throws JOSEException {
-        // TODO EIDOMNI-1205 -> Extract this logic to the generic library
-        JWSAlgorithm algorithm = signedJWT.getHeader().getAlgorithm();
-        if (JWSAlgorithm.Family.EC.contains(algorithm)) {
-            return verifyECSignature(signedJWT);
-        } else if (JWSAlgorithm.Family.ED.contains(algorithm)) {
-            return verifyEdSignature(signedJWT);
-        }
-        throw new UnsupportedOperationException("JWS Algorithm %s is not supported for Proof JWT".formatted(algorithm.getName()));
-    }
-
-    private JWK verifyEdSignature(SignedJWT signedJWT) throws JOSEException {
         JWSHeader header = signedJWT.getHeader();
-        OctetKeyPair holderKey = getNormalizedEdKey(header);
-        JWSVerifier verifier = new Ed25519Verifier(holderKey);
-        if (!signedJWT.verify(verifier)) {
-            throw proofException("Proof JWT is not valid!",
-                    Map.of("alg", header.getAlgorithm() != null ? header.getAlgorithm().getName() : "null"));
+        try {
+            JWK holderBindingJWK = signedJWT.getHeader().getJWK();
+            JwtUtil.verifyJwt(jwt, holderBindingJWK);
+            return holderBindingJWK;
+        } catch (JwtUtilException e) {
+            throw proofException("Holder binding proof could not be validated successfully.", 
+                Map.of("alg", header.getAlgorithm() != null ? header.getAlgorithm().getName(): null));
         }
-        return holderKey;
-    }
-
-    private JWK verifyECSignature(SignedJWT signedJWT) throws JOSEException {
-        JWSHeader header = signedJWT.getHeader();
-        ECKey holderKey = getNormalizedECKey(header);
-        JWSVerifier verifier = new ECDSAVerifier(holderKey);
-        if (!signedJWT.verify(verifier)) {
-            throw proofException("Proof JWT is not valid!",
-                    Map.of("alg", header.getAlgorithm() != null ? header.getAlgorithm().getName() : "null"));
-        }
-        return holderKey;
     }
 
     @Override
@@ -194,11 +168,14 @@ public class ProofJwt extends Proof implements AttestableProof {
     }
 
     /**
-     * Check if the JWT claims are as expected
+     * Check if the JWT claims are as expected for proofs.
+     * The audience must (partially) match the issuerId
      */
     private void validateJwtClaims(String issuerId) throws ParseException {
         // Check jwt body values:
-        var claimSet = signedJWT.getJWTClaimsSet();
+        JWTClaimsSet claimSet = signedJWT.getJWTClaimsSet();
+
+        
 
         // aud: REQUIRED (string). The value of this claim MUST be the Credential Issuer Identifier.
         if (claimSet.getAudience().isEmpty() || !claimSet.getAudience().contains(issuerId)) {
@@ -245,40 +222,5 @@ public class ProofJwt extends Proof implements AttestableProof {
                             "nonceLifetimeSeconds", nonceLifetimeSeconds
                     ));
         }
-    }
-
-    /**
-     * Gets the ECKey from jwk header entry
-     *
-     * @return the Holder's ECKey
-     */
-    private ECKey getNormalizedECKey(JWSHeader header) {
-        // Public key is present as jwk
-        if (header.getJWK() != null) {
-            return header.getJWK().toECKey();
-        }
-
-        // No public key present which the current system supports
-        throw proofException(String.format("No valid holder key binding was found in the proof header %s", header),
-                Map.of(
-                        "jwkPresent", header.getJWK() != null
-                ));
-    }
-
-    /**
-     * Gets the EdKey from jwk header entry
-     *
-     * @return the Holder's EdKey
-     */
-    private OctetKeyPair getNormalizedEdKey(JWSHeader header) {
-                // Public key is present as jwk
-        if (header.getJWK() != null) {
-            return header.getJWK().toOctetKeyPair();
-        }
-        // No public key present which the current system supports
-        throw proofException(String.format("No valid holder key binding was found in the proof header %s", header),
-                Map.of(
-                        "jwkPresent", header.getJWK() != null
-                ));
     }
 }
