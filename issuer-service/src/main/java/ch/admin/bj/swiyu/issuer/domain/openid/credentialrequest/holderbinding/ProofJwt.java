@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.InvalidNonceException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.jwtutil.JwtUtil;
 import ch.admin.bj.swiyu.jwtutil.JwtUtilException;
+import lombok.extern.slf4j.Slf4j;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
@@ -20,6 +21,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class ProofJwt extends Proof implements AttestableProof {
 
     /**
@@ -113,6 +115,7 @@ public class ProofJwt extends Proof implements AttestableProof {
             JwtUtil.verifyJwt(jwt, holderBindingJWK);
             return holderBindingJWK;
         } catch (JwtUtilException e) {
+            log.debug("Failed to verify holder binding signature", e);
             throw proofException("Holder binding proof could not be validated successfully.", 
                 Map.of("alg", header.getAlgorithm() != null ? header.getAlgorithm().getName(): null));
         }

@@ -69,7 +69,7 @@ public final class AttestationJwt {
      * @param jwtClaimsSet The JWT Body to be checked for Attestation JWT Required attributes
      * @throws IllegalArgumentException if one of the checks fails
      */
-    private static void validateBody(JWTClaimsSet jwtClaimsSet, String expectedAttestationIssuerDid) throws IllegalArgumentException {
+    private static void validateBody(JWTClaimsSet jwtClaimsSet, String expectedAttestationIssuerDid) {
         DefaultJWTClaimsVerifier<SecurityContext> verifier = new DefaultJWTClaimsVerifier<>(
                     null,                  // no required audience
                     new JWTClaimsSet.Builder().issuer(expectedAttestationIssuerDid).build(), // Issuer MUST match DID.
