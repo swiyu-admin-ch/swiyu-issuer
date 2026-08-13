@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed mapping error with deferred credentials and accept unknown fields in `CredentialResponseEncryptionClass` to make
-  it more robust with older versions.
+  it more robust with older versions `(#1120, #1130)`.
 
 ## Changed use jackson 3 instead of 2
 
