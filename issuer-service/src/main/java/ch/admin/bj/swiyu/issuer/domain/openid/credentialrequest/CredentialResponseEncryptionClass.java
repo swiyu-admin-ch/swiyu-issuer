@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nimbusds.jose.jwk.JWK;
 import lombok.Data;
 
@@ -12,8 +13,13 @@ import org.springframework.validation.annotation.Validated;
 import java.text.ParseException;
 import java.util.Map;
 
+import lombok.NoArgsConstructor;
+
+
 @Validated
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+@NoArgsConstructor
 public class CredentialResponseEncryptionClass {
     private  Map<String, Object> jwk;
     private  String enc;

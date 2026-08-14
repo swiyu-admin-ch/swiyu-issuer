@@ -1,8 +1,10 @@
 package ch.admin.bj.swiyu.issuer.domain.credentialoffer;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.commons.lang3.StringUtils;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record ConfigurationOverride(
         String issuerDid,
         String verificationMethod,
