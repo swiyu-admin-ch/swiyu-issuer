@@ -10,9 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for EdDSA signed VCs. When using EdDSA `credential_signing_alg_values_supported` MUST be updated to `Ed25519`
-  Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used by the wallet for proofs.
+  Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used
+  by the wallet for proofs.
 
-## Changed use jackson 3 instead of 2
+## Changed
+
+- Use Jackson 3 instead of 2
+- Renamed cache properties to be more descriptive: `(#1227)`
+    - `caching.publicKeyCacheTTL` → `caching.public-key-cache-ttl-ms`
+    - `caching.encryptionMetadataCacheTTL` → `caching.encryption-metadata-cache-ttl-ms`
 
 ## [4.1.0] - 2026-07-23
 
