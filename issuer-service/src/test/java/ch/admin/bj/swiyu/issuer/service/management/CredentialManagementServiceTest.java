@@ -252,7 +252,7 @@ class CredentialManagementServiceTest {
                 .build();
         valid.setCredentialManagement(mgmt);
 
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
 
         StatusResponseDto response = credentialService.getCredentialStatus(mgmt.getId());
 
@@ -267,7 +267,7 @@ class CredentialManagementServiceTest {
     @Test
     void getOfferStatus_shouldReturnStatus() {
         var mgmt = suspended.getCredentialManagement();
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
 
         StatusResponseDto response = credentialService.getCredentialStatus(mgmt.getId());
 
@@ -440,7 +440,7 @@ class CredentialManagementServiceTest {
                 .build();
         nonDeferredOffer.setCredentialManagement(mgmt);
 
-        when(persistenceService.findCredentialManagementById(mgmtId)).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmtId)).thenReturn(mgmt);
         when(persistenceService.saveCredentialManagement(any())).thenAnswer(i -> i.getArgument(0));
 
         assertThrows(BadRequestException.class, () -> credentialService.updateOfferDataForDeferred(mgmtId, offerDataMap));
@@ -472,7 +472,7 @@ class CredentialManagementServiceTest {
         var mgmt = mock(CredentialManagement.class);
         when(mgmt.getCredentialOffers()).thenReturn(Set.of(deferredOffer));
 
-        when(persistenceService.findCredentialManagementById(mgmtId)).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmtId)).thenReturn(mgmt);
         when(persistenceService.saveCredentialManagement(any())).thenAnswer(i -> i.getArgument(0));
 
         doNothing().when(stateService).markOfferAsReady(deferredOffer);
@@ -506,7 +506,7 @@ class CredentialManagementServiceTest {
         var mgmt = mock(CredentialManagement.class);
         when(mgmt.getCredentialOffers()).thenReturn(Set.of(deferredOffer));
 
-        when(persistenceService.findCredentialManagementById(mgmtId)).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmtId)).thenReturn(mgmt);
         when(persistenceService.saveCredentialManagement(any())).thenAnswer(i -> i.getArgument(0));
 
         doNothing().when(stateService).markOfferAsReady(deferredOffer);
