@@ -33,14 +33,14 @@ public class CacheCustomizer {
      */
     // Todo: EIDOMNI-1246 Contract - remove encryptionMetadataCacheTTL
     @CacheEvict(value = ISSUER_METADATA_ENCRYPTION_CACHE, allEntries = true)
-    @Scheduled(fixedRateString = "${caching.encryption-metadata-cache-ttl-ms:${caching.encryptionMetadataCacheTTL:300000}}")
+    @Scheduled(fixedRateString = "${caching.encryptionMetadataCacheTTL:${caching.encryption-metadata-cache-ttl-ms}}")
     public void emptyIssuerMetadataEncryptionCache() {
         log.debug("emptying issuer metadata encryption cache");
     }
 
     // Todo: EIDOMNI-1246 Contract - remove publicKeyCacheTTL
     @CacheEvict(value = PUBLIC_KEY_CACHE, allEntries = true)
-    @Scheduled(fixedRateString = "${caching.public-key-cache-ttl-ms:${caching.publicKeyCacheTTL:3600000}}")
+    @Scheduled(fixedRateString = "${caching.publicKeyCacheTTL:${caching.public-key-cache-ttl-ms}}")
     public void emptyPublicKeyCache() {
         log.debug("emptying public key cache");
     }
