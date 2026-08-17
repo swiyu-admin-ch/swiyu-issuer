@@ -17,8 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Use Jackson 3 instead of 2
 - Renamed cache properties to be more descriptive: `(#1227)`
-    - `caching.publicKeyCacheTTL` → `caching.public-key-cache-ttl-ms`
-    - `caching.encryptionMetadataCacheTTL` → `caching.encryption-metadata-cache-ttl-ms`
+    - `caching.publicKeyCacheTTL` → `caching.public-key-cache-ttl-ms` (Non-breaking change, as the old property is still
+      supported for backwards compatibility)
+    - `caching.encryptionMetadataCacheTTL` → `caching.encryption-metadata-cache-ttl-ms` (Non-breaking change, as the old
+      property is still supported for backwards compatibility)
 
 ## [4.1.0] - 2026-07-23
 
