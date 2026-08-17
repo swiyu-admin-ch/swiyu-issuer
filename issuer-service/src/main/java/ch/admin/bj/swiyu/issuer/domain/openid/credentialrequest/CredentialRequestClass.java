@@ -17,6 +17,9 @@ import java.util.Map;
  * Representation of an <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#section-7.2">OID4VCI Credential Request</a>
  * using the parameters for the pre-authenticated flow
  */
+// JSON-PERSISTED (ZDD): serialized to JSON in the "credential_offer" table (see CredentialOffer.credentialRequest).
+// Keep this type backward compatible across releases: don't rename/remove fields without a migration
+// path (e.g. @JsonAlias), and keep any new field optional with a default.
 @Data
 @Builder
 @AllArgsConstructor

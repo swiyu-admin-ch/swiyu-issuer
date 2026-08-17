@@ -16,6 +16,10 @@ import java.util.Map;
 import lombok.NoArgsConstructor;
 
 
+// JSON-PERSISTED (ZDD): serialized to JSON in the "credential_offer" table (see
+// CredentialOffer.credentialRequest -> CredentialRequestClass.credentialResponseEncryption).
+// Keep this type backward compatible across releases: don't rename/remove fields without a migration
+// path (e.g. @JsonAlias), and keep any new field optional with a default.
 @Validated
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
