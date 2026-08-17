@@ -47,15 +47,48 @@ jobs:
             -Dtest='*PactTest' \
             -Dsurefire.failIfNoSpecifiedTests=false
 
-      - name: Validate generated Pact contract
+      - name: Validate generated Pact contracts
         run: |
-          PACT_FILE=issuer-service/target/pacts/swiyu-issuer-swiyu-trust-registry.json
-          test -s "$PACT_FILE"
-          jq -e '
-            .consumer.name == "swiyu-issuer" and
-            .provider.name == "swiyu-trust-registry" and
-            (.interactions | length == 6)
-          ' "$PACT_FILE"
+          set -euo pipefail
+          PACT_DIR=issuer-service/target/pacts
+          shopt -s nullglob
+          PACT_FILES=("$PACT_DIR"/*.json)
+
+          if (( ${#PACT_FILES[@]} == 0 )); then
+            echo "No Pact contract was generated in $PACT_DIR" >&2
+            exit 1
+          fi
+
+          EXPECTED_PROVIDERS='[
+            "swiyu-trust-registry",
+            "swiyu-identifier-registry",
+            "swiyu-status-registry",
+            "swiyu-core-business-service"
+          ]'
+
+          jq -s -e \
+            --arg consumer 'swiyu-issuer' \
+            --argjson expectedProviders "$EXPECTED_PROVIDERS" '
+            . as $pacts
+            | (([$pacts[].provider.name] | sort) == ($expectedProviders | sort))
+              and ($pacts | all(.[];
+                .consumer.name == $consumer
+                and (.metadata.pactSpecification.version
+                     | type == "string" and startswith("4."))
+                and (.interactions | type == "array" and length > 0)
+                and (.interactions | all(.[];
+                  (.description | type == "string" and length > 0)
+                  and (.providerStates | type == "array" and length > 0)
+                  and (.providerStates | all(.[];
+                    (.name | type == "string" and length > 0)
+                    and (.params | type == "object" and length > 0)
+                  ))
+                  and (.request.method | type == "string" and length > 0)
+                  and (.request.path | type == "string" and startswith("/"))
+                  and (.response.status | type == "number")
+                ))
+              ))
+          ' "${PACT_FILES[@]}"
 
       - name: Publish contracts to Pact Broker
         env:
