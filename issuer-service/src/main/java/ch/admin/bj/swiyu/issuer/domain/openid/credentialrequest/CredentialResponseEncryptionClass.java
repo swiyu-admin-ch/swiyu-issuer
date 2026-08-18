@@ -12,10 +12,15 @@ import org.springframework.validation.annotation.Validated;
 import java.text.ParseException;
 import java.util.Map;
 
+
+// JSON-PERSISTED (ZDD): serialized to JSON in the "credential_offer" table (see
+// CredentialOffer.credentialRequest -> CredentialRequestClass.credentialResponseEncryption).
+// Keep this type backward compatible across releases: don't rename/remove fields without a migration
+// path (e.g. @JsonAlias), and keep any new field optional with a default.
 @Validated
 @Data
-@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
+@NoArgsConstructor
 public class CredentialResponseEncryptionClass {
     private Map<String, Object> jwk;
     private String enc;
