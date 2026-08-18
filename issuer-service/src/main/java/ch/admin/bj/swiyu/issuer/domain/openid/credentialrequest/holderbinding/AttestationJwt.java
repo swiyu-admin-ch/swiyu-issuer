@@ -27,15 +27,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+/**
+ * Provide Key Attestation functioality according to <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#appendix-D">OID4VCI 1.0 Appendix D. Key Attestations</a>
+ * with additions from <a href="https://swiyu-admin-ch.github.io/specifications/swiss-profile-issuance/">swiss profile issuance</a>
+ */
 @Getter
 public final class AttestationJwt {
 
+    private static final String CLAIM_KEY_STORAGE = "key_storage";
+    private static final String CLAIM_ATTESTED_KEYS = "attested_keys";
+    private static final Set<String> REQUIRED_ATTESTATION_CLAIMS = Set.of( // Fields Requried to be present according to Swiss Profile 1.0
+        JWTClaimNames.ISSUER, 
+        JWTClaimNames.ISSUED_AT,
+        JWTClaimNames.EXPIRATION_TIME,
+        CLAIM_ATTESTED_KEYS,
+        CLAIM_KEY_STORAGE
+    );
     @Deprecated(since = "OID4VCI 1.0") // remove later
     private static final String KEY_ATTESTATION_TYPE_ID1 = "keyattestation+jwt";
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
     private static final Set<String> ALLOWED_TYPES = Set.of(KEY_ATTESTATION_TYPE_ID1, "key-attestation+jwt");
-
+    
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
     private static final DidKidParser kidParser = new DidKidParser();
@@ -73,13 +85,7 @@ public final class AttestationJwt {
         DefaultJWTClaimsVerifier<SecurityContext> verifier = new DefaultJWTClaimsVerifier<>(
                     null,                  // no required audience
                     new JWTClaimsSet.Builder().issuer(expectedAttestationIssuerDid).build(), // Issuer MUST match DID.
-                    Set.of( // Fields Requried to be present according to Swiss Profile 1.0
-                        JWTClaimNames.ISSUER, 
-                        JWTClaimNames.ISSUED_AT,
-                        JWTClaimNames.EXPIRATION_TIME,
-                        "attested_keys",
-                        "key_storage"
-                    ),
+                    REQUIRED_ATTESTATION_CLAIMS,
                     Set.of()               // no prohibited claims – iss is ignored, not forbidden
             );
         try {
@@ -99,7 +105,7 @@ public final class AttestationJwt {
                 .stream()
                 .map(AttackPotentialResistance::getValue)
                 .collect(Collectors.toSet());
-        var keyStorage = jwtClaimsSet.getClaim("key_storage");
+        var keyStorage = jwtClaimsSet.getClaim(CLAIM_KEY_STORAGE);
         if (!(keyStorage instanceof List)) {
             throw new IllegalArgumentException("list of attested key_storage is required");
         }
@@ -220,7 +226,7 @@ public final class AttestationJwt {
      */
     public boolean containsKey(@NotNull JWK proofKey) throws JOSEException {
         var proofThumbprint = proofKey.toPublicJWK().computeThumbprint().toString();
-        var rawAttestedKeys = claims.getClaim("attested_keys");
+        var rawAttestedKeys = claims.getClaim(CLAIM_ATTESTED_KEYS);
 
         if (!(rawAttestedKeys instanceof List<?> attestedKeyList) || attestedKeyList.isEmpty()) {
             return false;
