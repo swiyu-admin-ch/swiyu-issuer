@@ -12,8 +12,6 @@ import org.springframework.validation.annotation.Validated;
 import java.text.ParseException;
 import java.util.Map;
 
-import lombok.NoArgsConstructor;
-
 
 // JSON-PERSISTED (ZDD): serialized to JSON in the "credential_offer" table (see
 // CredentialOffer.credentialRequest -> CredentialRequestClass.credentialResponseEncryption).
