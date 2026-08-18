@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Map;
@@ -14,10 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link StatusListPersistenceService}.
@@ -41,6 +39,7 @@ class StatusListPersistenceServiceTest {
      */
     @BeforeEach
     void setUp() {
+        ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
         statusListRepository = mock(StatusListRepository.class);
         signingService = mock(StatusListSigningService.class);
         statusRegistryClient = mock(StatusRegistryClient.class);
@@ -49,11 +48,12 @@ class StatusListPersistenceServiceTest {
         when(statusListProperties.getStatusListSizeLimit()).thenReturn(100 * 1024 * 1024); // 100 MB
         when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true); // Disable registry sync in tests
         persistenceService = new StatusListPersistenceService(
-            applicationProperties,
-            statusListProperties,
-            statusListRepository,
-            statusRegistryClient,
-            signingService
+                applicationProperties,
+                statusListProperties,
+                statusListRepository,
+                statusRegistryClient,
+                signingService,
+                eventPublisher
         );
     }
 
@@ -66,13 +66,13 @@ class StatusListPersistenceServiceTest {
         var token = new TokenStatusListToken(8, 10);
         token.setStatus(1, TokenStatusListBit.REVOKE.getValue());
         StatusList statusList = StatusList.builder()
-            .id(statusListId)
-            .uri("https://example.com/" + statusListId)
-            .config(Map.of("bits", 8))
-            .statusZipped(token.getStatusListData())
-            .maxLength(10)
-            .configurationOverride(null)
-            .build();
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .statusZipped(token.getStatusListData())
+                .maxLength(10)
+                .configurationOverride(null)
+                .build();
         when(statusListRepository.findAllByIdInForUpdate(List.of(statusListId))).thenReturn(List.of(statusList));
 
         CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
@@ -96,13 +96,13 @@ class StatusListPersistenceServiceTest {
         TokenStatusListToken token = new TokenStatusListToken(8, 10);
         token.setStatus(2, TokenStatusListBit.SUSPEND.getValue());
         StatusList statusList = StatusList.builder()
-            .id(statusListId)
-            .uri("https://example.com/" + statusListId)
-            .config(Map.of("bits", 8))
-            .statusZipped(token.getStatusListData())
-            .maxLength(10)
-            .configurationOverride(null)
-            .build();
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .statusZipped(token.getStatusListData())
+                .maxLength(10)
+                .configurationOverride(null)
+                .build();
         when(statusListRepository.findAllByIdInForUpdate(List.of(statusListId))).thenReturn(List.of(statusList));
 
         CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
@@ -126,13 +126,13 @@ class StatusListPersistenceServiceTest {
         TokenStatusListToken token = new TokenStatusListToken(8, 10);
         token.setStatus(3, TokenStatusListBit.VALID.getValue());
         StatusList statusList = StatusList.builder()
-            .id(statusListId)
-            .uri("https://example.com/" + statusListId)
-            .config(Map.of("bits", 8))
-            .statusZipped(token.getStatusListData())
-            .maxLength(10)
-            .configurationOverride(null)
-            .build();
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .statusZipped(token.getStatusListData())
+                .maxLength(10)
+                .configurationOverride(null)
+                .build();
         when(statusListRepository.findAllByIdInForUpdate(List.of(statusListId))).thenReturn(List.of(statusList));
 
         CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);

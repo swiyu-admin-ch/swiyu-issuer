@@ -10,9 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for EdDSA signed VCs. When using EdDSA `credential_signing_alg_values_supported` MUST be updated to `Ed25519`
-  Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used by the wallet for proofs.
+  Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used
+  by the wallet for proofs.
 
 ## Changed use jackson 3 instead of 2
+
+## Fixed
+
+- Send status list update to registry after the entity has been persisted to the database, to avoid race conditions
+  `(#830)`.
 
 ## [4.1.0] - 2026-07-23
 
