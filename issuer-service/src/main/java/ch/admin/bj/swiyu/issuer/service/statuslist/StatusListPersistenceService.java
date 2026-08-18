@@ -170,45 +170,6 @@ public class StatusListPersistenceService {
     }
 
     /**
-     * Updates a single already-loaded status list by applying {@code bit} to all {@code affectedIndexes}.
-     *
-     * @param bit             the status bit to apply (VALID, REVOKE, or SUSPEND)
-     * @param affectedIndexes the indexes within the status list to update
-     * @return the updated {@link StatusList}
-     */
-    private StatusList updateStatusList(TokenStatusListBit bit, StatusList statusList, List<Integer> affectedIndexes) {
-        var statusListBits = (Integer) statusList.getConfig().get(BITS_FIELD_NAME);
-        StatusListValidator.requireBitSupported(statusListBits, bit, statusList.getUri());
-
-        try {
-            var token = TokenStatusListToken.loadTokenStatusListToken(statusListBits,
-                    statusList.getStatusZipped(), statusListProperties.getStatusListSizeLimit());
-            for (int index : affectedIndexes) {
-                token.setStatus(index, bit.getValue());
-            }
-            statusList.setStatusZipped(token.getStatusListData());
-            if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
-                publishToRegistry(statusList, token);
-            }
-            return statusList;
-        } catch (IOException e) {
-            log.error("Failed to load status list {}", statusList.getId(), e);
-            throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
-        }
-    }
-
-    /**
-     * Publishes the status list to the external registry.
-     *
-     * @param statusListEntity the status list entity
-     * @param token            the token status list token containing the current status data
-     */
-    public void publishToRegistry(StatusList statusListEntity, TokenStatusListToken token) {
-        SignedJWT jwt = signingService.buildSignedStatusListJwt(statusListEntity, token);
-        statusRegistryClient.updateStatusListEntry(statusListEntity, jwt.serialize());
-    }
-
-    /**
      * Publishes the status list to the external registry.
      *
      * @param update the status list update containing the status list entity and the token
