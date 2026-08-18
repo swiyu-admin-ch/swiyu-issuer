@@ -113,10 +113,10 @@ public class TestInfrastructureUtils {
         return signedJwt.serialize();
     }
 
-    public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString) throws Exception {
+    public static ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString, String contentType) throws Exception {
         return mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", token))
-                .contentType("application/json")
+                .contentType(contentType)
                 .content(credentialRequestString)
         );
     }
@@ -140,7 +140,7 @@ public class TestInfrastructureUtils {
     }
 
     public static JsonObject requestFailingCredential(MockMvc mock, Object token, String credentialRequestString) throws Exception {
-        var response = requestCredential(mock, (String) token, credentialRequestString)
+        var response = requestCredential(mock, (String) token, credentialRequestString, "application/json")
                 .andExpect(status().is4xxClientError())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andReturn();
