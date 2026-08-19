@@ -105,7 +105,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @ExceptionHandler(PessimisticLockingFailureException.class)
     public ResponseEntity<ApiErrorDto> handlePessimisticLockingFailureException(final PessimisticLockingFailureException exception) {
-        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
+        final ApiErrorDto apiError = ApiErrorDto.builder()
                 .errorDescription(CONFLICT.getReasonPhrase())
                 .errorDetails("The requested credential is currently locked by another operation. Please retry.")
                 .status(CONFLICT)
