@@ -111,7 +111,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
                 .status(CONFLICT)
                 .build();
         log.warn("Pessimistic lock could not be acquired in time: {}", exception.getMessage());
-        return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
+        return new ResponseEntity<>(apiError, apiErrorV2.getStatus());
     }
 
     @ExceptionHandler({CreateStatusListException.class, UpdateStatusListException.class})
