@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed mapping error with deferred credentials and accept unknown fields in `CredentialResponseEncryptionClass` to make
   it more robust with older versions `(#1120, #1130)`.
+- Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
 
 ## Changed use jackson 3 instead of 2
 
@@ -42,7 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value
   `(#1116)`.
 - NullPointerException on missing Type during JWTAttestation parsing `(#1129)`.
-- Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
 
 ### Changed
 

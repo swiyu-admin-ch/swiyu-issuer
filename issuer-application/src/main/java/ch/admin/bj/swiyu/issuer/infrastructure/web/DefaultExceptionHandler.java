@@ -10,6 +10,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -87,6 +88,29 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
                 .status(BAD_REQUEST)
                 .build();
         log.debug("Bad Request intercepted", exception);
+        return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
+    }
+
+    /**
+     * Handles a failure to acquire a pessimistic database lock in time (e.g. the
+     * {@code CredentialManagement} row lock used to serialize revocation against a
+     * concurrently running renewal, see EIDOMNI-1216).
+     *
+     * <p>Returns {@code 409 CONFLICT} instead of falling through to the generic
+     * {@link #handle(Exception)} handler, so operators can distinguish a transient
+     * lock contention (safe to retry) from an unexpected server error.</p>
+     *
+     * @param exception the lock acquisition failure
+     * @return a {@code 409 CONFLICT} response describing the conflict
+     */
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<ApiErrorDto> handlePessimisticLockingFailureException(final PessimisticLockingFailureException exception) {
+        final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
+                .errorDescription(CONFLICT.getReasonPhrase())
+                .errorDetails("The requested credential is currently locked by another operation. Please retry.")
+                .status(CONFLICT)
+                .build();
+        log.warn("Pessimistic lock could not be acquired in time: {}", exception.getMessage());
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 

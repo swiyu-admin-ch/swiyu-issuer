@@ -168,7 +168,7 @@ class RenewalRevocationRaceConditionIT {
     }
 
     @Test
-    void renewalOverlappingWithRevoke_rendersRenewedCredentialRevokedToo() throws Exception {
+    void givenRenewalHoldsManagementLock_whenRevokeRunsConcurrently_thenRenewedCredentialIsAlsoRevoked() throws Exception {
         // The business-issuer call is where CredentialRenewalService#handleRenewalFlow spends most of
         // its time while still holding the pessimistic write lock on the management row acquired via
         // the access-token lookup. Delaying the mocked response widens that window so the concurrent
