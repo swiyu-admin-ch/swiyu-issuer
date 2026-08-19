@@ -33,7 +33,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.service.management.CredentialManagementMapper.*;
@@ -151,20 +150,15 @@ public class CredentialManagementService {
      * </p>
      *
      * @param managementId the id of the management object
-     * @return a {@link CredentialInfoResponseDto} containing credential offer
+     * @return a {@link CredentialManagementDto} containing credential offer
      * information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
-    public CredentialManagementDto getCredentialOfferInformation(UUID managementId) {
-        var mgmt = persistenceService.findCredentialManagementById(managementId);
-
-        // Check and expire offers if needed
-        var credentialOffers = mgmt.getCredentialOffers().stream()
-                .map(this::checkAndExpireOffer)
-                .collect(Collectors.toSet());
+    public CredentialManagementDto getCredentialOfferInformationWithExpirationCheck(UUID managementId) {
+        var mgmt = getCredentialManagementWithExpirationCheck(managementId);
         try {
-            return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
+            return toCredentialManagementDto(applicationProperties, mgmt, mgmt.getCredentialOffers());
         } catch (JacksonException e) {
             throw new IllegalStateException("Failed to parse management object with DPoP key", e);
         }
@@ -195,20 +189,6 @@ public class CredentialManagementService {
         }
 
         return toCredentialInfoResponseDto(offer, applicationProperties);
-    }
-
-    /**
-     * Checks if an offer has expired and updates its state if necessary.
-     *
-     * @param offer the credential offer to check
-     * @return the (potentially updated) credential offer
-     */
-    private CredentialOffer checkAndExpireOffer(CredentialOffer offer) {
-        if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
-                && offer.hasExpirationTimeStampPassed()) {
-            return expireCredentialOffer(offer);
-        }
-        return offer;
     }
 
     /**

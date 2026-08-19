@@ -68,15 +68,15 @@ class CredentialPersistenceServiceTest {
     }
 
     /**
-     * Happy path: finding an existing credential management by its id.
+     * Happy path: finding an existing credential management by its id using a lock ("for update").
      */
     @Test
-    void findCredentialManagementById_shouldReturnWhenFound() {
+    void findCredentialManagementByIdForUpdate_shouldReturnWhenFound() {
         var id = UUID.randomUUID();
         var mgmt = CredentialManagement.builder().id(id).build();
-        when(credentialManagementRepository.findById(id)).thenReturn(Optional.of(mgmt));
+        when(credentialManagementRepository.findByIdForUpdate(id)).thenReturn(Optional.of(mgmt));
 
-        var result = persistenceService.findCredentialManagementById(id);
+        var result = persistenceService.findCredentialManagementByIdForUpdate(id);
 
         assertEquals(mgmt, result);
     }

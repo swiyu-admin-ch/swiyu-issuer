@@ -51,19 +51,6 @@ public class CredentialPersistenceService {
     }
 
     /**
-     * Finds a credential management by ID.
-     *
-     * @param managementId the management ID
-     * @return the credential management
-     * @throws ResourceNotFoundException if not found
-     */
-    public CredentialManagement findCredentialManagementById(UUID managementId) {
-        return credentialManagementRepository.findById(managementId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Credential Management %s not found".formatted(managementId)));
-    }
-
-    /**
      * Finds a credential management by ID with a pessimistic write lock.
      *
      * <p>Serializes against the renewal flow, which locks the same row via
