@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that rejects oversized decrypted/decompressed payloads before JSON parsing (EIDOMNI-1117 / EIDSEC-843)
+- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 
 ## Changed use jackson 3 instead of 2
 
