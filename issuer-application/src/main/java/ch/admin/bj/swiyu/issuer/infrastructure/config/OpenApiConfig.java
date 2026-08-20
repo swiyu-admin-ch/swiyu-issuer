@@ -3,6 +3,8 @@ package ch.admin.bj.swiyu.issuer.infrastructure.config;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.*;
 import ch.admin.bj.swiyu.issuer.dto.callback.WebhookCallbackDto;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.service.renewal.RenewalRequestDto;
+import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
@@ -73,6 +75,8 @@ public class OpenApiConfig {
         additionalSchemas.put("MetadataImage", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataImage.class).schema);
         additionalSchemas.put("KeyAttestationRequirement", ModelConverters.getInstance().readAllAsResolvedSchema(KeyAttestationRequirement.class).schema);
         additionalSchemas.put("MetadataDisplayInfo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataDisplayInfo.class).schema);
+        additionalSchemas.put("RenewalResponse", ModelConverters.getInstance().readAllAsResolvedSchema(RenewalResponseDto.class).schema);
+        additionalSchemas.put("RenewalRequest", ModelConverters.getInstance().readAllAsResolvedSchema(RenewalRequestDto.class).schema);
         return openApi -> {
             if (openApi.getComponents() == null) {
                 openApi.setComponents(new Components());
