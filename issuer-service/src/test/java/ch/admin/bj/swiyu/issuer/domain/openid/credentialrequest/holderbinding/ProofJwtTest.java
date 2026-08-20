@@ -58,7 +58,7 @@ class ProofJwtTest {
         var expirationTimestamp = offer.getOfferExpirationTimestamp();
         var exc = assertThrows(Oid4vcException.class,
                 () -> proofJwt.isValidHolderBinding(audience, algorithms, expirationTimestamp));
-        assertTrue(exc.getMessage().contains("No valid holder key binding was found in the proof header"));
+        assertTrue(exc.getMessage().contains("Holder binding proof could not be validated successfully."));
     }
 
     @ParameterizedTest
@@ -89,7 +89,7 @@ class ProofJwtTest {
         var exc = assertThrows(Oid4vcException.class,
                 () -> proofJwt.isValidHolderBinding(audience, algorithms, expirationTimestamp));
 
-        assertThat(exc.getMessage()).contains("No valid holder key binding was found in the proof header");
+        assertThat(exc.getMessage()).contains("Holder binding proof could not be validated successfully.");
     }
 
     @ParameterizedTest
