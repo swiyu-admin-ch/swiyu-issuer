@@ -8,7 +8,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
-import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
 import lombok.experimental.UtilityClass;
 import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;

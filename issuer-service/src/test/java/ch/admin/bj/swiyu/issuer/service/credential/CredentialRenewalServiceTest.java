@@ -6,9 +6,9 @@ import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
-import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -118,7 +118,7 @@ class CredentialRenewalServiceTest {
                 .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .credentialOffers(Set.of(CredentialOffer.builder()
                         .credentialStatus(CredentialOfferStatusType.DEFERRED)
-                .build())).build();
+                        .build())).build();
         assertThatThrownBy(() -> service.ensureRenewableState(mgmt))
                 .isInstanceOf(RenewalException.class)
                 .hasMessageContaining("INIT");

@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.service.renewal;
+package ch.admin.bj.swiyu.issuer.dto.renewal;
 
 import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
