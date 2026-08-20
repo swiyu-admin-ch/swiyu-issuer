@@ -61,7 +61,7 @@ public class OpenIdIssuerConfiguration {
             if (!validationResult.isEmpty()) {
                 throw new IllegalArgumentException(String.format("An invalid issuer metadata configuration was provided. Please adapt the following values:%n%s", validationResult));
             }
-            
+
             mapped.getCredentialConfigurationSupported().forEach(this::checkMetadataRenewalConfig);
 
             return mapped;
@@ -187,7 +187,7 @@ public class OpenIdIssuerConfiguration {
      */
     private void checkMetadataRenewalConfig(String key, CredentialConfiguration config) {
         if (applicationProperties.isRenewalFlowEnabled() && config.getCredentialRefreshDisabled()) {
-            log.warn("Credential refresh is disabled by config but the issuer metadata contains credential refresh fields in {}. The metadata is overridden with the config", key);
+            log.warn("Credential refresh is disabled by config but the issuer metadata contains credential refresh fields in {}", key);
         }
     }
 }
