@@ -20,14 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed mapping error with deferred credentials and accept unknown fields in `CredentialResponseEncryptionClass` to make
   it more robust with older versions `(#1120, #1130)`.
+- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 
-### Changed
+## Changed
 
-- Uses Jackson 3 instead of 2
+- Use Jackson 3 instead of 2
 - As the `renewal-flow-allowed` property is removed, the renewal flow is now enabled by setting
   `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT` not setting the value (which is the default) disables the renewal and keeps the
   former functionality `(#1093)`
-
+- Renamed cache properties to be more descriptive: `(#1227)`
+    - `caching.publicKeyCacheTTL` → `caching.public-key-cache-ttl-ms` (Non-breaking change, as the old property is still
+      supported for backwards compatibility)
+    - `caching.encryptionMetadataCacheTTL` → `caching.encryption-metadata-cache-ttl-ms` (Non-breaking change, as the old
+      property is still supported for backwards compatibility)
+      
 ### Removed
 
 - Removed support for `renewal-flow-allowed` and therefore `RENEWAL_FLOW_ENABLED` as different variables handle the same

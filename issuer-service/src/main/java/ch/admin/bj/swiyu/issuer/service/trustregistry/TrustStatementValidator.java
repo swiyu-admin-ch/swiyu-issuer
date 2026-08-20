@@ -25,20 +25,7 @@ import java.text.ParseException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Validates Trust Statement JWTs (idTS and piaTS) using the two-step Flow B of
- * {@link DidJwtValidator}, split across two distinct phases:
- *
- * <ol>
- *   <li><strong>Pre-cache validation</strong> ({@link #validateAllowlist(String)}):
- *       Called at fetch time. Checks that the JWT's {@code kid} resolves to a DID URL
- *       on the configured Trust Registry allowlist. Fast – no HTTP call. Prevents
- *       malicious JWTs with foreign DIDs from ever entering the cache.</li>
- *   <li><strong>Pre-inject validation</strong> ({@link #validateSignature(String)}):
- *       Called on every metadata response, just before the cached JWT is injected.
- *       Fetches the Trust Registry's DID Document fresh and verifies the signature.
- *       This ensures key rotations on the Trust Registry side are detected immediately,
- *       without waiting for the cache TTL to expire.</li>
- * </ol>
+ * Validates Trust Statement JWTs (idTS and piaTS) using {@link DidJwtValidator}
  *
  * <p>On signature failure the caller is expected to invalidate the cache entry via
  * {@link TrustStatementCacheService#invalidateAllTrustStatements(String)} so that a fresh
@@ -69,7 +56,7 @@ public class TrustStatementValidator {
      * <br>
      * Does NOT validate if the Trust Statement is correct in the context it is being used!
      *
-     * @param jwtString
+     * @param jwtString compact serialized Trust Statement JWT
      * @return TrustStatementValidationResult containing if the trust statement has a valid state and the milliseconds the trust statement can be cached
      */
     public TrustStatementValidationResult trustStatementValidityWindow(String jwtString) {
@@ -94,8 +81,9 @@ public class TrustStatementValidator {
             long minimumTimeoutNs = TimeUnit.SECONDS.toNanos(swiyuProperties.trustRegistry().maxCacheTtlSeconds());
             minimumTimeoutNs = TimeUtil.minNanosUntilExpiry(minimumTimeoutNs, TimeUtil.secondsToNanos(statusList.getExp()));
             minimumTimeoutNs = TimeUtil.minNanosUntilExpiry(minimumTimeoutNs, trustStatementJWT.getJWTClaimsSet().getExpirationTime());
-            // Substract the clock skew from expiration time to ensure that we fetch sufficiently soon the new Trust Statement
-            minimumTimeoutNs = Math.max(0, minimumTimeoutNs - swiyuProperties.trustRegistry().clockSkewBufferSeconds());
+            // Subtract the clock skew from expiration time to ensure that we fetch sufficiently soon the new Trust Statement
+            var clockSkewBufferNs = TimeUtil.secondsToNanos(swiyuProperties.trustRegistry().clockSkewBufferSeconds());
+            minimumTimeoutNs = Math.max(0, minimumTimeoutNs - clockSkewBufferNs);
             minimumTimeoutNs = TimeUtil.minWithNullable(minimumTimeoutNs, TimeUtil.secondsToNanos(statusList.getTtl()));
             log.debug("Trust statement state validation completed - Validity: {} Cache TTL {} - DID: {}, URL: {}", statusListState.valid(), minimumTimeoutNs, didString, didUrl);
 
@@ -109,9 +97,9 @@ public class TrustStatementValidator {
     }
 
     /**
-     * @param isValid        is the statement validated valid & to be used
-     * @param valditiyWindow how long this validation result may be used in nanoseconds
+     * @param isValid        whether the statement is validated and may be used
+     * @param validityWindow how long this validation result may be used in nanoseconds
      */
-    public record TrustStatementValidationResult(boolean isValid, long valditiyWindow) {
+    public record TrustStatementValidationResult(boolean isValid, long validityWindow) {
     }
 }
