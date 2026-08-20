@@ -102,7 +102,8 @@ class CredentialServiceOrchestratorTest {
                 renewalApiClient,
                 credentialManagementService,
                 credentialManagementRepository,
-                credentialEnvelopeService);
+                credentialEnvelopeService,
+                issuerMetadata);
         var deferredCredentialService = new DeferredCredentialService(
                 credentialOfferRepository,
                 credentialManagementRepository,

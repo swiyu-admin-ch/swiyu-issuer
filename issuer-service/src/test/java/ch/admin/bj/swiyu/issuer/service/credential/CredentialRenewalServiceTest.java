@@ -5,6 +5,8 @@ import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
@@ -12,6 +14,8 @@ import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -25,8 +29,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class CredentialRenewalServiceTest {
 
@@ -40,6 +43,8 @@ class CredentialRenewalServiceTest {
     private CredentialManagementRepository credentialManagementRepository;
     @Mock
     private CredentialEnvelopeService credentialEnvelopeService;
+    @Mock
+    private IssuerMetadata issuerMetadata;
 
     @InjectMocks
     private CredentialRenewalService service;
@@ -74,7 +79,6 @@ class CredentialRenewalServiceTest {
                 List.of(),
                 null);
         var updatedOffer = CredentialOffer.builder().id(UUID.randomUUID()).build();
-        @SuppressWarnings("deprecation")
         var request = new CredentialRequestClass();
         var envelope = new CredentialEnvelopeDto("h", "b", HttpStatus.OK);
 
@@ -82,6 +86,10 @@ class CredentialRenewalServiceTest {
         when(renewalApiClient.getRenewalData(any())).thenReturn(renewalResponse);
         when(credentialManagementService.updateOfferFromRenewalResponse(renewalResponse, initialOffer)).thenReturn(updatedOffer);
         when(credentialEnvelopeService.createCredentialEnvelopeDto(updatedOffer, request, null, mgmt)).thenReturn(envelope);
+
+        var credentialConfig = mock(CredentialConfiguration.class);
+        when(credentialConfig.getCredentialRefreshDisabled()).thenReturn(false);
+        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(credentialConfig);
 
         var result = service.handleRenewalFlow(request, mgmt, null, "dpop-key");
 
@@ -118,21 +126,29 @@ class CredentialRenewalServiceTest {
                 .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .credentialOffers(Set.of(CredentialOffer.builder()
                         .credentialStatus(CredentialOfferStatusType.DEFERRED)
-                .build())).build();
+                        .build())).build();
         assertThatThrownBy(() -> service.ensureRenewableState(mgmt))
                 .isInstanceOf(RenewalException.class)
                 .hasMessageContaining("INIT");
     }
 
-    @Test
-    void ensureRenewalFlowEnabled_rejectsWhenDisabled() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void ensureRenewalFlowEnabled_rejectsWhenDisabled(boolean isRenewalFlowEnabled) {
         var mgmt = CredentialManagement.builder()
                 .credentialManagementStatus(CredentialStatusManagementType.ISSUED)
                 .id(UUID.randomUUID())
                 .build();
-        when(applicationProperties.isRenewalFlowEnabled()).thenReturn(false);
 
-        assertThatThrownBy(() -> service.ensureRenewalFlowEnabled(mgmt))
+        var credentialConfig = mock(CredentialConfiguration.class);
+        when(credentialConfig.getCredentialRefreshDisabled()).thenReturn(isRenewalFlowEnabled);
+        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(credentialConfig);
+
+        when(applicationProperties.isRenewalFlowEnabled()).thenReturn(isRenewalFlowEnabled);
+
+        var renewalRequestDto = new CredentialRequestClass();
+
+        assertThatThrownBy(() -> service.ensureRenewalFlowEnabled(mgmt, renewalRequestDto))
                 .isInstanceOf(RenewalException.class)
                 .hasMessageContaining("Credential renewal is not allowed");
     }
