@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
@@ -45,6 +46,8 @@ class CredentialRenewalServiceTest {
     private CredentialEnvelopeService credentialEnvelopeService;
     @Mock
     private IssuerMetadata issuerMetadata;
+    @Mock
+    private MetadataService issuerMetadataService;
 
     @InjectMocks
     private CredentialRenewalService service;
@@ -90,6 +93,7 @@ class CredentialRenewalServiceTest {
         var credentialConfig = mock(CredentialConfiguration.class);
         when(credentialConfig.getCredentialRefreshDisabled()).thenReturn(false);
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(credentialConfig);
+        when(issuerMetadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
 
         var result = service.handleRenewalFlow(request, mgmt, null, "dpop-key");
 
@@ -142,6 +146,7 @@ class CredentialRenewalServiceTest {
 
         var credentialConfig = mock(CredentialConfiguration.class);
         when(credentialConfig.getCredentialRefreshDisabled()).thenReturn(isRenewalFlowEnabled);
+        when(issuerMetadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(credentialConfig);
 
         when(applicationProperties.isRenewalFlowEnabled()).thenReturn(isRenewalFlowEnabled);
