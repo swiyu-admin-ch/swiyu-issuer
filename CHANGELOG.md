@@ -23,7 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 
-## Changed use jackson 3 instead of 2
+## Changed
+
+- Use Jackson 3 instead of 2
+- Renamed cache properties to be more descriptive: `(#1227)`
+    - `caching.publicKeyCacheTTL` → `caching.public-key-cache-ttl-ms` (Non-breaking change, as the old property is still
+      supported for backwards compatibility)
+    - `caching.encryptionMetadataCacheTTL` → `caching.encryption-metadata-cache-ttl-ms` (Non-breaking change, as the old
+      property is still supported for backwards compatibility)
 
 ## [4.1.0] - 2026-07-23
 
