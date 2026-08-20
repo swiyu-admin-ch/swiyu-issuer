@@ -34,7 +34,7 @@
         <sonar.jacoco.reportPath>${project.basedir}/issuer-application/target/jacoco.exec</sonar.jacoco.reportPath>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <javacrumbs.shedlock.version>6.10.0</javacrumbs.shedlock.version>
-        <archunit-junit5.version>1.4.2</archunit-junit5.version>
+        <archunit-junit5.version>1.5.0</archunit-junit5.version>
         <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
         <bouncycastle.version>1.85</bouncycastle.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
@@ -51,7 +51,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <generic-java-lib.version>2.1.0</generic-java-lib.version>
-        <pact.version>4.7.3</pact.version>
+        <pact.version>4.7.5</pact.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
         <netty.version>4.2.17.Final</netty.version>
         <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
@@ -69,14 +69,14 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.21.5</version>
+                <version>2.22.2</version>
             </dependency>
 
             <!-- Fixes CVE-2026-59889 -->
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>3.1.5</version>
+                <version>3.2.2</version>
             </dependency>
 
             <!-- Fixes CVE-2026-42198 -->
