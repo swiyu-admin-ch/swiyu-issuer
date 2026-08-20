@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used
   by the wallet for proofs.
 
+### Fixed
+
+- Fixed mapping error with deferred credentials and accept unknown fields in `CredentialResponseEncryptionClass` to make
+  it more robust with older versions `(#1120, #1130)`.
+
 ## Changed
 
 - Use Jackson 3 instead of 2
