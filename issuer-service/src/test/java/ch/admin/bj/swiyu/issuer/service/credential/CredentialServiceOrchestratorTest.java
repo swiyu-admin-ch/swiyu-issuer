@@ -54,8 +54,6 @@ class CredentialServiceOrchestratorTest {
     CredentialOfferRepository credentialOfferRepository;
     CredentialManagementRepository credentialManagementRepository;
     CredentialServiceOrchestrator credentialServiceOrchestrator;
-    @Mock
-    private MetadataService metadataService;
     private StatusListOrchestrator statusListOrchestrator;
     private IssuerMetadata issuerMetadata;
     private StatusList statusList;
@@ -80,6 +78,7 @@ class CredentialServiceOrchestratorTest {
         CredentialManagementService credentialManagementService = Mockito.mock(CredentialManagementService.class);
         BusinessIssuerRenewalApiClient renewalApiClient = Mockito.mock(BusinessIssuerRenewalApiClient.class);
         credentialStateMachine = Mockito.mock(CredentialStateMachine.class);
+        MetadataService metadataService = Mockito.mock(MetadataService.class);
 
         mockCredentialStateMachine(credentialStateMachine);
 
