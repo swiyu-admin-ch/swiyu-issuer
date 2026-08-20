@@ -1,24 +1,22 @@
 package ch.admin.bj.swiyu.issuer.service.trustregistry;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import org.jspecify.annotations.NonNull;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.stereotype.Service;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Expiry;
-
 import ch.admin.bj.swiyu.core.trust.client.api.TrustProtocol20Api;
 import ch.admin.bj.swiyu.core.trust.client.model.PagedModelString;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.service.enc.CacheMaintenanceService;
 import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Service that fetches and caches Trust Statements (idTS and piaTS) from the
@@ -102,7 +100,7 @@ public class TrustStatementCacheService {
     @Nullable
     public String getIdentityTrustStatement(String issuerDid) {
         ValidatedSingleTrustStatement cached = idTsCache.get(issuerDid, this::fetchIdentityTrustStatement);
-        return cached!=null && cached.trustStatement.isPresent() && cached.valid ? cached.trustStatement.orElse(null) : null;
+        return cached != null && cached.trustStatement.isPresent() && cached.valid ? cached.trustStatement.orElse(null) : null;
     }
 
     /**
@@ -125,8 +123,8 @@ public class TrustStatementCacheService {
         }
         return statements
                 .stream().map(vts -> vts.trustStatement)
-                .filter(ts -> ts.isPresent())
-                .map(ts -> ts.get()).toList();
+                .filter(Optional::isPresent)
+                .map(Optional::get).toList();
     }
 
     /**
@@ -155,9 +153,9 @@ public class TrustStatementCacheService {
 
             log.debug("Fetched {} piaTS JWT(s) for issuer {}", jwts.size(), issuerDid);
             return jwts.stream()
-                .map(this::validateTrustStatement)
-                .filter(vts -> vts.valid)
-                .toList();
+                    .map(this::validateTrustStatement)
+                    .filter(vts -> vts.valid)
+                    .toList();
         } catch (RuntimeException e) {
             log.warn("An error occured while fetching piaTS for issuer {}: {}", issuerDid, e.getMessage());
             return null;
@@ -169,14 +167,12 @@ public class TrustStatementCacheService {
      * Runs the pre-cache allowlist check via {@link TrustStatementValidator} (no HTTP call).
      * If no validator is configured, the check is skipped and a warning is logged.
      *
-     * @param jwt       the trust statement JWT to check
-     * @param type      the statement type label for logging ("idTS" or "piaTS")
-     * @param issuerDid the issuer DID for logging context
+     * @param jwt the trust statement JWT to check
      * @throws JwtValidatorException if the DID URL resolved from the JWT is not on the allowlist
      */
     private ValidatedSingleTrustStatement validateTrustStatement(String jwt) {
         var validationResult = trustStatementValidator.trustStatementValidityWindow(jwt);
-        return new ValidatedSingleTrustStatement(Optional.ofNullable(jwt), validationResult.isValid(), validationResult.valditiyWindow());
+        return new ValidatedSingleTrustStatement(Optional.ofNullable(jwt), validationResult.isValid(), validationResult.validityWindow());
     }
 
     /**
@@ -245,13 +241,13 @@ public class TrustStatementCacheService {
 
             @Override
             public long expireAfterUpdate(String key, ValidatedSingleTrustStatement ts, long currentTime,
-                    long currentDuration) {
+                                          long currentDuration) {
                 return getValidTtlOrBackoff(ts);
             }
 
             @Override
             public long expireAfterRead(String key, ValidatedSingleTrustStatement ts, long currentTime,
-                    long currentDuration) {
+                                        long currentDuration) {
                 return currentDuration;
             }
 
@@ -288,13 +284,13 @@ public class TrustStatementCacheService {
 
             @Override
             public long expireAfterUpdate(String key, List<ValidatedSingleTrustStatement> value, long currentTime,
-                    long currentDuration) {
+                                          long currentDuration) {
                 return getValidTtlOrBackoff(value);
             }
 
             @Override
             public long expireAfterRead(String key, List<ValidatedSingleTrustStatement> value, long currentTime,
-                    long currentDuration) {
+                                        long currentDuration) {
                 return currentDuration;
             }
 
