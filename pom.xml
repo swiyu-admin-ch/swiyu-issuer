@@ -60,23 +60,39 @@
         <logback-core.version>1.5.38</logback-core.version>
         <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
         <tomcat.version>11.0.23</tomcat.version>
+
+        <!-- Fixes CVE-2026-59889. jackson-annotations/jackson-core must stay aligned with jackson-databind
+     (>= 2.22 required for e.g. JsonApplyView), otherwise dependency mediation can pick an older
+     managed version from Spring Boot and cause java.lang.NoClassDefFoundError at runtime. -->
+        <jackson.version>2.22.2</jackson.version>
+        <jackson-annotations.version>2.22</jackson-annotations.version>
+        <jackson-core.version>2.22.0</jackson-core.version>
+        <jackson3.version>3.2.2</jackson3.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
 
-            <!-- Fixes CVE-2026-59889 -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.22.2</version>
+                <version>${jackson.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson-annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson-core.version}</version>
+            </dependency>
             <!-- Fixes CVE-2026-59889 -->
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>3.2.2</version>
+                <version>${jackson3.version}</version>
             </dependency>
 
             <!-- Fixes CVE-2026-42198 -->
