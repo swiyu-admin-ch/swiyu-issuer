@@ -11,6 +11,7 @@ application:
     - "trust-reg.trust-infra.swiyu.admin.ch"
     - "status-reg.trust-infra.swiyu.admin.ch"
     - "identifier-reg.trust-infra.swiyu.admin.ch"
+    - "test-attestation-builder"
 
 swiyu:
   trust-registry:
