@@ -26,6 +26,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
@@ -238,6 +239,42 @@ class WellKnownControllerIT {
         var metadataJwt = assertDoesNotThrow(() -> SignedJWT.parse(metadataResponse.getResponse()
                 .getContentAsString()), "Well Known data should be a parsable JWT");
         assertDoesNotThrow(() -> metadataJwt.verify(issuerSignatureVerifier), "Signed Metadata must have a valid signature");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "%s/.well-known/openid-credential-issuer",
+            "/oid4vci/%s/.well-known/openid-credential-issuer",
+            "/.well-known/openid-credential-issuer/%s",
+    })
+    void testGetIssuerMetadata_withCredentialConfigId_checkIfRenewalDisabledFlagPresent(String uri) throws Exception {
+        var tenantId = testHelper.createBasicOfferJsonAndGetTenantID();
+
+        assertDoesNotThrow(() -> mock.perform(get(
+                        uri.formatted(tenantId))
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credential_configurations_supported.university_example_sd_jwt_with_renewal['credential_refresh_disabled']").value(false))
+                .andExpect(jsonPath("$.credential_configurations_supported.university_example_sd_jwt_with_renewal_disabled['credential_refresh_disabled']").value(true))
+                .andExpect(jsonPath("$.credential_configurations_supported.university_example_sd_jwt['credential_refresh_disabled']").doesNotExist())
+                .andReturn());
+
+        var encryptedResponse = mock.perform(get(uri.formatted(tenantId))
+                        .accept("application/jwt"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+
+        var issuerMetadataJwt = SignedJWT.parse(encryptedResponse);
+
+        JsonNode payloadNode = objectMapper.readTree(issuerMetadataJwt.getPayload().toString());
+
+        var credentialConfigsSupported = payloadNode.get("credential_configurations_supported");
+
+        assertFalse(credentialConfigsSupported.get("university_example_sd_jwt_with_renewal").get("credential_refresh_disabled").asBoolean());
+        assertTrue(credentialConfigsSupported.get("university_example_sd_jwt_with_renewal_disabled").get("credential_refresh_disabled").asBoolean());
+        assertFalse(credentialConfigsSupported.get("university_example_sd_jwt").has("credential_refresh_disabled"));
     }
 
 }

@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.renewal.RenewalRequestDto;
@@ -28,6 +29,7 @@ public class CredentialRenewalService {
     private final CredentialManagementService credentialManagementService;
     private final CredentialManagementRepository credentialManagementRepository;
     private final CredentialEnvelopeService credentialEnvelopeService;
+    private final MetadataService issuerMetadataService;
 
     /**
      * Runs the end-to-end renewal flow for a credential management record.
@@ -46,7 +48,7 @@ public class CredentialRenewalService {
                                                    String dpopKey) {
 
         ensureRenewableState(mgmt);
-        ensureRenewalFlowEnabled(mgmt);
+        ensureRenewalFlowEnabled(mgmt, credentialRequest);
         ensureDpopKeyPresent(dpopKey);
         ensureNoPendingRenewalRequest(mgmt);
 
@@ -69,8 +71,12 @@ public class CredentialRenewalService {
         }
     }
 
-    void ensureRenewalFlowEnabled(CredentialManagement mgmt) {
-        if (!applicationProperties.isRenewalFlowEnabled()) {
+    void ensureRenewalFlowEnabled(CredentialManagement mgmt, CredentialRequestClass credentialRequest) {
+
+        var credentialConfiguration = issuerMetadataService.getUnsignedIssuerMetadata()
+                .getCredentialConfigurationById(credentialRequest.getCredentialConfigurationId());
+
+        if (!applicationProperties.isRenewalFlowEnabled() || credentialConfiguration.getCredentialRefreshDisabled()) {
             log.info("Tried to renew credential for management id %s".formatted(mgmt.getId()));
             throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential renewal is not allowed for management id %s".formatted(mgmt.getId()));
         }
