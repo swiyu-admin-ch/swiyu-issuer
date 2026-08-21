@@ -164,6 +164,10 @@ application:
   offer-expiration-interval: "${CREDENTIAL_OFFER_EXPIRATION_INTERVAL:PT15M}"
   encryption-key-rotation-interval: "PT15M"
   encryption-enforce: true # swiss-profile requires encryption to be used. Do NOT disable in production!
+  # Maximum allowed size of a compressed JWE ciphertext the service will process. Kept small to mitigate JWE decompression bomb attacks
+  max-compressed-cipher-text-length: ${MAX_COMPRESSED_CIPHER_TEXT_LENGTH:20971520} # 20 MiB
+  # Maximum allowed size of the decrypted/decompressed JWE plaintext payload. Additional defense-in-depth limit against decompression bomb attacks
+  max-decompressed-payload-length: ${MAX_DECOMPRESSED_PAYLOAD_LENGTH:20971520} # 20 MiB
 
   # Enforce Swiss Profile version indications (profile_version) in incoming/outgoing artifacts where applicable.
   # Default: false (transitional period).
@@ -283,8 +287,8 @@ monitoring:
     password: "${MONITORING_BASIC_AUTH_PASSWORD:}"
 
 caching:
-  publicKeyCacheTTL: ${PUBLIC_KEY_CACHE_TTL_MILLI:3600000} # 1 hour
-  encryptionMetadataCacheTTL: ${ENCRYPTION_METADATA_CACHE_TTL_MILLI:300000} # 5 minutes – must be less than 2× encryption-key-rotation-interval (grace period = 30min); recommended ~1/3 of rotation interval
+  public-key-cache-ttl-ms: ${PUBLIC_KEY_CACHE_TTL_MILLI:3600000} # 1 hour
+  encryption-metadata-cache-ttl-ms: ${ENCRYPTION_METADATA_CACHE_TTL_MILLI:300000} # 5 minutes – must be less than 2× encryption-key-rotation-interval (grace period = 30min); recommended ~1/3 of rotation interval
 
 database-migration:
   init-container: ${IS_INIT_CONTAINER_EXECUTION:false}
