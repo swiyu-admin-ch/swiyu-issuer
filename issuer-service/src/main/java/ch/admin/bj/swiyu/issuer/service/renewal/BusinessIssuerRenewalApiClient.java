@@ -2,6 +2,8 @@ package ch.admin.bj.swiyu.issuer.service.renewal;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
+import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
@@ -25,18 +27,18 @@ public class BusinessIssuerRenewalApiClient {
     public RenewalResponseDto getRenewalData(RenewalRequestDto requestDto) {
 
         try {
-        return webClient.post()
-                .uri(URI.create(applicationProperties.getBusinessIssuerRenewalApiEndpoint()))
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(requestDto)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> {
-                    log.error("Renewal request to {} failed with status code {}",
-                            applicationProperties.getBusinessIssuerRenewalApiEndpoint(), response.statusCode());
-                    return reactor.core.publisher.Mono.error(new RenewalException(response.statusCode(), "Renewal request failed"));
-                })
-                .bodyToMono(RenewalResponseDto.class)
-                .block();
+            return webClient.post()
+                    .uri(URI.create(applicationProperties.getBusinessIssuerRenewalApiEndpoint()))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestDto)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> {
+                        log.error("Renewal request to {} failed with status code {}",
+                                applicationProperties.getBusinessIssuerRenewalApiEndpoint(), response.statusCode());
+                        return reactor.core.publisher.Mono.error(new RenewalException(response.statusCode(), "Renewal request failed"));
+                    })
+                    .bodyToMono(RenewalResponseDto.class)
+                    .block();
         } catch (RestClientResponseException e) {
             log.error("Renewal request to {} failed with status code {} with message {}",
                     applicationProperties.getBusinessIssuerRenewalApiEndpoint(), e.getStatusCode(), e.getMessage());

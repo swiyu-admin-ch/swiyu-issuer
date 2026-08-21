@@ -17,12 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed mapping error with deferred credentials and accept unknown fields in `CredentialResponseEncryptionClass` to make
   it more robust with older versions `(#1120, #1130)`.
+- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that
+  rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
+- Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
 - Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
-
-
-### Fixed
-
-- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 
 ## Changed
 
