@@ -14,7 +14,7 @@ application:
   external-url: "http://localhost:8080"
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
   deferred-offer-validity-seconds: 864000 # 60 * 60 * 24 * 10 => 10 days;
-  trusted-attestation-providers: [ "did:test:test-attestation-builder" ]
+  trusted-attestation-providers: [ "did:webvh:scid:test-attestation-builder" ]
   template-replacement:
     external-url: "http://localhost:8080"
     stage: "local-"
@@ -32,6 +32,8 @@ application:
     status-list-expiration-time: 365d
   offer-expiration-interval: "PT15M"
   encryption-key-rotation-interval: "PT15M"
+  max-compressed-cipher-text-length: 20971520 # 20 MiB
+  max-decompressed-payload-length: 20971520 # 20 MiB
   encryption-enforce: false
   dpop-enforce: false
   deeplink-schema: swiyu
@@ -79,8 +81,8 @@ webhook:
   callback-interval: 5000
 
 caching:
-  publicKeyCacheTTL: 5000
-  encryptionMetadataCacheTTL: 5000
+  public-key-cache-ttl-ms: 5000
+  encryption-metadata-cache-ttl-ms: 5000
 
 management:
   endpoint:

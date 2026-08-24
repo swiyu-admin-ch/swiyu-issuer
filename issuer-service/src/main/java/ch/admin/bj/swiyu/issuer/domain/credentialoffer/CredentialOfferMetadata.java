@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import org.apache.commons.lang3.StringUtils;
 
+// JSON-PERSISTED (ZDD): serialized to JSON in the "credential_offer" table (see CredentialOffer.credentialMetadata).
+// Keep this type backward compatible across releases: don't rename/remove fields without a migration
+// path (e.g. @JsonAlias), and keep any new field optional with a default.
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

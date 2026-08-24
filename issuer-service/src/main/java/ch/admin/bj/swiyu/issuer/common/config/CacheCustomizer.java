@@ -24,21 +24,23 @@ public class CacheCustomizer {
      * Periodically evicts all entries from the issuer metadata encryption cache on every pod,
      * ensuring that stale encryption key references are cleared in horizontally scaled deployments.
      *
-     * <p>The TTL is configured via {@code caching.encryptionMetadataCacheTTL}. Because rotated keys
+     * <p>The TTL is configured via {@code caching.encryption-metadata-cache-ttl-ms}. Because rotated keys
      * are kept in the database for a grace period of {@code 2 × encryption-key-rotation-interval}
      * before deletion, wallets that received an older public key from a stale cache entry can still
      * decrypt their requests during that window. The cache TTL must therefore be strictly less than
      * {@code 2 × encryption-key-rotation-interval}. A value of roughly one third of the rotation
      * interval (default: 5 min for a 15-min rotation) is recommended to leave a comfortable margin.
      */
+    // Todo: EIDOMNI-1246 Contract - remove encryptionMetadataCacheTTL
     @CacheEvict(value = ISSUER_METADATA_ENCRYPTION_CACHE, allEntries = true)
-    @Scheduled(fixedRateString = "${caching.encryptionMetadataCacheTTL}")
+    @Scheduled(fixedRateString = "${caching.encryptionMetadataCacheTTL:${caching.encryption-metadata-cache-ttl-ms}}")
     public void emptyIssuerMetadataEncryptionCache() {
         log.debug("emptying issuer metadata encryption cache");
     }
 
+    // Todo: EIDOMNI-1246 Contract - remove publicKeyCacheTTL
     @CacheEvict(value = PUBLIC_KEY_CACHE, allEntries = true)
-    @Scheduled(fixedRateString = "${caching.publicKeyCacheTTL}")
+    @Scheduled(fixedRateString = "${caching.publicKeyCacheTTL:${caching.public-key-cache-ttl-ms}}")
     public void emptyPublicKeyCache() {
         log.debug("emptying public key cache");
     }
