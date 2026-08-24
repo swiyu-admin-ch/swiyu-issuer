@@ -5,13 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [NEXT]
+## [4.2.0] - 2026-08-24
 
 ### Added
 
 - Support for EdDSA signed VCs. When using EdDSA `credential_signing_alg_values_supported` MUST be updated to `Ed25519`
   Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used
   by the wallet for proofs.
+- Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
 
 ### Fixed
 
@@ -19,8 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it more robust with older versions `(#1120, #1130)`.
 - Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that
   rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
-- Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
-- Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
+- Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the
+  revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List `(#1216)`.
+- Fixed status retrieval and response entity handling in `DefaultExceptionHandler` `(#1216)`.
 
 ## Changed
 
