@@ -1850,6 +1850,69 @@ components:
           minItems: 1
       required:
       - jwt
+    RenewalRequest:
+      type: object
+      description: Request sent to the Business Issuer to renew a credential offer
+      properties:
+        management_id:
+          type: string
+          format: uuid
+        offer_id:
+          type: string
+          format: uuid
+        dpopKey:
+          type: string
+    RenewalResponse:
+      type: object
+      description: "Response to a renewal request, containing the data to be used\
+        \ for creating a renewed vc."
+      properties:
+        metadata_credential_supported_id:
+          type: array
+          description: ID linking the offer to the issuer metadata.
+          example:
+          - myIssuerMetadataCredentialSupportedId
+          items:
+            type: string
+          minItems: 1
+        credential_subject_data:
+          type: object
+          description: |2
+                The user data to be written in the verifiable credential. Can be a json object or a JWT.
+                credentialSubjectData": {"lastName": "Example","firstName": "Edward"}
+                When using data integrity JWT the value are as claims inside the JWT.
+                "credentialSubjectData": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsYXN0TmFtZSI6IkV4YW1wbGUiLCJmaXJzdE5hbWUiOiJFZHdhcmQiLCJkYXRlT2ZCaXJ0aCI6IjEuMS4xOTcwIn0.2VMjj1RpJ7jUjn1SJHDwwzqx3kygn88UxSsG5j1uXG8"
+          example:
+            lastName: Example
+            firstName: Edward
+        credential_metadata:
+          $ref: "#/components/schemas/CredentialOfferMetadataDto"
+        credential_valid_until:
+          type: string
+          format: date-time
+          description: Setting for until when the VC shall be valid. XMLSchema dateTimeStamp
+            https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
+          example: 2010-01-01T19:23:24Z
+        credential_valid_from:
+          type: string
+          format: date-time
+          description: Setting for from when the VC shall be valid. XMLSchema dateTimeStamp
+            https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
+          example: 2010-01-01T18:23:24Z
+        status_lists:
+          type: array
+          description: List of URIs of the status lists to be used with the credential.
+            Status Lists must be initialized. Can provide multiple status lists to
+            have multiple status sources.
+          example:
+          - https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt
+          items:
+            type: string
+        configuration_override:
+          $ref: "#/components/schemas/ConfigurationOverride"
+      required:
+      - credential_subject_data
+      - metadata_credential_supported_id
     StatusList:
       type: object
       properties:

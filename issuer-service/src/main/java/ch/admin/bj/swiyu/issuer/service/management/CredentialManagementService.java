@@ -14,11 +14,11 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
-import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -33,7 +33,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.service.management.CredentialManagementMapper.*;
@@ -151,20 +150,15 @@ public class CredentialManagementService {
      * </p>
      *
      * @param managementId the id of the management object
-     * @return a {@link CredentialInfoResponseDto} containing credential offer
+     * @return a {@link CredentialManagementDto} containing credential offer
      * information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
-    public CredentialManagementDto getCredentialOfferInformation(UUID managementId) {
-        var mgmt = persistenceService.findCredentialManagementById(managementId);
-
-        // Check and expire offers if needed
-        var credentialOffers = mgmt.getCredentialOffers().stream()
-                .map(this::checkAndExpireOffer)
-                .collect(Collectors.toSet());
+    public CredentialManagementDto getCredentialOfferInformationWithExpirationCheck(UUID managementId) {
+        var mgmt = getCredentialManagementWithExpirationCheck(managementId);
         try {
-            return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
+            return toCredentialManagementDto(applicationProperties, mgmt, mgmt.getCredentialOffers());
         } catch (JacksonException e) {
             throw new IllegalStateException("Failed to parse management object with DPoP key", e);
         }
@@ -195,20 +189,6 @@ public class CredentialManagementService {
         }
 
         return toCredentialInfoResponseDto(offer, applicationProperties);
-    }
-
-    /**
-     * Checks if an offer has expired and updates its state if necessary.
-     *
-     * @param offer the credential offer to check
-     * @return the (potentially updated) credential offer
-     */
-    private CredentialOffer checkAndExpireOffer(CredentialOffer offer) {
-        if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
-                && offer.hasExpirationTimeStampPassed()) {
-            return expireCredentialOffer(offer);
-        }
-        return offer;
     }
 
     /**
@@ -531,15 +511,26 @@ public class CredentialManagementService {
     }
 
     /**
-     * Retrieves credential management and checks for expiration, expiring the
-     * affected offers.
+     * Retrieves credential management with a pessimistic write lock and checks for
+     * expiration, expiring the affected offers.
+     *
+     * <p>Takes the lock unconditionally because expiration handling can itself mutate
+     * and persist the aggregate (see {@link #expireCredentialOffer}) and every caller
+     * of this method eventually does the same. It serializes against a concurrently
+     * running renewal, which holds the same row lock (via {@code findByAccessToken}/
+     * {@code findByRefreshToken}) for the whole renewal transaction. Without this lock,
+     * a caller could read the aggregate before the renewal's new credential offer is
+     * committed, decide its own updates from that stale snapshot, and then persist them
+     * without ever touching the renewed offer's status-list entry.</p>
      *
      * @param managementId the management ID
-     * @return the credential management with updated offer states
+     * @return the locked credential management with updated offer states
      */
     private CredentialManagement getCredentialManagementWithExpirationCheck(UUID managementId) {
-        var mgmt = persistenceService.findCredentialManagementById(managementId);
+        return applyExpirationCheck(persistenceService.findCredentialManagementByIdForUpdate(managementId));
+    }
 
+    private CredentialManagement applyExpirationCheck(CredentialManagement mgmt) {
         mgmt.getCredentialOffers().forEach(offer -> {
             // Make sure only offer is returned if it is not expired
             if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())

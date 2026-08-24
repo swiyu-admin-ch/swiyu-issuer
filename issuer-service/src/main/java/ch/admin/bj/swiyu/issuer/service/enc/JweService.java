@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryptio
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.jweutil.JweDecryptionLimits;
 import ch.admin.bj.swiyu.jweutil.JweUtil;
 import ch.admin.bj.swiyu.jweutil.JweUtilException;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -71,7 +72,7 @@ public class JweService {
             JWEHeader header = encryptedJWT.getHeader();
             validateJWEHeaders(header, issuerMetadata.getRequestEncryption());
             JWK key = resolveDecryptionKey(header);
-            return JweUtil.decrypt(encryptedMessage, key);
+            return JweUtil.decrypt(encryptedMessage, key, resolveDecryptionLimits());
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Message is not a correct JWE object",
                     Map.of("payloadLength", encryptedMessage != null ? encryptedMessage.length() : 0));
@@ -79,6 +80,17 @@ public class JweService {
             throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "JWE Object could not be decrypted",
                     Map.of("payloadLength", encryptedMessage != null ? encryptedMessage.length() : 0));
         }
+    }
+
+    /**
+     * Builds the JWE size limits enforced by {@code swiyu-jwe-util} from the application configuration.
+     *
+     * @return the configured {@link JweDecryptionLimits}
+     */
+    private JweDecryptionLimits resolveDecryptionLimits() {
+        return new JweDecryptionLimits(
+                applicationProperties.getMaxCompressedCipherTextLength(),
+                applicationProperties.getMaxDecompressedPayloadLength());
     }
 
     /**

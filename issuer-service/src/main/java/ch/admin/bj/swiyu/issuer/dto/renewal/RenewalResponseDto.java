@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.service.renewal;
+package ch.admin.bj.swiyu.issuer.dto.renewal;
 
 import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
@@ -15,6 +15,7 @@ import tools.jackson.databind.annotation.JsonDeserialize;
 import java.time.Instant;
 import java.util.List;
 
+@Schema(name = "RenewalResponse", description = "Response to a renewal request, containing the data to be used for creating a renewed vc.")
 public record RenewalResponseDto(
         /**
          * ID as in credential metadata

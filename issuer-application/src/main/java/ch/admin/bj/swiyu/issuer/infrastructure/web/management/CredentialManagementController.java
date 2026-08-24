@@ -73,7 +73,7 @@ public class CredentialManagementController {
             }
     )
     public CredentialManagementDto getCredentialInformation(@PathVariable UUID credentialManagementId) {
-        return this.credentialManagementService.getCredentialOfferInformation(credentialManagementId);
+        return this.credentialManagementService.getCredentialOfferInformationWithExpirationCheck(credentialManagementId);
     }
 
     @Timed

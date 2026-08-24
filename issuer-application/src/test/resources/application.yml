@@ -32,6 +32,8 @@ application:
     status-list-expiration-time: 365d
   offer-expiration-interval: "PT15M"
   encryption-key-rotation-interval: "PT15M"
+  max-compressed-cipher-text-length: 20971520 # 20 MiB
+  max-decompressed-payload-length: 20971520 # 20 MiB
   encryption-enforce: false
   dpop-enforce: false
   deeplink-schema: swiyu
@@ -79,8 +81,8 @@ webhook:
   callback-interval: 5000
 
 caching:
-  publicKeyCacheTTL: 5000
-  encryptionMetadataCacheTTL: 5000
+  public-key-cache-ttl-ms: 5000
+  encryption-metadata-cache-ttl-ms: 5000
 
 management:
   endpoint:
