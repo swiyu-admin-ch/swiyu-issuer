@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.management.ApplicationIT;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -22,10 +23,12 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import java.util.UUID;
 
 @SpringBootTest()
 @ActiveProfiles({"test", "testjwt"})
@@ -35,7 +38,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CredentialOfferCreateJwtIT {
 
     private static final String BASE_URL = "/management/api/credentials";
-
+    @Autowired
+    private CredentialManagementRepository managementRepository;
+    @Autowired
+    private CredentialOfferRepository offerRepository;
     @Autowired
     private MockMvc mvc;
 
@@ -69,8 +75,58 @@ class CredentialOfferCreateJwtIT {
         jwt.sign(new ECDSASigner(ecJWK));
         String payload = jwt.serialize();
         // Adding in the offer data is done in the same way as without data integrity
-        String jsonPayload = getMinimalPayloadForCredentialSupportedIdTest();
+        String jsonPayload = String.format("""
+                {
+                  "metadata_credential_supported_id": ["test"],
+                  "credential_subject_data": "%s",
+                  "offer_validity_seconds": 36000
+                }
+                """, payload);
         testJWTCreateOffer(jsonPayload);
+    }
+
+    /**
+     * This test covers deferred issuance, updating the data of a deferred VC.
+     */
+    @Test
+    void createDeferredOfferWithJWTAndInnerJWT() throws Exception {
+        // Create Existing entry
+        final UUID ID = UUID.randomUUID();
+        var management = managementRepository.save(CredentialManagement.builder()
+                .id(ID)
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .accessToken(UUID.randomUUID())
+                .renewalRequestCnt(0)
+                .renewalResponseCnt(0)
+                .build());
+        offerRepository.save(CredentialOffer.builder()
+                .id(UUID.randomUUID())
+                .credentialStatus(CredentialOfferStatusType.DEFERRED)
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialMetadata(CredentialOfferMetadata.builder().deferred(true).build())
+                .credentialManagement(management)
+                .build());
+        // Offer data we want to use in the VC as JWT
+        // Build the data integrity JWT (Inner JWT)
+        ECKey ecJWK = ECKey.parse(ApplicationIT.privateKey);
+        var dataClaims = JWTClaimsSet.parse(getCredentialOfferData());
+        SignedJWT integrityJwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("testkey").build(), dataClaims);
+        integrityJwt.sign(new ECDSASigner(ecJWK));
+        String dataIntegrityPayload = integrityJwt.serialize();
+
+        var jwtAuthVClaims = JWTClaimsSet.parse("""
+                {
+                    "data": "%s"
+                }
+                """.formatted(dataIntegrityPayload));
+        SignedJWT jwtAuthJwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("testkey").build(), jwtAuthVClaims);
+        jwtAuthJwt.sign(new ECDSASigner(ecJWK));
+        String jwtAuth = jwtAuthJwt.serialize();
+        var response = mvc.perform(patch("%s/%s".formatted(BASE_URL, ID.toString()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jwtAuth))
+                .andExpect(status().isOk())
+                .andReturn();
     }
 
     @Test

@@ -12,7 +12,9 @@ import java.util.List;
 @Schema(name = "OAuthAuthorizationServerMetadata")
 @Builder(toBuilder = true)
 public record OAuthAuthorizationServerMetadataDto(
+        @Schema(description = "The Issuer Identifier", requiredMode = Schema.RequiredMode.REQUIRED, type = "string")
         String issuer,
+        @Schema(description = "URL of the OAuth 2.0 Token Endpoint", requiredMode = Schema.RequiredMode.REQUIRED, type = "string")
         String token_endpoint,
         @Nullable List<String> dpop_signing_alg_values_supported,
         @Nullable String profile_version,

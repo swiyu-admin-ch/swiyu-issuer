@@ -10,7 +10,6 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -28,14 +27,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.ObjectMapper;
 
 import java.text.ParseException;
 import java.util.List;
@@ -83,6 +84,10 @@ class IssuanceIT {
 
     @BeforeEach
     void setUp() {
+        // Reset spies so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null)
+        // do not bleed into subsequent tests that rely on the real bean behaviour.
+        reset(issuerMetadata);
+        reset(persistenceService);
         testStatusList = saveStatusList(createStatusList());
         holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
@@ -152,11 +157,10 @@ class IssuanceIT {
     @Test
     void testSdJwtOffer_withMetadata_thenSuccess() throws Exception {
 
-        var vctIntegrity = "vct#integrity";
         var vctMetadataUri = "vct_metadata_uri";
         var vctMetadataUriIntegrity = "vct_metadata_uri#integrity";
 
-        var metadata = new CredentialOfferMetadataDto(false, vctIntegrity, vctMetadataUri, vctMetadataUriIntegrity);
+        var metadata = new CredentialOfferMetadataDto(false, vctMetadataUri, vctMetadataUriIntegrity);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -182,7 +186,6 @@ class IssuanceIT {
         var credentialString = credential.get("credential").getAsString();
         var claims = getVcClaims(credentialString);
 
-        assertEquals(vctIntegrity, claims.get(vctIntegrity).getAsString());
         assertEquals(vctMetadataUri, claims.get(vctMetadataUri).getAsString());
         assertEquals(vctMetadataUriIntegrity, claims.get(vctMetadataUriIntegrity).getAsString());
     }
@@ -259,7 +262,7 @@ class IssuanceIT {
         var token = tokenResponse.get("access_token");
 
         // Fetch issuer metadata for encryption info
-        var metadata = assertDoesNotThrow(() -> objectMapper.readValue(mock.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
+        var metadata = assertDoesNotThrow(() -> objectMapper.readValue(mock.perform(get("/oid4vci/.well-known/openid-credential-issuer").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), IssuerMetadata.class));
 
         // Response Encryption
@@ -278,7 +281,7 @@ class IssuanceIT {
                             "enc": "%s",
                             "jwk": %s
                         }
-                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
+                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A256GCM.getName(),
                 encryptionKey.toPublicJWK().toJSONString());
         var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, responseEncryptionJson, "university_example_sd_jwt");
 
@@ -319,6 +322,48 @@ class IssuanceIT {
         var vc = credential.get("credential").getAsString();
 
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, offerData);
+    }
+
+
+    @Test
+    void testSdJwtOffer_withRMissingequestAndResponseEncryption_thenBadRequest() throws Exception {
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenResponse = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
+        var token = tokenResponse.get("access_token");
+
+        // Response Encryption
+        ECKey encryptionKey = new ECKeyGenerator(Curve.P_256)
+                .keyID("transportEncKeyEC")
+                .keyUse(KeyUse.ENCRYPTION)
+                .algorithm(JWEAlgorithm.ECDH_ES)
+                .generate();
+
+        var responseEncryptionJson = String.format("""
+                        {
+                            "alg": "%s",
+                            "enc": "%s",
+                            "jwk": %s
+                        }
+                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A256GCM.getName(),
+                encryptionKey.toPublicJWK().toJSONString());
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, responseEncryptionJson, "university_example_sd_jwt");
+        mock.perform(post("/oid4vci/api/credential")
+                        .header("Authorization", String.format("BEARER %s", token))
+                        .header("SWIYU-API-Version", "2")
+                        .content(credentialRequestString)
+                        .contentType("application/jwt") // For encrypted credential request must be application/jwt
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("invalid_encryption_parameters"))
+                .andExpect(jsonPath("$.error_description").value("Message is not a correct JWE object"));
     }
 
     @ParameterizedTest
@@ -487,7 +532,7 @@ class IssuanceIT {
         // verify that only 1 status list entry has been created beforehand (as batch issuance is not allowed)
         verify(persistenceService, times(1)).saveStatusListEntries(anyList(), eq(offer.getOfferId()), eq(10));
 
-        var tokenDto = fetchOAuthTokenDpop(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString(), null, null);
+        var tokenDto = fetchOAuthTokenDpop(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString(), null, null, null);
         var token = tokenDto.get("access_token");
         var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
 

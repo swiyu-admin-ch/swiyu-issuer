@@ -2,7 +2,7 @@
 
 # Generic issuer service
 
-This software is a web server implementing the technical standards as specified in 
+This software is a web server implementing the technical standards as specified in
 the [swiyu Trust Infrastructure Interoperability Profile](https://swiyu-admin-ch.github.io/specifications/interoperability-profile/).
 Together with the other generic components provided, this software forms a collection of APIs allowing issuance and
 verification of verifiable credentials without the need of reimplementing the standards.
@@ -59,9 +59,9 @@ A possible deployment configuration of the issuer service. Issuer Business Syste
 Starting with v3.2.0 we publish **two image variants** to GHCR so existing operators have a
 transition period to adopt the hardened runtime:
 
-| Tag pattern | Base image | Entrypoint | User | Status |
-|---|---|---|---|---|
-| `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>`            | `dhi.io/eclipse-temurin:21-debian13` (hardened, no shell) | `java ...` directly | `nonroot` | **Default — recommended** |
+| Tag pattern                                            | Base image                                                | Entrypoint              | User       | Status                                            |
+|--------------------------------------------------------|-----------------------------------------------------------|-------------------------|------------|---------------------------------------------------|
+| `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>`            | `dhi.io/eclipse-temurin:21-debian13` (hardened, no shell) | `java ...` directly     | `nonroot`  | **Default — recommended**                         |
 | `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened` | `eclipse-temurin:21-jre-ubi9-minimal`                     | `scripts/entrypoint.sh` | UID `1001` | Transitional — will be removed in a later release |
 
 - **New deployments and operators who have completed the migration** should use the default
@@ -72,6 +72,20 @@ transition period to adopt the hardened runtime:
   changes in [`migration-guides/guide-3.1.x-to-3.2.x.md`](migration-guides/guide-3.1.x-to-3.2.x.md).
 - The two `Dockerfile`s in this repository (`Dockerfile.dhi` for the default, `Dockerfile`
   for the `-unhardened` variant) are both built and Snyk-scanned on every PR.
+
+### Verifying image signatures
+
+All published images are signed with [Cosign](https://docs.sigstore.dev/) using keyless
+(OIDC) signing directly in the GitHub Actions build workflow. The signature is bound to the
+image digest and recorded in the public Sigstore transparency log. You can verify the
+authenticity of an image before deploying it:
+
+```bash
+cosign verify \
+  --certificate-identity-regexp "https://github.com/swiyu-admin-ch/swiyu-issuer/.github/workflows/docker-builder.yml@.*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>
+```
 
 ## 1. Set the environment variables
 
@@ -123,10 +137,7 @@ The integrity can be calculated using shell commands.
     "credential_valid_from": "2010-01-01T18:23:24Z",
     "status_lists": [
         "https://example-status-registry-uri/api/v1/statuslist/05d2e09f-21dc-4699-878f-89a8a2222c67.jwt"
-    ],
-    "credential_metadata": {
-        "vct#integrity": "sha256-JXU3403niPeAUi8FN0IX6wfXafrgusykHC1LpKMOO94="
-    }
+    ]
 }
 ```
 
@@ -297,20 +308,24 @@ The Generic Issuer service is configured using environment variables.
 | URL_REWRITE_MAPPING                              | Json object for url replacements during rest client call. Key represents the original url and value the one which should be used instead (e.g. {"https://mysample1.ch":"https://somethingdiffeerent1.ch"})                                                                               |
 | ENABLE_SIGNED_METADATA                           | Enable signed metadata endpoint at `/.well-known/openid-credential-issuer-signed-metadata`. When enabled, the issuer provides cryptographically signed metadata in addition to the standard unsigned metadata endpoint. Default: `true`.                                                 |
 | APPLICATION_SWISS_PROFILE_VERSIONING_ENFORCEMENT | Feature flag for Swiss Profile versioning enforcement. If set to `true`, the service rejects incoming artifacts where applicable if the JWT header is missing `profile_version` or has an unexpected value (e.g. DPoP / key attestation). Default: `false`.                              |
+| MAX_COMPRESSED_CIPHER_TEXT_LENGTH                | Maximum allowed size (in bytes) of a compressed JWE ciphertext the service will process when decrypting incoming credential requests. Kept small to mitigate JWE decompression bomb attacks. Do not change this value unless you fully understand the security implications. Modifying it may expose the service to denial-of-service attacks or other risks. If you choose to change this setting, you do so at your own risk. Default: `20971520` (20 MiB).                                                              |
+| MAX_DECOMPRESSED_PAYLOAD_LENGTH                  | Maximum allowed size (in characters) of the decrypted/decompressed JWE plaintext payload. Acts as an additional defense-in-depth limit against decompression bomb attacks, rejecting oversized payloads before JSON parsing. Default: `20971520` (20 MiB).                              |
 
 #### Status List
 
-| Variable                                             | Description                                                                                                                                             |
-|:-----------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| STATUS_LIST_KEY                                      | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                            |
-| DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment |
-| SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                         |
-| SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                       |
-| SWIYU_STATUS_REGISTRY_TOKEN_URL                      | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                               |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                       |
-| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                    |
-| SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                 |
-| SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal.  |
+| Variable                                             | Description                                                                                                                                                                                                 | Default  |
+|:-----------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
+| STATUS_LIST_KEY                                      | Private Signing Key for the status list vc, the matching public key should be published on the base registry                                                                                                | _(none)_ |
+| DID_STATUS_LIST_VERIFICATION_METHOD                  | Verification Method (id of the public key as in did doc) of the public part of the status list signing key. Contains the whole did:tdw:....#keyFragment                                                     | _(none)_ |
+| SWIYU_PARTNER_ID                                     | Your business partner id. This is provided by the swiyu portal.                                                                                                                                             | _(none)_ |
+| SWIYU_STATUS_REGISTRY_API_URL                        | The api url to use for requests to the status registry api. This is provided by the swiyu portal.                                                                                                           | _(none)_ |
+| SWIYU_STATUS_REGISTRY_TOKEN_URL                      | The token url to get authentication to use the status registry api. This is provided by the swiyu portal.                                                                                                   | _(none)_ |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_KEY                   | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                                                                           | _(none)_ |
+| SWIYU_STATUS_REGISTRY_CUSTOMER_SECRET                | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                                                                        | _(none)_ |
+| SWIYU_STATUS_REGISTRY_AUTH_ENABLE_REFRESH_TOKEN_FLOW | Decide if you want to use the refresh token flow for requests to the status registry api. Default: true                                                                                                     | _(none)_ |
+| SWIYU_STATUS_REGISTRY_BOOTSTRAP_REFRESH_TOKEN        | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self management portal.                                                      | _(none)_ |
+| STATUS_LIST_CACHE_TIME                               | Time-to-live for cached status list entries. This value is only set by the issuer, but is used by the cache of the wallet to determine how long a status list should be kept before it is considered stale. | `15m     |
+| STATUS_LIST_EXPIRATION_TIME                          | Expiration duration for a status list artifact itself. Represents how long a generated status list remains valid.                                                                                           | `365d    |
 
 #### Trust Registry (optional)
 
@@ -320,9 +335,7 @@ if `SWIYU_TRUST_REGISTRY_API_URL` is not set, trust statement caching is disable
 
 | Variable                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                         | Default  |
 |:-----------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
-| SWIYU_TRUST_REGISTRY_API_URL                   | The API base URL of the Trust Registry sidechannel (Trust Protocol 2.0). If not set, trust statement caching is disabled.                                                                                                                                                                                                                                                                                                           | _(none)_ |
-| SWIYU_TRUST_REGISTRY_CUSTOMER_KEY              | Customer key for HTTP Basic Auth against the Trust Registry API. Provided by the api self-service portal.                                                                                                                                                                                                                                                                                                                           | _(none)_ |
-| SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET           | Customer secret for HTTP Basic Auth against the Trust Registry API. Provided by the api self-service portal.                                                                                                                                                                                                                                                                                                                        | _(none)_ |
+| SWIYU_TRUST_REGISTRY_API_URL                   | Trust registry API URL (read-only, IF-007). If set, the issuer can fetch its own trust statements. Currently intended for testing purposes only. If not set, trust statement caching is disabled.                                                                                                                                                                                                                                 | _(none)_ |                                                                         | _(none)_ |
 | SWIYU_TRUST_REGISTRY_MAX_CACHE_SIZE            | Maximum number of distinct issuer DIDs to cache trust statements for. Prevents unbounded memory growth.                                                                                                                                                                                                                                                                                                                             | `1000`   |
 | SWIYU_TRUST_REGISTRY_CLOCK_SKEW_BUFFER_SECONDS | Buffer in seconds subtracted from the JWT `exp` claim before caching. Ensures that served statements are still valid when received by downstream consumers, accounting for clock skew and network latency.                                                                                                                                                                                                                          | `60`     |
 | SWIYU_TRUST_REGISTRY_MAX_CACHE_TTL_SECONDS     | Optional hard upper bound for the trust statement cache TTL in seconds. When set, the effective TTL is `min(exp-based TTL, max-cache-ttl-seconds)`. Recommended: set to the same value as `PUBLIC_KEY_CACHE_TTL_MILLI` (converted to seconds) to avoid serving trust statements whose referenced DID key has already been rotated out of the public key cache. If not set, the TTL is derived exclusively from the JWT `exp` claim. | _(none)_ |
@@ -350,13 +363,22 @@ if `SWIYU_TRUST_REGISTRY_API_URL` is not set, trust statement caching is disable
 
 #### Security
 
-Management Endpoints can be secured as OAuth2 Resource Server using Spring Security.
+The management endpoints for both the issuer/verifier (generic component) might seem like they're unprotected and that
+there is a lack of controls securing them. This is because they are meant to be used exclusively by the business
+issuer/verifier (business component) that are built on top of them by each participant in the ecosystem. The generic
+component should be considered closer to a library than to stand-alone services. As such these endpoints are meant to be
+deployed in a way where they can only be accessed by the business component of the software. The threat model therefore
+excludes attackers being able to send crafted payloads to these management endpoints. If attackers can send anything to
+these endpoints, they must have completely taken over the business component and can already do everything.
+
+Management Endpoints can be secured as OAuth2 Resource Server using Spring Security, if required. The generic component
+leaves user management to the business component.
 
 For more details see the
 official [spring security documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html).
 
-For easy playground setup security starts deactivated. It is activated when the appropriate environment variables are
-set.
+For easy playground setup or when using the component in an isolated zone security starts deactivated. It is activated
+when the appropriate environment variables are set.
 
 ##### Fixed single asymmetric key
 
@@ -422,8 +444,6 @@ The Data integrity check can be enforced to be always used by setting the enviro
 | secret.swiyu.status-registry.customer-key            | The customer key to use for requests to the status registry api. This is provided by the api self-service portal.                                   |
 | secret.swiyu.status-registry.customer-secret         | The customer secret to use for requests to the status registry api. This is provided by the api self-service portal.                                |
 | secret.swiyu.status-registry.bootstrap-refresh-token | The customer refresh token to bootstrap the auth flow for for requests to the status registry api. This is provided by the api self-service portal. |
-| secret.swiyu.trust-registry.customer-key             | The customer key for HTTP Basic Auth against the Trust Registry API (alternative to env variable).                                                  |
-| secret.swiyu.trust-registry.customer-secret          | The customer secret for HTTP Basic Auth against the Trust Registry API (alternative to env variable).                                               |
 
 #### HSM - Hardware Security Module
 
@@ -519,8 +539,8 @@ the [OpenID4VCI specification](https://openid.net/specs/openid-4-verifiable-cred
 |-------------------------------------------------------------------------------|------------------------------------------------------------------|----------|-----------------------------------------------------------|
 | version                                                                       | "1.0"                                                            | Yes      |                                                           |
 | credential_configurations_supported.*.format                                  | "dc+sd-jwt" / "vc+sd-jwt" (deprecated)                           | Yes      |                                                           |
-| credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256"]                                                        | Yes      |                                                           |
-| credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256"]} ``` | No       | When set only the exact object shown as sample is allowed |
+| credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256", "Ed25519"]                                             | Yes      | Must be matching the configured singing key               |
+| credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256", "Ed25519"]} ``` | No       | When set must be ES256 Ed25519 or both         |
 | credential_configurations_supported.*.cryptographic_binding_methods_supported | ["jwk"]                                                          | No       |                                                           |
 
 The configuration `proof_types_supported` allows specifying the required security specification the wallet should store
@@ -533,7 +553,8 @@ Example value
 "proof_types_supported": {
         "jwt": {
           "proof_signing_alg_values_supported": [
-            "ES256"
+            "ES256",
+            "Ed25519"
           ],
           "key_attestations_required": {
             "key_storage": ["iso_18045_high"]

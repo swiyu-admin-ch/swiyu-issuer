@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialEncryptio
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialRequestEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.jweutil.JweDecryptionLimits;
 import ch.admin.bj.swiyu.jweutil.JweUtil;
 import ch.admin.bj.swiyu.jweutil.JweUtilException;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -71,7 +72,7 @@ public class JweService {
             JWEHeader header = encryptedJWT.getHeader();
             validateJWEHeaders(header, issuerMetadata.getRequestEncryption());
             JWK key = resolveDecryptionKey(header);
-            return JweUtil.decrypt(encryptedMessage, key);
+            return JweUtil.decrypt(encryptedMessage, key, resolveDecryptionLimits());
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_ENCRYPTION_PARAMETERS, "Message is not a correct JWE object",
                     Map.of("payloadLength", encryptedMessage != null ? encryptedMessage.length() : 0));
@@ -82,11 +83,28 @@ public class JweService {
     }
 
     /**
+     * Builds the JWE size limits enforced by {@code swiyu-jwe-util} from the application configuration.
+     *
+     * @return the configured {@link JweDecryptionLimits}
+     */
+    private JweDecryptionLimits resolveDecryptionLimits() {
+        return new JweDecryptionLimits(
+                applicationProperties.getMaxCompressedCipherTextLength(),
+                applicationProperties.getMaxDecompressedPayloadLength());
+    }
+
+    /**
      * @return true, if credential requests MUST be encrypted
      */
     public boolean isRequestEncryptionMandatory() {
+        var isEncryptionEnforced = applicationProperties.isEncryptionEnforce();
         IssuerCredentialRequestEncryption encryptionOptions = issuerMetadata.getRequestEncryption();
-        return encryptionOptions != null && encryptionOptions.isEncRequired();
+
+        if (isEncryptionEnforced && (encryptionOptions == null || !encryptionOptions.isEncRequired())) {
+            log.warn("RequestEncryption options are not mandatory, but there is a problem with the issuer metadata configuration. Please check the issuer metadata configuration and ensure that the requestEncryption options are set correctly.");
+        }
+
+        return isEncryptionEnforced;
     }
 
 
@@ -103,9 +121,11 @@ public class JweService {
         // Decrypt if holder sent an encrypted
         if (StringUtils.equalsIgnoreCase("application/jwt", contentType)) {
             return decrypt(requestMessage);
-        } else if (isRequestEncryptionMandatory()) {
+        }
+
+        if (isRequestEncryptionMandatory()) {
             throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
-                    "Request encryption is mandatory with content type set to application/jwt",
+                    "Request encryption is mandatory. Content type must be set to application/jwt",
                     Map.of("contentType", contentType != null ? contentType : "null"));
         }
         return requestMessage;

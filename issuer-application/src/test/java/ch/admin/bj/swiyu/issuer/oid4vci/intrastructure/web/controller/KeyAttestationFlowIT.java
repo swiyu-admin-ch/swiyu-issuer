@@ -27,8 +27,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -41,12 +41,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.createKeyAttestationJwt;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -75,7 +77,7 @@ class KeyAttestationFlowIT {
     @Autowired
     CredentialManagementRepository credentialManagementRepository;
 
-    @Autowired
+    @MockitoSpyBean
     ApplicationProperties applicationProperties;
     @MockitoSpyBean
     AsyncCredentialEventHandler testEventListener;
@@ -197,13 +199,54 @@ class KeyAttestationFlowIT {
         Assertions.assertThat(response.get("error").getAsString()).hasToString(CredentialRequestErrorDto.UNKNOWN_CREDENTIAL_IDENTIFIER.getErrorCode());
     }
 
+    @Test
+    void checkDpopKeyAttestation_withSameKey_thenSuccess() throws Exception {
+        when(applicationProperties.isDpopEnforce()).thenReturn(true);
+        mockDidResolve(jwk.toPublicJWK());
+
+        String proof = createKeyAttestationJwt(jwk, jwk, AttackPotentialResistance.ISO_18045_HIGH, null);
+
+        fetchOAuthTokenDpop(mock, testOfferHighAttestationId.toString(), jwk, applicationProperties.getTemplateReplacement().get("external-url"), proof);
+    }
+
+    @Test
+    void checkDpopKeyAttestation_thenException() throws Exception {
+        when(applicationProperties.isDpopEnforce()).thenReturn(true);
+        mockDidResolve(jwk.toPublicJWK());
+
+        var unattestedKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
+                .keyID("Different-Key")
+                .keyUse(KeyUse.SIGNATURE)
+                .generate());
+
+        String proof = createKeyAttestationJwt(jwk, jwk, AttackPotentialResistance.ISO_18045_HIGH, null);
+        var response = fetchOAuthTokenDpop(mock, testOfferHighAttestationId.toString(), unattestedKey, applicationProperties.getTemplateReplacement().get("external-url"), proof);
+
+        assertEquals(INVALID_PROOF.getErrorCode(), response.get("error"));
+    }
+
+    @Test
+    void checkDpopKeyAttestation2_thenException() throws Exception {
+        when(applicationProperties.isDpopEnforce()).thenReturn(true);
+        mockDidResolve(jwk.toPublicJWK());
+
+        var unattestedKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
+                .keyID("Different-Key")
+                .keyUse(KeyUse.SIGNATURE)
+                .generate());
+
+        String proof = createKeyAttestationJwt(unattestedKey, unattestedKey, AttackPotentialResistance.ISO_18045_HIGH, null);
+        var response = fetchOAuthTokenDpop(mock, testOfferHighAttestationId.toString(), jwk, applicationProperties.getTemplateReplacement().get("external-url"), proof);
+
+        assertEquals(INVALID_PROOF.getErrorCode(), response.get("error"));
+    }
+
     private void mockDidResolve(JWK key) {
         Mockito.when(didKeyResolver.resolveKey(any())).thenReturn(key);
     }
 
     private TestInfrastructureUtils.CredentialFetchData prepareAttested(MockMvc mock, UUID preAuthCode, AttackPotentialResistance resistance) throws Exception {
         var nonce = requestNonceDPopHeader(mock);
-
 
         return prepareAttestedVC(mock, preAuthCode, resistance, null, jwk, applicationProperties.getTemplateReplacement().get("external-url"), nonce, "university_example_sd_jwt");
     }

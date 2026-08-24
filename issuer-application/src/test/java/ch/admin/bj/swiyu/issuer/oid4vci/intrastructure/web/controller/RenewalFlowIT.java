@@ -9,13 +9,12 @@ import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import com.authlete.sd.SDJWT;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.jwk.Curve;
@@ -31,16 +30,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -50,6 +49,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mockserver.MockServerContainer;
 import org.testcontainers.utility.DockerImageName;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -66,6 +66,7 @@ import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.fetc
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -84,6 +85,7 @@ class RenewalFlowIT {
             DockerImageName.parse("mockserver/mockserver:5.15.0"));
 
     static MockServerClient mockServerClient;
+    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     @Autowired
     MockMvc mockMvc;
     @Autowired
@@ -96,10 +98,8 @@ class RenewalFlowIT {
     SwiyuProperties swiyuProperties;
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
-    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     private StatusListTestHelper statusListTestHelper;
     private String payload;
-    private Map<String, Object> payloadMap;
     private OAuthTokenDto oauthTokenResponse;
     private ECKey dpopKey;
     private String managementId;
@@ -143,16 +143,14 @@ class RenewalFlowIT {
         var statusListUri = statusListDto.getStatusRegistryUrl();
 
         payload = getMinimalPayloadForUniversityCredential(statusListUri);
-
-        payloadMap = Map.of("name", "name", "type", "type");
+        
         // here
         assertDoesNotThrow(this::createCredential);
 
-        when(applicationProperties.getNonceLifetimeSeconds()).thenReturn(120);
-        when(applicationProperties.isRenewalFlowEnabled()).thenReturn(true);
-        when(applicationProperties.getBusinessIssuerRenewalApiEndpoint())
-                .thenReturn(mockServerContainer.getEndpoint()
-                        + TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT);
+        doReturn(120).when(applicationProperties).getNonceLifetimeSeconds();
+        doReturn(true).when(applicationProperties).isRenewalFlowEnabled();
+        doReturn(mockServerContainer.getEndpoint() + TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT)
+                .when(applicationProperties).getBusinessIssuerRenewalApiEndpoint();
     }
 
     @Test
@@ -166,7 +164,7 @@ class RenewalFlowIT {
         var newOffer = TestInfrastructureUtils.createCredentialOffer(mockMvc, deferredPayload).andReturn();
         var management = getManagementJsonObject(newOffer);
         var preAuthCode = IssuanceTestUtils.getPreAuthCodeFromDeeplink(management.get("offer_deeplink").getAsString());
-        var oAuthToken = fetchOAuthTokenDpop(mockMvc, preAuthCode, dpopKey, "http://localhost:8080");
+        var oAuthToken = fetchOAuthTokenDpop(mockMvc, preAuthCode, dpopKey, "http://localhost:8080", null);
 
         requestCredentialWithDpop(mockMvc, (String) oAuthToken.get("access_token"), getCredentialRequestString(mockMvc, List.of(jwk), applicationProperties, "university_example_sd_jwt"), issuerMetadata, dpopKey)
                 .andExpect(status().isAccepted())
@@ -213,7 +211,7 @@ class RenewalFlowIT {
                     .getResponse()
                     .getContentAsString();
             var credentialResponse = assertDoesNotThrow(() -> objectMapper
-                    .readValue(credentialResponseString, CredentialEndpointResponseDto.class));
+                    .readValue(credentialResponseString, CredentialResponseDto.class));
             var credentialClaims = credentialResponse.credentials().stream()
                     .map(this::getCredentialClaimsSet)
                     .toList();
@@ -238,7 +236,7 @@ class RenewalFlowIT {
     @Test
     void testRenewalWhenDisabled_throwsException() throws Exception {
 
-        when(applicationProperties.isRenewalFlowEnabled()).thenReturn(false);
+        doReturn(false).when(applicationProperties).isRenewalFlowEnabled();
 
         // renew token
         var tokenResponse = refreshTokenWithDpop(oauthTokenResponse.getRefreshToken(), dpopKey);

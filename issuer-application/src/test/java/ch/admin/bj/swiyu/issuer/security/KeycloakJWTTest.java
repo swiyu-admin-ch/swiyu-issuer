@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -35,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 /**
  * Testing the coverage of securing endpoints using Keycloak
@@ -138,11 +140,11 @@ class KeycloakJWTTest {
 
     @Test
     void testPublicAccessWellKnown() throws Exception {
-        mvc.perform(get("/oid4vci/.well-known/openid-configuration"))
+        mvc.perform(get("/oid4vci/.well-known/openid-configuration").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
-        mvc.perform(get("/oid4vci/.well-known/oauth-authorization-server"))
+        mvc.perform(get("/oid4vci/.well-known/oauth-authorization-server").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
-        mvc.perform(get("/oid4vci/.well-known/openid-credential-issuer"))
+        mvc.perform(get("/oid4vci/.well-known/openid-credential-issuer").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 

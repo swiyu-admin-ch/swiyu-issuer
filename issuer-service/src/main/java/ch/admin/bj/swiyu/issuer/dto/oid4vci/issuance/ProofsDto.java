@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance;
 
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 
@@ -12,6 +13,7 @@ import java.util.List;
  */
 public record ProofsDto(
         @NotEmpty
+        @ArraySchema(minItems = 1, schema = @Schema(type = "string"))
         @Schema(description = """
                 ProofsDto represents the proofs object in the OID4VCI Credential Request.
                 """, example = """

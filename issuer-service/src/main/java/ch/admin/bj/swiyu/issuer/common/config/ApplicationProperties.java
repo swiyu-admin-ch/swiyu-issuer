@@ -109,23 +109,42 @@ public class ApplicationProperties {
     private int nonceLifetimeSeconds;
     @NotNull
     private Duration encryptionKeyRotationInterval;
-    private boolean encryptionEnforce;
+    private boolean encryptionEnforce = true;
 
     private boolean dpopEnforce;
 
     private boolean automaticStatusListSynchronizationDisabled;
 
+    @NotEmpty
+    private List<String> acceptedRegistryHosts;
+
     private String dataIntegrityJwks;
     private JWKSet dataIntegrityKeySet;
     private boolean dataIntegrityEnforced;
     private boolean signedMetadataEnabled;
-    private boolean recursiveDisclosureEnabled;
 
     /**
      * If set to true, Swiss Profile version indications (profile_version) will be enforced where applicable.
      * Default is false to allow a transitional period.
      */
     private boolean swissProfileVersioningEnforcement = false;
+
+    /**
+     * Limits the maximum length of compressed JWE ciphertext accepted by the application
+     * to avoid excessive memory usage or potential DoS via decompression bombs.
+     */
+    @NotNull
+    @Min(1)
+    private Integer maxCompressedCipherTextLength;
+
+    /**
+     * Limits the maximum length of the decrypted/decompressed JWE plaintext payload.
+     * Acts as an additional defense-in-depth limit against decompression bomb attacks,
+     * rejecting oversized payloads before JSON parsing.
+     */
+    @NotNull
+    @Min(1)
+    private Integer maxDecompressedPayloadLength;
 
     @PostConstruct
     public void init() {

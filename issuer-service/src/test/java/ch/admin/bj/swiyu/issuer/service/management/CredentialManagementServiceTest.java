@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
+import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
@@ -14,22 +15,24 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
-import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import com.google.gson.JsonParser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URLDecoder;
 import java.time.Instant;
 import java.util.*;
 
 import static java.time.Instant.now;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -43,15 +46,17 @@ import static org.mockito.Mockito.*;
  *
  * <h2>Mocking strategy</h2>
  * <p><strong>Important:</strong> We intentionally do <em>not</em> stub
- * {@code persistenceService.findCredentialManagementById(any())} globally.
+ * {@code persistenceService.findCredentialManagementByIdForUpdate(any())} globally.
  * A broad {@code any()} stub tends to eclipse more specific stubs defined inside tests and is a common
  * source of confusion when a test-specific {@code when(...)} "doesn't get hit".
- * Instead, each test stubs {@code findCredentialManagementById(mgmtId)} explicitly.</p>
+ * Instead, each test stubs {@code findCredentialManagementByIdForUpdate(mgmtId)} explicitly.</p>
  */
 class CredentialManagementServiceTest {
     private static final String TEST_STATUS_LIST_URI = "https://localhost:8080/status";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final Map<String, Object> offerData = Map.of("hello", "world");
+
 
     private CredentialManagementService credentialService;
 
@@ -89,7 +94,7 @@ class CredentialManagementServiceTest {
         when(applicationProperties.getOfferValidity()).thenReturn(3600L);
         when(issuerMetadata.getIssuanceBatchSize()).thenReturn(100);
 
-        // IMPORTANT: don't stub findCredentialManagementById(any()) with a custom thenAnswer.
+        // IMPORTANT: don't stub findCredentialManagementByIdForUpdate(any()) with a custom thenAnswer.
         // It's a notorious source of "why doesn't my per-test mock apply" issues.
         // Each test stubs the mgmt it needs explicitly.
         when(persistenceService.saveCredentialManagement(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -101,7 +106,8 @@ class CredentialManagementServiceTest {
                 validationService,
                 stateService,
                 persistenceService,
-                statusListOrchestrator
+                statusListOrchestrator,
+                objectMapper
         );
 
         createCredentialOfferRequestDto = CreateCredentialOfferRequestDto.builder()
@@ -113,7 +119,7 @@ class CredentialManagementServiceTest {
     }
 
     /**
-     * Verifies that {@link CredentialManagementService#getCredentialOfferInformation(UUID)}
+     * Verifies that {@link CredentialManagementService#getCredentialOfferInformationWithExpirationCheck(UUID)}
      * triggers expiration handling for offers in an expirable state when the expiration timestamp
      * is in the past.
      *
@@ -121,7 +127,7 @@ class CredentialManagementServiceTest {
      * and persisted, and the returned DTO must not expose sensitive data.</p>
      */
     @Test
-    void getCredentialOfferInformation_shouldExpireExpirableOfferAndNullOutSensitiveParts() {
+    void getCredentialOfferInformationWithExpirationCheck_shouldExpireExpirableOfferAndNullOutSensitiveParts() {
         var mgmt = CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .credentialOffers(Set.of(expiredOffer))
@@ -129,10 +135,10 @@ class CredentialManagementServiceTest {
                 .build();
         expiredOffer.setCredentialManagement(mgmt);
 
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
         doNothing().when(stateService).expireOfferAndPublish(any());
 
-        CredentialManagementDto response = credentialService.getCredentialOfferInformation(mgmt.getId());
+        CredentialManagementDto response = credentialService.getCredentialOfferInformationWithExpirationCheck(mgmt.getId());
 
         // expiration triggers a persisted offer update (via expireCredentialOffer)
         verify(stateService, times(1)).expireOfferAndPublish(any());
@@ -144,12 +150,12 @@ class CredentialManagementServiceTest {
 
     /**
      * Verifies that non-expired offers are not modified when calling
-     * {@link CredentialManagementService#getCredentialOfferInformation(UUID)}.
+     * {@link CredentialManagementService#getCredentialOfferInformationWithExpirationCheck(UUID)}.
      *
      * <p>Expectation: no expiration workflow is executed and the offer is not persisted.</p>
      */
     @Test
-    void getCredentialOfferInformation_shouldNotTouchNonExpiredOffer() {
+    void getCredentialOfferInformationWithExpirationCheck_shouldNotTouchNonExpiredOffer() {
         var mgmt = CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .credentialOffers(Set.of(valid))
@@ -157,9 +163,9 @@ class CredentialManagementServiceTest {
                 .build();
         valid.setCredentialManagement(mgmt);
 
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
 
-        credentialService.getCredentialOfferInformation(mgmt.getId());
+        credentialService.getCredentialOfferInformationWithExpirationCheck(mgmt.getId());
 
         verify(stateService, never()).expireOfferAndPublish(any());
     }
@@ -196,7 +202,7 @@ class CredentialManagementServiceTest {
 
     /**
      * Verifies that a non-expired offer is not modified when calling
-     * {@link CredentialManagementService#getCredentialOfferInformation(UUID)}.
+     * {@link CredentialManagementService#getSpecificCredentialOfferInformation(UUID, UUID)}.
      *
      * <p>Expectation: no expiration workflow is executed and the offer is not persisted.</p>
      */
@@ -224,7 +230,7 @@ class CredentialManagementServiceTest {
     void updateCredentialStatus_shouldRouteToPostIssuanceHandler_whenMgmtIsPostIssuance() {
         var mgmt = issued.getCredentialManagement();
 
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
         when(stateService.handleStatusChange(any(), any(), any()))
                 .thenReturn(new UpdateStatusResponseDto(mgmt.getId(), CredentialStatusTypeDto.SUSPENDED, null));
 
@@ -246,7 +252,7 @@ class CredentialManagementServiceTest {
                 .build();
         valid.setCredentialManagement(mgmt);
 
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
 
         StatusResponseDto response = credentialService.getCredentialStatus(mgmt.getId());
 
@@ -261,7 +267,7 @@ class CredentialManagementServiceTest {
     @Test
     void getOfferStatus_shouldReturnStatus() {
         var mgmt = suspended.getCredentialManagement();
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
 
         StatusResponseDto response = credentialService.getCredentialStatus(mgmt.getId());
 
@@ -434,7 +440,7 @@ class CredentialManagementServiceTest {
                 .build();
         nonDeferredOffer.setCredentialManagement(mgmt);
 
-        when(persistenceService.findCredentialManagementById(mgmtId)).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmtId)).thenReturn(mgmt);
         when(persistenceService.saveCredentialManagement(any())).thenAnswer(i -> i.getArgument(0));
 
         assertThrows(BadRequestException.class, () -> credentialService.updateOfferDataForDeferred(mgmtId, offerDataMap));
@@ -466,12 +472,46 @@ class CredentialManagementServiceTest {
         var mgmt = mock(CredentialManagement.class);
         when(mgmt.getCredentialOffers()).thenReturn(Set.of(deferredOffer));
 
-        when(persistenceService.findCredentialManagementById(mgmtId)).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmtId)).thenReturn(mgmt);
         when(persistenceService.saveCredentialManagement(any())).thenAnswer(i -> i.getArgument(0));
 
         doNothing().when(stateService).markOfferAsReady(deferredOffer);
 
         credentialService.updateOfferDataForDeferred(mgmtId, offerDataMap);
+
+        verify(stateService, times(1)).markOfferAsReady(deferredOffer);
+        verify(deferredOffer, times(1)).setOfferData(anyMap());
+        verify(persistenceService, times(1)).saveCredentialOffer(deferredOffer);
+    }
+
+    @Test
+    void updateOfferDataForDeferred_whenNestedArray_updateOfferData_andPersist() {
+        UUID mgmtId = UUID.randomUUID();
+        String offerData = """
+                {
+                  "helo": ["world"]
+                }
+                """;
+
+        var credConfig = mock(CredentialConfiguration.class);
+        when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credConfig);
+
+        doNothing().when(validationService).validateCredentialRequestOfferData(any(), eq(true), eq(credConfig));
+
+        CredentialOffer deferredOffer = mock(CredentialOffer.class);
+        when(deferredOffer.isDeferredOffer()).thenReturn(true);
+        when(deferredOffer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.DEFERRED);
+        when(deferredOffer.getMetadataCredentialSupportedId()).thenReturn(List.of("test"));
+
+        var mgmt = mock(CredentialManagement.class);
+        when(mgmt.getCredentialOffers()).thenReturn(Set.of(deferredOffer));
+
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmtId)).thenReturn(mgmt);
+        when(persistenceService.saveCredentialManagement(any())).thenAnswer(i -> i.getArgument(0));
+
+        doNothing().when(stateService).markOfferAsReady(deferredOffer);
+
+        credentialService.updateOfferDataForDeferred(mgmtId, offerData);
 
         verify(stateService, times(1)).markOfferAsReady(deferredOffer);
         verify(deferredOffer, times(1)).setOfferData(anyMap());
@@ -564,7 +604,7 @@ class CredentialManagementServiceTest {
                 validUntil,
                 validFrom,
                 List.of(statusListUri),
-                null
+                new ConfigurationOverrideDto("did:example:issuer", "did:example:issuer#key-1", "key-1", null)
         );
 
         CredentialManagement management = CredentialManagement.builder()
@@ -589,6 +629,9 @@ class CredentialManagementServiceTest {
         assertEquals(validFrom, updated.getCredentialValidFrom());
         assertEquals(validUntil, updated.getCredentialValidUntil());
         assertNotNull(updated.getOfferData());
+        assertThat(updated.getConfigurationOverride()).as("Override was provided with renewal data").isNotNull();
+        assertThat(updated.getConfigurationOverride().issuerDid()).as("issuer did was overridden").isEqualTo("did:example:issuer");
+        assertThat(updated.getConfigurationOverride().keyId()).as("HSM Key ID was set").isEqualTo("key-1");
 
         verify(validationService, times(1)).validateCredentialOfferCreateRequest(any(CreateCredentialOfferRequestDto.class), anyMap());
         verify(statusListOrchestrator, times(1)).lockAndValidateStatusListsForOffer(any(CreateCredentialOfferRequestDto.class));
@@ -606,7 +649,7 @@ class CredentialManagementServiceTest {
     @Test
     void updateCredentialStatus_shouldThrowIfStatusIsTerminal() {
         // expireCredentialOffer throws only if asked to expire a terminal offer.
-        // To hit that path, we call getCredentialOfferInformation(), which calls checkAndExpireOffer().
+        // To hit that path, we call getCredentialOfferInformationWithExpirationCheck(), which applies the expiration check.
 
         var terminalExpiredOffer = createCredentialOffer(CredentialOfferStatusType.EXPIRED, Instant.now().minusSeconds(10).getEpochSecond(), null);
         terminalExpiredOffer.setDeferredOfferValiditySeconds(0);
@@ -618,14 +661,14 @@ class CredentialManagementServiceTest {
                 .build();
         terminalExpiredOffer.setCredentialManagement(mgmt);
 
-        when(persistenceService.findCredentialManagementById(mgmt.getId())).thenReturn(mgmt);
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
 
         // terminal offer is expirable? no. So we need an expirable state but terminal mgmt isn't checked here.
         // Instead, simulate terminal offer in an expirable state by directly invoking expiration:
         // easiest: set status to OFFERED but mark as terminal via enum? not possible.
-        // Therefore: assert that calling getCredentialOfferInformation with a truly terminal *but expirable* state is not possible.
+        // Therefore: assert that calling getCredentialOfferInformationWithExpirationCheck with a truly terminal *but expirable* state is not possible.
         // We'll test the real behavior: terminal offers do not get re-expired.
-        assertDoesNotThrow(() -> credentialService.getCredentialOfferInformation(mgmt.getId()));
+        assertDoesNotThrow(() -> credentialService.getCredentialOfferInformationWithExpirationCheck(mgmt.getId()));
         verify(stateService, never()).expireOfferAndPublish(any());
     }
 

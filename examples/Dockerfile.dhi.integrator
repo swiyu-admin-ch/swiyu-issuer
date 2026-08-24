@@ -1,0 +1,32 @@
+# ==============================================================================
+# STAGE 1: Build custom Java Trust Store
+# ==============================================================================
+FROM eclipse-temurin:21-jre AS cert-builder
+
+RUN cp "$JAVA_HOME/lib/security/cacerts" /tmp/custom-cacerts
+
+COPY ./my-certs/*.crt /certs-app/
+
+RUN for cert in /certs-app/*.crt; do \
+        if [ -f "$cert" ]; then \
+            alias="$(basename "${cert}" .crt)"; \
+            keytool -importcert -noprompt -trustcacerts \
+                -alias "${alias}" \
+                -file "${cert}" \
+                -keystore /tmp/custom-cacerts \
+                -storepass changeit; \
+        fi; \
+    done
+
+# ==============================================================================
+# STAGE 2: Final deployment image
+# ==============================================================================
+# Replace the tag with the official swiyu-issuer release you are targeting.
+FROM swiyu-issuer:replace-with-official-tag
+
+# Path verified via: docker inspect <image> | grep JAVA_HOME -> /opt/java/openjdk/21-jre
+COPY --from=cert-builder --chown=root:root --chmod=644 \
+    /tmp/custom-cacerts \
+    /opt/java/openjdk/21-jre/lib/security/cacerts
+
+# ENTRYPOINT and USER 1001 are inherited from the base image.

@@ -11,6 +11,8 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -19,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,6 +35,10 @@ class EncryptionKeyServiceTest {
     private EncryptionKeyService encryptionKeyService;
     private List<EncryptionKey> encryptionKeyTestCache;
 
+    private static Stream<EncryptionMethod> encryptionMethods() {
+        return Stream.of(EncryptionMethod.A256GCM, EncryptionMethod.A128GCM);
+    }
+
     @BeforeEach
     void setUp() {
         setupMockRepository();
@@ -42,9 +49,12 @@ class EncryptionKeyServiceTest {
         encryptionKeyService.rotateEncryptionKeys();
     }
 
-    @Test
-    // Rotation produces new keys while keeping decryption possible with both old and new keys in the overlap window
-    void shouldAllowDecryptionWithBothOldAndNewKeysAfterRotation() throws JOSEException, ParseException {
+    /*
+     * Rotation produces new keys while keeping decryption possible with both old and new keys in the overlap window
+     */
+    @ParameterizedTest
+    @MethodSource("encryptionMethods")
+    void shouldAllowDecryptionWithBothOldAndNewKeysAfterRotation(EncryptionMethod encryptionMethod) throws JOSEException, ParseException {
         var jwks = JWKSet.parse(encryptionKeyService.getActivePublicKeys());
         triggerKeyRotation();
         var updatedJwks = JWKSet.parse(encryptionKeyService.getActivePublicKeys());
@@ -58,21 +68,25 @@ class EncryptionKeyServiceTest {
         allKeys.addAll(updatedJwks.getKeys());
         String payload = "Hello World";
         for (var key : allKeys) {
-            String encrypted = createEncryptedMessage(payload, key);
+            String encrypted = createEncryptedMessage(payload, key, encryptionMethod);
             assertEquals(payload, decryptWithKeySet(encryptionKeyService.getActivePrivateKeys(), encrypted));
         }
     }
 
+    /*
+     * Even when the newest key is stale, publishing public keys should not throw
+     */
     @Test
-    // Even when the newest key is stale, publishing public keys should not throw
     void shouldNotThrowWhenPublishingPublicKeysWithStaleActiveKey() {
         triggerKeyRotation();
         timePasses();
         assertDoesNotThrow(encryptionKeyService::getActivePublicKeys);
     }
 
+    /*
+     * Once all keys fall outside the validity window, fetching active public keys should fail
+     */
     @Test
-    // Once all keys fall outside the validity window, fetching active public keys should fail
     void failsWhenNoKeysWithinWindow() {
         triggerKeyRotation();
         timePasses();
@@ -80,9 +94,10 @@ class EncryptionKeyServiceTest {
         assertThrows(Oid4vcException.class, encryptionKeyService::getActivePublicKeys);
     }
 
-    @Test
-    // Deprecated keys are deleted and cannot decrypt; still-valid keys remain usable
-    void shouldDeleteDeprecatedKeysAndPreserveValidKeys() throws ParseException, JOSEException {
+    @ParameterizedTest
+    @MethodSource("encryptionMethods")
+        // Deprecated keys are deleted and cannot decrypt; still-valid keys remain usable
+    void shouldDeleteDeprecatedKeysAndPreserveValidKeys(EncryptionMethod method) throws ParseException, JOSEException {
         var deprecatedJwks = JWKSet.parse(encryptionKeyService.getActivePublicKeys());
         triggerKeyRotation();
         var oldJwks = JWKSet.parse(encryptionKeyService.getActivePublicKeys());
@@ -103,13 +118,13 @@ class EncryptionKeyServiceTest {
 
         var jwks = JWKSet.parse(encryptionKeyService.getActivePublicKeys());
         for (var deprecatedKey : deprecatedJwks.getKeys()) {
-            String encrypted = createEncryptedMessage("hello world", deprecatedKey);
+            String encrypted = createEncryptedMessage("hello world", deprecatedKey, method);
             assertThrows(Oid4vcException.class, () -> decryptWithKeySet(encryptionKeyService.getActivePrivateKeys(), encrypted));
         }
         var validKeys = new LinkedList<>(oldJwks.getKeys());
         validKeys.addAll(jwks.getKeys());
         for (var key : validKeys) {
-            String encrypted = createEncryptedMessage("hello world", key);
+            String encrypted = createEncryptedMessage("hello world", key, method);
             assertDoesNotThrow(() -> decryptWithKeySet(encryptionKeyService.getActivePrivateKeys(), encrypted));
         }
     }
@@ -140,10 +155,10 @@ class EncryptionKeyServiceTest {
         }
     }
 
-    private String createEncryptedMessage(String message, JWK key) throws JOSEException {
+    private String createEncryptedMessage(String message, JWK key, EncryptionMethod encryptionMethod) throws JOSEException {
         ECDHEncrypter encrypter = new ECDHEncrypter(key.toECKey());
         JWEObject jweObject = new JWEObject(
-                new JWEHeader.Builder(JWEAlgorithm.ECDH_ES, EncryptionMethod.A128GCM)
+                new JWEHeader.Builder(JWEAlgorithm.ECDH_ES, encryptionMethod)
                         .compressionAlgorithm(CompressionAlgorithm.DEF)
                         .keyID(key.getKeyID())
                         .build(),

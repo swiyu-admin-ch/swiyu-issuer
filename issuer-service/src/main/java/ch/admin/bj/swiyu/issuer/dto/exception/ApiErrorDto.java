@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatusCode;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(name = "ApiError", description = "Error response object")
 public class ApiErrorDto {
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, type = "string")
     @JsonProperty("error")
     String errorCode;
     @JsonProperty("error_description")

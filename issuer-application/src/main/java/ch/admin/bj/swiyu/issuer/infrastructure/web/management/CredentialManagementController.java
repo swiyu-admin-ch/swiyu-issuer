@@ -20,7 +20,6 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -74,7 +73,7 @@ public class CredentialManagementController {
             }
     )
     public CredentialManagementDto getCredentialInformation(@PathVariable UUID credentialManagementId) {
-        return this.credentialManagementService.getCredentialOfferInformation(credentialManagementId);
+        return this.credentialManagementService.getCredentialOfferInformationWithExpirationCheck(credentialManagementId);
     }
 
     @Timed
@@ -122,7 +121,7 @@ public class CredentialManagementController {
                     )
             }
     )
-    public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialManagementId, @RequestBody Map<String, Object> credentialOffer) {
+    public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialManagementId, @RequestBody String credentialOffer) {
 
         return this.credentialManagementService.updateOfferDataForDeferred(credentialManagementId, credentialOffer);
     }

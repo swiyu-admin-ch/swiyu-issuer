@@ -1,35 +1,56 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding;
 
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
+import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+import ch.admin.bj.swiyu.jwtvalidator.DidKidParser;
+import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
+
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jwt.JWTClaimNames;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.ParseException;
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+/**
+ * Provide Key Attestation functioality according to <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#appendix-D">OID4VCI 1.0 Appendix D. Key Attestations</a>
+ * with additions from <a href="https://swiyu-admin-ch.github.io/specifications/swiss-profile-issuance/">swiss profile issuance</a>
+ */
 @Getter
 public final class AttestationJwt {
 
+    private static final String CLAIM_KEY_STORAGE = "key_storage";
+    private static final String CLAIM_ATTESTED_KEYS = "attested_keys";
+    private static final Set<String> REQUIRED_ATTESTATION_CLAIMS = Set.of( // Fields Requried to be present according to Swiss Profile 1.0
+        JWTClaimNames.ISSUER, 
+        JWTClaimNames.ISSUED_AT,
+        JWTClaimNames.EXPIRATION_TIME,
+        CLAIM_ATTESTED_KEYS,
+        CLAIM_KEY_STORAGE
+    );
     @Deprecated(since = "OID4VCI 1.0") // remove later
     private static final String KEY_ATTESTATION_TYPE_ID1 = "keyattestation+jwt";
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
     private static final Set<String> ALLOWED_TYPES = Set.of(KEY_ATTESTATION_TYPE_ID1, "key-attestation+jwt");
+    
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
+    private static final DidKidParser kidParser = new DidKidParser();
     private final SignedJWT signedJWT;
     private final List<AttackPotentialResistance> attestedAttackPotentialResistance;
     private final JWTClaimsSet claims;
@@ -51,12 +72,8 @@ public final class AttestationJwt {
         var parsedJwt = SignedJWT.parse(jwt);
         var claims = parsedJwt.getJWTClaimsSet();
         // Check required Headers & Payload
-        validateHeader(parsedJwt.getHeader(), enforceSwissProfileVersioning);
-        validateBody(claims);
-        // Validation between Header and body
-        if (!parsedJwt.getHeader().getKeyID().split("#")[0].equals(claims.getIssuer())) {
-            throw new IllegalArgumentException("The key id must conform to the did syntax (did:webvh ...)");
-        }
+        String issuerDid = validateHeader(parsedJwt.getHeader(), enforceSwissProfileVersioning);
+        validateBody(claims, issuerDid);
         return new AttestationJwt(parsedJwt, extractSupportedAttackPotentialResistance(claims));
     }
 
@@ -64,22 +81,22 @@ public final class AttestationJwt {
      * @param jwtClaimsSet The JWT Body to be checked for Attestation JWT Required attributes
      * @throws IllegalArgumentException if one of the checks fails
      */
-    private static void validateBody(JWTClaimsSet jwtClaimsSet) throws IllegalArgumentException {
-        if (StringUtils.isEmpty(jwtClaimsSet.getIssuer())) {
-            throw new IllegalArgumentException("Issuer is required");
-        }
-        if (jwtClaimsSet.getIssueTime() == null) {
-            throw new IllegalArgumentException("IssueTime is required");
-        }
-        var expirationTime = jwtClaimsSet.getExpirationTime();
-        if (expirationTime == null) {
-            throw new IllegalArgumentException("ExpirationTime is required");
-        }
-        if (expirationTime.before(new Date())) {
-            throw new IllegalArgumentException("Attestation is expired");
-        }
-        if (jwtClaimsSet.getClaim("attested_keys") == null) {
-            throw new IllegalArgumentException("attested_keys is required");
+    private static void validateBody(JWTClaimsSet jwtClaimsSet, String expectedAttestationIssuerDid) {
+        DefaultJWTClaimsVerifier<SecurityContext> verifier = new DefaultJWTClaimsVerifier<>(
+                    null,                  // no required audience
+                    new JWTClaimsSet.Builder().issuer(expectedAttestationIssuerDid).build(), // Issuer MUST match DID.
+                    REQUIRED_ATTESTATION_CLAIMS,
+                    Set.of()               // no prohibited claims – iss is ignored, not forbidden
+            );
+        try {
+            verifier.verify(jwtClaimsSet, null);
+            // iat should not be after now with clock skew considered
+            var issuedAtTime = jwtClaimsSet.getIssueTime().toInstant();
+            if (issuedAtTime.isAfter(Instant.now().plusSeconds(verifier.getMaxClockSkew()))) {
+                throw new IllegalArgumentException("IssueTime is in the future");
+            }
+        } catch (BadJWTException e) {
+            throw new IllegalArgumentException("Bad Attestation JWT - " + e.getMessage(), e);
         }
     }
 
@@ -88,7 +105,7 @@ public final class AttestationJwt {
                 .stream()
                 .map(AttackPotentialResistance::getValue)
                 .collect(Collectors.toSet());
-        var keyStorage = jwtClaimsSet.getClaim("key_storage");
+        var keyStorage = jwtClaimsSet.getClaim(CLAIM_KEY_STORAGE);
         if (!(keyStorage instanceof List)) {
             throw new IllegalArgumentException("list of attested key_storage is required");
         }
@@ -109,7 +126,7 @@ public final class AttestationJwt {
      * @param header the JWT header
      * @param enforceSwissProfileVersioning whether to enforce Swiss Profile versioning
      */
-    static void validateHeader(JWSHeader header, boolean enforceSwissProfileVersioning) {
+    static String validateHeader(JWSHeader header, boolean enforceSwissProfileVersioning) {
 
         validateType(header);
 
@@ -118,11 +135,25 @@ public final class AttestationJwt {
         if (enforceSwissProfileVersioning) {
             validateSwissProfileVersion(header);
         }
+        return validateKid(header);
     }
 
+    private static String validateKid(JWSHeader header) {
+        var kid = header.getKeyID();
+        if (kid == null) {
+            throw new IllegalArgumentException("Key ID (kid) must be present");
+        }
+        try {
+            return kidParser.getDidFromAbsoluteKid(kid);
+        } catch (JwtValidatorException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+
     private static void validateType(JWSHeader header) {
-        var type = header.getAlgorithm();
-        if (type == null || !ALLOWED_TYPES.contains(header.getType().getType())) {
+        var type = header.getType();
+        if (type == null || !ALLOWED_TYPES.contains(type.getType())) {
             throw new IllegalArgumentException("Typ must be one of " + String.join(", ", ALLOWED_TYPES));
         }
     }
@@ -153,7 +184,9 @@ public final class AttestationJwt {
      * @throws IllegalArgumentException if the issuer of the jwt is not matching the list of trusted attestation providers
      */
     public void throwIfNotTrustedAttestationProvider(@NotNull List<String> trustedAttestationProviders) throws IllegalArgumentException {
-        if (!trustedAttestationProviders.contains(claims.getIssuer())) {
+        String attestationKeyId = signedJWT.getHeader().getKeyID();
+        String attestationProviderDid = kidParser.getDidFromAbsoluteKid(attestationKeyId);
+        if (!trustedAttestationProviders.contains(attestationProviderDid)) {
             throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted attestation providers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
         }
     }
@@ -164,11 +197,13 @@ public final class AttestationJwt {
      * @return true if the attestation is valid and the resistance is matching
      * @throws JOSEException if the fetched Key can not be parsed as a supported JWSVerifier
      */
-    public boolean isValidAttestation(@NotNull KeyResolver keyResolver, @NotNull List<AttackPotentialResistance> resistance) throws JOSEException {
+    public boolean isValidAttestation(@NotNull KeyResolver keyResolver, @NotNull List<AttackPotentialResistance> resistance, DidJwtValidator validator) throws JOSEException {
         var header = signedJWT.getHeader();
         var key = keyResolver.resolveKey(header.getKeyID());
-        if (!signedJWT.verify(new ECDSAVerifier(key.toECKey()))) {
-            throw new JOSEException("JWT verification failed");
+        try {
+            validator.validateJwt(signedJWT.getParsedString(), key);
+        } catch (JwtValidatorException e) {
+            throw new JOSEException("JWT verification failed", e);
         }
         if (resistance.isEmpty()) {
             return true;
@@ -189,9 +224,9 @@ public final class AttestationJwt {
      * @return {@code true} if the proof key matches one of the attested keys, {@code false} otherwise
      * @throws JOSEException if a thumbprint cannot be computed
      */
-    public boolean containsKey(@NotNull ECKey proofKey) throws JOSEException {
+    public boolean containsKey(@NotNull JWK proofKey) throws JOSEException {
         var proofThumbprint = proofKey.toPublicJWK().computeThumbprint().toString();
-        var rawAttestedKeys = claims.getClaim("attested_keys");
+        var rawAttestedKeys = claims.getClaim(CLAIM_ATTESTED_KEYS);
 
         if (!(rawAttestedKeys instanceof List<?> attestedKeyList) || attestedKeyList.isEmpty()) {
             return false;

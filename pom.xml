@@ -8,13 +8,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.6</version>
+        <version>4.0.7</version>
         <relativePath/>
     </parent>
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-issuer-parent</artifactId>
-    <version>3.2.0-SNAPSHOT</version>
+    <version>4.2.0-SNAPSHOT</version>
     <name>Swiyu issuer parent pom</name>
     <description>Generic issuer for public beta</description>
 
@@ -25,43 +25,74 @@
         <module>issuer-application</module>
     </modules>
 
-
     <properties>
         <java.version>21</java.version>
         <maven.compiler.proc>full</maven.compiler.proc>
         <sonar.jacoco.itReportPath>${project.basedir}/issuer-application/target/jacoco-it.exec
         </sonar.jacoco.itReportPath>
+        <pgpverify-maven-plugin.version>1.19.1</pgpverify-maven-plugin.version>
         <sonar.jacoco.reportPath>${project.basedir}/issuer-application/target/jacoco.exec</sonar.jacoco.reportPath>
-        <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
-        <javacrumbs.shedlock.version>6.0.2</javacrumbs.shedlock.version>
-        <archunit-junit5.verion>1.4.2</archunit-junit5.verion>
-        <nimbus-jose-jwt.version>10.8</nimbus-jose-jwt.version>
-        <bouncycastle.version>1.84</bouncycastle.version>
-        <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
+        <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+        <javacrumbs.shedlock.version>6.10.0</javacrumbs.shedlock.version>
+        <archunit-junit5.version>1.5.0</archunit-junit5.version>
+        <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
+        <bouncycastle.version>1.85</bouncycastle.version>
+        <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
         <springdoc-openapi-starter-webmvc-ui.version>3.0.0</springdoc-openapi-starter-webmvc-ui.version>
-        <openapi-generator-maven-plugin.version>7.22.0</openapi-generator-maven-plugin.version>
+        <openapi-generator-maven-plugin.version>7.24.0</openapi-generator-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <primus-jce.version>2.4.4</primus-jce.version>
         <skip.doc-generate>true</skip.doc-generate>
         <sonar.issue.ignore.multicriteria.e1.ruleKey>xml:S3422</sonar.issue.ignore.multicriteria.e1.ruleKey>
         <sonar.issue.ignore.multicriteria.e1.resourceKey>**/pom.xml</sonar.issue.ignore.multicriteria.e1.resourceKey>
         <spring-doc.version>3.0.0</spring-doc.version>
-        <authlete.version>1.7</authlete.version>
+        <authlete.version>1.9</authlete.version>
         <springframework.cloud.version>2025.1.1</springframework.cloud.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <generic-java-lib.version>1.5.0</generic-java-lib.version>
-        <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
-        <netty.version>4.2.15.Final</netty.version>
+        <generic-java-lib.version>2.2.0</generic-java-lib.version>
+        <pact.version>4.7.5</pact.version>
+        <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 / 18956131 -->
+        <netty.version>4.2.17.Final</netty.version>
+        <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
+        <tomcat.version>11.0.23</tomcat.version>
+        <!-- Fixes CVE-2026-13006 -->
+        <logback-core.version>1.5.38</logback-core.version>
+        <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
+        <tomcat.version>11.0.23</tomcat.version>
+
+        <!-- Fixes CVE-2026-59889. jackson-annotations/jackson-core must stay aligned with jackson-databind
+     (>= 2.22 required for e.g. JsonApplyView), otherwise dependency mediation can pick an older
+     managed version from Spring Boot and cause java.lang.NoClassDefFoundError at runtime. -->
+        <jackson.version>2.22.2</jackson.version>
+        <jackson-annotations.version>2.22</jackson-annotations.version>
+        <jackson-core.version>2.22.0</jackson-core.version>
+        <jackson3.version>3.2.2</jackson3.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- fix CVE-2026-43512 -->
+
             <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-core</artifactId>
-                <version>11.0.22</version>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson-annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson-core.version}</version>
+            </dependency>
+            <!-- Fixes CVE-2026-59889 -->
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson3.version}</version>
             </dependency>
 
             <!-- Fixes CVE-2026-42198 -->
@@ -69,7 +100,7 @@
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <scope>runtime</scope>
-                <version>42.7.11</version>
+                <version>42.7.13</version>
             </dependency>
 
             <!-- Todo check again on spring boot upgrade-->
@@ -113,45 +144,54 @@
                 <artifactId>swiyu-dpop-util</artifactId>
                 <version>${generic-java-lib.version}</version>
             </dependency>
+            <dependency>
+                <groupId>ch.admin.swiyu</groupId>
+                <artifactId>swiyu-token-status-list</artifactId>
+                <version>${generic-java-lib.version}</version>
+            </dependency>
 
-            <!-- fix CVE netty compression/http2 – force ${netty.version} -->
-            <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 -->
+
+            <!-- PACT TEST -->
             <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport-native-epoll</artifactId>
-                <version>${netty.version}</version>
+                <groupId>au.com.dius.pact.consumer</groupId>
+                <artifactId>junit5</artifactId>
+                <version>${pact.version}</version>
+                <scope>test</scope>
             </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-compression</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-resolver-dns</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http2</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http3</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <!-- end fix -->
         </dependencies>
     </dependencyManagement>
 
     <build>
         <plugins>
+
+            <!-- PGP provenance verification for all third-party dependencies.-->
+            <plugin>
+                <groupId>org.simplify4u.plugins</groupId>
+                <artifactId>pgpverify-maven-plugin</artifactId>
+                <version>${pgpverify-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>pgp-verify-dependencies</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- Path to the curated trust map (artifact coords → PGP fingerprint).
+                         ${maven.multiModuleProjectDirectory} always resolves to the root
+                         of the multi-module project, regardless of which sub-module runs. -->
+                    <keysMapLocation>${maven.multiModuleProjectDirectory}/pgp/keys.list</keysMapLocation>
+                    <verifyPomFiles>true</verifyPomFiles>
+                    <!--  To skip verification locally mvn -Dpgpverify.skip=true -->
+                    <pgpKeyServer>hkps://keys.openpgp.org, hkps://keyserver.ubuntu.com</pgpKeyServer>
+                    <pgpKeyServerLoadBalance>true</pgpKeyServerLoadBalance>
+                    <failNoSignature>true</failNoSignature>
+                    <failWeakSignature>true</failWeakSignature>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

@@ -1,8 +1,5 @@
 package ch.admin.bj.swiyu.issuer.service;
 
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialEndpointResponseDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
@@ -13,8 +10,10 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Ho
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerCredentialResponseEncryption;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialObjectDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.DeferredCredentialResponseDto;
 import com.nimbusds.jose.JWSSigner;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
@@ -22,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 
@@ -77,12 +78,12 @@ public abstract class CredentialBuilder {
         List<CredentialObjectDto> credentials = getCredential(holderKeyBindings).stream()
                 .map(CredentialObjectDto::new)
                 .toList();
-        var credentialResponseDto = new CredentialEndpointResponseDto(credentials, null, null);
+        var credentialResponseDto = new CredentialResponseDto(credentials);
         return buildEnvelopeDto(credentialResponseDto);
     }
 
     public CredentialEnvelopeDto buildDeferredCredential(UUID transactionId) {
-        var credentialResponseDto = new CredentialEndpointResponseDto(null, transactionId.toString(),
+        var credentialResponseDto = new DeferredCredentialResponseDto(transactionId.toString(),
                 applicationProperties.getMinDeferredOfferIntervalSeconds());
 
         return buildEnvelopeDto(credentialResponseDto, HttpStatus.ACCEPTED);
@@ -97,7 +98,7 @@ public abstract class CredentialBuilder {
         var payloadJson = "";
         try {
             payloadJson = new ObjectMapper().writeValueAsString(payload);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new CredentialException(e.getMessage());
         }
         var contentType = MediaType.APPLICATION_JSON_VALUE;
@@ -120,8 +121,8 @@ public abstract class CredentialBuilder {
 
         this.holderKeyBindings = !CollectionUtils.isEmpty(holderKeys)
                 ? holderKeys.stream()
-                .map(key -> new HolderKeyBinding(key))
-                .toList()
+                  .map(HolderKeyBinding::new)
+                  .toList()
                 : List.of();
         return this;
     }

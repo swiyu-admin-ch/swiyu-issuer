@@ -1,7 +1,10 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.config;
 
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.*;
 import ch.admin.bj.swiyu.issuer.dto.callback.WebhookCallbackDto;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
@@ -58,6 +61,22 @@ public class OpenApiConfig {
         var additionalSchemas = new LinkedHashMap<String, io.swagger.v3.oas.models.media.Schema<?>>();
         additionalSchemas.put("ApiError", ModelConverters.getInstance().readAllAsResolvedSchema(ApiErrorDto.class).schema);
         additionalSchemas.put("WebhookCallback", ModelConverters.getInstance().readAllAsResolvedSchema(WebhookCallbackDto.class).schema);
+        additionalSchemas.put("IssuerMetadata", ModelConverters.getInstance().readAllAsResolvedSchema(IssuerMetadata.class).schema);
+        additionalSchemas.put("CredentialConfiguration", ModelConverters.getInstance().readAllAsResolvedSchema(CredentialConfiguration.class).schema);
+        additionalSchemas.put("IssuerCredentialRequestEncryption", ModelConverters.getInstance().readAllAsResolvedSchema(IssuerCredentialRequestEncryption.class).schema);
+        additionalSchemas.put("IssuerCredentialResponseEncryption", ModelConverters.getInstance().readAllAsResolvedSchema(IssuerCredentialResponseEncryption.class).schema);
+        additionalSchemas.put("BatchCredentialIssuance", ModelConverters.getInstance().readAllAsResolvedSchema(BatchCredentialIssuance.class).schema);
+        additionalSchemas.put("MetadataIssuerDisplayInfo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataIssuerDisplayInfo.class).schema);
+        additionalSchemas.put("MetadataLogo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataLogo.class).schema);
+        additionalSchemas.put("SupportedProofType", ModelConverters.getInstance().readAllAsResolvedSchema(SupportedProofType.class).schema);
+        additionalSchemas.put("MetadataCredentialDisplayInfo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataCredentialDisplayInfo.class).schema);
+        additionalSchemas.put("CredentialConfigurationMetadata", ModelConverters.getInstance().readAllAsResolvedSchema(CredentialConfigurationMetadata.class).schema);
+        additionalSchemas.put("MetadataClaimDescriptor", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataClaimDescriptor.class).schema);
+        additionalSchemas.put("MetadataImage", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataImage.class).schema);
+        additionalSchemas.put("KeyAttestationRequirement", ModelConverters.getInstance().readAllAsResolvedSchema(KeyAttestationRequirement.class).schema);
+        additionalSchemas.put("MetadataDisplayInfo", ModelConverters.getInstance().readAllAsResolvedSchema(MetadataDisplayInfo.class).schema);
+        additionalSchemas.put("RenewalResponse", ModelConverters.getInstance().readAllAsResolvedSchema(RenewalResponseDto.class).schema);
+        additionalSchemas.put("RenewalRequest", ModelConverters.getInstance().readAllAsResolvedSchema(RenewalRequestDto.class).schema);
         return openApi -> {
             if (openApi.getComponents() == null) {
                 openApi.setComponents(new Components());
@@ -68,6 +87,11 @@ public class OpenApiConfig {
                         orderedSchemas.put(schemaName, (io.swagger.v3.oas.models.media.Schema<?>) schema));
             }
             orderedSchemas.putAll(additionalSchemas);
+            orderedSchemas.forEach((name, schema) -> {
+                if (schema.getTypes() == null && schema.getProperties() != null && !schema.getProperties().isEmpty()) {
+                    schema.addType("object");
+                }
+            });
             openApi.getComponents().setSchemas(new LinkedHashMap<>(orderedSchemas));
         };
     }

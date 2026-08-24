@@ -1,20 +1,21 @@
-package ch.admin.bj.swiyu.issuer.service.renewal;
+package ch.admin.bj.swiyu.issuer.dto.renewal;
 
+import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
-import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import java.time.Instant;
 import java.util.List;
 
+@Schema(name = "RenewalResponse", description = "Response to a renewal request, containing the data to be used for creating a renewed vc.")
 public record RenewalResponseDto(
         /**
          * ID as in credential metadata
@@ -45,7 +46,7 @@ public record RenewalResponseDto(
                 Various metadata to be used for credential creation.
                 """,
                 example = """
-                        {"vct#integrity": "sha256-0000000000000000000000000000000000000000000="
+                        {"deferred": true
                         }""")
         CredentialOfferMetadataDto credentialMetadata,
 

@@ -4,8 +4,6 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.AuditMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -14,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.*;
@@ -86,7 +86,7 @@ public class CredentialOffer {
 
     /**
      * VC Type specific metadata which is dynamically provisioned.
-     * For example vct#integrity for SD-JWT VC.
+     * For example vct_metadata_uri for SD-JWT VC.
      */
     @JdbcTypeCode(SqlTypes.JSON)
     private CredentialOfferMetadata credentialMetadata;
@@ -183,6 +183,9 @@ public class CredentialOffer {
         }
     }
 
+    /**
+     * Data Integrity Protected Data
+     */
     private static Map<String, Object> readOfferDataString(String offerData) {
         var metadata = new LinkedHashMap<String, Object>();
 
@@ -199,7 +202,7 @@ public class CredentialOffer {
         try {
             metadata.put("data", mapper.writeValueAsString(offerData));
             return metadata;
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BadRequestException(String.format("Unsupported OfferData %s", offerData));
         }
     }

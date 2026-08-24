@@ -14,29 +14,30 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
-import ch.admin.bj.swiyu.issuer.service.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
 import static ch.admin.bj.swiyu.issuer.service.management.CredentialManagementMapper.*;
-import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toUpdateStatusResponseDto;
 import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.*;
+import static ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper.toUpdateStatusResponseDto;
 import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapper.toStatusResponseDto;
 
 /**
@@ -61,13 +62,17 @@ public class CredentialManagementService {
     private final CredentialStateService stateService;
     private final CredentialPersistenceService persistenceService;
     private final StatusListOrchestrator statusListOrchestrator;
+    private final ObjectMapper objectMapper;
 
     /**
      * Validates that only READY event is allowed in INIT state of credential
      * management.
      *
-     * @param offerEvent
-     * @param mgmt
+     * @param offerEvent the credential offer event being processed
+     * @param mgmt       the credential management instance to check
+     * @throws IllegalStateException if a {@code READY} event is requested while
+     *                               the management object is not in the
+     *                               {@code INIT} state
      */
     private static void validateReadyOnlyInInit(CredentialStateMachineConfig.CredentialOfferEvent offerEvent,
                                                 CredentialManagement mgmt) {
@@ -145,21 +150,16 @@ public class CredentialManagementService {
      * </p>
      *
      * @param managementId the id of the management object
-     * @return a {@link CredentialInfoResponseDto} containing credential offer
+     * @return a {@link CredentialManagementDto} containing credential offer
      * information and a deeplink
      * @throws ResourceNotFoundException if no credential with the given id exists
      */
     @Transactional
-    public CredentialManagementDto getCredentialOfferInformation(UUID managementId) {
-        var mgmt = persistenceService.findCredentialManagementById(managementId);
-
-        // Check and expire offers if needed
-        var credentialOffers = mgmt.getCredentialOffers().stream()
-                .map(this::checkAndExpireOffer)
-                .collect(Collectors.toSet());
+    public CredentialManagementDto getCredentialOfferInformationWithExpirationCheck(UUID managementId) {
+        var mgmt = getCredentialManagementWithExpirationCheck(managementId);
         try {
-            return toCredentialManagementDto(applicationProperties, mgmt, credentialOffers);
-        } catch (JsonProcessingException e) {
+            return toCredentialManagementDto(applicationProperties, mgmt, mgmt.getCredentialOffers());
+        } catch (JacksonException e) {
             throw new IllegalStateException("Failed to parse management object with DPoP key", e);
         }
     }
@@ -189,20 +189,6 @@ public class CredentialManagementService {
         }
 
         return toCredentialInfoResponseDto(offer, applicationProperties);
-    }
-
-    /**
-     * Checks if an offer has expired and updates its state if necessary.
-     *
-     * @param offer the credential offer to check
-     * @return the (potentially updated) credential offer
-     */
-    private CredentialOffer checkAndExpireOffer(CredentialOffer offer) {
-        if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
-                && offer.hasExpirationTimeStampPassed()) {
-            return expireCredentialOffer(offer);
-        }
-        return offer;
     }
 
     /**
@@ -412,7 +398,7 @@ public class CredentialManagementService {
         var issuerDid = validationService.determineIssuerDid(newOffer, applicationProperties.getIssuerId());
         validationService.ensureMatchingIssuerDids(issuerDid, applicationProperties.getIssuerId(), statusLists);
 
-        CredentialOfferMapper.updateOfferFromDto(existingOffer, newOffer, offerData, applicationProperties);
+        CredentialOfferMapper.updateOfferFromDto(existingOffer, newOffer, offerData);
 
         CredentialOffer entity = persistenceService.saveCredentialOffer(existingOffer);
 
@@ -440,7 +426,7 @@ public class CredentialManagementService {
      *
      * @param credentialManagementId the id of the credential management offer to
      *                               update
-     * @param offerDataMap           the credential subject data to apply to the
+     * @param unparsedOfferData      the credential subject data to apply to the
      *                               deferred offer
      * @return an {@link UpdateStatusResponseDto} describing the updated credential
      * status
@@ -451,7 +437,7 @@ public class CredentialManagementService {
      */
     @Transactional
     public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialManagementId,
-                                                              Map<String, Object> offerDataMap) {
+                                                              Object unparsedOfferData) {
         var mgmt = getCredentialManagementWithExpirationCheck(credentialManagementId);
         var storedCredentialOffer = mgmt.getCredentialOffers().stream()
                 .filter(CredentialOffer::isDeferredOffer)
@@ -464,9 +450,10 @@ public class CredentialManagementService {
             throw new BadRequestException(
                     "Credential is either not deferred or has an incorrect status, cannot update offer data");
         }
+        Object rawOfferData = parseOfferData(unparsedOfferData);
 
         // check if offerData matches the expected metadata claims
-        var offerData = readOfferData(offerDataMap, false);
+        var offerData = readOfferData(rawOfferData, false);
         var credentialOfferMetadata = storedCredentialOffer.getMetadataCredentialSupportedId().getFirst();
         var credentialConfig = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
 
@@ -478,6 +465,28 @@ public class CredentialManagementService {
         persistenceService.saveCredentialOffer(storedCredentialOffer);
 
         return toUpdateStatusResponseDto(storedCredentialOffer);
+    }
+
+    /**
+     * @param unparsedOfferData The offer data, potentially a JSON String or JWT String
+     * @return the offerdata as String or as Map
+     */
+    private Object parseOfferData(Object unparsedOfferData) {
+        if (!(unparsedOfferData instanceof String)) {
+            // Already parsed or cannot be further parsed here
+            return unparsedOfferData;
+        }
+        String unparsedOfferDataString = unparsedOfferData.toString();
+        // The offer data is a json map
+        if (unparsedOfferDataString.startsWith("{")) {
+            try {
+                return objectMapper.readValue(unparsedOfferDataString, new TypeReference<Map<String, Object>>() {
+                });
+            } catch (JacksonException e) {
+                throw new BadRequestException("Offer Data %s cannot be parsed".formatted(unparsedOfferDataString), e);
+            }
+        }
+        return unparsedOfferDataString;
     }
 
     /**
@@ -498,20 +507,30 @@ public class CredentialManagementService {
 
     @Transactional
     public CredentialOffer getCredentialOfferByTenantId(UUID tenantId) {
-        var offer = persistenceService.findCredentialOfferByMetadataTenantId(tenantId);
-        return offer;
+        return persistenceService.findCredentialOfferByMetadataTenantId(tenantId);
     }
 
     /**
-     * Retrieves credential management and checks for expiration, expiring the
-     * affected offers.
+     * Retrieves credential management with a pessimistic write lock and checks for
+     * expiration, expiring the affected offers.
+     *
+     * <p>Takes the lock unconditionally because expiration handling can itself mutate
+     * and persist the aggregate (see {@link #expireCredentialOffer}) and every caller
+     * of this method eventually does the same. It serializes against a concurrently
+     * running renewal, which holds the same row lock (via {@code findByAccessToken}/
+     * {@code findByRefreshToken}) for the whole renewal transaction. Without this lock,
+     * a caller could read the aggregate before the renewal's new credential offer is
+     * committed, decide its own updates from that stale snapshot, and then persist them
+     * without ever touching the renewed offer's status-list entry.</p>
      *
      * @param managementId the management ID
-     * @return the credential management with updated offer states
+     * @return the locked credential management with updated offer states
      */
     private CredentialManagement getCredentialManagementWithExpirationCheck(UUID managementId) {
-        var mgmt = persistenceService.findCredentialManagementById(managementId);
+        return applyExpirationCheck(persistenceService.findCredentialManagementByIdForUpdate(managementId));
+    }
 
+    private CredentialManagement applyExpirationCheck(CredentialManagement mgmt) {
         mgmt.getCredentialOffers().forEach(offer -> {
             // Make sure only offer is returned if it is not expired
             if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
@@ -581,7 +600,7 @@ public class CredentialManagementService {
                         .credentialValidFrom(requestDto.getCredentialValidFrom())
                         .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
                         .credentialValidUntil(requestDto.getCredentialValidUntil())
-                        .credentialMetadata(toCredentialOfferMetadataDto(requestDto.getCredentialMetadata()))
+                        .credentialMetadata(toCredentialOfferMetadata(requestDto.getCredentialMetadata()))
                         .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
                         .credentialManagement(credentialManagement)
                         .build());

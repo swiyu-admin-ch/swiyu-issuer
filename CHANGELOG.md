@@ -5,16 +5,164 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
 ## [NEXT]
 
+### Added
+
+- Support for EdDSA signed VCs. When using EdDSA `credential_signing_alg_values_supported` MUST be updated to `Ed25519`
+  Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used
+  by the wallet for proofs.
+
+### Fixed
+
+- Fixed mapping error with deferred credentials and accept unknown fields in `CredentialResponseEncryptionClass` to make
+  it more robust with older versions `(#1120, #1130)`.
+- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that
+  rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
+- Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
+- Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
+
+## Changed
+
+- Use Jackson 3 instead of 2
+- Renamed cache properties to be more descriptive: `(#1227)`
+    - `caching.publicKeyCacheTTL` → `caching.public-key-cache-ttl-ms` (Non-breaking change, as the old property is still
+      supported for backwards compatibility)
+    - `caching.encryptionMetadataCacheTTL` → `caching.encryption-metadata-cache-ttl-ms` (Non-breaking change, as the old
+      property is still supported for backwards compatibility)
+
+## [4.1.0] - 2026-07-23
+
+### Added
+
+- Added static compliance tests for the Swiss Profile / OID4VCI contract (OpenID Configuration, Credential Issuer
+  Metadata, Credential Endpoint, Deferred Credential Endpoint, Nonce, VCT, OCA, JSON Schema endpoints) verifying the
+  OpenAPI specification against the OID4VCI spec and Swiss Profile requirements. Tests that require outstanding fixes
+  in the OpenAPI contract are disabled and tracked in `(#1127)`.
+- Added new config `application.accepted-registry-hosts` to allow restricting the allowed hosts for the trust registry.
+  Don't change this unless you know what you are doing, as it may break the trust registry and
+  status registry functionality `(#1105)`.
+- Verification of Trust Statements with Status Lists using caching according to exp, ttl or maximum cache ttl `(#1105)`.
+
+### Fixed
+
+- Fixed missing claim validation, now also validates the attestation claims `nbf` and `iat` `(#1066)`.
+- Re-enabled jwt checks for trust statements, which were temporarily disabled. Do not use trust statements yet, as the
+  checks are not yet fully implemented and may cause issues.
+- Fixed incorrect caching of invalid trust statement responses `(#996)`.
+- The check if encryption is required now uses the designated `applicationProperties.isEncryptionEnforced` value
+  `(#1116)`.
+- NullPointerException on missing Type during JWTAttestation parsing `(#1129)`.
+
 ### Changed
+
+- Updated generic-java-lib to 1.8.3
+
+## [4.0.1] - 2026-07-09
+
+### Fixed
+
+- Fixed SBOM to contain information about all modules.
+
+## [4.0.0] - 2026-07-08
+
+### Added
+
+- **Security:** Published container images (hardened and unhardened variants) are now automatically signed with
+  [Cosign](https://docs.sigstore.dev/) using keyless OIDC signing in the GitHub Actions build workflow. Signatures are
+  bound to the immutable image digest and published to the Sigstore transparency log, allowing consumers to verify image
+  authenticity via `cosign verify` `(#838)`.
+
+- Integrate `pgpverify-maven-plugin` to cryptographically verify PGP signatures of all third-party dependencies during
+  the build. The build fails if an artifact has no signature or an invalid signature. PGP keys are cached in CI/CD to
+  avoid redundant downloads `(#836)`.
+
+### Changed
+
+- Status list tokens (`statuslist+jwt`) now include a `ttl` claim and proper `exp`/`iat` timestamps derived from the
+  `application.status-list` properties. This allows operators to control how long published status lists are considered
+  valid and how long cached status list entries are retained by the wallet. New properties are:
+    - `statusListCacheTime` — TTL used by the wallets status list cache.
+    - `statusListExpirationTime` — Expiration used when generating status lists.
+- Expanded `enc_values_supported` to allow A256GCM encryption in addition to A128GCM `(#877)`.
+- Update generic-java-lib to 1.7.0
+
+### Fixed
+
+- Fixed race condition in `CredentialStateMachine`: state machines were shared singletons, causing state corruption
+  under concurrent requests. Replaced with `CredentialStateMachineFactory` so each transition operates on an isolated
+  instance `(#1021)`.
+- Fixed "cannot be parsed exception" with nested arrays in credential subject data update `(#1006)`.
+- Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`.
+  Issuance though keeps supporting only a single credential type per offer `(#985)`.
+- Fixed Prometheus metrics authentication with Basic Auth `(#1003)`.
+
+### Removed
+
+- Removed the vars `SWIYU_TRUST_REGISTRY_CUSTOMER_KEY` and `SWIYU_TRUST_REGISTRY_CUSTOMER_SECRET` as they are not
+  required by the read-only trust registry `(#1075)`.
+- Removed support for `claims` in `credential_configurations_supported` details for claims can now be found in
+  `credential_metadata.claims` instead as announced earlier. Please update your metadata accordingly. Additional changes
+  are:
+    - in `client_metadata.display` the `background_image` and `text_color` are now marked as deprecated as they are not
+      used and marked as `NOT SUPPORTED` in the Swiss Profile.
+    - `client_metadata.display` can no longer be an empty list -> if you do not want to use it, set it to `null` instead
+      of an empty list.
+    - `client_metadata.display.name` is not nullable anymore in compliance with
+      the [OID4VCI specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-issuer-metadata-p)
+- Removed `vct#integrity` from issuer metadata as it is no longer used -> use `vct_metadata_uri` and
+  `vct_metadata_uri#integrity` instead.
+
+## [3.2.4] - 2026-06-12
+
+### Fixed
+
+- update generic-java-lib to 1.6.4 for didresolver security updates.
+
+## [3.2.3] - 2026-06-10
+
+### Fixed
+
+- Added null handling to SD-JWT recursive claim processing to avoid NPEs when offer data contains null values.
+- **Security:** Fixed Inefficient Algorithmic Complexity in spring-expression by pinning to 7.0.8
+- **Security:** Fixed Missing Release of Memory in spring-web by pinning to 7.0.8
+
+## [3.2.2] - 2026-06-09
+
+### Changed
+
+- Updated didresolver dependency to the latest version.
+- **Docker image:** Improved hardened image robustness. See `examples/Dockerfile.dhi.integrator` and
+  `examples/README.md` for detailed information on the hardening enhancements `(#XXXX)`.
+
+## [3.2.1] - 2026-06-08
+
+- Add support for signed metadata to the openid-credential-issuer without `{tenantId}`
+
+## [3.2.0] - 2026-06-03
+
+### Fixed
+
+- Fixed validation of recursively nested array lists in credential claims `(#1000)`.
+- Fixed credential renewal not applying `configuration_override` to newly issued VCs `(#1002)`.
+- **Security:** DPoP key attestation validation now verifies that the DPoP proof's signing key is listed in the
+  attestation's `attested_keys` claim. Previously, a structurally valid attestation for a *different* key was accepted,
+  allowing an attacker to obtain access and refresh tokens without possessing the required hardware-backed key
+  `(#979)`.
+- Fix global config bean being permanently overridden by override mechanism `(#993)`.
+- Stop using key attestation for trust requirement evaluation `(#960)`.
+
+### Changed
+
 - **OID4VCI Credential Format**: Newly issued SD-JWT VCs now use `typ: dc+sd-jwt`
   to align with `draft-ietf-oauth-sd-jwt-vc-09`. Issuer metadata
   configurations may declare either `vc+sd-jwt` or `dc+sd-jwt` as `format`
   during the migration period (Expand-Migrate-Contract). `(#178)`
-- Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default:
-  true).
+- **Configuration**: Some defaults have changed with the evolving ecosystem.
+    - Enabled signed metadata by default. The behavior can be changed by setting ENABLE_SIGNED_METADATA=false (default:
+      true).
+    - Require Encryption to be used by default.
+    - Require DPoP to be used by default.
 - **Docker image:** the published image is now hardened. The default
   (unsuffixed) tag `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
   `dhi.io/eclipse-temurin:21-debian13`, runs as the pre-configured `nonroot` user
@@ -25,43 +173,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   they have completed the migration steps in
   [`migration-guides/guide-3.1.x-to-3.2.x.md`](migration-guides/guide-3.1.x-to-3.2.x.md);
   the `-unhardened` variant will be removed in a later release. `(#834)`.
+- Update OpenAPI specification and local configuration `(#914)`.
 
 ### Removed
-- fabric8 dependency is removed due to incompatibility with spring boot 4. External configurations are now can still be used with the techniques described in https://docs.spring.io/spring-boot/reference/features/external-config.html For example using `spring.config.import`
+
+- fabric8 dependency is removed due to incompatibility with spring boot 4. External configurations are now can still be
+  used with the techniques described in https://docs.spring.io/spring-boot/reference/features/external-config.html For
+  example using `spring.config.import`
 
 ## [3.1.1] - 2026-05-15
 
 ### Fixed
-- Further opened up DPoP `htu` claim URL rewriting to support partial path-based rewrites via `external_url`, enabling setups where the public URI contains a path prefix  `(#EIDOMNI-971)`. *(Fixed via `generic-java-lib` 1.6.0)*
+
+- Further opened up DPoP `htu` claim URL rewriting to support partial path-based rewrites via `external_url`, enabling
+  setups where the public URI contains a path prefix  `(#971)`. *(Fixed via `generic-java-lib` 1.6.0)*
 
 ## [3.1.0] - 2026-05-11
 
 ### Added
 
 - **Trust Protocol 2.0 Support** `(#881, #882)`:
-  - The issuer can now fetch, validate, and cache Identity Trust Statements (idTS) and Protected Issuance Authorization Trust Statements (piaTS) from the Trust Registry.
-  - **Metadata Injection**: Trust Statements are now dynamically injected into the OID4VCI Issuer Metadata (`/.well-known/openid-credential-issuer`) based on the requested tenant/DID.
-  - **Dynamic Cache Eviction**: `TrustStatementCacheService` implemented with dynamic expiration-based eviction and negative caching `(#881)`.
-  - Configurable maximum cache TTL for Trust Statements `(#881)`.
+    - The issuer can now fetch, validate, and cache Identity Trust Statements (idTS) and Protected Issuance
+      Authorization Trust Statements (piaTS) from the Trust Registry.
+    - **Metadata Injection**: Trust Statements are now dynamically injected into the OID4VCI Issuer Metadata (
+      `/.well-known/openid-credential-issuer`) based on the requested tenant/DID.
+    - **Dynamic Cache Eviction**: `TrustStatementCacheService` implemented with dynamic expiration-based eviction and
+      negative caching `(#881)`.
+    - Configurable maximum cache TTL for Trust Statements `(#881)`.
 - Added support for `iso_18045_enhanced_basic` attestation level for DPoP key attestations `(#937)`.
 
 ### Changed
 
 - Migrated to Spring Boot 4.0.6 (Spring Framework 7) `(#537)`:
-  - Upgraded Spring Cloud to 2025.1.1 and springdoc-openapi to 3.0.0.
-  - Added dedicated starters for extracted autoconfiguration modules: `spring-boot-starter-webclient`,
-    `spring-boot-starter-flyway`, and `spring-boot-health`.
-  - Retained Jackson 2 (`com.fasterxml.jackson`) via `spring-boot-jackson2` and
-    `spring.http.converters.preferred-json-mapper=jackson2` (Boot 4 defaults to Jackson 3).
-  - Replaced `HttpStatus` with `HttpStatusCode` in `RenewalException` and `ApiErrorDto` to support non-standard
-    HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
-  - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
-  - Removed optional springdoc-openapi dependency from `issuer-application` `(#537)`.
+    - Upgraded Spring Cloud to 2025.1.1 and springdoc-openapi to 3.0.0.
+    - Added dedicated starters for extracted autoconfiguration modules: `spring-boot-starter-webclient`,
+      `spring-boot-starter-flyway`, and `spring-boot-health`.
+    - Retained Jackson 2 (`com.fasterxml.jackson`) via `spring-boot-jackson2` and
+      `spring.http.converters.preferred-json-mapper=jackson2` (Boot 4 defaults to Jackson 3).
+    - Replaced `HttpStatus` with `HttpStatusCode` in `RenewalException` and `ApiErrorDto` to support non-standard
+      HTTP status codes (e.g. 420) no longer present in the `HttpStatus` enum in Spring Framework 7.
+    - Upgraded Testcontainers to 2.0 (module artifacts renamed, e.g. `postgresql` → `testcontainers-postgresql`).
+    - Removed optional springdoc-openapi dependency from `issuer-application` `(#537)`.
+    - [Recursive disclosures](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-selective-disclosure-jwt-22?utm_source=chatgpt.com#section-4.2.6)
+      are now the default therefore `RECURSIVE_DISCLOSURE_ENABLED` is removed and the non-recursive function removed.
 
 ### Fixed
 
 - Fixed negative index handling in `TokenStatusListToken` `(#EIDOMNI-5)`.
-- Fixed DPoP `htu` claim URL rewriting to support path-based rewrites via `external_url`, enabling setups where the public URI contains a path prefix (e.g. `https://host/public/issuer/`) `(#EIDOMNI-941)`. *(Fixed via `generic-java-lib` 1.5.0)*
+- Fixed DPoP `htu` claim URL rewriting to support path-based rewrites via `external_url`, enabling setups where the
+  public URI contains a path prefix (e.g. `https://host/public/issuer/`) `(#EIDOMNI-941)`. *(Fixed
+  via `generic-java-lib` 1.5.0)*
 
 ## 3.0.0
 
@@ -212,23 +373,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added optional support for DPoP for wallets to begin adopting DPoP for more secure communication.
   As operator of an issuer there is action needed. This feature is added automatically.
   Note: In the future this will be enforced
-- Implemented Refresh Flow as Draft implementation according spez. Should not yet used in production (#292)
+- Implemented Refresh Flow as Draft implementation according spez. Should not yet used in production `(#292)`
 - Integrated Spring State Machine for credential offer and management lifecycles, improving state management and error
   handling (#292).
-- Added option to disable/enable refresh_token rotation after usage (#464).
-- Added test coverage for signed metadata usage and renewal flow (#200, #292).
+- Added option to disable/enable refresh_token rotation after usage `(#464)`.
+- Added test coverage for signed metadata usage and renewal flow `(#200, #292)`.
 
 ### Fixed
 
-- Fixed missing alg field in JWKS keys for metadata endpoint (#597).
-- Corrected subject claim in signed metadata and improved metadata endpoint to prefer signed data (#570).
-- Fixed size limitations for incoming token calls and responses (#363).
-- Fixed edge case with ephemeral signing keys causing server errors (#426).
+- Fixed missing alg field in JWKS keys for metadata endpoint `(#597)`.
+- Corrected subject claim in signed metadata and improved metadata endpoint to prefer signed data `(#570)`.
+- Fixed size limitations for incoming token calls and responses `(#363)`.
+- Fixed edge case with ephemeral signing keys causing server errors `(#426)`.
 - Fixed logs displaying management id incorrectly.
-- Fixed tests and improved code for signed metadata (#570, #597).
-- Fixed response size limitation for token calls (#363).
-- Fixed error handling for credential requests missing JWT proof (#425).
-- Fixed IT tests for RFC6749 compliance (#504).
+- Fixed tests and improved code for signed metadata `(#570, #597)`.
+- Fixed response size limitation for token calls `(#363)`.
+- Fixed error handling for credential requests missing JWT proof `(#425)`.
+- Fixed IT tests for RFC6749 compliance `(#504)`.
 
 ## 2.2.0
 

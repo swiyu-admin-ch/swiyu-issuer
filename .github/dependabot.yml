@@ -2,9 +2,13 @@
 # Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
 # Update strategy:
-#   • Weekly patch + minor updates are automated via Dependabot (label: patch-minor).
-#   • Major updates are intentionally excluded here and must be applied manually,
-#     because they carry breaking-change risk and require deliberate review.
+#   • Weekly: only patch + minor (label: patch-minor) — grouped per concern.
+#   • Major updates are IGNORED here and tracked manually via the monthly
+#     "Major Dependency Check" workflow which opens a tracking issue.
+#
+# Important: `ignore` at the ecosystem level is what actually suppresses major
+# PRs. Group-level `update-types` alone would still create individual PRs for
+# updates that fall outside a group.
 
 version: 2
 updates:
@@ -21,28 +25,28 @@ updates:
       - "patch-minor"
     commit-message:
       prefix: "chore(deps)"
+    # Suppress ALL major updates – handled manually via tracking issue.
+    # Exception: internal swiyu libraries may bump majors automatically.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       spring:
         patterns:
           - "org.springframework*"  # Boot, Cloud, Statemachine, …
           - "org.springdoc*"
           - "org.apache.tomcat*"    # embedded Tomcat
-        update-types: ["patch", "minor"]
-
-      # Internal swiyu / Swiss e-ID libraries – all update types (no major-version risk gate)
       swiyu:
+        # Internal swiyu / Swiss e-ID libraries
         patterns:
-          - "ch.admin.*"
+          - "ch.admin*"
           - "io.github.swiyu*"
-
       cryptography:
         # Auth/encryption libs – silent API breaks possible; kept in their own PR
         patterns:
           - "org.bouncycastle*"
           - "com.nimbusds*"   # nimbus-jose-jwt
           - "com.authlete*"   # sd-jwt
-        update-types: ["patch", "minor"]
-
       infrastructure:
         # DB drivers, migrations, networking, observability
         patterns:
@@ -57,13 +61,10 @@ updates:
           - "io.netty*"
           - "com.squareup.okhttp3*"
           - "com.squareup.okio*"
-        update-types: ["patch", "minor"]
-
       tooling:
         # Tests, build plugins, processors, utilities – catch-all
         patterns:
           - "*"
-        update-types: ["patch", "minor"]
 
   # ════════════════════════════════════════════════════════════════════════════
   # Docker – Weekly: patch + minor only
@@ -78,11 +79,13 @@ updates:
       - "patch-minor"
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       docker:
         patterns:
           - "*"
-        update-types: ["patch", "minor"]
 
   # ════════════════════════════════════════════════════════════════════════════
   # GitHub Actions – Weekly: patch + minor only
@@ -97,8 +100,10 @@ updates:
       - "patch-minor"
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       actions:
         patterns:
           - "*"
-        update-types: ["patch", "minor"]

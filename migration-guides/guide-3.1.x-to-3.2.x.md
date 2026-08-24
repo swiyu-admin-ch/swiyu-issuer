@@ -1,15 +1,17 @@
-# Migration Guide: v2.x to v3.0.0
-This guide helps you migrate from **v2.x** to **v3.0.0** of the Swiyu Issuer Service.
+# Migration Guide: v3.1.x to v3.2.x
+This guide helps you migrate from **v3.1.x** to **v3.2.x** of the Swiyu Issuer Service.
 It is based on the **[NEXT]** section in `CHANGELOG.md` and the migration to the hardened
 `dhi.io` base image (`#834`).
 ## Compatibility summary
 - **Issuance clients / OID4VCI wallets:** no changes required beyond those already documented
   in the [NEXT] `CHANGELOG.md` entry.
-- **Operators / DevOps:** the **default** published image is now the hardened
+- **Operators / DevOps:** 
+    * some defaults have changed in `application.yml`. If you only used the environment variables as in the readme you will not be affected. If you changed `encryption-enforce`, `dpop-enforce` the issuer may stop being compatible with the swiyu wallet. Please refer to the defaults in `application.yml`.
+    * the **default** published image is now the hardened
   `dhi.io`-based runtime. The previous UBI-based image is still available as
   `<tag>-unhardened` for a transition period (will be removed in a later release).
-  - If you stay on `-unhardened`: **no operational changes** beyond the tag rename.
-  - If you adopt the default hardened image: action required, see
+        * If you stay on `-unhardened`: **no operational changes** beyond the tag rename.
+        * If you adopt the default hardened image: action required, see
     [Breaking changes](#breaking-changes-when-adopting-the-default-hardened-image).
 ## Choose your path
 This release ships **two image variants** so you can decouple the application upgrade from

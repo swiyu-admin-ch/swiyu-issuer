@@ -13,7 +13,6 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.jwk.Curve;
@@ -26,9 +25,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -38,6 +38,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -53,7 +54,7 @@ import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doReturn;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -124,8 +125,11 @@ class IssuanceControllerIT {
 
     @BeforeEach
     void setUp() throws Exception {
+        // Reset the spy so that stubs from previous tests (e.g. isSignedMetadataEnabled=true set by
+        // testGetIssuerMetadataWithSignedMetadata_thenSuccess) do not bleed into subsequent tests.
+        Mockito.reset(applicationProperties);
         testStatusList = saveStatusList(createStatusList());
-        CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, "vct#integrity-example", null, null);
+        CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, null, null);
         var offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt",
                 metadata);
         saveStatusListLinkedOffer(offer, testStatusList, 0);
@@ -145,7 +149,7 @@ class IssuanceControllerIT {
     @Test
     void testGetIssuerMetadataWithSignedMetadata_thenSuccess() throws Exception {
         // Override with always enabled signed metadata
-        when(applicationProperties.isSignedMetadataEnabled()).thenReturn(true);
+        doReturn(true).when(applicationProperties).isSignedMetadataEnabled();
 
         String minPayloadWithEmptySubject = getMinimalPayloadForCredentialSupportedIdTest();
 
@@ -493,7 +497,7 @@ class IssuanceControllerIT {
         );
     }
 
-    private String getCredentialRequestString(String proof) throws Exception {
+    private String getCredentialRequestString(String proof) {
         var request = new CreateCredentialRequestDto(
                 "university_example_sd_jwt",
                 new ProofsDto(List.of(proof)),

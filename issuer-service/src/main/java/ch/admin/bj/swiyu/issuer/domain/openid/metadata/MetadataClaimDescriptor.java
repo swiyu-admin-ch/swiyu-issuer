@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.List;
@@ -19,16 +19,25 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MetadataClaimDescriptor {
-    @JsonProperty(value = "path")
-    @NotNull
+    /**
+     * A non-empty array representing a claims path pointer
+     */
     @NotEmpty
+    @JsonProperty(value = "path")
     @ValidPathElements
     private List<Object> path;
 
+    /**
+     * Optional boolean when true the issuer will always check in the offer create validation and then will be part of the issued credential
+     */
     @JsonProperty(value = "mandatory", defaultValue = "false")
     private boolean mandatory;
 
-    @JsonProperty(value = "display")
+    /**
+     * A non-empty, optional array of objects, defining display properties of a claim for a certain language
+     */
     @Nullable
+    @Size(min = 1)
+    @JsonProperty(value = "display")
     private List<MetadataDisplayInfo> display;
 }

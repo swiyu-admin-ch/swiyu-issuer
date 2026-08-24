@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,28 +34,35 @@ class JweServiceTest {
     static final Duration KEY_ROTATION_INTERVAL = Duration.ofSeconds(10);
     private JweService jweService;
     private EncryptionKeyRepository encryptionKeyRepository;
-    private EncryptionKeyService encryptionKeyService;
     private List<EncryptionKey> encryptionKeyTestCache;
     private IssuerMetadata issuerMetadata;
+    private ApplicationProperties applicationProperties;
 
     @BeforeEach
     void setUp() {
         setupMockRepository();
-        ApplicationProperties applicationProperties = Mockito.mock(ApplicationProperties.class);
+        applicationProperties = Mockito.mock(ApplicationProperties.class);
+        Mockito.when(applicationProperties.isEncryptionEnforce()).thenReturn(true);
         issuerMetadata = IssuerMetadata.builder()
-            .requestEncryption(IssuerCredentialRequestEncryption.builder()
-                .encRequired(true)
-                .build())
-            .build();
-        encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository);
+                .requestEncryption(IssuerCredentialRequestEncryption.builder()
+                        .encRequired(true)
+                        .build())
+                .build();
+        EncryptionKeyService encryptionKeyService = new EncryptionKeyService(applicationProperties, encryptionKeyRepository);
         jweService = new JweService(applicationProperties, issuerMetadata, encryptionKeyService);
         Mockito.when(applicationProperties.getEncryptionKeyRotationInterval())
                 .thenReturn(KEY_ROTATION_INTERVAL);
+        Mockito.when(applicationProperties.getMaxCompressedCipherTextLength())
+                .thenReturn(20_971_520);
+        Mockito.when(applicationProperties.getMaxDecompressedPayloadLength())
+                .thenReturn(20_971_520);
         encryptionKeyService.rotateEncryptionKeys();
     }
 
+    /**
+     * Ensures issuer metadata exposes supported enc/zip values populated by the service
+     */
     @Test
-    // Ensures issuer metadata exposes supported enc/zip values populated by the service
     void testIssuerMetadataWithEncryptionOptions() {
         jweService.issuerMetadataWithEncryptionOptions();
         assertThat(issuerMetadata.getRequestEncryption()).isNotNull();
@@ -62,13 +70,15 @@ class JweServiceTest {
         var requestEncryption = issuerMetadata.getRequestEncryption();
         var responseEncryption = issuerMetadata.getResponseEncryption();
         for (var encryptionSpec : List.of(requestEncryption, responseEncryption)) {
-            assertThat(encryptionSpec.getEncValuesSupported()).contains("A128GCM");
+            assertThat(encryptionSpec.getEncValuesSupported()).contains("A128GCM").contains("A256GCM");
             assertThat(encryptionSpec.getZipValuesSupported()).contains("DEF");
         }
     }
 
+    /**
+     * Verifies decrypt succeeds when using an active key from the published JWKS
+     */
     @Test
-    // Verifies decrypt succeeds when using an active key from the published JWKS
     void decryptsWithActiveKey() {
         jweService.issuerMetadataWithEncryptionOptions();
         var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
@@ -80,8 +90,10 @@ class JweServiceTest {
         assertEquals(plaintext, decrypted);
     }
 
+    /**
+     * Confirms decryption fails for a JWE encrypted with an unknown/foreign key ID
+     */
     @Test
-    // Confirms decryption fails for a JWE encrypted with an unknown/foreign key ID
     void rejectsUnknownKeyId() throws JOSEException {
         jweService.issuerMetadataWithEncryptionOptions();
         ECKey foreignKey = new ECKeyGenerator(Curve.P_256)
@@ -95,6 +107,39 @@ class JweServiceTest {
     @Test
     void rejectMissingEncryption() {
         assertThrows(Oid4vcException.class, () -> jweService.decryptRequest("Anything", "application/json"));
+    }
+
+    @Test
+    void rejectsPlaintextBeforeIssuerMetadataIsRenderedWhenEncryptionIsEnforced() {
+        issuerMetadata.setRequestEncryption(null);
+
+        var exception = assertThrows(Oid4vcException.class,
+                () -> jweService.decryptRequest("{}", "application/json"));
+
+        assertThat(exception.getError()).isEqualTo(INVALID_ENCRYPTION_PARAMETERS);
+    }
+
+    /**
+     * Verifies that JWE decryption is rejected once the decrypted/decompressed payload exceeds the
+     * configured {@code maxDecompressedPayloadLength}. This is a defense-in-depth mitigation against
+     * JWE decompression bomb attacks (EIDOMNI-1117 / EIDSEC-843), where a small, highly-compressible
+     * ciphertext expands into a disproportionately large plaintext payload.
+     */
+    @Test
+    void decrypt_whenDecompressedPayloadExceedsLimit_thenThrowsOid4vcException() {
+        jweService.issuerMetadataWithEncryptionOptions();
+        var jwks = assertDoesNotThrow(() -> JWKSet.parse(issuerMetadata.getRequestEncryption().getJwks()));
+        var activeKey = jwks.getKeys().getFirst();
+
+        // Highly repetitive payload compresses well, allowing a small ciphertext to expand
+        // into a decompressed payload larger than the configured limit.
+        String plaintext = "a".repeat(50_000);
+        Mockito.when(applicationProperties.getMaxDecompressedPayloadLength())
+                .thenReturn(plaintext.length() - 1);
+        String encrypted = createEncryptedMessage(plaintext, activeKey);
+
+        Oid4vcException exception = assertThrows(Oid4vcException.class, () -> jweService.decrypt(encrypted));
+        assertThat(exception.getMessage()).contains("JWE Object could not be decrypted");
     }
 
     private void setupMockRepository() {

@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestableProof;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttestationJwt;
@@ -9,14 +8,17 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Ke
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.Proof;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
+import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
+
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.text.ParseException;
+import java.util.Map;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 
@@ -24,6 +26,7 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @AllArgsConstructor
 public class KeyAttestationService {
     private final KeyResolver keyResolver;
+    private final DidJwtValidator jwtValidator;
     private final ApplicationProperties applicationProperties;
 
     public String validateAndGetHolderKeyAttestation(SupportedProofType supportedProofType, Proof requestProof) throws Oid4vcException {
@@ -76,7 +79,7 @@ public class KeyAttestationService {
      *
      * @param attestationRequirement the requirement defining the expected key storage and
      *                               other attestation constraints
-     * @param attestationJwt the raw JWT string to be validated
+     * @param attestationJwt         the raw JWT string to be validated
      * @return a fully parsed and validated {@link AttestationJwt}
      * @throws Oid4vcException if parsing fails, the JWT is malformed, the provider is not
      *                         trusted, validation against the requirement fails, or the
@@ -87,11 +90,11 @@ public class KeyAttestationService {
             AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt, applicationProperties.isSwissProfileVersioningEnforcement());
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
             attestation.throwIfNotTrustedAttestationProvider(trustedAttestationServices);
-            
-            if (!attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage())) {
+
+            if (!attestation.isValidAttestation(keyResolver, attestationRequirement.getKeyStorage(), jwtValidator)) {
                 throw new Oid4vcException(INVALID_PROOF, "Key attestation was invalid or not matching the attack resistance for the credential!");
             }
-            
+
             return attestation;
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Key attestation is malformed!");
@@ -116,14 +119,14 @@ public class KeyAttestationService {
         if (bindingJson == null) {
             throw new Oid4vcException(INVALID_PROOF, "Proof has no binding key – cannot verify against attested_keys");
         }
-
-        ECKey proofKey = parseProofKey(bindingJson);
+        
+        JWK proofKey = parseProofKey(bindingJson);
         verifyKeyPresentInAttestation(proofKey, attestation);
     }
 
-    private ECKey parseProofKey(String bindingJson) {
+    private JWK parseProofKey(String bindingJson) {
         try {
-            return ECKey.parse(bindingJson);
+            return JWK.parse(bindingJson);
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Proof binding key could not be parsed for attested_keys verification!");
         }
@@ -137,9 +140,9 @@ public class KeyAttestationService {
      * @param proofKey    the EC key used as proof
      * @param attestation the attestation JWT containing the {@code attested_keys}
      * @throws Oid4vcException with {@code INVALID_PROOF} if the proof key does not
-     *         match any key in the attestation or if thumb‑print computation fails
+     *                         match any key in the attestation or if thumb‑print computation fails
      */
-    public void verifyKeyPresentInAttestation(ECKey proofKey, AttestationJwt attestation) {
+    public void verifyKeyPresentInAttestation(JWK proofKey, AttestationJwt attestation) {
         try {
             if (!attestation.containsKey(proofKey)) {
                 throw new Oid4vcException(INVALID_PROOF,
@@ -151,7 +154,7 @@ public class KeyAttestationService {
         }
     }
 
-    private String computeThumbprintSafe(ECKey key) {
+    private String computeThumbprintSafe(JWK key) {
         try {
             return key.toPublicJWK().computeThumbprint().toString();
         } catch (JOSEException e) {

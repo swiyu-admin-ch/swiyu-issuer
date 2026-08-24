@@ -3,14 +3,16 @@ package ch.admin.bj.swiyu.issuer.dto.credentialoffer;
 import ch.admin.bj.swiyu.issuer.common.date.CustomInstantDeserializer;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -18,6 +20,8 @@ import java.util.List;
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Schema(name = "CreateCredentialOfferRequest", description = "Initial credential creation request to start the offering process.")
 public class CreateCredentialOfferRequestDto {
 
@@ -36,17 +40,17 @@ public class CreateCredentialOfferRequestDto {
     @Schema(
             additionalProperties = Schema.AdditionalPropertiesValue.TRUE,
             description = """
-                The user data to be written in the verifiable credential. Can be a json object or a JWT.
-                credentialSubjectData": {"lastName": "Example","firstName": "Edward"}
-                When using data integrity JWT the value are as claims inside the JWT.
-                "credentialSubjectData": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsYXN0TmFtZSI6IkV4YW1wbGUiLCJmaXJzdE5hbWUiOiJFZHdhcmQiLCJkYXRlT2ZCaXJ0aCI6IjEuMS4xOTcwIn0.2VMjj1RpJ7jUjn1SJHDwwzqx3kygn88UxSsG5j1uXG8"
-            """,
+                        The user data to be written in the verifiable credential. Can be a json object or a JWT.
+                        credentialSubjectData": {"lastName": "Example","firstName": "Edward"}
+                        When using data integrity JWT the value are as claims inside the JWT.
+                        "credentialSubjectData": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsYXN0TmFtZSI6IkV4YW1wbGUiLCJmaXJzdE5hbWUiOiJFZHdhcmQiLCJkYXRlT2ZCaXJ0aCI6IjEuMS4xOTcwIn0.2VMjj1RpJ7jUjn1SJHDwwzqx3kygn88UxSsG5j1uXG8"
+                    """,
             example = """
-            {
-                "lastName": "Example",
-                "firstName": "Edward"
-            }
-            """)
+                    {
+                        "lastName": "Example",
+                        "firstName": "Edward"
+                    }
+                    """)
     private Object credentialSubjectData;
 
     @JsonProperty(value = "credential_metadata")
@@ -56,7 +60,6 @@ public class CreateCredentialOfferRequestDto {
             """,
             example = """
                     {
-                        "vct#integrity": "sha256-0000000000000000000000000000000000000000000=",
                         "deferred": false
                     }
                     """)

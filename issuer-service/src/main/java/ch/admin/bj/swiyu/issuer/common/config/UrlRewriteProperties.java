@@ -1,12 +1,12 @@
 package ch.admin.bj.swiyu.issuer.common.config;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,8 +21,8 @@ public class UrlRewriteProperties {
     private Map<String, String> urlMappings = new HashMap<>();
 
     @PostConstruct
-    public void init() throws JsonProcessingException {
-        urlMappings = objectMapper.readValue(mapping, new TypeReference<Map<String, String>>() {
+    public void init() throws JacksonException {
+        urlMappings = objectMapper.readValue(mapping, new TypeReference<>() {
         });
     }
 

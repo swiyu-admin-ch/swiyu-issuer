@@ -23,7 +23,7 @@ public class IssuerCredentialEncryption {
     @Schema(description = "List of supported JWE encryption algorithms")
     @NotEmpty
     @Builder.Default
-    protected List<@Pattern(regexp = "^A128GCM$") String> encValuesSupported = List.of("A128GCM");
+    protected List<@Pattern(regexp = "^(A128GCM|A256GCM)$") String> encValuesSupported = List.of("A128GCM", "A256GCM");
     @JsonProperty("zip_values_supported")
     @Schema(description = "If present must be a non-empty array of JWE compression algorithms")
     @Nullable
