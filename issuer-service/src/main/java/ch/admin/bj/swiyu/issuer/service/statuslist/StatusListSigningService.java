@@ -46,14 +46,14 @@ public class StatusListSigningService {
     public SignedJWT buildSignedStatusListJwt(StatusList statusList, TokenStatusListToken token) {
         try {
             ConfigurationOverride override = statusList.getConfigurationOverride();
-            JWSSigner signer = jwsSignatureFacade.createSigner(statusListProperties, override.keyId(), override.keyPin());
-            
+            JWSSigner signer = jwsSignatureFacade.createSigner(statusListProperties, override);
+
             JWSHeader header = JwtUtil.prepareHeaderBuilder(signer)
                     .keyID(override.verificationMethodOrDefault(statusListProperties.getVerificationMethod()))
                     .type(new JOSEObjectType("statuslist+jwt"))
                     .customParam(SwissProfileVersions.PROFILE_VERSION_PARAM, SwissProfileVersions.VC_PROFILE_VERSION)
                     .build();
-        
+
             JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
                     .claim("ttl", statusListProperties.getStatusListCacheTime().toSeconds())
                     .expirationTime(Date.from(Instant.now().plusSeconds(statusListProperties.getStatusListExpirationTime().toSeconds())))
@@ -62,7 +62,7 @@ public class StatusListSigningService {
                     .issueTime(Date.from(Instant.now()))
                     .claim("status_list", token.getStatusListClaims())
                     .build();
-        
+
             SignedJWT jwt = new SignedJWT(header, claimSet);
             jwt.sign(signer);
             return jwt;

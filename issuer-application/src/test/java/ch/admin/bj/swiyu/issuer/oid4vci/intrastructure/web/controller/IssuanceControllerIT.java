@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -55,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -85,7 +87,7 @@ class IssuanceControllerIT {
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
-    @Autowired
+    @MockitoSpyBean
     private SdjwtProperties sdjwtProperties;
     @MockitoSpyBean
     private ApplicationProperties applicationProperties;
@@ -287,7 +289,15 @@ class IssuanceControllerIT {
         if (overrideId != null) {
             expectedIssuer = overrideId;
             expectedVerificationMethod = overrideId + "#key1";
-            override = new ConfigurationOverride(overrideId, overrideId + "#key1", null, null);
+            override = new ConfigurationOverride(overrideId, expectedVerificationMethod, null, null);
+
+            var config = new SignatureConfiguration();
+            config.setVerificationMethod(expectedVerificationMethod);
+            config.setKeyManagementMethod("key");
+            config.setPrivateKey(sdjwtProperties.getPrivateKey());
+
+            when(sdjwtProperties.getSigningKeys()).thenReturn(List.of(config));
+            when(sdjwtProperties.supportsSigningKeys()).thenReturn(true);
         } else {
             expectedIssuer = applicationProperties.getIssuerId();
             expectedVerificationMethod = sdjwtProperties.getVerificationMethod();

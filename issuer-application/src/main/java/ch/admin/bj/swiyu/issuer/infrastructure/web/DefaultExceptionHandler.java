@@ -177,11 +177,11 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> handleSignedMetadataUnsupportedException(final SignedMetadataUnsupportedException ex) {
-            ErrorResponse err = new NotAcceptableStatusException(
-            "Only supports application/json for the used endpoint");
+        ErrorResponse err = new NotAcceptableStatusException(
+                "Only supports application/json for the used endpoint");
 
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
-                         .body(err);
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+                .body(err);
     }
 
 

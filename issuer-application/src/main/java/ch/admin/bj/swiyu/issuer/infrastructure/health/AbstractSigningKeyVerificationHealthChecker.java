@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
@@ -18,6 +19,7 @@ import org.springframework.boot.health.contributor.Health;
 /**
  * Abstract health checker that validates the signing capability of a configured verification method.
  * Consolidates duplicated logic between concrete implementations.
+ *
  * @param <T> concrete SignatureConfiguration type
  */
 public abstract class AbstractSigningKeyVerificationHealthChecker<T extends SignatureConfiguration> extends CachedHealthChecker {
@@ -54,28 +56,29 @@ public abstract class AbstractSigningKeyVerificationHealthChecker<T extends Sign
                 builder.up().withDetail(HEALTH_DETAIL_SIGNING_KEY, verificationMethod);
             } else {
                 builder.down().withDetail(HEALTH_DETAIL_SIGNING_KEY,
-                    "Verification failed for " + verificationMethod);
+                        "Verification failed for " + verificationMethod);
             }
         } catch (Exception e) {
             builder.down()
-                .withDetail(HEALTH_DETAIL_SIGNING_ERROR, e.getMessage())
-                .withDetail(HEALTH_DETAIL_SIGNING_KEY, verificationMethod);
+                    .withDetail(HEALTH_DETAIL_SIGNING_ERROR, e.getMessage())
+                    .withDetail(HEALTH_DETAIL_SIGNING_KEY, verificationMethod);
         }
     }
 
     private boolean verifySigningCapability(JWK jwk) throws KeyStrategyException, JOSEException {
-        var signer = jwsSignatureFacade.createSigner(properties, null, null);
+        ConfigurationOverride override = new ConfigurationOverride(null, null, null, null);
+        var signer = jwsSignatureFacade.createSigner(properties, override);
 
         JWSHeader header = JwtUtil.prepareHeaderBuilder(signer).build();
         JWTClaimsSet payload = new JWTClaimsSet.Builder()
-            .subject(TEST_JWT_SUBJECT)
-            .build();
+                .subject(TEST_JWT_SUBJECT)
+                .build();
         SignedJWT testJwt = new SignedJWT(header, payload);
         testJwt.sign(signer);
         return verifySignature(testJwt, jwk);
     }
 
-    private boolean verifySignature(SignedJWT signedJwt, JWK jwk) throws JOSEException{
+    private boolean verifySignature(SignedJWT signedJwt, JWK jwk) throws JOSEException {
         JWK publicKey = jwk.toECKey();
 
         JWSVerifier verifier = new ECDSAVerifier(publicKey.toECKey());

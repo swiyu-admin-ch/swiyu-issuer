@@ -4,28 +4,32 @@ import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
-import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.common.config.*;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
+import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,6 +45,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -48,8 +53,9 @@ import java.util.stream.IntStream;
 import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.createPemForKid;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -67,24 +73,26 @@ class StatusListIT {
     private final UUID statusListUUID = UUID.randomUUID();
     private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
             .formatted(statusListUUID);
+    private final String overrideDID = "did:example:offer:override";
+    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     @Autowired
     private SwiyuProperties swiyuProperties;
     @Autowired
     private MockMvc mvc;
-    @Autowired
+    @MockitoSpyBean
     private StatusListProperties statusListProperties;
     @Autowired
     private StatusListRepository statusListRepository;
     @MockitoBean
     private StatusBusinessApiApi statusBusinessApi;
-    @MockitoBean
+    @MockitoSpyBean
     private JwsSignatureFacade jwsSignatureFacade;
-    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     @Autowired
     private IssuerMetadata issuerMetadata;
     @MockitoSpyBean
     private ApplicationProperties applicationProperties;
-
+    @MockitoSpyBean
+    private StatusRegistryClient statusRegistryClient;
 
     @BeforeEach
     void setUp() throws JOSEException, KeyStrategyException {
@@ -103,8 +111,6 @@ class StatusListIT {
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
 
         final JWSSigner es256Signer = new ECDSASigner(new ECKeyGenerator(Curve.P_256).keyID("test-key").generate());
-        when(jwsSignatureFacade.createSigner(any(SignatureConfiguration.class), any(), any()))
-                .thenReturn(es256Signer);
     }
 
     @Test
@@ -148,12 +154,15 @@ class StatusListIT {
 
         final int maxLength = 127;
         final int bits = 4;
-        final String issuerId = "did:example:offer:override";
-        final String verificationMethod = issuerId + "#key";
+        final String did = "did:tdw:example";
+        final String verificationMethod = did + "#12345";
         final String keyId = "1052933";
         final String keyPin = "209323";
         final String payload = String.format(
-                "{\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": %s,\"key_pin\": %s}}", maxLength, bits, issuerId, verificationMethod, keyId, keyPin);
+                "{\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": %s,\"key_pin\": %s}}", maxLength, bits, did, verificationMethod, keyId, keyPin);
+
+        var hsmConfig = getHsmProperties(keyId);
+        when(statusListProperties.getHsm()).thenReturn(hsmConfig);
 
         MvcResult result = mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -169,16 +178,113 @@ class StatusListIT {
         assertNotNull(newStatusList.getUri());
         assertEquals(maxLength, newStatusList.getMaxLength());
         assertEquals(bits, newStatusList.getConfig().get("bits"));
-        assertEquals(issuerId, newStatusList.getConfigurationOverride().issuerDid());
+        assertEquals(did, newStatusList.getConfigurationOverride().issuerDid());
         assertEquals(verificationMethod, newStatusList.getConfigurationOverride().verificationMethod());
         assertEquals(keyId, newStatusList.getConfigurationOverride().keyId());
         assertEquals(keyPin, newStatusList.getConfigurationOverride().keyPin());
 
         verify(jwsSignatureFacade, atLeastOnce()).createSigner(
-                same(statusListProperties),
-                eq(keyId),
-                eq(keyPin)
+                statusListProperties,
+                newStatusList.getConfigurationOverride()
         );
+    }
+
+    @Test
+    void createNewStatusList_withIncorrectSigningKeysOverride_thenBadRequest() throws Exception {
+
+        var kid = "did:example:offer:override#key-other";
+        var pem = createPemForKid(kid);
+
+        SignatureConfiguration signatureConfiguration = new SignatureConfiguration();
+        signatureConfiguration.setKeyManagementMethod("key");
+        signatureConfiguration.setPrivateKey(pem);
+        signatureConfiguration.setVerificationMethod(kid);
+
+        when(statusListProperties.getSigningKeys()).thenReturn(List.of(signatureConfiguration));
+        when(statusListProperties.supportsSigningKeys()).thenReturn(true);
+
+        final int maxLength = 127;
+        final int bits = 4;
+        final String verificationMethod = overrideDID + "#key";
+        final String payload = String.format(
+                "{\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": null,\"key_pin\": null}}", maxLength, bits, overrideDID, verificationMethod);
+
+        mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                // todo check if correct status code
+                .andExpect(status().isInternalServerError())
+                .andReturn();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"did:tdw:example#12345", "did:example:offer:override#key-0", "did:example:offer:override#key-1", "did:example:offer:override#key-2"})
+    void createNewStatusList_withSigningKeysOverride_thenSuccess(String expectedKid) throws Exception {
+        final String verificationMethod = overrideDID + "#key";
+        var signingKeys = IntStream.range(0, 3)
+                .mapToObj(i -> {
+                    var keyId = verificationMethod + "-" + i;
+                    String pemKey = null;
+                    try {
+                        pemKey = createPemForKid(keyId);
+                    } catch (JOSEException e) {
+                        throw new RuntimeException(e);
+                    }
+                    SignatureConfiguration signatureConfiguration = new SignatureConfiguration();
+                    signatureConfiguration.setKeyManagementMethod("key");
+                    signatureConfiguration.setPrivateKey(pemKey);
+                    signatureConfiguration.setVerificationMethod(keyId);
+                    return signatureConfiguration;
+                })
+                .toList();
+
+        when(statusListProperties.getSigningKeys()).thenReturn(signingKeys);
+        when(statusListProperties.supportsSigningKeys()).thenReturn(true);
+
+        final int maxLength = 127;
+        final int bits = 4;
+        final String payload = String.format(
+                "{\"maxLength\": %d,\"config\": {\"bits\": %d},\"configuration_override\": {\"issuer_did\": \"%s\",\"verification_method\": \"%s\",\"key_id\": null,\"key_pin\": null}}", maxLength, bits, overrideDID, expectedKid);
+
+        MvcResult result = mvc.perform(post(STATUS_LIST_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        final UUID newStatusListId = UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
+
+        final Optional<StatusList> newStatusListOpt = statusListRepository.findById(newStatusListId);
+        final StatusList newStatusList = newStatusListOpt.get();
+        assertEquals(overrideDID, newStatusList.getConfigurationOverride().issuerDid());
+        assertEquals(expectedKid, newStatusList.getConfigurationOverride().verificationMethod());
+        assertNull(newStatusList.getConfigurationOverride().keyId());
+        assertNull(newStatusList.getConfigurationOverride().keyPin());
+
+        ArgumentCaptor<String> captor =
+                ArgumentCaptor.forClass(String.class);
+
+        doNothing().when(statusRegistryClient).updateStatusListEntry(any(), any());
+        verify(statusRegistryClient).updateStatusListEntry(any(), captor.capture());
+
+        JWT jwt = JWTParser.parse(captor.getValue());
+
+        var header = jwt.getHeader();
+
+        // check header details
+        assertEquals("ES256", header.getAlgorithm().getName());
+        assertEquals("statuslist+jwt", header.getType().getType());
+        assertEquals(expectedKid, ((JWSHeader) header).getKeyID());
+        assertEquals("swiss-profile-vc:1.0.0", header.getCustomParam("profile_version"));
+
+        // check payload details
+        var claimsSet = jwt.getJWTClaimsSet();
+        assertEquals(overrideDID, claimsSet.getIssuer());
+        assertEquals(statusRegistryUrl, claimsSet.getSubject());
+        assertNotNull(claimsSet.getExpirationTime());
+        assertNotNull(claimsSet.getClaim("ttl"));
+        assertNotNull(claimsSet.getClaim("iat"));
+        assertNotNull(claimsSet.getClaim("status_list"));
     }
 
     @Test
@@ -456,4 +562,19 @@ class StatusListIT {
         return String.format("%s/%s/status", BASE_URL, id);
     }
 
+    private HSMProperties getHsmProperties(String keyId) {
+
+        var hsmConfig = new HSMProperties();
+        hsmConfig.setUserPin("209323");
+        hsmConfig.setKeyId(keyId);
+        hsmConfig.setKeyPin("209323");
+        hsmConfig.setPkcs11Config("pkcs11-hsm");
+        hsmConfig.setUser("user");
+        hsmConfig.setHost("host");
+        hsmConfig.setPort("1234");
+        hsmConfig.setPassword("password");
+        hsmConfig.setProxyUser("proxy-user");
+        hsmConfig.setProxyPassword("proxy-password");
+        return hsmConfig;
+    }
 }

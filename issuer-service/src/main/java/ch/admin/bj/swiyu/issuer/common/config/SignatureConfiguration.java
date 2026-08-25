@@ -5,19 +5,21 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.List;
+
 /**
- * Parent Class with basic signing information 
+ * Parent Class with basic signing information
  */
 @Valid
 @Data
 public class SignatureConfiguration {
     /**
-     * Method of signing key management
+     * Default Method of signing key management
      */
     @NotNull
     private String keyManagementMethod;
     /**
-     * Private Key, if the key is not managed by HSM
+     * Default Private Key, if the key is not managed by HSM
      * This includes vault or just mounted as environment variable
      */
     private String privateKey;
@@ -33,9 +35,19 @@ public class SignatureConfiguration {
     private String pkcs11Config;
 
     /**
-     * The id of the verification method in the did document with which a verifier can check the issued VC
+     * The id of the Default verification method in the did document with which a verifier can check the issued VC
      * In did tdw/webvh this is the full did#fragment
      */
     @NotEmpty
     private String verificationMethod;
+
+    private List<SignatureConfiguration> signingKeys;
+
+    public boolean supportsHSM() {
+        return hsm != null;
+    }
+
+    public boolean supportsSigningKeys() {
+        return signingKeys != null && !signingKeys.isEmpty();
+    }
 }

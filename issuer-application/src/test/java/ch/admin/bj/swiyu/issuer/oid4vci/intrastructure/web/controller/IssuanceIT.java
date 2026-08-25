@@ -3,9 +3,11 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialOfferMetadataDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
@@ -21,6 +23,8 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,7 +77,7 @@ class IssuanceIT {
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired
     private ApplicationProperties applicationProperties;
-    @Autowired
+    @MockitoSpyBean
     private SdjwtProperties sdjwtProperties;
     @Autowired
     private ObjectMapper objectMapper;
@@ -539,6 +543,66 @@ class IssuanceIT {
         IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isOk())
                 .andReturn();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"did:example:localhost%3A8080:abcabc#sdjwt", "did:example:offer:override#key-0", "did:example:offer:override#key-1", "did:example:offer:override#key-2"})
+    void testSdJwtOffer_withConfigOverride_thenSuccess(String expectedKid) throws Exception {
+
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(1);
+
+        final String overrideDID = "did:example:offer:override";
+        final String verificationMethod = overrideDID + "#key";
+        var signingKeys = IntStream.range(0, 3)
+                .mapToObj(i -> {
+                    var keyId = verificationMethod + "-" + i;
+                    String pemKey;
+                    try {
+                        pemKey = createPemForKid(keyId);
+                    } catch (JOSEException e) {
+                        throw new RuntimeException(e);
+                    }
+                    SignatureConfiguration signatureConfiguration = new SignatureConfiguration();
+                    signatureConfiguration.setKeyManagementMethod("key");
+                    signatureConfiguration.setPrivateKey(pemKey);
+                    signatureConfiguration.setVerificationMethod(keyId);
+                    return signatureConfiguration;
+                })
+                .toList();
+
+        when(sdjwtProperties.getSigningKeys()).thenReturn(signingKeys);
+        when(sdjwtProperties.supportsSigningKeys()).thenReturn(true);
+
+        var statusListDto = createStatusList();
+        statusListDto.setConfigurationOverride(new ConfigurationOverride("did:example:offer:override", expectedKid, null, null));
+        var newTestStatusList = saveStatusList(statusListDto);
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(newTestStatusList.getUri()))
+                .configurationOverride(new ConfigurationOverrideDto("did:example:offer:override", expectedKid, null, null))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
+        var token = tokenDto.get("access_token");
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "university_example_sd_jwt");
+
+        var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonArray credentials = extractCredentials(response);
+
+        var jwtString = credentials.get(0).getAsJsonObject().get("credential").getAsString().split("~")[0];
+
+        JWT jwt = JWTParser.parse(jwtString);
+
+        // check header details
+        assertEquals(expectedKid, ((JWSHeader) jwt.getHeader()).getKeyID());
+        assertEquals(overrideDID, (jwt.getJWTClaimsSet().getIssuer()));
     }
 
     private StatusList saveStatusList(StatusList statusList) {
