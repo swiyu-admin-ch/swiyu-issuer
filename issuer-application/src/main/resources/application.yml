@@ -133,7 +133,6 @@ application:
     signing-keys:
       - verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD:}"
         private-key: "${secret.key.status-list.key1:${STATUS_LIST_KEY_1:}}"
-        key-management-method: "${SIGNING_KEY_MANAGEMENT_METHOD:key}"
 
     # private key for singing status list VCs
     private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY:}}"
@@ -238,6 +237,10 @@ application:
         # When using a proxy with username / password authentication
         proxy-user: "${HSM_PROXY_USER:}"
         proxy-password: "${HSM_PROXY_PASSWORD:}"
+
+      signing-keys:
+        - verification-method: "${DID_SDJWT_VERIFICATION_METHOD:}"
+          private-key: "${secret.key.sdjwt.key:${SDJWT_KEY:}}"
 
       # Signing Key for Selective Disclosure JWT Verifiable Credentials
       private-key: "${secret.key.sdjwt.key:${SDJWT_KEY:}}"

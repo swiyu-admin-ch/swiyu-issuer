@@ -328,10 +328,8 @@ class SdJwtCredentialIT {
     @Test
     void getSdJwtCredentialTestSD_whenOverriding_thenSuccess() throws ParseException {
 
-        var overrideDid = "did:example:override";
-
-        var overrideDid2 = "did:example:override2";
-        var overrideVerificationMethod2 = overrideDid2 + "#key2";
+        var overrideDid = "did:example:override2";
+        var overrideVerificationMethod2 = overrideDid + "#key2";
 
         var test = new SignatureConfiguration();
         test.setVerificationMethod(overrideVerificationMethod2);
@@ -346,7 +344,7 @@ class SdJwtCredentialIT {
 
         var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED,
                 "university_example_sd_jwt",
-                new ConfigurationOverride(overrideDid2, overrideVerificationMethod2, null, null));
+                new ConfigurationOverride(overrideDid, overrideVerificationMethod2, null, null));
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -364,7 +362,7 @@ class SdJwtCredentialIT {
         String credential = getReadFirstCredential(vc);
         var issuedJwt = SignedJWT.parse(credential.split("~")[0]);
         assertEquals(overrideVerificationMethod2, issuedJwt.getHeader().getKeyID());
-        assertEquals(overrideDid2, issuedJwt.getJWTClaimsSet().getIssuer());
+        assertEquals(overrideDid, issuedJwt.getJWTClaimsSet().getIssuer());
     }
 
     @Test

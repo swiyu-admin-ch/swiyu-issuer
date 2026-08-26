@@ -10,6 +10,7 @@ import ch.admin.bj.swiyu.jwssignatureservice.dto.SignatureConfigurationDto;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.nimbusds.jose.JWSSigner;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ import static ch.admin.bj.swiyu.issuer.common.config.CacheConfig.JWS_SIGNER_CACH
  * Instances of this class should be created via dependency injection (e.g., by Spring),
  * as it requires a {@link JwsSignatureService} dependency.
  */
+@Slf4j
 @Service
 @AllArgsConstructor
 public class JwsSignatureFacade {
@@ -58,21 +60,28 @@ public class JwsSignatureFacade {
             return baseConfig;
         }
 
-        if (baseConfig.getVerificationMethod().equals(override.verificationMethod()) || (baseConfig.supportsHSM() && override.keyId() != null)) {
+        // handles default key
+        if (baseConfig.getVerificationMethod().equals(override.verificationMethod())) {
             return baseConfig;
         }
 
-        // if hsm set use hsm
+        // handles hsm use
         if (baseConfig.supportsHSM() && override.keyId() != null) {
             return baseConfig;
         }
 
-        return findMatchingSigningKey(baseConfig, override.verificationMethod());
+        // handles signing keys
+        return findMatchingSigningKey(baseConfig, override.issuerDid(), override.verificationMethod());
     }
 
-    private SignatureConfiguration findMatchingSigningKey(SignatureConfiguration baseConfig, String verificationMethod) {
+    private SignatureConfiguration findMatchingSigningKey(SignatureConfiguration baseConfig, String issuerDid, String verificationMethod) {
         if (!baseConfig.supportsSigningKeys()) {
             throw new ConfigurationException("No signing key found for verification method: " + verificationMethod);
+        }
+
+        // warn if verification method does not start with the same did
+        if (!verificationMethod.startsWith(issuerDid)) {
+            log.warn("Verification method {} does not start with issuer DID: {}", verificationMethod, issuerDid);
         }
 
         return baseConfig.getSigningKeys().stream()
