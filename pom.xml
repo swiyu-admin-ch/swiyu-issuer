@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.7</version>
+        <version>4.1.1</version>
         <relativePath/>
     </parent>
 
@@ -72,51 +72,6 @@
 
     <dependencyManagement>
         <dependencies>
-
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${jackson-annotations.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jackson-core.version}</version>
-            </dependency>
-            <!-- Fixes CVE-2026-59889 -->
-            <dependency>
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson3.version}</version>
-            </dependency>
-
-            <!-- Fixes CVE-2026-42198 -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <scope>runtime</scope>
-                <version>42.7.13</version>
-            </dependency>
-
-            <!-- Todo check again on spring boot upgrade-->
-            <dependency>
-                <groupId>org.bouncycastle</groupId>
-                <artifactId>bcprov-jdk18on</artifactId>
-                <version>${bouncycastle.version}</version>
-            </dependency>
-
-            <!-- Source: https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.20.0</version>
-                <scope>compile</scope>
-            </dependency>
 
             <!-- centrally manage swiyu-jws-signature-service version -->
             <dependency>

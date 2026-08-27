@@ -23,31 +23,63 @@ public class KeyOnlySignatureConfiguration implements SignatureConfiguration {
     @Setter
     private String privateKey;
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@code false}, as this configuration does not use an HSM
+     */
     @Override
     public boolean supportsHSM() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@code "key"}, indicating that a private key is used directly
+     */
     @Override
     public String getKeyManagementMethod() {
         return "key";
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@code false}, as this configuration does not support
+     * additional signing keys
+     */
     @Override
     public boolean supportsSigningKeys() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@code null}, as HSM configuration is not supported
+     */
     @Override
     public HSMProperties getHsm() {
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@code null}, as PKCS#11 configuration is not supported
+     */
     @Override
     public String getPkcs11Config() {
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return an empty list, as this configuration does not contain
+     * additional signing keys
+     */
     @Override
     public List<KeyOnlySignatureConfiguration> getSigningKeys() {
         return List.of();
