@@ -47,7 +47,7 @@
         <sonar.issue.ignore.multicriteria.e1.resourceKey>**/pom.xml</sonar.issue.ignore.multicriteria.e1.resourceKey>
         <spring-doc.version>3.0.0</spring-doc.version>
         <authlete.version>1.9</authlete.version>
-        <springframework.cloud.version>2025.1.1</springframework.cloud.version>
+        <springframework.cloud.version>2025.1.2</springframework.cloud.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <generic-java-lib.version>2.2.0</generic-java-lib.version>
