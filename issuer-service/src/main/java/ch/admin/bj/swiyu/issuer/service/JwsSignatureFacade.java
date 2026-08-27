@@ -76,7 +76,7 @@ public class JwsSignatureFacade {
     }
 
     private SignatureConfiguration findMatchingSigningKey(SignatureConfigurationWithHsm baseConfig, String issuerDid, String verificationMethod) {
-        if (!baseConfig.supportsSigningKeys()) {
+        if (issuerDid == null || verificationMethod == null || !baseConfig.supportsSigningKeys()) {
             throw new ConfigurationException("No signing key found for verification method: " + verificationMethod);
         }
 
@@ -98,10 +98,6 @@ public class JwsSignatureFacade {
 
         if (override == null) {
             throw new ConfigurationException("Configuration override cannot be null.");
-        }
-
-        if (signatureConfigurationWithHsm.supportsHSM() && StringUtils.isEmpty(override.keyId())) {
-            throw new ConfigurationException("Override without Key ID is not supported for HSM configurations.");
         }
     }
 

@@ -78,6 +78,8 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
+            <!-- Fixes CVE-2026-5598 -->
+            <version>5.0.3</version>
         </dependency>
 
 
