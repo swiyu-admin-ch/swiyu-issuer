@@ -101,7 +101,7 @@ public class JwsSignatureFacade {
         }
 
         if (signatureConfigurationWithHsm.supportsHSM() && StringUtils.isEmpty(override.keyId())) {
-            throw new ConfigurationException("Key ID override is not supported for HSM configurations.");
+            throw new ConfigurationException("Override without Key ID is not supported for HSM configurations.");
         }
     }
 

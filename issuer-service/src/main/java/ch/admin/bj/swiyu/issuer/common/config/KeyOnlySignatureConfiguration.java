@@ -6,14 +6,11 @@ import lombok.Setter;
 import java.util.List;
 
 @Getter
+@Setter
 public class KeyOnlySignatureConfiguration implements SignatureConfiguration {
-
-    @Getter
-    @Setter
+    
     private String verificationMethod;
 
-    @Getter
-    @Setter
     private String privateKey;
 
     @Override

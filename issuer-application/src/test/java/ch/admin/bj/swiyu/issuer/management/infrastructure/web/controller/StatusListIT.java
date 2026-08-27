@@ -11,16 +11,11 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
-import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -95,7 +90,7 @@ class StatusListIT {
     private StatusRegistryClient statusRegistryClient;
 
     @BeforeEach
-    void setUp() throws JOSEException, KeyStrategyException {
+    void setUp() {
         // Reset the spy so that stubs (e.g. isAutomaticStatusListSynchronizationDisabled=true) from
         // previous tests do not bleed into tests that expect the real/default behaviour.
         Mockito.reset(applicationProperties);
@@ -109,8 +104,6 @@ class StatusListIT {
         when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
-
-        final JWSSigner es256Signer = new ECDSASigner(new ECKeyGenerator(Curve.P_256).keyID("test-key").generate());
     }
 
     @Test
@@ -211,7 +204,6 @@ class StatusListIT {
         mvc.perform(post(STATUS_LIST_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                // todo check if correct status code
                 .andExpect(status().isInternalServerError())
                 .andReturn();
     }
@@ -223,7 +215,7 @@ class StatusListIT {
         var signingKeys = IntStream.range(0, 3)
                 .mapToObj(i -> {
                     var keyId = verificationMethod + "-" + i;
-                    String pemKey = null;
+                    String pemKey;
                     try {
                         pemKey = createPemForKid(keyId);
                     } catch (JOSEException e) {

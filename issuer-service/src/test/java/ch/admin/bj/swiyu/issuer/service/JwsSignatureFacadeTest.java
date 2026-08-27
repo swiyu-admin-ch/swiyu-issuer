@@ -70,7 +70,7 @@ class JwsSignatureFacadeTest {
     }
 
     @Test
-    void createSigner_withValidOnlyKeyIdOverride_thenSuccess() throws Exception {
+    void createSigner_withValidOnlyKeyId_noOverride_thenSuccess() throws Exception {
         SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
 
         ConfigurationOverride override = new ConfigurationOverride(null, null, null, null);
