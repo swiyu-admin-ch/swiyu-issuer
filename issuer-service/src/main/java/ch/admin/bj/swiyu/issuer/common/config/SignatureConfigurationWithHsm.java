@@ -41,6 +41,7 @@ public class SignatureConfigurationWithHsm implements SignatureConfiguration {
     @NotEmpty
     private String verificationMethod;
 
+    @Valid
     private List<KeyOnlySignatureConfiguration> signingKeys;
 
     @Override
