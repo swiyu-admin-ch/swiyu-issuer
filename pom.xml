@@ -66,7 +66,7 @@
      managed version from Spring Boot and cause java.lang.NoClassDefFoundError at runtime. -->
         <jackson.version>2.22.2</jackson.version>
         <jackson-annotations.version>2.22</jackson-annotations.version>
-        <jackson-core.version>2.22.0</jackson-core.version>
+        <jackson-core.version>2.22.2</jackson-core.version>
         <jackson3.version>3.2.2</jackson3.version>
     </properties>
 
