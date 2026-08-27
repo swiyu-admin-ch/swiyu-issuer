@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SignatureConfigurationWithHsm;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
@@ -327,9 +326,6 @@ class SdJwtCredentialIT {
 
         var overrideDid = "did:example:override2";
         var overrideVerificationMethod2 = overrideDid + "#key2";
-
-        var test = new SignatureConfigurationWithHsm();
-        test.setVerificationMethod(overrideVerificationMethod2);
 
         var config = new KeyOnlySignatureConfiguration();
         config.setVerificationMethod(overrideVerificationMethod2);

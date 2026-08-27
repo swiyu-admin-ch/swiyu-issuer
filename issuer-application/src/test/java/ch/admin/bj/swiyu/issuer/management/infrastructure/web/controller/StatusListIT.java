@@ -183,7 +183,7 @@ class StatusListIT {
     }
 
     @Test
-    void createNewStatusList_withIncorrectSigningKeysOverride_thenBadRequest() throws Exception {
+    void createNewStatusList_withIncorrectSigningKeysOverride_thenInternalServerError() throws Exception {
 
         var kid = "did:example:offer:override#key-other";
         var pem = createPemForKid(kid);

@@ -152,7 +152,7 @@ class WellKnownControllerIT {
 
 
     @Test
-    void testGetIssuerMetadata_withOverride_andIncorrectkey_byTenantIdSigned_thenSuccess() throws Exception {
+    void testGetIssuerMetadata_withOverrideAndIncorrectKey_thenInternalServerError() throws Exception {
         var issuerDid = "did:example:override";
         var issuerKid = issuerDid + "#key-1";
 

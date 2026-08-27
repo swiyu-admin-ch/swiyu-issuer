@@ -5,12 +5,22 @@ import lombok.Setter;
 
 import java.util.List;
 
-@Getter
-@Setter
+/**
+ * Signature configuration that uses a private key directly for signing
+ * and does not rely on an HSM or additional signing key configurations.
+ *
+ * <p>This implementation uses {@code "key"} as its key management method.
+ * HSM-related configuration is not supported, and no additional signing
+ * keys are maintained.</p>
+ */
 public class KeyOnlySignatureConfiguration implements SignatureConfiguration {
-    
+
+    @Getter
+    @Setter
     private String verificationMethod;
 
+    @Getter
+    @Setter
     private String privateKey;
 
     @Override
