@@ -72,6 +72,19 @@
 
     <dependencyManagement>
         <dependencies>
+            
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+
+            <!-- Fixes CVE-2026-59284 -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-context</artifactId>
+                <version>5.0.3</version>
+            </dependency>
 
             <!-- centrally manage swiyu-jws-signature-service version -->
             <dependency>
