@@ -153,8 +153,8 @@ class WellKnownControllerIT {
 
     @Test
     void testGetIssuerMetadata_withOverrideAndIncorrectKey_thenInternalServerError() throws Exception {
-        var issuerDid = "did:example:override";
-        var issuerKid = issuerDid + "#key-1";
+        var issuerDid = "did:example:override-2";
+        var issuerKid = issuerDid + "#key-2";
 
         CreateCredentialOfferRequestDto credentialOfferDto = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(java.util.List.of("test"))
