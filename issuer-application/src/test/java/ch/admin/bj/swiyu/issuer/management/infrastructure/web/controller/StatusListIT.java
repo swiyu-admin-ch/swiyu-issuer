@@ -195,8 +195,7 @@ class StatusListIT {
         var kid = "did:example:offer:override#key-other";
         var pem = createPemForKid(kid);
 
-        SignatureConfiguration signatureConfiguration = new SignatureConfiguration();
-        signatureConfiguration.setKeyManagementMethod("key");
+        KeyOnlySignatureConfiguration signatureConfiguration = new KeyOnlySignatureConfiguration();
         signatureConfiguration.setPrivateKey(pem);
         signatureConfiguration.setVerificationMethod(kid);
 
@@ -230,8 +229,7 @@ class StatusListIT {
                     } catch (JOSEException e) {
                         throw new RuntimeException(e);
                     }
-                    SignatureConfiguration signatureConfiguration = new SignatureConfiguration();
-                    signatureConfiguration.setKeyManagementMethod("key");
+                    KeyOnlySignatureConfiguration signatureConfiguration = new KeyOnlySignatureConfiguration();
                     signatureConfiguration.setPrivateKey(pemKey);
                     signatureConfiguration.setVerificationMethod(keyId);
                     return signatureConfiguration;

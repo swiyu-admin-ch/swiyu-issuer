@@ -1,7 +1,8 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.HSMProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
+import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfigurationWithHsm;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.jwssignatureservice.JwsSignatureService;
@@ -35,7 +36,7 @@ class JwsSignatureFacadeTest {
 
     @Test
     void createSigner_withDefaultKey_andSameOverride_thenSuccess() throws Exception {
-        SignatureConfiguration cfg = baseConfiguration(baseConfigKeyId);
+        SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
 
         ConfigurationOverride override = new ConfigurationOverride(baseConfig, baseConfigKeyId, null, null);
         assertDoesNotThrow(() -> facade.createSigner(cfg, override));
@@ -45,7 +46,7 @@ class JwsSignatureFacadeTest {
 
     @Test
     void createSigner_withoutKeyOverride_mapsConfigurationAndDelegates() throws Exception {
-        SignatureConfiguration cfg = baseConfiguration(baseConfigKeyId);
+        SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
         JWSSigner signer = mock(JWSSigner.class);
 
         when(jwsSignatureService.createSigner(any(SignatureConfigurationDto.class), isNull(), isNull())).thenReturn(signer);
@@ -70,7 +71,7 @@ class JwsSignatureFacadeTest {
 
     @Test
     void createSigner_withValidOnlyKeyIdOverride_thenSuccess() throws Exception {
-        SignatureConfiguration cfg = baseConfiguration(baseConfigKeyId);
+        SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
 
         ConfigurationOverride override = new ConfigurationOverride(null, null, null, null);
         assertDoesNotThrow(() -> facade.createSigner(cfg, override));
@@ -81,7 +82,7 @@ class JwsSignatureFacadeTest {
 
     @Test
     void createSigner_withUnknownKeyIdOverride_noHSM_noSigningKeys_throwsConfigurationException() throws Exception {
-        SignatureConfiguration cfg = baseConfiguration(baseConfigKeyId);
+        SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
         var differentKeyId = baseConfigKeyId + "different-key";
 
         ConfigurationOverride override = new ConfigurationOverride(baseConfig, differentKeyId, null, null);
@@ -92,10 +93,10 @@ class JwsSignatureFacadeTest {
 
     @Test
     void createSigner_withUnknownKeyIdOverride_noHSM_validSigningKeys_thenSuccess() throws Exception {
-        SignatureConfiguration cfg = baseConfiguration(baseConfigKeyId);
+        SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
         var differentKeyId = baseConfigKeyId + "different-key";
 
-        cfg.setSigningKeys(List.of(baseConfiguration(differentKeyId)));
+        cfg.setSigningKeys(List.of(keySignatureConfiguration(differentKeyId)));
 
         ConfigurationOverride override = new ConfigurationOverride(null, null, null, null);
         assertDoesNotThrow(() -> facade.createSigner(cfg, override));
@@ -105,11 +106,11 @@ class JwsSignatureFacadeTest {
 
     @Test
     void createSigner_withUnknownKeyIdOverride_withHSM_noValidSigningKeys_thenSuccess() throws Exception {
-        SignatureConfiguration cfg = baseConfiguration(baseConfigKeyId);
+        SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
         var differentKeyId = baseConfigKeyId + "different-key";
         var pin = "pin";
         cfg.setHsm(hsmProperties(differentKeyId));
-        cfg.setSigningKeys(List.of(baseConfiguration(baseConfigKeyId)));
+        cfg.setSigningKeys(List.of(keySignatureConfiguration(baseConfigKeyId)));
 
         ConfigurationOverride override = new ConfigurationOverride(null, null, differentKeyId, pin);
         assertDoesNotThrow(() -> facade.createSigner(cfg, override));
@@ -129,11 +130,11 @@ class JwsSignatureFacadeTest {
 
     @Test
     void createSigner_withUnknownKeyIdOverride_withHSM_andValidSigningKeys_shouldUseHSM_thenSuccess() throws Exception {
-        SignatureConfiguration cfg = baseConfiguration(baseConfigKeyId);
+        SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
         var differentKeyId = baseConfigKeyId + "different-key";
         var pin = "pin";
         cfg.setHsm(hsmProperties(differentKeyId));
-        cfg.setSigningKeys(List.of(baseConfiguration(differentKeyId)));
+        cfg.setSigningKeys(List.of(keySignatureConfiguration(differentKeyId)));
 
         ConfigurationOverride override = new ConfigurationOverride(null, null, differentKeyId, pin);
         assertDoesNotThrow(() -> facade.createSigner(cfg, override));
@@ -153,11 +154,11 @@ class JwsSignatureFacadeTest {
 
     @Test
     void createSigner_withoutMatchingSigningKeys_thenThrowsConfigurationException() {
-        SignatureConfiguration cfg = baseConfiguration(baseConfigKeyId);
+        SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
         var differentKeyId = baseConfigKeyId + "different-key";
         var anotherDid = baseConfig + "-other";
         var anotherKeyId = anotherDid + "#key";
-        cfg.setSigningKeys(List.of(baseConfiguration(differentKeyId)));
+        cfg.setSigningKeys(List.of(keySignatureConfiguration(differentKeyId)));
 
         ConfigurationOverride override = new ConfigurationOverride(anotherDid, anotherKeyId, null, null);
         assertThrows(ConfigurationException.class, () -> facade.createSigner(cfg, override));
@@ -165,7 +166,7 @@ class JwsSignatureFacadeTest {
 
     @Test
     void createSigner_withNullOverride_thenThrowsConfigurationException() {
-        SignatureConfiguration cfg = baseConfiguration(baseConfigKeyId);
+        SignatureConfigurationWithHsm cfg = baseConfiguration(baseConfigKeyId);
 
         assertThrows(ConfigurationException.class, () -> facade.createSigner(cfg, null));
     }
@@ -177,10 +178,19 @@ class JwsSignatureFacadeTest {
         assertThrows(ConfigurationException.class, () -> facade.createSigner(null, override));
     }
 
-    private SignatureConfiguration baseConfiguration(String verificationMethod) {
+    private SignatureConfigurationWithHsm baseConfiguration(String verificationMethod) {
 
-        SignatureConfiguration cfg = new SignatureConfiguration();
+        SignatureConfigurationWithHsm cfg = new SignatureConfigurationWithHsm();
         cfg.setKeyManagementMethod("key");
+        cfg.setVerificationMethod(verificationMethod);
+        cfg.setPrivateKey("private-key");
+
+        return cfg;
+    }
+
+    private KeyOnlySignatureConfiguration keySignatureConfiguration(String verificationMethod) {
+
+        KeyOnlySignatureConfiguration cfg = new KeyOnlySignatureConfiguration();
         cfg.setVerificationMethod(verificationMethod);
         cfg.setPrivateKey("private-key");
 

@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
-import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfigurationWithHsm;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.KeyResolver;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
@@ -22,7 +22,7 @@ import org.springframework.boot.health.contributor.Health;
  *
  * @param <T> concrete SignatureConfiguration type
  */
-public abstract class AbstractSigningKeyVerificationHealthChecker<T extends SignatureConfiguration> extends CachedHealthChecker {
+public abstract class AbstractSigningKeyVerificationHealthChecker<T extends SignatureConfigurationWithHsm> extends CachedHealthChecker {
 
     private static final String HEALTH_DETAIL_FAILED_DIDS = "failedDids";
     private static final String HEALTH_DETAIL_SIGNING_KEY = "signingKeyVerificationMethod";

@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.HSMProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfigurationWithHsm;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.jwssignatureservice.JwsSignatureService;
@@ -37,25 +38,25 @@ public class JwsSignatureFacade {
     /**
      * Creates a JWS signer with optional configuration overrides.
      *
-     * @param signatureConfiguration the base signature configuration
-     * @param override               the configuration override (keyId, keyPin, verificationMethod)
+     * @param signatureConfigurationWithHsm the base signature configuration
+     * @param override                      the configuration override (keyId, keyPin, verificationMethod)
      * @return a configured JWS signer instance
      * @throws KeyStrategyException   if signer creation fails
      * @throws ConfigurationException if the configuration is invalid or verification method not found
      */
     @Cacheable(JWS_SIGNER_CACHE)
-    public JWSSigner createSigner(SignatureConfiguration signatureConfiguration, ConfigurationOverride override)
+    public JWSSigner createSigner(SignatureConfigurationWithHsm signatureConfigurationWithHsm, ConfigurationOverride override)
             throws KeyStrategyException {
 
-        validateInputs(signatureConfiguration, override);
+        validateInputs(signatureConfigurationWithHsm, override);
 
-        SignatureConfiguration resolvedConfig = resolveConfiguration(signatureConfiguration, override);
+        SignatureConfiguration resolvedConfig = resolveConfiguration(signatureConfigurationWithHsm, override);
         SignatureConfigurationDto dto = mapToDto(resolvedConfig);
 
         return jwsSignatureService.createSigner(dto, override.keyId(), override.keyPin());
     }
 
-    private SignatureConfiguration resolveConfiguration(SignatureConfiguration baseConfig, ConfigurationOverride override) {
+    private SignatureConfiguration resolveConfiguration(SignatureConfigurationWithHsm baseConfig, ConfigurationOverride override) {
         if (StringUtils.isEmpty(override.verificationMethod())) {
             return baseConfig;
         }
@@ -74,7 +75,7 @@ public class JwsSignatureFacade {
         return findMatchingSigningKey(baseConfig, override.issuerDid(), override.verificationMethod());
     }
 
-    private SignatureConfiguration findMatchingSigningKey(SignatureConfiguration baseConfig, String issuerDid, String verificationMethod) {
+    private SignatureConfiguration findMatchingSigningKey(SignatureConfigurationWithHsm baseConfig, String issuerDid, String verificationMethod) {
         if (!baseConfig.supportsSigningKeys()) {
             throw new ConfigurationException("No signing key found for verification method: " + verificationMethod);
         }
@@ -90,8 +91,8 @@ public class JwsSignatureFacade {
                 .orElseThrow(() -> new ConfigurationException("No signing key found for verification method: " + verificationMethod));
     }
 
-    private void validateInputs(SignatureConfiguration signatureConfiguration, ConfigurationOverride override) {
-        if (signatureConfiguration == null) {
+    private void validateInputs(SignatureConfigurationWithHsm signatureConfigurationWithHsm, ConfigurationOverride override) {
+        if (signatureConfigurationWithHsm == null) {
             throw new ConfigurationException("Signature configuration cannot be null.");
         }
 
@@ -99,7 +100,7 @@ public class JwsSignatureFacade {
             throw new ConfigurationException("Configuration override cannot be null.");
         }
 
-        if (signatureConfiguration.supportsHSM() && StringUtils.isEmpty(override.keyId())) {
+        if (signatureConfigurationWithHsm.supportsHSM() && StringUtils.isEmpty(override.keyId())) {
             throw new ConfigurationException("Key ID override is not supported for HSM configurations.");
         }
     }

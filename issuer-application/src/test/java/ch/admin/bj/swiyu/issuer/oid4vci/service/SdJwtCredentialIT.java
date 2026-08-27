@@ -2,8 +2,9 @@ package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
+import ch.admin.bj.swiyu.issuer.common.config.SignatureConfigurationWithHsm;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
@@ -295,12 +296,8 @@ class SdJwtCredentialIT {
         var overrideDid2 = "did:example:override2";
         var overrideVerificationMethod2 = overrideDid2 + "#key2";
 
-        var test = new SignatureConfiguration();
-        test.setVerificationMethod(overrideVerificationMethod);
-
-        var config = new SignatureConfiguration();
+        var config = new KeyOnlySignatureConfiguration();
         config.setVerificationMethod(overrideVerificationMethod2);
-        config.setKeyManagementMethod("key");
         config.setPrivateKey(sdjwtProperties.getPrivateKey());
 
         Mockito.doReturn(List.of(config)).when(sdjwtProperties).getSigningKeys();
@@ -331,12 +328,11 @@ class SdJwtCredentialIT {
         var overrideDid = "did:example:override2";
         var overrideVerificationMethod2 = overrideDid + "#key2";
 
-        var test = new SignatureConfiguration();
+        var test = new SignatureConfigurationWithHsm();
         test.setVerificationMethod(overrideVerificationMethod2);
 
-        var config = new SignatureConfiguration();
+        var config = new KeyOnlySignatureConfiguration();
         config.setVerificationMethod(overrideVerificationMethod2);
-        config.setKeyManagementMethod("key");
         config.setPrivateKey(sdjwtProperties.getPrivateKey());
 
         Mockito.doReturn(List.of(config)).when(sdjwtProperties).getSigningKeys();

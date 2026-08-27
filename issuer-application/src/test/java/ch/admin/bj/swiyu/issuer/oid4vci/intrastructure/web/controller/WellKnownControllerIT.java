@@ -1,8 +1,8 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
@@ -195,8 +195,7 @@ class WellKnownControllerIT {
                     } catch (JOSEException e) {
                         throw new RuntimeException(e);
                     }
-                    SignatureConfiguration signatureConfiguration = new SignatureConfiguration();
-                    signatureConfiguration.setKeyManagementMethod("key");
+                    KeyOnlySignatureConfiguration signatureConfiguration = new KeyOnlySignatureConfiguration();
                     signatureConfiguration.setPrivateKey(pemKey);
                     signatureConfiguration.setVerificationMethod(keyId);
                     return signatureConfiguration;

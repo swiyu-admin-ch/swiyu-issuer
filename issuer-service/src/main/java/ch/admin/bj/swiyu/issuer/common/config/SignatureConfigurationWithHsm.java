@@ -1,0 +1,55 @@
+package ch.admin.bj.swiyu.issuer.common.config;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+import java.util.List;
+
+/**
+ * Parent Class with basic signing information
+ */
+@Valid
+@Data
+public class SignatureConfigurationWithHsm implements SignatureConfiguration {
+    /**
+     * Default Method of signing key management
+     */
+    @NotNull
+    private String keyManagementMethod;
+    /**
+     * Default Private Key, if the key is not managed by HSM
+     * This includes vault or just mounted as environment variable
+     */
+    private String privateKey;
+
+    /**
+     * Configuration Information for connecting to HSM and using an HSM Key
+     */
+    private HSMProperties hsm;
+
+    /**
+     * Location of the config file, see the <a href="https://docs.oracle.com/en/java/javase/21/security/pkcs11-reference-guide1.html">official java documentation</a>
+     */
+    private String pkcs11Config;
+
+    /**
+     * The id of the Default verification method in the did document with which a verifier can check the issued VC
+     * In did tdw/webvh this is the full did#fragment
+     */
+    @NotEmpty
+    private String verificationMethod;
+
+    private List<KeyOnlySignatureConfiguration> signingKeys;
+
+    @Override
+    public boolean supportsHSM() {
+        return hsm != null;
+    }
+
+    @Override
+    public boolean supportsSigningKeys() {
+        return signingKeys != null && !signingKeys.isEmpty();
+    }
+}

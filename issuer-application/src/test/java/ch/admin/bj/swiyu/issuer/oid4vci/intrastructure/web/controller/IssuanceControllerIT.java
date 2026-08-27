@@ -2,8 +2,8 @@ package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.common.config.SignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -291,9 +291,8 @@ class IssuanceControllerIT {
             expectedVerificationMethod = overrideId + "#key1";
             override = new ConfigurationOverride(overrideId, expectedVerificationMethod, null, null);
 
-            var config = new SignatureConfiguration();
+            var config = new KeyOnlySignatureConfiguration();
             config.setVerificationMethod(expectedVerificationMethod);
-            config.setKeyManagementMethod("key");
             config.setPrivateKey(sdjwtProperties.getPrivateKey());
 
             when(sdjwtProperties.getSigningKeys()).thenReturn(List.of(config));
