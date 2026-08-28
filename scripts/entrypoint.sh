@@ -35,7 +35,7 @@ if ls /certs-app/*.crt >/dev/null 2>&1; then
     done
 fi
 
- Only set the JVM proxy system properties when the corresponding env vars are
+# Only set the JVM proxy system properties when the corresponding env vars are
 # actually provided. Passing an *empty* -Dhttp.proxyHost=/-Dhttps.proxyHost= is
 # NOT equivalent to omitting the property: some HTTP clients (e.g. Reactor Netty,
 # used by Spring WebClient) interpret an empty proxyHost as "localhost" and will
