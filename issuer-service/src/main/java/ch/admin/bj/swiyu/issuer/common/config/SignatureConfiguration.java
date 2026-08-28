@@ -14,6 +14,7 @@ public interface SignatureConfiguration {
     /**
      * Indicates whether an HSM (Hardware Security Module) is configured
      * and supported for signing operations.
+     * This can be through a direct JCA plugin or through PKCS#11.
      *
      * @return {@code true} if HSM signing is supported; {@code false} otherwise
      */

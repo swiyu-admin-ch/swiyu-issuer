@@ -7,6 +7,8 @@ import lombok.Data;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Parent Class with basic signing information
  */
@@ -46,7 +48,7 @@ public class SignatureConfigurationWithHsm implements SignatureConfiguration {
 
     @Override
     public boolean supportsHSM() {
-        return hsm != null;
+        return hsm != null && StringUtils.isNotEmpty(pkcs11Config);
     }
 
     @Override

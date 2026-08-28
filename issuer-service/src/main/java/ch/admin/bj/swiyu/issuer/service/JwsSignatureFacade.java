@@ -48,7 +48,7 @@ public class JwsSignatureFacade {
     public JWSSigner createSigner(SignatureConfigurationWithHsm signatureConfigurationWithHsm, ConfigurationOverride override)
             throws KeyStrategyException {
 
-        validateInputs(signatureConfigurationWithHsm, override);
+        validateNotNull(signatureConfigurationWithHsm, override);
 
         SignatureConfiguration resolvedConfig = resolveConfiguration(signatureConfigurationWithHsm, override);
         SignatureConfigurationDto dto = mapToDto(resolvedConfig);
@@ -56,6 +56,13 @@ public class JwsSignatureFacade {
         return jwsSignatureService.createSigner(dto, override.keyId(), override.keyPin());
     }
 
+    /**
+     * Searches available configs for the appropriate one for the verification method.
+     * @param baseConfig Base configuration in which the search will take place
+     * @param override which may contain an alternative verification method
+     * @return baseConfig if no override verificationMethod is used or if an HSM is being used. 
+     *         When using key from application config the apropriate config is returned.
+     */
     private SignatureConfiguration resolveConfiguration(SignatureConfigurationWithHsm baseConfig, ConfigurationOverride override) {
         if (StringUtils.isEmpty(override.verificationMethod())) {
             return baseConfig;
@@ -66,12 +73,12 @@ public class JwsSignatureFacade {
             return baseConfig;
         }
 
-        // handles hsm use
+        // handles hsm using JCA (Java Cryptography Architecture) or PKCS#11 use
         if (baseConfig.supportsHSM() && override.keyId() != null) {
             return baseConfig;
         }
 
-        // handles signing keys
+        // handles signing keys from application config file
         return findMatchingSigningKey(baseConfig, override.issuerDid(), override.verificationMethod());
     }
 
@@ -91,7 +98,14 @@ public class JwsSignatureFacade {
                 .orElseThrow(() -> new ConfigurationException("No signing key found for verification method: " + verificationMethod));
     }
 
-    private void validateInputs(SignatureConfigurationWithHsm signatureConfigurationWithHsm, ConfigurationOverride override) {
+
+    /**
+     * Ensures input are not null
+     * @param signatureConfigurationWithHsm config to be validated
+     * @param override override to be validated
+     * @throws ConfigurationException if one of the inputs was null
+     */
+    private void validateNotNull(SignatureConfigurationWithHsm signatureConfigurationWithHsm, ConfigurationOverride override) {
         if (signatureConfigurationWithHsm == null) {
             throw new ConfigurationException("Signature configuration cannot be null.");
         }
