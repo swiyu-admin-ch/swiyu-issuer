@@ -5,39 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [NEXT]
+# [NEXT]
+
+## Changed
+- Migrated build to Java 25 (LTS) and upgraded to Spring Boot 4.1.1 to officially support the new JDK LTS release `(#1019)`
+- Updated the Docker base images (`Dockerfile` and `Dockerfile.dhi`) to Eclipse Temurin 25 JRE (`eclipse-temurin:25-jre-ubi10-minimal`) so container images now require and ship a Java 25 runtime. `(#1019)`
+
+### Added
+
+- Added new credential-configuration-property in the issuer metadata `credential_refresh_disabled` that points out if a
+  business issuer has disabled the renewal flow for a specific credential type. If this property is set to true, the
+  wallet should not attempt to renew the credential and should not display a renewal option to the user `(#1093)`
+
+
+
+## [4.2.0] - 2026-08-24
 
 ### Added
 
 - Support for EdDSA signed VCs. When using EdDSA `credential_signing_alg_values_supported` MUST be updated to `Ed25519`
   Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used
   by the wallet for proofs.
-- Added new credential-configuration-property in the issuer metadata `credential_refresh_disabled` that points out if a
-  business issuer has disabled the renewal flow for a specific credential type. If this property is set to true, the
-  wallet should not attempt to renew the credential and should not display a renewal option to the user `(#1093)`
+
+### Changed
+
+- As the `renewal-flow-allowed` property is removed, the renewal flow is now enabled by setting
+  `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT` not setting the value (which is the default) disables the renewal and keeps the
+  former functionality `(#1093)`
+-
+### Removed
+
+- Removed support for `renewal-flow-allowed` and therefore `RENEWAL_FLOW_ENABLED` as different variables handle the same
+  functionality `(#1093)`
 
 ### Fixed
 
 - Fixed mapping error with deferred credentials and accept unknown fields in `CredentialResponseEncryptionClass` to make
   it more robust with older versions `(#1120, #1130)`.
-- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
+- Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that
+  rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
+- Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
+- Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
 
 ## Changed
 
 - Use Jackson 3 instead of 2
-- As the `renewal-flow-allowed` property is removed, the renewal flow is now enabled by setting
-  `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT` not setting the value (which is the default) disables the renewal and keeps the
-  former functionality `(#1093)`
 - Renamed cache properties to be more descriptive: `(#1227)`
     - `caching.publicKeyCacheTTL` → `caching.public-key-cache-ttl-ms` (Non-breaking change, as the old property is still
       supported for backwards compatibility)
     - `caching.encryptionMetadataCacheTTL` → `caching.encryption-metadata-cache-ttl-ms` (Non-breaking change, as the old
       property is still supported for backwards compatibility)
-      
-### Removed
-
-- Removed support for `renewal-flow-allowed` and therefore `RENEWAL_FLOW_ENABLED` as different variables handle the same
-  functionality `(#1093)`
 
 ## [4.1.0] - 2026-07-23
 
