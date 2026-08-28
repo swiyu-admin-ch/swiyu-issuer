@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer;
 
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto;
@@ -11,10 +10,10 @@ import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpStatus;
@@ -33,13 +32,11 @@ class DefaultExceptionHandlerTest {
     private DefaultExceptionHandler handler;
 
     @Mock
-    private ApplicationProperties applicationProperties;
-    @Mock
     private NonceService nonceService;
 
     @BeforeEach
     void setUp() {
-        handler = new DefaultExceptionHandler(applicationProperties, nonceService);
+        handler = new DefaultExceptionHandler(nonceService);
     }
 
     @ParameterizedTest
@@ -178,6 +175,19 @@ class DefaultExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(body);
         assertEquals(errorMessage, body.getErrorDetails());
+    }
+
+    @Test
+    void handleRenewalException_withHTTPStatusCodeBAD_REQUEST_shouldReturnBadRequestWithCorrectCode() {
+        var errorMessage = "Credential error message";
+        var exception = new RenewalException(HttpStatus.BAD_REQUEST, errorMessage);
+        final ResponseEntity<ApiErrorDto> response = handler.handleRenewalException(exception);
+        final ApiErrorDto body = response.getBody();
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(body);
+        assertEquals("credential_request_denied", body.getErrorCode());
+        assertEquals(errorMessage, body.getErrorDescription());
     }
 
     @Test

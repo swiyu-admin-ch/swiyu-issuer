@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated build to Java 25 (LTS) and upgraded to Spring Boot 4.1.1 to officially support the new JDK LTS release `(#1019)`
 - Updated the Docker base images (`Dockerfile` and `Dockerfile.dhi`) to Eclipse Temurin 25 JRE (`eclipse-temurin:25-jre-ubi10-minimal`) so container images now require and ship a Java 25 runtime. `(#1019)`
 
+### Added
+
+- Added new credential-configuration-property in the issuer metadata `credential_refresh_disabled` that points out if a
+  business issuer has disabled the renewal flow for a specific credential type. If this property is set to true, the
+  wallet should not attempt to renew the credential and should not display a renewal option to the user `(#1093)`
+
+
+
 ## [4.2.0] - 2026-08-24
 
 ### Added
@@ -18,6 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for EdDSA signed VCs. When using EdDSA `credential_signing_alg_values_supported` MUST be updated to `Ed25519`
   Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used
   by the wallet for proofs.
+
+### Changed
+
+- As the `renewal-flow-allowed` property is removed, the renewal flow is now enabled by setting
+  `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT` not setting the value (which is the default) disables the renewal and keeps the
+  former functionality `(#1093)`
+-
+### Removed
+
+- Removed support for `renewal-flow-allowed` and therefore `RENEWAL_FLOW_ENABLED` as different variables handle the same
+  functionality `(#1093)`
 
 ### Fixed
 
