@@ -12,18 +12,18 @@ asked.
 ## 2. Technology Stack
 
 - **Build & Project Structure**
-    - **Build tool:** Maven (`pom.xml` in a multi-module setup, parent artifact `swiyu-issuer-parent` `3.1.1`)
+    - **Build tool:** Maven (`pom.xml` in a multi-module setup, parent artifact `swiyu-issuer-parent`)
     - **Modules:**
         - `issuer-service` – business logic, domain model, DTOs, shared configuration/utilities
         - `issuer-application` – Spring Boot application and web/infrastructure layer (depends on `issuer-service`)
 
 - **Primary Programming Language**
-    - **Java 21** (defined via `java.version` in the parent `pom.xml`)
+    - **Java 25 (LTS)** (defined via `java.version` in the parent `pom.xml`)
     - No Kotlin runtime is required for this project.
 
 - **Main Frameworks**
-    - **Spring Boot 4.0.6** (parent: `spring-boot-starter-parent` `4.0.6`)
-    - **Spring Cloud 2025.1.1** (BOM via `spring-cloud-dependencies`)
+    - **Spring Boot 4.1.1** (parent: `spring-boot-starter-parent` `4.1.1`)
+    - **Spring Cloud 2025.1.2** (BOM via `spring-cloud-dependencies`)
     - **Spring Framework / Spring Ecosystem**, including:
         - Spring Web (`spring-boot-starter-web`, in `issuer-application`)
         - Spring Security (`spring-boot-starter-security`, in `issuer-application`)
@@ -35,6 +35,7 @@ asked.
         - Spring Cloud Kubernetes Config (`spring-cloud-starter-kubernetes-fabric8-config`, in `issuer-application`
           only)
         - Spring Cloud Bootstrap (`spring-cloud-starter-bootstrap`, in `issuer-application` only)
+        - **`spring-boot-starter-restclient`** and **`spring-boot-starter-webclient`** (`issuer-application` only): since Spring Boot 4.1, `RestClientAutoConfiguration` (providing the `RestClient.Builder` bean) was split out of `spring-boot-autoconfigure` into its own starter and is no longer pulled in transitively via `spring-boot-starter-web`. Required explicitly because `swiyu-did-resolver-adapter`'s `DidResolverWebClientConfiguration` depends on a `RestClient.Builder` bean. Do not remove.
         - **Spring Statemachine 4.0.2** – used in `issuer-service` to drive the credential offer / issuance lifecycle.
         - Note: `spring-webflux` is a direct dependency of `issuer-service` (used by `WebClient` and reactive
           utilities), but the `spring-boot-starter-webflux` starter is **not** used — the web layer is Spring MVC.
@@ -48,7 +49,7 @@ asked.
         - PostgreSQL-specific overrides: `issuer-application/src/main/resources/db/migration/postgres`
 
 - **Important Libraries**
-    - **Lombok** (`org.projectlombok:lombok`, marked optional) for reducing boilerplate
+    - **Lombok** (`org.projectlombok:lombok`, marked optional) for reducing boilerplate; must be kept on a JDK-25-compatible release (≥ 1.18.42). In both module `pom.xml`s, the `maven-compiler-plugin`'s `annotationProcessorPaths` is restricted explicitly to the Lombok artifact only (instead of the full compile classpath) — this was required to avoid intermittent AST-transformation failures for a subset of classes when compiling the whole module in one pass under JDK 25. Do not remove this restriction or add other processors to the same path without re-testing a full `mvn clean package`.
     - **Nimbus JOSE + JWT** (`10.8`) for JWT/JOSE processing
     - **Bouncy Castle** (`bcprov-jdk18on`, `bcpkix-jdk18on`, both `1.84`) for cryptographic support
     - **Authlete SD-JWT** (`com.authlete:sd-jwt`, `1.7`) for SD-JWT handling
@@ -64,7 +65,7 @@ asked.
     - **JsonPath** (`2.10.0`) for JSON assertions and processing.
     - **Primus JCE** (`2.4.4`, system scope) – HSM provider integrated via the Spring Boot Maven plugin (
       `includeSystemScope=true`).
-    - **DID / SWIYU-specific libraries** (all under group `ch.admin.swiyu`, currently version `1.7.0`):
+    - **DID / SWIYU-specific libraries** (all under group `ch.admin.swiyu`, currently version `2.2.0`):
         - `swiyu-jws-signature-service`
         - `swiyu-did-resolver-adapter`
         - `swiyu-jwe-util`
