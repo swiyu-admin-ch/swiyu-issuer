@@ -382,7 +382,7 @@
       }
     },
     "university_example_sd_jwt_with_renewal": {
-      "credential_refresh_disabled": "false",
+      "credential_refresh_disabled": false,
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
         "ES256",
@@ -442,7 +442,7 @@
       }
     },
     "university_example_sd_jwt_with_renewal_disabled": {
-      "credential_refresh_disabled": "true",
+      "credential_refresh_disabled": true,
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
         "ES256",
