@@ -14,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
+import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import ch.admin.bj.swiyu.issuer.service.OAuthService;
 import ch.admin.bj.swiyu.issuer.service.SdJwtCredential;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
@@ -64,7 +65,6 @@ class CredentialServiceOrchestratorTest {
     private OAuthService oAuthService;
     private CredentialStateMachine credentialStateMachine;
 
-
     @BeforeEach
     void setUp() {
         statusListOrchestrator = Mockito.mock(StatusListOrchestrator.class);
@@ -78,6 +78,7 @@ class CredentialServiceOrchestratorTest {
         CredentialManagementService credentialManagementService = Mockito.mock(CredentialManagementService.class);
         BusinessIssuerRenewalApiClient renewalApiClient = Mockito.mock(BusinessIssuerRenewalApiClient.class);
         credentialStateMachine = Mockito.mock(CredentialStateMachine.class);
+        MetadataService metadataService = Mockito.mock(MetadataService.class);
 
         mockCredentialStateMachine(credentialStateMachine);
 
@@ -102,7 +103,8 @@ class CredentialServiceOrchestratorTest {
                 renewalApiClient,
                 credentialManagementService,
                 credentialManagementRepository,
-                credentialEnvelopeService);
+                credentialEnvelopeService,
+                metadataService);
         var deferredCredentialService = new DeferredCredentialService(
                 credentialOfferRepository,
                 credentialManagementRepository,
@@ -138,8 +140,8 @@ class CredentialServiceOrchestratorTest {
 
         when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credentialConfiguration);
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of("test", credentialConfiguration));
-
         when(jweService.issuerMetadataWithEncryptionOptions()).thenReturn(issuerMetadata);
+        when(metadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
 
     }
 

@@ -185,7 +185,6 @@ application:
   token-ttl: 600
   allow-token-refresh: "${ALLOW_TOKEN_REFRESH:true}"
   allow-refresh-token-rotation: "${ALLOW_REFRESH_TOKEN_ROTATION:false}"
-  renewal-flow-allowed: "${RENEWAL_FLOW_ENABLED:false}"
   business-issuer-renewal-api-endpoint: "${BUSINESS_ISSUER_RENEWAL_API_ENDPOINT:}"
 
   # JSON file holding OpenID Connect configuration

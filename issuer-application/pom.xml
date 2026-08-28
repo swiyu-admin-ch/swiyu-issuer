@@ -9,7 +9,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-issuer-parent</artifactId>
-        <version>4.2.0-SNAPSHOT</version>
+        <version>4.3.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>swiyu-issuer-application</artifactId>
@@ -78,8 +78,7 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
-            <!-- Fixes CVE-2026-5598 -->
-            <version>5.0.3</version>
+            <version>${spring-cloud-starter-bootstrap.version}</version>
         </dependency>
 
 
@@ -145,7 +144,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>4.2.0-SNAPSHOT</version>
+            <version>4.3.0-SNAPSHOT</version>
         </dependency>
 
         <!-- Miscellaneous / Utility -->
@@ -230,7 +229,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu</groupId>
             <artifactId>swiyu-issuer-service</artifactId>
-            <version>4.2.0-SNAPSHOT</version>
+            <version>4.3.0-SNAPSHOT</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -348,6 +347,23 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <!-- Explicitly restrict the annotation processor path to Lombok only (instead of the
+                 full compile classpath). See EIDOMNI-1019 Java 25 migration: under JDK 25, letting
+                 javac discover annotation processors from the whole classpath interfered with
+                 Lombok's AST rewriting for a subset of classes. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

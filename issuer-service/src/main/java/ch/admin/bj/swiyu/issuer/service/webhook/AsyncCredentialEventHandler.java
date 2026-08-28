@@ -1,5 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.webhook;
 
+import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventTrigger;
+import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -7,9 +9,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-
-import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventTrigger;
-import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 
 @Component
 @Slf4j
@@ -27,7 +26,7 @@ public class AsyncCredentialEventHandler {
 
     /**
      * Triggered after a successful transaction commit.
-     *
+     * <p>
      * The annotation @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) ensures that the webhook event
      * is only sent to the Business Issuer if the state change has actually been persisted in the database.
      * This prevents so-called "ghost webhooks" (false positives) where a webhook is sent,
@@ -42,7 +41,7 @@ public class AsyncCredentialEventHandler {
 
     /**
      * Triggered after a transaction rollback.
-     *
+     * <p>
      * The annotation @TransactionalEventListener(phase = TransactionPhase.AFTER_ROLLBACK) ensures that in case of a failure
      * (e.g., if updating the external Status List fails), an error webhook is sent to the Business Issuer.
      * This keeps both systems in sync regarding failed operations.
@@ -58,7 +57,7 @@ public class AsyncCredentialEventHandler {
 
     /**
      * Triggered after a successful transaction commit.
-     *
+     * <p>
      * The annotation @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) ensures that the webhook event
      * is only sent to the Business Issuer if the state change has actually been persisted in the database.
      * This prevents so-called "ghost webhooks" (false positives) where a webhook is sent,
@@ -73,7 +72,7 @@ public class AsyncCredentialEventHandler {
 
     /**
      * Triggered after a transaction rollback.
-     *
+     * <p>
      * The annotation @TransactionalEventListener(phase = TransactionPhase.AFTER_ROLLBACK) ensures that in case of a failure
      * (e.g., if updating the external Status List fails), an error webhook is sent to the Business Issuer.
      * This keeps both systems in sync regarding failed operations.

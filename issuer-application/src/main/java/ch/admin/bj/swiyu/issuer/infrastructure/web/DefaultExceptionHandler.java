@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web;
 
-import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.*;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.exception.DpopErrorDto;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.CREDENTIAL_REQUEST_DENIED;
 import static ch.admin.bj.swiyu.issuer.infrastructure.web.CredentialMapper.oauthErrorToApiErrorDto;
 import static ch.admin.bj.swiyu.issuer.infrastructure.web.CredentialMapper.toCredentialRequestErrorResponseDto;
 import static org.springframework.http.HttpStatus.*;
@@ -36,7 +36,6 @@ import static org.springframework.http.HttpStatus.*;
 @RequiredArgsConstructor
 public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
-    private final ApplicationProperties applicationProperties;
     private final NonceService nonceService;
 
     @ExceptionHandler(OAuthException.class)
@@ -49,10 +48,11 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(RenewalException.class)
     public ResponseEntity<ApiErrorDto> handleRenewalException(final RenewalException exception) {
         ApiErrorDto apiError = ApiErrorDto.builder()
+                .errorCode(CREDENTIAL_REQUEST_DENIED.getErrorCode())
                 .errorDescription(exception.getMessage())
                 .status(exception.getHttpStatus())
                 .build();
-        log.debug("OAuthException: {}", exception.getMessage());
+        log.debug("Renewal exception: {}", exception.getMessage());
         return new ResponseEntity<>(apiError, apiError.getStatus());
     }
 
