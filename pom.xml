@@ -98,14 +98,6 @@
                 <version>${jackson3.version}</version>
             </dependency>
 
-            <!-- Fixes CVE-2026-42198 -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <scope>runtime</scope>
-                <version>42.7.13</version>
-            </dependency>
-
             <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORKCLOUD-19268251 (Missing Authorization, High Severity) in spring-cloud-context@5.0.2
                  Override the version pinned by spring-cloud-dependencies BOM 2025.1.2 which still uses 5.0.2 -->
             <dependency>
@@ -119,14 +111,6 @@
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcprov-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
-            </dependency>
-
-            <!-- Source: https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.20.0</version>
-                <scope>compile</scope>
             </dependency>
 
             <!-- centrally manage swiyu-jws-signature-service version -->
