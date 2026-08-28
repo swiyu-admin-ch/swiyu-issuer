@@ -76,10 +76,10 @@
 
         <!-- Spring Cloud / Kubernetes -->
         <dependency>
-             <groupId>org.springframework.cloud</groupId>
-             <artifactId>spring-cloud-starter-bootstrap</artifactId>
-             <version>${spring-cloud-starter-bootstrap.version}</version>
-         </dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bootstrap</artifactId>
+            <version>${spring-cloud-starter-bootstrap.version}</version>
+        </dependency>
 
 
         <!-- Database Drivers and Migration -->
@@ -347,28 +347,28 @@
                         </goals>
                     </execution>
                 </executions>
-             </plugin>
-             <!-- Explicitly restrict the annotation processor path to Lombok only (instead of the
-                  full compile classpath). See EIDOMNI-1019 Java 25 migration: under JDK 25, letting
-                  javac discover annotation processors from the whole classpath interfered with
-                  Lombok's AST rewriting for a subset of classes. -->
-             <plugin>
-                 <groupId>org.apache.maven.plugins</groupId>
-                 <artifactId>maven-compiler-plugin</artifactId>
-                 <configuration>
-                     <annotationProcessorPaths>
-                         <path>
-                             <groupId>org.projectlombok</groupId>
-                             <artifactId>lombok</artifactId>
-                             <version>${lombok.version}</version>
-                         </path>
-                     </annotationProcessorPaths>
-                 </configuration>
-             </plugin>
-             <plugin>
-                 <groupId>org.apache.maven.plugins</groupId>
-                 <artifactId>maven-failsafe-plugin</artifactId>
-             </plugin>
+            </plugin>
+            <!-- Explicitly restrict the annotation processor path to Lombok only (instead of the
+                 full compile classpath). See EIDOMNI-1019 Java 25 migration: under JDK 25, letting
+                 javac discover annotation processors from the whole classpath interfered with
+                 Lombok's AST rewriting for a subset of classes. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
             <!-- Requires the Server to be started to work, thus requires the pre- & post-documentation of spring-boot-maven-plugin-->
             <plugin>
                 <groupId>org.springdoc</groupId>

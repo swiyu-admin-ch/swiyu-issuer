@@ -307,27 +307,27 @@
                         </goals>
                     </execution>
                 </executions>
-             </plugin>
+            </plugin>
 
-             <!-- Explicitly restrict the annotation processor path to Lombok only (instead of the
-                  full compile classpath). -->
-             <plugin>
-                 <groupId>org.apache.maven.plugins</groupId>
-                 <artifactId>maven-compiler-plugin</artifactId>
-                 <configuration>
-                     <annotationProcessorPaths>
-                         <path>
-                             <groupId>org.projectlombok</groupId>
-                             <artifactId>lombok</artifactId>
-                             <version>${lombok.version}</version>
-                         </path>
-                     </annotationProcessorPaths>
-                 </configuration>
-             </plugin>
+            <!-- Explicitly restrict the annotation processor path to Lombok only (instead of the
+                 full compile classpath). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
 
-             <plugin>
-                 <groupId>org.apache.maven.plugins</groupId>
-                 <artifactId>maven-jar-plugin</artifactId>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
                 <version>3.5.1</version>
                 <executions>
                     <execution>
