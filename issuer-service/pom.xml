@@ -208,6 +208,12 @@
             <artifactId>swiyu-jwt-validator</artifactId>
             <version>${generic-java-lib.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-sdjwt-builder</artifactId>
+            <version>${generic-java-lib.version}</version>
+        </dependency>
+
 
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
