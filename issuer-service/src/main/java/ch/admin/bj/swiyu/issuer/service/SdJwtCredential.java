@@ -14,11 +14,13 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import ch.admin.bj.swiyu.jwtutil.JwtUtil;
-
 import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
 import com.authlete.sd.SDObjectBuilder;
-import com.nimbusds.jose.*;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.annotation.Nullable;
@@ -167,10 +169,7 @@ public class SdJwtCredential extends CredentialBuilder {
         var override = this.getCredentialOffer()
                 .getConfigurationOverride();
         try {
-            return getJwsSignatureFacade().createSigner(
-                    sdjwtProperties,
-                    override.keyId(),
-                    override.keyPin());
+            return getJwsSignatureFacade().createSigner(sdjwtProperties, override);
         } catch (KeyStrategyException e) {
             throw new CredentialException(e);
         }
@@ -407,7 +406,7 @@ public class SdJwtCredential extends CredentialBuilder {
                 .ifPresent(o -> alwaysDisclosedData.put("vct_metadata_uri", o));
         Optional.ofNullable(credentailConfiguration.getVctMetadataUriIntegrity())
                 .ifPresent(o -> alwaysDisclosedData.put("vct_metadata_uri#integrity", o));
-        
+
         var credentialMetadata = getCredentialOffer().getCredentialMetadata();
         if (nonNull(credentialMetadata)) {
             Optional.ofNullable(credentialMetadata.vctMetadataUri())
