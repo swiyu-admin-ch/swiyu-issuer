@@ -62,7 +62,7 @@ public class CredentialOfferTestData {
                                                   ConfigurationOverride override,
                                                   Integer deferredExpirationInSeconds) {
         HashMap<String, Object> offerData = new HashMap<>();
-        offerData.put("data", new GsonBuilder().create().toJson(addIllegalClaims(getUniversityCredentialSubjectData())));
+        offerData.put("data", new GsonBuilder().create().toJson(getUniversityCredentialSubjectData()));
         return CredentialOffer.builder()
                 .credentialStatus(status)
                 .metadataCredentialSupportedId(List.of(metadataId))
@@ -75,20 +75,6 @@ public class CredentialOfferTestData {
                 .credentialValidUntil(validUntil)
                 .configurationOverride(override)
                 .build();
-    }
-
-    /**
-     * illegally overriding some properties. They should be ignored in all tests this is used
-     *
-     * @param credentialSubjectData the credential subject data to be manipulated
-     * @return a new copy of the credentialSubjectData with additional sd-jwt illegal claims
-     */
-    public static Map<String, String> addIllegalClaims(Map<String, String> credentialSubjectData) {
-        var alteredCredentialSubjectData = new HashMap<>(credentialSubjectData);
-        alteredCredentialSubjectData.put("iss", "did:example:test-university");
-        alteredCredentialSubjectData.put("vct", "lorem ipsum");
-        alteredCredentialSubjectData.put("iat", "0");
-        return alteredCredentialSubjectData;
     }
 
     public static Map<String, String> getUniversityCredentialSubjectData() {

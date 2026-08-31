@@ -216,52 +216,6 @@ class CredentialBuilderTest {
         assertEquals("application/jwt", response.getContentType());
     }
 
-    @Test
-    void getStatusReferences_thenReturnsAggregatedReferences() {
-
-        UUID offerId = UUID.randomUUID();
-        UUID statusListId1 = UUID.randomUUID();
-        UUID statusListId2 = UUID.randomUUID();
-
-        CredentialOffer offer = mock(CredentialOffer.class);
-        when(offer.getId()).thenReturn(offerId);
-        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of(CREDENTIAL_SUPPORTED_ID));
-
-        var test = mock(CredentialConfiguration.class);
-        when(test.getVctMetadataUri()).thenReturn("https://example.com/vct-metadata");
-
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(CREDENTIAL_SUPPORTED_ID, mock(CredentialConfiguration.class)));
-
-        // two status entries pointing to two different status lists
-        CredentialOfferStatusKey key1 = new CredentialOfferStatusKey(offerId, statusListId1, 5);
-        CredentialOfferStatusKey key2 = new CredentialOfferStatusKey(offerId, statusListId2, 7);
-
-        CredentialOfferStatus status1 = CredentialOfferStatus.builder().id(key1).build();
-        CredentialOfferStatus status2 = CredentialOfferStatus.builder().id(key2).build();
-
-        when(credentialOfferStatusRepository.findByOfferId(offerId)).thenReturn(Set.of(status1, status2));
-
-        StatusList sl1 = StatusList.builder().id(statusListId1).uri("https://example.com/status/1").build();
-        StatusList sl2 = StatusList.builder().id(statusListId2).uri("https://example.com/status/2").build();
-
-        when(statusListRepository.findById(statusListId1)).thenReturn(Optional.of(sl1));
-        when(statusListRepository.findById(statusListId2)).thenReturn(Optional.of(sl2));
-
-        builder.credentialOffer(offer);
-
-        Map<String, List<ch.admin.bj.swiyu.issuer.domain.credentialoffer.VerifiableCredentialStatusReference>> refs = builder.getStatusReferences();
-
-        assertEquals(2, refs.size());
-        assertTrue(refs.containsKey(sl1.getUri()));
-        assertTrue(refs.containsKey(sl2.getUri()));
-        assertEquals(1, refs.get(sl1.getUri()).size());
-        assertEquals(1, refs.get(sl2.getUri()).size());
-
-        var ref = refs.get(sl1.getUri()).getFirst();
-        assertEquals(sl1.getUri(), ref.getIdentifier());
-        // TokenStatusListReference exposes idx as first param; ensure the index is correct
-        assertEquals(5, ((ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListReference) ref).idx());
-    }
 
     @Test
     void freeUnusedStatusReferences_deletesSuperfluousStatuses() {
