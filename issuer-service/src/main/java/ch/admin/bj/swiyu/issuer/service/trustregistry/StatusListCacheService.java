@@ -51,7 +51,7 @@ public class StatusListCacheService {
      */
     public TokenStatusListTokenDto getTokenStatusListTokenByUri(String uri) {
         Optional<TokenStatusListTokenDto> token = cache.get(uri, this::resolveValidatedStatusList);
-        return token == null ? null : token.orElse(null);
+        return token.orElse(null);
     }
 
     /**
