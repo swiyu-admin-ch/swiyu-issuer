@@ -38,7 +38,7 @@
         <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
         <bouncycastle.version>1.85</bouncycastle.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
-        <springdoc-openapi-starter-webmvc-ui.version>3.0.0</springdoc-openapi-starter-webmvc-ui.version>
+        <springdoc-openapi-starter-webmvc-ui.version>3.1.0</springdoc-openapi-starter-webmvc-ui.version>
         <openapi-generator-maven-plugin.version>7.24.0</openapi-generator-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <primus-jce.version>2.4.4</primus-jce.version>
@@ -47,7 +47,7 @@
         <sonar.issue.ignore.multicriteria.e1.resourceKey>**/pom.xml</sonar.issue.ignore.multicriteria.e1.resourceKey>
         <spring-doc.version>3.0.0</spring-doc.version>
         <authlete.version>1.9</authlete.version>
-        <springframework.cloud.version>2025.1.2</springframework.cloud.version>
+        <springframework.cloud.version>2025.1.3</springframework.cloud.version>
         <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORKCLOUD-19268251 (Missing Authorization, High Severity) in spring-cloud-context@5.0.2 -->
         <spring-cloud-context.version>5.0.3</spring-cloud-context.version>
         <spring-cloud-starter-bootstrap.version>5.0.3</spring-cloud-starter-bootstrap.version>
