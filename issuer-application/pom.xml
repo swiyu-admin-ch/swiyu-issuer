@@ -106,7 +106,7 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
-            <version>1.17.0</version>
+            <version>1.17.1</version>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -186,7 +186,7 @@
         <dependency>
             <groupId>com.squareup.okio</groupId>
             <artifactId>okio</artifactId>
-            <version>3.18.0</version>
+            <version>3.18.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
