@@ -2,6 +2,9 @@ package ch.admin.bj.swiyu.issuer.oid4vci.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
+import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
@@ -10,17 +13,21 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
+import ch.admin.bj.swiyu.issuer.service.enc.EncryptionKeyService;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jwt.SignedJWT;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.text.ParseException;
@@ -48,8 +55,13 @@ class SdJwtCredentialIT {
     private CredentialFormatFactory vcFormatFactory;
     @Autowired
     private ApplicationProperties applicationProperties;
-    @Autowired
+    @MockitoSpyBean
+    private SdjwtProperties sdjwtProperties;
+    @MockitoSpyBean
     private JweService jweService;
+    @Autowired
+    private EncryptionKeyService encryptionKeyService;
+
     @Autowired
     private IssuerMetadata issuerMetadata;
 
@@ -59,6 +71,14 @@ class SdJwtCredentialIT {
             throw new IllegalStateException("Expected first credential at path $.credentials[0].credential");
         }
         return credential;
+    }
+
+    @BeforeEach
+    void setUp() {
+        Mockito.reset(sdjwtProperties);
+
+        // Ensure encryption keys exist before tests run
+        encryptionKeyService.rotateEncryptionKeys();
     }
 
     @Test
@@ -245,13 +265,78 @@ class SdJwtCredentialIT {
     }
 
     @Test
-    void getSdJwtCredentialTestSD_whenOverriding_thenSuccess() throws ParseException {
+    void getSdJwtCredentialTestSD_whenOverriding_withoutSigningKeys_thenConfigurationException() {
         var overrideDid = "did:example:override";
         var overrideVerificationMethod = overrideDid + "#key1";
 
         var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED,
                 "university_example_sd_jwt",
                 new ConfigurationOverride(overrideDid, overrideVerificationMethod, null, null));
+
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
+        credentialRequest.setCredentialResponseEncryption(null);
+
+        assertThrows(ConfigurationException.class, () -> vcFormatFactory
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(
+                        jweService.issuerMetadataWithEncryptionOptions()
+                                .getResponseEncryption(),
+                        credentialRequest.getCredentialResponseEncryption())
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredentialEnvelope());
+    }
+
+    @Test
+    void getSdJwtCredentialTestSD_whenOverriding_withoutMatchingKeys_thenConfigurationException() {
+        var overrideDid = "did:example:override";
+        var overrideVerificationMethod = overrideDid + "#key1";
+
+        var overrideDid2 = "did:example:override2";
+        var overrideVerificationMethod2 = overrideDid2 + "#key2";
+
+        var config = new KeyOnlySignatureConfiguration();
+        config.setVerificationMethod(overrideVerificationMethod2);
+        config.setPrivateKey(sdjwtProperties.getPrivateKey());
+
+        Mockito.doReturn(List.of(config)).when(sdjwtProperties).getSigningKeys();
+        Mockito.doReturn(true).when(sdjwtProperties).supportsSigningKeys();
+
+
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED,
+                "university_example_sd_jwt",
+                new ConfigurationOverride(overrideDid, overrideVerificationMethod, null, null));
+
+        CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
+        credentialRequest.setCredentialResponseEncryption(null);
+
+        assertThrows(ConfigurationException.class, () -> vcFormatFactory
+                .getFormatBuilder(credentialOffer.getMetadataCredentialSupportedId().getFirst())
+                .credentialOffer(credentialOffer)
+                .credentialResponseEncryption(
+                        jweService.issuerMetadataWithEncryptionOptions()
+                                .getResponseEncryption(),
+                        credentialRequest.getCredentialResponseEncryption())
+                .credentialType(credentialOffer.getMetadataCredentialSupportedId())
+                .buildCredentialEnvelope());
+    }
+
+    @Test
+    void getSdJwtCredentialTestSD_whenOverriding_thenSuccess() throws ParseException {
+
+        var overrideDid = "did:example:override2";
+        var overrideVerificationMethod2 = overrideDid + "#key2";
+
+        var config = new KeyOnlySignatureConfiguration();
+        config.setVerificationMethod(overrideVerificationMethod2);
+        config.setPrivateKey(sdjwtProperties.getPrivateKey());
+
+        Mockito.doReturn(List.of(config)).when(sdjwtProperties).getSigningKeys();
+        Mockito.doReturn(true).when(sdjwtProperties).supportsSigningKeys();
+
+        var credentialOffer = createTestOffer(preAuthCode, CredentialOfferStatusType.OFFERED,
+                "university_example_sd_jwt",
+                new ConfigurationOverride(overrideDid, overrideVerificationMethod2, null, null));
 
         CredentialRequestClass credentialRequest = CredentialRequestClass.builder().build();
         credentialRequest.setCredentialResponseEncryption(null);
@@ -268,7 +353,7 @@ class SdJwtCredentialIT {
 
         String credential = getReadFirstCredential(vc);
         var issuedJwt = SignedJWT.parse(credential.split("~")[0]);
-        assertEquals(overrideVerificationMethod, issuedJwt.getHeader().getKeyID());
+        assertEquals(overrideVerificationMethod2, issuedJwt.getHeader().getKeyID());
         assertEquals(overrideDid, issuedJwt.getJWTClaimsSet().getIssuer());
     }
 

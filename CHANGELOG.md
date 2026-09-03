@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [Non-breaking if config not changed] Added new configurations for `application.status-list.signing-keys` and
+  `application.key.sdjwt.signing-keys` to allow
+  specifying multiple signing keys for status list and SD-JWT credentials, to prepare the did:tdw to did:webvh
+  migration. If the config is not changed as it is the list uses the default signing-key and verification-method. With
+  this change multiple keys can be used with the config-override. Default signing is not changed.
+
+### Added
+
 - Support for EdDSA signed VCs. When using EdDSA `credential_signing_alg_values_supported` MUST be updated to `Ed25519`
   Likewise `credential_signing_alg_values_supported` is used to indicate what signing algorithm is expected to be used
   by the wallet for proofs.
@@ -51,7 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that
   rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 - Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
-- Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
+- Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the
+  revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
 
 ## Changed
 
