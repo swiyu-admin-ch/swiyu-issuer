@@ -37,14 +37,22 @@ jobs:
           distribution: 'temurin'
           java-version: '25'
           cache: 'maven'
+
       - name: Cache PGP keys for pgpverify-maven-plugin
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ~/.m2/repository/pgpkeys-cache
           key: pgp-keys-${{ hashFiles('pgp/keys.list') }}
           restore-keys: pgp-keys-
+
       - name: Build & test with Maven (produce JaCoCo)
         run: mvn --batch-mode clean verify -DskipTests=false
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
+        with:
+          category: "/language:java"
+
       - name: Upload JaCoCo reports
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
@@ -148,7 +156,6 @@ jobs:
           cache: true
 
       - name: Upload PMD SARIF to GitHub Code Scanning
-        if: always() && hashFiles('pmd-report.sarif') != ''
         uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
         with:
           sarif_file: pmd-report.sarif
@@ -189,7 +196,7 @@ jobs:
           SNYK_ORG: ${{ secrets.SNYK_ORG }}
 
       - name: Upload result as sarif to GitHub Code Scanning 📦
-        if: always() && hashFiles('snyk.sarif') != '' # We want to upload the SARIF file even if the Snyk action fails, to have the results in the Code Scanning tab of GitHub
+        if: always() # We want to upload the SARIF file even if the Snyk action fails, to have the results in the Code Scanning tab of GitHub
         uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
         with:
           sarif_file: snyk.sarif

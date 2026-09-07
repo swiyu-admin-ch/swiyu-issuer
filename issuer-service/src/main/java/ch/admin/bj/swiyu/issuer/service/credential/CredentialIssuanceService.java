@@ -46,6 +46,7 @@ public class CredentialIssuanceService {
         checkIfAnyOfferExpiredAndUpdate(mgmt);
         var credentialOffer = getFirstOffersInProgress(mgmt);
 
+        // check if credential offer is present -> must be a regular issuance initiated by the business issuer
         if (credentialOffer.isPresent()) {
             return credentialEnvelopeService.createCredentialEnvelopeDto(
                     credentialOffer.get(), credentialRequest, clientInfo, mgmt);

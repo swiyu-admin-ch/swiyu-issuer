@@ -16,8 +16,10 @@ import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementInjectionService;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
 import ch.admin.bj.swiyu.jwtutil.JwtUtil;
-
-import com.nimbusds.jose.*;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
@@ -292,7 +294,7 @@ public class MetadataService {
         try {
             JWSSigner signer;
 
-            signer = jwsSignatureFacade.createSigner(sdjwtProperties, override.keyId(), override.keyPin());
+            signer = jwsSignatureFacade.createSigner(sdjwtProperties, override);
             if (signer == null) {
                 throw new SignedMetadataUnsupportedException();
             }

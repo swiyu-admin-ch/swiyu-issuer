@@ -1335,6 +1335,11 @@ components:
           type: string
           description: Protected Issuance Authorization Trust Statement (piaTS) JWT
             proving issuance authorization for protected VC formats.
+        credential_refresh_disabled:
+          type: boolean
+          description: "Indicates whether credential refresh is disabled. If true,\
+            \ the issuer does not support credential refresh for this configuration.\
+            \ If false or omitted, credential refresh must be considered as supported."
       required:
       - format
       - vct

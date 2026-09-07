@@ -112,7 +112,7 @@ class RenewalFlowIT {
     }
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         // Reset the spy so that no stub from a previous test (e.g. isRenewalFlowEnabled(false)
         // set by testRenewalWhenDisabled_throwsException) leaks into the next test through the
         // shared bean. We re-stub everything we need below.
@@ -143,7 +143,7 @@ class RenewalFlowIT {
         var statusListUri = statusListDto.getStatusRegistryUrl();
 
         payload = getMinimalPayloadForUniversityCredential(statusListUri);
-        
+
         // here
         assertDoesNotThrow(this::createCredential);
 
@@ -274,7 +274,7 @@ class RenewalFlowIT {
                         () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
-        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
+        var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt_with_renewal");
 
         // set to issued
         requestCredentialWithDpop(mockMvc, tokenResponse.getAccessToken(), credentialRequestString,

@@ -42,6 +42,24 @@ class StatusListSigningServiceTest {
     private StatusListProperties statusListProperties;
     private JwsSignatureFacade jwsSignatureFacade;
     private StatusListSigningService sut;
+    private ConfigurationOverride configurationOverride;
+
+    private static Stream<JWSSigner> createTestSigner() throws JOSEException {
+        return Stream.of(
+                new ECDSASigner(
+                        new ECKeyGenerator(Curve.P_256)
+                                .keyID("test-key")
+                                .algorithm(JWSAlgorithm.ES256)
+                                .keyUse(KeyUse.SIGNATURE)
+                                .generate()),
+                new Ed25519Signer(
+                        new OctetKeyPairGenerator(Curve.Ed25519)
+                                .keyID("test-key")
+                                .algorithm(JWSAlgorithm.Ed25519)
+                                .keyUse(KeyUse.SIGNATURE)
+                                .generate())
+        );
+    }
 
     @BeforeEach
     void setUp() {
@@ -53,21 +71,23 @@ class StatusListSigningServiceTest {
         when(statusListProperties.getVerificationMethod()).thenReturn("did:example:vm#1");
 
         sut = new StatusListSigningService(applicationProperties, statusListProperties, jwsSignatureFacade);
+        configurationOverride = new ConfigurationOverride(null, null, null, null);
     }
 
     @ParameterizedTest
     @MethodSource("createTestSigner")
     void buildSignedStatusListJwt_successfulSigning_returnsSignedJwt(JWSSigner signer) throws Exception {
         // Arrange
+        var configurationOverride = new ConfigurationOverride(null, "did:example:vm#override", null, null);
         var statusList = StatusList.builder()
                 .uri("https://registry.example/status/uuid-1234")
-                .configurationOverride(new ConfigurationOverride(null, "did:example:vm#override", null, null))
+                .configurationOverride(configurationOverride)
                 .build();
 
         TokenStatusListToken token = new TokenStatusListToken(2, 8);
 
         // Use a real ES256 signer to exercise Nimbus signing flow
-        when(jwsSignatureFacade.createSigner(statusListProperties, null, null)).thenReturn(signer);
+        when(jwsSignatureFacade.createSigner(statusListProperties, configurationOverride)).thenReturn(signer);
 
         // Act
         SignedJWT signed = sut.buildSignedStatusListJwt(statusList, token);
@@ -96,7 +116,7 @@ class StatusListSigningServiceTest {
         var statusList = StatusList.builder().uri("https://registry.example/status/1").build();
         TokenStatusListToken token = new TokenStatusListToken(1, 4);
 
-        when(jwsSignatureFacade.createSigner(statusListProperties, null, null)).thenThrow(new KeyStrategyException("bad", null));
+        when(jwsSignatureFacade.createSigner(statusListProperties, configurationOverride)).thenThrow(new KeyStrategyException("bad", null));
 
         // Act / Assert
         assertThrows(ConfigurationException.class, () -> sut.buildSignedStatusListJwt(statusList, token));
@@ -110,27 +130,10 @@ class StatusListSigningServiceTest {
 
         JWSSigner failingSigner = mock(JWSSigner.class);
         when(failingSigner.sign(any(), any())).thenThrow(new JOSEException("simulated signing failure"));
-        when(jwsSignatureFacade.createSigner(statusListProperties, null, null)).thenReturn(failingSigner);
+        when(jwsSignatureFacade.createSigner(statusListProperties, configurationOverride)).thenReturn(failingSigner);
 
         // Act / Assert
         assertThrows(ConfigurationException.class, () -> sut.buildSignedStatusListJwt(statusList, token));
-    }
-
-    private static Stream<JWSSigner> createTestSigner() throws JOSEException {
-        return Stream.of(
-            new ECDSASigner(
-                new ECKeyGenerator(Curve.P_256)
-                    .keyID("test-key")
-                    .algorithm(JWSAlgorithm.ES256)
-                    .keyUse(KeyUse.SIGNATURE)
-                    .generate()),
-            new Ed25519Signer(
-                new OctetKeyPairGenerator(Curve.Ed25519)
-                    .keyID("test-key")
-                    .algorithm(JWSAlgorithm.Ed25519)
-                    .keyUse(KeyUse.SIGNATURE)
-                    .generate())
-            );
     }
 }
 

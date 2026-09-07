@@ -3,13 +3,13 @@ package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
-import tools.jackson.databind.ObjectMapper;
-
-import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -20,9 +20,7 @@ import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class CredentialOfferTestHelper {
@@ -60,6 +58,11 @@ public class CredentialOfferTestHelper {
                 .andReturn();
 
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.management_id"));
+    }
+
+    public ResultActions createOffer(String payload) throws Exception {
+        return mvc
+                .perform(post(BASE_URL).contentType("application/json").content(payload));
     }
 
     public String createBasicOfferJsonAndGetTenantID() throws Exception {
@@ -109,21 +112,6 @@ public class CredentialOfferTestHelper {
         return managementId;
     }
 
-    public CredentialOffer updateStatusForEntity(UUID id, CredentialOfferStatusType status) {
-        CredentialOffer credentialOffer = credentialOfferRepository.findById(id).orElseThrow();
-        credentialOffer.setCredentialOfferStatusJustForTestUsage(status);
-        return credentialOfferRepository.save(credentialOffer);
-    }
-
-    public CredentialOffer updateStatusForOfferOfManagementEntity(UUID mgmtId, CredentialOfferStatusType status) {
-        CredentialManagement mgmt = credentialManagementRepository.findById(mgmtId).orElseThrow();
-
-        var credentialOffer = mgmt.getCredentialOffers().stream().findFirst().orElseThrow();
-
-        credentialOffer.setCredentialOfferStatusJustForTestUsage(status);
-        return credentialOfferRepository.save(credentialOffer);
-    }
-
     public void assertOfferStateConsistent(UUID offerId, CredentialOfferStatusType statusType) {
         var offer = credentialOfferRepository.findById(offerId).orElseThrow();
         Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository.findByOfferId(offer.getId());
@@ -162,38 +150,5 @@ public class CredentialOfferTestHelper {
         var offer = credentialOfferRepository.findById(offerId).get();
         offer.setCredentialOfferStatusJustForTestUsage(status);
         credentialOfferRepository.save(offer);
-    }
-
-    /**
-     * Creates an offer with a linked status list, set the state to issued and then
-     * revokes it
-     */
-    CredentialOffer createIssueAndSetStateOfVc(CredentialStatusTypeDto newStatus) throws Exception {
-        UUID managementId = createStatusListLinkedOfferAndGetUUID();
-
-        var mgmt = credentialManagementRepository.findById(managementId).orElseThrow();
-        mgmt.setCredentialManagementStatusJustForTestUsage(CredentialStatusManagementType.ISSUED);
-        mgmt.getCredentialOffers();
-
-        var updatedOffer = mgmt.getCredentialOffers().stream().map(
-                offer -> {
-                    offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.ISSUED);
-                    return credentialOfferRepository.save(offer);
-                }
-        ).findFirst().orElseThrow();
-
-        credentialManagementRepository.save(mgmt);
-
-        mvc.perform(patch(getUpdateUrl(managementId, newStatus)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(newStatus.toString()));
-
-        return updatedOffer;
-    }
-
-    void updateStatus(UUID managementId, CredentialStatusTypeDto newStatus) throws Exception {
-        mvc.perform(patch(getUpdateUrl(managementId, newStatus)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(newStatus.toString()));
     }
 }

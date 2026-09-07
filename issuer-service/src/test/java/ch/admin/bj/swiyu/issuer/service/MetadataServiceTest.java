@@ -87,8 +87,7 @@ class MetadataServiceTest {
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
 
         JWSSigner signer = createDummySigner();
-
-        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, override)).thenReturn(signer);
 
         String jwtStr = metadataService.getSignedIssuerMetadata(tenantId);
         assertNotNull(jwtStr);
@@ -101,7 +100,7 @@ class MetadataServiceTest {
     void getSignedIssuerMetadata_throwsConfigurationException_onKeyStrategyError() throws KeyStrategyException {
         UUID tenantId = UUID.randomUUID();
         when(credentialManagementService.getConfigurationOverrideByTenantId(tenantId)).thenReturn(override);
-        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenThrow(new KeyStrategyException("bad", null));
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, override)).thenThrow(new KeyStrategyException("bad", null));
 
         assertThrows(ConfigurationException.class, () -> metadataService.getSignedIssuerMetadata(tenantId));
     }
@@ -117,7 +116,7 @@ class MetadataServiceTest {
 
         JWSSigner signer = mock(JWSSigner.class);
         when(signer.sign(any(), any())).thenThrow(new JOSEException("bad"));
-        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, override)).thenReturn(signer);
 
         assertThrows(ConfigurationException.class, () -> metadataService.getSignedIssuerMetadata(tenantId));
     }
@@ -132,7 +131,7 @@ class MetadataServiceTest {
         MetadataService svc = new MetadataService(openIdIssuerConfiguration, credentialManagementService, jwsSignatureFacade, jweService, sdjwtProperties, applicationProperties, new ObjectMapper(), Optional.empty());
 
         JWSSigner signer = createDummySigner();
-        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null)).thenReturn(signer);
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, override)).thenReturn(signer);
 
         String jwt = svc.getSignedOAuthAuthorizationServerMetadata(tenantId);
         assertNotNull(jwt);
@@ -210,7 +209,7 @@ class MetadataServiceTest {
 
         // Use a real ES256 signer (the same helper used in other tests)
         JWSSigner signer = createDummySigner();
-        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null))
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, override))
                 .thenReturn(signer);
 
         // ---------- act ----------
@@ -240,7 +239,7 @@ class MetadataServiceTest {
         JWSSigner failingSigner = mock(JWSSigner.class);
         when(failingSigner.sign(any(), any()))
                 .thenThrow(new JOSEException("simulated signing failure"));
-        when(jwsSignatureFacade.createSigner(sdjwtProperties, null, null))
+        when(jwsSignatureFacade.createSigner(sdjwtProperties, override))
                 .thenReturn(failingSigner);
 
         // ---------- act & assert ----------
