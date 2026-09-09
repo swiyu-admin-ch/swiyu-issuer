@@ -9,6 +9,7 @@ on:
   #   branches:
   #     - '**'
   # pull_request:
+  #   types: [opened, reopened, synchronize]
   workflow_dispatch:
     inputs:
       consumer_version_selectors:
@@ -31,10 +32,11 @@ permissions:
 
 jobs:
   verify-pacts:
-    # Fork pull requests do not receive the PactFlow secrets.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      PACT_PROVIDER_VERSION: ${{ github.sha }}
+      PACT_PUBLISH_RESULTS: ${{ inputs.publish_results }}
 
     steps:
       - name: Checkout provider (this repository)
@@ -73,10 +75,8 @@ jobs:
           PACT_BROKER_BASE_URL: ${{ secrets.PACT_BROKER_BASE_URL }}
           PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
           PACTBROKER_CONSUMERVERSIONSELECTORS_RAWJSON: ${{ inputs.consumer_version_selectors || '[{"mainBranch":true},{"deployedOrReleased":true}]' }}
-          PACT_PROVIDER_VERSION: ${{ github.sha }}
           PACT_PROVIDER_BRANCH: ${{ github.head_ref || github.ref_name }}
           PACT_VERIFIER_BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          PACT_PUBLISH_RESULTS: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_results) }}
         run: |
           ./mvnw --batch-mode --no-transfer-progress \
             -Ppact-provider \
