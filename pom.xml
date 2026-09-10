@@ -39,7 +39,7 @@
         <bouncycastle.version>1.85</bouncycastle.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
         <springdoc-openapi-starter-webmvc-ui.version>3.0.0</springdoc-openapi-starter-webmvc-ui.version>
-        <openapi-generator-maven-plugin.version>7.24.0</openapi-generator-maven-plugin.version>
+        <openapi-generator-maven-plugin.version>7.25.0</openapi-generator-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <primus-jce.version>2.4.4</primus-jce.version>
         <skip.doc-generate>true</skip.doc-generate>
@@ -69,7 +69,7 @@
      managed version from Spring Boot and cause java.lang.NoClassDefFoundError at runtime. -->
         <jackson.version>2.22.2</jackson.version>
         <jackson-annotations.version>2.22</jackson-annotations.version>
-        <jackson-core.version>2.22.0</jackson-core.version>
+        <jackson-core.version>2.22.2</jackson-core.version>
         <jackson3.version>3.2.2</jackson3.version>
     </properties>
 
