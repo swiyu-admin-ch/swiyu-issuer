@@ -60,7 +60,7 @@ public class IssuanceController {
     private final Validator validator;
     private final ObjectMapper objectMapper;
 
-    private final AuthorizationService authorizationSerivce;
+    private final AuthorizationService authorizationService;
 
     /**
      * Build response headers with a Content-Type mapped from the envelope's declared format onto a
@@ -135,7 +135,7 @@ public class IssuanceController {
             @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
             @ModelAttribute OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
             HttpServletRequest request) {
-        return authorizationSerivce.processOAuthTokenEndpointRequest(dpop, oauthAccessTokenRequestDto, request);
+        return authorizationService.processOAuthTokenEndpointRequest(dpop, oauthAccessTokenRequestDto, request);
     }
 
     @Timed
@@ -171,7 +171,7 @@ public class IssuanceController {
                     )
             })
     public ResponseEntity<NonceResponseDto> createNonce() {
-        return authorizationSerivce.createNonceResponse();
+        return authorizationService.createNonceResponse();
     }
 
     @Timed
@@ -299,7 +299,7 @@ public class IssuanceController {
         // data needed exclusively for deferred flow -> are removed as soon as the credential is issued
         ClientAgentInfo clientInfo = getClientAgentInfo(request);
 
-        String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
+        String accessToken = this.authorizationService.getValidatedAccessToken(bearerToken, dpop, request);
         CreateCredentialRequestDto dto = parseRequestDto(unparsedRequestDto, CreateCredentialRequestDto.class, true);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredential(dto, accessToken, clientInfo, dpop);
 
@@ -391,7 +391,7 @@ public class IssuanceController {
         DeferredCredentialEndpointRequestDto deferredCredentialRequestDto = parseRequestDto(
                 unparsedRequestDto, DeferredCredentialEndpointRequestDto.class, false);
 
-        String accessToken = this.authorizationSerivce.getValidatedAccessToken(bearerToken, dpop, request);
+        String accessToken = this.authorizationService.getValidatedAccessToken(bearerToken, dpop, request);
         CredentialEnvelopeDto credentialEnvelope = credentialServiceOrchestrator.createCredentialFromDeferredRequest(deferredCredentialRequestDto, accessToken);
         var headers = responseHeadersFor(credentialEnvelope);
         return ResponseEntity.status(credentialEnvelope.getHttpStatus())

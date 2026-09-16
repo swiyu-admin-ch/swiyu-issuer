@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -129,6 +130,10 @@ public class CredentialConfiguration {
             description = "Protected Issuance Authorization Trust Statement (piaTS) JWT proving issuance authorization for protected VC formats.")
     private String protectedIssuanceAuthorizationTrustStatement;
 
+    @JsonProperty("credential_refresh_disabled")
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, type = "boolean",
+            description = "Indicates whether credential refresh is disabled. If true, the issuer does not support credential refresh for this configuration. If false or omitted, credential refresh must be considered as supported.")
+    private Boolean credentialRefreshDisabled;
 
     @PostConstruct
     public void postConstruct() {
@@ -143,5 +148,19 @@ public class CredentialConfiguration {
 
     public Map<String, SupportedProofType> getProofTypesSupported() {
         return Objects.requireNonNullElseGet(proofTypesSupported, HashMap::new);
+    }
+
+    /**
+     * Returns true when credential refresh is explicitly disabled for this configuration.
+     *
+     * <p>Corresponds to the JSON property "credential_refresh_disabled". Only {@code Boolean.TRUE}
+     * is interpreted as "disabled". A {@code null} or {@code Boolean.FALSE} value means credential
+     * refresh is considered supported.</p>
+     *
+     * @return {@code true} if credential refresh is explicitly disabled; {@code false} otherwise
+     */
+    @JsonIgnore
+    public boolean getCredentialRefreshDisabled() {
+        return Boolean.TRUE.equals(credentialRefreshDisabled);
     }
 }
