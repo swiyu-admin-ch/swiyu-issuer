@@ -107,7 +107,7 @@ public class IssuanceController {
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "Invalid client",
+                            description = "Unauthorized",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = ApiErrorDto.class)
