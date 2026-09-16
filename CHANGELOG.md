@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 - Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
 - Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
+- Documented missing HTTP response codes (405, 406, 409, 415, 420, 422, 429, 500) for the oid4vci and .well-known endpoints in openapi.yaml `(#1165)`
 
 ## Changed
 
