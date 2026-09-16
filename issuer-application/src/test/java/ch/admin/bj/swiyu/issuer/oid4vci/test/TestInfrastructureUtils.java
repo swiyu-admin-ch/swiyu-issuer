@@ -251,6 +251,24 @@ public class TestInfrastructureUtils {
                 .generate();
     }
 
+    public static String createPemForKid(String kid) throws JOSEException {
+        var ecKey = new ECKeyGenerator(Curve.P_256)
+                .keyID(kid)
+                .algorithm(JWSAlgorithm.ES256)
+                .keyUse(KeyUse.SIGNATURE)
+                .generate()
+                .toECPrivateKey();
+
+        return """
+                -----BEGIN PRIVATE KEY-----
+                %s
+                -----END PRIVATE KEY-----
+                """.formatted(
+                Base64.getMimeEncoder(64, new byte[]{'\n'})
+                        .encodeToString(ecKey.getEncoded())
+        );
+    }
+
     public record CredentialFetchData(Object token, String credentialRequestString) {
     }
 }

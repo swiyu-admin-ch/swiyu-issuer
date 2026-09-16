@@ -3,8 +3,6 @@ package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
-import ch.admin.bj.swiyu.issuer.service.dpop.DemonstratingProofOfPossessionService;
-import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,8 +36,6 @@ import java.util.UUID;
 public class WellKnownController {
 
     private static final MediaType CONTENT_TYPE_APPLICATION_JWT = MediaType.parseMediaType("application/jwt");
-    private final JweService jweService;
-    private final DemonstratingProofOfPossessionService demonstratingProofOfPossessionService;
     private final MetadataService metadataService;
 
     private static boolean expectsSignedResponse(String acceptHeader) {

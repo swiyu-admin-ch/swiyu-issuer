@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
+import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialMetadata;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
@@ -60,6 +61,9 @@ public class OpenIdIssuerConfiguration {
             if (!validationResult.isEmpty()) {
                 throw new IllegalArgumentException(String.format("An invalid issuer metadata configuration was provided. Please adapt the following values:%n%s", validationResult));
             }
+
+            mapped.getCredentialConfigurationSupported().forEach(this::checkMetadataRenewalConfig);
+
             return mapped;
         }
     }
@@ -170,5 +174,20 @@ public class OpenIdIssuerConfiguration {
     private String loadMetadata(Resource res) throws IOException {
         var json = res.getContentAsString(Charset.defaultCharset());
         return replaceExternalUri(json);
+    }
+
+    /**
+     * Validate credential-refresh settings and log a warning when metadata conflicts with application config.
+     *
+     * <p> Logs a warning that the issuer metadata contains credential-refresh fields that seemt to contradict the settings in {@link ApplicationProperties}.
+     * This method does not mutate the provided {@code config}.</p>
+     *
+     * @param key Configuration identifier for the metadata entry
+     * @see ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties#isRenewalFlowEnabled()
+     */
+    private void checkMetadataRenewalConfig(String key, CredentialConfiguration config) {
+        if (applicationProperties.isRenewalFlowEnabled() && config.getCredentialRefreshDisabled()) {
+            log.warn("Credential refresh is disabled by config but the issuer metadata contains credential refresh fields in {}", key);
+        }
     }
 }

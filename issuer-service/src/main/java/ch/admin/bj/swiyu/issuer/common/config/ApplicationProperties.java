@@ -98,9 +98,10 @@ public class ApplicationProperties {
     @NotNull
     private boolean allowRefreshTokenRotation;
 
-    @NotNull
-    private boolean renewalFlowAllowed;
-
+    /**
+     * URL of the business issuer renewal API endpoint.
+     * If set, the renewal flow is enabled if DPoP is enforced as well.
+     */
     private String businessIssuerRenewalApiEndpoint;
 
     @NotNull
@@ -163,6 +164,6 @@ public class ApplicationProperties {
     }
 
     public boolean isRenewalFlowEnabled() {
-        return this.isDpopEnforce() && this.isRenewalFlowAllowed() && this.getBusinessIssuerRenewalApiEndpoint() != null;
+        return this.isDpopEnforce() && this.getBusinessIssuerRenewalApiEndpoint() != null;
     }
 }
