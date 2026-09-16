@@ -68,7 +68,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
         "401":
-          description: Invalid client
+          description: Unauthorized
           content:
             application/json:
               schema:
