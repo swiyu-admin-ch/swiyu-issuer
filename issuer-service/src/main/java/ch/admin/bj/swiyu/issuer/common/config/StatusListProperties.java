@@ -14,7 +14,7 @@ import java.time.Duration;
 @Getter
 @Setter
 @ConfigurationProperties(prefix = "application.status-list")
-public class StatusListProperties extends SignatureConfiguration {
+public class StatusListProperties extends SignatureConfigurationWithHsm {
     /**
      * Configured limitation to the status list,
      * preventing accidental creation of status lists too large for sensible use.
@@ -36,6 +36,4 @@ public class StatusListProperties extends SignatureConfiguration {
      */
     @NotNull
     private Duration statusListExpirationTime = Duration.ofDays(365);
-
-
 }

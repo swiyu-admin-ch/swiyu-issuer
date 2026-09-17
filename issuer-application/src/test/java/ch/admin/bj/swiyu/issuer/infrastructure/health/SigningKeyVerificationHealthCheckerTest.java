@@ -32,13 +32,6 @@ class SigningKeyVerificationHealthCheckerTest {
     private JwsSignatureFacade jwsSignatureFacade;
     private SdjwtProperties properties;
 
-    // Concrete minimal subclass to expose performCheck
-    private static class TestChecker extends AbstractSigningKeyVerificationHealthChecker<SdjwtProperties> {
-        protected TestChecker(KeyResolver keyResolver, JwsSignatureFacade jwsSignatureFacade, SdjwtProperties properties) {
-            super(keyResolver, jwsSignatureFacade, properties);
-        }
-    }
-
     @BeforeEach
     void setup() throws JOSEException, KeyStrategyException, ParseException {
         keyResolver = Mockito.mock(KeyResolver.class);
@@ -52,7 +45,7 @@ class SigningKeyVerificationHealthCheckerTest {
 
         // Provide a signer that can sign ES256
         JWSSigner signer = new ECDSASigner(ecKey.toECPrivateKey());
-        when(jwsSignatureFacade.createSigner(any(), any(), any())).thenReturn(signer);
+        when(jwsSignatureFacade.createSigner(any(), any())).thenReturn(signer);
     }
 
     @Test
@@ -77,6 +70,13 @@ class SigningKeyVerificationHealthCheckerTest {
         assertEquals(Status.DOWN, result.getStatus());
         assertTrue(result.getDetails().containsKey("failedDids"));
         assertEquals("did:example:unknown#k1", result.getDetails().get("failedDids"));
+    }
+
+    // Concrete minimal subclass to expose performCheck
+    private static class TestChecker extends AbstractSigningKeyVerificationHealthChecker<SdjwtProperties> {
+        protected TestChecker(KeyResolver keyResolver, JwsSignatureFacade jwsSignatureFacade, SdjwtProperties properties) {
+            super(keyResolver, jwsSignatureFacade, properties);
+        }
     }
 }
 

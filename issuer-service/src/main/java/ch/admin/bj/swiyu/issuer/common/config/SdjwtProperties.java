@@ -12,6 +12,6 @@ import org.springframework.validation.annotation.Validated;
 @Getter
 @Setter
 @ConfigurationProperties(prefix = "application.key.sdjwt")
-public class SdjwtProperties extends SignatureConfiguration {
+public class SdjwtProperties extends SignatureConfigurationWithHsm {
 
 }
