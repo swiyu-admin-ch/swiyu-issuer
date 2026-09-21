@@ -3,6 +3,8 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
+import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
@@ -140,7 +142,7 @@ public class SdJwtCredential extends CredentialBuilder {
         try {
             return Optional.of(holderPublicKeys.get(i).getJWK());
         } catch (ParseException e) {
-            throw new CredentialException("Holder Public Key cannot be parsed", e);
+            throw new Oid4vcException(CredentialRequestError.INVALID_PROOF, "Holder Public Key cannot be parsed");
         }
     }
 
