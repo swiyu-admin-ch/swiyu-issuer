@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -417,11 +419,19 @@ class IssuanceControllerIT {
         TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUnboundCredentialSubjectData());
     }
 
-    @Test
-    void testNewTokenEndpoint_thenSuccess() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void testNewTokenEndpoint_thenSuccess(boolean useTxCode) throws Exception {
+        var txCode = "123456";
+        if (useTxCode) {
+            var offer = credentialOfferRepository.getReferenceById(offerId);
+            offer.setTxCode(txCode);
+            credentialOfferRepository.save(offer);
+        }
         mock.perform(post("/oid4vci/api/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                        .param("tx_code", txCode)
                         .param("pre-authorized_code", validPreAuthCode.toString()))
                 .andExpect(status().isOk())
                 // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
@@ -430,6 +440,9 @@ class IssuanceControllerIT {
                 .andExpect(jsonPath("$.access_token").isNotEmpty()) // REQUIRED
                 .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
                 .andExpect(jsonPath("$.token_type").value("BEARER"));
+        
+        var offer = credentialOfferRepository.getReferenceById(offerId);
+        assertThat(offer.getCredentialStatus()).isEqualTo(CredentialOfferStatusType.IN_PROGRESS);
     }
 
     @Test
@@ -450,7 +463,61 @@ class IssuanceControllerIT {
                         .param("pre-authorized_code", offerId.toString()))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString(INVALID_GRANT.getErrorCode())));
+        var offer = credentialOfferRepository.getReferenceById(offerId);
+        assertThat(offer.getCredentialStatus()).isEqualTo(CredentialOfferStatusType.OFFERED);
     }
+
+
+    /**
+     * Test Behaviour when transaction code is not valid
+     */
+    @Test 
+    void testNewTokenEndpoint_whenInvalidTxCode() throws Exception {
+        var txCode = "123456";
+        // Change the offer used in these tests to require tx_code
+        var initialOfferState = credentialOfferRepository.getReferenceById(offerId);
+        initialOfferState.setTxCode(txCode);
+        credentialOfferRepository.save(initialOfferState);
+        assertThat(initialOfferState.getTxCodeRetries()).isEqualTo(0);
+        // Send without tx_code
+        mock.perform(post("/oid4vci/api/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                        .param("tx_code", "654321")
+                        .param("pre-authorized_code", validPreAuthCode.toString()))
+                .andExpect(status().isBadRequest())
+                // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
+                // specified at https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.access_token").doesNotHaveJsonPath())
+                .andExpect(jsonPath("$.token_type").doesNotHaveJsonPath())
+                .andExpect(jsonPath("$.error").value(OAuthErrorDto.INVALID_TX_CODE.toString())); // INVALID_TX_CODE as retry should be attempted 
+        
+        // State after first false try when we should retry
+        var firstAttemptOfferState = credentialOfferRepository.getReferenceById(offerId);
+        assertThat(firstAttemptOfferState.getCredentialStatus()).as("There are still retries left, so state is still offered").isEqualTo(CredentialOfferStatusType.OFFERED);
+        assertThat(firstAttemptOfferState.getTxCodeRetries()).as("Failed to provide correct tx_code once").isEqualTo(1);
+        firstAttemptOfferState.setTxCodeRetries(applicationProperties.getTxCodeRetries()+1); // Emulate having spent all retries
+        credentialOfferRepository.save(firstAttemptOfferState);
+
+        // Send without tx_code
+        mock.perform(post("/oid4vci/api/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                        .param("tx_code", "654321")
+                        .param("pre-authorized_code", validPreAuthCode.toString()))
+                .andExpect(status().isBadRequest())
+                // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
+                // specified at https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.access_token").doesNotHaveJsonPath())
+                .andExpect(jsonPath("$.token_type").doesNotHaveJsonPath())
+                .andExpect(jsonPath("$.error").value(OAuthErrorDto.INVALID_GRANT.toString())); // INVALID_GRANT as should not retry
+
+        var finalOfferState = credentialOfferRepository.getReferenceById(offerId);
+        assertThat(finalOfferState.getCredentialStatus()).as("Too many failed reattempts - offer should be cancelled").isEqualTo(CredentialOfferStatusType.CANCELLED);
+    }
+
 
     private void addOverride(UUID preAuthCode, ConfigurationOverride override) {
         var offer = credentialOfferRepository.findByPreAuthorizedCode(preAuthCode);

@@ -182,6 +182,7 @@ application:
   allow-token-refresh: "${ALLOW_TOKEN_REFRESH:true}"
   allow-refresh-token-rotation: "${ALLOW_REFRESH_TOKEN_ROTATION:false}"
   business-issuer-renewal-api-endpoint: "${BUSINESS_ISSUER_RENEWAL_API_ENDPOINT:}"
+  tx-code-retries: "${CREDENTIAL_OFFER_TX_CODE_RETRIES:4}" # Number of retires a holder has to provide the correct transaction code when fetching the initial access token. 4 retries means 5 tries in total
 
   # JSON file holding OpenID Connect configuration
   #eg:  openid_file: "file:///data/example_openid.json"

@@ -1,9 +1,11 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidTxCodeException;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig.CredentialOfferEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,9 +19,12 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OAuthServiceTest {
@@ -140,8 +145,71 @@ class OAuthServiceTest {
         when(offer.hasExpirationTimeStampPassed()).thenReturn(true);
         when(offer.isTerminatedOffer()).thenCallRealMethod();
         when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(offer));
-        var error = assertThrows(OAuthException.class, () -> oauthService.issueOAuthToken(preAuthCode.toString()));
-        assertThat(error.getMessage()).isEqualToIgnoringCase("Credential has already been used");
+        var error = assertThrows(OAuthException.class, () -> oauthService.getCredentialOfferWithTokenRequestData(preAuthCode.toString(), null));
+        assertThat(error.getMessage()).isEqualToIgnoringCase("Credential Offer has already been used");
         Mockito.verify(credentialStateMachine, times(0)).sendEventAndUpdateStatus(any(CredentialOffer.class), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void getCredentialOfferWithTokenRequestData_thenSuccess(boolean useTxCode) {
+        String txCode = "1337";
+        var preAuthCode = UUID.randomUUID();
+        var offer = Mockito.mock(CredentialOffer.class);
+        when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(offer));
+        when(offer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.OFFERED); // State MUST be offered or exception will be thrown
+        when(offer.requiresTransactionCode()).thenReturn(useTxCode);
+        if (useTxCode) {
+            when(offer.getTxCode()).thenReturn(txCode);
+        }
+        var fetchedOffer = assertDoesNotThrow(() -> oauthService.getCredentialOfferWithTokenRequestData(preAuthCode.toString(), txCode));
+        assertThat(fetchedOffer).isEqualTo(offer);
+    }
+
+    /**
+     * Test to evaluate exceptions being thrown when the presented tx_code is not correct
+     */
+    @Test 
+    void getCredentialOfferWithTokenRequestData_whenIncorrectTxCode_thenThrows() {
+        String wrongTxCode = "1337";
+        var preAuthCode = UUID.randomUUID();
+        var offer = Mockito.mock(CredentialOffer.class);
+        when(applicationProperties.getTxCodeRetries()).thenReturn(1);
+        when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(offer));
+        when(offer.getTxCode()).thenReturn("9001");
+        when(offer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.OFFERED); // State MUST be offered or exception will be thrown
+        when(offer.getTxCodeRetries()).thenReturn(0);
+        when(offer.requiresTransactionCode()).thenReturn(true);
+
+        // Allow 1 Retry
+        when(applicationProperties.getTxCodeRetries()).thenReturn(1);
+        assertThatThrownBy(() -> oauthService.getCredentialOfferWithTokenRequestData(preAuthCode.toString(), wrongTxCode))
+            .isInstanceOf(InvalidTxCodeException.class);
+        verify(offer, times(1)).incrementTxCodeRetries();
+        verify(credentialStateMachine, times(0)).sendEventAndUpdateStatus(offer, CredentialOfferEvent.CANCEL);
+        when(offer.getTxCodeRetries()).thenReturn(2);
+        assertThatThrownBy(() -> oauthService.getCredentialOfferWithTokenRequestData(preAuthCode.toString(), wrongTxCode))
+            .isInstanceOf(InvalidTxCodeException.class);
+        verify(credentialStateMachine, times(1)).sendEventAndUpdateStatus(offer, CredentialOfferEvent.CANCEL);
+    }
+
+    /**
+     * When out of retries even an accepted tx_code may not be accepted
+     */
+    @Test 
+    void getCredentialOfferWithTokenRequestData_whenTooManyRetries_thenThrows() {   
+        String txCode = "1337";
+        var preAuthCode = UUID.randomUUID();
+        var offer = Mockito.mock(CredentialOffer.class);
+        when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(offer));
+        when(offer.getTxCode()).thenReturn(txCode);
+        when(offer.getCredentialStatus()).thenReturn(CredentialOfferStatusType.OFFERED); // State MUST be offered or exception will be thrown
+        when(offer.getTxCodeRetries()).thenReturn(1); // Already was wrong once
+        when(offer.requiresTransactionCode()).thenReturn(true);
+        when(applicationProperties.getTxCodeRetries()).thenReturn(0); // No Retries
+        // Send with correct tx_code
+        assertThatThrownBy(() -> oauthService.getCredentialOfferWithTokenRequestData(preAuthCode.toString(), txCode))
+            .isInstanceOf(InvalidTxCodeException.class);
+        verify(credentialStateMachine, times(1)).sendEventAndUpdateStatus(offer, CredentialOfferEvent.CANCEL);
     }
 }

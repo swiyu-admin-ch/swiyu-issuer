@@ -81,7 +81,7 @@ class DemonstratingProofOfPossessionIT {
     void setUp() {
         accessToken = UUID.randomUUID();
 
-        testCredentialOffer = CredentialOffer.builder()
+        var createTestCredentialOffer = CredentialOffer.builder()
                 .id(UUID.randomUUID())
                 .preAuthorizedCode(UUID.randomUUID())
                 .credentialStatus(CredentialOfferStatusType.OFFERED)
@@ -98,13 +98,16 @@ class DemonstratingProofOfPossessionIT {
 
         var mgmt = credentialManagementRepository.save(credentialManagement);
 
-        testCredentialOffer.setCredentialManagement(credentialManagement);
+        createTestCredentialOffer.setCredentialManagement(credentialManagement);
 
-        credentialOfferRepository.save(testCredentialOffer);
+        credentialOfferRepository.save(createTestCredentialOffer);
         credentialManagement.setCredentialOffers(
-                Set.of(testCredentialOffer)
+                Set.of(createTestCredentialOffer)
         );
         credentialManagementRepository.save(mgmt);
+        
+        // Reload Object to ensure that generated values are all present
+        testCredentialOffer = credentialOfferRepository.findById(createTestCredentialOffer.getId()).get();
 
         dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("test-key-1").keyUse(KeyUse.SIGNATURE).generate());
     }
@@ -157,7 +160,7 @@ class DemonstratingProofOfPossessionIT {
         var tokenRequest = mockTokenHttpRequest(baseTestHttpRequest);
         var registrationDPoP = getDPoPJWT(tokenRequest, faultyNonce, null);
         String preAuthCode = testCredentialOffer.getPreAuthorizedCode().toString();
-        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.registerDpop(preAuthCode, registrationDPoP, tokenRequest));
+        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.registerDpop(testCredentialOffer, registrationDPoP, tokenRequest));
     }
 
     private HttpRequest createMockRequest() {
@@ -167,7 +170,8 @@ class DemonstratingProofOfPossessionIT {
     private void registerDPoP(HttpRequest baseTestHttpRequest, String nonce) {
         var tokenRequest = mockTokenHttpRequest(baseTestHttpRequest);
         var registrationDPoP = getDPoPJWT(tokenRequest, nonce, null);
-        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(testCredentialOffer.getPreAuthorizedCode().toString(), registrationDPoP, tokenRequest));
+
+        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(testCredentialOffer, registrationDPoP, tokenRequest));
     }
 
     private HttpRequest mockTokenHttpRequest(HttpRequest baseTestHttpRequest) {

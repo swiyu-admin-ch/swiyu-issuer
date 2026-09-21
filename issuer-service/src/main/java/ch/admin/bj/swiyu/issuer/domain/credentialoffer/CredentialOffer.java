@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -125,6 +127,25 @@ public class CredentialOffer {
      * Value used to get the token for grant-type:pre-authorized_code
      */
     private UUID preAuthorizedCode;
+
+    /**
+     * Optional Transaction Code the wallet needs provide alongside the pre-authroized_code
+     */
+    @Column(name = "tx_code")
+    private String txCode;
+    
+    /**
+     * Number of retries the wallet attempted to provide the correct tx_code
+     */
+    @Column(name = "tx_code_retries")
+    private int txCodeRetries;
+
+    /**
+     * Description with reminder for the wallet to display to the holder where to find the tx_code. 
+     * eg: Sent by SMS
+     */
+    @Column(name = "tx_code_description")
+    private String txCodeDescription;
 
     /**
      * Timestamp after which the credential offer or the deferred credential offer will be regarded as expired.
@@ -291,5 +312,13 @@ public class CredentialOffer {
         UUID transactionId = Optional.ofNullable(getTransactionId()).orElse(UUID.randomUUID());
         setTransactionId(transactionId);
         return transactionId;
+    }
+
+    public boolean requiresTransactionCode() {
+        return StringUtils.isNotEmpty(txCode);
+    }
+
+    public void incrementTxCodeRetries() {
+        txCodeRetries++;
     }
 }

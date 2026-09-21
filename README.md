@@ -684,6 +684,9 @@ erDiagram
         TEXT[] key_attestations
         INTEGER deferred_offer_validity_seconds
         UUID credential_management_id FK
+        TEXT tx_code
+        INTEGER tx_code_retries
+        TEXT tx_code_description
     }
 
     CREDENTIAL_OFFER_STATUS {

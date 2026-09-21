@@ -147,6 +147,13 @@ public class ApplicationProperties {
     @Min(1)
     private Integer maxDecompressedPayloadLength;
 
+    /**
+     * Limit how many retries a holder has to provide the correct Transaction Code when requesting the token
+     */
+    @NotNull 
+    @Min(0)
+    private Integer txCodeRetries;
+
     @PostConstruct
     public void init() {
         try {

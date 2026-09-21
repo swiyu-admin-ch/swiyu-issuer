@@ -30,8 +30,10 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer.readOfferData;
@@ -63,6 +65,7 @@ public class CredentialManagementService {
     private final CredentialPersistenceService persistenceService;
     private final StatusListOrchestrator statusListOrchestrator;
     private final ObjectMapper objectMapper;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     /**
      * Validates that only READY event is allowed in INIT state of credential
@@ -589,9 +592,7 @@ public class CredentialManagementService {
                         .renewalRequestCnt(0)
                         .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
                         .build());
-
-        CredentialOffer entity = persistenceService.saveCredentialOffer(
-                CredentialOffer.builder()
+        var builder = CredentialOffer.builder()
                         .credentialStatus(CredentialOfferStatusType.OFFERED)
                         .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
                         .preAuthorizedCode(UUID.randomUUID())
@@ -602,8 +603,15 @@ public class CredentialManagementService {
                         .credentialValidUntil(requestDto.getCredentialValidUntil())
                         .credentialMetadata(toCredentialOfferMetadata(requestDto.getCredentialMetadata()))
                         .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
-                        .credentialManagement(credentialManagement)
-                        .build());
+                        .credentialManagement(credentialManagement);
+        Optional.ofNullable(requestDto.getTransactionCodeConfig()).ifPresent(txConf -> {
+            if(txConf.isUseTransactionCode()) {
+                builder.txCode(createPin(txConf.getLength()));
+                builder.txCodeRetries(0);
+                builder.txCodeDescription(txConf.getDescription());
+            }
+        });
+        CredentialOffer entity = persistenceService.saveCredentialOffer(builder.build());
 
         credentialManagement.addCredentialOffer(entity);
         var newCredentialManagement = persistenceService.saveCredentialManagement(credentialManagement);
@@ -618,6 +626,18 @@ public class CredentialManagementService {
                 statusListEntries);
 
         return newCredentialManagement;
+    }
+
+    /**
+     * Creates a random pin with as many digits
+     * @param length
+     * @return
+     */
+    private String createPin(int length) {
+        long upperBound = Math.powExact(10l, length);
+        // Add padding in front
+        String format = "%0"+Integer.toString(length)+"d";
+        return String.format(format, secureRandom.nextLong(upperBound));
     }
 
     /**
