@@ -130,6 +130,10 @@ application:
   enable-vc-hash-storage: ${ENABLE_VC_HASH_STORAGE:false}
   authentication-jwks: ${JWKS_ALLOWLIST:}
   status-list:
+    signing-keys:
+      - verification-method: "${DID_STATUS_LIST_VERIFICATION_METHOD:}"
+        private-key: "${secret.key.status-list.key1:${STATUS_LIST_KEY_1:}}"
+
     # private key for singing status list VCs
     private-key: "${secret.key.status-list.key:${STATUS_LIST_KEY:}}"
     # value to be added to the kid of the created status list; should be available in the published did document.
@@ -232,6 +236,10 @@ application:
         # When using a proxy with username / password authentication
         proxy-user: "${HSM_PROXY_USER:}"
         proxy-password: "${HSM_PROXY_PASSWORD:}"
+
+      signing-keys:
+        - verification-method: "${DID_SDJWT_VERIFICATION_METHOD:}"
+          private-key: "${secret.key.sdjwt.key:${SDJWT_KEY:}}"
 
       # Signing Key for Selective Disclosure JWT Verifiable Credentials
       private-key: "${secret.key.sdjwt.key:${SDJWT_KEY:}}"

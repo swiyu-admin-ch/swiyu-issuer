@@ -149,10 +149,7 @@ public class SdJwtCredential extends CredentialBuilder {
         var override = this.getCredentialOffer()
                 .getConfigurationOverride();
         try {
-            return getJwsSignatureFacade().createSigner(
-                    sdjwtProperties,
-                    override.keyId(),
-                    override.keyPin());
+            return getJwsSignatureFacade().createSigner(sdjwtProperties, override);
         } catch (KeyStrategyException e) {
             throw new CredentialException(e);
         }
