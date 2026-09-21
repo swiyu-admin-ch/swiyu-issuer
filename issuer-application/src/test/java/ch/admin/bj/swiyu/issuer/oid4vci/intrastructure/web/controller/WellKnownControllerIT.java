@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
+import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
@@ -8,10 +9,18 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialOfferTestHelper;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,17 +32,23 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.createPemForKid;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -49,7 +64,7 @@ class WellKnownControllerIT {
     private MockMvc mock;
     @Autowired
     private ObjectMapper objectMapper;
-    @Autowired
+    @MockitoSpyBean
     private SdjwtProperties sdjwtProperties;
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
@@ -122,7 +137,7 @@ class WellKnownControllerIT {
 
         var response = assertDoesNotThrow(() -> mock.perform(get(
                         uri.formatted(tenantId))
-                        .accept("application/JWT;application/JSON"))
+                        .accept("application/JWT,application/JSON"))
                 .andExpect(status().isOk())
                 .andReturn());
 
@@ -133,6 +148,96 @@ class WellKnownControllerIT {
         assertEquals("openidvci-issuer-metadata+jwt", header.getType().getType());
         assertEquals("ES256", header.getAlgorithm().getName());
         assertEquals(SwissProfileVersions.ISSUANCE_PROFILE_VERSION, header.getCustomParam(SwissProfileVersions.PROFILE_VERSION_PARAM));
+    }
+
+
+    @Test
+    void testGetIssuerMetadata_withOverrideAndIncorrectKey_thenInternalServerError() throws Exception {
+        var issuerDid = "did:example:override-2";
+        var issuerKid = issuerDid + "#key-2";
+
+        CreateCredentialOfferRequestDto credentialOfferDto = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(java.util.List.of("test"))
+                .credentialSubjectData(java.util.Map.of("firstName", "firstName", "lastName", "lastName", "dateOfBirth", "1990-01-01"))
+                .configurationOverride(new ConfigurationOverrideDto(issuerDid, issuerKid, null, null))
+                .build();
+
+        String payloadString = objectMapper.writeValueAsString(credentialOfferDto);
+
+        var offer = testHelper.createOffer(payloadString).andExpect(status().isOk());
+
+        var createCredentialOfferResponse = assertDoesNotThrow(() -> objectMapper.readValue(offer.andReturn().getResponse()
+                .getContentAsString(), CredentialWithDeeplinkResponseDto.class));
+        var deeplink = createCredentialOfferResponse.getOfferDeeplink();
+        var parsedDeeplink = assertDoesNotThrow(() -> new URI(deeplink));
+        var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
+        var credentialOffer = offerQuery.getFirst();
+        JsonNode node = assertDoesNotThrow(() -> objectMapper.readTree(credentialOffer.getValue()));
+        var tenantId = node.get("credential_issuer").asString().split("http://localhost:8080")[1];
+
+        mock.perform(get("%s/.well-known/openid-credential-issuer".formatted(tenantId))
+                        .accept("application/jwt, application/json"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"did:example:localhost%3A8080:abcabc#sdjwt", "did:example:override#key-0", "did:example:override#key-1", "did:example:override#key-2"})
+    void testGetIssuerMetadata_withOverride_byTenantIdSigned_thenSuccess(String expectedKid) throws Exception {
+
+        var overrideDID = "did:example:override";
+        var verificationMethod = overrideDID + "#key";
+        var signingKeys = IntStream.range(0, 3)
+                .mapToObj(i -> {
+                    var keyId = verificationMethod + "-" + i;
+                    String pemKey;
+                    try {
+                        pemKey = createPemForKid(keyId);
+                    } catch (JOSEException e) {
+                        throw new RuntimeException(e);
+                    }
+                    KeyOnlySignatureConfiguration signatureConfiguration = new KeyOnlySignatureConfiguration();
+                    signatureConfiguration.setPrivateKey(pemKey);
+                    signatureConfiguration.setVerificationMethod(keyId);
+                    return signatureConfiguration;
+                })
+                .toList();
+
+        when(sdjwtProperties.getSigningKeys()).thenReturn(signingKeys);
+        when(sdjwtProperties.supportsSigningKeys()).thenReturn(true);
+
+        CreateCredentialOfferRequestDto credentialOfferDto = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(java.util.List.of("test"))
+                .credentialSubjectData(java.util.Map.of("firstName", "firstName", "lastName", "lastName", "dateOfBirth", "1990-01-01"))
+                .configurationOverride(new ConfigurationOverrideDto(overrideDID, expectedKid, null, null))
+                .build();
+
+        String payloadString = objectMapper.writeValueAsString(credentialOfferDto);
+
+        var offer = testHelper.createOffer(payloadString).andExpect(status().isOk());
+
+        var createCredentialOfferResponse = assertDoesNotThrow(() -> objectMapper.readValue(offer.andReturn().getResponse()
+                .getContentAsString(), CredentialWithDeeplinkResponseDto.class));
+        var deeplink = createCredentialOfferResponse.getOfferDeeplink();
+        var parsedDeeplink = assertDoesNotThrow(() -> new URI(deeplink));
+        var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
+        var credentialOffer = offerQuery.getFirst();
+        JsonNode node = assertDoesNotThrow(() -> objectMapper.readTree(credentialOffer.getValue()));
+        var tenantId = node.get("credential_issuer").asString().split("http://localhost:8080")[1];
+
+        var response = assertDoesNotThrow(() -> mock.perform(get(
+                        "%s/.well-known/openid-credential-issuer".formatted(tenantId))
+                        .accept("application/JWT,application/JSON"))
+                .andExpect(status().isOk())
+                .andReturn());
+
+        JWT jwt = JWTParser.parse(response.getResponse().getContentAsString());
+
+        var header = jwt.getHeader();
+        assertEquals(expectedKid, ((JWSHeader) header).getKeyID());
+
+        // check payload details
+        var claimsSet = jwt.getJWTClaimsSet();
+        assertEquals(overrideDID, claimsSet.getIssuer());
     }
 
 

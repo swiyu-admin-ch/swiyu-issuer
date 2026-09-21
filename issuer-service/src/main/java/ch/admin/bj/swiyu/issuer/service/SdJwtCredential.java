@@ -18,7 +18,7 @@ import ch.admin.bj.swiyu.sdjwtbuilder.exception.SdJwtBuilderException;
 import ch.admin.bj.swiyu.sdjwtbuilder.SdJwtVcBuilder.CreatedSdJwtVc;
 import ch.admin.bj.swiyu.statuslist.dto.TokenStatusListReferenceDto.TokenStatusListStatusListReference;
 
-import com.nimbusds.jose.*;
+import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.jwk.JWK;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
@@ -149,10 +149,7 @@ public class SdJwtCredential extends CredentialBuilder {
         var override = this.getCredentialOffer()
                 .getConfigurationOverride();
         try {
-            return getJwsSignatureFacade().createSigner(
-                    sdjwtProperties,
-                    override.keyId(),
-                    override.keyPin());
+            return getJwsSignatureFacade().createSigner(sdjwtProperties, override);
         } catch (KeyStrategyException e) {
             throw new CredentialException(e);
         }
