@@ -39,7 +39,7 @@
         <bouncycastle.version>1.85</bouncycastle.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
         <springdoc-openapi-starter-webmvc-ui.version>3.0.0</springdoc-openapi-starter-webmvc-ui.version>
-        <openapi-generator-maven-plugin.version>7.24.0</openapi-generator-maven-plugin.version>
+        <openapi-generator-maven-plugin.version>7.25.0</openapi-generator-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <primus-jce.version>2.4.4</primus-jce.version>
         <skip.doc-generate>true</skip.doc-generate>
@@ -53,7 +53,7 @@
         <spring-cloud-starter-bootstrap.version>5.0.3</spring-cloud-starter-bootstrap.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
-        <generic-java-lib.version>2.2.0</generic-java-lib.version>
+        <generic-java-lib.version>3.1.1</generic-java-lib.version>
         <pact.version>4.7.5</pact.version>
         <!-- Fixes SNYK-JAVA-IONETTY-16438323 / 16438929 / 16438931 / 16438936 / 16438938 / 16438978 / 18956131 -->
         <netty.version>4.2.17.Final</netty.version>
@@ -69,7 +69,7 @@
      managed version from Spring Boot and cause java.lang.NoClassDefFoundError at runtime. -->
         <jackson.version>2.22.2</jackson.version>
         <jackson-annotations.version>2.22</jackson-annotations.version>
-        <jackson-core.version>2.22.0</jackson-core.version>
+        <jackson-core.version>2.22.2</jackson-core.version>
         <jackson3.version>3.2.2</jackson3.version>
     </properties>
 
@@ -142,6 +142,11 @@
             <dependency>
                 <groupId>ch.admin.swiyu</groupId>
                 <artifactId>swiyu-token-status-list</artifactId>
+                <version>${generic-java-lib.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.admin.swiyu</groupId>
+                <artifactId>swiyu-sdjwt-builder</artifactId>
                 <version>${generic-java-lib.version}</version>
             </dependency>
 

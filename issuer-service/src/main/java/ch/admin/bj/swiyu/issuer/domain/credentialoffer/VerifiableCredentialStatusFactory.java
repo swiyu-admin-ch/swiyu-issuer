@@ -17,14 +17,6 @@ public class VerifiableCredentialStatusFactory {
         return new TokenStatusListReference(index, statusList.getUri());
     }
 
-    public Map<String, List<VerifiableCredentialStatusReference>> mergeByIdentifier(Map<String, List<VerifiableCredentialStatusReference>> accumulator,
-                                                                                    VerifiableCredentialStatusReference item) {
-        var identifier = item.getIdentifier();
-        accumulator.putIfAbsent(identifier, new LinkedList<>());
-        accumulator.get(identifier).add(item);
-        return accumulator;
-    }
-
     public int getMaxSize(Map<String, List<VerifiableCredentialStatusReference>> references) {
         return references.values().stream().map(List::size).reduce(Integer::max).orElse(0);
     }
@@ -32,22 +24,25 @@ public class VerifiableCredentialStatusFactory {
     /**
      * A sane configuration has 1 entry (using the same for all instances) or one entry per instance (batch size)
      */
-    public boolean isCompatibleStatusReferencesToBatchSize(@NotNull Map<String, List<VerifiableCredentialStatusReference>> accumulatedStatusReferences,
+    public boolean isCompatibleStatusReferencesToBatchSize(@NotNull List<VerifiableCredentialStatusReference> statusListReferences,
                                                            @NotNull IssuerMetadata issuerMetadata,
                                                            @Nullable Integer batchSize) {
+        
+        if (statusListReferences == null || statusListReferences.isEmpty()) {
+            // Having no status list references at all is a valid option
+            return true;
+        }
         int size = 1;
         if (batchSize != null && batchSize > 0) {
             size = batchSize;
         }
-        for (List<VerifiableCredentialStatusReference> referenceList : accumulatedStatusReferences.values()) {
 
-            if (!issuerMetadata.isBatchIssuanceAllowed() && referenceList.size() != 1) {
-                return false;
-            }
+        if (!issuerMetadata.isBatchIssuanceAllowed() && statusListReferences.size() != 1) {
+            return false;
+        }
 
-            if (referenceList.size() < size) {
-                return false;
-            }
+        if (statusListReferences.size() < size) {
+            return false;
         }
         return true;
     }
