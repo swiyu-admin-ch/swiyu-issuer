@@ -1570,7 +1570,7 @@ components:
           description: "Optional Parameter to override configured parameters, such\
             \ as the DID used or the HSM key used in singing the request object"
         tx_code_config:
-          $ref: "#/components/schemas/CreateCredentialOfferRequest"
+          $ref: "#/components/schemas/TransactionCodeConfig"
           description: Optional parameter to enable and configure transaction code
             as a second factor. Note that the description will be part of the QR-Code
             and should be kept short as possible
@@ -2379,6 +2379,23 @@ components:
             pattern: ^ES256|Ed25519$
         key_attestations_required:
           $ref: "#/components/schemas/KeyAttestationRequirement"
+    TransactionCodeConfig:
+      type: object
+      description: Configuration for transaction code.
+      properties:
+        use_tx_code:
+          type: boolean
+          default: false
+          description: Flag indicating if tx_code should be used. By default false.
+        description:
+          type: string
+          description: String containing guidance for the Holder of the Wallet on
+            how to obtain the Transaction Code.
+        length:
+          type: integer
+          format: int32
+          default: 6
+          description: Integer specifying the length of the Transaction Code.
     UpdateCredentialStatusRequestType:
       type: string
       description: |2
