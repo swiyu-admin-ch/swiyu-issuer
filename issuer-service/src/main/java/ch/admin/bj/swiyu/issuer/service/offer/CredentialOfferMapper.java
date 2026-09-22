@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
+import ch.admin.bj.swiyu.statuslist.dto.TokenStatusListReferenceDto;
 import lombok.experimental.UtilityClass;
 import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
@@ -19,6 +20,7 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 

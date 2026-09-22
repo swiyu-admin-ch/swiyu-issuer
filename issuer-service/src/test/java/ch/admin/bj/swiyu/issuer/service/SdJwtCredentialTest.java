@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.CredentialException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.HolderKeyBinding;
@@ -46,6 +47,23 @@ class SdJwtCredentialTest {
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     private CredentialConfiguration credentialConfiguration;
 
+    private static Stream<JWSSigner> createTestSigner() throws JOSEException {
+        return Stream.of(
+                new ECDSASigner(
+                        new ECKeyGenerator(Curve.P_256)
+                                .keyID("test-key")
+                                .algorithm(JWSAlgorithm.ES256)
+                                .keyUse(KeyUse.SIGNATURE)
+                                .generate()),
+                new Ed25519Signer(
+                        new OctetKeyPairGenerator(Curve.Ed25519)
+                                .keyID("test-key")
+                                .algorithm(JWSAlgorithm.Ed25519)
+                                .keyUse(KeyUse.SIGNATURE)
+                                .generate())
+        );
+    }
+
     @BeforeEach
     void setUp() {
         applicationProperties = mock(ApplicationProperties.class);
@@ -64,23 +82,6 @@ class SdJwtCredentialTest {
         when(applicationProperties.getIssuerId()).thenReturn("did:example:issuer");
         when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(Map.of(metadataCredentialSupportedId, credentialConfiguration));
         when(issuerMetadata.getCredentialConfigurationById(metadataCredentialSupportedId)).thenReturn(credentialConfiguration);
-    }
-
-    private static Stream<JWSSigner> createTestSigner() throws JOSEException {
-        return Stream.of(
-            new ECDSASigner(
-                new ECKeyGenerator(Curve.P_256)
-                    .keyID("test-key")
-                    .algorithm(JWSAlgorithm.ES256)
-                    .keyUse(KeyUse.SIGNATURE)
-                    .generate()),
-            new Ed25519Signer(
-                new OctetKeyPairGenerator(Curve.Ed25519)
-                    .keyID("test-key")
-                    .algorithm(JWSAlgorithm.Ed25519)
-                    .keyUse(KeyUse.SIGNATURE)
-                    .generate())
-            );
     }
 
     @ParameterizedTest
@@ -210,9 +211,8 @@ class SdJwtCredentialTest {
             "status",
             "_sd",
             "_sd_alg",
-            "sd_hash",
             "..."})
-    void whenGetCredential_withReservedKey_doesNotAddValue_thenSuccess(String value) throws Exception {
+    void whenGetCredential_withReservedKey_doesNotAddValue_thenThrows(String value) throws Exception {
 
         CredentialOffer offer = createCredentialOffer(Map.of(value, "bar"));
 
@@ -223,9 +223,7 @@ class SdJwtCredentialTest {
         sdJwtCredential.credentialOffer(offer);
         sdJwtCredential.credentialType(List.of(metadataCredentialSupportedId));
 
-        List<String> credentials = sdJwtCredential.getCredential(null);
-
-        assertEquals(1, credentials.getFirst().split("~").length); // No claim / no disclosure should be added
+        assertThrows(CredentialException.class, () -> sdJwtCredential.getCredential(null));
     }
 
     @ParameterizedTest
