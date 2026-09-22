@@ -51,7 +51,7 @@ public class StatusListCacheService {
      */
     public TokenStatusListTokenDto getTokenStatusListTokenByUri(String uri) {
         Optional<TokenStatusListTokenDto> token = cache.get(uri, this::resolveValidatedStatusList);
-        return token == null ? null : token.orElse(null);
+        return token.orElse(null);
     }
 
     /**
@@ -65,7 +65,12 @@ public class StatusListCacheService {
         try {
             String statusListJWT = statusRegistryClient.resolveStatusList(uri);
             SignedJWT tokenStatusListJWT = SignedJWT.parse(statusListJWT);
-            TokenStatusListVerifier.hasValidTokenStatusListTokenHeader(tokenStatusListJWT.getHeader());
+
+            if (!TokenStatusListVerifier.hasValidTokenStatusListTokenHeader(tokenStatusListJWT.getHeader())) {
+                log.info("Status list header is not valid for uri {}", uri);
+                return Optional.empty();
+            }
+
             TokenStatusListTokenDto statusList = TokenStatusListMapper.toTokenStatusListToken(tokenStatusListJWT.getJWTClaimsSet().getClaims(), tokenStatusListJWT.getHeader());
             String kid = didKidParser.extractKidFromHeader(statusListJWT);
             JWK statusListKey = keyResolver.resolveKey(kid);
