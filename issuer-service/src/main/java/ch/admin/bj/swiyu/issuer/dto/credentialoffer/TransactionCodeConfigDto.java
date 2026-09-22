@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor 
 @NoArgsConstructor
-@Schema(name = "CreateCredentialOfferRequest", description = "Initial credential creation request to start the offering process.")
+@Schema(name = "TransactionCodeConfig", description = "Configuration for transaction code.")
 public class TransactionCodeConfigDto {
     @JsonProperty("use_tx_code")
     @Schema(description = "Flag indicating if tx_code should be used. By default false.", defaultValue = "false")
