@@ -44,7 +44,7 @@ public class OAuthService {
      * Issues an OAuth token for a given pre-authorization code created by issuer
      * mgmt
      *
-     * @param preAuthCode Pre-authorization code of holder
+     * @param offer Credential Offer for which the OAuth token will be issued
      * @return OAuth authorization token which can be used in credential service
      *         endpoint
      * @throws OAuthException if no offer was found with associated pre-auth_code
@@ -67,7 +67,7 @@ public class OAuthService {
      * @throws OAuthException when the provided preAuth code was incorrect, already used or too many attempts with incorrect txCode were made
      * @throws InvalidTxCodeException when the provided txCode was incorrect. This indicates that it should be tried again with a different txCode
      */
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.MANDATORY, noRollbackFor = {InvalidTxCodeException.class})
     public CredentialOffer getCredentialOfferWithTokenRequestData(String preAuthCode, String txCode) {
         CredentialOffer offer = getCredentialOfferByPreAuthCode(preAuthCode);
         
@@ -213,7 +213,7 @@ public class OAuthService {
 
     private void invalidateCredentialOffer(CredentialOffer offer) {
         credentialStateMachine.sendEventAndUpdateStatus(offer,
-                                CredentialStateMachineConfig.CredentialOfferEvent.CANCEL);
+                CredentialStateMachineConfig.CredentialOfferEvent.CANCEL);
         credentialOfferRepository.save(offer);
     }
 
