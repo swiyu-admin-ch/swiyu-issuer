@@ -9,7 +9,7 @@ import java.util.UUID;
  * Data Transfer Object for Pre-Authorized Code.
  *
  * @param preAuthCode The pre-authorized code as a UUID.
- * @param txCode Optional Transaction Code indicating if a transaction will be required
+ * @param txCode Optional Transaction Code indicating if a transaction code will be required
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record PreAuthorizedCodeGrantDto(

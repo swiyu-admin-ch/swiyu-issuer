@@ -129,7 +129,7 @@ public class CredentialOffer {
     private UUID preAuthorizedCode;
 
     /**
-     * Optional Transaction Code the wallet needs provide alongside the pre-authroized_code
+     * Optional Transaction Code the wallet needs to provide alongside the pre-authroized_code
      */
     @Column(name = "tx_code")
     private String txCode;
