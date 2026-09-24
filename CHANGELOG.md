@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added new credential-configuration-property in the issuer metadata `credential_refresh_disabled` that points out if a
   business issuer has disabled the renewal flow for a specific credential type. If this property is set to true, the
   wallet should not attempt to renew the credential and should not display a renewal option to the user `(#1093)`
+- Optionally an API Key can now be set for Credential Renewal call to the business issuer using environment variables
+  `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` and `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` (#1223)
 
 ## Fixed
 
@@ -59,7 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that
   rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 - Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
-- Documented missing HTTP response codes (405, 406, 409, 415, 420, 422, 429, 500) for the oid4vci and .well-known endpoints in openapi.yaml `(#1165)`
+- Documented missing HTTP response codes (405, 406, 409, 415, 420, 422, 429, 500) for the oid4vci and .well-known
+  endpoints in openapi.yaml `(#1165)`
 - Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the
   revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
 
@@ -204,12 +207,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       true).
     - Require Encryption to be used by default.
     - Require DPoP to be used by default.
-- **Docker image:** the published image is now hardened. The default
-  (unsuffixed) tag `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
+- **Docker image:** the published image is now hardened. The default (unsuffixed) tag
+  `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
   `dhi.io/eclipse-temurin:21-debian13`, runs as the pre-configured `nonroot` user
   and contains no shell. During a transition period the previous UBI-based image
-  remains available under the `-unhardened` suffix
-  (`ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened`). Operators who cannot
+  remains available under the `-unhardened` suffix (`ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened`). Operators
+  who cannot
   immediately adopt the hardened runtime **must pin to the `-unhardened` tag** until
   they have completed the migration steps in
   [`migration-guides/guide-3.1.x-to-3.2.x.md`](migration-guides/guide-3.1.x-to-3.2.x.md);
@@ -535,8 +538,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       it delivers the same information)
     - Added new endpoint patch `/management/api/credentials{credentialId}` which updates / creates the credential offer
       for a deferred endpoint.
-    - Added a new ClientAgentInfoDto which are used for the deferred credential flow. This is stored in the database
-      (db migration is necessary & included)
+    - Added a new ClientAgentInfoDto which are used for the deferred credential flow. This is stored in the database (db
+      migration is necessary & included)
 - Breaking! updated url path to distinguish management (with `/management`) and oid4vci (with `/oid4vci`) urls
 - Added new endpoint `/.well-known/oauth-authorization-server` that provides the same information as the
   `/.well-known/openid-configuration` endpoint but in a OAuth2-centric way.

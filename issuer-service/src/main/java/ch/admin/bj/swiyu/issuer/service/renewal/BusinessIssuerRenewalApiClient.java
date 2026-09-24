@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.RenewalException;
 import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
+import io.micrometer.common.util.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
@@ -27,8 +28,11 @@ public class BusinessIssuerRenewalApiClient {
     public RenewalResponseDto getRenewalData(RenewalRequestDto requestDto) {
 
         try {
-            return webClient.post()
-                    .uri(URI.create(applicationProperties.getBusinessIssuerRenewalApiEndpoint()))
+            WebClient.RequestBodySpec request = webClient.post()
+                    .uri(URI.create(applicationProperties.getBusinessIssuerRenewalApiEndpoint()));
+            request = withApiKey(request);
+
+            return request
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)
                     .retrieve()
@@ -44,5 +48,14 @@ public class BusinessIssuerRenewalApiClient {
                     applicationProperties.getBusinessIssuerRenewalApiEndpoint(), e.getStatusCode(), e.getMessage());
             throw new RenewalException(e.getStatusCode(), "Renewal request failed: " + e.getMessage(), e);
         }
+    }
+
+    private WebClient.RequestBodySpec withApiKey(WebClient.RequestBodySpec request) {
+        var apiKeyHeader = applicationProperties.getBusinessIssuerRenewalApiKeyHeader();
+        var apiKey = applicationProperties.getBusinessIssuerRenewalApiKeyValue();
+        if (!StringUtils.isBlank(apiKeyHeader) && !StringUtils.isBlank(apiKey)) {
+            request = request.header(apiKeyHeader, apiKey);
+        }
+        return request;
     }
 }
