@@ -96,6 +96,13 @@
                 <version>${jackson3.version}</version>
             </dependency>
 
+            <!-- Fixes CVE-2026-89425 -->
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>3.1.7</version>
+            </dependency>
+
             <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORKCLOUD-19268251 (Missing Authorization, High Severity) in spring-cloud-context@5.0.2
                  Override the version pinned by spring-cloud-dependencies BOM 2025.1.2 which still uses 5.0.2 -->
             <dependency>
