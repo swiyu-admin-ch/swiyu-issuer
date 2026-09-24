@@ -64,13 +64,11 @@
         <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
         <tomcat.version>11.0.23</tomcat.version>
 
-        <!-- Fixes CVE-2026-59889. jackson-annotations/jackson-core must stay aligned with jackson-databind
-     (>= 2.22 required for e.g. JsonApplyView), otherwise dependency mediation can pick an older
-     managed version from Spring Boot and cause java.lang.NoClassDefFoundError at runtime. -->
-        <jackson.version>2.22.2</jackson.version>
+        <!-- Fixes CVE-2026-89425 -->
+        <jackson.version>2.22.3</jackson.version>
         <jackson-annotations.version>2.22</jackson-annotations.version>
-        <jackson-core.version>2.22.2</jackson-core.version>
-        <jackson3.version>3.2.2</jackson3.version>
+        <jackson-core.version>2.22.3</jackson-core.version>
+        <jackson3.version>3.2.3</jackson3.version>
     </properties>
 
     <dependencyManagement>
@@ -96,6 +94,13 @@
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson3.version}</version>
+            </dependency>
+
+            <!-- Fixes CVE-2026-89425 -->
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>3.1.7</version>
             </dependency>
 
             <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORKCLOUD-19268251 (Missing Authorization, High Severity) in spring-cloud-context@5.0.2
