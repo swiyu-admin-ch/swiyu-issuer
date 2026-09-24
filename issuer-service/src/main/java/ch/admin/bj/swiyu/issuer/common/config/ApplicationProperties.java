@@ -104,6 +104,11 @@ public class ApplicationProperties {
      */
     private String businessIssuerRenewalApiEndpoint;
 
+    @Nullable
+    private String businessIssuerRenewalApiKeyHeader;
+    @Nullable
+    private String businessIssuerRenewalApiKeyValue;
+
     @NotNull
     private int acceptableProofTimeWindowSeconds;
     @NotNull
