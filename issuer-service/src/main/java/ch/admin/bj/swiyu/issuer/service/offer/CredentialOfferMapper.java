@@ -11,13 +11,18 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDt
 import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
 import ch.admin.bj.swiyu.statuslist.dto.TokenStatusListReferenceDto;
 import lombok.experimental.UtilityClass;
+
+import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.util.UriUtils;
+
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +42,7 @@ public class CredentialOfferMapper {
                 .managementId(management.getId())
                 .offerId(credentialOffer.getId())
                 .offerDeeplink(getOfferDeeplinkFromCredential(props, credentialOffer))
+                .txCode(credentialOffer.getTxCode())
                 .build();
     }
 
@@ -186,7 +192,11 @@ public class CredentialOfferMapper {
     private static String getOfferDeeplinkFromCredential(ApplicationProperties props,
                                                          CredentialOffer credentialOffer) {
 
-        var grants = new GrantsDto(new PreAuthorizedCodeGrantDto(credentialOffer.getPreAuthorizedCode()));
+        TransactionCodeDto txCode = null;
+        if (StringUtils.isNotEmpty(credentialOffer.getTxCode())) {
+            txCode = new TransactionCodeDto(null, credentialOffer.getTxCode().length(), credentialOffer.getTxCodeDescription());
+        }
+        var grants = new GrantsDto(new PreAuthorizedCodeGrantDto(credentialOffer.getPreAuthorizedCode(), txCode));
         var credentialIssuer = getCredentialIssuer(props, credentialOffer);
         var objectMapper = new ObjectMapper();
 
@@ -198,8 +208,8 @@ public class CredentialOfferMapper {
 
         String credentialOfferString;
         try {
-            credentialOfferString = URLEncoder.encode(objectMapper.writeValueAsString(credentialOfferDto),
-                    Charset.defaultCharset());
+            credentialOfferString = UriUtils.encode(objectMapper.writeValueAsString(credentialOfferDto),
+                StandardCharsets.UTF_8);
         } catch (JacksonException e) {
             throw new JsonException(
                     "Error processing credential offer for credential with id %s".formatted(credentialOffer.getId()), e);

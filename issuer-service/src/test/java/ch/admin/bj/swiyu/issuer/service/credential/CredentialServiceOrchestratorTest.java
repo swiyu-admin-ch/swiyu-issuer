@@ -188,7 +188,7 @@ class CredentialServiceOrchestratorTest {
         // WHEN credential is created for offer with expired timestamp
         var uuidString = uuid.toString();
         var ex = assertThrows(OAuthException.class,
-                () -> oAuthService.issueOAuthToken(uuidString));
+                () -> oAuthService.getCredentialOfferWithTokenRequestData(uuidString, null));
 
         // THEN Status is changed and offer data is cleared
         assertEquals(CredentialOfferStatusType.EXPIRED, offer.getCredentialStatus());
@@ -428,7 +428,8 @@ class CredentialServiceOrchestratorTest {
         when(credentialOfferRepository.findByPreAuthorizedCode(preAuthCode)).thenReturn(Optional.of(credentialOffer));
         when(applicationProperties.getTokenTTL()).thenReturn(600L);
 
-        OAuthTokenDto token = oAuthService.issueOAuthToken(preAuthCode.toString());
+        var loadedOffer = oAuthService.getCredentialOfferWithTokenRequestData(preAuthCode.toString(), null);
+        OAuthTokenDto token = oAuthService.issueOAuthToken(loadedOffer);
 
         assertEquals(mgmt.getAccessToken().toString(), token.getAccessToken());
         assertEquals(600, token.getExpiresIn());
@@ -450,9 +451,9 @@ class CredentialServiceOrchestratorTest {
         when(applicationProperties.getTokenTTL()).thenReturn(600L);
 
         var preAuthCodeString = preAuthCode.toString();
-        var exception = assertThrows(OAuthException.class, () -> oAuthService.issueOAuthToken(preAuthCodeString));
+        var exception = assertThrows(OAuthException.class, () -> oAuthService.getCredentialOfferWithTokenRequestData(preAuthCodeString, null));
 
-        assertEquals("Credential has already been used", exception.getMessage());
+        assertEquals("Credential Offer has already been used", exception.getMessage());
     }
 
     @Test
@@ -537,7 +538,7 @@ class CredentialServiceOrchestratorTest {
         var invalidPreAuthCode = "definitely-not-a-uuid";
 
         var exception = assertThrows(OAuthException.class, () ->
-                oAuthService.issueOAuthToken(invalidPreAuthCode));
+                oAuthService.getCredentialOfferWithTokenRequestData(invalidPreAuthCode, null));
 
         assertEquals("INVALID_REQUEST", exception.getError().toString());
         assertEquals("Expecting a correct UUID", exception.getMessage());

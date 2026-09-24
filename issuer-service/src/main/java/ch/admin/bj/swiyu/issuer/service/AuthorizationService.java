@@ -8,7 +8,9 @@ import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidTxCodeException;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAccessTokenRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
@@ -39,7 +41,7 @@ public class AuthorizationService {
      * @param request                    full request with anciallary headers and request target uri
      * @return
      */
-    @Transactional
+    @Transactional(noRollbackFor = {InvalidTxCodeException.class})
     public OAuthTokenDto processOAuthTokenEndpointRequest(@Nullable String dpop,
                                                           OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
                                                           HttpServletRequest request) {
@@ -96,29 +98,27 @@ public class AuthorizationService {
         }
     }
 
-    private OAuthTokenDto oauthTokenPreAuthorized(String dpop, HttpServletRequest request, String preauthorizedCode) {
-        if (StringUtils.isBlank(preauthorizedCode)) {
+    private OAuthTokenDto oauthTokenPreAuthorized(String dpop, HttpServletRequest request, OAuthAccessTokenRequestDto oauthAccessTokenRequestDto) {
+        String preAuthCode = oauthAccessTokenRequestDto.preauthorized_code();
+        if (StringUtils.isBlank(preAuthCode)) {
             throw OAuthException.invalidRequest("Pre-authorized code is required");
         }
-        demonstratingProofOfPossessionService.registerDpop(
-                preauthorizedCode,
-                dpop,
-                new ServletServerHttpRequest(request));
+        CredentialOffer offer = oauthService.getCredentialOfferWithTokenRequestData(
+            oauthAccessTokenRequestDto.preauthorized_code(), 
+            oauthAccessTokenRequestDto.tx_code());
 
-        try {
-            return oauthService.issueOAuthToken(preauthorizedCode);
-        } catch (OAuthException exc) {
-            // Other endpoints calling issueOAuthToken expect an invalid token OAuthException
-            // this exception is caught here and replaced with invalid grant to follow the specification
-            throw OAuthException.invalidGrant("invalid token");
-        }
+        demonstratingProofOfPossessionService.registerDpop(
+            offer,
+            dpop,
+            new ServletServerHttpRequest(request));
+
+        return oauthService.issueOAuthToken(offer);
     }
 
     private OAuthTokenDto processTokenRequestByGrantType(String dpop, OAuthAccessTokenRequestDto oauthAccessTokenRequestDto,
                                                          HttpServletRequest request) {
         if (OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
-            String preauthorizedCode = oauthAccessTokenRequestDto.preauthorized_code();
-            return oauthTokenPreAuthorized(dpop, request, preauthorizedCode);
+            return oauthTokenPreAuthorized(dpop, request, oauthAccessTokenRequestDto);
         } else if (OAuthTokenGrantType.REFRESH_TOKEN.getName().equals(oauthAccessTokenRequestDto.grant_type())) {
             String refreshToken = oauthAccessTokenRequestDto.refresh_token();
             return oauthRefreshToken(dpop, request, refreshToken);
@@ -128,11 +128,8 @@ public class AuthorizationService {
     }
     
     private void validateUnsupportedRequestParameters(HttpServletRequest request) {
-        if (request.getParameter("tx_code") != null) {
-            throw OAuthException.invalidRequest("Unsupported parameter 'tx_code'");
-        }
-
         if (request.getParameter("client_id") != null) {
+            // Note: This is unsupported as pre-authorized_grant_anonymous_access_supported is hardcoded to true
             throw OAuthException.invalidRequest("Unsupported parameter 'client_id'");
         }
     }

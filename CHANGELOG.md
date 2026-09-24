@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   business issuer has disabled the renewal flow for a specific credential type. If this property is set to true, the
   wallet should not attempt to renew the credential and should not display a renewal option to the user `(#1093)`
 
+- Support tx_code. This can be activated when creating a new credential offer by using `tx_code_config.use_tx_code = true`. This feature allows using a secondary code to be sent through a differen channel than the pre-authorized code. `(#709)`
 ## Fixed
 
 - Check correctness of the status list header and reset cache accordingly `(#1235)`
@@ -46,7 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT` not setting the value (which is the default) disables the renewal and keeps the
   former functionality `(#1093)`
 -
-
 ### Removed
 
 - Removed support for `renewal-flow-allowed` and therefore `RENEWAL_FLOW_ENABLED` as different variables handle the same

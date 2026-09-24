@@ -1569,6 +1569,14 @@ components:
           $ref: "#/components/schemas/ConfigurationOverride"
           description: "Optional Parameter to override configured parameters, such\
             \ as the DID used or the HSM key used in singing the request object"
+        tx_code_config:
+          $ref: "#/components/schemas/TransactionCodeConfig"
+          description: Optional parameter to enable and configure transaction code
+            as a second factor. Note that the description will be part of the QR-Code
+            and should be kept short as possible
+          example:
+            use_tx_code: "true"
+            description: Code sent by SMS to +41 000 000 00 00
       required:
       - metadata_credential_supported_id
     CreateCredentialRequest:
@@ -1822,6 +1830,8 @@ components:
           type: string
           format: uuid
         offer_deeplink:
+          type: string
+        tx_code:
           type: string
     DeferredCredentialEndpointRequest:
       type: object
@@ -2145,6 +2155,7 @@ components:
           type: string
         pre-authorized_grant_anonymous_access_supported:
           type: boolean
+          description: True if client_id should be omitted in the call to the token_endpoint
       required:
       - issuer
       - token_endpoint
@@ -2175,8 +2186,19 @@ components:
           minLength: 1
         pre-authorized_code:
           type: string
+          description: ' The code representing the authorization to obtain Credentials
+            of a certain type. This parameter MUST be present if the grant_type is
+            urn:ietf:params:oauth:grant-type:pre-authorized_code.'
         refresh_token:
           type: string
+          description: "The refresh token, which can be used to obtain new access\
+            \ tokens."
+        tx_code:
+          type: string
+          description: String value containing a Transaction Code value itself. This
+            value MUST be present if a tx_code object was present in the Credential
+            Offer (including if the object was empty). This parameter MUST only be
+            used if the grant_type is urn:ietf:params:oauth:grant-type:pre-authorized_code.
       required:
       - grant_type
     ProofsDto:
@@ -2357,6 +2379,23 @@ components:
             pattern: ^ES256|Ed25519$
         key_attestations_required:
           $ref: "#/components/schemas/KeyAttestationRequirement"
+    TransactionCodeConfig:
+      type: object
+      description: Configuration for transaction code.
+      properties:
+        use_tx_code:
+          type: boolean
+          default: false
+          description: Flag indicating if tx_code should be used. By default false.
+        description:
+          type: string
+          description: String containing guidance for the Holder of the Wallet on
+            how to obtain the Transaction Code.
+        length:
+          type: integer
+          format: int32
+          default: 6
+          description: Integer specifying the length of the Transaction Code.
     UpdateCredentialStatusRequestType:
       type: string
       description: |2

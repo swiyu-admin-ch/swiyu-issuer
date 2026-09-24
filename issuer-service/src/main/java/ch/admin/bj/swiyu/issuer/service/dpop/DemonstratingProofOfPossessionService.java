@@ -66,17 +66,16 @@ public class DemonstratingProofOfPossessionService {
     /**
      * Validate the Demonstrating Proof of Possession for the initial call of the token endpoint and register the public key provided therein
      *
-     * @param preAuthCode One time Pre-Auth code used for the token_endpoint request
+     * @param credentialOffer the credential offer for which the DPoP registration should be done (if necessary)
      * @param dpop        Serialized Json Web Token to be validated, must contain nonce and jwk with the public key of the holder
      * @param request     HTTP request associated with the DPoP for validating Request Method and URI
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void registerDpop(@NotBlank String preAuthCode, @Nullable String dpop, HttpRequest request) {
+    public void registerDpop(@NotNull CredentialOffer credentialOffer, @Nullable String dpop, HttpRequest request) {
         if (canSkipDpopValidation(dpop, false)) {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
-        var credentialOffer = credentialOfferRepository.findByPreAuthorizedCode(UUID.fromString(preAuthCode)).orElseThrow();
         var mgmt = credentialOffer.getCredentialManagement();
         if (requiresKeyAttestation(credentialOffer)) {
             validateDPoPKeyAttestation(dpopJwt);
