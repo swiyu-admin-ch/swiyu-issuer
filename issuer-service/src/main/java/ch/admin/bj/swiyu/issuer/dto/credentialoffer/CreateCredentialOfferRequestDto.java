@@ -108,16 +108,18 @@ public class CreateCredentialOfferRequestDto {
     @JsonProperty("configuration_override")
     private ConfigurationOverrideDto configurationOverride;
 
-    @JsonProperty("tx_code_config")
+
     @Schema(description = "[EXPERIMENTAL] Optional parameter to enable and configure transaction code as a second factor. Note that the description will be part of the QR-Code and should be kept short as possible",
-        example = """
-                {
-                    "use_tx_code": "true",
-                    "description": "Code sent by SMS to +41 000 000 00 00"
-                }
-                """
+            example = """
+                    {
+                        "use_tx_code": "true",
+                        "description": "Code sent by SMS to +41 000 000 00 00"
+                    }
+                    """
     )
-    @Nullable 
+    @Valid
+    @Nullable
+    @JsonProperty("tx_code_config")
     private TransactionCodeConfigDto transactionCodeConfig;
 
     public List<String> getStatusLists() {

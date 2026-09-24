@@ -58,7 +58,7 @@ class DemonstratingProofOfPossessionIT {
     private UUID accessToken;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
-    
+
     public static Stream<String> faultyNonceSource() {
         var nonceSecret = IssuerSecret.builder().id(UUID.randomUUID()).build();
         return Stream.of(
@@ -105,8 +105,9 @@ class DemonstratingProofOfPossessionIT {
                 Set.of(createTestCredentialOffer)
         );
         credentialManagementRepository.save(mgmt);
-        
+
         // Reload Object to ensure that generated values are all present
+        // notably audit data is without this step null and will cause DataIntegrityViolationException
         testCredentialOffer = credentialOfferRepository.findById(createTestCredentialOffer.getId()).get();
 
         dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("test-key-1").keyUse(KeyUse.SIGNATURE).generate());

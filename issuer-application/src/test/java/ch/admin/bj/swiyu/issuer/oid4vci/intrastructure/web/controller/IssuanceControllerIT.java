@@ -440,7 +440,7 @@ class IssuanceControllerIT {
         mock.perform(post("/oid4vci/api/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
-                        .param("tx_code", txCode)
+                        .param("tx_code", txCode) // MUST be present when part of the offer. When not requested should be ignored
                         .param("pre-authorized_code", validPreAuthCode.toString()))
                 .andExpect(status().isOk())
                 // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
@@ -449,7 +449,7 @@ class IssuanceControllerIT {
                 .andExpect(jsonPath("$.access_token").isNotEmpty()) // REQUIRED
                 .andExpect(jsonPath("$.token_type").isNotEmpty()) // REQUIRED
                 .andExpect(jsonPath("$.token_type").value("BEARER"));
-        
+
         var offer = credentialOfferRepository.getReferenceById(offerId);
         assertThat(offer.getCredentialStatus()).isEqualTo(CredentialOfferStatusType.IN_PROGRESS);
     }
@@ -478,9 +478,9 @@ class IssuanceControllerIT {
 
 
     /**
-     * Test Behaviour when transaction code is not valid
+     * Test behaviour when transaction code is not valid
      */
-    @Test 
+    @Test
     void testNewTokenEndpoint_whenInvalidTxCode() throws Exception {
         var txCode = "123456";
         // Change the offer used in these tests to require tx_code
@@ -492,7 +492,6 @@ class IssuanceControllerIT {
         mock.perform(post("/oid4vci/api/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
-                        .param("tx_code", "654321")
                         .param("pre-authorized_code", validPreAuthCode.toString()))
                 .andExpect(status().isBadRequest())
                 // Assertions w.r.t. RFC 6749 ("The OAuth 2.0 Authorization Framework")
@@ -501,15 +500,15 @@ class IssuanceControllerIT {
                 .andExpect(jsonPath("$.access_token").doesNotHaveJsonPath())
                 .andExpect(jsonPath("$.token_type").doesNotHaveJsonPath())
                 .andExpect(jsonPath("$.error").value(OAuthErrorDto.INVALID_TX_CODE.toString())); // INVALID_TX_CODE as retry should be attempted 
-        
+
         // State after first false try when we should retry
         var firstAttemptOfferState = credentialOfferRepository.getReferenceById(offerId);
         assertThat(firstAttemptOfferState.getCredentialStatus()).as("There are still retries left, so state is still offered").isEqualTo(CredentialOfferStatusType.OFFERED);
         assertThat(firstAttemptOfferState.getTxCodeRetries()).as("Failed to provide correct tx_code once").isEqualTo(1);
-        firstAttemptOfferState.setTxCodeRetries(applicationProperties.getTxCodeRetries()+1); // Emulate having spent all retries
+        firstAttemptOfferState.setTxCodeRetries(applicationProperties.getTxCodeRetries() + 1); // Emulate having spent all retries
         credentialOfferRepository.save(firstAttemptOfferState);
 
-        // Send without tx_code
+        // Send with wrong tx_code
         mock.perform(post("/oid4vci/api/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
