@@ -148,9 +148,10 @@ public class ApplicationProperties {
     private Integer maxDecompressedPayloadLength;
 
     /**
-     * Limit how many retries a holder has to provide the correct Transaction Code when requesting the token
+     * Limit how many retries a holder has to provide the correct Transaction Code when requesting the token.
+     * Note that the total number of attempts a wallet may make is retries + 1 for the initial try
      */
-    @NotNull 
+    @NotNull
     @Min(0)
     private Integer txCodeRetries;
 

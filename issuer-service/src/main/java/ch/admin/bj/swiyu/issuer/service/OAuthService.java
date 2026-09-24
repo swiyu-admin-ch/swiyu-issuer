@@ -46,7 +46,7 @@ public class OAuthService {
      *
      * @param offer Credential Offer for which the OAuth token will be issued
      * @return OAuth authorization token which can be used in credential service
-     *         endpoint
+     * endpoint
      * @throws OAuthException if no offer was found with associated pre-auth_code
      */
     @Transactional(propagation = Propagation.MANDATORY)
@@ -61,16 +61,17 @@ public class OAuthService {
 
     /**
      * Retrieves and validates the Credential Offer using data as provided by a request to the Token Endpoint
+     *
      * @param preAuthCode the pre-authorized_code used once to load the credential offer
-     * @param txCode optional transaction code as second factor
+     * @param txCode      optional transaction code as second factor
      * @return the credential offer object associated with the provided preAuthCode
-     * @throws OAuthException when the provided preAuth code was incorrect, already used or too many attempts with incorrect txCode were made
+     * @throws OAuthException         when the provided preAuth code was incorrect, already used or too many attempts with incorrect txCode were made
      * @throws InvalidTxCodeException when the provided txCode was incorrect. This indicates that it should be tried again with a different txCode
      */
     @Transactional(propagation = Propagation.MANDATORY, noRollbackFor = {InvalidTxCodeException.class})
     public CredentialOffer getCredentialOfferWithTokenRequestData(String preAuthCode, String txCode) {
         CredentialOffer offer = getCredentialOfferByPreAuthCode(preAuthCode);
-        
+
         if (offer.getCredentialStatus() != CredentialOfferStatusType.OFFERED) {
             log.debug("Refused to issue OAuth token. Credential offer {} has already state {}.", offer.getId(),
                     offer.getCredentialStatus());
@@ -78,6 +79,7 @@ public class OAuthService {
         }
 
         if (offer.requiresTransactionCode()) {
+            // Count Retries, the total number of attempts is the initial try + retries
             if (offer.getTxCodeRetries() > applicationProperties.getTxCodeRetries()) {
                 invalidateCredentialOffer(offer);
                 throw InvalidTxCodeException.tooManyInvalidTxCodeException();
@@ -229,6 +231,7 @@ public class OAuthService {
 
     /**
      * parses the UUID of a preAuthCode
+     *
      * @param preAuthCode token
      * @return uuid of the preAuthCode
      * @throws OAuthException (Invalid Request)
