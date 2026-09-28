@@ -49,29 +49,6 @@ class CredentialFormatFactoryTest {
     /**
      * Happy‑path: when the credential configuration exists and its format is
      * {@code dc+sd-jwt}, the factory must return an {@link SdJwtCredential}
-     * instance (backwards-compatibility, Expand phase).
-     */
-    @Test
-    void getFormatBuilder_returnsSdJwtCredential_whenFormatIsVcSdJwt() {
-        // arrange
-        var configId = "test-config";
-        var mockedConfig = mock(CredentialConfiguration.class);
-        when(mockedConfig.getFormat()).thenReturn("dc+sd-jwt");
-
-        Map<String, CredentialConfiguration> credentialConfigurationSupported = new HashMap<>();
-        credentialConfigurationSupported.put(configId, mockedConfig);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(credentialConfigurationSupported);
-
-        // act
-        CredentialBuilder builder = factory.getFormatBuilder(configId);
-
-        // assert
-        assertThat(builder).isInstanceOf(SdJwtCredential.class);
-    }
-
-    /**
-     * Happy‑path: when the credential configuration exists and its format is
-     * {@code dc+sd-jwt}, the factory must return an {@link SdJwtCredential}
      * instance (new default format, A3).
      */
     @Test
