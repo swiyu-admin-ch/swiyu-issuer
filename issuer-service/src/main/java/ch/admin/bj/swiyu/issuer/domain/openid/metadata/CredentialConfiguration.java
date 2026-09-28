@@ -33,9 +33,8 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @NoArgsConstructor
 @AllArgsConstructor
 public class CredentialConfiguration {
-    // TODO EIDOMNI-284: allow only dc+sd-jwt and start throwing errors for vc+sd-jwt (after issuers had some time to migrate)
     @NotNull
-    @Pattern(regexp = "^[dv]c\\+sd-jwt$", message = "Only vc+sd-jwt or dc+sd-jwt is supported")
+    @Pattern(regexp = "^dc\\+sd-jwt$", message = "Only dc+sd-jwt is supported")
     private String format;
 
     /**

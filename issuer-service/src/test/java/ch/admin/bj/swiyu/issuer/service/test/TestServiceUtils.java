@@ -128,7 +128,7 @@ public class TestServiceUtils {
                 .deferredOfferValiditySeconds(120)
                 .credentialValidFrom(Instant.now())
                 .credentialValidUntil(Instant.now().plusSeconds(200))
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
+                .credentialRequest(new CredentialRequestClass("dc+sd-jwt", null, null))
                 .build();
     }
 
