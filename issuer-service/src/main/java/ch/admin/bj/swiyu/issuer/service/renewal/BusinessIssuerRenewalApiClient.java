@@ -54,7 +54,7 @@ public class BusinessIssuerRenewalApiClient {
         var apiKeyHeader = applicationProperties.getBusinessIssuerRenewalApiKeyHeader();
         var apiKey = applicationProperties.getBusinessIssuerRenewalApiKeyValue();
         if (!StringUtils.isBlank(apiKeyHeader) && !StringUtils.isBlank(apiKey)) {
-            request = request.header(apiKeyHeader, apiKey);
+            return request.header(apiKeyHeader, apiKey);
         }
         return request;
     }
