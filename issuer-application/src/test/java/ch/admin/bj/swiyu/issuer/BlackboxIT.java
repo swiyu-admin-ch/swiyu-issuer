@@ -362,13 +362,13 @@ class BlackboxIT {
                 .isNotNull();
         assertThat(requestEncryption.getJwks()).isNotEmpty();
         assertThat(requestEncryption.getEncValuesSupported()).isNotEmpty()
-                .contains(EncryptionMethod.A128GCM.getName());
+                .contains(EncryptionMethod.A256GCM.getName());
         var requestJwks = assertDoesNotThrow(() -> JWKSet.parse(requestEncryption.getJwks()));
         // Currently we only support a single EC key, so we can cheat here
         var issuerEncryptionKey = requestJwks.getKeys()
                 .getFirst();
         var encryptedCredentialRequest = assertDoesNotThrow(() -> new EncryptedJWT(new JWEHeader.Builder(JWEAlgorithm.ECDH_ES,
-                EncryptionMethod.A128GCM).keyID(issuerEncryptionKey.getKeyID())
+                EncryptionMethod.A256GCM).keyID(issuerEncryptionKey.getKeyID())
                 .compressionAlgorithm(CompressionAlgorithm.DEF)
                 .build(),
                 JWTClaimsSet.parse(objectMapper.writeValueAsString(credentialRequestDto))));

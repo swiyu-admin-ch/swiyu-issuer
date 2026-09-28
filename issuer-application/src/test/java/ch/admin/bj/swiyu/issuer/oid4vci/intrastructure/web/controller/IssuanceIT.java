@@ -272,7 +272,7 @@ class IssuanceIT {
         // Response Encryption
         assertThat(metadata.getResponseEncryption()).isNotNull();
         assertTrue(metadata.getResponseEncryption().getAlgValuesSupported().contains(JWEAlgorithm.ECDH_ES.getName()));
-        assertTrue(metadata.getResponseEncryption().getEncValuesSupported().contains(EncryptionMethod.A128GCM.getName()));
+        assertTrue(metadata.getResponseEncryption().getEncValuesSupported().contains(EncryptionMethod.A256GCM.getName()));
         ECKey encryptionKey = new ECKeyGenerator(Curve.P_256)
                 .keyID("transportEncKeyEC")
                 .keyUse(KeyUse.ENCRYPTION)
