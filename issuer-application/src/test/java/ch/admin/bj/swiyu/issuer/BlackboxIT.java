@@ -162,7 +162,7 @@ class BlackboxIT {
                         new HttpRequest()
                                 .withHeader("Authorization", "bearer refreshedAccessToken")
                                 .withMethod("PUT")
-                                .withPath("/api/v1/status/business-entities/%s/status-list-entries/%s".formatted(swiyuProperties.businessPartnerId(), statusListEntry.getId()))
+                                .withPath("/api/v2/status/business-entities/%s/status-list-entries/%s".formatted(swiyuProperties.businessPartnerId(), statusListEntry.getId()))
                 )
                 .respond(
                         HttpResponse.response()
