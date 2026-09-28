@@ -631,8 +631,8 @@ public class CredentialManagementService {
     /**
      * Creates a random pin with as many digits
      *
-     * @param length
-     * @return
+     * @param length the number of digits for the generated pin to have.
+     * @return a numeric pin of the specified length
      */
     private String createPin(int length) {
         long upperBound = Math.powExact(10L, length);
