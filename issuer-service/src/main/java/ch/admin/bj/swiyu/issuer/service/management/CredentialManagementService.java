@@ -593,19 +593,19 @@ public class CredentialManagementService {
                         .metadataTenantId(applicationProperties.isSignedMetadataEnabled() ? UUID.randomUUID() : null)
                         .build());
         var builder = CredentialOffer.builder()
-                        .credentialStatus(CredentialOfferStatusType.OFFERED)
-                        .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
-                        .preAuthorizedCode(UUID.randomUUID())
-                        .offerData(offerData)
-                        .offerExpirationTimestamp(expiration.getEpochSecond())
-                        .credentialValidFrom(requestDto.getCredentialValidFrom())
-                        .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
-                        .credentialValidUntil(requestDto.getCredentialValidUntil())
-                        .credentialMetadata(toCredentialOfferMetadata(requestDto.getCredentialMetadata()))
-                        .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
-                        .credentialManagement(credentialManagement);
+                .credentialStatus(CredentialOfferStatusType.OFFERED)
+                .metadataCredentialSupportedId(requestDto.getMetadataCredentialSupportedId())
+                .preAuthorizedCode(UUID.randomUUID())
+                .offerData(offerData)
+                .offerExpirationTimestamp(expiration.getEpochSecond())
+                .credentialValidFrom(requestDto.getCredentialValidFrom())
+                .deferredOfferValiditySeconds(requestDto.getDeferredOfferValiditySeconds())
+                .credentialValidUntil(requestDto.getCredentialValidUntil())
+                .credentialMetadata(toCredentialOfferMetadata(requestDto.getCredentialMetadata()))
+                .configurationOverride(toConfigurationOverride(requestDto.getConfigurationOverride()))
+                .credentialManagement(credentialManagement);
         Optional.ofNullable(requestDto.getTransactionCodeConfig()).ifPresent(txConf -> {
-            if(txConf.isUseTransactionCode()) {
+            if (txConf.isUseTransactionCode()) {
                 builder.txCode(createPin(txConf.getLength()));
                 builder.txCodeRetries(0);
                 builder.txCodeDescription(txConf.getDescription());
@@ -630,13 +630,14 @@ public class CredentialManagementService {
 
     /**
      * Creates a random pin with as many digits
+     *
      * @param length
      * @return
      */
     private String createPin(int length) {
-        long upperBound = Math.powExact(10l, length);
+        long upperBound = Math.powExact(10L, length);
         // Add padding in front
-        String format = "%0"+Integer.toString(length)+"d";
+        String format = "%0" + Integer.toString(length) + "d";
         return String.format(format, secureRandom.nextLong(upperBound));
     }
 
