@@ -1571,9 +1571,9 @@ components:
             \ as the DID used or the HSM key used in singing the request object"
         tx_code_config:
           $ref: "#/components/schemas/TransactionCodeConfig"
-          description: Optional parameter to enable and configure transaction code
-            as a second factor. Note that the description will be part of the QR-Code
-            and should be kept short as possible
+          description: "[EXPERIMENTAL] Optional parameter to enable and configure\
+            \ transaction code as a second factor. Note that the description will\
+            \ be part of the QR-Code and should be kept short as possible"
           example:
             use_tx_code: "true"
             description: Code sent by SMS to +41 000 000 00 00
