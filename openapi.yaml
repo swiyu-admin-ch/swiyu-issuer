@@ -1616,7 +1616,7 @@ components:
       properties:
         format:
           type: string
-          pattern: "^[dv]c\\+sd-jwt$"
+          pattern: ^dc\+sd-jwt$
         vct:
           type: string
           description: |

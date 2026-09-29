@@ -472,7 +472,7 @@ class SdJwtCredentialTest {
                 .credentialStatus(null)
                 .metadataCredentialSupportedId(List.of("metadata-supported"))
                 .offerData(offerData)
-                .credentialRequest(new CredentialRequestClass("vc+sd-jwt", null, null))
+                .credentialRequest(new CredentialRequestClass("dc+sd-jwt", null, null))
                 .build();
 
         when(credentialOfferStatusRepository.findByOfferId(offer.getId())).thenReturn(Set.of());
