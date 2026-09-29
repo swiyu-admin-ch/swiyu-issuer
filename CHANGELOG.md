@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Fixed
 
 - Check correctness of the status list header and reset cache accordingly `(#1235)`
+- Removed empty `proof_types_supported` map if not provided in metadata `(#1309)`
 
 ### Removed
 
