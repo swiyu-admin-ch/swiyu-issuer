@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Check correctness of the status list header and reset cache accordingly `(#1235)`
 
+### Removed
+
+- Removed deprecated environment variables `caching.publicKeyCacheTTL` and `caching.encryptionMetadataCacheTTL`
+
 ## [4.2.0] - 2026-08-24
 
 ### Added
