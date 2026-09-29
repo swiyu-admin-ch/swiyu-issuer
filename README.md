@@ -38,9 +38,9 @@ flowchart LR
     iss(Issuer Service)
     isdb[(Postgres)]
     wallet[Wallet]
-    issint --Internal Network--> iss
+    issint -- Internal Network --> iss
     iss ---> isdb
-    wallet --Web Access--> iss
+    wallet -- Web Access --> iss
 ```
 
 A possible deployment configuration of the issuer service. Issuer Business System as well as API
@@ -64,8 +64,7 @@ transition period to adopt the hardened runtime:
 | `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>`            | `dhi.io/eclipse-temurin:21-debian13` (hardened, no shell) | `java ...` directly     | `nonroot`  | **Default — recommended**                         |
 | `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened` | `eclipse-temurin:21-jre-ubi9-minimal`                     | `scripts/entrypoint.sh` | UID `1001` | Transitional — will be removed in a later release |
 
-- **New deployments and operators who have completed the migration** should use the default
-  (unsuffixed) tag.
+- **New deployments and operators who have completed the migration** should use the default (unsuffixed) tag.
 - **Operators with pipelines that still depend on the shell-based entrypoint**
   (`HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`, `MY_SPRING_PROFILES`, `JAVA_BOOTCLASSPATH` /
   `/lib` JCE-provider mounts) must pin to the `-unhardened` suffix while they apply the
@@ -75,8 +74,8 @@ transition period to adopt the hardened runtime:
 
 ### Verifying image signatures
 
-All published images are signed with [Cosign](https://docs.sigstore.dev/) using keyless
-(OIDC) signing directly in the GitHub Actions build workflow. The signature is bound to the
+All published images are signed with [Cosign](https://docs.sigstore.dev/) using keyless (OIDC) signing directly in the
+GitHub Actions build workflow. The signature is bound to the
 image digest and recorded in the public Sigstore transparency log. You can verify the
 authenticity of an image before deploying it:
 
@@ -90,8 +89,7 @@ cosign verify \
 ## 1. Set the environment variables
 
 A sample compose file for an entire setup of both components and a database can be found
-in [sample.compose.yml](sample.compose.yml) file.
-**Replace all placeholder <VARIABLE_NAME>**.
+in [sample.compose.yml](sample.compose.yml) file. **Replace all placeholder <VARIABLE_NAME>**.
 
 Please be aware that both the swiyu-issuer-service needs to be publicly accessible over a domain configured
 in `EXTERNAL_URL`
@@ -99,8 +97,8 @@ so that a wallet can communicate with them.
 
 ## 2. Create a verifiable credentials schema
 
-In order to support your use case you need to adapt the so-called issuer_metadata (
-see [sample.compose.yml](sample.compose.yml#L85)).
+In order to support your use case you need to adapt the so-called issuer_metadata
+(see [sample.compose.yml](sample.compose.yml#L85)).
 Those metadata define the appearance of the credential in the wallet and what kind of credential formats are supported.
 For further information consult the [Cookbooks](https://swiyu-admin-ch.github.io/cookbooks/)
 
@@ -176,12 +174,12 @@ flowchart LR
     wallet[Wallet]
     apigw[\API Gateway\]
     auth[\Authentication Server\]
-    issint --Internal network calls--> iss
+    issint -- Internal network calls --> iss
     iss ---> isdb
-    wallet --Web calls--> apigw
-    apigw --Filtered calls--> iss
-    issint --Get OAuth2.0 Token--> auth
-    iss --Validate OAuth2.0 Token--> auth
+    wallet -- Web calls --> apigw
+    apigw -- Filtered calls --> iss
+    issint -- Get OAuth2 . 0 Token --> auth
+    iss -- Validate OAuth2 . 0 Token --> auth
 ```
 
 # Development
@@ -256,7 +254,7 @@ swiyu:
         bootstrap-refresh-token: "your refresh token"
 ```
 
-> [!NOTE]  
+> [!NOTE]
 > The values can also be set as environment variables. For more information check
 > the [Configuration Environment Variables](#configuration-environment-variables) section.
 
@@ -294,22 +292,22 @@ The Generic Issuer service is configured using environment variables.
 
 #### Verifiable Credential Issuing
 
-| Variable                                         | Description                                                                                                                                                                                                                                                                              |
-|:-------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| EXTERNAL_URL                                     | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet                                                                                                                                                                                           |
-| ISSUER_ID                                        | DID of the Credential Issuer. This will be written to the credential and used during verification                                                                                                                                                                                        |
-| CREDENTIAL_OFFER_EXPIRATION_INTERVAL             | The interval in which expired offers are cleared from the storage in the [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). The default value is 15min. This should not be confused with the time an offer is actually valid, which is controlled per request |
-| OPENID_CONFIG_FILE                               | JSON file containing the OpenID Connect Configuration of the Issuer. Placeholder replacement is done as described in Config File Placeholders                                                                                                                                            |
-| METADATA_CONFIG_FILE                             | The OID4VCI Metadata as a json. Placeholder replacement is done as described in Config File Placeholders. For details on the OID4VCI Metadata consult the OID4VCI Specification.                                                                                                         |
-| SDJWT_KEY (Optional - See HSM)                   | The private key used to sign SD-JWT Credentials. The matching public key must be published on the base registry for verification. - Not recommended.                                                                                                                                     |
-| DID_SDJWT_VERIFICATION_METHOD                    | The full DID with fragment as used to find the public key for sd-jwt VCs in the DID Document. eg: `did:tdw:<base-registry-url>:<issuer_uuid>#<sd-jwt-public-key-fragment>`                                                                                                               |
-| MIN_DEFERRED_OFFER_WAITING_SECONDS               | For the deferred flow. Polling interval for the deferred flow. Defines how long a wallet should wait after receiving the transaction_id until it tries to fetch the actual credential. This value will be shown as `interval` in the deferred response.                                  |
-| DEFERRED_OFFER_VALIDITY_SECONDS                  | For the deferred flow. Defines how long (in seconds) an offer can be in the deferred / ready state until it is expired.                                                                                                                                                                  |
-| URL_REWRITE_MAPPING                              | Json object for url replacements during rest client call. Key represents the original url and value the one which should be used instead (e.g. {"https://mysample1.ch":"https://somethingdiffeerent1.ch"})                                                                               |
-| ENABLE_SIGNED_METADATA                           | Enable signed metadata endpoint at `/.well-known/openid-credential-issuer-signed-metadata`. When enabled, the issuer provides cryptographically signed metadata in addition to the standard unsigned metadata endpoint. Default: `true`.                                                 |
-| APPLICATION_SWISS_PROFILE_VERSIONING_ENFORCEMENT | Feature flag for Swiss Profile versioning enforcement. If set to `true`, the service rejects incoming artifacts where applicable if the JWT header is missing `profile_version` or has an unexpected value (e.g. DPoP / key attestation). Default: `false`.                              |
-| MAX_COMPRESSED_CIPHER_TEXT_LENGTH                | Maximum allowed size (in bytes) of a compressed JWE ciphertext the service will process when decrypting incoming credential requests. Kept small to mitigate JWE decompression bomb attacks. Do not change this value unless you fully understand the security implications. Modifying it may expose the service to denial-of-service attacks or other risks. If you choose to change this setting, you do so at your own risk. Default: `20971520` (20 MiB).                                                              |
-| MAX_DECOMPRESSED_PAYLOAD_LENGTH                  | Maximum allowed size (in characters) of the decrypted/decompressed JWE plaintext payload. Acts as an additional defense-in-depth limit against decompression bomb attacks, rejecting oversized payloads before JSON parsing. Default: `20971520` (20 MiB).                              |
+| Variable                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|:-------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| EXTERNAL_URL                                     | The URL of the Issuer Signer. This URL is used in the credential offer link sent to the Wallet                                                                                                                                                                                                                                                                                                                                                                |
+| ISSUER_ID                                        | DID of the Credential Issuer. This will be written to the credential and used during verification                                                                                                                                                                                                                                                                                                                                                             |
+| CREDENTIAL_OFFER_EXPIRATION_INTERVAL             | The interval in which expired offers are cleared from the storage in the [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). The default value is 15min. This should not be confused with the time an offer is actually valid, which is controlled per request                                                                                                                                                                      |
+| OPENID_CONFIG_FILE                               | JSON file containing the OpenID Connect Configuration of the Issuer. Placeholder replacement is done as described in Config File Placeholders                                                                                                                                                                                                                                                                                                                 |
+| METADATA_CONFIG_FILE                             | The OID4VCI Metadata as a json. Placeholder replacement is done as described in Config File Placeholders. For details on the OID4VCI Metadata consult the OID4VCI Specification.                                                                                                                                                                                                                                                                              |
+| SDJWT_KEY (Optional - See HSM)                   | The private key used to sign SD-JWT Credentials. The matching public key must be published on the base registry for verification. - Not recommended.                                                                                                                                                                                                                                                                                                          |
+| DID_SDJWT_VERIFICATION_METHOD                    | The full DID with fragment as used to find the public key for sd-jwt VCs in the DID Document. eg: `did:tdw:<base-registry-url>:<issuer_uuid>#<sd-jwt-public-key-fragment>`                                                                                                                                                                                                                                                                                    |
+| MIN_DEFERRED_OFFER_WAITING_SECONDS               | For the deferred flow. Polling interval for the deferred flow. Defines how long a wallet should wait after receiving the transaction_id until it tries to fetch the actual credential. This value will be shown as `interval` in the deferred response.                                                                                                                                                                                                       |
+| DEFERRED_OFFER_VALIDITY_SECONDS                  | For the deferred flow. Defines how long (in seconds) an offer can be in the deferred / ready state until it is expired.                                                                                                                                                                                                                                                                                                                                       |
+| URL_REWRITE_MAPPING                              | Json object for url replacements during rest client call. Key represents the original url and value the one which should be used instead (e.g. {"https://mysample1.ch":"https://somethingdiffeerent1.ch"})                                                                                                                                                                                                                                                    |
+| ENABLE_SIGNED_METADATA                           | Enable signed metadata endpoint at `/.well-known/openid-credential-issuer-signed-metadata`. When enabled, the issuer provides cryptographically signed metadata in addition to the standard unsigned metadata endpoint. Default: `true`.                                                                                                                                                                                                                      |
+| APPLICATION_SWISS_PROFILE_VERSIONING_ENFORCEMENT | Feature flag for Swiss Profile versioning enforcement. If set to `true`, the service rejects incoming artifacts where applicable if the JWT header is missing `profile_version` or has an unexpected value (e.g. DPoP / key attestation). Default: `false`.                                                                                                                                                                                                   |
+| MAX_COMPRESSED_CIPHER_TEXT_LENGTH                | Maximum allowed size (in bytes) of a compressed JWE ciphertext the service will process when decrypting incoming credential requests. Kept small to mitigate JWE decompression bomb attacks. Do not change this value unless you fully understand the security implications. Modifying it may expose the service to denial-of-service attacks or other risks. If you choose to change this setting, you do so at your own risk. Default: `20971520` (20 MiB). |
+| MAX_DECOMPRESSED_PAYLOAD_LENGTH                  | Maximum allowed size (in characters) of the decrypted/decompressed JWE plaintext payload. Acts as an additional defense-in-depth limit against decompression bomb attacks, rejecting oversized payloads before JSON parsing. Default: `20971520` (20 MiB).                                                                                                                                                                                                    |
 
 #### Status List
 
@@ -335,7 +333,7 @@ if `SWIYU_TRUST_REGISTRY_API_URL` is not set, trust statement caching is disable
 
 | Variable                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                         | Default  |
 |:-----------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
-| SWIYU_TRUST_REGISTRY_API_URL                   | Trust registry API URL (read-only, IF-007). If set, the issuer can fetch its own trust statements. Currently intended for testing purposes only. If not set, trust statement caching is disabled.                                                                                                                                                                                                                                 | _(none)_ |                                                                         | _(none)_ |
+| SWIYU_TRUST_REGISTRY_API_URL                   | Trust registry API URL (read-only, IF-007). If set, the issuer can fetch its own trust statements. Currently intended for testing purposes only. If not set, trust statement caching is disabled.                                                                                                                                                                                                                                   | _(none)_ |                                                                         | _(none)_ |
 | SWIYU_TRUST_REGISTRY_MAX_CACHE_SIZE            | Maximum number of distinct issuer DIDs to cache trust statements for. Prevents unbounded memory growth.                                                                                                                                                                                                                                                                                                                             | `1000`   |
 | SWIYU_TRUST_REGISTRY_CLOCK_SKEW_BUFFER_SECONDS | Buffer in seconds subtracted from the JWT `exp` claim before caching. Ensures that served statements are still valid when received by downstream consumers, accounting for clock skew and network latency.                                                                                                                                                                                                                          | `60`     |
 | SWIYU_TRUST_REGISTRY_MAX_CACHE_TTL_SECONDS     | Optional hard upper bound for the trust statement cache TTL in seconds. When set, the effective TTL is `min(exp-based TTL, max-cache-ttl-seconds)`. Recommended: set to the same value as `PUBLIC_KEY_CACHE_TTL_MILLI` (converted to seconds) to avoid serving trust statements whose referenced DID key has already been rotated out of the public key cache. If not set, the TTL is derived exclusively from the JWT `exp` claim. | _(none)_ |
@@ -535,13 +533,13 @@ In our deployment we can set the value by adding in the environment variable
 >
 the [OpenID4VCI specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID1.html#section-11.2.3)
 
-| Config path                                                                   | Allowed values                                                   | Required | Comment                                                   |
-|-------------------------------------------------------------------------------|------------------------------------------------------------------|----------|-----------------------------------------------------------|
-| version                                                                       | "1.0"                                                            | Yes      |                                                           |
-| credential_configurations_supported.*.format                                  | "dc+sd-jwt" / "vc+sd-jwt" (deprecated)                           | Yes      |                                                           |
-| credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256", "Ed25519"]                                             | Yes      | Must be matching the configured singing key               |
-| credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256", "Ed25519"]} ``` | No       | When set must be ES256 Ed25519 or both         |
-| credential_configurations_supported.*.cryptographic_binding_methods_supported | ["jwk"]                                                          | No       |                                                           |
+| Config path                                                                   | Allowed values                                                              | Required | Comment                                     |
+|-------------------------------------------------------------------------------|-----------------------------------------------------------------------------|----------|---------------------------------------------|
+| version                                                                       | "1.0"                                                                       | Yes      |                                             |
+| credential_configurations_supported.*.format                                  | "dc+sd-jwt" / "vc+sd-jwt" (deprecated)                                      | Yes      |                                             |
+| credential_configurations_supported.*.credential_signing_alg_values_supported | ["ES256", "Ed25519"]                                                        | Yes      | Must be matching the configured singing key |
+| credential_configurations_supported.*.proof_types_supported                   | ``` "jwt": {"proof_signing_alg_values_supported": ["ES256", "Ed25519"]} ``` | No       | When set must be ES256 Ed25519 or both      |
+| credential_configurations_supported.*.cryptographic_binding_methods_supported | ["jwk"]                                                                     | No       |                                             |
 
 The configuration `proof_types_supported` allows specifying the required security specification the wallet should store
 key material in for the credential. This value is provided alongside `proof_signing_alg_values_supported`.
@@ -574,7 +572,7 @@ the [android documentation](https://developer.android.com/privacy-and-security/s
 
 | Supported key_storage Value | Description                                                                                                                                                                                                                                            |
 |-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| iso_18045_enhanced-basic	   | Key storage is resistant to attack with attack potential "Enhanced-Basic", equivalent to VAN.3 according to ISO 18045. This is the case if TEE is used.                                                                                                |
+| iso_18045_enhanced-basic	    | Key storage is resistant to attack with attack potential "Enhanced-Basic", equivalent to VAN.3 according to ISO 18045. This is the case if TEE is used.                                                                                                |
 | iso_18045_high              | Key storage is is resistant to attack with attack potential "High", equivalent to VAN.5 according to ISO 18045. This is the case if Strongbox/Secure enclave is used. Please note that no backup of credentials issued with this security can be made. |
 
 It is possible to limit key attestation providers by their DID. This can be configured with providing a list of trusted
@@ -632,6 +630,32 @@ Callback Object Structure
 | event             | The new VC state if event_type is VC_STATUS_CHANGED. If ISSUANCE_ERROR one of OAUTH_TOKEN_EXPIRED or KEY_BINDING_ERROR |
 | event_description | Human readable details.                                                                                                |
 | timestamp         | timestamp the event occurred. Can differ from the time it is sent.                                                     |
+
+#### Credential Renewal Call
+
+To enable this feature the environment variable `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT` must be set.
+
+It is possible to allow credentials to be renewed when a Wallet or Holder think it is appropriate.
+This can be used in conjunction with batch renewal to strengthen unlinkability and thus privacy protection of holders.
+
+Wallets may also provide a way for holders to trigger a renewal manually. For example should they be aware of data
+changing.
+For example having a VC credential subject claim "over_18" a holder could trigger a renewal flow when the know that the
+data have changed.
+
+In any of these cases this will trigger a re-issuance to the same wallet under the same management object.
+This means the original credentials and all their renewal instances are suspended and revoked together to prevent
+inconsistency.
+
+As the generic issuer does not store the data, it must fetch the credential subject data from the business issuer.
+It does so by sending as a POST request a `RenewalRequest` object with the structure as documented
+in [OpenAPI](openapi.yaml).
+
+| Variable                               | Description                                                                                                               |
+|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| BUSINESS_ISSUER_RENEWAL_API_ENDPOINT   | Full URI of the REST endpoint where the generic issuer can fetch the most current credential subject data.                |
+| BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER | (Optional) API key header, if the business issuer endpoint has a api key for protection. Will be used as HTTP header key. |
+| BUSINESS_ISSUER_RENEWAL_API_KEY_VALUE  | (Optional, Required if BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER is set) The API key used.                                   |
 
 ### Adding certificates to the image via the `certs` directory
 
@@ -709,9 +733,9 @@ erDiagram
         EMBEDDED audit_metadata
     }
 
-    CREDENTIAL_MANAGEMENT ||--o{ CREDENTIAL_OFFER : "has"
-    CREDENTIAL_OFFER ||--o{ CREDENTIAL_OFFER_STATUS : "has_status"
-    STATUS_LIST ||--o{ CREDENTIAL_OFFER_STATUS : "provides"
+    CREDENTIAL_MANAGEMENT ||--o{ CREDENTIAL_OFFER: "has"
+    CREDENTIAL_OFFER ||--o{ CREDENTIAL_OFFER_STATUS: "has_status"
+    STATUS_LIST ||--o{ CREDENTIAL_OFFER_STATUS: "provides"
 ```
 
 Note: Status List info comes from config and are populated to the DB the first time a Credential uses the status.
@@ -725,88 +749,86 @@ revoke the credential later on.
 ```mermaid
 sequenceDiagram
     actor BUSINESS as Business Issuer
-
     participant ISS as Issuer Service
     participant DB as Issuer DB
     participant STATUS as Status Registry
-
     actor WALLET as Holder
 
-    # Create offer
-    BUSINESS->>+ISS: Create offer
-    ISS->>+STATUS: Create status list entry
-    STATUS->>-ISS:
-    ISS->>+DB : Store offer
-    DB-->>-ISS :
-    ISS-->>-BUSINESS : Return offer details (incl. deeplink)
+# Create offer
+    BUSINESS ->>+ ISS: Create offer
+    ISS ->>+ STATUS: Create status list entry
+STATUS->>-ISS: 
+    ISS->>+DB: Store offer
+DB-->>-ISS:
+ISS-->>-BUSINESS: Return offer details (incl. deeplink)
 
-    # Pass deeplink to WALLET
-    BUSINESS-->>+WALLET : Pass deeplink to wallet
-    Note over BUSINESS,WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
+# Pass deeplink to WALLET
+BUSINESS-->>+WALLET: Pass deeplink to wallet
+Note over BUSINESS, WALLET: INFO: Passing the deeplink to the wallet is not part of this service and must be handled by the Business Issuer
 
-    loop Status check
-        BUSINESS->>+ISS: Get status
-        ISS-->>-BUSINESS :
-    end
+loop Status check
+BUSINESS->>+ISS: Get status
+ISS-->>-BUSINESS:
+end
 
-    # Get credential
-    WALLET->>+ISS : Get openid metadata
-    ISS-->>-WALLET :
+# Get credential
+WALLET->>+ISS: Get openid metadata
+ISS-->>-WALLET:
 
-    WALLET->>+ISS : Get issuer metadata
-    ISS-->>-WALLET :
+WALLET->>+ISS : Get issuer metadata
+ISS-->>-WALLET:
 
-    WALLET->>+ISS : Get oauth token
-    ISS-->>-WALLET : Oauth token
+WALLET->>+ISS: Get oauth token
+ISS-->>-WALLET: Oauth token
 
-    alt Deferred = true
-        WALLET->>+ISS : Redeem offer
-        ISS->>+DB : Get offer data and status list INFO
-        DB-->-ISS :
-        ISS->>+DB : Set STATUS = Deferred
-        DB-->-ISS :
-        ISS-->>-WALLET : Transaction id
+alt Deferred = true
+WALLET->>+ISS: Redeem offer
+ISS->>+DB: Get offer data and status list INFO
+DB-->-ISS :
+ISS->>+DB: Set STATUS = Deferred
+DB-->-ISS:
+ISS-->>-WALLET: Transaction id
 
-        loop get status
-            BUSINESS->>+ISS: Get status
-            ISS-->>-BUSINESS : Status
+loop get status
+BUSINESS->>+ISS: Get status
+ISS-->>-BUSINESS: Status
 
-            alt STATUS is Deferred
-                BUSINESS->>BUSINESS : Some additional process
-                alt offer data is already set
-                    BUSINESS->>+ISS : Set status READY
-                else
-                    BUSINESS->>+ISS : Set offer data (STATUS is set to READY)
-                end
-                ISS->>DB : Store offer
-                ISS-->>-BUSINESS :
-            end
-        end
+alt STATUS is Deferred
+BUSINESS->>BUSINESS: Some additional process
+alt offer data is already set
+BUSINESS->>+ISS: Set status READY
+else
+BUSINESS->>+ISS: Set offer data (STATUS is set to READY)
+end
+ISS->>DB: Store offer
+ISS-->>-BUSINESS:
+end
+end
 
-        loop Get deferred credential
-            alt STATUS is not READY
-                WALLET->>+ISS: Get credential from deferred_credential
-                ISS->>+DB : Get offer data and status list INF
-                DB-->-ISS :
-                ISS-->>-WALLET : issuance_pending
-            else
-                WALLET->>+ISS: Get credential from deferred_credential
-                ISS->>+DB : Get offer data and status list INFO
-                DB-->-ISS :
-                ISS-->>-WALLET : VC
-            end
-        end
-    else
-        WALLET->>+ISS: Get credential
-        ISS->>+DB : Get offer data and status list INFO
-        ISS-->>-WALLET : VC
-    end
+loop Get deferred credential
+alt STATUS is not READY
+WALLET->>+ISS: Get credential from deferred_credential
+ISS->>+DB: Get offer data and status list INF
+DB-->-ISS :
+ISS-->>-WALLET: issuance_pending
+else
+WALLET->>+ISS: Get credential from deferred_credential
+ISS->>+DB: Get offer data and status list INFO
+DB-->-ISS:
+ISS-->>-WALLET: VC
+end
+end
+else
+WALLET->>+ISS: Get credential
+ISS->>+DB: Get offer data and status list INFO
+ISS-->>-WALLET: VC
+end
 
-    loop STATUS is ISSUED
-        BUSINESS->>+ISS: Get status
-        ISS->>+DB : Remove offer data
-        ISS-->>-BUSINESS : Status
-    end
+loop STATUS is ISSUED
+BUSINESS->>+ISS: Get status
+ISS->>+DB: Remove offer data
+ISS-->>-BUSINESS: Status
+end
 ```
 
 ## Credential Flow Api details
@@ -831,12 +853,11 @@ stateDiagram-v2
     ISSUED
     SUSPENDED
     REVOKED
-
-    [*] --> INIT : BI creates the VC-Offer
-    INIT --> ISSUED : VC has been collected by the holder and is valid.
-    ISSUED --> SUSPENDED : BI suspends the vc temporarly
-    SUSPENDED --> ISSUED : BI reactives vc by setting the status to ISSUED
-    ISSUED --> REVOKED : BI revokes the vc premanently
+    [*] --> INIT: BI creates the VC-Offer
+    INIT --> ISSUED: VC has been collected by the holder and is valid.
+    ISSUED --> SUSPENDED: BI suspends the vc temporarly
+    SUSPENDED --> ISSUED: BI reactives vc by setting the status to ISSUED
+    ISSUED --> REVOKED: BI revokes the vc premanently
     REVOKED --> [*]
 
 ```
@@ -860,21 +881,20 @@ stateDiagram-v2
     EXPIRED
     ISSUED
     REQUESTED
-
     [*] --> OFFERED
-    [*] --> REQUESTED : Wallet requests new  credential renewal
-    OFFERED --> CANCELLED : All processes can be cancelled as long as the vc is not ISSUED
+    [*] --> REQUESTED: Wallet requests new credential renewal
+    OFFERED --> CANCELLED: All processes can be cancelled as long as the vc is not ISSUED
     CANCELLED --> [*]
     OFFERED --> IN_PROGRESS
     IN_PROGRESS --> fork_state
-    fork_state --> DEFERRED : Credential endpoint called by Holder and (deferred = true)
-    fork_state --> join_state : Non-deferred flow
-    IN_PROGRESS --> EXPIRED : Can expire on status (OFFERED, IN_PROGRESS)
+    fork_state --> DEFERRED: Credential endpoint called by Holder and (deferred = true)
+    fork_state --> join_state: Non-deferred flow
+    IN_PROGRESS --> EXPIRED: Can expire on status (OFFERED, IN_PROGRESS)
     EXPIRED --> [*]
-    DEFERRED --> READY : Status READY must be set by the business issuer
-    DEFERRED --> EXPIRED : When deferred-offer-validity-seconds passed
+    DEFERRED --> READY: Status READY must be set by the business issuer
+    DEFERRED --> EXPIRED: When deferred-offer-validity-seconds passed
     READY --> join_state
-    READY --> EXPIRED : When deferred-offer-validity-seconds passed
+    READY --> EXPIRED: When deferred-offer-validity-seconds passed
     join_state --> ISSUED
     REQUESTED --> ISSUED
     ISSUED --> [*]
@@ -999,8 +1019,8 @@ release:
 
 Our release process follows these principles:
 
-Version Contract: If you upgrade within the same MAJOR version, your existing integrations will continue to work (
-following the Expand and Migrate Pattern)
+Version Contract: If you upgrade within the same MAJOR version, your existing integrations will continue to work
+(following the Expand and Migrate Pattern)
 
 GitHub Pre-release Tagging:
 
