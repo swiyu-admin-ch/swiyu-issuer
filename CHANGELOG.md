@@ -22,12 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optionally an API Key can now be set for Credential Renewal call to the business issuer using environment variables
   `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` and `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` (#1223)
 
-## Fixed
+### Fixed
 
 - Check correctness of the status list header and reset cache accordingly `(#1235)`
 
 ### Removed
 
+- Deprecated vc+sd-jwt (pre OID4VCI Draft 13) format has been removed, only supporting dc+sd-jwt `(#179)`
 - Removed deprecated environment variables `caching.publicKeyCacheTTL` and `caching.encryptionMetadataCacheTTL`
 
 ## [4.2.0] - 2026-08-24
