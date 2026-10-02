@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
@@ -62,7 +63,7 @@ class CredentialOfferStatusMultiThreadedIT {
     private final UUID statusListUUID = UUID.randomUUID();
     private final String statusRegistryUrl = "https://status-service-mock.bit.admin.ch/api/v1/statuslist/%s.jwt"
             .formatted(statusListUUID);
-
+    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     @Autowired
     protected SwiyuProperties swiyuProperties;
     @Autowired
@@ -81,11 +82,10 @@ class CredentialOfferStatusMultiThreadedIT {
     private CredentialManagementRepository credentialManagementRepository;
     @Autowired
     private TransactionTemplate transactionTemplate;
-
     @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
-    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
-
+    private StatusB2BApi statusBusinessApi;
+    @MockitoBean
+    private StatusB2BV2Api statusB2BV2Api;
     private CredentialOfferTestHelper testHelper;
 
     @BeforeEach
@@ -99,7 +99,7 @@ class CredentialOfferStatusMultiThreadedIT {
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
                 .thenReturn(Mono.just(statusListEntryCreationDto));
-        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
+        when(statusB2BV2Api.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
 

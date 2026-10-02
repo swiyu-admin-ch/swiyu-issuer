@@ -135,7 +135,7 @@ class DemonstratingProofOfPossessionServiceTest {
         when(credentialOfferRepository.findByPreAuthorizedCode(any())).thenReturn(Optional.of(offer));
 
         var dpop = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/token", null, dpopKey);
-        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(preAuthCode.toString(), signAndSerialize(dpop, dpopKey), request));
+        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(offer, signAndSerialize(dpop, dpopKey), request));
     }
 
     /**
@@ -173,14 +173,14 @@ class DemonstratingProofOfPossessionServiceTest {
         // Without profile_version -> should fail when enforcement enabled
         var dpopWithoutProfileVersion = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/token", null, dpopKey, false);
         var failingCall = (org.junit.jupiter.api.function.Executable) () -> demonstratingProofOfPossessionService.registerDpop(
-                UUID.randomUUID().toString(),
+                offer,
                 signAndSerialize(dpopWithoutProfileVersion, dpopKey),
                 request);
         assertThrows(DemonstratingProofOfPossessionException.class, failingCall);
 
         // With profile_version -> should pass
         var dpopWithProfileVersion = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/token", null, dpopKey, true);
-        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(UUID.randomUUID().toString(),
+        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(offer,
                 signAndSerialize(dpopWithProfileVersion, dpopKey),
                 request));
     }
