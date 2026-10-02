@@ -34,7 +34,7 @@
         <sonar.jacoco.reportPath>${project.basedir}/issuer-application/target/jacoco.exec</sonar.jacoco.reportPath>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <javacrumbs.shedlock.version>6.10.0</javacrumbs.shedlock.version>
-        <archunit-junit5.version>1.5.0</archunit-junit5.version>
+        <archunit-junit5.version>1.5.1</archunit-junit5.version>
         <nimbus-jose-jwt.version>10.10</nimbus-jose-jwt.version>
         <bouncycastle.version>1.86</bouncycastle.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
@@ -98,7 +98,7 @@
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>3.1.7</version>
+                <version>3.2.3</version>
             </dependency>
 
             <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORKCLOUD-19268251 (Missing Authorization, High Severity) in spring-cloud-context@5.0.2
