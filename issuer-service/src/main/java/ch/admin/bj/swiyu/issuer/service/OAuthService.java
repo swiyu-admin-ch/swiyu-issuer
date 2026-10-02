@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.InvalidTxCodeException;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
@@ -43,26 +44,54 @@ public class OAuthService {
      * Issues an OAuth token for a given pre-authorization code created by issuer
      * mgmt
      *
-     * @param preAuthCode Pre-authorization code of holder
+     * @param offer Credential Offer for which the OAuth token will be issued
      * @return OAuth authorization token which can be used in credential service
-     *         endpoint
+     * endpoint
      * @throws OAuthException if no offer was found with associated pre-auth_code
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public OAuthTokenDto issueOAuthToken(String preAuthCode) {
-        var offer = getCredentialOfferByPreAuthCode(preAuthCode);
+    public OAuthTokenDto issueOAuthToken(CredentialOffer offer) {
         var mgmt = offer.getCredentialManagement();
-
-        if (offer.getCredentialStatus() != CredentialOfferStatusType.OFFERED) {
-            log.debug("Refused to issue OAuth token. Credential offer {} has already state {}.", offer.getId(),
-                    offer.getCredentialStatus());
-            throw OAuthException.invalidGrant("Credential has already been used");
-        }
         log.info(
                 "Pre-Authorized code consumed, sending Access Token {}. Management ID is {}, offer ID is {} and new status is {}",
                 mgmt.getAccessToken(), mgmt.getId(), offer.getId(), offer.getCredentialStatus());
         credentialStateMachine.sendEventAndUpdateStatus(offer, CredentialStateMachineConfig.CredentialOfferEvent.CLAIM);
         return updateOAuthTokens(mgmt);
+    }
+
+    /**
+     * Retrieves and validates the Credential Offer using data as provided by a request to the Token Endpoint
+     *
+     * @param preAuthCode the pre-authorized_code used once to load the credential offer
+     * @param txCode      optional transaction code as second factor
+     * @return the credential offer object associated with the provided preAuthCode
+     * @throws OAuthException         when the provided preAuth code was incorrect, already used or too many attempts with incorrect txCode were made
+     * @throws InvalidTxCodeException when the provided txCode was incorrect. This indicates that it should be tried again with a different txCode
+     */
+    @Transactional(propagation = Propagation.MANDATORY, noRollbackFor = {InvalidTxCodeException.class})
+    public CredentialOffer getCredentialOfferWithTokenRequestData(String preAuthCode, String txCode) {
+        CredentialOffer offer = getCredentialOfferByPreAuthCode(preAuthCode);
+
+        if (offer.getCredentialStatus() != CredentialOfferStatusType.OFFERED) {
+            log.debug("Refused to issue OAuth token. Credential offer {} has already state {}.", offer.getId(),
+                    offer.getCredentialStatus());
+            throw OAuthException.invalidGrant("Credential Offer has already been used");
+        }
+
+        if (offer.requiresTransactionCode()) {
+            // Count Retries, the total number of attempts is the initial try + retries
+            if (offer.getTxCodeRetries() > applicationProperties.getTxCodeRetries()) {
+                invalidateCredentialOffer(offer);
+                throw InvalidTxCodeException.tooManyInvalidTxCodeException();
+            }
+            if (!offer.getTxCode().equals(txCode)) {
+                offer.incrementTxCodeRetries();
+                throw InvalidTxCodeException.invalidTxCode();
+            }
+
+        }
+
+        return offer;
     }
 
     /**
@@ -72,7 +101,7 @@ public class OAuthService {
      * @return CredentialManagement associated with the access token
      * @throws OAuthException if no offer was found with associated access_token
      */
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public CredentialManagement getCredentialManagementByAccessToken(String accessToken) {
         var uuid = uuidOrException(accessToken);
         var mgmt = credentialManagementRepository.findByAccessToken(uuid);
@@ -184,6 +213,12 @@ public class OAuthService {
                 .orElseThrow(() -> OAuthException.invalidGrant("Invalid preAuthCode"));
     }
 
+    private void invalidateCredentialOffer(CredentialOffer offer) {
+        credentialStateMachine.sendEventAndUpdateStatus(offer,
+                CredentialStateMachineConfig.CredentialOfferEvent.CANCEL);
+        credentialOfferRepository.save(offer);
+    }
+
     private Optional<CredentialManagement> getNonRevokedCredentialOffer(
             Optional<CredentialManagement> credentialOffer) {
         return credentialOffer
@@ -196,6 +231,7 @@ public class OAuthService {
 
     /**
      * parses the UUID of a preAuthCode
+     *
      * @param preAuthCode token
      * @return uuid of the preAuthCode
      * @throws OAuthException (Invalid Request)

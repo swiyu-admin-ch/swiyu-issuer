@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.TransactionCodeConfigDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
@@ -21,15 +22,21 @@ import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import com.google.gson.JsonParser;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.net.URIBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URLDecoder;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static java.time.Instant.now;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,9 +61,10 @@ import static org.mockito.Mockito.*;
 class CredentialManagementServiceTest {
     private static final String TEST_STATUS_LIST_URI = "https://localhost:8080/status";
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
+    private static final String SOME_DESCRIPTION = "Description where to find the tx_code provided by business issuers";
+    
     private final Map<String, Object> offerData = Map.of("hello", "world");
-
+    private final ObjectMapper mapper = new ObjectMapper();
 
     private CredentialManagementService credentialService;
 
@@ -330,8 +338,10 @@ class CredentialManagementServiceTest {
      *
      * <p>Expectation: status lists are resolved, an offer/management is persisted, and status list entries are created.</p>
      */
-    @Test
-    void createCredentialOfferAndGetDeeplink_shouldCreateOffer_andPersistStatusListEntries() {
+    @ParameterizedTest 
+    @MethodSource("generateTxCodeConf")
+    void createCredentialOfferAndGetDeeplink_shouldCreateOffer_andPersistStatusListEntries(TransactionCodeConfigDto txCodeConf) {
+        createCredentialOfferRequestDto.setTransactionCodeConfig(txCodeConf);
         // Arrange
         var statusLists = List.of(
                 StatusList.builder()
@@ -369,6 +379,33 @@ class CredentialManagementServiceTest {
 
         verify(statusListOrchestrator, times(1)).lockAndValidateStatusListsForOffer(any());
         verify(persistenceService, times(1)).saveStatusListEntries(eq(statusLists), any(UUID.class), eq(batchSize));
+
+
+        var deeplink = assertDoesNotThrow(() -> new URIBuilder(response.getOfferDeeplink()));
+        var deeplinkParams = mapper.readValue(deeplink.getQueryParams().getFirst().getValue(), Map.class);
+
+        assertThat(deeplinkParams)
+            .as("Must contain reference to credential issuer").containsKey("credential_issuer")
+            .as("Must describe which vc configurations are being offered").containsKey("credential_configuration_ids")
+            .as("Must provide the type of grant").containsKey("grants");
+
+        // Structure is {..., "grants": {"urn:ietf:params:oauth:grant-type:pre-authorized_code":{...}}}
+        var preAuthGrant = mapper.convertValue(
+            mapper.convertValue(deeplinkParams.get("grants"), Map.class)
+                .get("urn:ietf:params:oauth:grant-type:pre-authorized_code"), Map.class);
+
+        if (txCodeConf == null || txCodeConf.isUseTransactionCode() == false) {
+            assertThat(preAuthGrant).as("When usage of tx_code was not requested, the tx_code object MUST NOT be present").doesNotContainKey("tx_code");
+        } else {
+            assertThat(preAuthGrant).as("When Transaction Code usage was requested, tx_code object MUST be present").containsKey("tx_code");
+            var txCodeRequest = mapper.convertValue(preAuthGrant.get("tx_code"), Map.class);
+            assertThat(txCodeRequest).as("The length paramter should be provided to help the wallet render").containsEntry("length", txCodeConf.getLength());
+            if(StringUtils.isNotEmpty(txCodeConf.getDescription())) {
+                assertThat(txCodeRequest).as("When a description is provided it should be contained in the offer for the wallet to display").containsEntry("description", txCodeConf.getDescription());
+            } else {
+                assertThat(txCodeRequest).doesNotContainKey("description");
+            }
+        }
     }
 
     /**
@@ -712,5 +749,14 @@ class CredentialManagementServiceTest {
                 .deferredOfferValiditySeconds(0)
                 .credentialValidUntil(null)
                 .build();
+    }
+
+    private static Stream<TransactionCodeConfigDto> generateTxCodeConf(){
+        return Stream.of(
+            null, 
+            new TransactionCodeConfigDto(false, SOME_DESCRIPTION, 6),
+            new TransactionCodeConfigDto(true, SOME_DESCRIPTION, 6),
+            new TransactionCodeConfigDto(true, null, 2)
+        );
     }
 }

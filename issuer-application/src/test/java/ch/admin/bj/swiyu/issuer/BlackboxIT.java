@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.TransactionCodeConfigDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
@@ -194,6 +195,9 @@ class BlackboxIT {
                 // The credential subject data must be matching the claims we publicize that we will issue
                 .credentialSubjectData(getUniversityCredentialSubjectData())
                 .statusLists(List.of(statusListUri))
+                .transactionCodeConfig(TransactionCodeConfigDto.builder()
+                    .useTransactionCode(true)
+                    .build())
                 .build()));
 
         MvcResult createCredentialOfferResult = assertDoesNotThrow(() -> mvc.perform(post(CREDENTIAL_MANAGEMENT_BASE_URL).contentType(
@@ -212,6 +216,8 @@ class BlackboxIT {
         var vcManagementId = createCredentialOfferResponse.getManagementId();
         assertThat(vcManagementId).as("Management Id is used to reidentify the VC in future calls")
                 .isNotNull();
+
+        var txCode = createCredentialOfferResponse.getTxCode();
 
         // We can now pass the deeplink in some form to the wallet. This could be via QR-Code or even an SMS
 
@@ -308,6 +314,7 @@ class BlackboxIT {
                                         dpopKey
                                 )).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                                 .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                                .param("tx_code", txCode)
                                 .param("pre-authorized_code", preAuthCode))
                         .andExpect(status().isOk())
                         .andReturn(),
