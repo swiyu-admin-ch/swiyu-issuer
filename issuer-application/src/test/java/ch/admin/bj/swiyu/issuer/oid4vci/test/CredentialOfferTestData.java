@@ -82,6 +82,7 @@ public class CredentialOfferTestData {
         credentialSubjectData.put("type", "Bachelor of Science");
         credentialSubjectData.put("name", "Data Science");
         credentialSubjectData.put("average_grade", "Data average_grade");
+        credentialSubjectData.put("additional_courses", null);
         return credentialSubjectData;
     }
 
