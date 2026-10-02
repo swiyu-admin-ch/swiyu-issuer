@@ -510,14 +510,6 @@
       "cryptographic_binding_methods_supported": [
         "jwk"
       ],
-      "proof_types_supported": {
-        "jwt": {
-          "proof_signing_alg_values_supported": [
-            "ES256",
-            "Ed25519"
-          ]
-        }
-      },
       "vct": "test",
       "credential_metadata": {
         "claims": [
