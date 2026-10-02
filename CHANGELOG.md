@@ -8,16 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [NEXT]
 
 ## Changed
-- Migrated build to Java 25 (LTS) and upgraded to Spring Boot 4.1.1 to officially support the new JDK LTS release `(#1019)`
-- Updated the Docker base images (`Dockerfile` and `Dockerfile.dhi`) to Eclipse Temurin 25 JRE (`eclipse-temurin:25-jre-ubi10-minimal`) so container images now require and ship a Java 25 runtime. `(#1019)`
+
+- Migrated build to Java 25 (LTS) and upgraded to Spring Boot 4.1.1 to officially support the new JDK LTS release
+  `(#1019)`
+- Updated the Docker base images (`Dockerfile` and `Dockerfile.dhi`) to Eclipse Temurin 25 JRE (
+  `eclipse-temurin:25-jre-ubi10-minimal`) so container images now require and ship a Java 25 runtime. `(#1019)`
 
 ### Added
 
 - Added new credential-configuration-property in the issuer metadata `credential_refresh_disabled` that points out if a
   business issuer has disabled the renewal flow for a specific credential type. If this property is set to true, the
   wallet should not attempt to renew the credential and should not display a renewal option to the user `(#1093)`
+- Optionally an API Key can now be set for Credential Renewal call to the business issuer using environment variables
+  `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` and `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` (#1223)
+- Support tx_code. This can be activated when creating a new credential offer by using `tx_code_config.use_tx_code = true`. This feature allows using a secondary code to be sent through a differen channel than the pre-authorized code. `(#709)`
 
+### Fixed
 
+- Check correctness of the status list header and reset cache accordingly `(#1235)`
+- Removed empty `proof_types_supported` map if not provided in metadata `(#1309)`
+
+### Removed
+
+- Deprecated vc+sd-jwt (pre OID4VCI Draft 13) format has been removed, only supporting dc+sd-jwt `(#179)`
+- Removed deprecated environment variables `caching.publicKeyCacheTTL` and `caching.encryptionMetadataCacheTTL`
 
 ## [4.2.0] - 2026-08-24
 
@@ -41,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT` not setting the value (which is the default) disables the renewal and keeps the
   former functionality `(#1093)`
 -
+
 ### Removed
 
 - Removed support for `renewal-flow-allowed` and therefore `RENEWAL_FLOW_ENABLED` as different variables handle the same
@@ -53,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that
   rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 - Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
+- Documented missing HTTP response codes (405, 406, 409, 415, 420, 422, 429, 500) for the oid4vci and .well-known endpoints in openapi.yaml `(#1165)`
 - Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the
   revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
 

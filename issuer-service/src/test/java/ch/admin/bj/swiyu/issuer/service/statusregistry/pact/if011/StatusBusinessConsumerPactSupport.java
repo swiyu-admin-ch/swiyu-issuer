@@ -1,13 +1,15 @@
 package ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011;
 
 import au.com.dius.pact.consumer.MockServer;
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
+import org.testcontainers.shaded.org.yaml.snakeyaml.util.Tuple;
 
 import java.util.UUID;
 
@@ -24,7 +26,10 @@ final class StatusBusinessConsumerPactSupport {
 
     static final String COLLECTION_PATH = "/api/v1/status/business-entities/"
             + BUSINESS_ENTITY_ID + "/status-list-entries/";
-    static final String ENTRY_PATH = COLLECTION_PATH + STATUS_REGISTRY_ENTRY_ID;
+    static final String COLLECTION_PATH_V2 = "/api/v2/status/business-entities/"
+            + BUSINESS_ENTITY_ID + "/status-list-entries/";
+    
+    static final String UPDATE_PATH_V2 = COLLECTION_PATH_V2 + STATUS_REGISTRY_ENTRY_ID;
     static final String STATUS_REGISTRY_URL =
             "https://status-registry.example.ch/api/v1/statuslist/" + STATUS_REGISTRY_ENTRY_ID + ".jwt";
 
@@ -44,19 +49,20 @@ final class StatusBusinessConsumerPactSupport {
     private StatusBusinessConsumerPactSupport() {
     }
 
-    static StatusBusinessApiApi buildStatusBusinessApi(final MockServer mockServer) {
+    static Tuple<StatusB2BApi, StatusB2BV2Api> buildStatusBusinessApi(final MockServer mockServer) {
         final ApiClient apiClient = new ApiClient();
         apiClient.setBasePath(mockServer.getUrl());
         apiClient.setBearerToken(ACCESS_TOKEN);
-        return new StatusBusinessApiApi(apiClient);
+        return new Tuple<>(new StatusB2BApi(apiClient), new StatusB2BV2Api(apiClient));
     }
 
     static StatusRegistryClient buildStatusRegistryClient(final MockServer mockServer) {
         final SwiyuProperties swiyuProperties = mock(SwiyuProperties.class);
         when(swiyuProperties.businessPartnerId()).thenReturn(BUSINESS_ENTITY_ID);
-
+        var statusApis = buildStatusBusinessApi(mockServer);
         return new StatusRegistryClient(
-                buildStatusBusinessApi(mockServer),
+                statusApis._1(),
+                statusApis._2(),
                 swiyuProperties,
                 mock(UrlRewriteProperties.class),
                 mock(ApplicationProperties.class));

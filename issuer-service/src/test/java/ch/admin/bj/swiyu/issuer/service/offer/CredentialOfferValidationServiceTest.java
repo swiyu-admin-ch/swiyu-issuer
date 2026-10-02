@@ -196,7 +196,7 @@ class CredentialOfferValidationServiceTest {
         mandatory.setMandatory(true);
 
         var credConfig = mock(CredentialConfiguration.class);
-        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(credConfig.getFormat()).thenReturn("dc+sd-jwt");
 
         when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credConfig);
 
@@ -355,7 +355,7 @@ class CredentialOfferValidationServiceTest {
         mandatory.setMandatory(true);
 
         var credConfig = mock(CredentialConfiguration.class);
-        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(credConfig.getFormat()).thenReturn("dc+sd-jwt");
 
         when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credConfig);
         when(issuerMetadata.getCredentialConfigurationById("unsupported")).thenThrow(new BadRequestException("Unsupported credential offer metadata"));
@@ -469,7 +469,7 @@ class CredentialOfferValidationServiceTest {
         var objectMapper = new ObjectMapper();
         var credConfig = mock(CredentialConfiguration.class);
         when(credConfig.getCredentialMetadata()).thenReturn(objectMapper.readValue(credentialMetadata, CredentialConfigurationMetadata.class));
-        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(credConfig.getFormat()).thenReturn("dc+sd-jwt");
         when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credConfig);
     }
 }

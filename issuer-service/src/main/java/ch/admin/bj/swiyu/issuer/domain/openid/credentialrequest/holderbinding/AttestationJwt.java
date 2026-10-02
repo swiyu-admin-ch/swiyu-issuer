@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 /**
  * Provide Key Attestation functioality according to <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#appendix-D">OID4VCI 1.0 Appendix D. Key Attestations</a>
  * with additions from <a href="https://swiyu-admin-ch.github.io/specifications/swiss-profile-issuance/">swiss profile issuance</a>
@@ -36,18 +37,18 @@ public final class AttestationJwt {
 
     private static final String CLAIM_KEY_STORAGE = "key_storage";
     private static final String CLAIM_ATTESTED_KEYS = "attested_keys";
-    private static final Set<String> REQUIRED_ATTESTATION_CLAIMS = Set.of( // Fields Requried to be present according to Swiss Profile 1.0
-        JWTClaimNames.ISSUER, 
-        JWTClaimNames.ISSUED_AT,
-        JWTClaimNames.EXPIRATION_TIME,
-        CLAIM_ATTESTED_KEYS,
-        CLAIM_KEY_STORAGE
+    private static final Set<String> REQUIRED_ATTESTATION_CLAIMS = Set.of( // Fields Required to be present according to Swiss Profile 1.0
+            // JWTClaimNames.ISSUER is not required according to the swiss profile and therefore ommited here
+            JWTClaimNames.ISSUED_AT,
+            JWTClaimNames.EXPIRATION_TIME,
+            CLAIM_ATTESTED_KEYS,
+            CLAIM_KEY_STORAGE
     );
     @Deprecated(since = "OID4VCI 1.0") // remove later
     private static final String KEY_ATTESTATION_TYPE_ID1 = "keyattestation+jwt";
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
     private static final Set<String> ALLOWED_TYPES = Set.of(KEY_ATTESTATION_TYPE_ID1, "key-attestation+jwt");
-    
+
     // For now we only support ECDSA for Attestations
     private static final Set<JWSAlgorithm> ALLOWED_ALGORITHMS = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512);
     private static final DidKidParser kidParser = new DidKidParser();
@@ -65,7 +66,7 @@ public final class AttestationJwt {
     /**
      * Creates an Attestation JWT from a base64 encoded JWT, performing basic validation.
      *
-     * @param jwt base64 encoded JWT
+     * @param jwt                           base64 encoded JWT
      * @param enforceSwissProfileVersioning if true, requires profile_version in the JWT header
      */
     public static AttestationJwt parseJwt(String jwt, boolean enforceSwissProfileVersioning) throws ParseException {
@@ -83,11 +84,11 @@ public final class AttestationJwt {
      */
     private static void validateBody(JWTClaimsSet jwtClaimsSet, String expectedAttestationIssuerDid) {
         DefaultJWTClaimsVerifier<SecurityContext> verifier = new DefaultJWTClaimsVerifier<>(
-                    null,                  // no required audience
-                    new JWTClaimsSet.Builder().issuer(expectedAttestationIssuerDid).build(), // Issuer MUST match DID.
-                    REQUIRED_ATTESTATION_CLAIMS,
-                    Set.of()               // no prohibited claims – iss is ignored, not forbidden
-            );
+                null,                  // no required audience
+                new JWTClaimsSet.Builder().issuer(expectedAttestationIssuerDid).build(), // Issuer MUST match DID.
+                REQUIRED_ATTESTATION_CLAIMS,
+                Set.of()               // no prohibited claims – iss is ignored, not forbidden
+        );
         try {
             verifier.verify(jwtClaimsSet, null);
             // iat should not be after now with clock skew considered
@@ -123,7 +124,7 @@ public final class AttestationJwt {
     /**
      * Validates the JWT header for required Swiss Profile parameters.
      *
-     * @param header the JWT header
+     * @param header                        the JWT header
      * @param enforceSwissProfileVersioning whether to enforce Swiss Profile versioning
      */
     static String validateHeader(JWSHeader header, boolean enforceSwissProfileVersioning) {
@@ -177,6 +178,12 @@ public final class AttestationJwt {
         if (!SwissProfileVersions.ISSUANCE_PROFILE_VERSION.equals(profileVersion.toString())) {
             throw new IllegalArgumentException("Invalid 'profile_version' in key attestation header");
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> toStringKeyMap(Map<?, ?> rawKey) {
+        // Safe: JWTClaimsSet always deserialises JSON object keys as String
+        return (Map<String, Object>) rawKey;
     }
 
     /**
@@ -246,12 +253,6 @@ public final class AttestationJwt {
             }
         }
         return false;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> toStringKeyMap(Map<?, ?> rawKey) {
-        // Safe: JWTClaimsSet always deserialises JSON object keys as String
-        return (Map<String, Object>) rawKey;
     }
 
     public String toJsonString() throws ParseException {

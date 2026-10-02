@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
@@ -97,7 +98,9 @@ class RenewalFlowIT {
     @Autowired
     SwiyuProperties swiyuProperties;
     @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
+    private StatusB2BApi statusBusinessApi;
+    @MockitoBean
+    private StatusB2BV2Api statusB2BV2Api;
     private StatusListTestHelper statusListTestHelper;
     private String payload;
     private OAuthTokenDto oauthTokenResponse;
@@ -123,7 +126,7 @@ class RenewalFlowIT {
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
                 .thenReturn(Mono.just(statusListEntry));
-        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
+        when(statusB2BV2Api.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
 
