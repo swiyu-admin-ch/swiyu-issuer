@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance;
 
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -51,9 +50,4 @@ public record CreateCredentialRequestDto(
         @JsonProperty("credential_response_encryption")
         CredentialResponseEncryptionDto credentialResponseEncryption
 ) {
-
-    @JsonIgnore
-    public boolean hasProofs() {
-        return proofs != null && proofs.jwt() != null && !proofs.jwt().isEmpty();
-    }
 }

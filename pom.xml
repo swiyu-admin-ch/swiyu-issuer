@@ -57,12 +57,10 @@
         <pact.version>4.7.5</pact.version>
         <!-- Fixes various SNYK-JAVA-IONETTY errors -->
         <netty.version>4.2.18.Final</netty.version>
-        <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
-        <tomcat.version>11.0.23</tomcat.version>
+        <!-- Fixes various SNYK-JAVA-ORGAPACHETOMCATEMBED -->
+        <tomcat.version>11.0.25</tomcat.version>
         <!-- Fixes CVE-2026-13006 -->
         <logback-core.version>1.5.38</logback-core.version>
-        <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
-        <tomcat.version>11.0.23</tomcat.version>
 
         <!-- Fixes CVE-2026-89425 -->
         <jackson.version>2.22.3</jackson.version>
