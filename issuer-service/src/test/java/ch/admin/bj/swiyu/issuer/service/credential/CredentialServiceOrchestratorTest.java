@@ -135,7 +135,7 @@ class CredentialServiceOrchestratorTest {
                 .build();
 
         credentialConfiguration = mock(CredentialConfiguration.class);
-        when(credentialConfiguration.getFormat()).thenReturn("vc+sd-jwt");
+        when(credentialConfiguration.getFormat()).thenReturn("dc+sd-jwt");
         when(credentialConfiguration.getVct()).thenReturn("test-vct");
 
         when(issuerMetadata.getCredentialConfigurationById("test")).thenReturn(credentialConfiguration);
@@ -237,7 +237,7 @@ class CredentialServiceOrchestratorTest {
         var credConfig = mock(CredentialConfiguration.class);
         // when(credConfig.getCredentialDefinition()).thenReturn(null);
         // when(credConfig.getCredentialMetadata().getClaimDescriptor()).thenReturn(Map.of("hello", claim));
-        when(credConfig.getFormat()).thenReturn("vc+sd-jwt");
+        when(credConfig.getFormat()).thenReturn("dc+sd-jwt");
         when(credConfig.getVct()).thenReturn("test-vct");
 
         when(credConfig.getCryptographicBindingMethodsSupported()).thenReturn(List.of("jwk"));
@@ -621,7 +621,7 @@ class CredentialServiceOrchestratorTest {
                 .credentialOffers(Set.of(offer))
                 .build();
         offer.setCredentialManagement(mgmt);
-        when(config.getFormat()).thenReturn("vc+sd-jwt");
+        when(config.getFormat()).thenReturn("dc+sd-jwt");
 
         when(credentialManagementRepository.findByAccessToken(accessToken)).thenReturn(Optional.of(mgmt));
         when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(config);
