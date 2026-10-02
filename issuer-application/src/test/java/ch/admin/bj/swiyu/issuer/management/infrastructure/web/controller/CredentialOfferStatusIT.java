@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
@@ -57,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CredentialOfferStatusIT {
 
     private static final int STATUS_LIST_MAX_LENGTH = 30;
+    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
     @Autowired
     protected SwiyuProperties swiyuProperties;
     @Autowired
@@ -70,8 +72,9 @@ class CredentialOfferStatusIT {
     @Autowired
     private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
-    private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
+    private StatusB2BApi statusBusinessApi;
+    @MockitoBean
+    private StatusB2BV2Api statusB2BV2Api;
     private UUID managementId;
     @Autowired
     private IssuerMetadata issuerMetadata;
@@ -93,7 +96,7 @@ class CredentialOfferStatusIT {
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
                 .thenReturn(Mono.just(statusListEntryCreationDto));
-        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
+        when(statusB2BV2Api.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
 
