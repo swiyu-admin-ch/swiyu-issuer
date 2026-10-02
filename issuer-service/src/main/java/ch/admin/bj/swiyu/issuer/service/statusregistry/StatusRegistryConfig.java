@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.statusregistry;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.lock.GlobalLocksType;
@@ -98,8 +99,13 @@ public class StatusRegistryConfig {
     }
 
     @Bean
-    public StatusBusinessApiApi statusBusinessApi(ApiClient statusRegistryApiClient) {
-        return new StatusBusinessApiApi(statusRegistryApiClient);
+    public StatusB2BApi statusBusinessApi(ApiClient statusRegistryApiClient) {
+        return new StatusB2BApi(statusRegistryApiClient);
+    }
+
+    @Bean
+    public StatusB2BV2Api statusBusinessV2Api(ApiClient statusRegistryApiClient) {
+        return new StatusB2BV2Api(statusRegistryApiClient);
     }
 
     private ClientRequest withBearer(ClientRequest request, String token) {
