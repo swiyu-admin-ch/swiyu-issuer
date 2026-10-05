@@ -18,10 +18,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 
@@ -33,9 +31,8 @@ import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.I
 @NoArgsConstructor
 @AllArgsConstructor
 public class CredentialConfiguration {
-    // TODO EIDOMNI-284: allow only dc+sd-jwt and start throwing errors for vc+sd-jwt (after issuers had some time to migrate)
     @NotNull
-    @Pattern(regexp = "^[dv]c\\+sd-jwt$", message = "Only vc+sd-jwt or dc+sd-jwt is supported")
+    @Pattern(regexp = "^dc\\+sd-jwt$", message = "Only dc+sd-jwt is supported")
     private String format;
 
     /**
@@ -144,10 +141,6 @@ public class CredentialConfiguration {
                             "cryptographicBindingMethodsSupported", cryptographicBindingMethodsSupported
                     ));
         }
-    }
-
-    public Map<String, SupportedProofType> getProofTypesSupported() {
-        return Objects.requireNonNullElseGet(proofTypesSupported, HashMap::new);
     }
 
     /**

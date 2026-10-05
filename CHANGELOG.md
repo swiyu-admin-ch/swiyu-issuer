@@ -19,10 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added new credential-configuration-property in the issuer metadata `credential_refresh_disabled` that points out if a
   business issuer has disabled the renewal flow for a specific credential type. If this property is set to true, the
   wallet should not attempt to renew the credential and should not display a renewal option to the user `(#1093)`
+- Optionally an API Key can now be set for Credential Renewal call to the business issuer using environment variables
+  `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` and `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` (#1223)
+- Support tx_code. This can be activated when creating a new credential offer by using `tx_code_config.use_tx_code = true`. This feature allows using a secondary code to be sent through a differen channel than the pre-authorized code. `(#709)`
 
-## Fixed
+### Fixed
 
 - Check correctness of the status list header and reset cache accordingly `(#1235)`
+- Removed empty `proof_types_supported` map if not provided in metadata `(#1309)`
+
+### Removed
+
+- Deprecated vc+sd-jwt (pre OID4VCI Draft 13) format has been removed, only supporting dc+sd-jwt `(#179)`
+- Removed deprecated environment variables `caching.publicKeyCacheTTL` and `caching.encryptionMetadataCacheTTL`
 
 ## [4.2.0] - 2026-08-24
 
