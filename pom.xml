@@ -53,20 +53,23 @@
         <spring-cloud-starter-bootstrap.version>5.0.3</spring-cloud-starter-bootstrap.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
-        <generic-java-lib.version>3.1.1</generic-java-lib.version>
+        <generic-java-lib.version>3.2.0</generic-java-lib.version>
         <pact.version>4.7.5</pact.version>
         <!-- Fixes various SNYK-JAVA-IONETTY errors -->
         <netty.version>4.2.18.Final</netty.version>
         <!-- Fixes various SNYK-JAVA-ORGAPACHETOMCATEMBED -->
-        <tomcat.version>11.0.25</tomcat.version>
+        <tomcat.version>11.0.26</tomcat.version>
         <!-- Fixes CVE-2026-13006 -->
-        <logback-core.version>1.5.38</logback-core.version>
+        <logback-core.version>1.6.5</logback-core.version>
+        <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
+        <tomcat.version>11.0.26</tomcat.version>
 
         <!-- Fixes CVE-2026-89425 -->
         <jackson.version>2.22.3</jackson.version>
         <jackson-annotations.version>2.22</jackson-annotations.version>
         <jackson-core.version>2.22.3</jackson-core.version>
         <jackson3.version>3.2.3</jackson3.version>
+        <postgres.version>42.7.14</postgres.version>
     </properties>
 
     <dependencyManagement>
@@ -109,7 +112,6 @@
                 <version>${spring-cloud-context.version}</version>
             </dependency>
 
-            <!-- Todo check again on spring boot upgrade-->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcprov-jdk18on</artifactId>

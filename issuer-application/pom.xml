@@ -86,6 +86,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <version>${postgres.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -102,11 +103,18 @@
             <artifactId>hibernate-core</artifactId>
         </dependency>
 
+        <!-- JWT Library -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+
         <!-- Monitoring & Tracing -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
-            <version>1.17.0</version>
+            <version>1.17.1</version>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -186,7 +194,7 @@
         <dependency>
             <groupId>com.squareup.okio</groupId>
             <artifactId>okio</artifactId>
-            <version>3.18.0</version>
+            <version>3.18.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
