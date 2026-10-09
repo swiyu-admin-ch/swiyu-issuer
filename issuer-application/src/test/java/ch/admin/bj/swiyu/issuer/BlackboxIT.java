@@ -31,6 +31,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import io.netty.handler.codec.base64.Base64Decoder;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -58,9 +59,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
@@ -187,17 +186,21 @@ class BlackboxIT {
                 null));
         // We will need the status list uri as identifier to indicate which status list will be used a VC we create
         var statusListUri = statusListDto.getStatusRegistryUrl();
-
+        var credentialSubjectData = getUniversityCredentialSubjectData();
+        // Validate Input Data to ensure later tests do not fail due to changed input conditions
+        assertThat(credentialSubjectData).as("Data contains a field additional_courses")
+                .containsKey("additional_courses").extractingByKey("additional_courses")
+                .as("additional_courses must be null for later tests").isNull();
         // Now that we have a status list we can create credential offers to issue VCs
         var createRequestBody = assertDoesNotThrow(() -> objectMapper.writeValueAsString(CreateCredentialOfferRequestDto.builder()
                 // Select the entry from issuer metadata (in this test case the example_issuer_metadata.json)
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
                 // The credential subject data must be matching the claims we publicize that we will issue
-                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .credentialSubjectData(credentialSubjectData)
                 .statusLists(List.of(statusListUri))
                 .transactionCodeConfig(TransactionCodeConfigDto.builder()
-                    .useTransactionCode(true)
-                    .build())
+                        .useTransactionCode(true)
+                        .build())
                 .build()));
 
         MvcResult createCredentialOfferResult = assertDoesNotThrow(() -> mvc.perform(post(CREDENTIAL_MANAGEMENT_BASE_URL).contentType(
@@ -434,6 +437,14 @@ class BlackboxIT {
                 .toList();
         assertThat(holderBindings).hasSize(issuerMetadata.getIssuanceBatchSize());
 
+        var vcParts = Arrays.stream(credentialResponseDto.credentials().getFirst().credential().split("~")).toList();
+        var selectiveDisclosures = vcParts.subList(1, vcParts.size()).stream()
+                .map(c -> new String(Base64.getUrlDecoder().decode(c))) // Selective Disclosures are Base64 URL Encoded
+                .map(c -> mapper.readValue(c, List.class)).toList(); // Simple selective disclosures are shaped like ["salt", "key", "value"]
+        var nullValueDisclosure = assertThat(selectiveDisclosures.stream().filter(c -> c.contains("additional_courses")).findFirst())
+                .as("Test Data specify that claim additional courses  credential subject data is added with value null it should still be added to the VC and disclosures").isPresent().get().actual();
+        assertThat(nullValueDisclosure).as("salt, key and value are 3 values").hasSize(3)
+                .as("Credential Subject gave null as value for additional_courses").element(2).isNull();
 
         // As Business Issuer we should be able to get some information from management endpoints
         MvcResult managementInfoResponse = assertDoesNotThrow(() -> mvc.perform(get(CREDENTIAL_MANAGEMENT_BASE_URL + "/" + vcManagementId).contentType(
