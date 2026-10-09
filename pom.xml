@@ -69,6 +69,7 @@
         <jackson-annotations.version>2.22</jackson-annotations.version>
         <jackson-core.version>2.22.3</jackson-core.version>
         <jackson3.version>3.2.3</jackson3.version>
+        <postgres.version>42.7.14</postgres.version>
     </properties>
 
     <dependencyManagement>
