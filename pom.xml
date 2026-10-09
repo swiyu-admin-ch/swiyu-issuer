@@ -58,11 +58,11 @@
         <!-- Fixes various SNYK-JAVA-IONETTY errors -->
         <netty.version>4.2.18.Final</netty.version>
         <!-- Fixes various SNYK-JAVA-ORGAPACHETOMCATEMBED -->
-        <tomcat.version>11.0.25</tomcat.version>
+        <tomcat.version>11.0.26</tomcat.version>
         <!-- Fixes CVE-2026-13006 -->
-        <logback-core.version>1.6.4</logback-core.version>
+        <logback-core.version>1.6.5</logback-core.version>
         <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
-        <tomcat.version>11.0.23</tomcat.version>
+        <tomcat.version>11.0.26</tomcat.version>
 
         <!-- Fixes CVE-2026-89425 -->
         <jackson.version>2.22.3</jackson.version>
