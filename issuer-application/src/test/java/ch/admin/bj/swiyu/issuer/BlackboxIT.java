@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.TransactionCodeConfigDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialResponseEncryptionDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.NonceResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
@@ -162,7 +163,7 @@ class BlackboxIT {
                         new HttpRequest()
                                 .withHeader("Authorization", "bearer refreshedAccessToken")
                                 .withMethod("PUT")
-                                .withPath("/api/v1/status/business-entities/%s/status-list-entries/%s".formatted(swiyuProperties.businessPartnerId(), statusListEntry.getId()))
+                                .withPath("/api/v2/status/business-entities/%s/status-list-entries/%s".formatted(swiyuProperties.businessPartnerId(), statusListEntry.getId()))
                 )
                 .respond(
                         HttpResponse.response()
@@ -194,6 +195,9 @@ class BlackboxIT {
                 // The credential subject data must be matching the claims we publicize that we will issue
                 .credentialSubjectData(getUniversityCredentialSubjectData())
                 .statusLists(List.of(statusListUri))
+                .transactionCodeConfig(TransactionCodeConfigDto.builder()
+                    .useTransactionCode(true)
+                    .build())
                 .build()));
 
         MvcResult createCredentialOfferResult = assertDoesNotThrow(() -> mvc.perform(post(CREDENTIAL_MANAGEMENT_BASE_URL).contentType(
@@ -212,6 +216,8 @@ class BlackboxIT {
         var vcManagementId = createCredentialOfferResponse.getManagementId();
         assertThat(vcManagementId).as("Management Id is used to reidentify the VC in future calls")
                 .isNotNull();
+
+        var txCode = createCredentialOfferResponse.getTxCode();
 
         // We can now pass the deeplink in some form to the wallet. This could be via QR-Code or even an SMS
 
@@ -308,6 +314,7 @@ class BlackboxIT {
                                         dpopKey
                                 )).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                                 .param("grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code")
+                                .param("tx_code", txCode)
                                 .param("pre-authorized_code", preAuthCode))
                         .andExpect(status().isOk())
                         .andReturn(),
@@ -362,13 +369,13 @@ class BlackboxIT {
                 .isNotNull();
         assertThat(requestEncryption.getJwks()).isNotEmpty();
         assertThat(requestEncryption.getEncValuesSupported()).isNotEmpty()
-                .contains(EncryptionMethod.A128GCM.getName());
+                .contains(EncryptionMethod.A256GCM.getName());
         var requestJwks = assertDoesNotThrow(() -> JWKSet.parse(requestEncryption.getJwks()));
         // Currently we only support a single EC key, so we can cheat here
         var issuerEncryptionKey = requestJwks.getKeys()
                 .getFirst();
         var encryptedCredentialRequest = assertDoesNotThrow(() -> new EncryptedJWT(new JWEHeader.Builder(JWEAlgorithm.ECDH_ES,
-                EncryptionMethod.A128GCM).keyID(issuerEncryptionKey.getKeyID())
+                EncryptionMethod.A256GCM).keyID(issuerEncryptionKey.getKeyID())
                 .compressionAlgorithm(CompressionAlgorithm.DEF)
                 .build(),
                 JWTClaimsSet.parse(objectMapper.writeValueAsString(credentialRequestDto))));

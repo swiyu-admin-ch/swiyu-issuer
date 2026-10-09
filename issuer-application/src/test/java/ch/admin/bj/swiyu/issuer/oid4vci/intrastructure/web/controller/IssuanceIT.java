@@ -43,6 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.ObjectMapper;
 
 import java.text.ParseException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -272,7 +273,7 @@ class IssuanceIT {
         // Response Encryption
         assertThat(metadata.getResponseEncryption()).isNotNull();
         assertTrue(metadata.getResponseEncryption().getAlgValuesSupported().contains(JWEAlgorithm.ECDH_ES.getName()));
-        assertTrue(metadata.getResponseEncryption().getEncValuesSupported().contains(EncryptionMethod.A128GCM.getName()));
+        assertTrue(metadata.getResponseEncryption().getEncValuesSupported().contains(EncryptionMethod.A256GCM.getName()));
         ECKey encryptionKey = new ECKeyGenerator(Curve.P_256)
                 .keyID("transportEncKeyEC")
                 .keyUse(KeyUse.ENCRYPTION)
@@ -602,6 +603,94 @@ class IssuanceIT {
         // check header details
         assertEquals(expectedKid, ((JWSHeader) jwt.getHeader()).getKeyID());
         assertEquals(overrideDID, (jwt.getJWTClaimsSet().getIssuer()));
+    }
+
+    @Test
+    void testSdJwtOffer_withoutProofTypeSupported_withProofs_thenSuccess() throws Exception {
+
+        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(1);
+
+        var statusListDto = createStatusList();
+        var newTestStatusList = saveStatusList(statusListDto);
+
+        Map<String, String> subjectData = new HashMap<>();
+        subjectData.put("firstName", "firstName");
+        subjectData.put("lastName", "lastName");
+        subjectData.put("dateOfBirth", "dateOfBirth");
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialSubjectData(subjectData)
+                .statusLists(List.of(newTestStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
+        var token = tokenDto.get("access_token");
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "test");
+
+        var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonArray credentials = extractCredentials(response);
+
+        var jwtString = credentials.get(0).getAsJsonObject().get("credential").getAsString().split("~")[0];
+
+        JWT jwt = JWTParser.parse(jwtString);
+        assertNull(jwt.getJWTClaimsSet().getClaim("cnf"));
+    }
+
+    @Test
+    void testSdJwtOffer_withoutProofTypeSupported_withoutProofs_thenSuccess() throws Exception {
+
+        List<ECKey> holderPrivateKeys = List.of();
+
+        var statusListDto = createStatusList();
+        var newTestStatusList = saveStatusList(statusListDto);
+
+        Map<String, String> subjectData = new HashMap<>();
+        subjectData.put("firstName", "firstName");
+        subjectData.put("lastName", "lastName");
+        subjectData.put("dateOfBirth", "dateOfBirth");
+
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("test"))
+                .credentialSubjectData(subjectData)
+                .statusLists(List.of(newTestStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
+        var token = tokenDto.get("access_token");
+        var credentialRequestString = getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, "test");
+
+        var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonArray credentials = extractCredentials(response);
+
+        var jwtString = credentials.get(0).getAsJsonObject().get("credential").getAsString().split("~")[0];
+
+        JWT jwt = JWTParser.parse(jwtString);
+        assertNull(jwt.getJWTClaimsSet().getClaim("cnf"));
+    }
+
+    private List<KeyOnlySignatureConfiguration> getSigningKeys(String keyId) {
+        String pemKey;
+        try {
+            pemKey = createPemForKid(keyId);
+        } catch (JOSEException e) {
+            throw new RuntimeException(e);
+        }
+        KeyOnlySignatureConfiguration signatureConfiguration = new KeyOnlySignatureConfiguration();
+        signatureConfiguration.setPrivateKey(pemKey);
+        signatureConfiguration.setVerificationMethod(keyId);
+
+        return List.of(signatureConfiguration);
     }
 
     private StatusList saveStatusList(StatusList statusList) {

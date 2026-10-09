@@ -1494,18 +1494,26 @@ components:
       description: Override for configuration to be use for the created entity
       properties:
         issuer_did:
-          type: string
+          type:
+          - string
+          - "null"
           description: Override to be used in place of the ISSUER_ID
         verification_method:
-          type: string
+          type:
+          - string
+          - "null"
           description: "Override for the verification method that is looked up in\
             \ the did document during verification of the entity. Most often the full\
             \ did and a unique id after #"
         key_id:
-          type: string
+          type:
+          - string
+          - "null"
           description: ID of the key in the HSM
         key_pin:
-          type: string
+          type:
+          - string
+          - "null"
           description: "The pin which protects the key in the hsm, if any. Note that\
             \ this only the key pin, not hsm password or partition pin."
     CreateCredentialOfferRequest:
@@ -1569,6 +1577,14 @@ components:
           $ref: "#/components/schemas/ConfigurationOverride"
           description: "Optional Parameter to override configured parameters, such\
             \ as the DID used or the HSM key used in singing the request object"
+        tx_code_config:
+          $ref: "#/components/schemas/TransactionCodeConfig"
+          description: "[EXPERIMENTAL] Optional parameter to enable and configure\
+            \ transaction code as a second factor. Note that the description will\
+            \ be part of the QR-Code and should be kept short as possible"
+          example:
+            use_tx_code: "true"
+            description: Code sent by SMS to +41 000 000 00 00
       required:
       - metadata_credential_supported_id
     CreateCredentialRequest:
@@ -1596,9 +1612,9 @@ components:
           $ref: "#/components/schemas/CredentialResponseEncryption"
           description: |
             Optional object providing information how to encrypt the Credential Response, if present.
-          example: |
+          example: |-
             {
-               "enc": "A128GCM",
+               "enc": "A256GCM",
                "jwk": {"kty":"EC", "alg": "ECDH-ES","crv":"P-256","kid":"transportEncKeyEC","x":"DTaouFJpyVkLvfhoOvuTDR6_nmTt7YTvEHsHzK0Ingk","y":"vOipfo61Sy64XpneRyR5g6NCGXLv_Q7f3-kEDMT-G9U"
             }
       required:
@@ -1766,13 +1782,19 @@ components:
       type: object
       properties:
         deferred:
-          type: boolean
+          type:
+          - boolean
+          - "null"
         vct_metadata_uri:
-          type: string
+          type:
+          - string
+          - "null"
           maxLength: 2147483647
           minLength: 1
         vct_metadata_uri#integrity:
-          type: string
+          type:
+          - string
+          - "null"
           maxLength: 2147483647
           minLength: 1
     CredentialResponseEncryption:
@@ -1823,6 +1845,8 @@ components:
           format: uuid
         offer_deeplink:
           type: string
+        tx_code:
+          type: string
     DeferredCredentialEndpointRequest:
       type: object
       description: Request to the deferred credential endpoint.
@@ -1851,6 +1875,7 @@ components:
           format: int64
           description: Minimum number of seconds the Wallet MUST wait before polling
             again.
+          minimum: 0
       required:
       - interval
       - transaction_id
@@ -1871,7 +1896,7 @@ components:
           items:
             type: string
             description: List of supported JWE encryption algorithms
-            pattern: ^(A128GCM|A256GCM)$
+            pattern: ^(A256GCM)$
           minItems: 1
         zip_values_supported:
           type: array
@@ -1919,7 +1944,7 @@ components:
           items:
             type: string
             description: List of supported JWE encryption algorithms
-            pattern: ^(A128GCM|A256GCM)$
+            pattern: ^(A256GCM)$
           minItems: 1
         zip_values_supported:
           type: array
@@ -2138,13 +2163,20 @@ components:
           type: string
           description: URL of the OAuth 2.0 Token Endpoint
         dpop_signing_alg_values_supported:
-          type: array
+          type:
+          - array
+          - "null"
           items:
             type: string
         profile_version:
-          type: string
+          type:
+          - string
+          - "null"
         pre-authorized_grant_anonymous_access_supported:
-          type: boolean
+          type:
+          - boolean
+          - "null"
+          description: True if client_id should be omitted in the call to the token_endpoint
       required:
       - issuer
       - token_endpoint
@@ -2174,9 +2206,26 @@ components:
             or 'refresh_token.
           minLength: 1
         pre-authorized_code:
-          type: string
+          type:
+          - string
+          - "null"
+          description: ' The code representing the authorization to obtain Credentials
+            of a certain type. This parameter MUST be present if the grant_type is
+            urn:ietf:params:oauth:grant-type:pre-authorized_code.'
         refresh_token:
-          type: string
+          type:
+          - string
+          - "null"
+          description: "The refresh token, which can be used to obtain new access\
+            \ tokens."
+        tx_code:
+          type:
+          - string
+          - "null"
+          description: String value containing a Transaction Code value itself. This
+            value MUST be present if a tx_code object was present in the Credential
+            Offer (including if the object was empty). This parameter MUST only be
+            used if the grant_type is urn:ietf:params:oauth:grant-type:pre-authorized_code.
       required:
       - grant_type
     ProofsDto:
@@ -2186,7 +2235,11 @@ components:
           type: array
           description: |
             ProofsDto represents the proofs object in the OID4VCI Credential Request.
-          example: jwt
+          example: |-
+            "jwt": [
+               "eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJraWQiOiJUZXN0LUtleSIsIngiOiJrdHFJRFpoUjFmY2NlM3VGanpxdDdLRVlEdVdweFJoX3pqdkszanZsS2k4IiwieSI6Ik1UV2ZObTJ6dy1CbklqM2szbW0xZVB3Q3hqTm9DSEowdXN6V25MeHVDemsiLCJpYXQiOjE3NTMyNjkyNzZ9fQ.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvb2lkNHZjaSIsIm5vbmNlIjoiY2U5YzEzNzgtODc2Yi00OGUyLTg0ZmUtOGE0ZjUwZGFkZmJmIiwiaWF0IjoxNzUzMjY5Mjc2fQ.ck-6Oq6IAav1VdFOkq9Qh7tzrl52jJvFBU3aPcZ_20oE73Cf4izN0ECmmiJm_qUMvYJlykQFsX2sW43gFC6vCw".
+               "..."
+            ]
           items:
             type: string
           minItems: 1
@@ -2357,6 +2410,23 @@ components:
             pattern: ^ES256|Ed25519$
         key_attestations_required:
           $ref: "#/components/schemas/KeyAttestationRequirement"
+    TransactionCodeConfig:
+      type: object
+      description: Configuration for transaction code.
+      properties:
+        use_tx_code:
+          type: boolean
+          default: false
+          description: Flag indicating if tx_code should be used. By default false.
+        description:
+          type: string
+          description: String containing guidance for the Holder of the Wallet on
+            how to obtain the Transaction Code.
+        length:
+          type: integer
+          format: int32
+          default: 6
+          description: Integer specifying the length of the Transaction Code.
     UpdateCredentialStatusRequestType:
       type: string
       description: |2
