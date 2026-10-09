@@ -112,7 +112,6 @@
                 <version>${spring-cloud-context.version}</version>
             </dependency>
 
-            <!-- Todo check again on spring boot upgrade-->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcprov-jdk18on</artifactId>

@@ -103,6 +103,13 @@
             <artifactId>hibernate-core</artifactId>
         </dependency>
 
+        <!-- JWT Library -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+
         <!-- Monitoring & Tracing -->
         <dependency>
             <groupId>io.micrometer</groupId>
