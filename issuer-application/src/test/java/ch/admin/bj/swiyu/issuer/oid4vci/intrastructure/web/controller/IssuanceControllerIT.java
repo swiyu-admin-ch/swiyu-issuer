@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -283,8 +284,9 @@ class IssuanceControllerIT {
     }
 
     @ParameterizedTest
-    @CsvSource({"true,", "false,", "true,did:example:override", "false,did:example:override"})
-    void testCredentialFlow_thenSuccess(boolean useNewNonce, String overrideId) throws Exception {
+    @NullSource
+    @ValueSource(strings = {"did:example:override"})
+    void testCredentialFlow_thenSuccess(String overrideId) throws Exception {
         ConfigurationOverride override = null;
         String expectedIssuer;
         String expectedVerificationMethod;
