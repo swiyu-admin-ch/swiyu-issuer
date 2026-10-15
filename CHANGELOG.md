@@ -5,13 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [5.0.1] - 2026-10-15
+## [5.0.1] - 2026-10-15
 
 - Fix hsm key selection with override `(#1404)`
 
-# [5.0.0]
+## [5.0.0] - 2026-10-12
 
-## Changed
+### Changed
 
 - Migrated build to Java 25 (LTS) and upgraded to Spring Boot 4.1.1 to officially support the new JDK LTS release
   `(#1019)`
@@ -220,12 +220,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       true).
     - Require Encryption to be used by default.
     - Require DPoP to be used by default.
-- **Docker image:** the published image is now hardened. The default
-  (unsuffixed) tag `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
+- **Docker image:** the published image is now hardened. The default (unsuffixed) tag
+  `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
   `dhi.io/eclipse-temurin:21-debian13`, runs as the pre-configured `nonroot` user
   and contains no shell. During a transition period the previous UBI-based image
-  remains available under the `-unhardened` suffix
-  (`ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened`). Operators who cannot
+  remains available under the `-unhardened` suffix (`ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened`). Operators
+  who cannot
   immediately adopt the hardened runtime **must pin to the `-unhardened` tag** until
   they have completed the migration steps in
   [`migration-guides/guide-3.1.x-to-3.2.x.md`](migration-guides/guide-3.1.x-to-3.2.x.md);
@@ -551,8 +551,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       it delivers the same information)
     - Added new endpoint patch `/management/api/credentials{credentialId}` which updates / creates the credential offer
       for a deferred endpoint.
-    - Added a new ClientAgentInfoDto which are used for the deferred credential flow. This is stored in the database
-      (db migration is necessary & included)
+    - Added a new ClientAgentInfoDto which are used for the deferred credential flow. This is stored in the database (db
+      migration is necessary & included)
 - Breaking! updated url path to distinguish management (with `/management`) and oid4vci (with `/oid4vci`) urls
 - Added new endpoint `/.well-known/oauth-authorization-server` that provides the same information as the
   `/.well-known/openid-configuration` endpoint but in a OAuth2-centric way.
