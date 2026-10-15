@@ -1,7 +1,7 @@
 # Migration Guide: v4.0.x to v5.0.x
 
 This guide helps you migrate from **v4.0.x** to **v5.0.x** of the Swiyu Issuer Service.
-It is based on the **[NEXT]** section in `CHANGELOG.md`.
+It is based on the **[5.0.0]** section in `CHANGELOG.md`.
 
 ## Compatibility summary
 
