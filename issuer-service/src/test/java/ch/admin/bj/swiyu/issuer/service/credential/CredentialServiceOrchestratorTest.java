@@ -511,6 +511,7 @@ class CredentialServiceOrchestratorTest {
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .build();
 
         CredentialOffer offer = mockCredentialOffer(false, mgmt);

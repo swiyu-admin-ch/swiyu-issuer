@@ -75,7 +75,9 @@ class CredentialEnvelopeServiceTest {
         var offer = CredentialOffer.builder().build();
         offer.setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.IN_PROGRESS);
         offer.setMetadataCredentialSupportedId(List.of("config-id"));
-        var mgmt = CredentialManagement.builder().build();
+        var mgmt = CredentialManagement.builder()
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .build();
         mgmt.setAccessTokenExpirationTimestamp(Instant.now().plusSeconds(60).getEpochSecond());
         offer.setCredentialManagement(mgmt);
 
