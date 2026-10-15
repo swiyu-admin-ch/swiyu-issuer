@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [NEXT]
+# [5.0.1] - 2026-10-15
+
+- Fix hsm key selection with override `(#1404)`
+
+# [5.0.0]
 
 ## Changed
 
@@ -21,7 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wallet should not attempt to renew the credential and should not display a renewal option to the user `(#1093)`
 - Optionally an API Key can now be set for Credential Renewal call to the business issuer using environment variables
   `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` and `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` (#1223)
-- Support tx_code. This can be activated when creating a new credential offer by using `tx_code_config.use_tx_code = true`. This feature allows using a secondary code to be sent through a differen channel than the pre-authorized code. `(#709)`
+- Support tx_code. This can be activated when creating a new credential offer by using
+  `tx_code_config.use_tx_code = true`. This feature allows using a secondary code to be sent through a differen channel
+  than the pre-authorized code. `(#709)`
 
 ### Fixed
 
@@ -68,7 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that
   rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 - Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
-- Documented missing HTTP response codes (405, 406, 409, 415, 420, 422, 429, 500) for the oid4vci and .well-known endpoints in openapi.yaml `(#1165)`
+- Documented missing HTTP response codes (405, 406, 409, 415, 420, 422, 429, 500) for the oid4vci and .well-known
+  endpoints in openapi.yaml `(#1165)`
 - Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the
   revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
 
