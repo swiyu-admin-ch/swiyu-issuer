@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialReques
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofJwt;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.service.CredentialBuilder;
+import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementMapper;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialFormatFactory;
 import ch.admin.bj.swiyu.issuer.service.enc.JweService;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
@@ -139,7 +140,13 @@ public class CredentialEnvelopeService {
 
         var responseEnvelope = buildImmediate.get();
         credentialStateMachine.sendEventAndUpdateStatus(context.offer(), CredentialStateMachineConfig.CredentialOfferEvent.ISSUE);
-        credentialStateMachine.sendEventAndUpdateStatus(context.mgmt(), ISSUE);
+
+        CredentialStateMachineConfig.CredentialManagementEvent managementEvent = ISSUE;
+        if (context.mgmt.getCredentialManagementStatus().isIssued()) {
+            managementEvent = CredentialManagementMapper.toCredentialManagementEvent(context.mgmt.getCredentialManagementStatus());
+        }
+        credentialStateMachine.sendEventAndUpdateStatus(context.mgmt(), managementEvent);
+
         credentialOfferRepository.save(context.offer());
         credentialManagementRepository.save(context.mgmt());
         return responseEnvelope;
