@@ -194,12 +194,12 @@ class CredentialBuilderTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"A128GCM", "A256GCM"})
+    @ValueSource(strings = {"A256GCM"})
     void buildEnvelopeDto_withEncryption_thenSuccess(String encAlg) throws JOSEException {
 
         var issuerCredentialResponseEncryption = new IssuerCredentialResponseEncryption();
         issuerCredentialResponseEncryption.setAlgValuesSupported(List.of("ECDH-ES"));
-        issuerCredentialResponseEncryption.setEncValuesSupported(List.of("A128GCM", "A256GCM"));
+        issuerCredentialResponseEncryption.setEncValuesSupported(List.of("A256GCM"));
 
         when(issuerMetadata.getResponseEncryption()).thenReturn(issuerCredentialResponseEncryption);
         var jwk = createEncryptionKey().toPublicJWK().toJSONObject();

@@ -102,30 +102,29 @@ public class SdJwtCredential extends CredentialBuilder {
         // Get first entry because we expect the list to only contain one item
         final var metadataId = getMetadataCredentialsSupportedIds().getFirst();
         final var credentialConfiguration = getIssuerMetadata().getCredentialConfigurationById(metadataId);
-        
-        
-        
+
+
         SdJwtVcBuilder vcBuilder;
         try {
             vcBuilder = SdJwtVcBuilder.createBuilder(
-                override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()), 
-                prepareAlwaysDisclosedData(credentialConfiguration, override),
-                prepareSelectivelyDisclosableData(credentialConfiguration),
-                prepareTimeConfiguration(),
-                this.createSigner());
-                
-                for (int i = 0; i < batchSize; i++) {
-                    Optional<VerifiableCredentialStatusReference> statusReference = reserveStatusReferences(statusReferences, i);
-                    statusReference.ifPresent(sRef -> usedCredentialStatusReferences.add(sRef));
-                    Optional<JWK> holderPublicKey = getHolderPublicKey(i, holderPublicKeys);
-                    
-                    CreatedSdJwtVc vc = vcBuilder.createSignedSdJwtVc(toLibraryTokenStatusListReference(statusReference), holderPublicKey);
-                    vcHashes.add(vc.vcHash());
-                    sdjwts.add(vc.serializedSdJwt());
-                }
-            } catch (SdJwtBuilderException e) {
-                throw new CredentialException("Failed to build the SD-JWT VC", e);
+                    override.verificationMethodOrDefault(sdjwtProperties.getVerificationMethod()),
+                    prepareAlwaysDisclosedData(credentialConfiguration, override),
+                    prepareSelectivelyDisclosableData(credentialConfiguration),
+                    prepareTimeConfiguration(),
+                    this.createSigner());
+
+            for (int i = 0; i < batchSize; i++) {
+                Optional<VerifiableCredentialStatusReference> statusReference = reserveStatusReferences(statusReferences, i);
+                statusReference.ifPresent(sRef -> usedCredentialStatusReferences.add(sRef));
+                Optional<JWK> holderPublicKey = getHolderPublicKey(i, holderPublicKeys);
+
+                CreatedSdJwtVc vc = vcBuilder.createSignedSdJwtVc(toLibraryTokenStatusListReference(statusReference), holderPublicKey);
+                vcHashes.add(vc.vcHash());
+                sdjwts.add(vc.serializedSdJwt());
             }
+        } catch (SdJwtBuilderException e) {
+            throw new CredentialException("Failed to build the SD-JWT VC", e);
+        }
         // Only save hashes if needed
         if (getApplicationProperties().isEnableVcHashStorage()) {
             getCredentialOffer().setVcHashes(vcHashes);
@@ -174,10 +173,10 @@ public class SdJwtCredential extends CredentialBuilder {
             List<VerifiableCredentialStatusReference> statusReferences,
             int index) {
 
-        if(statusReferences.isEmpty()) {
+        if (statusReferences.isEmpty()) {
             return Optional.empty();
         }
-        if(statusReferences.size() == SINGLE_ELEMENT) {
+        if (statusReferences.size() == SINGLE_ELEMENT) {
             return Optional.of(statusReferences.getFirst());
         }
         return Optional.of(statusReferences.get(index));
@@ -202,18 +201,18 @@ public class SdJwtCredential extends CredentialBuilder {
     }
 
 
-    private Map<SdJwtVcClaim, Object> prepareAlwaysDisclosedData(CredentialConfiguration credentailConfiguration, ConfigurationOverride override) {
+    private Map<SdJwtVcClaim, Object> prepareAlwaysDisclosedData(CredentialConfiguration credentialConfiguration, ConfigurationOverride override) {
         Map<SdJwtVcClaim, Object> alwaysDisclosedData = new HashMap<>();
         // Mandatory claims or claims which always need to be disclosed according to
         // SD-JWT VC specification
-        alwaysDisclosedData.put(SdJwtVcClaim.VCT, credentailConfiguration.getVct());
-        // In swiss profile 1.0 Issuer not required / used for verification anymore. For clarity it is added.
+        alwaysDisclosedData.put(SdJwtVcClaim.VCT, credentialConfiguration.getVct());
+        // In swiss profile 1.0 Issuer not required / used for verification anymore. For clarity, it is added.
         alwaysDisclosedData.put(SdJwtVcClaim.ISSUER, override.issuerDidOrDefault(getApplicationProperties().getIssuerId()));
 
         // Optional vct addons
-        Optional.ofNullable(credentailConfiguration.getVctMetadataUri())
+        Optional.ofNullable(credentialConfiguration.getVctMetadataUri())
                 .ifPresent(o -> alwaysDisclosedData.put(SdJwtVcClaim.VCT_METADATA_URI, o));
-        Optional.ofNullable(credentailConfiguration.getVctMetadataUriIntegrity())
+        Optional.ofNullable(credentialConfiguration.getVctMetadataUriIntegrity())
                 .ifPresent(o -> alwaysDisclosedData.put(SdJwtVcClaim.VCT_METADATA_URI_INTEGRITY, o));
         var credentialMetadata = getCredentialOffer().getCredentialMetadata();
         if (nonNull(credentialMetadata)) {
@@ -227,22 +226,22 @@ public class SdJwtCredential extends CredentialBuilder {
 
     private TimeConfiguration prepareTimeConfiguration() {
         return TimeConfiguration.builder()
-            .issuedAt(Optional.of(Instant.now()))
-            .notBefore(Optional.ofNullable(getCredentialOffer().getCredentialValidFrom()))
-            .expiry(Optional.ofNullable(getCredentialOffer().getCredentialValidUntil()))
-            .build();
-        
+                .issuedAt(Optional.of(Instant.now()))
+                .notBefore(Optional.ofNullable(getCredentialOffer().getCredentialValidFrom()))
+                .expiry(Optional.ofNullable(getCredentialOffer().getCredentialValidUntil()))
+                .build();
+
     }
 
-    private Map<String, Object> prepareSelectivelyDisclosableData(CredentialConfiguration credentailConfiguration) {
+    private Map<String, Object> prepareSelectivelyDisclosableData(CredentialConfiguration credentialConfiguration) {
         // Custom Data
         Map<String, Object> selectivelyDisclosableData = getOfferData();
         // Extended VCT versioning
-        Optional.ofNullable(credentailConfiguration.getVctVersion())
+        Optional.ofNullable(credentialConfiguration.getVctVersion())
                 .ifPresent(o -> selectivelyDisclosableData.put("vct_version", o));
-        Optional.ofNullable(credentailConfiguration.getVctSubtype())
+        Optional.ofNullable(credentialConfiguration.getVctSubtype())
                 .ifPresent(o -> selectivelyDisclosableData.put("vct_subtype", o));
-        Optional.ofNullable(credentailConfiguration.getVctSubtypeVersion())
+        Optional.ofNullable(credentialConfiguration.getVctSubtypeVersion())
                 .ifPresent(o -> selectivelyDisclosableData.put("vct_subtype_version", o));
         return selectivelyDisclosableData;
     }

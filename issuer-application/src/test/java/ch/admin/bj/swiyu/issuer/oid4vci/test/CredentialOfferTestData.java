@@ -62,7 +62,7 @@ public class CredentialOfferTestData {
                                                   ConfigurationOverride override,
                                                   Integer deferredExpirationInSeconds) {
         HashMap<String, Object> offerData = new HashMap<>();
-        offerData.put("data", new GsonBuilder().create().toJson(getUniversityCredentialSubjectData()));
+        offerData.put("data", new GsonBuilder().serializeNulls().create().toJson(getUniversityCredentialSubjectData()));
         return CredentialOffer.builder()
                 .credentialStatus(status)
                 .metadataCredentialSupportedId(List.of(metadataId))
@@ -82,6 +82,7 @@ public class CredentialOfferTestData {
         credentialSubjectData.put("type", "Bachelor of Science");
         credentialSubjectData.put("name", "Data Science");
         credentialSubjectData.put("average_grade", "Data average_grade");
+        credentialSubjectData.put("additional_courses", null);
         return credentialSubjectData;
     }
 
