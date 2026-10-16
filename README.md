@@ -664,12 +664,30 @@ rounding which takes place to provide herd anonymity.
 When using `credential_valid_from` for renewal, it should also be used when creating initial credential offers to
 prevent leaking the information that this is a renewed batch or that the holder was once suspended.
 
-| Variable                               | Description                                                                                                               |
-|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| BUSINESS_ISSUER_RENEWAL_API_ENDPOINT   | Full URI of the REST endpoint where the generic issuer can fetch the most current credential subject data.                |
-| BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER | (Optional) API key header, if the business issuer endpoint has a api key for protection. Will be used as HTTP header key. |
-| BUSINESS_ISSUER_RENEWAL_API_KEY_VALUE  | (Optional, Required if BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER is set) The API key used.                                   |
-| ENABLE_SUSPENDED_RENEWAL               | (Default: False) Enable suspended VCs to use renewal                                                                      |
+| Variable                               | Description                                                                                                                                             |
+|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| BUSINESS_ISSUER_RENEWAL_API_ENDPOINT   | Full URI of the REST endpoint where the generic issuer can fetch the most current credential subject data. If not set renewal requests will be rejected |
+| BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER | (Optional) API key header, if the business issuer endpoint has a api key for protection. Will be used as HTTP header key.                               |
+| BUSINESS_ISSUER_RENEWAL_API_KEY_VALUE  | (Optional, Required if BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER is set) The API key used.                                                                 |
+| ENABLE_SUSPENDED_RENEWAL               | (Default: False) Enable suspended VCs to use renewal                                                                                                    |
+
+This sequence diagram is a high level overview how and where these flags are used in the renewal process.
+
+```mermaid
+sequenceDiagram
+    participant holder as Wallet
+    participant genIss as Generic Issuer
+    participant busIss as Business Issuer
+    participant stat@{ "type": "database", "alias": "Status Registry" }
+
+holder ->> genIss: call credential_endpoint
+genIss ->> genIss: Validate renewal request.<br>Reject when <br>BUSINESS_ISSUER_RENEWAL_API_ENDPOINT is not set<br>credential is revoked or<br>credential is suspended and ENABLE_SUSPENDED_RENEWAL=false
+genIss ->> busIss: Call BUSINESS_ISSUER_RENEWAL_API_ENDPOINT<br>with BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER<br>and BUSINESS_ISSUER_RENEWAL_API_KEY_VALUE
+busIss ->> busIss: Decide on renewal
+busIss ->> genIss: Credential Data
+genIss -->> stat: (Only if Credential was already Suspended)<br>Suspend new Credentials
+genIss ->> holder: New credential batch
+```
 
 ### Adding certificates to the image via the `certs` directory
 
