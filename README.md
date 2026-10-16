@@ -652,13 +652,15 @@ It does so by sending as a POST request a `RenewalRequest` object with the struc
 in [OpenAPI](openapi.yaml).
 
 Renewal requests are by default refused for credentials which are revoked or suspended. It is possible to use
-`ENABLE_SUSPENDED_RENEWAL` to allow suspended credentials to be renewed. **Warning:** This should be done only with
-care. All credentials are created initially with the valid state - this is the initial state of all status list indexes.
+`ENABLE_SUSPENDED_RENEWAL` to allow suspended credentials to be renewed.
+> [!WARNING]
+>Allowing renewal of suspended credentials should be done only with great care.
+All credentials are created initially with the valid state - this is the initial state of all status list indexes.
 When renewing a suspended credential it will be immediately be set to suspended. Until the data has reached the read
 status registry it can take up to 15 minutes. In this time holders have a valid credential, despite the status being
 suspended.
-
-To circumvent providing holders accidentally with valid credentials despite the credentials being suspended
+>
+> To circumvent providing holders accidentally with valid credentials despite the credentials being suspended
 `credential_valid_from` can be used. Note that it should be set sufficiently far in the future, taking in account the
 rounding which takes place to provide herd anonymity.
 When using `credential_valid_from` for renewal, it should also be used when creating initial credential offers to
