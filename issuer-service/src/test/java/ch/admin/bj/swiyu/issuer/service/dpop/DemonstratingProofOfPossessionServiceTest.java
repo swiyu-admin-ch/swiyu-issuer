@@ -253,6 +253,19 @@ class DemonstratingProofOfPossessionServiceTest {
     }
 
     @Test
+    void requiresKeyAttestation_whenProofTypesAreOmitted_thenFalse() {
+        final var configuration = CredentialConfiguration.builder().format("dc+sd-jwt").vct("unbound").build();
+        final var metadata = IssuerMetadata.builder()
+                .credentialConfigurationSupported(Map.of("unbound", configuration))
+                .build();
+        final var offer = CredentialOffer.builder().metadataCredentialSupportedId(List.of("unbound")).build();
+        when(metadataService.getUnsignedIssuerMetadata()).thenReturn(metadata);
+
+        assertThat(demonstratingProofOfPossessionService.requiresKeyAttestation(offer))
+                .isFalse();
+    }
+
+    @Test
     void requiresKeyAttestation_keyAttestationWithoutHigh() {
         // Create one mock with low requirement
         var offer = Mockito.mock(CredentialOffer.class);
