@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update default sizes for encrypted messages to be in MB as in swiss-profile instead of MiB `(#1397)`
+- Missing iss claim is ignored in key attestation JWTs as defined in swiss-profile-anchor 1.0.
+  Maintaining previous finding to ensure if iss is present it must match the issuer defined in kid. `(#1417)`
 
 ## [5.0.1] - 2026-10-15
 

@@ -28,26 +28,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AttestationJwtTest {
 
-    ECKey signingKey;
     static final String DEFAULT_ISSUER = "did:webvh:scid:example.issuer";
+    ECKey signingKey;
 
     @BeforeEach
     void setup() throws JOSEException {
-        signingKey = new ECKeyGenerator(Curve.P_256).keyID(DEFAULT_ISSUER+"#key-1").keyUse(KeyUse.SIGNATURE).generate();
+        signingKey = new ECKeyGenerator(Curve.P_256).keyID(DEFAULT_ISSUER + "#key-1").keyUse(KeyUse.SIGNATURE).generate();
 
     }
 
-    @Test
-    void parseJwt_withValidJwt_returnsAttestationJwt() throws JOSEException {
+    /**
+     * If only the issuer is checked for being trusted and the key id is used to resolve the public key, it is
+     */
+    @ParameterizedTest(name = "should accept JWT when keyID={0}, issuerDid={1}")
+    @CsvSource({
+            "did:webvh:scid:example.issuer#key-1, did:webvh:scid:example.issuer",
+            "did:webvh:scid:example.issuer#key-1,"
+    })
+    void parseJwt_withValidJwt_returnsAttestationJwt(String attackerKeyID, String issuerDid) throws JOSEException {
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(signingKey.getKeyID())
+                .keyID(attackerKeyID)
                 .type(new JOSEObjectType("key-attestation+jwt"))
                 .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
                 .build(),
                 new JWTClaimsSet.Builder()
-                        .issuer(DEFAULT_ISSUER)
+                        .issuer(issuerDid)
                         .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5 * 60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
                         .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
                         .build());
@@ -109,7 +116,7 @@ class AttestationJwtTest {
         attestation.sign(new ECDSASigner(signingKey));
         var parsedJwt = attestation.serialize();
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> AttestationJwt.parseJwt(parsedJwt , true));
+                () -> AttestationJwt.parseJwt(parsedJwt, true));
     }
 
     @Test
@@ -122,7 +129,7 @@ class AttestationJwtTest {
                 new JWTClaimsSet.Builder()
                         .issuer(DEFAULT_ISSUER)
                         .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5 * 60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
                         .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
                         .build());
@@ -143,7 +150,7 @@ class AttestationJwtTest {
                 new JWTClaimsSet.Builder()
                         .issuer(DEFAULT_ISSUER)
                         .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5 * 60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
                         .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
                         .build());
@@ -164,7 +171,7 @@ class AttestationJwtTest {
                 new JWTClaimsSet.Builder()
                         .issuer(DEFAULT_ISSUER)
                         .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5*60)))
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5 * 60)))
                         .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
                         .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
                         .build());

@@ -85,10 +85,13 @@ public final class AttestationJwt {
     private static void validateBody(JWTClaimsSet jwtClaimsSet, String expectedAttestationIssuerDid) {
         DefaultJWTClaimsVerifier<SecurityContext> verifier = new DefaultJWTClaimsVerifier<>(
                 null,                  // no required audience
-                new JWTClaimsSet.Builder().issuer(expectedAttestationIssuerDid).build(), // Issuer MUST match DID.
+                null,                                     // No claim strictly needed to be set
                 REQUIRED_ATTESTATION_CLAIMS,
                 Set.of()               // no prohibited claims – iss is ignored, not forbidden
         );
+        if (jwtClaimsSet.getIssuer() != null && !jwtClaimsSet.getIssuer().equals(expectedAttestationIssuerDid)) {
+            throw new IllegalArgumentException(String.format("When issuer is set, it must match the DID of the kid; %s but was %s", expectedAttestationIssuerDid, jwtClaimsSet.getIssuer()));
+        }
         try {
             verifier.verify(jwtClaimsSet, null);
             // iat should not be after now with clock skew considered
@@ -194,7 +197,7 @@ public final class AttestationJwt {
         String attestationKeyId = signedJWT.getHeader().getKeyID();
         String attestationProviderDid = kidParser.getDidFromAbsoluteKid(attestationKeyId);
         if (!trustedAttestationProviders.contains(attestationProviderDid)) {
-            throw new IllegalArgumentException("The JWT issuer %s is not in the list of trusted attestation providers %s.".formatted(claims.getIssuer(), String.join(", ", trustedAttestationProviders)));
+            throw new IllegalArgumentException("The JWT kid %s is not in the list of trusted attestation providers %s.".formatted(attestationProviderDid, String.join(", ", trustedAttestationProviders)));
         }
     }
 
