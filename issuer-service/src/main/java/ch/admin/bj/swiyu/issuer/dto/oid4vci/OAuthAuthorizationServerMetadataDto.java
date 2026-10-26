@@ -19,6 +19,7 @@ public record OAuthAuthorizationServerMetadataDto(
         @Nullable List<String> dpop_signing_alg_values_supported,
         @Nullable String profile_version,
         @JsonProperty("pre-authorized_grant_anonymous_access_supported")
+        @Schema(description = "True if client_id should be omitted in the call to the token_endpoint")
         @Nullable Boolean preauthorized_grant_anonymous_access_supported
 ) {
 

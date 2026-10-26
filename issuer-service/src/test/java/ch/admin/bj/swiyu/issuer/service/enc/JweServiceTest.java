@@ -70,7 +70,7 @@ class JweServiceTest {
         var requestEncryption = issuerMetadata.getRequestEncryption();
         var responseEncryption = issuerMetadata.getResponseEncryption();
         for (var encryptionSpec : List.of(requestEncryption, responseEncryption)) {
-            assertThat(encryptionSpec.getEncValuesSupported()).contains("A128GCM").contains("A256GCM");
+            assertThat(encryptionSpec.getEncValuesSupported()).doesNotContain("A128GCM").contains("A256GCM");
             assertThat(encryptionSpec.getZipValuesSupported()).contains("DEF");
         }
     }

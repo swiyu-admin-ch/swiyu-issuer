@@ -1,11 +1,14 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
@@ -51,10 +54,7 @@ import org.testcontainers.utility.DockerImageName;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -96,13 +96,18 @@ class RenewalFlowIT {
     IssuerMetadata issuerMetadata;
     @Autowired
     SwiyuProperties swiyuProperties;
+    @Autowired
+    StatusListRepository statusListRepository;
     @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
+    private StatusB2BApi statusBusinessApi;
+    @MockitoBean
+    private StatusB2BV2Api statusB2BV2Api;
     private StatusListTestHelper statusListTestHelper;
     private String payload;
     private OAuthTokenDto oauthTokenResponse;
     private ECKey dpopKey;
     private String managementId;
+    private String statusListUri;
 
     @BeforeAll
     static void initialization() {
@@ -123,7 +128,7 @@ class RenewalFlowIT {
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
                 .thenReturn(Mono.just(statusListEntry));
-        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
+        when(statusB2BV2Api.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
 
@@ -140,7 +145,7 @@ class RenewalFlowIT {
                 null));
         // We will need the status list uri as identifier to indicate which status list
         // will be used a VC we create
-        var statusListUri = statusListDto.getStatusRegistryUrl();
+        statusListUri = statusListDto.getStatusRegistryUrl();
 
         payload = getMinimalPayloadForUniversityCredential(statusListUri);
 
@@ -181,8 +186,11 @@ class RenewalFlowIT {
         refreshTokenWithDpop((String) oAuthToken.get("refresh_token"), dpopKey);
     }
 
-    @Test
-    void testRenewalSuccess() throws Exception {
+    @ParameterizedTest
+    @EnumSource(value = UpdateCredentialStatusRequestTypeDto.class, names = {"ISSUED", "SUSPENDED"})
+    void testRenewalSuccess(UpdateCredentialStatusRequestTypeDto state) throws Exception {
+        when(applicationProperties.isEnableSuspendedRenewal()).thenReturn(true);
+
         var RENEWAL_FLOWS = 4;
         mockServerClient
                 .when(
@@ -220,6 +228,10 @@ class RenewalFlowIT {
                     .collect(Collectors.toSet());
             assertThat(statusIndexes).hasSameSizeAs(credentialClaims);
             credentials.addAll(credentialClaims);
+            if (i == 0 && state != UpdateCredentialStatusRequestTypeDto.ISSUED) {
+                // After first batch set state of VC
+                updateStatus(mockMvc, managementId, state);
+            }
         }
         assertThat(credentials)
                 .as("Should have gotten issued the full batch of VCs for each renewal flow run")
@@ -230,7 +242,12 @@ class RenewalFlowIT {
         assertThat(allStatusIndexes)
                 .as("Every VC accross all batches should have a disinct state to prevent linking through states")
                 .hasSameSizeAs(credentials);
-
+        var statusLists = statusListRepository.findByUriInForUpdate(List.of(statusListUri));
+        assertThat(statusLists).hasSize(1);
+        var testStatusList = statusLists.get(0);
+        var statusList = TokenStatusListToken.loadTokenStatusListToken(Integer.parseInt(testStatusList.getConfig().get("bits").toString()), testStatusList.getStatusZipped(), Integer.MAX_VALUE);
+        var allStatuses = allStatusIndexes.stream().map(Long::intValue).map(statusList::getStatus).toList();
+        assertThat(allStatuses).as("All Statuses should be set to the same").containsExactlyInAnyOrderElementsOf(allStatusIndexes.stream().map(idx -> state == UpdateCredentialStatusRequestTypeDto.SUSPENDED ? 2 : 0).toList());
     }
 
     @Test

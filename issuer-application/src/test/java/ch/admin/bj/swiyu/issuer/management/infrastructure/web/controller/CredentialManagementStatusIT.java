@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
@@ -81,7 +82,9 @@ class CredentialManagementStatusIT {
     private StatusListRepository statusListRepository;
     private StatusListTestHelper statusListTestHelper;
     @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
+    private StatusB2BApi statusBusinessApi;
+    @MockitoBean
+    private StatusB2BV2Api statusB2BV2Api;
     private CredentialWithDeeplinkResponseDto credentialManagementOffer;
 
     private String statusListUri;
@@ -93,7 +96,7 @@ class CredentialManagementStatusIT {
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
                 .thenReturn(Mono.just(statusListEntry));
-        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
+        when(statusB2BV2Api.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
 

@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
@@ -79,7 +80,9 @@ class StatusListIT {
     @Autowired
     private StatusListRepository statusListRepository;
     @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
+    private StatusB2BApi statusBusinessApi;
+    @MockitoBean
+    private StatusB2BV2Api statusB2BV2Api;
     @MockitoSpyBean
     private JwsSignatureFacade jwsSignatureFacade;
     @Autowired
@@ -101,7 +104,7 @@ class StatusListIT {
 
         when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
                 .thenReturn(Mono.just(statusListEntryCreationDto));
-        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
+        when(statusB2BV2Api.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
         when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusRegistryUrl);
     }
@@ -457,7 +460,7 @@ class StatusListIT {
                 .andExpect(status().isOk());
 
         // should be only called once on status list create
-        verify(statusBusinessApi, times(1)).updateStatusListEntry(any(), any(), any());
+        verify(statusB2BV2Api, times(1)).updateStatusListEntry(any(), any(), any());
     }
 
     @Test
@@ -485,7 +488,7 @@ class StatusListIT {
                 .andExpect(status().isOk());
 
         // should be only called once (1) on status list create and once (1) on update
-        verify(statusBusinessApi, times(1 + 1)).updateStatusListEntry(any(), any(), any());
+        verify(statusB2BV2Api, times(1 + 1)).updateStatusListEntry(any(), any(), any());
     }
 
     @Test
@@ -515,13 +518,13 @@ class StatusListIT {
                 .andExpect(status().isOk());
 
         // should be only called once on status list create
-        verify(statusBusinessApi, times(1)).updateStatusListEntry(any(), any(), any());
+        verify(statusB2BV2Api, times(1)).updateStatusListEntry(any(), any(), any());
 
         mvc.perform(post("/management/api/status-list" + "/" + statusList.get("id").getAsString()))
                 .andExpect(status().isOk());
 
         // should be only called twice on status list create
-        verify(statusBusinessApi, times(2)).updateStatusListEntry(any(), any(), any());
+        verify(statusB2BV2Api, times(2)).updateStatusListEntry(any(), any(), any());
     }
 
     private String getCreateTokenStatusListPayload(int maxLength, int bits) {

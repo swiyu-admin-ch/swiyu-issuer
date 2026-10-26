@@ -59,6 +59,24 @@ public class CredentialManagementMapper {
         return CredentialStatusTypeDto.valueOf(status.name());
     }
 
+    /**
+     * Recreate an event from existing management status
+     *
+     * @param source the management status
+     * @return the event which would lead to the associated status - is applicable
+     */
+    public static CredentialStateMachineConfig.CredentialManagementEvent toCredentialManagementEvent(CredentialStatusManagementType source) {
+        if (source == null) {
+            return null;
+        }
+        return switch (source) {
+            case ISSUED -> CredentialStateMachineConfig.CredentialManagementEvent.ISSUE;
+            case SUSPENDED -> CredentialStateMachineConfig.CredentialManagementEvent.SUSPEND;
+            case REVOKED -> CredentialStateMachineConfig.CredentialManagementEvent.REVOKE;
+            default -> null; // INIT is not linked to any event
+        };
+    }
+
     public static CredentialStateMachineConfig.CredentialManagementEvent toCredentialManagementEvent(UpdateCredentialStatusRequestTypeDto source) {
         if (source == null) {
             return null;

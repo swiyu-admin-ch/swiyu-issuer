@@ -58,10 +58,11 @@ public class JwsSignatureFacade {
 
     /**
      * Searches available configs for the appropriate one for the verification method.
+     *
      * @param baseConfig Base configuration in which the search will take place
-     * @param override which may contain an alternative verification method
-     * @return baseConfig if no override verificationMethod is used or if an HSM is being used. 
-     *         When using key from application config the apropriate config is returned.
+     * @param override   which may contain an alternative verification method
+     * @return baseConfig if no override verificationMethod is used or if an HSM is being used.
+     * When using key from application config the apropriate config is returned.
      */
     private SignatureConfiguration resolveConfiguration(SignatureConfigurationWithHsm baseConfig, ConfigurationOverride override) {
         if (StringUtils.isEmpty(override.verificationMethod())) {
@@ -101,8 +102,9 @@ public class JwsSignatureFacade {
 
     /**
      * Ensures input are not null
+     *
      * @param signatureConfigurationWithHsm config to be validated
-     * @param override override to be validated
+     * @param override                      override to be validated
      * @throws ConfigurationException if one of the inputs was null
      */
     private void validateNotNull(SignatureConfigurationWithHsm signatureConfigurationWithHsm, ConfigurationOverride override) {

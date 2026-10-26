@@ -5,19 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [NEXT]
+## [NEXT]
 
-## Changed
-- Migrated build to Java 25 (LTS) and upgraded to Spring Boot 4.1.1 to officially support the new JDK LTS release `(#1019)`
-- Updated the Docker base images (`Dockerfile` and `Dockerfile.dhi`) to Eclipse Temurin 25 JRE (`eclipse-temurin:25-jre-ubi10-minimal`) so container images now require and ship a Java 25 runtime. `(#1019)`
+### Added
+
+- New boolean flag ENABLE_SUSPENDED_RENEWAL to optionally extend renewal flow to also allow suspended credentials.
+  If allowing renewal refer to readme section on renewal to necessary considerations.
+
+### Changed
+
+- Update default sizes for encrypted messages to be in MB as in swiss-profile instead of MiB `(#1397)`
+
+## [5.0.1] - 2026-10-15
+
+- Fix hsm key selection with override `(#1404)`
+
+## [5.0.0] - 2026-10-12
+
+### Changed
+
+- Migrated build to Java 25 (LTS) and upgraded to Spring Boot 4.1.1 to officially support the new JDK LTS release
+  `(#1019)`
+- Updated the Docker base images (`Dockerfile` and `Dockerfile.dhi`) to Eclipse Temurin 25 JRE (
+  `eclipse-temurin:25-jre-ubi10-minimal`) so container images now require and ship a Java 25 runtime. `(#1019)`
 
 ### Added
 
 - Added new credential-configuration-property in the issuer metadata `credential_refresh_disabled` that points out if a
   business issuer has disabled the renewal flow for a specific credential type. If this property is set to true, the
   wallet should not attempt to renew the credential and should not display a renewal option to the user `(#1093)`
+- Optionally an API Key can now be set for Credential Renewal call to the business issuer using environment variables
+  `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` and `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` (#1223)
+- Support tx_code. This can be activated when creating a new credential offer by using
+  `tx_code_config.use_tx_code = true`. This feature allows using a secondary code to be sent through a different channel
+  than the pre-authorized code. `(#709)`
 
+### Fixed
 
+- Check correctness of the status list header and reset cache accordingly `(#1235)`
+- Removed empty `proof_types_supported` map if not provided in metadata `(#1309)`
+
+### Removed
+
+- Deprecated vc+sd-jwt (pre OID4VCI Draft 13) format has been removed, only supporting dc+sd-jwt `(#179)`
+- Removed deprecated environment variables `caching.publicKeyCacheTTL` and `caching.encryptionMetadataCacheTTL`
 
 ## [4.2.0] - 2026-08-24
 
@@ -41,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BUSINESS_ISSUER_RENEWAL_API_ENDPOINT` not setting the value (which is the default) disables the renewal and keeps the
   former functionality `(#1093)`
 -
+
 ### Removed
 
 - Removed support for `renewal-flow-allowed` and therefore `RENEWAL_FLOW_ENABLED` as different variables handle the same
@@ -53,6 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mitigated JWE decompression bomb vulnerability: added a `MAX_DECOMPRESSED_PAYLOAD_LENGTH` defense-in-depth limit that
   rejects oversized decrypted/decompressed payloads before JSON parsing `(#1117)`
 - Added missing Renewal DTOs (`RenewalRequest` and `RenewalResponse`) to openapi spec `(#680)`
+- Documented missing HTTP response codes (405, 406, 409, 415, 420, 422, 429, 500) for the oid4vci and .well-known
+  endpoints in openapi.yaml `(#1165)`
 - Resolved a race condition between credential renewal and status changes. Applied a pessimistic write lock to the
   revocation path to ensure concurrently renewed credentials are correctly updated in the Token Status List. `(#1216)`.
 
@@ -197,12 +231,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       true).
     - Require Encryption to be used by default.
     - Require DPoP to be used by default.
-- **Docker image:** the published image is now hardened. The default
-  (unsuffixed) tag `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
+- **Docker image:** the published image is now hardened. The default (unsuffixed) tag
+  `ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>` builds from
   `dhi.io/eclipse-temurin:21-debian13`, runs as the pre-configured `nonroot` user
   and contains no shell. During a transition period the previous UBI-based image
-  remains available under the `-unhardened` suffix
-  (`ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened`). Operators who cannot
+  remains available under the `-unhardened` suffix (`ghcr.io/swiyu-admin-ch/swiyu-issuer:<tag>-unhardened`). Operators
+  who cannot
   immediately adopt the hardened runtime **must pin to the `-unhardened` tag** until
   they have completed the migration steps in
   [`migration-guides/guide-3.1.x-to-3.2.x.md`](migration-guides/guide-3.1.x-to-3.2.x.md);
@@ -528,8 +562,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       it delivers the same information)
     - Added new endpoint patch `/management/api/credentials{credentialId}` which updates / creates the credential offer
       for a deferred endpoint.
-    - Added a new ClientAgentInfoDto which are used for the deferred credential flow. This is stored in the database
-      (db migration is necessary & included)
+    - Added a new ClientAgentInfoDto which are used for the deferred credential flow. This is stored in the database (db
+      migration is necessary & included)
 - Breaking! updated url path to distinguish management (with `/management`) and oid4vci (with `/oid4vci`) urls
 - Added new endpoint `/.well-known/oauth-authorization-server` that provides the same information as the
   `/.well-known/openid-configuration` endpoint but in a OAuth2-centric way.

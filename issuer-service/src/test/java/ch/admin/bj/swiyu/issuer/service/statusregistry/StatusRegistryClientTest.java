@@ -1,7 +1,8 @@
 // ...existing code...
 package ch.admin.bj.swiyu.issuer.service.statusregistry;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
@@ -33,14 +34,15 @@ import static org.mockito.Mockito.*;
 
 class StatusRegistryClientTest {
 
-    private StatusBusinessApiApi statusBusinessApi;
+    private static final String TEST_URI = "https://example.com/";
+    private StatusB2BApi statusBusinessApi;
+    private StatusB2BV2Api statusBusinessV2Api;
     private SwiyuProperties swiyuProperties;
     private UrlRewriteProperties rewriteProperties;
     private ApplicationProperties applicationProperties;
     private StatusRegistryTokenService tokenDomainService;
     private StatusRegistryClient client;
     private ApiClient apiClient;
-    private static final String TEST_URI = "https://example.com/";
 
     @BeforeEach
     void setUp() {
@@ -51,16 +53,17 @@ class StatusRegistryClientTest {
         rewriteProperties = Mockito.mock(UrlRewriteProperties.class);
         // Return unaltered URL
         when(rewriteProperties.getRewrittenUrl(anyString())).thenAnswer(a -> a.getArguments()[0]);
-        
 
-        statusBusinessApi = Mockito.mock(StatusBusinessApiApi.class);
+
+        statusBusinessApi = Mockito.mock(StatusB2BApi.class);
+        statusBusinessV2Api = Mockito.mock(StatusB2BV2Api.class);
         apiClient = Mockito.mock(ApiClient.class);
         when(statusBusinessApi.getApiClient()).thenReturn(apiClient);
 
         tokenDomainService = Mockito.mock(StatusRegistryTokenService.class);
         when(tokenDomainService.getAccessToken()).thenReturn("access-token");
 
-        client = new StatusRegistryClient(statusBusinessApi, swiyuProperties, rewriteProperties, applicationProperties);
+        client = new StatusRegistryClient(statusBusinessApi, statusBusinessV2Api, swiyuProperties, rewriteProperties, applicationProperties);
     }
 
     @Test
@@ -104,14 +107,14 @@ class StatusRegistryClientTest {
         String jwt = "signedJwt";
 
         // no exception expected
-        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
+        when(statusBusinessV2Api.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
 
         client.updateStatusListEntry(list, jwt);
 
         ArgumentCaptor<UUID> bpCaptor = ArgumentCaptor.forClass(UUID.class);
         ArgumentCaptor<UUID> idCaptor = ArgumentCaptor.forClass(UUID.class);
         ArgumentCaptor<String> jwtCaptor = ArgumentCaptor.forClass(String.class);
-        verify(statusBusinessApi).updateStatusListEntry(bpCaptor.capture(), idCaptor.capture(), jwtCaptor.capture());
+        verify(statusBusinessV2Api).updateStatusListEntry(bpCaptor.capture(), idCaptor.capture(), jwtCaptor.capture());
         assertThat(bpCaptor.getValue()).isEqualTo(swiyuProperties.businessPartnerId());
         assertThat(idCaptor.getValue()).isEqualTo(list.getRegistryId());
         assertThat(jwtCaptor.getValue()).isEqualTo(jwt);
@@ -121,7 +124,7 @@ class StatusRegistryClientTest {
     void updateStatusListEntry_unauthorized_throwsConfigurationException() {
         StatusList list = StatusList.builder().id(UUID.randomUUID()).uri("https://example.com/" + UUID.randomUUID()).build();
         String jwt = "jwt";
-        doThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED)).when(statusBusinessApi).updateStatusListEntry(any(), any(), any());
+        doThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED)).when(statusBusinessV2Api).updateStatusListEntry(any(), any(), any());
 
         assertThrows(ConfigurationException.class, () -> client.updateStatusListEntry(list, jwt));
     }
@@ -130,7 +133,7 @@ class StatusRegistryClientTest {
     void updateStatusListEntry_forbidden_throwsConfigurationException_withMessage() {
         StatusList list = StatusList.builder().id(UUID.randomUUID()).uri("https://example.com/" + UUID.randomUUID()).build();
         String jwt = "jwt";
-        doThrow(new HttpClientErrorException(HttpStatus.FORBIDDEN)).when(statusBusinessApi).updateStatusListEntry(any(), any(), any());
+        doThrow(new HttpClientErrorException(HttpStatus.FORBIDDEN)).when(statusBusinessV2Api).updateStatusListEntry(any(), any(), any());
 
         var ex = assertThrows(ConfigurationException.class, () -> client.updateStatusListEntry(list, jwt));
         // message should contain business partner id and registry id
@@ -141,7 +144,7 @@ class StatusRegistryClientTest {
     void updateStatusListEntry_notFound_throwsResourceNotFoundException() {
         StatusList list = StatusList.builder().id(UUID.randomUUID()).uri("https://example.com/" + UUID.randomUUID()).build();
         String jwt = "jwt";
-        doThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND)).when(statusBusinessApi).updateStatusListEntry(any(), any(), any());
+        doThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND)).when(statusBusinessV2Api).updateStatusListEntry(any(), any(), any());
 
         assertThrows(ResourceNotFoundException.class, () -> client.updateStatusListEntry(list, jwt));
     }
@@ -150,7 +153,7 @@ class StatusRegistryClientTest {
     void updateStatusListEntry_otherHttpError_throwsUpdateStatusListException() {
         StatusList list = StatusList.builder().id(UUID.randomUUID()).uri("https://example.com/" + UUID.randomUUID()).build();
         String jwt = "jwt";
-        doThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST)).when(statusBusinessApi).updateStatusListEntry(any(), any(), any());
+        doThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST)).when(statusBusinessV2Api).updateStatusListEntry(any(), any(), any());
 
         assertThrows(UpdateStatusListException.class, () -> client.updateStatusListEntry(list, jwt));
     }
@@ -159,7 +162,7 @@ class StatusRegistryClientTest {
     void updateStatusListEntry_otherException_throwsUpdateStatusListException() {
         StatusList list = StatusList.builder().id(UUID.randomUUID()).uri("https://example.com/" + UUID.randomUUID()).build();
         String jwt = "jwt";
-        doThrow(new RuntimeException("boom")).when(statusBusinessApi).updateStatusListEntry(any(), any(), any());
+        doThrow(new RuntimeException("boom")).when(statusBusinessV2Api).updateStatusListEntry(any(), any(), any());
 
         assertThrows(UpdateStatusListException.class, () -> client.updateStatusListEntry(list, jwt));
     }

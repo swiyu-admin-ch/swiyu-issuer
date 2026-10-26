@@ -28,39 +28,23 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CredentialFormatFactoryTest {
 
-    @Mock private ApplicationProperties applicationProperties;
-    @Mock private IssuerMetadata issuerMetadata;
-    @Mock private DataIntegrityService dataIntegrityService;
-    @Mock private SdjwtProperties sdjwtProperties;
-    @Mock private JwsSignatureFacade jwsSignatureFacade;
-    @Mock private StatusListRepository statusListRepository;
-    @Mock private CredentialOfferStatusRepository credentialOfferStatusRepository;
+    @Mock
+    private ApplicationProperties applicationProperties;
+    @Mock
+    private IssuerMetadata issuerMetadata;
+    @Mock
+    private DataIntegrityService dataIntegrityService;
+    @Mock
+    private SdjwtProperties sdjwtProperties;
+    @Mock
+    private JwsSignatureFacade jwsSignatureFacade;
+    @Mock
+    private StatusListRepository statusListRepository;
+    @Mock
+    private CredentialOfferStatusRepository credentialOfferStatusRepository;
 
     @InjectMocks
     private CredentialFormatFactory factory;
-
-    /**
-     * Happy‑path: when the credential configuration exists and its format is
-     * {@code vc+sd-jwt}, the factory must return an {@link SdJwtCredential}
-     * instance (backwards-compatibility, Expand phase).
-     */
-    @Test
-    void getFormatBuilder_returnsSdJwtCredential_whenFormatIsVcSdJwt() {
-        // arrange
-        var configId = "test-config";
-        var mockedConfig = mock(CredentialConfiguration.class);
-        when(mockedConfig.getFormat()).thenReturn("vc+sd-jwt");
-
-        Map<String, CredentialConfiguration> credentialConfigurationSupported = new HashMap<>();
-        credentialConfigurationSupported.put(configId, mockedConfig);
-        when(issuerMetadata.getCredentialConfigurationSupported()).thenReturn(credentialConfigurationSupported);
-
-        // act
-        CredentialBuilder builder = factory.getFormatBuilder(configId);
-
-        // assert
-        assertThat(builder).isInstanceOf(SdJwtCredential.class);
-    }
 
     /**
      * Happy‑path: when the credential configuration exists and its format is
@@ -120,7 +104,7 @@ class CredentialFormatFactoryTest {
 
         // act / assert
         assertThatThrownBy(() -> factory.getFormatBuilder(configId))
-            .as("Should indicate something is wrong with configuration done by the issuer")
-            .isInstanceOf(ConfigurationException.class);
+                .as("Should indicate something is wrong with configuration done by the issuer")
+                .isInstanceOf(ConfigurationException.class);
     }
 }

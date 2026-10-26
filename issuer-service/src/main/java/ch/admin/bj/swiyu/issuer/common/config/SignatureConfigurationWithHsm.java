@@ -4,10 +4,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Parent Class with basic signing information
@@ -48,7 +47,7 @@ public class SignatureConfigurationWithHsm implements SignatureConfiguration {
 
     @Override
     public boolean supportsHSM() {
-        return hsm != null && StringUtils.isNotEmpty(pkcs11Config);
+        return hsm != null || StringUtils.isNotEmpty(pkcs11Config);
     }
 
     @Override

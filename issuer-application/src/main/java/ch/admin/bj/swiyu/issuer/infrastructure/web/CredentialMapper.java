@@ -32,6 +32,7 @@ public class CredentialMapper {
             case UNAUTHORIZED_CLIENT -> OAuthErrorDto.UNAUTHORIZED_CLIENT;
             case UNSUPPORTED_GRANT_TYPE -> OAuthErrorDto.UNSUPPORTED_GRANT_TYPE;
             case INVALID_SCOPE -> OAuthErrorDto.INVALID_SCOPE;
+            case INVALID_TX_CODE -> OAuthErrorDto.INVALID_TX_CODE;
         };
     }
 

@@ -9,7 +9,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-issuer-parent</artifactId>
-        <version>4.3.0-SNAPSHOT</version>
+        <version>5.1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>swiyu-issuer-service</artifactId>
@@ -57,7 +57,7 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
-            <version>1.17.0</version>
+            <version>1.17.1</version>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -208,6 +208,12 @@
             <artifactId>swiyu-jwt-validator</artifactId>
             <version>${generic-java-lib.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>swiyu-sdjwt-builder</artifactId>
+            <version>${generic-java-lib.version}</version>
+        </dependency>
+
 
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
@@ -400,7 +406,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>3.6.1</version>
                 <configuration>
                     <systemPropertyVariables>
                         <pact.rootDir>${project.build.directory}/pacts</pact.rootDir>

@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import org.springframework.web.reactive.function.client.WebClientException;
 @ConditionalRegistryHealthChecksEnabled
 public class StatusListAvailabilityHealthChecker extends CachedHealthChecker {
 
-    private final StatusBusinessApiApi statusBusinessApi;
+    private final StatusB2BApi statusBusinessApi;
     private final SwiyuProperties swiyuProperties;
 
     @Override

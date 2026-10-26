@@ -66,7 +66,7 @@ public class CredentialRenewalService {
     }
 
     void ensureRenewableState(CredentialManagement mgmt) {
-        if (mgmt.getCredentialManagementStatus() != CredentialStatusManagementType.ISSUED) {
+        if (mgmt.getCredentialManagementStatus() != CredentialStatusManagementType.ISSUED && !isSuspendedRenewal(mgmt.getCredentialManagementStatus())) {
             throw new RenewalException(HttpStatus.BAD_REQUEST, "Credential management is %s, no renewal possible".formatted(mgmt.getCredentialManagementStatus().name()));
         }
     }
@@ -104,5 +104,14 @@ public class CredentialRenewalService {
 
     void incrementRenewalResponseCount(CredentialManagement mgmt) {
         mgmt.setRenewalResponseCnt(mgmt.getRenewalResponseCnt() + 1);
+    }
+
+    /**
+     *
+     * @param credentialStatus status of the credential
+     * @return true if suspended renewal is allowed and credential state is suspended
+     */
+    private boolean isSuspendedRenewal(CredentialStatusManagementType credentialStatus) {
+        return applicationProperties.isEnableSuspendedRenewal() && credentialStatus == CredentialStatusManagementType.SUSPENDED;
     }
 }

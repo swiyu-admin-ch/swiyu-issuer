@@ -36,7 +36,7 @@ class EncryptionKeyServiceTest {
     private List<EncryptionKey> encryptionKeyTestCache;
 
     private static Stream<EncryptionMethod> encryptionMethods() {
-        return Stream.of(EncryptionMethod.A256GCM, EncryptionMethod.A128GCM);
+        return Stream.of(EncryptionMethod.A256GCM);
     }
 
     @BeforeEach

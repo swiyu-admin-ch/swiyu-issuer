@@ -38,7 +38,7 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final NonceService nonceService;
 
-    @ExceptionHandler(OAuthException.class)
+    @ExceptionHandler({OAuthException.class, InvalidTxCodeException.class})
     public ResponseEntity<ApiErrorDto> handleOAuthException(final OAuthException exception) {
         ApiErrorDto apiError = oauthErrorToApiErrorDto(exception);
         log.debug("OAuthException: {}", exception.getMessage());

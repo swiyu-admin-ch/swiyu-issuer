@@ -120,7 +120,7 @@ class DeferredIssuanceIT {
                             "enc": "%s",
                             "jwk": %s
                         }
-                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A128GCM.getName(),
+                        """, JWEAlgorithm.ECDH_ES.getName(), EncryptionMethod.A256GCM.getName(),
                 ecJWK.toPublicJWK()
                         .toJSONString());
     }
@@ -423,7 +423,7 @@ class DeferredIssuanceIT {
         var issuerEncryptionKey = JWKSet.parse(requestEncryptionSpec.getJwks()).getKeys().getFirst();
         var issuerEncrypter = new ECDHEncrypter(issuerEncryptionKey.toECKey());
         var jweHeader = new JWEHeader.Builder(JWEAlgorithm.ECDH_ES,
-                EncryptionMethod.A128GCM).keyID(issuerEncryptionKey.getKeyID())
+                EncryptionMethod.A256GCM).keyID(issuerEncryptionKey.getKeyID())
                 .compressionAlgorithm(CompressionAlgorithm.DEF)
                 .build();
         var encryptedRequest = new EncryptedJWT(jweHeader,
