@@ -61,8 +61,6 @@
         <tomcat.version>11.0.27</tomcat.version>
         <!-- Fixes CVE-2026-13006 -->
         <logback-core.version>1.6.5</logback-core.version>
-        <!-- Fixes SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890 / 17733746 -->
-        <tomcat.version>11.0.26</tomcat.version>
 
         <!-- Fixes CVE-2026-89425 -->
         <jackson.version>2.22.3</jackson.version>
