@@ -1875,7 +1875,7 @@ components:
           format: int64
           description: Minimum number of seconds the Wallet MUST wait before polling
             again.
-          minimum: 0
+          exclusiveMinimum: 0
       required:
       - interval
       - transaction_id

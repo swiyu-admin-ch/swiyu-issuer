@@ -29,6 +29,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import tools.jackson.databind.ObjectMapper;
@@ -62,7 +63,7 @@ class CredentialManagementServiceTest {
     private static final String TEST_STATUS_LIST_URI = "https://localhost:8080/status";
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String SOME_DESCRIPTION = "Description where to find the tx_code provided by business issuers";
-    
+
     private final Map<String, Object> offerData = Map.of("hello", "world");
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -82,6 +83,15 @@ class CredentialManagementServiceTest {
     private CredentialOffer suspended;
 
     private CreateCredentialOfferRequestDto createCredentialOfferRequestDto;
+
+    private static Stream<TransactionCodeConfigDto> generateTxCodeConf() {
+        return Stream.of(
+                null,
+                new TransactionCodeConfigDto(false, SOME_DESCRIPTION, 6),
+                new TransactionCodeConfigDto(true, SOME_DESCRIPTION, 6),
+                new TransactionCodeConfigDto(true, null, 2)
+        );
+    }
 
     @BeforeEach
     void setUp() {
@@ -338,7 +348,7 @@ class CredentialManagementServiceTest {
      *
      * <p>Expectation: status lists are resolved, an offer/management is persisted, and status list entries are created.</p>
      */
-    @ParameterizedTest 
+    @ParameterizedTest
     @MethodSource("generateTxCodeConf")
     void createCredentialOfferAndGetDeeplink_shouldCreateOffer_andPersistStatusListEntries(TransactionCodeConfigDto txCodeConf) {
         createCredentialOfferRequestDto.setTransactionCodeConfig(txCodeConf);
@@ -385,14 +395,14 @@ class CredentialManagementServiceTest {
         var deeplinkParams = mapper.readValue(deeplink.getQueryParams().getFirst().getValue(), Map.class);
 
         assertThat(deeplinkParams)
-            .as("Must contain reference to credential issuer").containsKey("credential_issuer")
-            .as("Must describe which vc configurations are being offered").containsKey("credential_configuration_ids")
-            .as("Must provide the type of grant").containsKey("grants");
+                .as("Must contain reference to credential issuer").containsKey("credential_issuer")
+                .as("Must describe which vc configurations are being offered").containsKey("credential_configuration_ids")
+                .as("Must provide the type of grant").containsKey("grants");
 
         // Structure is {..., "grants": {"urn:ietf:params:oauth:grant-type:pre-authorized_code":{...}}}
         var preAuthGrant = mapper.convertValue(
-            mapper.convertValue(deeplinkParams.get("grants"), Map.class)
-                .get("urn:ietf:params:oauth:grant-type:pre-authorized_code"), Map.class);
+                mapper.convertValue(deeplinkParams.get("grants"), Map.class)
+                        .get("urn:ietf:params:oauth:grant-type:pre-authorized_code"), Map.class);
 
         if (txCodeConf == null || txCodeConf.isUseTransactionCode() == false) {
             assertThat(preAuthGrant).as("When usage of tx_code was not requested, the tx_code object MUST NOT be present").doesNotContainKey("tx_code");
@@ -400,7 +410,7 @@ class CredentialManagementServiceTest {
             assertThat(preAuthGrant).as("When Transaction Code usage was requested, tx_code object MUST be present").containsKey("tx_code");
             var txCodeRequest = mapper.convertValue(preAuthGrant.get("tx_code"), Map.class);
             assertThat(txCodeRequest).as("The length paramter should be provided to help the wallet render").containsEntry("length", txCodeConf.getLength());
-            if(StringUtils.isNotEmpty(txCodeConf.getDescription())) {
+            if (StringUtils.isNotEmpty(txCodeConf.getDescription())) {
                 assertThat(txCodeRequest).as("When a description is provided it should be contained in the offer for the wallet to display").containsEntry("description", txCodeConf.getDescription());
             } else {
                 assertThat(txCodeRequest).doesNotContainKey("description");
@@ -603,8 +613,9 @@ class CredentialManagementServiceTest {
      *   <li>status list entries are (re)created for the updated offer.</li>
      * </ul>
      */
-    @Test
-    void updateOfferFromRenewalResponse_shouldValidateUpdatePersist_andWriteStatusListEntries() {
+    @ParameterizedTest
+    @EnumSource(value = CredentialStatusManagementType.class, names = {"ISSUED", "SUSPENDED"})
+    void updateOfferFromRenewalResponse_shouldValidateUpdatePersist_andWriteStatusListEntries(CredentialStatusManagementType state) {
         int batchSize = 100;
         when(issuerMetadata.getIssuanceBatchSize()).thenReturn(batchSize);
 
@@ -647,6 +658,7 @@ class CredentialManagementServiceTest {
         CredentialManagement management = CredentialManagement.builder()
                 .id(UUID.randomUUID())
                 .metadataTenantId(UUID.randomUUID())
+                .credentialManagementStatus(state)
                 .build();
         CredentialOffer existing = CredentialOffer.builder()
                 .id(UUID.randomUUID())
@@ -749,14 +761,5 @@ class CredentialManagementServiceTest {
                 .deferredOfferValiditySeconds(0)
                 .credentialValidUntil(null)
                 .build();
-    }
-
-    private static Stream<TransactionCodeConfigDto> generateTxCodeConf(){
-        return Stream.of(
-            null, 
-            new TransactionCodeConfigDto(false, SOME_DESCRIPTION, 6),
-            new TransactionCodeConfigDto(true, SOME_DESCRIPTION, 6),
-            new TransactionCodeConfigDto(true, null, 2)
-        );
     }
 }
