@@ -234,6 +234,44 @@ class DemonstratingProofOfPossessionServiceTest {
     }
 
     @Test
+    void requiresKeyAttestation_proofTypesSupportedNull() {
+        // proof_types_supported is optional in the metadata, so getProofTypesSupported() can return null
+        var offer = Mockito.mock(CredentialOffer.class);
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("cred1"));
+        var issuerMetadata = Mockito.mock(IssuerMetadata.class);
+        var credConfig = Mockito.mock(CredentialConfiguration.class);
+        when(metadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
+        when(issuerMetadata.getCredentialConfigurationById("cred1")).thenReturn(credConfig);
+        when(credConfig.getProofTypesSupported()).thenReturn(null);
+
+        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestation(offer));
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void requiresKeyAttestation_proofTypesSupportedNull_mixedCredentials() {
+        // A credential configuration without proof_types_supported must not break the evaluation of other credentials
+        var offer = Mockito.mock(CredentialOffer.class);
+        when(offer.getMetadataCredentialSupportedId()).thenReturn(List.of("cred1", "cred2"));
+        var issuerMetadata = Mockito.mock(IssuerMetadata.class);
+        var credConfig1 = Mockito.mock(CredentialConfiguration.class);
+        var credConfig2 = Mockito.mock(CredentialConfiguration.class);
+        when(metadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
+        when(issuerMetadata.getCredentialConfigurationById("cred1")).thenReturn(credConfig1);
+        when(issuerMetadata.getCredentialConfigurationById("cred2")).thenReturn(credConfig2);
+        // cred1 has no proof_types_supported (null)
+        when(credConfig1.getProofTypesSupported()).thenReturn(null);
+        // cred2 requires a key attestation
+        var highProofType = SupportedProofType.builder().keyAttestationRequirement(
+            KeyAttestationRequirement.builder().keyStorage(List.of(AttackPotentialResistance.ISO_18045_HIGH)
+        ).build()).build();
+        when(credConfig2.getProofTypesSupported()).thenReturn(Map.of("jwt", highProofType));
+
+        boolean result = assertDoesNotThrow(() -> demonstratingProofOfPossessionService.requiresKeyAttestation(offer));
+        assertThat(result).isTrue();
+    }
+
+    @Test
     void requiresKeyAttestation_noKeyAttestationDefined() {
         // Create one mock where no requirement is defined (is null)
         var offer = Mockito.mock(CredentialOffer.class);

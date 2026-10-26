@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * Provide functionality to embed Demonstrating Proof of Possession (DPoP) functionality in the greater application
@@ -159,9 +160,15 @@ public class DemonstratingProofOfPossessionService {
             // The type of dpop binding is up to the wallet
             return false;
         }
-        return credentialOffer.getMetadataCredentialSupportedId().stream()
-                .flatMap(offerCredentialSupportedId -> metadata.getCredentialConfigurationById(offerCredentialSupportedId)
-                        .getProofTypesSupported().values().stream())
+        return offeredCredentialTypes.stream()
+                .flatMap(offerCredentialSupportedId -> {
+                    var proofTypesSupported = metadata.getCredentialConfigurationById(offerCredentialSupportedId)
+                            .getProofTypesSupported();
+                    // proof_types_supported is optional in the metadata and can therefore be null
+                    return proofTypesSupported == null
+                            ? Stream.empty()
+                            : proofTypesSupported.values().stream();
+                })
                 .map(SupportedProofType::getKeyAttestationRequirement)
                 .filter(Objects::nonNull) // Key Attestation Requirement can be null
                 .flatMap(keyAttestationRequirement -> keyAttestationRequirement.getKeyStorage().stream())
