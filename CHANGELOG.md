@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+### Changed
+
+- Update default sizes for encrypted messages to be in MB as in swiss-profile instead of MiB `(#1397)`
+
 ## [5.0.1] - 2026-10-15
 
 - Fix hsm key selection with override `(#1404)`
