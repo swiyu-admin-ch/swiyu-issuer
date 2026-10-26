@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New boolean flag ENABLE_SUSPENDED_RENEWAL to optionally extend renewal flow to also allow suspended credentials.
   If allowing renewal refer to readme section on renewal to necessary considerations.
 
+### Changed
+
+- Update default sizes for encrypted messages to be in MB as in swiss-profile instead of MiB `(#1397)`
+
 ## [5.0.1] - 2026-10-15
 
 - Fix hsm key selection with override `(#1404)`
