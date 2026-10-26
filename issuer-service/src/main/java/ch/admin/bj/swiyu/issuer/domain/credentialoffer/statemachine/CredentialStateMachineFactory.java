@@ -30,6 +30,25 @@ public class CredentialStateMachineFactory {
     private final CredentialOfferAction offerActions;
     private final CredentialManagementAction managementActions;
 
+    private static Guard<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> deferredOfferOnlyGuard() {
+        return context -> {
+            Message<CredentialStateMachineConfig.CredentialOfferEvent> message = context.getMessage();
+            if (message != null && message.getHeaders().containsKey(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER)) {
+                Object offerObj = message.getHeaders().get(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER);
+                if (offerObj instanceof CredentialOffer offer) {
+                    return offer.isDeferredOffer();
+                }
+            }
+            return false;
+        };
+    }
+
+    private static String addNote(String s) {
+        return "\nnote on link\n" +
+                s + "\n" +
+                "end note\n";
+    }
+
     /**
      * Creates a new credential management state machine instance.
      *
@@ -56,7 +75,7 @@ public class CredentialStateMachineFactory {
                     .event(CredentialStateMachineConfig.CredentialManagementEvent.SUSPEND)
                     .action(eventActions.managementStateChangeAction())
                     .action(managementActions.suspendAction())
-                    .name(addNote("Suspend all accociated VCs"))
+                    .name(addNote("Suspend all associated VCs"))
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.ISSUED).target(CredentialStatusManagementType.ISSUED)
@@ -67,21 +86,21 @@ public class CredentialStateMachineFactory {
                     .event(CredentialStateMachineConfig.CredentialManagementEvent.ISSUE)
                     .action(eventActions.managementStateChangeAction())
                     .action(managementActions.revalidateAction())
-                    .name(addNote("Revalidate all accociated VCs"))
+                    .name(addNote("Revalidate all associated VCs"))
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.ISSUED).target(CredentialStatusManagementType.REVOKED)
                     .event(CredentialStateMachineConfig.CredentialManagementEvent.REVOKE)
                     .action(eventActions.managementStateChangeAction())
                     .action(managementActions.revokeAction())
-                    .name(addNote("Revoke all accociated VCs"))
+                    .name(addNote("Revoke all associated VCs"))
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.SUSPENDED).target(CredentialStatusManagementType.REVOKED)
                     .event(CredentialStateMachineConfig.CredentialManagementEvent.REVOKE)
                     .action(eventActions.managementStateChangeAction())
                     .action(managementActions.revokeAction())
-                    .name(addNote("Revoke all accociated VCs"))
+                    .name(addNote("Revoke all associated VCs"))
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.REVOKED).target(CredentialStatusManagementType.REVOKED)
@@ -89,7 +108,10 @@ public class CredentialStateMachineFactory {
                     .and()
                     .withExternal()
                     .source(CredentialStatusManagementType.SUSPENDED).target(CredentialStatusManagementType.SUSPENDED)
-                    .event(CredentialStateMachineConfig.CredentialManagementEvent.SUSPEND);
+                    .event(CredentialStateMachineConfig.CredentialManagementEvent.SUSPEND)
+                    .action(managementActions.suspendAction())
+                    .name("Suspend all associated VCs again");
+
 
             builder.configureConfiguration()
                     .withConfiguration()
@@ -262,24 +284,5 @@ public class CredentialStateMachineFactory {
             log.error("Error building CredentialOffer State Machine", e);
             throw new ConfigurationException("Error building CredentialOffer State Machine", e);
         }
-    }
-
-    private static Guard<CredentialOfferStatusType, CredentialStateMachineConfig.CredentialOfferEvent> deferredOfferOnlyGuard() {
-        return context -> {
-            Message<CredentialStateMachineConfig.CredentialOfferEvent> message = context.getMessage();
-            if (message != null && message.getHeaders().containsKey(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER)) {
-                Object offerObj = message.getHeaders().get(CredentialStateMachineConfig.CREDENTIAL_OFFER_HEADER);
-                if (offerObj instanceof CredentialOffer offer) {
-                    return offer.isDeferredOffer();
-                }
-            }
-            return false;
-        };
-    }
-
-    private static String addNote(String s) {
-        return "\nnote on link\n" +
-                s + "\n" +
-                "end note\n";
     }
 }

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNKNOWN_CREDENTIAL_CONFIGURATION;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNKNOWN_CREDENTIAL_IDENTIFIER;
 import static ch.admin.bj.swiyu.issuer.common.exception.OAuthError.INVALID_GRANT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,7 +43,7 @@ class CredentialRequestValidatorTest {
 
         Oid4vcException ex = assertThrows(Oid4vcException.class,
                 () -> CredentialRequestValidator.validateCredentialRequest(offer, request));
-        assertEquals(UNKNOWN_CREDENTIAL_IDENTIFIER, ex.getError());
+        assertEquals(UNKNOWN_CREDENTIAL_CONFIGURATION, ex.getError());
     }
 
     private CredentialOffer offer(CredentialOfferStatusType status) {

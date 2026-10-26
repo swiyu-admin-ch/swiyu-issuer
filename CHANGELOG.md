@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [NEXT]
 
+### Added
+
+- New boolean flag ENABLE_SUSPENDED_RENEWAL to optionally extend renewal flow to also allow suspended credentials.
+  If allowing renewal refer to readme section on renewal to necessary considerations.
+
 ### Changed
 
 - Update default sizes for encrypted messages to be in MB as in swiss-profile instead of MiB `(#1397)`
@@ -32,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optionally an API Key can now be set for Credential Renewal call to the business issuer using environment variables
   `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` and `BUSINESS_ISSUER_RENEWAL_API_KEY_HEADER` (#1223)
 - Support tx_code. This can be activated when creating a new credential offer by using
-  `tx_code_config.use_tx_code = true`. This feature allows using a secondary code to be sent through a differen channel
+  `tx_code_config.use_tx_code = true`. This feature allows using a secondary code to be sent through a different channel
   than the pre-authorized code. `(#709)`
 
 ### Fixed
