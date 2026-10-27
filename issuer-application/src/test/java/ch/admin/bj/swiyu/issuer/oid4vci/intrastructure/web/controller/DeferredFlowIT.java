@@ -557,7 +557,7 @@ class DeferredFlowIT {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void testDeferredOffer_withoutProof_thenSuccess(boolean batched) throws Exception {
+    void testDeferredOffer_withoutProof_thenBadRequest(boolean batched) throws Exception {
 
         doReturn(batched).when(issuerMetadata).isBatchIssuanceAllowed();
 
@@ -572,7 +572,7 @@ class DeferredFlowIT {
                 credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = (String) tokenResponse.get("access_token");
         var credentialRequestString = objectMapper.writeValueAsString(new CreateCredentialRequestDto(
-                "unbound_example_sd_jwt",
+                configId,
                 null,
                 null
         ));

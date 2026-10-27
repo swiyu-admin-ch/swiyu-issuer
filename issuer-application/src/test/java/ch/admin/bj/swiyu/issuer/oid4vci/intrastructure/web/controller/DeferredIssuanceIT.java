@@ -581,7 +581,7 @@ class DeferredIssuanceIT {
                 .generate();
 
         var responseEncryptionJson = createResponseEncryptionJson(ecJWK);
-        var credentialRequestString = "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s".formatted("university_example_sd_jwt", responseEncryptionJson);
+        var credentialRequestString = "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s}".formatted("university_example_sd_jwt", responseEncryptionJson);
 
          requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest());
