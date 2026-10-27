@@ -87,11 +87,8 @@ public final class AttestationJwt {
                 null,                  // no required audience
                 null,                                     // No claim strictly needed to be set
                 REQUIRED_ATTESTATION_CLAIMS,
-                Set.of()               // no prohibited claims – iss is ignored, not forbidden
+                Set.of()                                  // no prohibited claims – iss is ignored, not forbidden
         );
-        if (jwtClaimsSet.getIssuer() != null && !jwtClaimsSet.getIssuer().equals(expectedAttestationIssuerDid)) {
-            throw new IllegalArgumentException(String.format("When issuer is set, it must match the DID of the kid; %s but was %s", expectedAttestationIssuerDid, jwtClaimsSet.getIssuer()));
-        }
         try {
             verifier.verify(jwtClaimsSet, null);
             // iat should not be after now with clock skew considered

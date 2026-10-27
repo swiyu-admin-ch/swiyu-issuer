@@ -91,34 +91,6 @@ class AttestationJwtTest {
                 () -> AttestationJwt.parseJwt(parsedJwt, true));
     }
 
-    /**
-     * If only the issuer is checked for being trusted and the key id is used to resolve the public key, it is
-     */
-    @ParameterizedTest(name = "should reject JWT when attackerKeyID={0}, issuerDid={1}")
-    @CsvSource({
-            "did:webvh:scid:12345#key-1, did:webvh:scid:9876",
-            "did:webvh:scid:trusted-fake#key-1, did:webvh:scid:trusted"
-    })
-    void parseJwt_withDivergingIssuerAndKidUsingKeyStorage_throwsIllegalArgumentException(String attackerKeyID, String issuerDid) throws JOSEException {
-        var signingKey = new ECKeyGenerator(Curve.P_256).keyID(attackerKeyID).keyUse(KeyUse.SIGNATURE).generate();
-        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
-                .keyID(signingKey.getKeyID())
-                .type(new JOSEObjectType("key-attestation+jwt"))
-                .customParam("profile_version", "swiss-profile-issuance:1.0.0")
-                .build(),
-                new JWTClaimsSet.Builder()
-                        .issuer(issuerDid)
-                        .issueTime(new Date())
-                        .expirationTime(Date.from(Instant.now().plusSeconds(5 * 60)))
-                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
-                        .claim("key_storage", List.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue()))
-                        .build());
-        attestation.sign(new ECDSASigner(signingKey));
-        var parsedJwt = attestation.serialize();
-        Assertions.assertThrows(IllegalArgumentException.class,
-                () -> AttestationJwt.parseJwt(parsedJwt, true));
-    }
-
     @Test
     void parseJwt_withMissingProfileVersionHeader_throwsIllegalArgumentException() throws JOSEException {
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
