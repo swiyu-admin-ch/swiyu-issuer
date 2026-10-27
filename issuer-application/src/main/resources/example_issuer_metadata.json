@@ -233,30 +233,6 @@
         ]
       }
     },
-    "unbound_example_sd_jwt": {
-      "format": "dc+sd-jwt",
-      "credential_signing_alg_values_supported": [
-        "ES256",
-        "Ed25519"
-      ],
-      "vct": "unbound_example_sd_jwt",
-      "credential_metadata": {
-        "claims": [
-          {
-            "mandatory": true,
-            "path": [
-              "animal"
-            ],
-            "display": [
-              {
-                "locale": "de-CH",
-                "name": "Tier"
-              }
-            ]
-          }
-        ]
-      }
-    },
     "university_example_high_key_attestation_required_sd_jwt": {
       "format": "dc+sd-jwt",
       "credential_signing_alg_values_supported": [
@@ -511,6 +487,14 @@
         "jwk"
       ],
       "vct": "test",
+      "proof_types_supported": {
+        "jwt": {
+          "proof_signing_alg_values_supported": [
+            "ES256",
+            "Ed25519"
+          ]
+        }
+      },
       "credential_metadata": {
         "claims": [
           {
