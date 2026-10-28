@@ -84,6 +84,18 @@ class DefaultExceptionHandlerTest {
     }
 
     @Test
+    void handleResourceGoneException_shouldReturnGone() {
+        var errorMessage = "Resource is gone";
+        var exception = new ResourceGoneException(errorMessage);
+        ResponseEntity<ApiErrorDto> response = handler.handleResourceGoneException(exception);
+        var body = response.getBody();
+
+        assertEquals(HttpStatus.GONE, response.getStatusCode());
+        assertNotNull(body);
+        assertEquals(errorMessage, body.getErrorDetails());
+    }
+
+    @Test
     void handleBadRequestException_shouldReturnBadRequest() {
         var errorMessage = "Bad Request error message";
         var exception = new BadRequestException(errorMessage);

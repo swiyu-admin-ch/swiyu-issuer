@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update default sizes for encrypted messages to be in MB as in swiss-profile instead of MiB `(#1397)`
 - In Key Attestation JWTs iss claim is ignored as defined in swiss-profile-anchor 1.0. `(#1417)`
+- Tenant specific issuer metadata responds now with `410 GONE` instead of `500 INTERNAL ERROR` when the latest credential offer of
+  the tenant is in a terminal state (`EXPIRED`, `CANCELLED`, `ISSUED`).
 
 ## [5.0.1] - 2026-10-15
 
