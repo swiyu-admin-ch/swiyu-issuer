@@ -39,6 +39,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
+import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionError;
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
@@ -124,7 +125,6 @@ class DemonstratingProofOfPossessionServiceTest {
     void testRegisterDemonstratingProofOfPossession_thenSuccess() {
         var request = Mockito.mock(HttpRequest.class);
         var requestUri = assertDoesNotThrow(() -> new URI("https://www.example.com/token?debug"));
-        var preAuthCode = UUID.randomUUID();
         var mgmt = Mockito.mock(CredentialManagement.class);
         var offer = Mockito.mock(CredentialOffer.class);
 
@@ -154,6 +154,56 @@ class DemonstratingProofOfPossessionServiceTest {
 
         var dpop = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/credential", accessToken.toString(), dpopKey);
         assertDoesNotThrow(() -> demonstratingProofOfPossessionService.validateDpop(accessToken.toString(), signAndSerialize(dpop, dpopKey), request));
+    }
+
+    /**
+     * A DPoP whose 'ath' claim does not match the presented access token must be rejected as an invalid DPoP proof
+     * instead of letting the low level {@code DpopValidationException} surface to the caller.
+     */
+    @Test
+    void testValidateDpop_whenAccessTokenHashMismatch_thenThrowsDemonstratingProofOfPossessionException() {
+        var request = Mockito.mock(HttpRequest.class);
+        var requestUri = assertDoesNotThrow(() -> new URI("https://www.example.com/credential?debug"));
+        var accessToken = UUID.randomUUID().toString();
+        when(request.getMethod()).thenReturn(HttpMethod.POST);
+        when(request.getURI()).thenReturn(requestUri);
+        var mockManagement = Mockito.mock(CredentialManagement.class);
+        when(oAuthService.getCredentialManagementByAccessToken(accessToken)).thenReturn(mockManagement);
+        when(mockManagement.getDpopKey()).thenReturn(dpopKey.toPublicJWK().toJSONObject());
+
+        // The DPoP is bound to another access token than the one presented
+        var dpop = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/credential", UUID.randomUUID().toString(), dpopKey);
+
+        var serializedDpop = signAndSerialize(dpop, dpopKey);
+        var exception = assertThrows(DemonstratingProofOfPossessionException.class,
+                () -> demonstratingProofOfPossessionService.validateDpop(accessToken, serializedDpop, request));
+        assertThat(exception.getMessage()).isEqualTo("Malformed DPoP");
+        assertThat(exception.getDpopError()).isEqualTo(DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
+    }
+
+    /**
+     * A DPoP without the mandatory 'ath' claim must be rejected as an invalid DPoP proof
+     * instead of letting the low level {@code DpopValidationException} surface to the caller.
+     */
+    @Test
+    void testValidateDpop_whenAccessTokenHashMissing_thenThrowsDemonstratingProofOfPossessionException() {
+        var request = Mockito.mock(HttpRequest.class);
+        var requestUri = assertDoesNotThrow(() -> new URI("https://www.example.com/credential?debug"));
+        var accessToken = UUID.randomUUID().toString();
+        when(request.getMethod()).thenReturn(HttpMethod.POST);
+        when(request.getURI()).thenReturn(requestUri);
+        var mockManagement = Mockito.mock(CredentialManagement.class);
+        when(oAuthService.getCredentialManagementByAccessToken(accessToken)).thenReturn(mockManagement);
+        when(mockManagement.getDpopKey()).thenReturn(dpopKey.toPublicJWK().toJSONObject());
+
+        // No access token passed -> the resulting DPoP has no 'ath' claim
+        var dpop = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/credential", null, dpopKey);
+
+        var serializedDpop = signAndSerialize(dpop, dpopKey);
+        var exception = assertThrows(DemonstratingProofOfPossessionException.class,
+                () -> demonstratingProofOfPossessionService.validateDpop(accessToken, serializedDpop, request));
+        assertThat(exception.getMessage()).isEqualTo("Malformed DPoP");
+        assertThat(exception.getDpopError()).isEqualTo(DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF);
     }
 
     @Test

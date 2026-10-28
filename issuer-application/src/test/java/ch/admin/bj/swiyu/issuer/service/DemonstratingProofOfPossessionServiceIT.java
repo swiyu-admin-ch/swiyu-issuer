@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class DemonstratingProofOfPossessionIT {
+class DemonstratingProofOfPossessionServiceIT {
 
     public static final String DPOP_NONCE_HEADER = "DPoP-Nonce";
     @Autowired
@@ -65,7 +65,7 @@ class DemonstratingProofOfPossessionIT {
                 // Only UUID; No timestamp
                 UUID.randomUUID().toString(), // EIDSEC-633
                 // Missing Hash
-                UUID.randomUUID().toString() + "::" + Instant.now().toString(),
+                UUID.randomUUID() + "::" + Instant.now().toString(),
                 // Attempt ot inject some other data
                 new SelfContainedNonce(nonceSecret).getNonce() + "::" + "SomeOtherData",
                 // Deprecated Nonce
@@ -160,7 +160,6 @@ class DemonstratingProofOfPossessionIT {
         HttpRequest baseTestHttpRequest = createMockRequest();
         var tokenRequest = mockTokenHttpRequest(baseTestHttpRequest);
         var registrationDPoP = getDPoPJWT(tokenRequest, faultyNonce, null);
-        String preAuthCode = testCredentialOffer.getPreAuthorizedCode().toString();
         assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.registerDpop(testCredentialOffer, registrationDPoP, tokenRequest));
     }
 
@@ -192,6 +191,4 @@ class DemonstratingProofOfPossessionIT {
         demonstratingProofOfPossessionService.addDpopNonce(dpopHeaders);
         return assertDoesNotThrow(() -> dpopHeaders.get(DPOP_NONCE_HEADER).getFirst());
     }
-
-
 }
