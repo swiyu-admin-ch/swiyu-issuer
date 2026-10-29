@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - In Key Attestation JWTs iss claim is ignored as defined in swiss-profile-anchor 1.0. `(#1417)`
 - Adjust loglevel in renewal responses from business issuers for HTTP STATUS codes `420`, `451`, `500`, `503` to info instead of error. `(#1344)`
 
+### Fixed
+
+- DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level exception `(#1463)`.
+
 ## [5.0.1] - 2026-10-15
 
 - Fix hsm key selection with override `(#1404)`
