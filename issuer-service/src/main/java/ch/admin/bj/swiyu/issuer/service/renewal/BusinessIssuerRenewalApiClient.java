@@ -37,7 +37,7 @@ public class BusinessIssuerRenewalApiClient {
      *
      * Additional details can be found in the <a href="https://github.com/swiyu-admin-ch/swiyu-issuer/blob/main/docs/Architecture_generic_issuer.pdf">Architecture docs</a>
      */
-    private static final Set<Integer> STATUS_CODES_LOGGED_AS_INFO = Set.of(404, 409, 420, 451, 500, 503);
+    private static final Set<Integer> STATUS_CODES_LOGGED_AS_INFO = Set.of(420, 451, 500, 503);
 
     private final WebClient webClient;
     private final ApplicationProperties applicationProperties;
