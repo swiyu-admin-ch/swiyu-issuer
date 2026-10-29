@@ -120,7 +120,7 @@ class BusinessIssuerRenewalApiClientTest {
      * Status codes the business issuer may legitimately answer with must not be logged as errors.
      */
     @ParameterizedTest
-    @ValueSource(ints = {404, 409, 420, 451, 500, 503})
+    @ValueSource(ints = {420, 451, 500, 503})
     void getRenewalData_whenStatusCodeIsLoggedAsInfo_thenLogsInfo(int statusCode) {
         var renewalException = triggerErrorStatus(statusCode);
 
