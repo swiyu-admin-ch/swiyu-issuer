@@ -4,7 +4,6 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
@@ -14,7 +13,6 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
@@ -43,7 +41,6 @@ import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionE
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.CachedNonceRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
@@ -64,8 +61,6 @@ class DemonstratingProofOfPossessionServiceTest {
     private ApplicationProperties applicationProperties;
     private NonceService nonceService;
     private OAuthService oAuthService;
-    private CredentialOfferRepository credentialOfferRepository;
-    private CredentialManagementRepository credentialManagementRepository;
     private ECKey dpopKey;
     private IssuerSecret nonceSecret;
     private MetadataService metadataService;
@@ -73,8 +68,7 @@ class DemonstratingProofOfPossessionServiceTest {
     @BeforeEach
     void setUp() {
         applicationProperties = Mockito.mock(ApplicationProperties.class);
-        credentialOfferRepository = Mockito.mock(CredentialOfferRepository.class);
-        credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
+        CredentialManagementRepository credentialManagementRepository = Mockito.mock(CredentialManagementRepository.class);
         CachedNonceRepository cachedNonceRepository = Mockito.mock(CachedNonceRepository.class);
         IssuerSecretRepository nonceSecretRepository = Mockito.mock(IssuerSecretRepository.class);
         nonceService = new NonceService(applicationProperties, cachedNonceRepository, nonceSecretRepository);
@@ -85,7 +79,6 @@ class DemonstratingProofOfPossessionServiceTest {
                 applicationProperties,
                 nonceService,
                 oAuthService,
-                credentialOfferRepository,
                 credentialManagementRepository,
                 new DemonstratingProofOfPossessionValidationService(applicationProperties, nonceService),
                 metadataService,
@@ -124,7 +117,6 @@ class DemonstratingProofOfPossessionServiceTest {
     void testRegisterDemonstratingProofOfPossession_thenSuccess() {
         var request = Mockito.mock(HttpRequest.class);
         var requestUri = assertDoesNotThrow(() -> new URI("https://www.example.com/token?debug"));
-        var preAuthCode = UUID.randomUUID();
         var mgmt = Mockito.mock(CredentialManagement.class);
         var offer = Mockito.mock(CredentialOffer.class);
 
@@ -132,7 +124,6 @@ class DemonstratingProofOfPossessionServiceTest {
 
         when(request.getMethod()).thenReturn(HttpMethod.POST);
         when(request.getURI()).thenReturn(requestUri);
-        when(credentialOfferRepository.findByPreAuthorizedCode(any())).thenReturn(Optional.of(offer));
 
         var dpop = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/token", null, dpopKey);
         assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(offer, signAndSerialize(dpop, dpopKey), request));
@@ -168,7 +159,6 @@ class DemonstratingProofOfPossessionServiceTest {
         var mgmt = Mockito.mock(CredentialManagement.class);
         var offer = Mockito.mock(CredentialOffer.class);
         when(offer.getCredentialManagement()).thenReturn(mgmt);
-        when(credentialOfferRepository.findByPreAuthorizedCode(any())).thenReturn(Optional.of(offer));
 
         // Without profile_version -> should fail when enforcement enabled
         var dpopWithoutProfileVersion = createDpopJwt(HttpMethod.POST.name(), "https://www.example.com/token", null, dpopKey, false);
