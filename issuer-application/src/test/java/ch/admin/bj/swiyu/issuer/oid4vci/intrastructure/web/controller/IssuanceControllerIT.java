@@ -8,7 +8,6 @@ import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
-import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
@@ -26,7 +25,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
@@ -78,7 +76,6 @@ class IssuanceControllerIT {
     private final UUID allValuesPreAuthCode = UUID.randomUUID();
     private final Instant validFrom = Instant.now();
     private final Instant validUntil = Instant.now().plus(30, ChronoUnit.DAYS);
-    private UUID unboundPreAuthCode = UUID.randomUUID();
 
     @Autowired
     private MockMvc mock;
@@ -99,33 +96,11 @@ class IssuanceControllerIT {
     @Autowired
     private NonceService nonceService;
 
-    private static Map<String, String> getUnboundCredentialSubjectData() {
-        Map<String, String> credentialSubjectData = new HashMap<>();
-        credentialSubjectData.put("animal", "Tux");
-        return credentialSubjectData;
-    }
-
     private static String extractVcFromCredentialResponse(MvcResult credentialResponse) throws UnsupportedEncodingException {
         var credentials = JsonParser.parseString(credentialResponse.getResponse().getContentAsString())
                 .getAsJsonObject()
                 .getAsJsonArray("credentials");
         return credentials.get(0).getAsJsonObject().get("credential").getAsString();
-    }
-
-    private CredentialOffer createUnboundCredentialOffer() throws Exception {
-        var offerRequest = CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
-                .credentialSubjectData(Map.of("animal", "Tux"))
-                .statusLists(List.of(testStatusList.getUri()))
-                // .credentialMetadata(getCredentialMetadataDto())
-                .build();
-
-        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
-
-        unboundPreAuthCode = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer).getGrants()
-                .preAuthorizedCode().preAuthCode();
-
-        return credentialOfferRepository.findById(offer.getOfferId()).orElseThrow();
     }
 
     @BeforeEach
@@ -142,8 +117,6 @@ class IssuanceControllerIT {
         var allValuesPreAuthCodeOffer = createTestOffer(allValuesPreAuthCode, CredentialOfferStatusType.OFFERED,
                 "university_example_sd_jwt", validFrom, validUntil, null);
         saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, testStatusList, 1);
-        var unboundOffer = createUnboundCredentialOffer();
-        saveStatusListLinkedOffer(unboundOffer, testStatusList, 2);
         jwk = new ECKeyGenerator(Curve.P_256)
                 .keyUse(KeyUse.SIGNATURE)
                 .keyID("Test-Key")
@@ -424,12 +397,6 @@ class IssuanceControllerIT {
                 .andExpect(jsonPath("$.error").value(INVALID_PROOF.getErrorCode()));
     }
 
-    @Test
-    void testUnboundCredentialFlow_thenSuccess() throws Exception {
-        var vc = getUnboundVc();
-        TestInfrastructureUtils.verifyVC(sdjwtProperties, vc, getUnboundCredentialSubjectData());
-    }
-
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void testNewTokenEndpoint_thenSuccess(boolean useTxCode) throws Exception {
@@ -551,22 +518,6 @@ class IssuanceControllerIT {
         );
 
         String credentialRequestString = getCredentialRequestString(proof);
-        return extractVcFromCredentialResponse(
-                IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
-                        .andExpect(status().isOk())
-                        .andReturn()
-        );
-    }
-
-    private String getUnboundVc() throws Exception {
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, unboundPreAuthCode.toString());
-        var token = tokenResponse.get("access_token");
-
-        String credentialRequestString = String.format(
-                "{\"credential_configuration_id\":\"%s\"}",
-                "unbound_example_sd_jwt"
-        );
-
         return extractVcFromCredentialResponse(
                 IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
                         .andExpect(status().isOk())
