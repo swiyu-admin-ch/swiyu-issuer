@@ -60,7 +60,7 @@
         <!-- Fixes various SNYK-JAVA-ORGAPACHETOMCATEMBED -->
         <tomcat.version>11.0.27</tomcat.version>
         <!-- Fixes CVE-2026-13006 -->
-        <logback-core.version>1.6.5</logback-core.version>
+        <logback-core.version>1.6.6</logback-core.version>
 
         <!-- Fixes CVE-2026-89425 -->
         <jackson.version>2.22.4</jackson.version>
