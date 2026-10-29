@@ -5,8 +5,7 @@ The generic Issuer of the Swiss SWIYU trust infrastructure (https://github.com/s
 It is a Spring Boot 4 / Java 25 service (Maven, modules `issuer-service` and `issuer-application`) backed by PostgreSQL.
 It issues verifiable credentials (SD-JWT VC) to wallets via OID4VCI (pre-authorized code flow, DPoP, nonces, key
 attestation, deferred issuance, credential renewal), exposes a management API for the business system that
-creates credential offers and manages their status, signs credentials with a configured key (key file, HSM or
-Primus), maintains token status lists, and calls the swiyu registries (status, trust, identifier) and
+creates credential offers and manages their status, signs credentials with a configured key (key file or HSM using PKCS or JCA), maintains token status lists, and calls the swiyu registries (status, trust, identifier) and
 webhook targets. Cryptographic and validation building blocks come from
 swiyu-generic-java-lib (https://github.com/swiyu-admin-ch/swiyu-generic-java-lib); the counterpart that verifies
 presentations is the swiyu-verifier (https://github.com/swiyu-admin-ch/swiyu-verifier).
