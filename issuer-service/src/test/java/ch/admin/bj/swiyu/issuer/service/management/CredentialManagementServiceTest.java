@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.management;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.common.exception.ResourceGoneException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
@@ -328,6 +329,39 @@ class CredentialManagementServiceTest {
         when(persistenceService.findCredentialOfferByIdForUpdate(valid.getId())).thenReturn(valid);
 
         assertThrows(ResourceNotFoundException.class, () -> credentialService.getCredentialOfferStatus(UUID.randomUUID(), valid.getId()));
+    }
+
+    /**
+     * Verifies that {@link CredentialManagementService#getCredentialOfferByTenantId(UUID)} returns the offer as it is not in a terminal state.
+     */
+    @ParameterizedTest
+    @EnumSource(value = CredentialOfferStatusType.class, names = {"EXPIRED", "CANCELLED", "ISSUED"}, mode = EnumSource.Mode.EXCLUDE)
+    void getCredentialOfferByTenantId_shouldReturnOffer_whenNotInTerminalState(CredentialOfferStatusType statusType) {
+        var tenantId = UUID.randomUUID();
+        var offer = createCredentialOffer(statusType, now().plusSeconds(1000).getEpochSecond(), offerData);
+        when(persistenceService.findCredentialOfferByMetadataTenantId(tenantId)).thenReturn(offer);
+
+        var result = credentialService.getCredentialOfferByTenantId(tenantId);
+
+        assertThat(result).isEqualTo(offer);
+    }
+
+    /**
+     * Verifies that {@link CredentialManagementService#getCredentialOfferByTenantId(UUID)} signals a gone resource if the offer is in a terminal state.
+     */
+    @ParameterizedTest
+    @EnumSource(value = CredentialOfferStatusType.class, names = {"EXPIRED", "CANCELLED", "ISSUED"})
+    void getCredentialOfferByTenantId_shouldThrowGone_whenInTerminalState(CredentialOfferStatusType terminalStatus) {
+        var tenantId = UUID.randomUUID();
+        var offer = createCredentialOffer(terminalStatus, now().plusSeconds(1000).getEpochSecond(), offerData);
+        when(persistenceService.findCredentialOfferByMetadataTenantId(tenantId)).thenReturn(offer);
+
+        var exception = assertThrows(ResourceGoneException.class,
+                () -> credentialService.getCredentialOfferByTenantId(tenantId));
+
+        assertThat(exception.getMessage())
+                .contains(tenantId.toString())
+                .contains(terminalStatus.toString());
     }
 
     /**
