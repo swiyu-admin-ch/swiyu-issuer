@@ -72,7 +72,7 @@ public class DemonstratingProofOfPossessionValidationService {
             DpopHashUtil.validateAccessTokenHash(accessToken, dpopJwt.getJWTClaimsSet().getStringClaim("ath"));
             // * confirm that the public key to which the access token is bound matches the public key from the DPoP proof.
             validateBoundPublicKey(dpopJwt, boundPublicKey);
-        } catch (ParseException e) {
+        } catch (ParseException | DpopValidationException e) {
             throw new DemonstratingProofOfPossessionException("Malformed DPoP", DemonstratingProofOfPossessionError.INVALID_DPOP_PROOF, e);
         }
     }

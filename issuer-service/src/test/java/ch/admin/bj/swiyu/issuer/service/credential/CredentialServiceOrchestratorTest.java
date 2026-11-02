@@ -511,6 +511,7 @@ class CredentialServiceOrchestratorTest {
         var mgmt = CredentialManagement.builder()
                 .accessToken(accessToken)
                 .accessTokenExpirationTimestamp(Instant.now().plusSeconds(600).getEpochSecond())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .build();
 
         CredentialOffer offer = mockCredentialOffer(false, mgmt);
@@ -629,7 +630,7 @@ class CredentialServiceOrchestratorTest {
         var accessTokenString = accessToken.toString();
         var exception = assertThrows(Oid4vcException.class, () -> credentialServiceOrchestrator.createCredential(credentialRequestDto, accessTokenString, null, null));
 
-        assertEquals(CredentialRequestError.UNKNOWN_CREDENTIAL_IDENTIFIER, exception.getError());
+        assertEquals(CredentialRequestError.UNKNOWN_CREDENTIAL_CONFIGURATION, exception.getError());
         assertEquals("Mismatch between requested and offered credential configuration id.", exception.getMessage());
     }
 

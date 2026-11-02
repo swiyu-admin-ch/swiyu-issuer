@@ -1,13 +1,11 @@
 package ch.admin.bj.swiyu.issuer.domain.openid.metadata;
 
-import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -21,7 +19,6 @@ import org.springframework.validation.annotation.Validated;
 import java.util.List;
 import java.util.Map;
 
-import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_ENCRYPTION_PARAMETERS;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -82,12 +79,14 @@ public class CredentialConfiguration {
 
     /**
      * A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound to.
-     * If missing, credential will be issued as unbound VC.
+     * Mandatory, as unbound credentials are not accepted.
      */
     @JsonProperty("cryptographic_binding_methods_supported")
+    @NotNull
+    @Size(min = 1, message = "At least one cryptographic binding method has to be provided - unbound credentials are no longer accepted")
     @Schema(description = """
                  A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound.
-                 If missing, credential will be issued as unbound VC.
+                 Mandatory, as unbound credentials are not accepted.
             """)
     @Valid
     private List<@Pattern(regexp = "^jwk$", message = "Only jwk is supported") String> cryptographicBindingMethodsSupported;
@@ -100,10 +99,12 @@ public class CredentialConfiguration {
     private List<@Pattern(regexp = "^ES256|Ed25519$") String> credentialSigningAlgorithmsSupported;
 
     /**
-     * Define what kind of proof the holder is allowed to provide for the credential
+     * Define what kind of proof the holder is allowed to provide for the credential.
+     * Mandatory, as unbound credentials are not accepted.
      */
     @JsonProperty("proof_types_supported")
-    @Size(max = 1)
+    @NotNull
+    @Size(min = 1, max = 1, message = "Exactly one proof type has to be provided - unbound credentials are not accepted")
     @Valid
     private Map<@Pattern(regexp = "^jwt$", message = "Only jwt holder binding proofs are supported") String, SupportedProofType> proofTypesSupported;
 
@@ -131,17 +132,6 @@ public class CredentialConfiguration {
     @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, type = "boolean",
             description = "Indicates whether credential refresh is disabled. If true, the issuer does not support credential refresh for this configuration. If false or omitted, credential refresh must be considered as supported.")
     private Boolean credentialRefreshDisabled;
-
-    @PostConstruct
-    public void postConstruct() {
-        if (!proofTypesSupported.isEmpty() && cryptographicBindingMethodsSupported.isEmpty()) {
-            throw new Oid4vcException(INVALID_ENCRYPTION_PARAMETERS,
-                    "If proof types are supported, cryptographic binding methods must be specified as well",
-                    Map.of(
-                            "cryptographicBindingMethodsSupported", cryptographicBindingMethodsSupported
-                    ));
-        }
-    }
 
     /**
      * Returns true when credential refresh is explicitly disabled for this configuration.

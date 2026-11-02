@@ -109,6 +109,11 @@ public class ApplicationProperties {
     @Nullable
     private String businessIssuerRenewalApiKeyValue;
 
+    /**
+     * Enables renewal flow to be triggered by credentials that are in suspended state
+     */
+    private boolean enableSuspendedRenewal = false;
+
     @NotNull
     private int acceptableProofTimeWindowSeconds;
     @NotNull

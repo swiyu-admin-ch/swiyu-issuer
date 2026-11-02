@@ -113,6 +113,9 @@ class CredentialRenewalServiceTest {
                 .hasMessageContaining("REVOKED");
     }
 
+    /**
+     * Normally renew suspended is rejected
+     */
     @Test
     void ensureManagementNotRenewed_rejectsSuspended() {
         var mgmt = CredentialManagement.builder()
@@ -122,6 +125,48 @@ class CredentialRenewalServiceTest {
         assertThatThrownBy(() -> service.ensureRenewableState(mgmt))
                 .isInstanceOf(RenewalException.class)
                 .hasMessageContaining("SUSPENDED");
+    }
+
+    /**
+     * Test case when Properties is to enable suspended renewal
+     */
+    @Test
+    void handleRenewalFlow_whenSuspendedRenewalIsEnabled_executesStepsAndPersists() {
+        when(applicationProperties.isEnableSuspendedRenewal()).thenReturn(true);
+        var mgmt = CredentialManagement.builder()
+                .credentialManagementStatus(CredentialStatusManagementType.SUSPENDED)
+                .credentialOffers(Set.of())
+                .renewalResponseCnt(0)
+                .id(UUID.randomUUID())
+                .build();
+        var initialOffer = CredentialOffer.builder().id(UUID.randomUUID()).build();
+        var renewalResponse = new RenewalResponseDto(
+                List.of("config-id"),
+                null,
+                null,
+                Instant.now(),
+                Instant.now(),
+                List.of(),
+                null);
+        var updatedOffer = CredentialOffer.builder().id(UUID.randomUUID()).build();
+        var request = new CredentialRequestClass();
+        var envelope = new CredentialEnvelopeDto("h", "b", HttpStatus.OK);
+
+        when(credentialManagementService.createInitialCredentialOfferForRenewal(mgmt)).thenReturn(initialOffer);
+        when(renewalApiClient.getRenewalData(any())).thenReturn(renewalResponse);
+        when(credentialManagementService.updateOfferFromRenewalResponse(renewalResponse, initialOffer)).thenReturn(updatedOffer);
+        when(credentialEnvelopeService.createCredentialEnvelopeDto(updatedOffer, request, null, mgmt)).thenReturn(envelope);
+
+        var credentialConfig = mock(CredentialConfiguration.class);
+        when(credentialConfig.getCredentialRefreshDisabled()).thenReturn(false);
+        when(issuerMetadata.getCredentialConfigurationById(any())).thenReturn(credentialConfig);
+        when(issuerMetadataService.getUnsignedIssuerMetadata()).thenReturn(issuerMetadata);
+
+        var result = service.handleRenewalFlow(request, mgmt, null, "dpop-key");
+
+        assertThat(result).isEqualTo(envelope);
+        verify(credentialManagementRepository).save(mgmt);
+        assertThat(mgmt.getRenewalResponseCnt()).isEqualTo(1);
     }
 
     @Test
