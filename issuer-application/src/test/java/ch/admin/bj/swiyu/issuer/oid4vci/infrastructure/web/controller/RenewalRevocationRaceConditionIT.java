@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;

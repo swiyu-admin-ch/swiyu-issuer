@@ -35,7 +35,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createStatusList;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.linkStatusList;

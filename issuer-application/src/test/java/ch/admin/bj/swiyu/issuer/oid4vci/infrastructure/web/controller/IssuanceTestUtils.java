@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;

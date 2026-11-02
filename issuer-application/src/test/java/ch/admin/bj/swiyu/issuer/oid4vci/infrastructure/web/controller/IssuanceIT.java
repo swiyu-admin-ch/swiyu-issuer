@@ -1,6 +1,5 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
@@ -31,15 +30,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.ObjectMapper;
 
 import java.text.ParseException;
@@ -47,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -57,26 +50,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("test")
-@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class IssuanceIT {
+class IssuanceIT extends AbstractCredentialIT {
 
     private StatusList testStatusList;
     private List<ECKey> holderKeys;
     @Autowired
-    private MockMvc mock;
-    @Autowired
-    private StatusListRepository statusListRepository;
-    @Autowired
-    private CredentialOfferStatusRepository credentialOfferStatusRepository;
+    private ApplicationProperties applicationProperties;
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
-    @Autowired
-    private ApplicationProperties applicationProperties;
     @MockitoSpyBean
     private SdjwtProperties sdjwtProperties;
     @Autowired
@@ -602,10 +584,6 @@ class IssuanceIT {
         // check header details
         assertEquals(expectedKid, ((JWSHeader) jwt.getHeader()).getKeyID());
         assertEquals(overrideDID, (jwt.getJWTClaimsSet().getIssuer()));
-    }
-
-    private StatusList saveStatusList(StatusList statusList) {
-        return statusListRepository.save(statusList);
     }
 
     private CredentialOffer createUnboundCredentialOffer() throws Exception {

@@ -45,7 +45,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForCredentialSupportedIdTest;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.createPemForKid;

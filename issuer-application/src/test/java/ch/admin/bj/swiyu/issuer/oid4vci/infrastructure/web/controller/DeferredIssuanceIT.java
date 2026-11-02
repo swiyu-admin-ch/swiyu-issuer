@@ -1,6 +1,5 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
@@ -36,17 +35,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.UnsupportedEncodingException;
@@ -60,8 +54,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatus;
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatusAndSubjectDataForDeferred;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatusAndSubjectDataForDeferred;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,24 +65,11 @@ import static org.mockito.Mockito.mockStatic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("test")
-@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class DeferredIssuanceIT {
+class DeferredIssuanceIT extends AbstractCredentialIT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
     private List<ECKey> holderKeys;
-    @Autowired
-    private MockMvc mock;
-    @Autowired
-    private StatusListRepository statusListRepository;
-    @Autowired
-    private CredentialOfferStatusRepository credentialOfferStatusRepository;
-    @Autowired
-    private CredentialOfferRepository credentialOfferRepository;
     @Autowired
     private ApplicationProperties applicationProperties;
     @Autowired
@@ -103,8 +84,6 @@ class DeferredIssuanceIT {
     private JweService encryptionService;
     @Autowired
     private NonceService nonceService;
-    @Autowired
-    private CredentialManagementRepository credentialManagementRepository;
 
     private static String getDeferredCredentialRequestString(String transactionId) {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
@@ -726,30 +705,6 @@ class DeferredIssuanceIT {
                     "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}",
                     configurationId, encryption, proofString);
         }
-    }
-
-    private CredentialManagement saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList,
-                                                           int index) {
-        var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .accessToken(UUID.randomUUID())
-                .credentialManagementStatus(CredentialStatusManagementType.INIT)
-                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
-                .renewalRequestCnt(0)
-                .renewalResponseCnt(0)
-                .build());
-
-        offer.setCredentialManagement(credentialManagement);
-        var storedOffer = credentialOfferRepository.save(offer);
-        credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
-
-        credentialManagement.addCredentialOffer(storedOffer);
-        credentialManagementRepository.save(credentialManagement);
-        return credentialManagementRepository.save(credentialManagement);
-    }
-
-    private StatusList saveStatusList(StatusList statusList) {
-        return statusListRepository.save(statusList);
     }
 
     private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString)

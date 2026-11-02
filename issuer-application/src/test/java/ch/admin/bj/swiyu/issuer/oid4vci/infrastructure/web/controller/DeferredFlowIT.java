@@ -1,6 +1,5 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
@@ -51,18 +50,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -75,8 +68,8 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.requestCredentialFromDeferred;
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.requestCredentialFromDeferred;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -86,12 +79,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("test")
-@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-class DeferredFlowIT {
+class DeferredFlowIT extends AbstractCredentialIT {
 
     private static ECKey jwk;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -102,16 +90,6 @@ class DeferredFlowIT {
     AsyncCredentialEventHandler testEventListener;
     @MockitoSpyBean
     private IssuerMetadata issuerMetadata;
-    @Autowired
-    private MockMvc mock;
-    @Autowired
-    private CredentialOfferRepository credentialOfferRepository;
-    @Autowired
-    private CredentialManagementRepository credentialManagementRepository;
-    @Autowired
-    private StatusListRepository statusListRepository;
-    @Autowired
-    private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
     private SdjwtProperties sdjwtProperties;
     @Autowired
@@ -167,14 +145,6 @@ class DeferredFlowIT {
     void tearDown() {
         cleanDatabase();
     }
-
-    private void cleanDatabase() {
-        credentialOfferStatusRepository.deleteAll();
-        credentialOfferRepository.deleteAll();
-        credentialManagementRepository.deleteAll();
-        statusListRepository.deleteAll();
-    }
-
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void testCompleteFlow_thenSuccess(boolean encryptionEnabled) throws Exception {
@@ -666,11 +636,6 @@ class DeferredFlowIT {
             assertEquals(instant.plusSeconds(expirationInSeconds).getEpochSecond(), result.getOfferExpirationTimestamp());
         }
     }
-
-    private StatusList saveStatusList(StatusList statusList) {
-        return statusListRepository.save(statusList);
-    }
-
     /**
      * Polls until the async event handler has been invoked at least {@code times} times
      * for {@link OfferStateChangeEvent}.
