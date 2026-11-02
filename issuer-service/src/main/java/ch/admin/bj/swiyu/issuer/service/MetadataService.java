@@ -316,14 +316,15 @@ public class MetadataService {
             jwt.sign(signer);
             return jwt.serialize();
         } catch (JOSEException e) {
-            log.error("Unable to sign metadata for tenant %s".formatted(tenantId), e);
-            throw new ConfigurationException("Unable to sign metadata for tenant %s", e);
+            log.error("Unable to sign metadata for tenant {}", tenantId, e);
+            throw new ConfigurationException("Unable to sign metadata for tenant %s".formatted(tenantId), e);
         } catch (KeyStrategyException e) {
-            log.error("Failed to signed metadata JWT with the provided key %s".formatted(override.keyId()));
-            throw new ConfigurationException("Failed to signed metadata JWT with the provided key", e);
+            log.error("Failed to sign metadata JWT for tenant {} with the provided key {}", tenantId, override.keyId(), e);
+            throw new ConfigurationException(
+                    "Failed to sign metadata JWT for tenant %s with the provided key %s".formatted(tenantId, override.keyId()), e);
         } catch (ParseException e) {
-            log.error("Unable to parse the metadata to a JSON");
-            throw new ConfigurationException("Unable to parse the metadata to a JSON", e);
+            log.error("Unable to parse the metadata to a JSON for tenant {}", tenantId, e);
+            throw new ConfigurationException("Unable to parse the metadata to a JSON for tenant %s".formatted(tenantId), e);
         }
 
 
