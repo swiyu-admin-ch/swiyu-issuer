@@ -13,6 +13,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.Instant;
 import java.util.UUID;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createStatusList;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.linkStatusList;
 
 /**
@@ -48,6 +49,10 @@ abstract class AbstractCredentialIT {
 
     protected StatusList saveStatusList(StatusList statusList) {
         return statusListRepository.save(statusList);
+    }
+
+    protected StatusList saveNewStatusList() {
+        return saveStatusList(createStatusList());
     }
 
     protected CredentialManagement saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList,

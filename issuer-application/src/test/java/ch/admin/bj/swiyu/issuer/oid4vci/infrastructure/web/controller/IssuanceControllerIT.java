@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
@@ -16,10 +15,7 @@ import ch.admin.bj.swiyu.issuer.service.NonceService;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,17 +24,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.UnsupportedEncodingException;
@@ -51,6 +42,7 @@ import java.util.*;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthErrorDto.INVALID_GRANT;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.createPrivateKey;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -61,13 +53,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("test")
-@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class IssuanceControllerIT {
+class IssuanceControllerIT extends AbstractCredentialIT {
     private static UUID offerId;
     private static StatusList testStatusList;
     private static ECKey jwk;
@@ -77,16 +64,6 @@ class IssuanceControllerIT {
     private final Instant validUntil = Instant.now().plus(30, ChronoUnit.DAYS);
     private UUID unboundPreAuthCode = UUID.randomUUID();
 
-    @Autowired
-    private MockMvc mock;
-    @Autowired
-    private CredentialOfferRepository credentialOfferRepository;
-    @Autowired
-    private StatusListRepository statusListRepository;
-    @Autowired
-    private CredentialOfferStatusRepository credentialOfferStatusRepository;
-    @Autowired
-    private CredentialManagementRepository credentialManagementRepository;
     @MockitoSpyBean
     private SdjwtProperties sdjwtProperties;
     @MockitoSpyBean
@@ -130,7 +107,7 @@ class IssuanceControllerIT {
         // Reset the spy so that stubs from previous tests (e.g. isSignedMetadataEnabled=true set by
         // testGetIssuerMetadataWithSignedMetadata_thenSuccess) do not bleed into subsequent tests.
         Mockito.reset(applicationProperties);
-        testStatusList = saveStatusList(createStatusList());
+        testStatusList = saveNewStatusList();
         CredentialOfferMetadata metadata = new CredentialOfferMetadata(null, null, null);
         var offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt",
                 metadata);
@@ -141,11 +118,7 @@ class IssuanceControllerIT {
         saveStatusListLinkedOffer(allValuesPreAuthCodeOffer, testStatusList, 1);
         var unboundOffer = createUnboundCredentialOffer();
         saveStatusListLinkedOffer(unboundOffer, testStatusList, 2);
-        jwk = new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID("Test-Key")
-                .issueTime(new Date())
-                .generate();
+        jwk = createPrivateKey("Test-Key");
     }
 
     @Test
@@ -513,29 +486,6 @@ class IssuanceControllerIT {
                 null
         );
         return objectMapper.writeValueAsString(request);
-    }
-
-    private CredentialOffer saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList, int index) {
-        var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .accessToken(UUID.randomUUID())
-                .credentialManagementStatus(CredentialStatusManagementType.INIT)
-                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
-                .renewalRequestCnt(0)
-                .renewalResponseCnt(0)
-                .build());
-
-        offer.setCredentialManagement(credentialManagement);
-        var storedOffer = credentialOfferRepository.save(offer);
-        credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
-
-        credentialManagement.addCredentialOffer(storedOffer);
-        credentialManagementRepository.save(credentialManagement);
-        return storedOffer;
-    }
-
-    private StatusList saveStatusList(StatusList statusList) {
-        return statusListRepository.save(statusList);
     }
 
     @NotNull

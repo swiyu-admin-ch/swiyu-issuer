@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.createHolderPrivateKeys;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatusAndSubjectDataForDeferred;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
@@ -105,11 +106,11 @@ class DeferredIssuanceIT extends AbstractCredentialIT {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws JOSEException {
         // Reset the spy so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null,
         // isBatchIssuanceAllowed=false) do not bleed into subsequent tests that use the real batch size.
         Mockito.reset(issuerMetadata);
-        statusList = saveStatusList(createStatusList());
+        statusList = saveNewStatusList();
         var deferredMetadata = new CredentialOfferMetadata(true, null, null);
 
         CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED,
@@ -117,13 +118,7 @@ class DeferredIssuanceIT extends AbstractCredentialIT {
                 deferredMetadata);
 
         offerManagementId = saveStatusListLinkedOffer(offer, statusList, 0).getId();
-        holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize()).boxed()
-                .map(i -> assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
-                        .keyUse(KeyUse.SIGNATURE)
-                        .keyID("Test-Key-" + i)
-                        .issueTime(new Date())
-                        .generate()))
-                .toList();
+        holderKeys = createHolderPrivateKeys(issuerMetadata.getIssuanceBatchSize());
     }
 
     @Test

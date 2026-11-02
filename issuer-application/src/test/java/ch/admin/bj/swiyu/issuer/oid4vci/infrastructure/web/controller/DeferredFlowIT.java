@@ -68,6 +68,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.createPrivateKey;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.requestCredentialFromDeferred;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
@@ -132,19 +133,16 @@ class DeferredFlowIT extends AbstractCredentialIT {
         Mockito.reset(issuerMetadata);
         Mockito.reset(testEventListener);
         cleanDatabase();
-        statusList = saveStatusList(createStatusList());
+        statusList = saveNewStatusList();
 
-        jwk = new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID("Test-Key")
-                .issueTime(new Date())
-                .generate();
+        jwk = createPrivateKey("Test-Key");
     }
 
     @AfterEach
     void tearDown() {
         cleanDatabase();
     }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void testCompleteFlow_thenSuccess(boolean encryptionEnabled) throws Exception {

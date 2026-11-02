@@ -69,16 +69,13 @@ class IssuanceIT extends AbstractCredentialIT {
     private CredentialPersistenceService persistenceService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws JOSEException {
         // Reset spies so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null)
         // do not bleed into subsequent tests that rely on the real bean behaviour.
         reset(issuerMetadata);
         reset(persistenceService);
-        testStatusList = saveStatusList(createStatusList());
-        holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
-                .boxed()
-                .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
-                .toList();
+        testStatusList = saveNewStatusList();
+        holderKeys = createHolderPrivateKeys(issuerMetadata.getIssuanceBatchSize());
     }
 
     @Test
