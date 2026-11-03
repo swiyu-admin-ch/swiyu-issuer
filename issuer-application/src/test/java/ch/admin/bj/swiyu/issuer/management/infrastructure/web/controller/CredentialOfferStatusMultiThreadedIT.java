@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
 import static org.junit.jupiter.api.Assertions.*;
@@ -153,7 +154,7 @@ class CredentialOfferStatusMultiThreadedIT {
 
                 var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                         .boxed()
-                        .map(privindex -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(privindex))))
+                        .map(privindex -> signingKey("Test-Key-%s".formatted(privindex)))
                         .toList();
                 String payload = getMinimalPayloadForUniversityCredential(statusRegistryUrl);
 

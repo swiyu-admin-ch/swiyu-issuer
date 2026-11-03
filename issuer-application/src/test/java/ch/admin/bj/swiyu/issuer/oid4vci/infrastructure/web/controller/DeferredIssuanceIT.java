@@ -23,7 +23,6 @@ import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -48,13 +47,12 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.createHolderPrivateKeys;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKeys;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatusAndSubjectDataForDeferred;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
@@ -118,7 +116,7 @@ class DeferredIssuanceIT extends AbstractCredentialIT {
                 deferredMetadata);
 
         offerManagementId = saveStatusListLinkedOffer(offer, statusList, 0).getId();
-        holderKeys = createHolderPrivateKeys(issuerMetadata.getIssuanceBatchSize());
+        holderKeys = signingKeys("Test-Key-", issuerMetadata.getIssuanceBatchSize());
     }
 
     @Test
@@ -280,11 +278,7 @@ class DeferredIssuanceIT extends AbstractCredentialIT {
         doReturn(null).when(issuerMetadata).getBatchCredentialIssuance();
         doReturn(false).when(issuerMetadata).isBatchIssuanceAllowed();
 
-        holderKeys = List.of(new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID("Test-Key")
-                .issueTime(new Date())
-                .generate());
+        holderKeys = List.of(signingKey("Test-Key"));
 
         var offer = createCredentialOffer();
         var nonce = requestNonce(mock);

@@ -33,11 +33,8 @@ import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -68,11 +65,13 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.createPrivateKey;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.requestCredentialFromDeferred;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.linkStatusList;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.encryptionKey;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -127,7 +126,7 @@ class DeferredFlowIT extends AbstractCredentialIT {
     }
 
     @BeforeEach
-    void setUp() throws JOSEException {
+    void setUp() {
         // Reset spies so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null)
         // do not bleed into subsequent tests that rely on the real bean behaviour.
         Mockito.reset(issuerMetadata);
@@ -135,7 +134,7 @@ class DeferredFlowIT extends AbstractCredentialIT {
         cleanDatabase();
         statusList = saveNewStatusList();
 
-        jwk = createPrivateKey("Test-Key");
+        jwk = signingKey("Test-Key");
     }
 
     @AfterEach
@@ -155,17 +154,12 @@ class DeferredFlowIT extends AbstractCredentialIT {
         var metadata = getIssuerMetadata(credentialOffer);
 
         JWEAlgorithm alg = JWEAlgorithm.parse(metadata.getResponseEncryption().getAlgValuesSupported().getFirst());
-        var holderEncryptionKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("HolderEncryptionKey")
-                .keyUse(KeyUse.ENCRYPTION)
-                .algorithm(alg)
-                .generate());
+        var holderEncryptionKey = encryptionKey("HolderEncryptionKey", alg);
 
         // create holder keys (as many as possible defined by metadata)
         var holderBindingKeys = IntStream.range(0, metadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("HolderBindingKey#%s".formatted(i))
-                        .keyUse(KeyUse.SIGNATURE)
-                        .generate()))
+                .map(i -> signingKey("HolderBindingKey#%s".formatted(i)))
                 .toList();
 
         var holderBindingJwts = holderBindingKeys.stream()
@@ -236,9 +230,7 @@ class DeferredFlowIT extends AbstractCredentialIT {
 
         var holderBindingKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("HolderBindingKey#%s".formatted(i))
-                        .keyUse(KeyUse.SIGNATURE)
-                        .generate()))
+                .map(i -> signingKey("HolderBindingKey#%s".formatted(i)))
                 .toList();
 
         var holderBindingJwts = holderBindingKeys.stream()

@@ -41,6 +41,7 @@ import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKeys;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -350,8 +351,7 @@ class CredentialManagementStatusIT {
                 createCredentialOfferResult.getContentAsString(),
                 CredentialWithDeeplinkResponseDto.class);
 
-        List<ECKey> holderPrivateKeys = IssuanceTestUtils
-                .createHolderPrivateKeys(issuerMetadata.getIssuanceBatchSize());
+        List<ECKey> holderPrivateKeys = signingKeys("Test-Key-", issuerMetadata.getIssuanceBatchSize());
 
         var token = IssuanceTestUtils.getAccessTokenFromDeeplink(mvc,
                 credentialWithDeeplinkResponseDto.getOfferDeeplink());

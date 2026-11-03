@@ -26,7 +26,6 @@ import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.*;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -62,6 +61,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.encryptionKey;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -292,10 +293,7 @@ class BlackboxIT {
 
         // Fetch the bearer token
 
-        var dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
-                .keyID("HolderDPoPKey")
-                .keyUse(KeyUse.SIGNATURE)
-                .generate());
+        var dpopKey = signingKey("HolderDPoPKey");
 
 
         var tokenResponse = assertDoesNotThrow(() -> mvc.perform(post(oauthConfig.token_endpoint()
@@ -331,15 +329,10 @@ class BlackboxIT {
         // To create the holder binding proof we need a key pair
         var holderBindingKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(i -> assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("HolderBindingKey#%s".formatted(
-                                i))
-                        .keyUse(KeyUse.SIGNATURE)
-                        .generate()))
+                .map(i -> signingKey("HolderBindingKey#%s".formatted(
+                                i)))
                 .toList();
-        var holderEncryptionKeys = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256).keyID("HolderEncryptionKey")
-                .keyUse(KeyUse.ENCRYPTION)
-                .algorithm(JWEAlgorithm.ECDH_ES)
-                .generate());
+        var holderEncryptionKeys = encryptionKey("HolderEncryptionKey");
 
         var holderBindingJwts = holderBindingKeys.stream()
                 .map(holderBindingKey -> createHolderBindingJwt(holderBindingKey, baseIssuerUri, issuerMetadata))

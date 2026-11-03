@@ -13,7 +13,6 @@ import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
 import ch.admin.bj.swiyu.issuer.service.webhook.AsyncCredentialEventHandler;
 import ch.admin.bj.swiyu.issuer.service.webhook.ErrorEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.OfferStateChangeEvent;
-import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
@@ -44,8 +43,10 @@ import java.util.UUID;
 import static ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialRequestErrorDto.INVALID_PROOF;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
 import static ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils.createKeyAttestationJwt;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -85,11 +86,11 @@ class KeyAttestationFlowIT {
     private DidKeyResolverFacade didKeyResolver;
 
     @BeforeEach
-    void setUp() throws JOSEException {
+    void setUp() {
         createCredentialOffer(createTestOffer(testOfferNoAttestationId, CredentialOfferStatusType.OFFERED, "university_example_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
         createCredentialOffer(createTestOffer(testOfferAnyAttestationId, CredentialOfferStatusType.OFFERED, "university_example_any_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
         createCredentialOffer(createTestOffer(testOfferHighAttestationId, CredentialOfferStatusType.OFFERED, "university_example_high_key_attestation_required_sd_jwt", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS)));
-        jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).keyID("Test-Key").issueTime(new Date()).generate();
+        jwk = signingKey("Test-Key");
     }
 
     @AfterEach
@@ -214,10 +215,7 @@ class KeyAttestationFlowIT {
         when(applicationProperties.isDpopEnforce()).thenReturn(true);
         mockDidResolve(jwk.toPublicJWK());
 
-        var unattestedKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
-                .keyID("Different-Key")
-                .keyUse(KeyUse.SIGNATURE)
-                .generate());
+        var unattestedKey = signingKey("Different-Key");
 
         String proof = createKeyAttestationJwt(jwk, jwk, AttackPotentialResistance.ISO_18045_HIGH, null);
         var response = fetchOAuthTokenDpop(mock, testOfferHighAttestationId.toString(), unattestedKey, applicationProperties.getTemplateReplacement().get("external-url"), proof);
@@ -230,10 +228,7 @@ class KeyAttestationFlowIT {
         when(applicationProperties.isDpopEnforce()).thenReturn(true);
         mockDidResolve(jwk.toPublicJWK());
 
-        var unattestedKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
-                .keyID("Different-Key")
-                .keyUse(KeyUse.SIGNATURE)
-                .generate());
+        var unattestedKey = signingKey("Different-Key");
 
         String proof = createKeyAttestationJwt(unattestedKey, unattestedKey, AttackPotentialResistance.ISO_18045_HIGH, null);
         var response = fetchOAuthTokenDpop(mock, testOfferHighAttestationId.toString(), jwk, applicationProperties.getTemplateReplacement().get("external-url"), proof);
