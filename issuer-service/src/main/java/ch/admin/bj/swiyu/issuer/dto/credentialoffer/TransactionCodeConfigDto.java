@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.dto.credentialoffer;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,11 +11,15 @@ import lombok.NoArgsConstructor;
 
 /**
  * Configuration to enable and change behaviour of the transaction code
+ *
+ * <p>The no-args constructor is declared as the
+ * properties-based creator otherwise Jackson would detect the all-args constructor required by the builder
+ * as properties-based creator and bypass those initializers.</p>
  */
 @Data
 @Builder
-@AllArgsConstructor 
-@NoArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor(onConstructor_ = @JsonCreator(mode = JsonCreator.Mode.PROPERTIES))
 @Schema(name = "TransactionCodeConfig", description = "Configuration for transaction code.")
 public class TransactionCodeConfigDto {
     @JsonProperty("use_tx_code")
