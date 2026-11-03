@@ -24,6 +24,7 @@ import ch.admin.bj.swiyu.issuer.service.renewal.BusinessIssuerRenewalApiClient;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import ch.admin.bj.swiyu.issuer.service.webhook.DeferredEvent;
 import ch.admin.bj.swiyu.issuer.service.webhook.EventProducerService;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 
@@ -66,7 +68,7 @@ class CredentialServiceOrchestratorTest {
     private CredentialStateMachine credentialStateMachine;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         statusListOrchestrator = Mockito.mock(StatusListOrchestrator.class);
         issuerMetadata = Mockito.mock(IssuerMetadata.class);
         credentialFormatFactory = Mockito.mock(CredentialFormatFactory.class);
@@ -126,7 +128,7 @@ class CredentialServiceOrchestratorTest {
                 deferredCredentialService
         );
 
-        var statusListToken = new TokenStatusListToken(2, 10000);
+        var statusListToken = new TokenStatusList(2, 10000);
         statusList = StatusList.builder()
                 .config(Map.of("bits", 2))
                 .uri("https://localhost:8080/status")

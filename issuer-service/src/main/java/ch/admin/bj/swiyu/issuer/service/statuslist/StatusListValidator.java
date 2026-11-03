@@ -1,11 +1,12 @@
 package ch.admin.bj.swiyu.issuer.service.statuslist;
 
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatus;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListBit;
+
+import ch.admin.bj.swiyu.statuslist.TokenStatusListBit;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;
@@ -59,10 +60,10 @@ public class StatusListValidator {
     /**
      * Validates the requested post-issuance status transition and maps it to the appropriate action.
      *
-     * @param newStatus   requested new management status
-     * @param revoke      action for {@link CredentialStatusManagementType#REVOKED}
-     * @param suspend     action for {@link CredentialStatusManagementType#SUSPENDED}
-     * @param revalidate  action for {@link CredentialStatusManagementType#ISSUED} (re-validate)
+     * @param newStatus  requested new management status
+     * @param revoke     action for {@link CredentialStatusManagementType#REVOKED}
+     * @param suspend    action for {@link CredentialStatusManagementType#SUSPENDED}
+     * @param revalidate action for {@link CredentialStatusManagementType#ISSUED} (re-validate)
      * @return affected status list IDs
      * @throws BadRequestException if the transition is not supported
      */
@@ -90,7 +91,7 @@ public class StatusListValidator {
      * @throws BadRequestException if the bit is not supported by the status list
      */
     public void requireBitSupported(int statusListBits, TokenStatusListBit bit, String statusListUri) {
-        if (statusListBits < bit.getValue()) {
+        if (statusListBits < bit.getBitNumber()) {
             throw new BadRequestException(
                     String.format("Attempted to update a status list %s to a status not supported %s", statusListUri, bit.name()));
         }
