@@ -17,6 +17,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
+import ch.admin.bj.swiyu.issuer.service.CredentialOfferExpirationService;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
@@ -123,6 +124,7 @@ class CredentialManagementServiceTest {
                 applicationProperties,
                 validationService,
                 stateService,
+                new CredentialOfferExpirationService(persistenceService, stateService),
                 persistenceService,
                 statusListOrchestrator,
                 objectMapper
@@ -202,9 +204,11 @@ class CredentialManagementServiceTest {
                 .credentialOffers(Set.of(expiredOffer))
                 .credentialManagementStatus(CredentialStatusManagementType.INIT)
                 .build();
+
         expiredOffer.setCredentialManagement(mgmt);
 
         when(persistenceService.findCredentialOfferByIdForUpdate(expiredOffer.getId())).thenReturn(expiredOffer);
+        when(stateService.expireOfferAndPublish(any())).thenReturn(expiredOffer);
 
         CredentialInfoResponseDto response = credentialService.getSpecificCredentialOfferInformation(mgmt.getId(), expiredOffer.getId());
 

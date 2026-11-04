@@ -15,6 +15,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
+import ch.admin.bj.swiyu.issuer.service.CredentialOfferExpirationService;
 import ch.admin.bj.swiyu.issuer.service.CredentialStateService;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferMapper;
 import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
@@ -55,13 +56,12 @@ import static ch.admin.bj.swiyu.issuer.service.statusregistry.StatusResponseMapp
 @RequiredArgsConstructor
 public class CredentialManagementService {
 
-    private static final String STATUS_NOT_CHANGEABLE = "Tried to set %s but status is already %s";
-
     private final IssuerMetadata issuerMetadata;
     private final ApplicationProperties applicationProperties;
 
     private final CredentialOfferValidationService validationService;
     private final CredentialStateService stateService;
+    private final CredentialOfferExpirationService expirationService;
     private final CredentialPersistenceService persistenceService;
     private final StatusListOrchestrator statusListOrchestrator;
     private final ObjectMapper objectMapper;
@@ -518,7 +518,8 @@ public class CredentialManagementService {
      * expiration, expiring the affected offers.
      *
      * <p>Takes the lock unconditionally because expiration handling can itself mutate
-     * and persist the aggregate (see {@link #expireCredentialOffer}) and every caller
+     * and persist the aggregate (see
+     * {@link CredentialOfferExpirationService#expireCredentialOfferIfExpired(CredentialOffer)}) and every caller
      * of this method eventually does the same. It serializes against a concurrently
      * running renewal, which holds the same row lock (via {@code findByAccessToken}/
      * {@code findByRefreshToken}) for the whole renewal transaction. Without this lock,
@@ -534,13 +535,8 @@ public class CredentialManagementService {
     }
 
     private CredentialManagement applyExpirationCheck(CredentialManagement mgmt) {
-        mgmt.getCredentialOffers().forEach(offer -> {
-            // Make sure only offer is returned if it is not expired
-            if (CredentialOfferStatusType.getExpirableStates().contains(offer.getCredentialStatus())
-                    && offer.hasExpirationTimeStampPassed()) {
-                expireCredentialOffer(offer);
-            }
-        });
+        // Make sure only offer is returned if it is not expired
+        mgmt.getCredentialOffers().forEach(expirationService::expireCredentialOfferIfExpired);
 
         return persistenceService.saveCredentialManagement(mgmt);
     }
@@ -548,14 +544,7 @@ public class CredentialManagementService {
     private CredentialOffer getCredentialOfferWithExpirationCheck(UUID offerId) {
         var offer = persistenceService.findCredentialOfferByIdForUpdate(offerId);
 
-        if (CredentialOfferStatusType.getExpirableStates()
-                .contains(
-                        offer.getCredentialStatus())
-                && offer.hasExpirationTimeStampPassed()) {
-            expireCredentialOffer(offer);
-        }
-
-        return offer;
+        return expirationService.expireCredentialOfferIfExpired(offer);
     }
 
     /**
@@ -639,25 +628,5 @@ public class CredentialManagementService {
         // Add padding in front
         String format = "%0" + Integer.toString(length) + "d";
         return String.format(format, secureRandom.nextLong(upperBound));
-    }
-
-    /**
-     * Expires a credential offer by updating its state and publishing an event.
-     *
-     * @param credential the credential offer to expire
-     * @return the updated credential offer
-     * @throws BadRequestException if the credential is already in a terminal state
-     */
-    private CredentialOffer expireCredentialOffer(CredentialOffer credential) {
-        var currentStatus = credential.getCredentialStatus();
-
-        if (credential.getCredentialStatus().isTerminalState()) {
-            throw new BadRequestException(
-                    String.format(STATUS_NOT_CHANGEABLE, CredentialOfferStatusType.EXPIRED, currentStatus));
-        }
-
-        stateService.expireOfferAndPublish(credential);
-
-        return credential;
     }
 }

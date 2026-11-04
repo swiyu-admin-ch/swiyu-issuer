@@ -56,20 +56,9 @@ public class CredentialOfferExpirationService {
      * @return either expired {@link CredentialOffer} or returns it untouched
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public CredentialOffer expireCredentialOffer(CredentialOffer offer) {
-        var currentStatus = offer.getCredentialStatus();
+    public CredentialOffer expireCredentialOfferIfExpired(CredentialOffer offer) {
 
-        // throw error on forbidden operation
-        if (currentStatus.isTerminalState()) {
-            throw new BadRequestException(
-                    String.format("Tried to set %s but status is already %s", CredentialOfferStatusType.EXPIRED, currentStatus));
-        }
-
-        if (isExpired(offer)) {
-            return stateService.expireOfferAndPublish(offer);
-        }
-
-        return offer;
+        return isExpired(offer) ? stateService.expireOfferAndPublish(offer) : offer;
     }
 
     // expire if offer is in an expirable state and timestamp is in past
