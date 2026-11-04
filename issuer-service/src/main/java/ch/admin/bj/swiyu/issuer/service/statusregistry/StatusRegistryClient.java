@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
@@ -154,8 +155,14 @@ public class StatusRegistryClient {
                         Mono.error(new StatusListFetchFailedException(
                                 "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl))))
                 .bodyToMono(String.class)
+                .onErrorResume(WebClientRequestException.class, ex -> {
+                    // e.g. connection refused, timeout or DNS failure
+                    log.error("Error while fetching status list from {}: {}", rewrittenUrl, ex.getMessage());
+                    return Mono.error(new StatusListFetchFailedException(
+                            "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl)));
+                })
                 .onErrorResume(WebClientResponseException.class, ex -> {
-                    if (ex.getCause().toString().contains("DataBufferLimitException")) {
+                    if (ex.getCause() != null && ex.getCause().toString().contains("DataBufferLimitException")) {
                         return Mono.error(new StatusListFetchFailedException(
                                 "Status list size from %s exceeds maximum allowed size".formatted(rewrittenUrl)));
                     }
