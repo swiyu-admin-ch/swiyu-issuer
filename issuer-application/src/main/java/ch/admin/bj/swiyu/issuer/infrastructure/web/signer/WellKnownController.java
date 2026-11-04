@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.web.signer;
 
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAuthorizationServerMetadataDto;
 import ch.admin.bj.swiyu.issuer.service.MetadataService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -67,7 +68,29 @@ public class WellKnownController {
     @Operation(summary = "Retrieve OAuth 2.0 Authorization Server Metadata",
             description = "Returns the configuration metadata of the Authorization Server in accordance with RFC 8414. " +
                     "This includes URLs to endpoints (e.g., token endpoint), supported grant types, as well as " +
-                    "extensions for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP."
+                    "extensions for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "OK",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = OAuthAuthorizationServerMetadataDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "406",
+                            description = "None of the requested Accept media types are supported"
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal Server Error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    )
+            }
     )
     public OAuthAuthorizationServerMetadataDto getAuthorizationServerMetadata() {
         return metadataService.getUnsignedOAuthAuthorizationServerMetadata();
@@ -83,13 +106,27 @@ public class WellKnownController {
             "/.well-known/openid-credential-issuer",
             "/.well-known/openid-credential-issuer/oid4vci"})
     @Operation(summary = "Information about credentials which can be issued.",
-            responses = @ApiResponse(responseCode = "200", description = "Credential Issuer Metadata",
-                    content = {
-                            @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = IssuerMetadata.class)),
-                            @Content(mediaType = "application/jwt",
-                                    schema = @Schema(type = "string", description = "Signed issuer metadata as JWT"))
-                    }))
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Credential Issuer Metadata",
+                            content = {
+                                    @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                            schema = @Schema(implementation = IssuerMetadata.class)),
+                                    @Content(mediaType = "application/jwt",
+                                            schema = @Schema(type = "string", description = "Signed issuer metadata as JWT"))
+                            }),
+                    @ApiResponse(
+                            responseCode = "406",
+                            description = "None of the requested Accept media types are supported, or signed metadata was requested but is not configured for this issuer"
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal Server Error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    )
+            })
     public Object getIssuerMetadata(@RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {
         // Unwrap the object from the spring cache object.
         if (expectsSignedResponse(acceptHeader)) {
@@ -103,7 +140,26 @@ public class WellKnownController {
             "/oid4vci/{tenantId}/.well-known/openid-credential-issuer",
             "/.well-known/openid-credential-issuer/{tenantId}",
             "/.well-known/openid-credential-issuer/oid4vci/{tenantId}"})
-    @Operation(summary = "Information about credentials which can be issued.")
+    @Operation(summary = "Information about credentials which can be issued.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Credential Issuer Metadata"),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "No credential offer exists for the given tenant id",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal Server Error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    )
+            })
     public Object getIssuerMetadataByTenantId(
             @PathVariable UUID tenantId,
             @RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {
@@ -143,7 +199,26 @@ public class WellKnownController {
             description = "Returns the Authorization Server configuration metadata for the given tenant in accordance with RFC 8414. " +
                     "Depending on the 'Accept' header, the response is provided either as an unsigned JSON document or as a signed JWT. " +
                     "The metadata includes issuer information, endpoint URLs (e.g., token endpoint), supported grant types and extensions " +
-                    "required for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP.")
+                    "required for OpenID for Verifiable Credential Issuance (OID4VCI) and DPoP.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK"),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "No credential offer exists for the given tenant id",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal Server Error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    )
+            })
     public Object getAuthorizationServerMetadataByTenantId(
             @PathVariable UUID tenantId,
             @RequestHeader(HttpHeaders.ACCEPT) String acceptHeader) {

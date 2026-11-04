@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
 import ch.admin.bj.swiyu.core.status.registry.client.model.PageStatusListEntryDto;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 class StatusListAvailabilityHealthCheckerTest {
 
     @Mock
-    StatusBusinessApiApi statusBusinessApi;
+    StatusB2BApi statusBusinessApi;
     @Mock
     SwiyuProperties swiyuProperties;
 

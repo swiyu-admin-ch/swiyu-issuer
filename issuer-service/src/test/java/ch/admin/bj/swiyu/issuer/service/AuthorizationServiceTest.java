@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
@@ -12,6 +13,7 @@ import org.mockito.Mockito;
 
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthError;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthAccessTokenRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenGrantType;
@@ -43,11 +45,13 @@ class AuthorizationServiceTest {
     @Test
     void oauthTokenEndpointWithValidPreAuthorizedCode_thenSuccess() {
         var uuid = UUID.randomUUID();
+        var mockOffer = mock(CredentialOffer.class);
         var expectedResponse = OAuthTokenDto.builder().accessToken("access").refreshToken("refresh")
                 .tokenType(OAuthTokenTypeDto.BEARER).build();
-        when(oAuthService.issueOAuthToken(uuid.toString())).thenReturn(expectedResponse);
+        when(oAuthService.getCredentialOfferWithTokenRequestData(uuid.toString(), null)).thenReturn(mockOffer);
+        when(oAuthService.issueOAuthToken(mockOffer)).thenReturn(expectedResponse);
         var requestBody = new OAuthAccessTokenRequestDto(
-            OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName(), uuid.toString(), null);
+            OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName(), uuid.toString(), null, null);
         var oAuthTokenDto = issuanceService.processOAuthTokenEndpointRequest(null, requestBody, httpRequest);
         assertThat(oAuthTokenDto.getAccessToken()).isNotBlank().isEqualTo(expectedResponse.getAccessToken());
         assertThat(oAuthTokenDto.getRefreshToken()).isNotBlank().isEqualTo(expectedResponse.getRefreshToken());
@@ -60,7 +64,7 @@ class AuthorizationServiceTest {
                 .tokenType(OAuthTokenTypeDto.BEARER).build();
         when(oAuthService.refreshOAuthToken(uuid.toString())).thenReturn(expectedResponse);
         var requestBody = new OAuthAccessTokenRequestDto(
-            OAuthTokenGrantType.REFRESH_TOKEN.getName(), null, uuid.toString());
+            OAuthTokenGrantType.REFRESH_TOKEN.getName(), null, uuid.toString(), null);
         var oAuthTokenDto = issuanceService.processOAuthTokenEndpointRequest(null, requestBody, httpRequest);
         assertThat(oAuthTokenDto.getAccessToken()).isNotBlank().isEqualTo(expectedResponse.getAccessToken());
         assertThat(oAuthTokenDto.getRefreshToken()).isNotBlank().isEqualTo(expectedResponse.getRefreshToken());
@@ -78,7 +82,7 @@ class AuthorizationServiceTest {
     void oauthTokenEndpointWithInvalidRequest_whenRefreshWithoutRefreshToken_thenBadRequest() {
         var expectedErrorCode = OAuthError.INVALID_REQUEST;
         var requestBody = new OAuthAccessTokenRequestDto(
-            OAuthTokenGrantType.REFRESH_TOKEN.getName(), UUID.randomUUID().toString(), null);
+            OAuthTokenGrantType.REFRESH_TOKEN.getName(), UUID.randomUUID().toString(), null, null);
         var error = assertThrows(OAuthException.class, () -> issuanceService.processOAuthTokenEndpointRequest(null, requestBody, httpRequest));
         assertThat(error.getError()).isEqualTo(expectedErrorCode);
     }
@@ -87,7 +91,7 @@ class AuthorizationServiceTest {
     void oauthTokenEndpointWithInvalidRequest_whenRegisterWithoutPreAuthCode_thenBadRequest() {
         var expectedErrorCode = OAuthError.INVALID_REQUEST;
         var requestBody = new OAuthAccessTokenRequestDto(
-            OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName(), null, UUID.randomUUID().toString());
+            OAuthTokenGrantType.PRE_AUTHORIZED_CODE.getName(), null, UUID.randomUUID().toString(), null);
         var error = assertThrows(OAuthException.class, () -> issuanceService.processOAuthTokenEndpointRequest(null, requestBody, httpRequest));
         assertThat(error.getError()).isEqualTo(expectedErrorCode);
     }
@@ -95,7 +99,7 @@ class AuthorizationServiceTest {
     @Test
     void oauthtokenEndpointWithInvalidGrant_whenWrongPreAuthCode_thenBadRequest() {
         var requestBody = new OAuthAccessTokenRequestDto(
-            "non-existent-grant-type", UUID.randomUUID().toString(), null);
+            "non-existent-grant-type", UUID.randomUUID().toString(), null, null);
         var error = assertThrows(OAuthException.class, () -> issuanceService.processOAuthTokenEndpointRequest(null, requestBody, httpRequest));
         assertThat(error.getError()).isEqualTo(OAuthError.UNSUPPORTED_GRANT_TYPE);
     }

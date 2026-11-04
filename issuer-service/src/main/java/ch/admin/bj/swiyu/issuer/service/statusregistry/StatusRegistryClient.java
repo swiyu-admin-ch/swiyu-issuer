@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.service.statusregistry;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
@@ -33,7 +34,8 @@ import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 @Service
 public class StatusRegistryClient {
 
-    private final StatusBusinessApiApi statusBusinessApi;
+    private final StatusB2BApi statusB2BApi;
+    private final StatusB2BV2Api statusB2BV2Api;
     private final SwiyuProperties swiyuProperties;
     private final UrlRewriteProperties urlRewriteProperties;
     private final ApplicationProperties applicationProperties;
@@ -47,12 +49,12 @@ public class StatusRegistryClient {
 
         var businessPartnerId = swiyuProperties.businessPartnerId();
 
-        var client = statusBusinessApi.getApiClient();
+        var client = statusB2BApi.getApiClient();
 
         log.debug("Creating status list entry for business partner id {} on {}", businessPartnerId, client.getBasePath());
 
         try {
-            return statusBusinessApi
+            return statusB2BApi
                     .createStatusListEntry(businessPartnerId)
                     .block();
         } catch (WebClientResponseException e) {
@@ -66,7 +68,7 @@ public class StatusRegistryClient {
             }
             throw new CreateStatusListException(
                     String.format("Failed to create status list. External system %s responded with: %s.",
-                            statusBusinessApi.getApiClient().getBasePath(), e.getStatusCode()),
+                            statusB2BApi.getApiClient().getBasePath(), e.getStatusCode()),
                     e);
         } catch (ConfigurationException e) {
             throw e;
@@ -78,8 +80,8 @@ public class StatusRegistryClient {
     public void updateStatusListEntry(StatusList target, String statusListJWT) {
 
         try {
-            log.debug("Updating status list entry {} for business partner id {} on {}", target.getUri(), swiyuProperties.businessPartnerId(), statusBusinessApi.getApiClient().getBasePath());
-            statusBusinessApi.updateStatusListEntry(
+            log.debug("Updating status list entry {} for business partner id {} on {}", target.getUri(), swiyuProperties.businessPartnerId(), statusB2BApi.getApiClient().getBasePath());
+            statusB2BV2Api.updateStatusListEntry(
                             swiyuProperties.businessPartnerId(),
                             target.getRegistryId(),
                             statusListJWT)
@@ -107,10 +109,10 @@ public class StatusRegistryClient {
                                 target.getRegistryId()),
                         e);
             }
-            log.error("Failed to update status list {} - external system {} responded with: {}.", target.getRegistryId(), statusBusinessApi.getApiClient().getBasePath(), e.getStatusCode(), e);
+            log.error("Failed to update status list {} - external system {} responded with: {}.", target.getRegistryId(), statusB2BApi.getApiClient().getBasePath(), e.getStatusCode(), e);
             throw new UpdateStatusListException(
                     String.format("Failed to update status list. External system %s responded with: %s",
-                            statusBusinessApi.getApiClient().getBasePath(),
+                            statusB2BApi.getApiClient().getBasePath(),
                             e.getStatusCode()),
                     e);
         } catch (Exception e) {
@@ -122,12 +124,13 @@ public class StatusRegistryClient {
 
     /**
      * Resolve Status Lists, skipping verification where the status is from. Should only be used
+     *
      * @param uri
      * @return
      */
     public String resolveStatusList(String uri) {
         var rewrittenUrl = urlRewriteProperties.getRewrittenUrl(uri);
-        var statusListWebClient = statusBusinessApi.getApiClient().getWebClient();       
+        var statusListWebClient = statusB2BApi.getApiClient().getWebClient();
         log.debug("HTTP Request after url rewrite to status list from {}", rewrittenUrl);
         try {
             // check if https request otherwise throw exception

@@ -38,6 +38,7 @@ application:
   dpop-enforce: false
   deeplink-schema: swiyu
   token-ttl: 600
+  tx-code-retries: 1 # For tests we only allow 1 retry
   allow-token-refresh: true
   allow-refresh-token-rotation: false
   enable-vc-hash-storage: true

@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class DemonstratingProofOfPossessionIT {
+class DemonstratingProofOfPossessionServiceIT {
 
     public static final String DPOP_NONCE_HEADER = "DPoP-Nonce";
     @Autowired
@@ -56,14 +56,14 @@ class DemonstratingProofOfPossessionIT {
     private UUID accessToken;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
-    
+
     public static Stream<String> faultyNonceSource() {
         var nonceSecret = IssuerSecret.builder().id(UUID.randomUUID()).build();
         return Stream.of(
                 // Only UUID; No timestamp
                 UUID.randomUUID().toString(), // EIDSEC-633
                 // Missing Hash
-                UUID.randomUUID().toString() + "::" + Instant.now().toString(),
+                UUID.randomUUID() + "::" + Instant.now().toString(),
                 // Attempt ot inject some other data
                 new SelfContainedNonce(nonceSecret).getNonce() + "::" + "SomeOtherData",
                 // Deprecated Nonce
@@ -79,7 +79,7 @@ class DemonstratingProofOfPossessionIT {
     void setUp() {
         accessToken = UUID.randomUUID();
 
-        testCredentialOffer = CredentialOffer.builder()
+        var createTestCredentialOffer = CredentialOffer.builder()
                 .id(UUID.randomUUID())
                 .preAuthorizedCode(UUID.randomUUID())
                 .credentialStatus(CredentialOfferStatusType.OFFERED)
@@ -96,13 +96,17 @@ class DemonstratingProofOfPossessionIT {
 
         var mgmt = credentialManagementRepository.save(credentialManagement);
 
-        testCredentialOffer.setCredentialManagement(credentialManagement);
+        createTestCredentialOffer.setCredentialManagement(credentialManagement);
 
-        credentialOfferRepository.save(testCredentialOffer);
+        credentialOfferRepository.save(createTestCredentialOffer);
         credentialManagement.setCredentialOffers(
-                Set.of(testCredentialOffer)
+                Set.of(createTestCredentialOffer)
         );
         credentialManagementRepository.save(mgmt);
+
+        // Reload Object to ensure that generated values are all present
+        // notably audit data is without this step null and will cause DataIntegrityViolationException
+        testCredentialOffer = credentialOfferRepository.findById(createTestCredentialOffer.getId()).get();
 
         dpopKey = signingKey("test-key-1");
     }
@@ -154,8 +158,7 @@ class DemonstratingProofOfPossessionIT {
         HttpRequest baseTestHttpRequest = createMockRequest();
         var tokenRequest = mockTokenHttpRequest(baseTestHttpRequest);
         var registrationDPoP = getDPoPJWT(tokenRequest, faultyNonce, null);
-        String preAuthCode = testCredentialOffer.getPreAuthorizedCode().toString();
-        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.registerDpop(preAuthCode, registrationDPoP, tokenRequest));
+        assertThrows(DemonstratingProofOfPossessionException.class, () -> demonstratingProofOfPossessionService.registerDpop(testCredentialOffer, registrationDPoP, tokenRequest));
     }
 
     private HttpRequest createMockRequest() {
@@ -165,7 +168,8 @@ class DemonstratingProofOfPossessionIT {
     private void registerDPoP(HttpRequest baseTestHttpRequest, String nonce) {
         var tokenRequest = mockTokenHttpRequest(baseTestHttpRequest);
         var registrationDPoP = getDPoPJWT(tokenRequest, nonce, null);
-        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(testCredentialOffer.getPreAuthorizedCode().toString(), registrationDPoP, tokenRequest));
+
+        assertDoesNotThrow(() -> demonstratingProofOfPossessionService.registerDpop(testCredentialOffer, registrationDPoP, tokenRequest));
     }
 
     private HttpRequest mockTokenHttpRequest(HttpRequest baseTestHttpRequest) {
@@ -185,6 +189,4 @@ class DemonstratingProofOfPossessionIT {
         demonstratingProofOfPossessionService.addDpopNonce(dpopHeaders);
         return assertDoesNotThrow(() -> dpopHeaders.get(DPOP_NONCE_HEADER).getFirst());
     }
-
-
 }

@@ -16,7 +16,8 @@ public enum OAuthErrorDto {
     INVALID_TOKEN(HttpStatus.BAD_REQUEST, "invalid_token"),
     UNAUTHORIZED_CLIENT(HttpStatus.BAD_REQUEST, "unauthorized_client"),
     UNSUPPORTED_GRANT_TYPE(HttpStatus.BAD_REQUEST, "unsupported_grant_type"),
-    INVALID_SCOPE(HttpStatus.BAD_REQUEST, "invalid_scope");
+    INVALID_SCOPE(HttpStatus.BAD_REQUEST, "invalid_scope"),
+    INVALID_TX_CODE(HttpStatus.BAD_REQUEST, "invalid_tx_code");
 
     private final HttpStatus httpStatus;
     private final String errorCode;

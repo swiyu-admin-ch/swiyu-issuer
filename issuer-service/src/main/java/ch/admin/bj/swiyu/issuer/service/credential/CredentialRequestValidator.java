@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNKNOWN_CREDENTIAL_CONFIGURATION;
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.UNKNOWN_CREDENTIAL_IDENTIFIER;
 
 /**
@@ -22,8 +23,8 @@ public class CredentialRequestValidator {
     /**
      * Validate offer state, format and configuration alignment for a credential request.
      *
-     * @param credentialOffer     the offer against which the request is validated
-     * @param credentialRequest   the incoming credential request
+     * @param credentialOffer   the offer against which the request is validated
+     * @param credentialRequest the incoming credential request
      */
     public void validateCredentialRequest(CredentialOffer credentialOffer,
                                           CredentialRequestClass credentialRequest) {
@@ -50,7 +51,7 @@ public class CredentialRequestValidator {
                 && !credentialOffer.getMetadataCredentialSupportedId()
                 .getFirst()
                 .equals(credentialRequest.getCredentialConfigurationId())) {
-            throw new Oid4vcException(UNKNOWN_CREDENTIAL_IDENTIFIER,
+            throw new Oid4vcException(UNKNOWN_CREDENTIAL_CONFIGURATION,
                     "Mismatch between requested and offered credential configuration id.",
                     Map.of(
                             "requestedConfigurationId", credentialRequest.getCredentialConfigurationId(),

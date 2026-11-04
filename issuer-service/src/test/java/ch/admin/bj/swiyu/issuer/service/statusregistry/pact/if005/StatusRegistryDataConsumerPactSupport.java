@@ -1,7 +1,8 @@
 package ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if005;
 
 import au.com.dius.pact.consumer.MockServer;
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
@@ -47,7 +48,8 @@ final class StatusRegistryDataConsumerPactSupport {
         applicationProperties.setAcceptedRegistryHosts(List.of(URI.create(mockServer.getUrl()).getHost()));
 
         return new StatusRegistryClient(
-                new StatusBusinessApiApi(apiClient),
+                new StatusB2BApi(apiClient),
+                new StatusB2BV2Api(apiClient),
                 mock(SwiyuProperties.class),
                 urlRewriteProperties,
                 applicationProperties);

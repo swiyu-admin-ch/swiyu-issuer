@@ -16,19 +16,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.util.Map;
 
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.AUTHORIZATION_HEADER;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.BEARER_TOKEN_REGEX;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.BUSINESS_ENTITY_ID;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.COMPACT_JWT_REGEX;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.CONSUMER;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.ENTRY_PATH;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.JSON_CONTENT_TYPE_REGEX;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.PROVIDER;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.STATUS_LIST_CONTENT_TYPE_REGEX;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.STATUS_LIST_JWT;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.STATUS_REGISTRY_ENTRY_ID;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.buildStatusRegistryClient;
-import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.statusList;
+import static ch.admin.bj.swiyu.issuer.service.statusregistry.pact.if011.StatusBusinessConsumerPactSupport.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,7 +34,7 @@ class StatusListEntryUpdateConsumerPactTest {
                                 "statusRegistryEntryId", STATUS_REGISTRY_ENTRY_ID.toString()))
                 .uponReceiving("PUT a compact status list JWT into an existing entry")
                 .method("PUT")
-                .path(ENTRY_PATH)
+                .path(UPDATE_PATH_V2)
                 .matchHeader("Accept", "^application/json$", "application/json")
                 .matchHeader("Authorization", BEARER_TOKEN_REGEX, AUTHORIZATION_HEADER)
                 .matchHeader("Content-Type", STATUS_LIST_CONTENT_TYPE_REGEX, "application/statuslist+jwt")
@@ -65,7 +53,7 @@ class StatusListEntryUpdateConsumerPactTest {
                                 "statusRegistryEntryId", STATUS_REGISTRY_ENTRY_ID.toString()))
                 .uponReceiving("PUT a compact status list JWT into a missing entry")
                 .method("PUT")
-                .path(ENTRY_PATH)
+                .path(UPDATE_PATH_V2)
                 .matchHeader("Accept", "^application/json$", "application/json")
                 .matchHeader("Authorization", BEARER_TOKEN_REGEX, AUTHORIZATION_HEADER)
                 .matchHeader("Content-Type", STATUS_LIST_CONTENT_TYPE_REGEX, "application/statuslist+jwt")

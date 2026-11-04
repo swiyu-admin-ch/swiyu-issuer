@@ -179,6 +179,18 @@ class RenewalFlowMigrationTestIT {
 
         postFlyway_1_5.migrate();
 
+
+        final Flyway postFlyway_1_8 = Flyway.configure()
+                .dataSource(dataSource)
+                .schemas(SCHEMA)
+                .defaultSchema(SCHEMA)
+                .locations(MIGRATION_LOCATIONS.toArray(String[]::new))
+                .target("1.8.0")
+                .cleanDisabled(false)
+                .load();
+
+        postFlyway_1_8.migrate();
+
     }
 
     @AfterAll

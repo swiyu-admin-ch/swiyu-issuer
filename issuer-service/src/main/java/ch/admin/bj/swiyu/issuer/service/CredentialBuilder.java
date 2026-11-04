@@ -164,28 +164,18 @@ public abstract class CredentialBuilder {
      *              "uri": "https://example.com/statuslists/1"
      *          }
      *      },
-     *      "credentialStatus": {
-     *          "id": "https://university.example/credentials/status/3#94567",
-     *          "type": "BitstringStatusListEntry",
-     *          "statusPurpose": "revocation",
-     *          "statusListIndex": "94567",
-     *          "statusListCredential": "https://university.example/credentials/status/3"
-     *      }
      *   }
      *  </code>
      * </pre>
      */
-    protected Map<String, List<VerifiableCredentialStatusReference>> getStatusReferences() {
-        Map<String, List<VerifiableCredentialStatusReference>> statuses = new HashMap<>();
+    protected List<VerifiableCredentialStatusReference> getStatusReferences() {
         Set<CredentialOfferStatus> byOfferStatusId = credentialOfferStatusRepository
                 .findByOfferId(this.credentialOffer.getId());
 
-        byOfferStatusId.stream()
+        return byOfferStatusId.stream()
                 .map((CredentialOfferStatus credentialOfferStatus) -> statusFactory.createStatusListReference(
                         credentialOfferStatus.getId()
-                                .getIndex(), getStatusList(credentialOfferStatus)))
-                .forEach(status -> statusFactory.mergeByIdentifier(statuses, status));
-        return statuses;
+                                .getIndex(), getStatusList(credentialOfferStatus))).toList();
     }
 
     protected void freeUnusedStatusReferences(List<VerifiableCredentialStatusReference> usedStatusReferences) {

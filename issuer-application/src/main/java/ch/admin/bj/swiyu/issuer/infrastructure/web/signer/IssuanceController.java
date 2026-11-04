@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.dto.exception.ApiErrorDto;
+import ch.admin.bj.swiyu.issuer.dto.exception.DpopErrorDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.*;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
@@ -86,7 +87,49 @@ public class IssuanceController {
                             mediaType = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
                             schema = @Schema(implementation = OAuthAccessTokenRequestDto.class)
                     )
-            )
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "OK",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = OAuthTokenDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid request, grant or token",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Unauthorized",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "405",
+                            description = "HTTP method not allowed"
+                    ),
+                    @ApiResponse(
+                            responseCode = "415",
+                            description = "Unsupported content type"
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal Server Error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    )
+            }
     )
     public OAuthTokenDto oauthTokenEndpoint(
             @RequestHeader(name = DPOP_HTTP_HEADER, required = false) String dpop,
@@ -104,7 +147,29 @@ public class IssuanceController {
                     The response should not be cached.
                     For more information see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-7.2">OID4VCI Nonce Endpoint specification</a></br>
                     Also provides a DPoP nonce. For more details towards demonstrating proof of possession refer to <a href="https://datatracker.ietf.org/doc/html/rfc9449#name-authorization-server-provid">RFC9449</a>
-                    """)
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "OK",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = NonceResponseDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "405",
+                            description = "HTTP method not allowed"
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal Server Error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    )
+            })
     public ResponseEntity<NonceResponseDto> createNonce() {
         return authorizationService.createNonceResponse();
     }
@@ -157,6 +222,66 @@ public class IssuanceController {
                     @ApiResponse(
                             responseCode = "400",
                             description = "Invalid request or validation error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Unauthorized",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = DpopErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Referenced resource not found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "405",
+                            description = "HTTP method not allowed"
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "The requested credential is currently locked by another operation",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "420",
+                            description = "Non-standard status forwarded verbatim from the external Business Issuer renewal backend during a renewal request. Not a fixed contract value.",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "422",
+                            description = "Request validation error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "429",
+                            description = "A renewal request for this credential is already in progress",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal Server Error",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = ApiErrorDto.class)
@@ -240,7 +365,19 @@ public class IssuanceController {
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "Unauthorized"
+                            description = "Unauthorized",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = DpopErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal Server Error",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
                     )
             }
     )

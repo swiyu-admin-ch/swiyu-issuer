@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.core.status.registry.client.api.StatusBusinessApiApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
+import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
 import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
@@ -106,7 +107,9 @@ class RenewalRevocationRaceConditionIT {
     @Autowired
     SwiyuProperties swiyuProperties;
     @MockitoBean
-    private StatusBusinessApiApi statusBusinessApi;
+    private StatusB2BApi statusB2BApi;
+    @MockitoBean
+    private StatusB2BV2Api statusB2BV2Api;
     @Autowired
     private CredentialManagementRepository credentialManagementRepository;
     @Autowired
@@ -137,10 +140,10 @@ class RenewalRevocationRaceConditionIT {
 
         var statusListTestHelper = new StatusListTestHelper(mockMvc, objectMapper);
         final StatusListEntryCreationDto statusListEntry = statusListTestHelper.buildStatusListEntry();
-        when(statusBusinessApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
+        when(statusB2BApi.createStatusListEntry(swiyuProperties.businessPartnerId()))
                 .thenReturn(Mono.just(statusListEntry));
-        when(statusBusinessApi.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
-        when(statusBusinessApi.getApiClient()).thenReturn(mockApiClient);
+        when(statusB2BV2Api.updateStatusListEntry(any(), any(), any())).thenReturn(Mono.empty());
+        when(statusB2BApi.getApiClient()).thenReturn(mockApiClient);
         when(mockApiClient.getBasePath()).thenReturn(statusListEntry.getStatusRegistryUrl());
 
         final StatusListDto statusListDto = assertDoesNotThrow(() -> statusListTestHelper.createStatusList(

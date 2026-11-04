@@ -88,7 +88,8 @@ class StatusListAvailabilityConsumerPactTest {
     @Test
     @PactTestFor(pactMethod = "firstStatusListEntryPage")
     void shouldReadFirstStatusListEntryPage(final MockServer mockServer) {
-        final var page = buildStatusBusinessApi(mockServer)
+        var statusApis = buildStatusBusinessApi(mockServer);
+        final var page = statusApis._1()
                 .getAllStatusListEntries(BUSINESS_ENTITY_ID, 0, 1, null)
                 .block();
 
@@ -104,9 +105,10 @@ class StatusListAvailabilityConsumerPactTest {
     @Test
     @PactTestFor(pactMethod = "statusListEntryPageUnavailable")
     void shouldExposeUnavailableStatusListEntryPage(final MockServer mockServer) {
+        var statusApis = buildStatusBusinessApi(mockServer);
         final WebClientResponseException exception = assertThrows(
                 WebClientResponseException.class,
-                () -> buildStatusBusinessApi(mockServer)
+                () -> statusApis._1()
                         .getAllStatusListEntries(BUSINESS_ENTITY_ID, 0, 1, null)
                         .block());
 

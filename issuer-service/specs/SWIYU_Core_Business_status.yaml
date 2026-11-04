@@ -1,21 +1,85 @@
 openapi: 3.0.1
 info:
-  title: SWIYU Service API
-  description: APIs for the SWIYU Services
-  version:  1.2.4-20250317145139-7c755a9
+  title: SWIYU Core Business Service API
+  description: APIs for the SWIYU Core Business Service
+  contact:
+    name: EID - Team Tergum
+    url: https://confluence.bit.admin.ch/display/EIDTGM/E-ID+-+Team+Tergum+-+Startseite
+  version: 0.0.1
+externalDocs:
+  url: https://confluence.bit.admin.ch/display/EIDTGM/E-ID+-+Team+Tergum+-+Startseite
+servers:
+  - url: http://localhost:8200
+    description: Generated server url
 security:
   # manual change to disable unsupported openid flow (which we acually cannot use anyway)
-  - bearer-jwt: []
+  - bearer-jwt: [ ]
 tags:
   - name: Status Business API
     description: Status Business API
 paths:
+  /api/v2/status/business-entities/{businessEntityId}/status-list-entries/{statusRegistryEntryId}:
+    put:
+      tags:
+        - Status B2B V2
+      summary: Upload a status list with Swiss profile 1.0.0 conformity validation.
+      description: |
+        Uploads a Token Status List JWT and validates Swiss profile conformity in addition to the base checks:
+        - JWT header `typ` must be `statuslist+jwt`
+        - JWT header `profile_version` must be `swiss-profile-vc:1.0.0`
+        - `exp` claim must be set
+        - Decompressed `lst` must not exceed 200KB
+        - Decompressed bit count must be byte-aligned (size-in-bits % 8 = 0) and aligned with `bits`-per-entry
+      operationId: updateStatusListEntry
+      parameters:
+        - name: businessEntityId
+          in: path
+          description: The business partner id provided by the self service api.
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 8432e1f3-8119-4fb9-a879-190ab2cb9deb
+        - name: statusRegistryEntryId
+          in: path
+          description: The status registry entry ID provided by /api/v1/status-list-entries/
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 18fa7c77-9dd1-4e20-a147-fb1bec146085
+      requestBody:
+        description: |
+          Token status list VC according to spec:
+          https://www.ietf.org/archive/id/draft-ietf-oauth-status-list-02.html#name-status-list-request
+          The JWT header must include `typ: statuslist+jwt` and `profile_version: swiss-profile-vc:1.0.0`.
+          The payload must include an `exp` claim.
+        content:
+          application/statuslist+jwt:
+            schema:
+              type: string
+            example: eyJraWQiOiJkaWQ6dGR3Oi4uLiIsInR5cCI6InN0YXR1c2xpc3Qrand0IiwiYWxnIjoiRVMyNTYiLCJwcm9maWxlX3ZlcnNpb24iOiJzd2lzcy1wcm9maWxlLXZjOjEuMC4wIn0.eyJpc3MiOiJkaWQ6dGR3Oi4uLiIsInN1YiI6Imh0dHBzOi8vc3RhdHVzLi4uL2FwaS92MS9zdGF0dXNsaXN0Ly4uLmp3dCIsImlhdCI6MTc0NzM5MjM1NCwiZXhwIjoxNzc4OTI4MzU0LCJzdGF0dXNfbGlzdCI6eyJsc3QiOiJlTnJ0elFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQSIsImJpdHMiOjJ9fQ.signature
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Internal Server Error
+        "200":
+          description: OK
   /api/v1/status/business-entities/{businessEntityId}/status-list-entries/{statusRegistryEntryId}:
     put:
       tags:
-        - Status Business API
-      summary: Get a new entry on the status registry to store a status list.
-      operationId: updateStatusListEntry
+        - Status B2B
+      summary: Upload a status list to the status registry.
+      description:
+        "Deprecated: Use /api/v2/status/... instead. This endpoint does\
+        \ not enforce Swiss profile conformity."
+      operationId: updateStatusListEntry_1
       parameters:
         - name: businessEntityId
           in: path
@@ -50,26 +114,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-        "403":
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
         "500":
           description: Internal Server Error
         "200":
           description: OK
+      deprecated: true
   /api/v1/status/business-entities/{businessEntityId}/status-list-entries/:
     get:
       tags:
-        - Status Business API
+        - Status B2B
       summary: Get all entries for the status registry.
       operationId: getAllStatusListEntries
       parameters:
@@ -95,8 +148,9 @@ paths:
             default: 20
         - name: sort
           in: query
-          description: "Sorting criteria in the format: property,(asc|desc). Default\
-          \ sort order is ascending. Multiple sort criteria are supported."
+          description:
+            "Sorting criteria in the format: property,(asc|desc). Default\
+            \ sort order is ascending. Multiple sort criteria are supported."
           schema:
             type: array
             items:
@@ -104,18 +158,6 @@ paths:
       responses:
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "403":
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "404":
-          description: Not Found
           content:
             application/json:
               schema:
@@ -130,7 +172,7 @@ paths:
                 $ref: "#/components/schemas/PageStatusListEntryDto"
     post:
       tags:
-        - Status Business API
+        - Status B2B
       summary: Create a new entry on the status registry to store a status list.
       operationId: createStatusListEntry
       parameters:
@@ -149,18 +191,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-        "403":
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
         "500":
           description: Internal Server Error
         "200":
@@ -175,25 +205,55 @@ components:
       type: object
       properties:
         errorCode:
-          type: string
-          description: |
-            | Value              | Description                                                                           |
-            | ------------------ | ------------------------------------------------------------------------------------- |
-            | data_invalid       | Indicates that the given data was invalid in syntax of semantic.                      |
-            | resource_not_found | Indicates that the requested data was not found in the given context.                 |
-            | resource_forbidden | Indicates that the requested data in not available with the permissions used.         |
-            | action_forbidden   | Indicates that the requested action could not be processed with the permissions used. |
-          enum:
-            - data_invalid
-            - resource_not_found
-            - resource_forbidden
-            - action_forbidden
+          $ref: "#/components/schemas/ApiErrorCode"
         message:
           type: string
         additionalDetails:
           type: array
           items:
             type: string
+    ApiErrorCode:
+      type: string
+      description: |2
+               | Value                                       | Description                                                                           |
+               | ------------------------------------------- | ------------------------------------------------------------------------------------- |
+               | data_invalid                                | Indicates that the given data was invalid in syntax or semantic.                      |
+               | data_invalid_virus_detected                 | Indicates that the given data contains a virus.                                       |
+               | resource_not_found                          | Indicates that the requested data was not found in the given context.                 |
+               | resource_forbidden                          | Indicates that the requested data is not available with the permissions used.         |
+               | action_forbidden                            | Indicates that the requested action could not be processed with the permissions used. |
+               | partner_is_not_governmental                 | Indicates that the partner is not governmental.                                       |
+               | business_data_integrity_violation           | Indicates that a business data integrity violation occurred.                          |
+               | crypto_integrity_validation_failed          | Indicates that the crypto integrity validation failed.                                |
+               | did_resolve_failed                          | Indicates that the DID resolution failed.                                             |
+               | document_not_found                          | Indicates that the document was not found.                                            |
+               | identifier_validation_failed                | Indicates that the identifier validation failed.                                      |
+               | invalid_pagination                          | Indicates that the pagination parameters are invalid.                                 |
+               | max_size_exceeded                           | Indicates that the maximum size was exceeded.                                         |
+               | object_count_limit_reached                  | Indicates that the object count limit was reached.                                    |
+               | status_list_validation_failed               | Indicates that the status list validation failed.                                     |
+               | trust_onboarding_document_validation_failed | Indicates that the trust onboarding document validation failed.                       |
+               | vc_schema_submission_not_found              | Indicates that the VC schema submission was not found.                                |
+               | vc_type_metadata_validation_failed          | Indicates that the VC type metadata validation failed.                                |
+      enum:
+        - data_invalid
+        - data_invalid_virus_detected
+        - resource_not_found
+        - resource_forbidden
+        - action_forbidden
+        - partner_is_not_governmental
+        - business_data_integrity_violation
+        - crypto_integrity_validation_failed
+        - did_resolve_failed
+        - document_not_found
+        - identifier_validation_failed
+        - invalid_pagination
+        - max_size_exceeded
+        - object_count_limit_reached
+        - status_list_validation_failed
+        - trust_onboarding_document_validation_failed
+        - vc_schema_submission_not_found
+        - vc_type_metadata_validation_failed
     StatusListEntryCreationDto:
       type: object
       properties:
@@ -207,18 +267,12 @@ components:
     PageStatusListEntryDto:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        first:
-          type: boolean
-        last:
-          type: boolean
+        totalElements:
+          type: integer
+          format: int64
         size:
           type: integer
           format: int32
@@ -231,6 +285,12 @@ components:
           format: int32
         sort:
           $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         numberOfElements:
           type: integer
           format: int32
@@ -239,6 +299,11 @@ components:
     PageableObject:
       type: object
       properties:
+        offset:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
         paged:
           type: boolean
         pageNumber:
@@ -249,19 +314,14 @@ components:
           format: int32
         unpaged:
           type: boolean
-        offset:
-          type: integer
-          format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
     SortObject:
       type: object
       properties:
+        empty:
+          type: boolean
         sorted:
           type: boolean
         unsorted:
-          type: boolean
-        empty:
           type: boolean
     StatusListEntryDto:
       type: object
@@ -278,6 +338,10 @@ components:
           type: string
           format: date-time
           example: 2024-10-29T09:35:16.809924Z
+      required:
+        - createdAt
+        - id
+        - updatedAt
   securitySchemes:
     bearer-jwt:
       type: http
@@ -286,3 +350,7 @@ components:
     prometheus:
       type: http
       scheme: basic
+    OIDC:
+      type: openIdConnect
+      description: OAuth2-Authentication
+      openIdConnectUrl: https://swiyu-oauth-mock-server-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/.well-known/openid-configuration

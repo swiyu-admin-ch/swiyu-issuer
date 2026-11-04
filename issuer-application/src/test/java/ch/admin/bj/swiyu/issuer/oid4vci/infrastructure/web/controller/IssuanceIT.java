@@ -38,6 +38,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.*;
@@ -57,6 +58,12 @@ class IssuanceIT extends AbstractCredentialIT {
 
     private StatusList testStatusList;
     private List<ECKey> holderKeys;
+    @Autowired
+    private MockMvc mock;
+    @Autowired
+    private StatusListRepository statusListRepository;
+    @Autowired
+    private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
     private ApplicationProperties applicationProperties;
     @Autowired
@@ -175,60 +182,34 @@ class IssuanceIT extends AbstractCredentialIT {
         assertEquals(vctMetadataUriIntegrity, claims.get(vctMetadataUriIntegrity).getAsString());
     }
 
-    @Test
-    void testSdJwtOffer_noBatch_withoutProof_thenSuccess() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testSdJwtOffer_withAndWithoutBatch_withoutProof_thenBadRequest(boolean batched) throws Exception {
 
-        doReturn(null).when(issuerMetadata).getBatchCredentialIssuance();
-        doReturn(false).when(issuerMetadata).isBatchIssuanceAllowed();
+        var batchCredentialSize = batched ? 10 : null;
 
-        var unboundOffer = createUnboundCredentialOffer();
+        doReturn(new BatchCredentialIssuance(batchCredentialSize)).when(issuerMetadata).getBatchCredentialIssuance();
+        doReturn(batched).when(issuerMetadata).isBatchIssuanceAllowed();
 
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, unboundOffer.getPreAuthorizedCode().toString());
+        var offerRequest = CreateCredentialOfferRequestDto.builder()
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
+                .statusLists(List.of(testStatusList.getUri()))
+                .build();
+
+        var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+
+        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
         var token = tokenResponse.get("access_token");
         var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\"}",
-                "unbound_example_sd_jwt");
+                "university_example_sd_jwt");
 
-        // assumption if no proofs provided then only 1 credential is issued
-        var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
-                .andExpect(status().isOk())
+        IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
+                .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.credentials").isNotEmpty())
-                .andExpect(jsonPath("$.transaction_id").doesNotExist())
-                .andExpect(jsonPath("$.interval").doesNotExist())
                 .andReturn();
-
-        var credentials = extractCredentials(response);
-
-        // without proof also configured batch size credential is issued
-        assertEquals(1, credentials.size());
-    }
-
-    @Test
-    void testSdJwtOffer_batched_withoutProof_thenSuccess() throws Exception {
-
-        doReturn(new BatchCredentialIssuance(10)).when(issuerMetadata).getBatchCredentialIssuance();
-        doReturn(true).when(issuerMetadata).isBatchIssuanceAllowed();
-
-        var unboundOffer = createUnboundCredentialOffer();
-
-        var tokenResponse = TestInfrastructureUtils.fetchOAuthToken(mock, unboundOffer.getPreAuthorizedCode().toString());
-        var token = tokenResponse.get("access_token");
-        var credentialRequestString = String.format("{\"credential_configuration_id\": \"%s\"}",
-                "unbound_example_sd_jwt");
-
-        // assumption if no proofs provided then only 1 credential is issued
-        var response = IssuanceTestUtils.requestCredential(mock, (String) token, credentialRequestString)
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.credentials").isNotEmpty())
-                .andExpect(jsonPath("$.transaction_id").doesNotExist())
-                .andExpect(jsonPath("$.interval").doesNotExist())
-                .andReturn();
-
-        var credentials = extractCredentials(response);
-
-        // without proof also configured batch size credential is issued
-        assertEquals(issuerMetadata.getIssuanceBatchSize(), credentials.size());
     }
 
     @Test
@@ -253,7 +234,7 @@ class IssuanceIT extends AbstractCredentialIT {
         // Response Encryption
         assertThat(metadata.getResponseEncryption()).isNotNull();
         assertTrue(metadata.getResponseEncryption().getAlgValuesSupported().contains(JWEAlgorithm.ECDH_ES.getName()));
-        assertTrue(metadata.getResponseEncryption().getEncValuesSupported().contains(EncryptionMethod.A128GCM.getName()));
+        assertTrue(metadata.getResponseEncryption().getEncValuesSupported().contains(EncryptionMethod.A256GCM.getName()));
         ECKey encryptionKey = encryptionKey("transportEncKeyEC");
 
         var responseEncryptionJson = String.format("""
@@ -577,15 +558,55 @@ class IssuanceIT extends AbstractCredentialIT {
         assertEquals(overrideDID, (jwt.getJWTClaimsSet().getIssuer()));
     }
 
-    private CredentialOffer createUnboundCredentialOffer() throws Exception {
+    @Test
+    void testSdJwtOffer_withIncorrectDPoPAth_then401() throws Exception {
+
         var offerRequest = CreateCredentialOfferRequestDto.builder()
-                .metadataCredentialSupportedId(List.of("unbound_example_sd_jwt"))
-                .credentialSubjectData(Map.of("animal", "animal"))
+                .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
+                .credentialSubjectData(getUniversityCredentialSubjectData())
                 .statusLists(List.of(testStatusList.getUri()))
                 .build();
 
         var offer = createInitialCredentialWithDeeplinkResponse(mock, offerRequest);
+        var credentialOffer = extractCredentialOfferDtoFromCredentialWithDeeplinkResponseDto(offer);
+        var tokenDto = fetchOAuthToken(mock, credentialOffer.getGrants().preAuthorizedCode().preAuthCode().toString());
 
-        return credentialOfferRepository.findById(offer.getOfferId()).orElseThrow();
+        var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, "university_example_sd_jwt");
+
+        ECKey dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
+                .keyID("HolderDPoPKey")
+                .keyUse(KeyUse.SIGNATURE)
+                .generate());
+
+        mock.perform(post("/oid4vci/api/credential")
+                .header("Authorization", String.format("BEARER %s", tokenDto.get("access_token")))
+                .header("DPoP", createDpop(
+                        mock,
+                        issuerMetadata.getNonceEndpoint(),
+                        "POST",
+                        issuerMetadata.getCredentialEndpoint(),
+                        UUID.randomUUID().toString(),
+                        dpopKey
+                ))
+                .content(credentialRequestString))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private List<KeyOnlySignatureConfiguration> getSigningKeys(String keyId) {
+        String pemKey;
+        try {
+            pemKey = createPemForKid(keyId);
+        } catch (JOSEException e) {
+            throw new RuntimeException(e);
+        }
+        KeyOnlySignatureConfiguration signatureConfiguration = new KeyOnlySignatureConfiguration();
+        signatureConfiguration.setPrivateKey(pemKey);
+        signatureConfiguration.setVerificationMethod(keyId);
+
+        return List.of(signatureConfiguration);
+    }
+
+    private StatusList saveStatusList(StatusList statusList) {
+        return statusListRepository.save(statusList);
     }
 }

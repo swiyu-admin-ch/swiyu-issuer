@@ -5,7 +5,6 @@ import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionE
 import ch.admin.bj.swiyu.issuer.common.exception.DemonstratingProofOfPossessionException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagementRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
@@ -29,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * Provide functionality to embed Demonstrating Proof of Possession (DPoP) functionality in the greater application
@@ -47,7 +46,6 @@ public class DemonstratingProofOfPossessionService {
     private final ApplicationProperties applicationProperties;
     private final NonceService nonceService;
     private final OAuthService oAuthService;
-    private final CredentialOfferRepository credentialOfferRepository;
     private final CredentialManagementRepository credentialManagementRepository;
     private final DemonstratingProofOfPossessionValidationService demonstratingProofOfPossessionValidationService;
     private final MetadataService metadataService;
@@ -66,17 +64,16 @@ public class DemonstratingProofOfPossessionService {
     /**
      * Validate the Demonstrating Proof of Possession for the initial call of the token endpoint and register the public key provided therein
      *
-     * @param preAuthCode One time Pre-Auth code used for the token_endpoint request
+     * @param credentialOffer the credential offer for which the DPoP registration should be done (if necessary)
      * @param dpop        Serialized Json Web Token to be validated, must contain nonce and jwk with the public key of the holder
      * @param request     HTTP request associated with the DPoP for validating Request Method and URI
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void registerDpop(@NotBlank String preAuthCode, @Nullable String dpop, HttpRequest request) {
+    public void registerDpop(@NotNull CredentialOffer credentialOffer, @Nullable String dpop, HttpRequest request) {
         if (canSkipDpopValidation(dpop, false)) {
             return;
         }
         var dpopJwt = demonstratingProofOfPossessionValidationService.parseDpopJwt(dpop, request);
-        var credentialOffer = credentialOfferRepository.findByPreAuthorizedCode(UUID.fromString(preAuthCode)).orElseThrow();
         var mgmt = credentialOffer.getCredentialManagement();
         if (requiresKeyAttestation(credentialOffer)) {
             validateDPoPKeyAttestation(dpopJwt);
@@ -160,9 +157,15 @@ public class DemonstratingProofOfPossessionService {
             // The type of dpop binding is up to the wallet
             return false;
         }
-        return credentialOffer.getMetadataCredentialSupportedId().stream()
-                .flatMap(offerCredentialSupportedId -> metadata.getCredentialConfigurationById(offerCredentialSupportedId)
-                        .getProofTypesSupported().values().stream())
+        return offeredCredentialTypes.stream()
+                .flatMap(offerCredentialSupportedId -> {
+                    var proofTypesSupported = metadata.getCredentialConfigurationById(offerCredentialSupportedId)
+                            .getProofTypesSupported();
+                    // if proof_types_supported is somehow not defined return empty map as otherwise a nullpointer is thrown
+                    return proofTypesSupported == null
+                            ? Stream.empty()
+                            : proofTypesSupported.values().stream();
+                })
                 .map(SupportedProofType::getKeyAttestationRequirement)
                 .filter(Objects::nonNull) // Key Attestation Requirement can be null
                 .flatMap(keyAttestationRequirement -> keyAttestationRequirement.getKeyStorage().stream())

@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.issuer.dto.credentialoffer;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(name = "CredentialWithDeeplinkResponse")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialWithDeeplinkResponseDto {
 
     @JsonProperty(value = "management_id")
@@ -24,4 +26,7 @@ public class CredentialWithDeeplinkResponseDto {
 
     @JsonProperty(value = "offer_deeplink")
     private String offerDeeplink;
+
+    @JsonProperty(value = "tx_code")
+    private String txCode;
 }
