@@ -57,7 +57,6 @@ public class CredentialOfferExpirationService {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public CredentialOffer expireCredentialOfferIfExpired(CredentialOffer offer) {
-
         return isExpired(offer) ? stateService.expireOfferAndPublish(offer) : offer;
     }
 
