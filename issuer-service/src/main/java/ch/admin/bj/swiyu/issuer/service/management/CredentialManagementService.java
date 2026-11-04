@@ -512,22 +512,23 @@ public class CredentialManagementService {
     /**
      * Retrieve the credential offer of a tenant identified by the tenant id.
      *
-     * <p>Once the latest offer of the tenant reached a terminal state
-     * (see {@link CredentialOfferStatusType#isTerminalState()}), the tenant specific metadata is no longer
-     * available.</p>
+     * <p>Once the latest offer of the tenant has been canceled or has expired, no credential was issued for it
+     * and the tenant specific metadata is no longer available. An issued offer is still returned
+     * because the credential issued for it references that metadata.</p>
      *
      * @param tenantId the tenant id associated with the credential offer
      * @return the latest {@link CredentialOffer} of the tenant
      * @throws ResourceNotFoundException if no credential offer exists for the provided tenant id
-     * @throws ResourceGoneException     if the credential offer of the tenant is in a terminal state
+     * @throws ResourceGoneException     if the credential offer of the tenant is canceled or expired
      */
     @Transactional
     public CredentialOffer getCredentialOfferByTenantId(UUID tenantId) {
         var offer = persistenceService.findCredentialOfferByMetadataTenantId(tenantId);
 
-        if (offer.getCredentialStatus().isTerminalState()) {
+        if (offer.getCredentialStatus() == CredentialOfferStatusType.CANCELLED
+                || offer.getCredentialStatus() == CredentialOfferStatusType.EXPIRED) {
             throw new ResourceGoneException(
-                    "Credential offer for tenant %s is in terminal state %s and therefore no longer available"
+                    "Credential offer for tenant %s is %s and therefore no longer available"
                             .formatted(tenantId, offer.getCredentialStatus()));
         }
 
