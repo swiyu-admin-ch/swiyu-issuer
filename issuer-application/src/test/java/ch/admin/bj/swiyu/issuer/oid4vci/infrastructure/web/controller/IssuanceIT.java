@@ -4,8 +4,6 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -44,8 +42,7 @@ import java.util.stream.IntStream;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
-import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.encryptionKey;
-import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKeys;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -59,15 +56,7 @@ class IssuanceIT extends AbstractCredentialIT {
     private StatusList testStatusList;
     private List<ECKey> holderKeys;
     @Autowired
-    private MockMvc mock;
-    @Autowired
-    private StatusListRepository statusListRepository;
-    @Autowired
-    private CredentialOfferStatusRepository credentialOfferStatusRepository;
-    @Autowired
     private ApplicationProperties applicationProperties;
-    @Autowired
-    private CredentialOfferRepository credentialOfferRepository;
     @MockitoSpyBean
     private SdjwtProperties sdjwtProperties;
     @Autowired
@@ -573,10 +562,7 @@ class IssuanceIT extends AbstractCredentialIT {
 
         var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, "university_example_sd_jwt");
 
-        ECKey dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
-                .keyID("HolderDPoPKey")
-                .keyUse(KeyUse.SIGNATURE)
-                .generate());
+        ECKey dpopKey = signingKey("HolderDPoPKey");
 
         mock.perform(post("/oid4vci/api/credential")
                 .header("Authorization", String.format("BEARER %s", tokenDto.get("access_token")))
@@ -604,9 +590,5 @@ class IssuanceIT extends AbstractCredentialIT {
         signatureConfiguration.setVerificationMethod(keyId);
 
         return List.of(signatureConfiguration);
-    }
-
-    private StatusList saveStatusList(StatusList statusList) {
-        return statusListRepository.save(statusList);
     }
 }
