@@ -1,5 +1,7 @@
 package ch.admin.bj.swiyu.issuer.common.exception;
 
+import java.io.Serial;
+
 /**
  * Thrown when a resource existed but is no longer available, for example because it reached a terminal state.
  *
@@ -7,6 +9,9 @@ package ch.admin.bj.swiyu.issuer.common.exception;
  * resource that is permanently gone from one that never existed ({@code 404 NOT FOUND}).</p>
  */
 public class ResourceGoneException extends RuntimeException {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * Creates a new exception with the given detail message.
