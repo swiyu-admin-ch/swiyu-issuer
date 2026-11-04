@@ -12,7 +12,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 @Repository
 public interface CredentialOfferRepository extends JpaRepository<CredentialOffer, UUID> {
@@ -33,8 +32,20 @@ public interface CredentialOfferRepository extends JpaRepository<CredentialOffer
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CredentialOffer> findByIdForUpdate(UUID uuid);
 
-    long countByCredentialStatusInAndOfferExpirationTimestampLessThan(Collection<CredentialOfferStatusType> credentialStatuses, long offerExpirationTimestampIsLessThan);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Stream<CredentialOffer> findByCredentialStatusInAndOfferExpirationTimestampLessThan(Collection<CredentialOfferStatusType> credentialStatuses, long offerExpirationTimestampIsLessThan);
+    /**
+     * Finds the UUIDs of all credential offers in the given states which are past the provided expiration timestamp.
+     *
+     * <p>This is a plain read: the offers are locked individually when they are expired
+     * (see {@link #findByIdForUpdate(UUID)}), so no lock is taken here.</p>
+     *
+     * @param credentialStatus                   the offer states which may expire
+     * @param offerExpirationTimestampIsLessThan the expiration timestamp
+     * @return the UUIDs of the expired credential offers
+     */
+    @Query("SELECT o.id FROM CredentialOffer o "
+            + "WHERE o.credentialStatus IN :credentialStatus "
+            + "AND o.offerExpirationTimestamp < :offerExpirationTimestampIsLessThan")
+    List<UUID> findExpiredOfferIds(
+            Collection<CredentialOfferStatusType> credentialStatus,
+            long offerExpirationTimestampIsLessThan);
 }

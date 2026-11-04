@@ -154,7 +154,6 @@ class CredentialManagementServiceTest {
         expiredOffer.setCredentialManagement(mgmt);
 
         when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
-        doNothing().when(stateService).expireOfferAndPublish(any());
 
         CredentialManagementDto response = credentialService.getCredentialOfferInformationWithExpirationCheck(mgmt.getId());
 
@@ -206,7 +205,6 @@ class CredentialManagementServiceTest {
         expiredOffer.setCredentialManagement(mgmt);
 
         when(persistenceService.findCredentialOfferByIdForUpdate(expiredOffer.getId())).thenReturn(expiredOffer);
-        doNothing().when(stateService).expireOfferAndPublish(any());
 
         CredentialInfoResponseDto response = credentialService.getSpecificCredentialOfferInformation(mgmt.getId(), expiredOffer.getId());
 
