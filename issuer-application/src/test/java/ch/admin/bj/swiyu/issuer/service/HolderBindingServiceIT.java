@@ -1,19 +1,15 @@
 package ch.admin.bj.swiyu.issuer.service;
 
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
-import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialManagement;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.AttackPotentialResistance;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecret;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.IssuerSecretRepository;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
-import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
+import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CreateCredentialRequestDto;
+import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.ProofsDto;
 import ch.admin.bj.swiyu.issuer.service.credential.HolderBindingService;
 import ch.admin.bj.swiyu.issuer.service.did.DidKeyResolverFacade;
 import ch.admin.bj.swiyu.issuer.service.test.TestServiceUtils;
@@ -26,7 +22,6 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jose.jwk.gen.JWKGenerator;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
-
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,8 +29,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -49,6 +44,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ch.admin.bj.swiyu.issuer.service.credential.CredentialRequestMapper.toCredentialRequest;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest()
@@ -93,8 +89,8 @@ class HolderBindingServiceIT {
     }
 
     @BeforeEach
-    void setUp() throws JOSEException {
-        attestationKey = new ECKeyGenerator(Curve.P_256).keyID("key-1").keyUse(KeyUse.SIGNATURE).generate();
+    void setUp() {
+        attestationKey = signingKey("key-1");
         Mockito.when(didKeyResolver.resolveKey(Mockito.any())).thenReturn(attestationKey);
         nonceSecret = nonceSecretRepository.findAll().getFirst();
     }

@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
@@ -20,10 +20,7 @@ import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import com.authlete.sd.SDJWT;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeAll;
@@ -58,10 +55,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForDeferredUniversityCredential;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.createEcKey;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.fetchOAuthTokenDpop;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -161,7 +158,7 @@ class RenewalFlowIT {
     @Test
     void renewAccessToken_deferred_thenSuccess() throws Exception {
 
-        var jwk = createEcKey("test-key-1");
+        var jwk = signingKey("test-key-1");
 
         var deferredPayload = getMinimalPayloadForDeferredUniversityCredential(null);
 
@@ -261,7 +258,7 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
+                        () -> signingKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
         var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
@@ -288,7 +285,7 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
+                        () -> signingKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
         var credentialRequestString = getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt_with_renewal");
@@ -380,7 +377,7 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
+                        () -> signingKey("Test-Key-%s".formatted(privindex))))
                 .toList();
 
         MvcResult result = TestInfrastructureUtils.createCredentialOffer(mockMvc, payload)
@@ -394,10 +391,7 @@ class RenewalFlowIT {
         var preAuthCode = IssuanceTestUtils
                 .getPreAuthCodeFromDeeplink(managementJsonObject.get("offer_deeplink").getAsString());
 
-        dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
-                .keyID("HolderDPoPKey")
-                .keyUse(KeyUse.SIGNATURE)
-                .generate());
+        dpopKey = signingKey("HolderDPoPKey");
 
         oauthTokenResponse = requestTokenWithDpop(preAuthCode, dpopKey);
 
@@ -453,7 +447,7 @@ class RenewalFlowIT {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(privindex -> assertDoesNotThrow(
-                        () -> createPrivateKey("Test-Key-%s".formatted(privindex))))
+                        () -> signingKey("Test-Key-%s".formatted(privindex))))
                 .toList();
         return getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
     }

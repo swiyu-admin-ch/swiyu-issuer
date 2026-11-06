@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
@@ -16,10 +16,7 @@ import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusL
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +52,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getMinimalPayloadForUniversityCredential;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -246,7 +244,7 @@ class RenewalRevocationRaceConditionIT {
     private JsonObject createCredential() throws Exception {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(privindex))))
+                .map(privindex -> signingKey("Test-Key-%s".formatted(privindex)))
                 .toList();
 
         MvcResult result = TestInfrastructureUtils.createCredentialOffer(mockMvc, payload)
@@ -258,10 +256,7 @@ class RenewalRevocationRaceConditionIT {
 
         var preAuthCode = getPreAuthCodeFromDeeplink(managementJsonObject.get("offer_deeplink").getAsString());
 
-        dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
-                .keyID("HolderDPoPKey")
-                .keyUse(KeyUse.SIGNATURE)
-                .generate());
+        dpopKey = signingKey("HolderDPoPKey");
 
         oauthTokenResponse = requestTokenWithDpop(preAuthCode, dpopKey);
 
@@ -315,7 +310,7 @@ class RenewalRevocationRaceConditionIT {
     private String createCredentialRequestStringWithNewKeys() throws Exception {
         var holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
-                .map(privindex -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(privindex))))
+                .map(privindex -> signingKey("Test-Key-%s".formatted(privindex)))
                 .toList();
         return getCredentialRequestString(mockMvc, holderKeys, applicationProperties, "university_example_sd_jwt");
     }
