@@ -21,7 +21,7 @@ final class TrustRegistryConsumerPactSupport {
     static final String PROVIDER = "swiyu-trust-registry";
 
     static final String ISSUER_DID =
-            "did:tdw:QmYyQSo1c1Ym7orWxLYvCrzRLZad5ZxQ8HkBLyEE4RRBB1:identifier.admin.ch:api:v1:did";
+            "did:webvh:QmYyQSo1c1Ym7orWxLYvCrzRLZad5ZxQ8HkBLyEE4RRBB1:identifier.admin.ch:api:v1:did";
     static final String VCT_ELFA = "https://example.ch/vct/elfa";
     static final String VCT_MDL = "https://example.ch/vct/mdl";
 

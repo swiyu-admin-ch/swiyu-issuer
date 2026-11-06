@@ -10,7 +10,7 @@ spring:
       ddl-auto: validate
 
 application:
-  issuer-id: "did:tdw:example"
+  issuer-id: "did:webvh:example"
   external-url: "http://localhost:8080"
   offer-validity: 864000 # 60 * 60 * 24 * 10 => 10 days;
   deferred-offer-validity-seconds: 864000 # 60 * 60 * 24 * 10 => 10 days;
@@ -25,7 +25,7 @@ application:
       AwEHoUQDQgAEm38isThXK8WxACgw4ycYrwY2OLWvOYWm96utBFwhBhnXOpdFb4e8
       +QzpPS7/vMQCX/EZvgDbEXrv/fC5W8M9YQ==
       -----END EC PRIVATE KEY-----
-    verification-method: "did:tdw:example#12345"
+    verification-method: "did:webvh:example#12345"
     key-management-method: "key"
     status-list-size-limit: 204800 # 200KiB
     status-list-cache-time: 15m

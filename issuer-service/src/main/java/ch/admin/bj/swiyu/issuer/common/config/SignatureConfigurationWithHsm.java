@@ -37,7 +37,7 @@ public class SignatureConfigurationWithHsm implements SignatureConfiguration {
 
     /**
      * The id of the Default verification method in the did document with which a verifier can check the issued VC
-     * In did tdw/webvh this is the full did#fragment
+     * In did:webvh this is the full did#fragment
      */
     @NotEmpty
     private String verificationMethod;
