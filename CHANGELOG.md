@@ -28,10 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level exception `(#1463)`.
 - Exception message for failed signing of tenant specific issuer metadata no longer contains an unresolved `%s` placeholder `(#1323)`.
-- DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level
-  exception `(#1463)`.
+- Key Attestation no longer resolvers DIDDocuments from outside of accepted registries. `(#1416)`.
 - Transaction code configuration (`tx_code_config`) falls back to the documented default length of 6 again when `length`
   is omitted. Such requests previously failed with an internal server error while creating the transaction code.
+- The scheduled credential offer expiration no longer aborts when a single offer cannot be processed, e.g. because its
+  persisted `credential_request` JSON can no longer be deserialized. Offers are now expired one by one in separate
+  transactions, and a broken offer is logged and skipped while all remaining offers still expire. `(#1229)`
 - DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level
   exception `(#1463)`.
 - Use Generic Lib for Status List token handling `(#1213)`
