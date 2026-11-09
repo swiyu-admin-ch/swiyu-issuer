@@ -14,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.jwk.ECKey;
@@ -226,7 +227,7 @@ class RenewalRevocationRaceConditionIT {
                 .map(entry -> entry.getId().getStatusListId())
                 .collect(Collectors.toSet())) {
             var statusList = statusListRepository.findById(statusListId).orElseThrow();
-            var tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+            var tokenStatusList = TokenStatusList.loadTokenStatusListToken(
                     (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
 
             offerStatuses.stream()

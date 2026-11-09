@@ -2,7 +2,10 @@ package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -50,12 +53,13 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
-import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKeys;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatusAndSubjectDataForDeferred;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKeys;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.doReturn;
@@ -103,7 +107,7 @@ class DeferredIssuanceIT extends AbstractCredentialIT {
     }
 
     @BeforeEach
-    void setUp() throws JOSEException {
+    void setUp() {
         // Reset the spy so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null,
         // isBatchIssuanceAllowed=false) do not bleed into subsequent tests that use the real batch size.
         Mockito.reset(issuerMetadata);
@@ -551,7 +555,7 @@ class DeferredIssuanceIT extends AbstractCredentialIT {
         var responseEncryptionJson = createResponseEncryptionJson(ecJWK);
         var credentialRequestString = "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s}".formatted("university_example_sd_jwt", responseEncryptionJson);
 
-         requestCredential(mock, (String) token, credentialRequestString)
+        requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest());
     }
 

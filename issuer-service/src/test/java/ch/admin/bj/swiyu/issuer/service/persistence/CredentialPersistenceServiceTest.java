@@ -136,42 +136,21 @@ class CredentialPersistenceServiceTest {
     }
 
     /**
-     * Happy path: returns the list of expired offers from the repository.
+     * Happy path: returns the IDs of the expired offers from the repository.
      */
     @Test
-    void findExpiredOffers_shouldReturnList() {
+    void findExpiredOfferIds_shouldReturnIds() {
         var expireStates = List.of(CredentialOfferStatusType.OFFERED);
         var expireTimeStamp = 123456L;
-        var offers = List.of(
-                CredentialOffer.builder().id(UUID.randomUUID()).build(),
-                CredentialOffer.builder().id(UUID.randomUUID()).build()
-        );
+        var offerIds = List.of(UUID.randomUUID(), UUID.randomUUID());
 
-        when(credentialOfferRepository.findByCredentialStatusInAndOfferExpirationTimestampLessThan(
-                expireStates, expireTimeStamp))
-                .thenReturn(offers.stream());
+        when(credentialOfferRepository.findExpiredOfferIds(expireStates, expireTimeStamp))
+                .thenReturn(offerIds);
 
-        var result = persistenceService.findExpiredOffers(expireStates, expireTimeStamp);
+        var result = persistenceService.findExpiredOfferIds(expireStates, expireTimeStamp);
 
         assertEquals(2, result.size());
-        assertEquals(offers, result);
-    }
-
-    /**
-     * Happy path: returns the count of expired offers from the repository.
-     */
-    @Test
-    void countExpiredOffers_shouldReturnCount() {
-        var expireStates = List.of(CredentialOfferStatusType.OFFERED);
-        var expireTimeStamp = 123456L;
-
-        when(credentialOfferRepository.countByCredentialStatusInAndOfferExpirationTimestampLessThan(
-                expireStates, expireTimeStamp))
-                .thenReturn(5L);
-
-        var result = persistenceService.countExpiredOffers(expireStates, expireTimeStamp);
-
-        assertEquals(5L, result);
+        assertEquals(offerIds, result);
     }
 
     /**

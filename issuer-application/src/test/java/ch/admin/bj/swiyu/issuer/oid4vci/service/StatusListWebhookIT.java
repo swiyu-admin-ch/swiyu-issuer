@@ -29,6 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -104,6 +105,10 @@ class StatusListWebhookIT {
 
     @Autowired
     private CallbackEventRepository callbackEventRepository;
+    @MockitoBean
+    private StatusListPersistenceService statusListPersistenceService;
+    private StatusList testStatusList;
+    private CredentialManagement issuedManagement;
 
     @DynamicPropertySource
     static void webhookProperties(DynamicPropertyRegistry registry) {
@@ -112,14 +117,8 @@ class StatusListWebhookIT {
         registry.add("webhook.callback-uri", () -> "http://localhost/callback");
     }
 
-    @MockitoBean
-    private StatusListPersistenceService statusListPersistenceService;
-
-    private StatusList testStatusList;
-    private CredentialManagement issuedManagement;
-
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         callbackEventRepository.deleteAll();
         credentialOfferStatusRepository.deleteAll();
         credentialOfferRepository.deleteAll();
