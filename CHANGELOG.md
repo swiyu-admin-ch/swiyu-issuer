@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level
   exception `(#1463)`.
 - Use Generic Lib for Status List token handling `(#1213)`
+- Regression regarding SCID linkage between webvh and did document by updating to did-resolver 2.10.1 `(#1516)`
 
 ## [5.0.1] - 2026-10-15
 
@@ -185,7 +186,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed incomplete create credential offer request validation, now validates all `metadata_credential_supported_id`.
   Issuance though keeps supporting only a single credential type per offer `(#985)`.
 - Fixed Prometheus metrics authentication with Basic Auth `(#1003)`.
-- Regression regarding SCID linkage between webvh and did document by updating to did-resolver 2.10.1 `(#1516)`
 
 ### Removed
 
