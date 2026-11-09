@@ -108,34 +108,21 @@ public class CredentialPersistenceService {
     }
 
     /**
-     * Finds expired credential offers.
+     * Finds the IDs of expired credential offers.
+     *
+     * <p>Returns IDs instead of entities as a broken unmappable offer fails the query.
+     * The IDs allow the caller to load and expire each offer separately.</p>
      *
      * @param expireStates    the states that can expire
      * @param expireTimeStamp the expiration timestamp
-     * @return the list of expired offers
+     * @return the IDs of the expired offers
      */
-    public List<CredentialOffer> findExpiredOffers(
+    @Transactional(readOnly = true)
+    public List<UUID> findExpiredOfferIds(
             List<CredentialOfferStatusType> expireStates,
             long expireTimeStamp) {
 
-        return credentialOfferRepository
-                .findByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp)
-                .toList();
-    }
-
-    /**
-     * Counts expired credential offers.
-     *
-     * @param expireStates    the states that can expire
-     * @param expireTimeStamp the expiration timestamp
-     * @return the count of expired offers
-     */
-    public long countExpiredOffers(
-            List<CredentialOfferStatusType> expireStates,
-            long expireTimeStamp) {
-
-        return credentialOfferRepository
-                .countByCredentialStatusInAndOfferExpirationTimestampLessThan(expireStates, expireTimeStamp);
+        return credentialOfferRepository.findExpiredOfferIds(expireStates, expireTimeStamp);
     }
 
     /**

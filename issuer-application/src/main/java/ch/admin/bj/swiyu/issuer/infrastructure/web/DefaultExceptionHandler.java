@@ -80,6 +80,23 @@ public class DefaultExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiErrorV2, apiErrorV2.getStatus());
     }
 
+    /**
+     * Handles a resource that existed but is no longer available when an offer is in a terminal state.
+     *
+     * @param exception the exception describing the gone resource
+     * @return a {@code 410 GONE} response describing the resource
+     */
+    @ExceptionHandler(ResourceGoneException.class)
+    public ResponseEntity<ApiErrorDto> handleResourceGoneException(final ResourceGoneException exception) {
+        final ApiErrorDto apiError = ApiErrorDto.builder()
+                .errorDescription(GONE.getReasonPhrase())
+                .errorDetails(exception.getMessage())
+                .status(GONE)
+                .build();
+        log.debug("Resource gone", exception);
+        return new ResponseEntity<>(apiError, apiError.getStatus());
+    }
+
     @ExceptionHandler({BadRequestException.class, IllegalStateException.class})
     public ResponseEntity<ApiErrorDto> handleBadRequestException(final Exception exception) {
         final ApiErrorDto apiErrorV2 = ApiErrorDto.builder()
