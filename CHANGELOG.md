@@ -15,15 +15,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update default sizes for encrypted messages to be in MB as in swiss-profile instead of MiB `(#1397)`
-- `cryptographic_binding_methods_supported` and `proof_types_supported` are now mandatory with in compliance with the swiss-profile-issuance but in contrast to the OID4VCI standard `(#1495)`
+- `cryptographic_binding_methods_supported` and `proof_types_supported` are now mandatory with in compliance with the
+  swiss-profile-issuance but in contrast to the OID4VCI standard `(#1495)`
 - In Key Attestation JWTs iss claim is ignored as defined in swiss-profile-anchor 1.0. `(#1417)`
-- Adjust loglevel in renewal responses from business issuers for HTTP STATUS codes `420`, `451`, `500`, `503` to info instead of error. `(#1344)`
+- Tenant specific issuer metadata responds now with `410 GONE` instead of `500 INTERNAL ERROR` when the latest credential offer of
+  the tenant is canceled or expired (`EXPIRED`, `CANCELLED`) `(#1323)`.
+- Adjust loglevel in renewal responses from business issuers for HTTP STATUS codes `420`, `451`, `500`, `503` to info
+  instead of error. `(#1344)`
 
 ### Fixed
 
 - DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level exception `(#1463)`.
+- Exception message for failed signing of tenant specific issuer metadata no longer contains an unresolved `%s` placeholder `(#1323)`.
+- Key Attestation no longer resolvers DIDDocuments from outside of accepted registries. `(#1416)`.
 - Transaction code configuration (`tx_code_config`) falls back to the documented default length of 6 again when `length`
   is omitted. Such requests previously failed with an internal server error while creating the transaction code.
+- The scheduled credential offer expiration no longer aborts when a single offer cannot be processed, e.g. because its
+  persisted `credential_request` JSON can no longer be deserialized. Offers are now expired one by one in separate
+  transactions, and a broken offer is logged and skipped while all remaining offers still expire. `(#1229)`
+- DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level
+  exception `(#1463)`.
+- Use Generic Lib for Status List token handling `(#1213)`
 
 ## [5.0.1] - 2026-10-15
 

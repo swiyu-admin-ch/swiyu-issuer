@@ -42,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +87,7 @@ class IssuanceIT {
     private CredentialPersistenceService persistenceService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         // Reset spies so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null)
         // do not bleed into subsequent tests that rely on the real bean behaviour.
         reset(issuerMetadata);
@@ -598,16 +599,16 @@ class IssuanceIT {
                 .generate());
 
         mock.perform(post("/oid4vci/api/credential")
-                .header("Authorization", String.format("BEARER %s", tokenDto.get("access_token")))
-                .header("DPoP", createDpop(
-                        mock,
-                        issuerMetadata.getNonceEndpoint(),
-                        "POST",
-                        issuerMetadata.getCredentialEndpoint(),
-                        UUID.randomUUID().toString(),
-                        dpopKey
-                ))
-                .content(credentialRequestString))
+                        .header("Authorization", String.format("BEARER %s", tokenDto.get("access_token")))
+                        .header("DPoP", createDpop(
+                                mock,
+                                issuerMetadata.getNonceEndpoint(),
+                                "POST",
+                                issuerMetadata.getCredentialEndpoint(),
+                                UUID.randomUUID().toString(),
+                                dpopKey
+                        ))
+                        .content(credentialRequestString))
                 .andExpect(status().isUnauthorized());
     }
 
