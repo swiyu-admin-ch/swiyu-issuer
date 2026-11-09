@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
@@ -9,11 +9,7 @@ import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.experimental.UtilityClass;
 import org.springframework.http.MediaType;
@@ -27,7 +23,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -148,22 +143,6 @@ public class IssuanceTestUtils {
 
     public static String getCredentialRequestString(MockMvc mock, List<ECKey> holderPrivateKeys, ApplicationProperties applicationProperties, String credentialConfigurationId) throws Exception {
         return getCredentialRequestString(mock, holderPrivateKeys, applicationProperties, null, credentialConfigurationId);
-    }
-
-    public static List<ECKey> createHolderPrivateKeys(int numberOfKeys) throws JOSEException {
-        List<ECKey> holderPrivateKeys = new ArrayList<>(numberOfKeys);
-        for (int i = 0; i < numberOfKeys; i++) {
-            holderPrivateKeys.add(createPrivateKey("Test-Key-" + i));
-        }
-        return holderPrivateKeys;
-    }
-
-    public static ECKey createPrivateKey(String keyName) throws JOSEException {
-        return new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID(keyName)
-                .issueTime(new Date())
-                .generate();
     }
 
     public static String getAccessTokenFromDeeplink(MockMvc mock, String deeplink) throws Exception {
