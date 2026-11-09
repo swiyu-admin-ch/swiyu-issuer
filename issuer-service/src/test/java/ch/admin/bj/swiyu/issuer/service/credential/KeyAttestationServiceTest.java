@@ -21,6 +21,7 @@ import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
 
+import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
@@ -107,6 +108,26 @@ class KeyAttestationServiceTest {
             when(attestationJwt.isValidAttestation(keyResolver, List.of(AttackPotentialResistance.ISO_18045_HIGH), validator)).thenReturn(true);
             when(attestationJwt.containsKey(any(ECKey.class))).thenReturn(true);
             assertDoesNotThrow(() -> keyAttestationService.getAndValidateKeyAttestation(requirement, proofJwt));
+        }
+    }
+
+    @Test
+    void validateKeyAttestation_resolverFailsWithRuntimeException_throwsInvalidProof() throws Exception {
+        KeyAttestationRequirement requirement = mock(KeyAttestationRequirement.class);
+        when(requirement.getKeyStorage()).thenReturn(List.of(AttackPotentialResistance.ISO_18045_HIGH));
+        String jwt = "jwt";
+        AttestationJwt attestationJwt = mock(AttestationJwt.class);
+
+        try (MockedStatic<AttestationJwt> staticMock = mockStatic(AttestationJwt.class)) {
+            staticMock.when(() -> AttestationJwt.parseJwt(jwt, false)).thenReturn(attestationJwt);
+            when(applicationProperties.getTrustedAttestationProviders()).thenReturn(Collections.emptyList());
+            when(attestationJwt.isValidAttestation(keyResolver, List.of(AttackPotentialResistance.ISO_18045_HIGH), validator))
+                    .thenThrow(new org.springframework.web.client.ResourceAccessException("I/O error on GET request for \"https://127.0.0.1/.well-known/did.jsonl\""));
+
+            Oid4vcException ex = assertThrows(Oid4vcException.class, () ->
+                    keyAttestationService.validateKeyAttestation(requirement, jwt));
+            assertEquals(INVALID_PROOF, ex.getError());
+            assertFalse(ex.getMessage().contains("127.0.0.1"));
         }
     }
 

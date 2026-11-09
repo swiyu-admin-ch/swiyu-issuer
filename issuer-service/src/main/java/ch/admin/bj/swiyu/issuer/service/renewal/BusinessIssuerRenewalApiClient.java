@@ -7,12 +7,14 @@ import ch.admin.bj.swiyu.issuer.dto.renewal.RenewalResponseDto;
 import io.micrometer.common.util.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.net.URI;
 import java.util.Set;
@@ -60,9 +62,16 @@ public class BusinessIssuerRenewalApiClient {
                     })
                     .bodyToMono(RenewalResponseDto.class)
                     .block();
-        } catch (RestClientResponseException e) {
+        } catch (RenewalException e) {
+            // Rethrow RenewalException to avoid wrapping it in another exception and losing the status code
+            throw e;
+        } catch (WebClientResponseException e) {
             logRenewalFailure(e.getStatusCode(), e.getMessage());
-            throw new RenewalException(e.getStatusCode(), "Renewal request failed: " + e.getMessage(), e);
+            throw new RenewalException(e.getStatusCode(), "Renewal request failed", e);
+        } catch (WebClientException e) {
+            // e.g. connection refused, timeout or DNS failure; details are only logged, not returned to the client
+            log.error("Renewal request to {} failed: {}", applicationProperties.getBusinessIssuerRenewalApiEndpoint(), e.getMessage());
+            throw new RenewalException(HttpStatus.BAD_GATEWAY, "Renewal request failed", e);
         }
     }
 

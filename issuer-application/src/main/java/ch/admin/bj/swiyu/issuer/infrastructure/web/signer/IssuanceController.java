@@ -221,7 +221,7 @@ public class IssuanceController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "Invalid request or validation error",
+                            description = "Invalid request or validation error, includes error code invalid_proof if the proof or its key attestation is invalid or cannot be validated",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = ApiErrorDto.class)
@@ -250,6 +250,14 @@ public class IssuanceController {
                     @ApiResponse(
                             responseCode = "409",
                             description = "The requested credential is currently locked by another operation",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiErrorDto.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "502",
+                            description = "The external Business Issuer renewal backend could not be reached during a renewal request",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = ApiErrorDto.class)
@@ -357,7 +365,7 @@ public class IssuanceController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "Invalid request or validation error",
+                            description = "Invalid request or validation error. Includes error code invalid_proof if the key attestation is invalid or cannot be validated. No details about the cause are returned.",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = ApiErrorDto.class)
