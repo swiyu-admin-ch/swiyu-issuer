@@ -44,10 +44,10 @@ public class StatusListCacheService {
     }
 
     /**
-     * Resolves the given URI to a verified TokenStatusListToken, caching it if possible to reduce load
+     * Resolves the given URI to a verified TokenStatusList, caching it if possible to reduce load
      *
      * @param uri URI where the status list is located
-     * @return the TokenStatusListToken or null, if it cannot be resolved
+     * @return the TokenStatusList or null, if it cannot be resolved
      */
     public TokenStatusListTokenDto getTokenStatusListTokenByUri(String uri) {
         Optional<TokenStatusListTokenDto> token = cache.get(uri, this::resolveValidatedStatusList);
@@ -59,7 +59,7 @@ public class StatusListCacheService {
      * fulfilling the basic requirements of a token status list according to the spec.
      *
      * @param uri URI where the status list is located
-     * @return the TokenStatusListToken or null, if it cannot be resolved
+     * @return the TokenStatusList or null, if it cannot be resolved
      */
     private Optional<TokenStatusListTokenDto> resolveValidatedStatusList(String uri) {
         try {

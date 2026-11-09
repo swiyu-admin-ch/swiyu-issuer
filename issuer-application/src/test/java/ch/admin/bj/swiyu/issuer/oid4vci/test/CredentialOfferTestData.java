@@ -1,11 +1,13 @@
 package ch.admin.bj.swiyu.issuer.oid4vci.test;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import com.google.gson.GsonBuilder;
 import lombok.experimental.UtilityClass;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 
@@ -32,9 +34,9 @@ public class CredentialOfferTestData {
         return createTestOffer(preAuthCode, status, metadataId, Instant.now().minusSeconds(10), Instant.now().plusSeconds(120), metadata, null, deferredExpirationInSeconds);
     }
 
-    public static StatusList createStatusList() {
+    public static StatusList createStatusList() throws IOException {
         var statusListId = UUID.randomUUID();
-        var statusListToken = new TokenStatusListToken(2, 10000);
+        var statusListToken = new TokenStatusList(2, 10000);
         return StatusList.builder()
                 .id(statusListId)
                 .config(Map.of("bits", 2))
