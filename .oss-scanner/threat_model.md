@@ -75,16 +75,15 @@ this repository is responsible for using them correctly.
 - Preserve unlinkability: issuance and presentation must not let an attacker correlate holder activity across credentials, sessions or issuers; breaking that unlinkability is an explicit attacker goal.
 - Access tokens must be validated before expensive or state-changing processing, and DPoP must be enforced when configured.
 - Nonces must be unpredictable, bound to the session, and single-use where the profile requires it.
-- Holder proof keys must be covered by the key attestation and bound to the access token, with attestation issuer, signature and temporal claims validated.
+- Holder proof keys must be covered by the key attestation and bound to the access token, with attestation issuer, signature and temporal claims validated if the claim `key_attestations_required` is set to true.
 - Credential type, claims and validity must be derived from server-side policy and must not be determined by wallet input.
-- Management request authentication must bind the signature to method, path, query, body, audience and validity window, and must resist replay.
-- Credential offers must expire in every flow, and renewal must not outlive a revocation or status change.
-- Concurrent validation and state changes must not create race conditions that accept an invalid request or lose a revocation.
+- Management endpoints must be protected by the deployment (API gateway, mTLS or OAuth2 resource server); the service must reject unauthenticated management requests when OAuth2 is configured.
+- Credential offers must be able to expire in every flow.
+- Credential renewal must not be possible for revoked credentials.
+- Concurrent validation and state changes must not create race conditions that accept an invalid request or lose a state change.
 - Status-list size and index arithmetic must be bounded, and capacity must be enforced.
-- JWE, JWT and JSON parsing must enforce decompressed-size, nesting and batch limits before materialization.
 - Outbound retrieval of status lists and registry resources must be restricted to allowed schemes, hosts and address ranges.
 - Validation must cover the complete attacker-supplied input, not only a subset of a collection.
-- Private keys and shared secrets must be stored and rotated appropriately.
 - Validation must fail closed and must not convert an error into acceptance.
 - A failed validation must not produce side effects in other components or in logs.
 
