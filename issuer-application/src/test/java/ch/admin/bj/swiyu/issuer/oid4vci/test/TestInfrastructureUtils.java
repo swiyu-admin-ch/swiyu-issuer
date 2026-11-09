@@ -243,14 +243,6 @@ public class TestInfrastructureUtils {
         return new CredentialOfferMetadataDto(true, null, null);
     }
 
-    public static ECKey createEcKey(String keyId) throws JOSEException {
-        return new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID(keyId)
-                .issueTime(new Date())
-                .generate();
-    }
-
     public static String createPemForKid(String kid) throws JOSEException {
         var ecKey = new ECKeyGenerator(Curve.P_256)
                 .keyID(kid)
