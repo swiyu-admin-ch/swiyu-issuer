@@ -151,7 +151,7 @@ class StatusListIT {
 
         final int maxLength = 127;
         final int bits = 4;
-        final String did = "did:tdw:example";
+        final String did = "did:webvh:example";
         final String verificationMethod = did + "#12345";
         final String keyId = "1052933";
         final String keyPin = "209323";
@@ -213,7 +213,7 @@ class StatusListIT {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"did:tdw:example#12345", "did:example:offer:override#key-0", "did:example:offer:override#key-1", "did:example:offer:override#key-2"})
+    @ValueSource(strings = {"did:webvh:example#12345", "did:example:offer:override#key-0", "did:example:offer:override#key-1", "did:example:offer:override#key-2"})
     void createNewStatusList_withSigningKeysOverride_thenSuccess(String expectedKid) throws Exception {
         final String verificationMethod = overrideDID + "#key";
         var signingKeys = IntStream.range(0, 3)
