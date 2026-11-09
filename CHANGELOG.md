@@ -23,11 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level
-  exception `(#1463)`.
 - Key Attestation no longer resolvers DIDDocuments from outside of accepted registries. `(#1416)`.
 - Transaction code configuration (`tx_code_config`) falls back to the documented default length of 6 again when `length`
   is omitted. Such requests previously failed with an internal server error while creating the transaction code.
+- DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level
+  exception `(#1463)`.
+- Use Generic Lib for Status List token handling `(#1213)`
 
 ## [5.0.1] - 2026-10-15
 

@@ -49,6 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.time.Clock;
@@ -125,7 +126,7 @@ class DeferredIssuanceIT {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         // Reset the spy so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null,
         // isBatchIssuanceAllowed=false) do not bleed into subsequent tests that use the real batch size.
         Mockito.reset(issuerMetadata);
@@ -583,7 +584,7 @@ class DeferredIssuanceIT {
         var responseEncryptionJson = createResponseEncryptionJson(ecJWK);
         var credentialRequestString = "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s}".formatted("university_example_sd_jwt", responseEncryptionJson);
 
-         requestCredential(mock, (String) token, credentialRequestString)
+        requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest());
     }
 

@@ -65,6 +65,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.time.Clock;
@@ -147,7 +148,7 @@ class DeferredFlowIT {
     }
 
     @BeforeEach
-    void setUp() throws JOSEException {
+    void setUp() throws JOSEException, IOException {
         // Reset spies so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null)
         // do not bleed into subsequent tests that rely on the real bean behaviour.
         Mockito.reset(issuerMetadata);
