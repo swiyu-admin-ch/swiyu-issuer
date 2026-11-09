@@ -71,7 +71,7 @@ class BusinessIssuerRenewalApiClientTest {
 
     @BeforeEach
     void setUp() {
-        requestDto = new RenewalRequestDto(UUID.randomUUID(), UUID.randomUUID(), "");
+        requestDto = new RenewalRequestDto(UUID.randomUUID(), UUID.randomUUID(), "", "requested-configuration-id");
         String apiEndpoint = "https://api.example.com/renewal";
         when(applicationProperties.getBusinessIssuerRenewalApiEndpoint()).thenReturn(apiEndpoint);
 

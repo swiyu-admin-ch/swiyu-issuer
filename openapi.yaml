@@ -2271,6 +2271,8 @@ components:
           format: uuid
         dpopKey:
           type: string
+        configuration_id:
+          type: string
     RenewalResponse:
       type: object
       description: "Response to a renewal request, containing the data to be used\

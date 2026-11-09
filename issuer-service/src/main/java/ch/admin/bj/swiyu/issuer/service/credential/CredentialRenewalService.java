@@ -53,7 +53,7 @@ public class CredentialRenewalService {
         ensureNoPendingRenewalRequest(mgmt);
 
         var initialCredentialOfferForRenewal = credentialManagementService.createInitialCredentialOfferForRenewal(mgmt);
-        var renewalData = buildRenewalRequestDto(mgmt, initialCredentialOfferForRenewal, dpopKey);
+        var renewalData = buildRenewalRequestDto(mgmt, initialCredentialOfferForRenewal, dpopKey, credentialRequest.getCredentialConfigurationId());
         var renewedDataResponse = renewalApiClient.getRenewalData(renewalData);
 
         var offer = credentialManagementService.updateOfferFromRenewalResponse(renewedDataResponse, initialCredentialOfferForRenewal);
@@ -98,8 +98,8 @@ public class CredentialRenewalService {
         }
     }
 
-    RenewalRequestDto buildRenewalRequestDto(CredentialManagement mgmt, CredentialOffer initialOffer, String dpopKey) {
-        return new RenewalRequestDto(mgmt.getId(), initialOffer.getId(), dpopKey);
+    RenewalRequestDto buildRenewalRequestDto(CredentialManagement mgmt, CredentialOffer initialOffer, String dpopKey, String requestedConfigurationId) {
+        return new RenewalRequestDto(mgmt.getId(), initialOffer.getId(), dpopKey, requestedConfigurationId);
     }
 
     void incrementRenewalResponseCount(CredentialManagement mgmt) {

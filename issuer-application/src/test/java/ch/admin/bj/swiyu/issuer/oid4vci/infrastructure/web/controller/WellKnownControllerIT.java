@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialOfferTestHelper;
+import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementCacheService;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
@@ -32,6 +33,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,6 +68,11 @@ class WellKnownControllerIT {
     private ObjectMapper objectMapper;
     @MockitoSpyBean
     private SdjwtProperties sdjwtProperties;
+    /**
+     * Replaces the Caffeine-backed cache so that no Trust Registry network calls are made.
+     */
+    @MockitoBean
+    private TrustStatementCacheService trustStatementCacheService;
     @Autowired
     private CredentialOfferRepository credentialOfferRepository;
     @Autowired

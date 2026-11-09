@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New boolean flag ENABLE_SUSPENDED_RENEWAL to optionally extend renewal flow to also allow suspended credentials.
   If allowing renewal refer to readme section on renewal to necessary considerations.
+- Expanded `RenewalRequestDto` to include the requested `configuration_id` to allow the business issuer to return a different configuration than the one used for the initial credential offer. `(#1495)`
 
 ### Changed
 

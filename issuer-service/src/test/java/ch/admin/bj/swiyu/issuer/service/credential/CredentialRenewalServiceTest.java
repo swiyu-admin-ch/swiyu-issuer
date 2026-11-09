@@ -228,14 +228,16 @@ class CredentialRenewalServiceTest {
     void buildRenewalRequestDto_includesIdsAndDpopKey() {
         var mgmtId = UUID.randomUUID();
         var offerId = UUID.randomUUID();
+        var requestedConfigurationId = "requested-configuration-id";
         var dto = service.buildRenewalRequestDto(
                 CredentialManagement.builder().id(mgmtId).build(),
                 CredentialOffer.builder().id(offerId).build(),
-                "dpop");
+                "dpop", requestedConfigurationId);
 
         assertThat(dto.managementId()).isEqualTo(mgmtId);
         assertThat(dto.offerId()).isEqualTo(offerId);
         assertThat(dto.dpopKey()).isEqualTo("dpop");
+        assertThat(dto.requestedConfigurationId()).isEqualTo(requestedConfigurationId);
     }
 
     @Test
