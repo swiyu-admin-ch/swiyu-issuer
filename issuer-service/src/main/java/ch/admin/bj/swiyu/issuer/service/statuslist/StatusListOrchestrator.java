@@ -155,7 +155,7 @@ public class StatusListOrchestrator {
         try {
             statusList.setStatusZipped(token.getStatusListData());
         } catch (IOException e) {
-            throw new BadRequestException(e.getMessage(), e);
+            throw new ConfigurationException(e.getMessage(), e);
         }
 
         mergeAndPersistConfigurationOverrideIfPresent(overrideDto, statusList);
@@ -230,7 +230,7 @@ public class StatusListOrchestrator {
             statusListPersistenceService.publishToRegistry(statusList, token);
             return statusList;
         } catch (IOException e) {
-            throw new BadRequestException(e.getMessage(), e);
+            throw new ConfigurationException(e.getMessage(), e);
         }
     }
 
