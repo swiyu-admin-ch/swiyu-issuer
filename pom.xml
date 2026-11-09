@@ -32,7 +32,7 @@
         </sonar.jacoco.itReportPath>
         <pgpverify-maven-plugin.version>1.19.1</pgpverify-maven-plugin.version>
         <sonar.jacoco.reportPath>${project.basedir}/issuer-application/target/jacoco.exec</sonar.jacoco.reportPath>
-        <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.16</jacoco-maven-plugin.version>
         <javacrumbs.shedlock.version>6.10.0</javacrumbs.shedlock.version>
         <archunit-junit5.version>1.5.1</archunit-junit5.version>
         <nimbus-jose-jwt.version>10.10</nimbus-jose-jwt.version>
@@ -54,7 +54,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <generic-java-lib.version>3.2.0</generic-java-lib.version>
-        <pact.version>4.7.5</pact.version>
+        <pact.version>4.7.6</pact.version>
         <!-- Fixes various SNYK-JAVA-IONETTY errors -->
         <netty.version>4.2.18.Final</netty.version>
         <!-- Fixes various SNYK-JAVA-ORGAPACHETOMCATEMBED -->
