@@ -18,7 +18,7 @@ public class DidKeyResolverFacade implements KeyResolver {
     private final UrlRewriteProperties urlRewriteProperties;
 
     /**
-     * @param keyId full did:tdw/did:webvh including #fragment indicating the verification method
+     * @param keyId full did:webvh including #fragment indicating the verification method
      * @return JWK fetched from the did document
      */
     @Override

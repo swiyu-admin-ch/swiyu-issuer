@@ -42,7 +42,7 @@ class TrustStatementCacheServiceTest {
      * Shared EC key for the entire test class – generated once to avoid per-test crypto overhead.
      */
     private static final ECKey TEST_KEY;
-    private static final String ISSUER_DID = "did:tdw:test:issuer";
+    private static final String ISSUER_DID = "did:webvh:test:issuer";
 
     static {
         try {
@@ -65,7 +65,7 @@ class TrustStatementCacheServiceTest {
                 .type(new JOSEObjectType("jwt"))
                 .build();
         var claims = new JWTClaimsSet.Builder()
-                .issuer("did:tdw:trust-registry:issuer")
+                .issuer("did:webvh:trust-registry:issuer")
                 .issueTime(new Date())
                 .expirationTime(Date.from(Instant.ofEpochSecond(expEpochSeconds)))
                 .build();
@@ -265,7 +265,7 @@ class TrustStatementCacheServiceTest {
 
     @Test
     void invalidate_doesNotAffectOtherDids() throws Exception {
-        var otherDid = "did:tdw:test:other-issuer";
+        var otherDid = "did:webvh:test:other-issuer";
         var jwt = buildJwt(Instant.now().plusSeconds(3600).getEpochSecond());
         when(trustProtocol20Api.getIdTS(any()))
                 .thenReturn(Mono.just(jwt));

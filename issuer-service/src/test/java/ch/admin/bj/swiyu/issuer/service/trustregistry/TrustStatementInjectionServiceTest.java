@@ -39,7 +39,7 @@ class TrustStatementInjectionServiceTest {
      * Shared EC key for signing test JWTs – generated once to avoid per-test crypto overhead.
      */
     private static final ECKey TEST_KEY;
-    private static final String ISSUER_DID = "did:tdw:test:issuer";
+    private static final String ISSUER_DID = "did:webvh:test:issuer";
     private static final String VCT_ELFA = "https://example.ch/vct/elfa";
     private static final String VCT_MDL = "https://example.ch/vct/mdl";
     private static final String ID_TS = "id.ts.jwt";
@@ -63,7 +63,7 @@ class TrustStatementInjectionServiceTest {
                 .type(new JOSEObjectType("jwt"))
                 .build();
         var claims = new JWTClaimsSet.Builder()
-                .issuer("did:tdw:trust-registry:issuer")
+                .issuer("did:webvh:trust-registry:issuer")
                 .claim("can_issue", Map.of("vct", vct, "vct_name", "Test VC"))
                 .issueTime(new Date())
                 .expirationTime(Date.from(Instant.now().plusSeconds(3600)))

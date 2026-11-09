@@ -16,6 +16,7 @@ import com.nimbusds.jose.jwk.JWK;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
@@ -23,6 +24,7 @@ import java.util.Map;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class KeyAttestationService {
@@ -106,6 +108,13 @@ public class KeyAttestationService {
             throw new Oid4vcException(e, INVALID_PROOF, String.format("Attestation has been rejected! %s", e.getMessage()));
         } catch (JOSEException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Key attestation key is not supported or not matching the signature!");
+        } catch (Oid4vcException e) {
+            // Rethrow Oid4vcException to avoid wrapping it in another exception and losing the status code
+            throw e;
+        } catch (RuntimeException e) {
+            // e.g. I/O errors or invalid responses while resolving the attestation key (DID) from an external server.
+            log.warn("Key attestation could not be validated due to an unexpected error", e);
+            throw new Oid4vcException(e, INVALID_PROOF, "Key attestation could not be validated!");
         }
     }
 

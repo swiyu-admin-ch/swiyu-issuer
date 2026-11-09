@@ -21,7 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -148,7 +149,7 @@ class BusinessIssuerRenewalApiClientTest {
 
     @Test
     void getRenewalData_whenRestClientExceptionWithInfoStatus_thenLogsInfo() {
-        var restClientException = mock(RestClientResponseException.class);
+        var restClientException = mock(WebClientResponseException.class);
         when(restClientException.getStatusCode()).thenReturn(HttpStatusCode.valueOf(503));
         when(restClientException.getMessage()).thenReturn("Service Unavailable");
         when(responseMono.block()).thenThrow(restClientException);
@@ -165,7 +166,7 @@ class BusinessIssuerRenewalApiClientTest {
 
     @Test
     void getRenewalData_whenRestClientExceptionWithErrorStatus_thenLogsError() {
-        var restClientException = mock(RestClientResponseException.class);
+        var restClientException = mock(WebClientResponseException.class);
         when(restClientException.getStatusCode()).thenReturn(HttpStatusCode.valueOf(400));
         when(restClientException.getMessage()).thenReturn("Bad Request");
         when(responseMono.block()).thenThrow(restClientException);
@@ -178,6 +179,18 @@ class BusinessIssuerRenewalApiClientTest {
         assertThat(logEvent.getFormattedMessage())
                 .contains("failed with status code 400 BAD_REQUEST")
                 .contains("with message Bad Request");
+    }
+
+    @Test
+    void getRenewalData_whenConnectionFails_thenThrowsBadGatewayWithoutDetails() {
+        var requestException = mock(WebClientRequestException.class);
+        when(requestException.getMessage()).thenReturn("Connection refused: /127.0.0.1:1234");
+        when(responseMono.block()).thenThrow(requestException);
+
+        var ex = assertThrows(RenewalException.class, () -> businessIssuerRenewalApiClient.getRenewalData(requestDto));
+
+        assertThat(ex.getHttpStatus().value()).isEqualTo(502);
+        assertThat(ex.getMessage()).doesNotContain("127.0.0.1");
     }
 
     /**
