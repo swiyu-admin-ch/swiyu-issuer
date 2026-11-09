@@ -188,7 +188,6 @@ With response:
             "ECDH-ES"
         ],
         "enc_values_supported": [
-            "A128GCM",
             "A256GCM"
         ]
     },
