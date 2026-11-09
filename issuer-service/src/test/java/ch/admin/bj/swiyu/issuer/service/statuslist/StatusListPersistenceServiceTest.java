@@ -4,10 +4,12 @@ import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.StatusListProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,11 +51,11 @@ class StatusListPersistenceServiceTest {
         when(statusListProperties.getStatusListSizeLimit()).thenReturn(100 * 1024 * 1024); // 100 MB
         when(applicationProperties.isAutomaticStatusListSynchronizationDisabled()).thenReturn(true); // Disable registry sync in tests
         persistenceService = new StatusListPersistenceService(
-            applicationProperties,
-            statusListProperties,
-            statusListRepository,
-            statusRegistryClient,
-            signingService
+                applicationProperties,
+                statusListProperties,
+                statusListRepository,
+                statusRegistryClient,
+                signingService
         );
     }
 
@@ -61,18 +63,18 @@ class StatusListPersistenceServiceTest {
      * Tests that revoking a credential status entry updates the status list and returns the correct status list ID.
      */
     @Test
-    void revoke_shouldReturnStatusListId() {
+    void revoke_shouldReturnStatusListId() throws IOException {
         UUID statusListId = UUID.randomUUID();
-        var token = new TokenStatusListToken(8, 10);
+        var token = new TokenStatusList(8, 10);
         token.setStatus(1, TokenStatusListBit.REVOKE.getValue());
         StatusList statusList = StatusList.builder()
-            .id(statusListId)
-            .uri("https://example.com/" + statusListId)
-            .config(Map.of("bits", 8))
-            .statusZipped(token.getStatusListData())
-            .maxLength(10)
-            .configurationOverride(null)
-            .build();
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .statusZipped(token.getStatusListData())
+                .maxLength(10)
+                .configurationOverride(null)
+                .build();
         when(statusListRepository.findAllByIdInForUpdate(List.of(statusListId))).thenReturn(List.of(statusList));
 
         CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
@@ -91,18 +93,18 @@ class StatusListPersistenceServiceTest {
      * Tests that suspending a credential status entry updates the status list and returns the correct status list ID.
      */
     @Test
-    void suspend_shouldReturnStatusListId() {
+    void suspend_shouldReturnStatusListId() throws IOException {
         UUID statusListId = UUID.randomUUID();
-        TokenStatusListToken token = new TokenStatusListToken(8, 10);
+        TokenStatusList token = new TokenStatusList(8, 10);
         token.setStatus(2, TokenStatusListBit.SUSPEND.getValue());
         StatusList statusList = StatusList.builder()
-            .id(statusListId)
-            .uri("https://example.com/" + statusListId)
-            .config(Map.of("bits", 8))
-            .statusZipped(token.getStatusListData())
-            .maxLength(10)
-            .configurationOverride(null)
-            .build();
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .statusZipped(token.getStatusListData())
+                .maxLength(10)
+                .configurationOverride(null)
+                .build();
         when(statusListRepository.findAllByIdInForUpdate(List.of(statusListId))).thenReturn(List.of(statusList));
 
         CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);
@@ -121,18 +123,18 @@ class StatusListPersistenceServiceTest {
      * Tests that revalidating a credential status entry updates the status list and returns the correct status list ID.
      */
     @Test
-    void revalidate_shouldReturnStatusListId() {
+    void revalidate_shouldReturnStatusListId() throws IOException {
         UUID statusListId = UUID.randomUUID();
-        TokenStatusListToken token = new TokenStatusListToken(8, 10);
+        TokenStatusList token = new TokenStatusList(8, 10);
         token.setStatus(3, TokenStatusListBit.VALID.getValue());
         StatusList statusList = StatusList.builder()
-            .id(statusListId)
-            .uri("https://example.com/" + statusListId)
-            .config(Map.of("bits", 8))
-            .statusZipped(token.getStatusListData())
-            .maxLength(10)
-            .configurationOverride(null)
-            .build();
+                .id(statusListId)
+                .uri("https://example.com/" + statusListId)
+                .config(Map.of("bits", 8))
+                .statusZipped(token.getStatusListData())
+                .maxLength(10)
+                .configurationOverride(null)
+                .build();
         when(statusListRepository.findAllByIdInForUpdate(List.of(statusListId))).thenReturn(List.of(statusList));
 
         CredentialOfferStatus offerStatus = Mockito.mock(CredentialOfferStatus.class);

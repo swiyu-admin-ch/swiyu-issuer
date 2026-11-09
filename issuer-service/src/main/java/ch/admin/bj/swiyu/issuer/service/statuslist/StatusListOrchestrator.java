@@ -8,12 +8,12 @@ import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusRepository;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListCreateDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryClient;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -151,8 +151,12 @@ public class StatusListOrchestrator {
         StatusList statusList = statusListRepository.findByIdForUpdate(statusListId).orElseThrow(
                 () -> new ResourceNotFoundException(String.format("Status list %s not found", statusListId)));
 
-        TokenStatusListToken token = loadTokenStatusListToken(statusList);
-        statusList.setStatusZipped(token.getStatusListData());
+        TokenStatusList token = loadTokenStatusListToken(statusList);
+        try {
+            statusList.setStatusZipped(token.getStatusListData());
+        } catch (IOException e) {
+            throw new ConfigurationException(e.getMessage(), e);
+        }
 
         mergeAndPersistConfigurationOverrideIfPresent(overrideDto, statusList);
 
@@ -172,9 +176,9 @@ public class StatusListOrchestrator {
         }
     }
 
-    private TokenStatusListToken loadTokenStatusListToken(StatusList statusList) {
+    private TokenStatusList loadTokenStatusListToken(StatusList statusList) {
         try {
-            return TokenStatusListToken.loadTokenStatusListToken(
+            return TokenStatusList.loadTokenStatusListToken(
                     (Integer) statusList.getConfig().get(BITS_FIELD_NAME),
                     statusList.getStatusZipped(),
                     statusListProperties.getStatusListSizeLimit()
@@ -206,24 +210,28 @@ public class StatusListOrchestrator {
         // creates new empty status list entry in the registry
         var newStatusList = createEmptyRegistryEntry();
 
-        TokenStatusListToken token = new TokenStatusListToken(config.getBits(),
+        TokenStatusList token = new TokenStatusList(config.getBits(),
                 statusListCreateDto.getMaxLength());
 
         // Build DB Entry
-        StatusList statusList = StatusList.builder()
-                .config(Map.of(
-                        BITS_FIELD_NAME, config.getBits(),
-                        "purpose", config.getPurpose() != null ? config.getPurpose() : ""
-                ))
-                .uri(newStatusList.getStatusRegistryUrl())
-                .statusZipped(token.getStatusListData())
-                .maxLength(statusListCreateDto.getMaxLength())
-                .configurationOverride(toConfigurationOverride(statusListCreateDto.getConfigurationOverride()))
-                .build();
-        log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits() * statusList.getMaxLength());
+        try {
+            StatusList statusList = StatusList.builder()
+                    .config(Map.of(
+                            BITS_FIELD_NAME, config.getBits(),
+                            "purpose", config.getPurpose() != null ? config.getPurpose() : ""
+                    ))
+                    .uri(newStatusList.getStatusRegistryUrl())
+                    .statusZipped(token.getStatusListData())
+                    .maxLength(statusListCreateDto.getMaxLength())
+                    .configurationOverride(toConfigurationOverride(statusListCreateDto.getConfigurationOverride()))
+                    .build();
+            log.debug("Initializing new status list with bit {} per entry and {} entries to a total size of {} bit", config.getBits(), statusList.getMaxLength(), config.getBits() * statusList.getMaxLength());
 
-        statusListPersistenceService.publishToRegistry(statusList, token);
-        return statusList;
+            statusListPersistenceService.publishToRegistry(statusList, token);
+            return statusList;
+        } catch (IOException e) {
+            throw new ConfigurationException(e.getMessage(), e);
+        }
     }
 
     private StatusListEntryCreationDto createEmptyRegistryEntry() {

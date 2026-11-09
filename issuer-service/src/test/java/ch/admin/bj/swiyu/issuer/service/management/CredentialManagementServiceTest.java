@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.issuer.service.management;
 
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.BadRequestException;
+import ch.admin.bj.swiyu.issuer.common.exception.ResourceGoneException;
 import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.CredentialConfiguration;
@@ -328,6 +329,57 @@ class CredentialManagementServiceTest {
         when(persistenceService.findCredentialOfferByIdForUpdate(valid.getId())).thenReturn(valid);
 
         assertThrows(ResourceNotFoundException.class, () -> credentialService.getCredentialOfferStatus(UUID.randomUUID(), valid.getId()));
+    }
+
+    /**
+     * Verifies that {@link CredentialManagementService#getCredentialOfferByTenantId(UUID)} returns the offer
+     * as long as it is neither canceled nor expired.
+     */
+    @ParameterizedTest
+    @EnumSource(value = CredentialOfferStatusType.class, names = {"EXPIRED", "CANCELLED"}, mode = EnumSource.Mode.EXCLUDE)
+    void getCredentialOfferByTenantId_shouldReturnOffer_whenNotCancelledOrExpired(CredentialOfferStatusType statusType) {
+        var tenantId = UUID.randomUUID();
+        var offer = createCredentialOffer(statusType, now().plusSeconds(1000).getEpochSecond(), offerData);
+        when(persistenceService.findCredentialOfferByMetadataTenantId(tenantId)).thenReturn(offer);
+
+        var result = credentialService.getCredentialOfferByTenantId(tenantId);
+
+        assertThat(result).isEqualTo(offer);
+    }
+
+    /**
+     * Verifies that {@link CredentialManagementService#getCredentialOfferByTenantId(UUID)} still returns an
+     * issued offer, because the credential issued for it may reference the tenant specific metadata.
+     */
+    @Test
+    void getCredentialOfferByTenantId_shouldReturnOffer_whenIssued() {
+        var tenantId = UUID.randomUUID();
+        var offer = createCredentialOffer(CredentialOfferStatusType.ISSUED, now().plusSeconds(1000).getEpochSecond(),
+                offerData);
+        when(persistenceService.findCredentialOfferByMetadataTenantId(tenantId)).thenReturn(offer);
+
+        var result = credentialService.getCredentialOfferByTenantId(tenantId);
+
+        assertThat(result).isEqualTo(offer);
+    }
+
+    /**
+     * Verifies that {@link CredentialManagementService#getCredentialOfferByTenantId(UUID)} signals a gone
+     * resource if the offer is cancelled or expired.
+     */
+    @ParameterizedTest
+    @EnumSource(value = CredentialOfferStatusType.class, names = {"EXPIRED", "CANCELLED"})
+    void getCredentialOfferByTenantId_shouldThrowGone_whenCancelledOrExpired(CredentialOfferStatusType goneStatus) {
+        var tenantId = UUID.randomUUID();
+        var offer = createCredentialOffer(goneStatus, now().plusSeconds(1000).getEpochSecond(), offerData);
+        when(persistenceService.findCredentialOfferByMetadataTenantId(tenantId)).thenReturn(offer);
+
+        var exception = assertThrows(ResourceGoneException.class,
+                () -> credentialService.getCredentialOfferByTenantId(tenantId));
+
+        assertThat(exception.getMessage())
+                .contains(tenantId.toString())
+                .contains(goneStatus.toString());
     }
 
     /**
