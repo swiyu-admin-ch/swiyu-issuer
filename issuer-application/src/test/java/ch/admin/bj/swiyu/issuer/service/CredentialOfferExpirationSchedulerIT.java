@@ -3,7 +3,6 @@ package ch.admin.bj.swiyu.issuer.service;
 import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.infrastructure.scheduler.CredentialOfferExpirationScheduler;
-import ch.admin.bj.swiyu.issuer.service.management.CredentialManagementService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,10 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
-//@Transactional will break filtering to currently used indexes
 class CredentialOfferExpirationSchedulerIT {
-    @Autowired
-    CredentialManagementService credentialManagementService;
     @Autowired
     CredentialOfferRepository credentialOfferRepository;
     @Autowired
