@@ -8,7 +8,6 @@ import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusListRepository;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.OAuthTokenDto;
@@ -17,6 +16,7 @@ import ch.admin.bj.swiyu.issuer.dto.oid4vci.issuance.CredentialResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import com.authlete.sd.SDJWT;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -245,7 +245,7 @@ class RenewalFlowIT {
         var statusLists = statusListRepository.findByUriInForUpdate(List.of(statusListUri));
         assertThat(statusLists).hasSize(1);
         var testStatusList = statusLists.get(0);
-        var statusList = TokenStatusListToken.loadTokenStatusListToken(Integer.parseInt(testStatusList.getConfig().get("bits").toString()), testStatusList.getStatusZipped(), Integer.MAX_VALUE);
+        var statusList = TokenStatusList.loadTokenStatusListToken(Integer.parseInt(testStatusList.getConfig().get("bits").toString()), testStatusList.getStatusZipped(), Integer.MAX_VALUE);
         var allStatuses = allStatusIndexes.stream().map(Long::intValue).map(statusList::getStatus).toList();
         assertThat(allStatuses).as("All Statuses should be set to the same").containsExactlyInAnyOrderElementsOf(allStatusIndexes.stream().map(idx -> state == UpdateCredentialStatusRequestTypeDto.SUSPENDED ? 2 : 0).toList());
     }
