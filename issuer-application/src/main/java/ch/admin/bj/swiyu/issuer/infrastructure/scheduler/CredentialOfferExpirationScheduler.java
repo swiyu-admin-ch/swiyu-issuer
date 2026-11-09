@@ -48,7 +48,7 @@ public class CredentialOfferExpirationScheduler {
         for (var offerId : expiringOfferIds) {
             try {
                 credentialOfferExpirationService.expireOffer(offerId);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 // A broken offer should not prevent the remaining offers from being expired.
                 failedOfferIds.add(offerId);
                 log.error("Could not expire offer {} - Please check the entry manually", offerId, e);
