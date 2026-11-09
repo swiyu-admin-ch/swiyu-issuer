@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -118,7 +119,7 @@ public class CredentialOfferTestHelper {
         var statusList = statusListRepository.findById(byOfferStatusId.stream().findFirst().orElseThrow().getId().getStatusListId()).orElseThrow();
         byOfferStatusId.forEach(status -> {
             try {
-                var tokenState = TokenStatusListToken.loadTokenStatusListToken(2, statusList.getStatusZipped(), 204800).getStatus(status.getId().getIndex());
+                var tokenState = TokenStatusList.loadTokenStatusListToken(2, statusList.getStatusZipped(), 204800).getStatus(status.getId().getIndex());
                 var expectedState = switch (statusType) {
                     case INIT, OFFERED, CANCELLED, IN_PROGRESS, EXPIRED, DEFERRED, READY, ISSUED, REQUESTED ->
                             TokenStatusListBit.VALID.getValue();
@@ -136,8 +137,8 @@ public class CredentialOfferTestHelper {
         return String.format("%s?credentialStatus=%s", getStatusUrl(id), credentialStatus);
     }
 
-    TokenStatusListToken loadTokenStatusListToken(int bits, String lst) throws IOException {
-        return TokenStatusListToken.loadTokenStatusListToken(bits, lst, 204800);
+    TokenStatusList loadTokenStatusListToken(int bits, String lst) throws IOException {
+        return TokenStatusList.loadTokenStatusListToken(bits, lst, 204800);
     }
 
     String getStatusUrl(UUID id) {

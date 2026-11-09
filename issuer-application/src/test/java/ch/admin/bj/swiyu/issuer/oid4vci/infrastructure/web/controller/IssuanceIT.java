@@ -1,10 +1,10 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.KeyOnlySignatureConfiguration;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.BatchCredentialIssuance;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
 import ch.admin.bj.swiyu.issuer.dto.common.ConfigurationOverrideDto;
@@ -18,11 +18,8 @@ import com.google.gson.JsonParser;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.crypto.ECDHEncrypter;
-import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
@@ -31,26 +28,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -58,22 +51,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("test")
-@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class IssuanceIT {
+class IssuanceIT extends AbstractCredentialIT {
 
     private StatusList testStatusList;
     private List<ECKey> holderKeys;
-    @Autowired
-    private MockMvc mock;
-    @Autowired
-    private StatusListRepository statusListRepository;
-    @Autowired
-    private CredentialOfferStatusRepository credentialOfferStatusRepository;
     @Autowired
     private ApplicationProperties applicationProperties;
     @MockitoSpyBean
@@ -86,16 +68,13 @@ class IssuanceIT {
     private CredentialPersistenceService persistenceService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         // Reset spies so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null)
         // do not bleed into subsequent tests that rely on the real bean behaviour.
         reset(issuerMetadata);
         reset(persistenceService);
-        testStatusList = saveStatusList(createStatusList());
-        holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
-                .boxed()
-                .map(i -> assertDoesNotThrow(() -> createPrivateKey("Test-Key-%s".formatted(i))))
-                .toList();
+        testStatusList = saveNewStatusList();
+        holderKeys = signingKeys("Test-Key-", issuerMetadata.getIssuanceBatchSize());
     }
 
     @Test
@@ -246,11 +225,7 @@ class IssuanceIT {
         assertThat(metadata.getResponseEncryption()).isNotNull();
         assertTrue(metadata.getResponseEncryption().getAlgValuesSupported().contains(JWEAlgorithm.ECDH_ES.getName()));
         assertTrue(metadata.getResponseEncryption().getEncValuesSupported().contains(EncryptionMethod.A256GCM.getName()));
-        ECKey encryptionKey = new ECKeyGenerator(Curve.P_256)
-                .keyID("transportEncKeyEC")
-                .keyUse(KeyUse.ENCRYPTION)
-                .algorithm(JWEAlgorithm.ECDH_ES)
-                .generate();
+        ECKey encryptionKey = encryptionKey("transportEncKeyEC");
 
         var responseEncryptionJson = String.format("""
                         {
@@ -317,11 +292,7 @@ class IssuanceIT {
         var token = tokenResponse.get("access_token");
 
         // Response Encryption
-        ECKey encryptionKey = new ECKeyGenerator(Curve.P_256)
-                .keyID("transportEncKeyEC")
-                .keyUse(KeyUse.ENCRYPTION)
-                .algorithm(JWEAlgorithm.ECDH_ES)
-                .generate();
+        ECKey encryptionKey = encryptionKey("transportEncKeyEC");
 
         var responseEncryptionJson = String.format("""
                         {
@@ -347,7 +318,7 @@ class IssuanceIT {
     @ValueSource(ints = {1, 3, 10})
     void testSdJwtOffer_withMultipleProof_thenSuccess(int numberOfProofs) throws Exception {
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
+        List<ECKey> holderPrivateKeys = signingKeys("Test-Key-", numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -411,7 +382,7 @@ class IssuanceIT {
     @ValueSource(ints = {0, 11})
     void testSdJwtOffer_invalidBatchSizes_thenBadRequest(int numberOfProofs) throws Exception {
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
+        List<ECKey> holderPrivateKeys = signingKeys("Test-Key-", numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -437,7 +408,7 @@ class IssuanceIT {
 
         var numberOfProofs = 2;
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
+        List<ECKey> holderPrivateKeys = signingKeys("Test-Key-", numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -464,7 +435,7 @@ class IssuanceIT {
 
         var numberOfProofs = 1;
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
+        List<ECKey> holderPrivateKeys = signingKeys("Test-Key-", numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -494,7 +465,7 @@ class IssuanceIT {
         doReturn(new BatchCredentialIssuance(10)).when(issuerMetadata).getBatchCredentialIssuance();
         doReturn(true).when(issuerMetadata).isBatchIssuanceAllowed();
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(numberOfProofs);
+        List<ECKey> holderPrivateKeys = signingKeys("Test-Key-", numberOfProofs);
 
         var offerRequest = CreateCredentialOfferRequestDto.builder()
                 .metadataCredentialSupportedId(List.of("university_example_sd_jwt"))
@@ -522,7 +493,7 @@ class IssuanceIT {
     @ValueSource(strings = {"did:example:localhost%3A8080:abcabc#sdjwt", "did:example:offer:override#key-0", "did:example:offer:override#key-1", "did:example:offer:override#key-2"})
     void testSdJwtOffer_withConfigOverride_thenSuccess(String expectedKid) throws Exception {
 
-        List<ECKey> holderPrivateKeys = createHolderPrivateKeys(1);
+        List<ECKey> holderPrivateKeys = signingKeys("Test-Key-", 1);
 
         final String overrideDID = "did:example:offer:override";
         final String verificationMethod = overrideDID + "#key";
@@ -592,22 +563,19 @@ class IssuanceIT {
 
         var credentialRequestString = getCredentialRequestString(mock, holderKeys, applicationProperties, "university_example_sd_jwt");
 
-        ECKey dpopKey = assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
-                .keyID("HolderDPoPKey")
-                .keyUse(KeyUse.SIGNATURE)
-                .generate());
+        ECKey dpopKey = signingKey("HolderDPoPKey");
 
         mock.perform(post("/oid4vci/api/credential")
-                .header("Authorization", String.format("BEARER %s", tokenDto.get("access_token")))
-                .header("DPoP", createDpop(
-                        mock,
-                        issuerMetadata.getNonceEndpoint(),
-                        "POST",
-                        issuerMetadata.getCredentialEndpoint(),
-                        UUID.randomUUID().toString(),
-                        dpopKey
-                ))
-                .content(credentialRequestString))
+                        .header("Authorization", String.format("BEARER %s", tokenDto.get("access_token")))
+                        .header("DPoP", createDpop(
+                                mock,
+                                issuerMetadata.getNonceEndpoint(),
+                                "POST",
+                                issuerMetadata.getCredentialEndpoint(),
+                                UUID.randomUUID().toString(),
+                                dpopKey
+                        ))
+                        .content(credentialRequestString))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -623,9 +591,5 @@ class IssuanceIT {
         signatureConfiguration.setVerificationMethod(keyId);
 
         return List.of(signatureConfiguration);
-    }
-
-    private StatusList saveStatusList(StatusList statusList) {
-        return statusListRepository.save(statusList);
     }
 }

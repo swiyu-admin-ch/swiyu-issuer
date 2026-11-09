@@ -29,13 +29,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createStatusList;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.linkStatusList;
@@ -104,6 +105,10 @@ class StatusListWebhookIT {
 
     @Autowired
     private CallbackEventRepository callbackEventRepository;
+    @MockitoBean
+    private StatusListPersistenceService statusListPersistenceService;
+    private StatusList testStatusList;
+    private CredentialManagement issuedManagement;
 
     @DynamicPropertySource
     static void webhookProperties(DynamicPropertyRegistry registry) {
@@ -112,14 +117,8 @@ class StatusListWebhookIT {
         registry.add("webhook.callback-uri", () -> "http://localhost/callback");
     }
 
-    @MockitoBean
-    private StatusListPersistenceService statusListPersistenceService;
-
-    private StatusList testStatusList;
-    private CredentialManagement issuedManagement;
-
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         callbackEventRepository.deleteAll();
         credentialOfferStatusRepository.deleteAll();
         credentialOfferRepository.deleteAll();

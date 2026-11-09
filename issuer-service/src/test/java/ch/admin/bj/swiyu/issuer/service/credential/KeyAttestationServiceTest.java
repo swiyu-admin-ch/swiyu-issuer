@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
 
+import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -21,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static ch.admin.bj.swiyu.issuer.common.exception.CredentialRequestError.INVALID_PROOF;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -260,5 +263,15 @@ class KeyAttestationServiceTest {
             assertTrue(ex.getMessage().contains("Proof has no binding key"),
                     "Expected missing-binding error but got: " + ex.getMessage());
         }
+    }
+
+    @Test
+    void validateKeyAttestation_whenNotAllowedUrl_thenThrowsOid4vcException() {
+        var libraryError = "Error by test";
+        KeyAttestationRequirement requirement = mock(KeyAttestationRequirement.class);
+        when(validator.getAndValidateResolutionUrl(anyString())).thenThrow(new JwtValidatorException(libraryError));
+        assertThatThrownBy(() -> keyAttestationService.validateKeyAttestation(requirement, "jwt"))
+                .isInstanceOf(Oid4vcException.class)
+                .hasMessageContaining(libraryError);
     }
 }
