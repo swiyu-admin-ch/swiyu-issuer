@@ -168,7 +168,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeferredCredentialPendingResponse"
         "400":
-          description: Invalid request or validation error
+          description: Invalid request or validation error. Includes error code invalid_proof
+            if the key attestation is invalid or cannot be validated. No details about
+            the cause are returned.
           content:
             application/json:
               schema:
@@ -235,7 +237,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeferredCredentialPendingResponse"
         "400":
-          description: Invalid request or validation error
+          description: "Invalid request or validation error, includes error code invalid_proof\
+            \ if the proof or its key attestation is invalid or cannot be validated"
           content:
             application/json:
               schema:
@@ -263,6 +266,13 @@ paths:
                 type: string
         "409":
           description: The requested credential is currently locked by another operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: The external Business Issuer renewal backend could not be reached
+            during a renewal request
           content:
             application/json:
               schema:
