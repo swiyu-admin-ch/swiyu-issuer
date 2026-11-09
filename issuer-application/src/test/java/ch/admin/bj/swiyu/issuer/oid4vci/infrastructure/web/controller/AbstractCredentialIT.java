@@ -10,6 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -51,7 +52,7 @@ abstract class AbstractCredentialIT {
         return statusListRepository.save(statusList);
     }
 
-    protected StatusList saveNewStatusList() {
+    protected StatusList saveNewStatusList() throws IOException {
         return saveStatusList(createStatusList());
     }
 

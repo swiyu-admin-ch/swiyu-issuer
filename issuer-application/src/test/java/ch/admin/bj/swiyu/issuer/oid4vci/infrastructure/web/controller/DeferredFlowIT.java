@@ -126,7 +126,7 @@ class DeferredFlowIT extends AbstractCredentialIT {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         // Reset spies so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null)
         // do not bleed into subsequent tests that rely on the real bean behaviour.
         Mockito.reset(issuerMetadata);

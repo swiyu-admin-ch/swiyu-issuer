@@ -45,6 +45,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.time.Clock;
@@ -107,7 +108,7 @@ class DeferredIssuanceIT extends AbstractCredentialIT {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         // Reset the spy so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null,
         // isBatchIssuanceAllowed=false) do not bleed into subsequent tests that use the real batch size.
         Mockito.reset(issuerMetadata);
