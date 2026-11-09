@@ -10,6 +10,7 @@ import ch.admin.bj.swiyu.issuer.domain.openid.metadata.KeyAttestationRequirement
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.SupportedProofType;
 import ch.admin.bj.swiyu.jwtvalidator.DidJwtValidator;
 
+import ch.admin.bj.swiyu.jwtvalidator.JwtValidatorException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 
@@ -87,6 +88,7 @@ public class KeyAttestationService {
      */
     public AttestationJwt validateKeyAttestation(KeyAttestationRequirement attestationRequirement, String attestationJwt) {
         try {
+            jwtValidator.getAndValidateResolutionUrl(attestationJwt);
             AttestationJwt attestation = AttestationJwt.parseJwt(attestationJwt, applicationProperties.isSwissProfileVersioningEnforcement());
             var trustedAttestationServices = applicationProperties.getTrustedAttestationProviders();
             attestation.throwIfNotTrustedAttestationProvider(trustedAttestationServices);
@@ -96,6 +98,8 @@ public class KeyAttestationService {
             }
 
             return attestation;
+        } catch (JwtValidatorException e) {
+            throw new Oid4vcException(e, INVALID_PROOF, e.getMessage());
         } catch (ParseException e) {
             throw new Oid4vcException(e, INVALID_PROOF, "Key attestation is malformed!");
         } catch (IllegalArgumentException e) {
@@ -119,7 +123,7 @@ public class KeyAttestationService {
         if (bindingJson == null) {
             throw new Oid4vcException(INVALID_PROOF, "Proof has no binding key – cannot verify against attested_keys");
         }
-        
+
         JWK proofKey = parseProofKey(bindingJson);
         verifyKeyPresentInAttestation(proofKey, attestation);
     }

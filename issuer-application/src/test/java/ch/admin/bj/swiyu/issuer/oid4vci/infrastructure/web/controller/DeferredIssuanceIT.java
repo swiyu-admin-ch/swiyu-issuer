@@ -1,9 +1,11 @@
-package ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller;
+package ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller;
 
-import ch.admin.bj.swiyu.issuer.PostgreSQLContainerInitializer;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SdjwtProperties;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferMetadata;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
+import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.ProofType;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.holderbinding.SelfContainedNonce;
 import ch.admin.bj.swiyu.issuer.domain.openid.metadata.IssuerMetadata;
@@ -24,7 +26,6 @@ import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -36,33 +37,30 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatus;
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatusAndSubjectDataForDeferred;
-import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.*;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatusAndSubjectDataForDeferred;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.createTestOffer;
+import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.TestInfrastructureUtils.*;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKey;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKeys;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.doReturn;
@@ -70,24 +68,11 @@ import static org.mockito.Mockito.mockStatic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("test")
-@ContextConfiguration(initializers = PostgreSQLContainerInitializer.class)
 @Transactional
-class DeferredIssuanceIT {
+class DeferredIssuanceIT extends AbstractCredentialIT {
 
     private final UUID validPreAuthCode = UUID.randomUUID();
     private List<ECKey> holderKeys;
-    @Autowired
-    private MockMvc mock;
-    @Autowired
-    private StatusListRepository statusListRepository;
-    @Autowired
-    private CredentialOfferStatusRepository credentialOfferStatusRepository;
-    @Autowired
-    private CredentialOfferRepository credentialOfferRepository;
     @Autowired
     private ApplicationProperties applicationProperties;
     @Autowired
@@ -102,8 +87,6 @@ class DeferredIssuanceIT {
     private JweService encryptionService;
     @Autowired
     private NonceService nonceService;
-    @Autowired
-    private CredentialManagementRepository credentialManagementRepository;
 
     private static String getDeferredCredentialRequestString(String transactionId) {
         return String.format("{ \"transaction_id\": \"%s\"}", transactionId);
@@ -125,11 +108,11 @@ class DeferredIssuanceIT {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         // Reset the spy so that stubs set in individual tests (e.g. getBatchCredentialIssuance=null,
         // isBatchIssuanceAllowed=false) do not bleed into subsequent tests that use the real batch size.
         Mockito.reset(issuerMetadata);
-        statusList = saveStatusList(createStatusList());
+        statusList = saveNewStatusList();
         var deferredMetadata = new CredentialOfferMetadata(true, null, null);
 
         CredentialOffer offer = createTestOffer(validPreAuthCode, CredentialOfferStatusType.OFFERED,
@@ -137,13 +120,7 @@ class DeferredIssuanceIT {
                 deferredMetadata);
 
         offerManagementId = saveStatusListLinkedOffer(offer, statusList, 0).getId();
-        holderKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize()).boxed()
-                .map(i -> assertDoesNotThrow(() -> new ECKeyGenerator(Curve.P_256)
-                        .keyUse(KeyUse.SIGNATURE)
-                        .keyID("Test-Key-" + i)
-                        .issueTime(new Date())
-                        .generate()))
-                .toList();
+        holderKeys = signingKeys("Test-Key-", issuerMetadata.getIssuanceBatchSize());
     }
 
     @Test
@@ -305,11 +282,7 @@ class DeferredIssuanceIT {
         doReturn(null).when(issuerMetadata).getBatchCredentialIssuance();
         doReturn(false).when(issuerMetadata).isBatchIssuanceAllowed();
 
-        holderKeys = List.of(new ECKeyGenerator(Curve.P_256)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID("Test-Key")
-                .issueTime(new Date())
-                .generate());
+        holderKeys = List.of(signingKey("Test-Key"));
 
         var offer = createCredentialOffer();
         var nonce = requestNonce(mock);
@@ -583,7 +556,7 @@ class DeferredIssuanceIT {
         var responseEncryptionJson = createResponseEncryptionJson(ecJWK);
         var credentialRequestString = "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s}".formatted("university_example_sd_jwt", responseEncryptionJson);
 
-         requestCredential(mock, (String) token, credentialRequestString)
+        requestCredential(mock, (String) token, credentialRequestString)
                 .andExpect(status().isBadRequest());
     }
 
@@ -679,30 +652,6 @@ class DeferredIssuanceIT {
                     "{\"credential_configuration_id\": \"%s\", \"credential_response_encryption\": %s, \"proofs\": {\"jwt\": [\"%s\"]}}",
                     configurationId, encryption, proofString);
         }
-    }
-
-    private CredentialManagement saveStatusListLinkedOffer(CredentialOffer offer, StatusList statusList,
-                                                           int index) {
-        var credentialManagement = credentialManagementRepository.save(CredentialManagement.builder()
-                .id(UUID.randomUUID())
-                .accessToken(UUID.randomUUID())
-                .credentialManagementStatus(CredentialStatusManagementType.INIT)
-                .accessTokenExpirationTimestamp(Instant.now().plusSeconds(120).getEpochSecond())
-                .renewalRequestCnt(0)
-                .renewalResponseCnt(0)
-                .build());
-
-        offer.setCredentialManagement(credentialManagement);
-        var storedOffer = credentialOfferRepository.save(offer);
-        credentialOfferStatusRepository.save(linkStatusList(offer, statusList, index));
-
-        credentialManagement.addCredentialOffer(storedOffer);
-        credentialManagementRepository.save(credentialManagement);
-        return credentialManagementRepository.save(credentialManagement);
-    }
-
-    private StatusList saveStatusList(StatusList statusList) {
-        return statusListRepository.save(statusList);
     }
 
     private ResultActions requestCredential(MockMvc mock, String token, String credentialRequestString)

@@ -14,7 +14,8 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkRespon
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
-import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils;
+import ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import com.nimbusds.jose.jwk.ECKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,8 +41,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils.updateStatus;
+import static ch.admin.bj.swiyu.issuer.oid4vci.infrastructure.web.controller.IssuanceTestUtils.updateStatus;
 import static ch.admin.bj.swiyu.issuer.oid4vci.test.CredentialOfferTestData.getUniversityCredentialSubjectData;
+import static ch.admin.bj.swiyu.issuer.service.test.TestKeysUtils.signingKeys;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -263,7 +265,7 @@ class CredentialManagementStatusIT {
                 () -> revokedOfferStatus.stream().findFirst().orElseThrow().getId().getStatusListId());
         var statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
 
-        var tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+        var tokenStatusList = TokenStatusList.loadTokenStatusListToken(
                 (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
         for (var offerStatus : revokedOfferStatus) {
             assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been revoked")
@@ -290,7 +292,7 @@ class CredentialManagementStatusIT {
         unusedIndexes.removeAll(suspendedIndexes);
 
         statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
-        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+        tokenStatusList = TokenStatusList.loadTokenStatusListToken(
                 (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
 
         for (var offerStatus : suspendedOfferStatus) {
@@ -320,7 +322,7 @@ class CredentialManagementStatusIT {
                 .containsExactlyInAnyOrderElementsOf(unsuspendedIndexes);
 
         statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
-        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+        tokenStatusList = TokenStatusList.loadTokenStatusListToken(
                 (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
         for (var offerStatus : issuedOfferStatus) {
             assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex()))
@@ -353,8 +355,7 @@ class CredentialManagementStatusIT {
                 createCredentialOfferResult.getContentAsString(),
                 CredentialWithDeeplinkResponseDto.class);
 
-        List<ECKey> holderPrivateKeys = IssuanceTestUtils
-                .createHolderPrivateKeys(issuerMetadata.getIssuanceBatchSize());
+        List<ECKey> holderPrivateKeys = signingKeys("Test-Key-", issuerMetadata.getIssuanceBatchSize());
 
         var token = IssuanceTestUtils.getAccessTokenFromDeeplink(mvc,
                 credentialWithDeeplinkResponseDto.getOfferDeeplink());

@@ -653,6 +653,13 @@ in [OpenAPI](openapi.yaml).
 
 Renewal requests are by default refused for credentials which are revoked or suspended. It is possible to use
 `ENABLE_SUSPENDED_RENEWAL` to allow suspended credentials to be renewed.
+>[!NOTE]
+>When using the `configuration_override` functionality during the renewal process, the override from the most recent renewal is used for the signed metadata. If no renewal has taken place yet, the initial override is used instead.
+
+> [!WARNING]
+>If you use the `configuration_override` functionality, for example when using an HSM, make sure that the keys used in the configuration override from the last renewal or initial issuance are kept. Otherwise, the signed_metadata functionality may fail, potentially causing the entire renewal process to fail.
+
+
 > [!WARNING]
 >Allowing renewal of suspended credentials should be done only with great care.
 All credentials are created initially with the valid state - this is the initial state of all status list indexes.
