@@ -25,6 +25,8 @@ It is based on the **[5.0.0]** section in `CHANGELOG.md`.
       }
       ```
     - Metadata no longer includes empty `proof_types_supported` maps when not provided.
+    - The response/request encryption metadata only advertises `A256GCM` in `enc_values_supported`, which no longer
+      includes `A128GCM`. See [breaking change 2](#2-response-encryption-a128gcm-no-longer-supported-only-a256gcm) for the required configuration update.
 
 - **Operators / DevOps:**
     - **Environment variables removed:** The deprecated caching configuration variables are no longer supported:
@@ -57,3 +59,21 @@ strategy.
         }
     }
 }
+```
+
+### 2. Response encryption: `A128GCM` no longer supported, only `A256GCM`
+
+The `enc_values_supported` list in the issuer metadata no longer accepts `A128GCM`. `A256GCM` is now the only supported JWE encryption
+algorithm. Leaving `A128GCM` in the list makes the metadata validation fail.
+
+**Before (v5.0.x):**
+
+```json
+"enc_values_supported": [ "A128GCM", "A256GCM" ]
+```
+
+**After (v5.0.x):**
+
+```json
+"enc_values_supported": [ "A256GCM" ]
+```
