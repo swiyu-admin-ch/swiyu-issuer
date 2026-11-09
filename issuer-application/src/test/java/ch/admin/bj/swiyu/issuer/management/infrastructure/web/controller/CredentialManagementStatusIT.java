@@ -15,6 +15,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDt
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.oid4vci.intrastructure.web.controller.IssuanceTestUtils;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import com.nimbusds.jose.jwk.ECKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -263,7 +264,7 @@ class CredentialManagementStatusIT {
                 () -> revokedOfferStatus.stream().findFirst().orElseThrow().getId().getStatusListId());
         var statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
 
-        var tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+        var tokenStatusList = TokenStatusList.loadTokenStatusListToken(
                 (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
         for (var offerStatus : revokedOfferStatus) {
             assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex())).as("VC has been revoked")
@@ -290,7 +291,7 @@ class CredentialManagementStatusIT {
         unusedIndexes.removeAll(suspendedIndexes);
 
         statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
-        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+        tokenStatusList = TokenStatusList.loadTokenStatusListToken(
                 (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
 
         for (var offerStatus : suspendedOfferStatus) {
@@ -320,7 +321,7 @@ class CredentialManagementStatusIT {
                 .containsExactlyInAnyOrderElementsOf(unsuspendedIndexes);
 
         statusList = assertDoesNotThrow(() -> statusListRepository.findById(statusListId).orElseThrow());
-        tokenStatusList = TokenStatusListToken.loadTokenStatusListToken(
+        tokenStatusList = TokenStatusList.loadTokenStatusListToken(
                 (Integer) statusList.getConfig().get("bits"), statusList.getStatusZipped(), 204800);
         for (var offerStatus : issuedOfferStatus) {
             assertThat(tokenStatusList.getStatus(offerStatus.getId().getIndex()))

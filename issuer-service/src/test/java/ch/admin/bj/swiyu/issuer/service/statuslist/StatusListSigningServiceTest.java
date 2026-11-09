@@ -6,9 +6,9 @@ import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.profile.SwissProfileVersions;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ConfigurationOverride;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
-import ch.admin.bj.swiyu.issuer.domain.credentialoffer.TokenStatusListToken;
 import ch.admin.bj.swiyu.issuer.service.JwsSignatureFacade;
 import ch.admin.bj.swiyu.jwssignatureservice.factory.strategy.KeyStrategyException;
+import ch.admin.bj.swiyu.statuslist.TokenStatusList;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -84,7 +84,7 @@ class StatusListSigningServiceTest {
                 .configurationOverride(configurationOverride)
                 .build();
 
-        TokenStatusListToken token = new TokenStatusListToken(2, 8);
+        TokenStatusList token = new TokenStatusList(2, 8);
 
         // Use a real ES256 signer to exercise Nimbus signing flow
         when(jwsSignatureFacade.createSigner(statusListProperties, configurationOverride)).thenReturn(signer);
@@ -114,7 +114,7 @@ class StatusListSigningServiceTest {
     void buildSignedStatusListJwt_throwsConfigurationException_onKeyStrategyError() throws KeyStrategyException {
         // Arrange
         var statusList = StatusList.builder().uri("https://registry.example/status/1").build();
-        TokenStatusListToken token = new TokenStatusListToken(1, 4);
+        TokenStatusList token = new TokenStatusList(1, 4);
 
         when(jwsSignatureFacade.createSigner(statusListProperties, configurationOverride)).thenThrow(new KeyStrategyException("bad", null));
 
@@ -126,7 +126,7 @@ class StatusListSigningServiceTest {
     void buildSignedStatusListJwt_throwsConfigurationException_onJoseException() throws Exception {
         // Arrange
         var statusList = StatusList.builder().uri("https://registry.example/status/2").build();
-        TokenStatusListToken token = new TokenStatusListToken(1, 4);
+        TokenStatusList token = new TokenStatusList(1, 4);
 
         JWSSigner failingSigner = mock(JWSSigner.class);
         when(failingSigner.sign(any(), any())).thenThrow(new JOSEException("simulated signing failure"));
