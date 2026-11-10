@@ -5,39 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [NEXT]
+## [5.1.0] - 2026-11-10
 
 ### Added
 
-- New boolean flag ENABLE_SUSPENDED_RENEWAL to optionally extend renewal flow to also allow suspended credentials.
-  If allowing renewal refer to readme section on renewal to necessary considerations.
-- Expanded `RenewalRequestDto` to include the requested `configuration_id` to allow the business issuer to return a different configuration than the one used for the initial credential offer. `(#1495)`
+- New boolean flag `ENABLE_SUSPENDED_RENEWAL` to optionally extend the renewal flow to also allow suspended credentials.
+  If allowing renewal, refer to the README section on renewal for necessary considerations. `(#1086)`
+- `RenewalRequestDto` now includes the requested `configuration_id`, so the business issuer can return a different
+  configuration than the one used for the initial credential offer. `(#1312)`
 
 ### Changed
 
-- Update default sizes for encrypted messages to be in MB as in swiss-profile instead of MiB `(#1397)`
-- `cryptographic_binding_methods_supported` and `proof_types_supported` are now mandatory with in compliance with the
-  swiss-profile-issuance but in contrast to the OID4VCI standard `(#1495)`
-- In Key Attestation JWTs iss claim is ignored as defined in swiss-profile-anchor 1.0. `(#1417)`
-- Tenant specific issuer metadata responds now with `410 GONE` instead of `500 INTERNAL ERROR` when the latest credential offer of
-  the tenant is canceled or expired (`EXPIRED`, `CANCELLED`) `(#1323)`.
-- Adjust loglevel in renewal responses from business issuers for HTTP STATUS codes `420`, `451`, `500`, `503` to info
-  instead of error. `(#1344)`
+- Default sizes for encrypted messages are now in MB as in swiss-profile instead of MiB. `(#1397)`
+- `cryptographic_binding_methods_supported` and `proof_types_supported` are now mandatory, in compliance with
+  swiss-profile-issuance (in contrast to the OID4VCI standard). `(#1495)`
+- The `iss` claim in Key Attestation JWTs is ignored, as defined in swiss-profile-anchor 1.0. `(#1417)`
+- Tenant-specific issuer metadata responds with `410 GONE` instead of `500 INTERNAL ERROR` when the latest credential
+  offer of the tenant is `EXPIRED` or `CANCELLED`. `(#1323)`
+- Log level for business issuer renewal responses with HTTP status `420`, `451`, `500`, `503` lowered from error to
+  info. `(#1344)`
+- Faulty configuration now raises a configuration exception instead of a Bad Request. `(#1213)`
+- Better matching error descriptions in responses and `openapi.yaml`. `(#1085, #215)`
+- Documentation: DID references updated from `did:tdw` to `did:webvh`. `(#1473)`
 
 ### Fixed
 
-- DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level exception `(#1463)`.
-- Exception message for failed signing of tenant specific issuer metadata no longer contains an unresolved `%s` placeholder `(#1323)`.
-- Key Attestation no longer resolvers DIDDocuments from outside of accepted registries. `(#1416)`.
-- Transaction code configuration (`tx_code_config`) falls back to the documented default length of 6 again when `length`
-  is omitted. Such requests previously failed with an internal server error while creating the transaction code.
-- The scheduled credential offer expiration no longer aborts when a single offer cannot be processed, e.g. because its
-  persisted `credential_request` JSON can no longer be deserialized. Offers are now expired one by one in separate
-  transactions, and a broken offer is logged and skipped while all remaining offers still expire. `(#1229)`
-- DPoP access token binding validation now handles the `DpopValidationException` instead of leaking the low level
-  exception `(#1463)`.
-- Use Generic Lib for Status List token handling `(#1213)`
-- Regression regarding SCID linkage between webvh and did document by updating to did-resolver 2.10.1 `(#1516)`
+- DPoP access token binding validation handles `DpopValidationException` instead of leaking the low-level exception.
+  `(#1463)`
+- Exception message for failed signing of tenant-specific issuer metadata no longer contains an unresolved `%s`
+  placeholder. `(#1323)`
+- Key Attestation no longer resolves DID documents from outside the accepted registries. `(#1416)`
+- `tx_code_config` falls back to the documented default length of 6 when `length` is omitted (previously an internal
+  server error). `(#1418)`
+- Scheduled credential offer expiration no longer aborts when a single offer cannot be processed. Offers expire one by
+  one in separate transactions, and broken offers are logged and skipped. `(#1229)`
+- Status list token handling now uses the generic library. `(#1213)`
+- Regression in SCID linkage between webvh and DID document fixed by updating to did-resolver 2.10.1. `(#1516)`
 
 ## [5.0.1] - 2026-10-15
 
