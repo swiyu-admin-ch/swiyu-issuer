@@ -72,8 +72,22 @@ this repository is responsible for using them correctly.
 - Resource exhaustion from small attacker-controlled inputs on public endpoints.
 - No leakage of signing keys, holder data or PII via logs, error messages, metadata or webhooks.
 - Safe handling of untrusted JSON, JSON schemas, claims path expressions and outbound HTTP calls (e.g. SSRF to non-allowed hosts).
+- Preserve unlinkability: issuance and presentation must not let an attacker correlate holder activity across credentials, sessions or issuers; breaking that unlinkability is an explicit attacker goal.
+- Access tokens must be validated before expensive or state-changing processing, and DPoP must be enforced when configured.
+- Nonces must be unpredictable, bound to the session, and single-use where the profile requires it.
+- Holder proof keys must be covered by the key attestation and bound to the access token, with attestation issuer, signature and temporal claims validated if the claim `key_attestations_required` is set to true.
+- Credential type, claims and validity must be derived from server-side policy and must not be determined by wallet input.
+- Management endpoints must be protected by the deployment (API gateway, mTLS or OAuth2 resource server); the service must reject unauthenticated management requests when OAuth2 is configured.
+- Credential offers must be able to expire in every flow.
+- Credential renewal must not be possible for revoked credentials.
+- Concurrent validation and state changes must not create race conditions that accept an invalid request or lose a state change.
+- Status-list size and index arithmetic must be bounded, and capacity must be enforced.
+- Outbound retrieval of status lists and registry resources must be restricted to allowed schemes, hosts and address ranges.
+- Validation must cover the complete attacker-supplied input, not only a subset of a collection.
+- Validation must fail closed and must not convert an error into acceptance.
+- A failed validation must not produce side effects in other components or in logs.
 
-## Severity guidance (draft, to be confirmed by the security team)
+## Severity guidance
 - Critical: credential issued to an unauthorized party or with forged content; authentication bypass on the management API;
   disclosure of signing key material.
 - High: replay/theft of offers, tokens or nonces leading to issuance; cross-offer/tenant data access; denial of service
