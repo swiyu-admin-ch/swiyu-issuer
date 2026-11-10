@@ -1664,15 +1664,13 @@ components:
           type: array
           description: |2
                  A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound.
-                 Mandatory, as unbound credentials are not accepted.
+                 If missing, credential will be issued as unbound VC.
           items:
             type: string
             description: |2
                    A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound.
-                   Mandatory, as unbound credentials are not accepted.
+                   If missing, credential will be issued as unbound VC.
             pattern: ^jwk$
-          maxItems: 2147483647
-          minItems: 1
         credential_signing_alg_values_supported:
           type: array
           items:
@@ -1698,9 +1696,7 @@ components:
             \ the issuer does not support credential refresh for this configuration.\
             \ If false or omitted, credential refresh must be considered as supported."
       required:
-      - cryptographic_binding_methods_supported
       - format
-      - proof_types_supported
       - vct
     CredentialConfigurationMetadata:
       type: object
