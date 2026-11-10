@@ -79,14 +79,12 @@ public class CredentialConfiguration {
 
     /**
      * A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound to.
-     * Mandatory, as unbound credentials are not accepted.
+     * If missing, credential will be issued as unbound VC.
      */
     @JsonProperty("cryptographic_binding_methods_supported")
-    @NotNull
-    @Size(min = 1, message = "At least one cryptographic binding method has to be provided - unbound credentials are no longer accepted")
     @Schema(description = """
                  A non-empty array of case sensitive strings that identify the representation of the cryptographic key material that the issued Credential is bound.
-                 Mandatory, as unbound credentials are not accepted.
+                 If missing, credential will be issued as unbound VC.
             """)
     @Valid
     private List<@Pattern(regexp = "^jwk$", message = "Only jwk is supported") String> cryptographicBindingMethodsSupported;
@@ -100,11 +98,9 @@ public class CredentialConfiguration {
 
     /**
      * Define what kind of proof the holder is allowed to provide for the credential.
-     * Mandatory, as unbound credentials are not accepted.
      */
     @JsonProperty("proof_types_supported")
-    @NotNull
-    @Size(min = 1, max = 1, message = "Exactly one proof type has to be provided - unbound credentials are not accepted")
+    @Size(max = 1)
     @Valid
     private Map<@Pattern(regexp = "^jwt$", message = "Only jwt holder binding proofs are supported") String, SupportedProofType> proofTypesSupported;
 
