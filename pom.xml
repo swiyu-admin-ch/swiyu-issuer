@@ -39,7 +39,7 @@
         <bouncycastle.version>1.86</bouncycastle.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
         <springdoc-openapi-starter-webmvc-ui.version>3.2.0</springdoc-openapi-starter-webmvc-ui.version>
-        <openapi-generator-maven-plugin.version>7.26.0</openapi-generator-maven-plugin.version>
+        <openapi-generator-maven-plugin.version>7.27.0</openapi-generator-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <primus-jce.version>2.4.4</primus-jce.version>
         <skip.doc-generate>true</skip.doc-generate>
@@ -54,7 +54,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <generic-java-lib.version>3.3.0</generic-java-lib.version>
-        <pact.version>4.7.6</pact.version>
+        <pact.version>4.7.7</pact.version>
         <!-- Fixes various SNYK-JAVA-IONETTY errors -->
         <netty.version>4.2.18.Final</netty.version>
         <!-- Fixes various SNYK-JAVA-ORGAPACHETOMCATEMBED -->
@@ -63,10 +63,10 @@
         <logback-core.version>1.6.6</logback-core.version>
 
         <!-- Fixes CVE-2026-89425 -->
-        <jackson.version>2.22.4</jackson.version>
-        <jackson-annotations.version>2.22</jackson-annotations.version>
-        <jackson-core.version>2.22.4</jackson-core.version>
-        <jackson3.version>3.2.4</jackson3.version>
+        <jackson.version>2.23.0</jackson.version>
+        <jackson-annotations.version>2.23</jackson-annotations.version>
+        <jackson-core.version>2.23.0</jackson-core.version>
+        <jackson3.version>3.3.0</jackson3.version>
         <postgres.version>42.7.14</postgres.version>
     </properties>
 
@@ -99,7 +99,7 @@
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>3.2.4</version>
+                <version>3.3.0</version>
             </dependency>
 
             <!-- Fixes SNYK-JAVA-ORGSPRINGFRAMEWORKCLOUD-19268251 (Missing Authorization, High Severity) in spring-cloud-context@5.0.2

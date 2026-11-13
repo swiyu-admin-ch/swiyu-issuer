@@ -257,7 +257,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.7.2-jre</version>
+            <version>33.8.0-jre</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -297,7 +297,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>3.6.2</version>
+                        <version>3.7.0</version>
                         <executions>
                             <execution>
                                 <id>add-pact-test-source</id>
