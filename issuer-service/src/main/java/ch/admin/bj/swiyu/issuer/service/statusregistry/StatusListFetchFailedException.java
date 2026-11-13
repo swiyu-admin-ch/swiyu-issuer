@@ -4,4 +4,8 @@ public class StatusListFetchFailedException extends RuntimeException {
     public StatusListFetchFailedException(String message) {
         super(message);
     }
+
+    public StatusListFetchFailedException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
