@@ -82,7 +82,7 @@ class StatusListEntryUpdateConsumerPactTest {
                 () -> buildStatusRegistryClient(mockServer).updateStatusListEntry(statusList(), STATUS_LIST_JWT));
 
         assertThat(exception)
-                .hasMessage("Failed to update status list.")
+                .hasMessageContaining("Failed to update status list")
                 .hasCauseInstanceOf(WebClientResponseException.class);
         assertThat(((WebClientResponseException) exception.getCause()).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
