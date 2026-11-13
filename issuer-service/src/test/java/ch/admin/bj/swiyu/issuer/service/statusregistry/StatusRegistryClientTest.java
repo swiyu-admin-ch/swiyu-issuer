@@ -310,4 +310,15 @@ class StatusRegistryClientTest {
         assertThrows(StatusListFetchFailedException.class, () -> client.resolveStatusList(TEST_URI + "list"));
         assertThat(logs()).contains("status=500").contains("<empty body>");
     }
+
+    @Test
+    void resolveStatusList_noContent_throwsStatusListFetchFailedException() {
+        var webClient = WebClient.builder().exchangeFunction(req ->
+                Mono.just(ClientResponse.create(HttpStatus.NO_CONTENT).build())).build();
+        when(apiClient.getWebClient()).thenReturn(webClient);
+        when(applicationProperties.getAcceptedRegistryHosts()).thenReturn(List.of("example.com"));
+
+        var ex = assertThrows(StatusListFetchFailedException.class, () -> client.resolveStatusList(TEST_URI + "list"));
+        assertThat(ex.getMessage()).contains("empty response");
+    }
 }
