@@ -175,15 +175,15 @@ public class StatusRegistryClient {
             // e.g. connection refused, timeout or DNS failure
             log.error("Error while fetching status list from {}: {}", rewrittenUrl, e.getMessage());
             throw new StatusListFetchFailedException(
-                    "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl));
+                    "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl), e);
         } catch (WebClientResponseException e) {
             if (e.getCause() != null && e.getCause().toString().contains("DataBufferLimitException")) {
                 throw new StatusListFetchFailedException(
-                        "Status list size from %s exceeds maximum allowed size".formatted(rewrittenUrl));
+                        "Status list size from %s exceeds maximum allowed size".formatted(rewrittenUrl), e);
             }
             log.error("Error while fetching status list from {}: {}", rewrittenUrl, ResponseBodyLogFormatter.describe(e));
             throw new StatusListFetchFailedException(
-                    "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl));
+                    "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl), e);
         }
 
         if (result == null) {
