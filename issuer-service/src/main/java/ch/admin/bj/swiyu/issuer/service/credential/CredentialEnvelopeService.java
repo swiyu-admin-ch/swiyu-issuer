@@ -92,7 +92,7 @@ public class CredentialEnvelopeService {
         try {
             holderJwkList = holderBindingService.getValidateHolderPublicKeys(context.request(), context.offer());
         } catch (Oid4vcException e) {
-            eventProducerService.produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, context.offer());
+            log.info("Failed to create key binding for management_id {}", context.mgmt.getId(), e);
             throw e;
         }
 
