@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
-import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.DeferredCredentialEndpointRequestDto;
 import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
@@ -133,11 +132,8 @@ public class DeferredCredentialService {
                 deferredCredentialRequest.transactionId(),
                 accessToken);
 
-        CredentialManagement mgmt = credentialOffer.getCredentialManagement();
-
         validateOfferProcessable(credentialOffer);
         isOfferReady(credentialOffer);
-        validateTokenNotExpired(credentialOffer, mgmt);
 
         // Only validate presence of credential request when the offer is READY (i.e., not DEFERRED)
         if (isOfferReady(credentialOffer)) {
@@ -170,21 +166,6 @@ public class DeferredCredentialService {
             return true;
         }
         return false;
-    }
-
-    /**
-     * Ensures the access token associated to the management entry is still valid; emits error events when expired.
-     */
-    void validateTokenNotExpired(CredentialOffer credentialOffer, CredentialManagement mgmt) {
-        if (mgmt.hasTokenExpirationPassed()) {
-            log.info("Received AccessToken for deferred credential offer {} was expired.", credentialOffer.getId());
-
-            eventProducerService.produceErrorEvent("AccessToken expired, offer is stuck in READY",
-                    CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
-                    credentialOffer);
-
-            throw OAuthException.invalidRequest("AccessToken expired.");
-        }
     }
 
     /**
