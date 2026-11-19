@@ -1,10 +1,8 @@
 package ch.admin.bj.swiyu.issuer.service.credential;
 
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.statemachine.CredentialStateMachineConfig;
-import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.oid4vci.CredentialEnvelopeDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
-import ch.admin.bj.swiyu.issuer.common.exception.OAuthException;
 import ch.admin.bj.swiyu.issuer.common.exception.Oid4vcException;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.domain.openid.credentialrequest.CredentialRequestClass;
@@ -74,9 +72,6 @@ public class CredentialEnvelopeService {
                                          CredentialRequestClass credentialRequest,
                                          ClientAgentInfo clientInfo,
                                          CredentialManagement mgmt) {
-        if (mgmt.hasTokenExpirationPassed()) {
-            handleExpiredToken(credentialOffer);
-        }
 
         CredentialRequestValidator.validateCredentialRequest(credentialOffer,
                 credentialRequest);
@@ -92,7 +87,7 @@ public class CredentialEnvelopeService {
         try {
             holderJwkList = holderBindingService.getValidateHolderPublicKeys(context.request(), context.offer());
         } catch (Oid4vcException e) {
-            eventProducerService.produceErrorEvent(e.getMessage(), CallbackErrorEventTypeDto.KEY_BINDING_ERROR, context.offer());
+            log.info("Failed to create key binding for management_id {}", context.mgmt.getId(), e);
             throw e;
         }
 
@@ -166,15 +161,6 @@ public class CredentialEnvelopeService {
                         .getResponseEncryption(), credentialRequest.getCredentialResponseEncryption())
                 .holderBindings(holderBindings)
                 .credentialType(credentialOffer.getMetadataCredentialSupportedId());
-    }
-
-    private void handleExpiredToken(CredentialOffer credentialOffer) {
-        log.info("Received AccessToken for credential offer {} was expired.", credentialOffer.getId());
-        eventProducerService.produceErrorEvent("AccessToken expired, offer possibly stuck in IN_PROGRESS",
-                CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED,
-                credentialOffer);
-
-        throw OAuthException.invalidRequest("AccessToken expired.");
     }
 
     private record EnvelopeContext(CredentialOffer offer,
