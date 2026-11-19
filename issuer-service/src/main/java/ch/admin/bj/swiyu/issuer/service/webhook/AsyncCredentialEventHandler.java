@@ -17,13 +17,6 @@ public class AsyncCredentialEventHandler {
 
     private final WebhookEventProducer webhookEventProducer;
 
-    @EventListener
-    @Async
-    public void handleErrorEvent(ErrorEvent errorEvent) {
-        webhookEventProducer.produceErrorEvent(errorEvent.credentialOfferId(), errorEvent.errorCode(), errorEvent.errorMessage(), errorEvent.trigger());
-        log.info("Processed ErrorEvent for CredentialOfferId: {}", errorEvent.credentialOfferId());
-    }
-
     /**
      * Triggered after a successful transaction commit.
      * <p>
