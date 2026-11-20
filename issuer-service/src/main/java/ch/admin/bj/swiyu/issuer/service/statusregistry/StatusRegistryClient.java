@@ -2,28 +2,25 @@ package ch.admin.bj.swiyu.issuer.service.statusregistry;
 
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BApi;
 import ch.admin.bj.swiyu.core.status.registry.client.api.StatusB2BV2Api;
+import ch.admin.bj.swiyu.core.status.registry.client.invoker.ApiClient;
 import ch.admin.bj.swiyu.core.status.registry.client.model.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.issuer.common.config.ApplicationProperties;
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
 import ch.admin.bj.swiyu.issuer.common.config.UrlRewriteProperties;
 import ch.admin.bj.swiyu.issuer.common.exception.ConfigurationException;
 import ch.admin.bj.swiyu.issuer.common.exception.CreateStatusListException;
-import ch.admin.bj.swiyu.issuer.common.exception.ResourceNotFoundException;
 import ch.admin.bj.swiyu.issuer.common.exception.UpdateStatusListException;
+import ch.admin.bj.swiyu.issuer.common.logging.ResponseBodyLogFormatter;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.StatusList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.net.MalformedURLException;
 import java.net.URI;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
@@ -42,6 +39,14 @@ public class StatusRegistryClient {
     private final ApplicationProperties applicationProperties;
 
     /**
+     * Both generated API classes (v1 and v2) share the same {@link ApiClient} instance,
+     * see {@link StatusRegistryConfig}. Base path and web client are therefore taken from one place.
+     */
+    private ApiClient apiClient() {
+        return statusB2BApi.getApiClient();
+    }
+
+    /**
      * Creates a status list entry for the configured business partner
      *
      * @return response of the status registry
@@ -50,7 +55,7 @@ public class StatusRegistryClient {
 
         var businessPartnerId = swiyuProperties.businessPartnerId();
 
-        var client = statusB2BApi.getApiClient();
+        var client = apiClient();
 
         log.debug("Creating status list entry for business partner id {} on {}", businessPartnerId, client.getBasePath());
 
@@ -59,6 +64,8 @@ public class StatusRegistryClient {
                     .createStatusListEntry(businessPartnerId)
                     .block();
         } catch (WebClientResponseException e) {
+            log.error("Failed to create status list entry for business partner id {} on {} - registry responded with {}",
+                    businessPartnerId, client.getBasePath(), ResponseBodyLogFormatter.describe(e), e);
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new ConfigurationException(
                         "Failed to create status list - Please check your Swiyu Status API access configuration.",
@@ -69,11 +76,11 @@ public class StatusRegistryClient {
             }
             throw new CreateStatusListException(
                     String.format("Failed to create status list. External system %s responded with: %s.",
-                            statusB2BApi.getApiClient().getBasePath(), e.getStatusCode()),
+                            apiClient().getBasePath(), e.getStatusCode()),
                     e);
-        } catch (ConfigurationException e) {
-            throw e;
         } catch (Exception e) {
+            log.error("Failed to create status list entry for business partner id {} on {}",
+                    businessPartnerId, client.getBasePath(), e);
             throw new CreateStatusListException("Failed to create status list", e);
         }
     }
@@ -81,41 +88,50 @@ public class StatusRegistryClient {
     public void updateStatusListEntry(StatusList target, String statusListJWT) {
 
         try {
-            log.debug("Updating status list entry {} for business partner id {} on {}", target.getUri(), swiyuProperties.businessPartnerId(), statusB2BApi.getApiClient().getBasePath());
+            log.debug("Updating status list entry {} for business partner id {} on {}", target.getUri(),
+                    swiyuProperties.businessPartnerId(),
+                    apiClient().getBasePath());
             statusB2BV2Api.updateStatusListEntry(
                             swiyuProperties.businessPartnerId(),
                             target.getRegistryId(),
                             statusListJWT)
                     .block();
-        } catch (HttpClientErrorException e) {
-
-            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                log.error("Failed to update status list {} - unauthorized. Check Swiyu Status API access configuration.", target.getRegistryId(), e);
-                throw new ConfigurationException(
-                        "Failed to update status list - Please check your Swiyu Status API access configuration.",
-                        e);
-            } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
-                log.error("Failed to update status list {} - forbidden for business partner {}.", target.getRegistryId(), swiyuProperties.businessPartnerId(), e);
-                throw new ConfigurationException(
-                        String.format(
-                                "Failed to update status list - the status list %s does not belong to swiyu partner %s.",
-                                target.getRegistryId(),
-                                swiyuProperties.businessPartnerId()),
-                        e);
-            } else if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                log.error("Failed to update status list {} - not found on swiyu status registry.", target.getRegistryId(), e);
-                throw new ResourceNotFoundException(
-                        String.format(
-                                "Failed to update status list - does the status list %s exist on swiyu status registry?",
-                                target.getRegistryId()),
-                        e);
+        } catch (WebClientResponseException e) {
+            var registryId = target.getRegistryId();
+            var basePath = apiClient().getBasePath();
+            switch (e.getStatusCode()) {
+                case HttpStatus.UNAUTHORIZED -> {
+                    log.error("Failed to update status list {} - unauthorized. Check Swiyu Status API access configuration. Registry responded with {}", registryId, ResponseBodyLogFormatter.describe(e), e);
+                    throw new ConfigurationException(
+                            "Failed to update status list - Please check your Swiyu Status API access configuration.",
+                            e);
+                }
+                case HttpStatus.FORBIDDEN -> {
+                    log.error("Failed to update status list {} - forbidden for business partner {}. Registry responded with {}", registryId, swiyuProperties.businessPartnerId(), ResponseBodyLogFormatter.describe(e), e);
+                    throw new ConfigurationException(
+                            String.format(
+                                    "Failed to update status list - the status list %s does not belong to swiyu partner %s.",
+                                    registryId,
+                                    swiyuProperties.businessPartnerId()),
+                            e);
+                }
+                case HttpStatus.NOT_FOUND -> {
+                    log.error("Failed to update status list {} - not found on swiyu status registry. Registry responded with {}", registryId, ResponseBodyLogFormatter.describe(e), e);
+                    throw new UpdateStatusListException(
+                            String.format(
+                                    "Failed to update status list - status list %s not found on swiyu status registry",
+                                    registryId),
+                            e);
+                }
+                default -> {
+                    log.error("Failed to update status list {} - external system {} responded with {}", registryId, basePath, ResponseBodyLogFormatter.describe(e), e);
+                    throw new UpdateStatusListException(
+                            String.format("Failed to update status list. External system %s responded with: %s",
+                                    basePath,
+                                    e.getStatusCode()),
+                            e);
+                }
             }
-            log.error("Failed to update status list {} - external system {} responded with: {}.", target.getRegistryId(), statusB2BApi.getApiClient().getBasePath(), e.getStatusCode(), e);
-            throw new UpdateStatusListException(
-                    String.format("Failed to update status list. External system %s responded with: %s",
-                            statusB2BApi.getApiClient().getBasePath(),
-                            e.getStatusCode()),
-                    e);
         } catch (Exception e) {
             log.error("Failed to update status list {}.", target.getRegistryId(), e);
             throw new UpdateStatusListException(
@@ -131,7 +147,7 @@ public class StatusRegistryClient {
      */
     public String resolveStatusList(String uri) {
         var rewrittenUrl = urlRewriteProperties.getRewrittenUrl(uri);
-        var statusListWebClient = statusB2BApi.getApiClient().getWebClient();
+        var statusListWebClient = apiClient().getWebClient();
         log.debug("HTTP Request after url rewrite to status list from {}", rewrittenUrl);
         try {
             // check if https request otherwise throw exception
@@ -147,30 +163,28 @@ public class StatusRegistryClient {
             throw new IllegalArgumentException("Malformed URL %s in StatusList".formatted(rewrittenUrl), e);
         }
 
-        var result = statusListWebClient
-                .get()
-                .uri(rewrittenUrl)
-                .retrieve()
-                .onStatus(status -> status != HttpStatusCode.valueOf(200), response ->
-                        Mono.error(new StatusListFetchFailedException(
-                                "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl))))
-                .bodyToMono(String.class)
-                .onErrorResume(WebClientRequestException.class, ex -> {
-                    // e.g. connection refused, timeout or DNS failure
-                    log.error("Error while fetching status list from {}: {}", rewrittenUrl, ex.getMessage());
-                    return Mono.error(new StatusListFetchFailedException(
-                            "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl)));
-                })
-                .onErrorResume(WebClientResponseException.class, ex -> {
-                    if (ex.getCause() != null && ex.getCause().toString().contains("DataBufferLimitException")) {
-                        return Mono.error(new StatusListFetchFailedException(
-                                "Status list size from %s exceeds maximum allowed size".formatted(rewrittenUrl)));
-                    }
-                    log.error("Error while fetching status list from {}: {}", rewrittenUrl, ex.getMessage());
-                    return Mono.error(new StatusListFetchFailedException(
-                            "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl)));
-                })
-                .block();
+        String result;
+        try {
+            result = statusListWebClient
+                    .get()
+                    .uri(rewrittenUrl)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+        } catch (WebClientRequestException e) {
+            // e.g. connection refused, timeout or DNS failure
+            log.error("Error while fetching status list from {}: {}", rewrittenUrl, e.getMessage());
+            throw new StatusListFetchFailedException(
+                    "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl), e);
+        } catch (WebClientResponseException e) {
+            if (e.getCause() != null && e.getCause().toString().contains("DataBufferLimitException")) {
+                throw new StatusListFetchFailedException(
+                        "Status list size from %s exceeds maximum allowed size".formatted(rewrittenUrl), e);
+            }
+            log.error("Error while fetching status list from {}: {}", rewrittenUrl, ResponseBodyLogFormatter.describe(e));
+            throw new StatusListFetchFailedException(
+                    "Status list with uri: %s could not be retrieved".formatted(rewrittenUrl), e);
+        }
 
         if (result == null) {
             throw new StatusListFetchFailedException(

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Errors from the status registry (status list create/update/fetch and health checks) are now logged with HTTP status
+  and response body. Failed status list updates now correctly distinguish 401/403 as configuration errors. `(#1349)`
+
 ## [5.1.0] - 2026-11-10
 
 ### Added
