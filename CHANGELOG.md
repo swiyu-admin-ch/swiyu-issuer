@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Key attestation error message for an unsupported `key_storage` now lists the supported attack potential
+  resistances instead of an empty list. `(#1493)`
+
 ## [5.1.0] - 2026-11-10
 
 ### Added

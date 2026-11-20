@@ -47,6 +47,10 @@ public final class AttestationJwt {
     @Deprecated(since = "OID4VCI 1.0") // remove later
     private static final String KEY_ATTESTATION_TYPE_ID1 = "keyattestation+jwt";
     private static final Set<AttackPotentialResistance> SUPPORTED_ATTACK_POTENTIAL_RESISTANCE = Set.of(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC, AttackPotentialResistance.ISO_18045_HIGH);
+    /** String values (e.g. "iso_18045_high") of the supported attack potential resistances, as used in the key_storage claim. */
+    private static final Set<String> SUPPORTED_KEY_STORES = SUPPORTED_ATTACK_POTENTIAL_RESISTANCE.stream()
+            .map(AttackPotentialResistance::getValue)
+            .collect(Collectors.toUnmodifiableSet());
     private static final Set<String> ALLOWED_TYPES = Set.of(KEY_ATTESTATION_TYPE_ID1, "key-attestation+jwt");
 
     // For now we only support ECDSA for Attestations
@@ -102,23 +106,32 @@ public final class AttestationJwt {
     }
 
     private static List<AttackPotentialResistance> extractSupportedAttackPotentialResistance(JWTClaimsSet jwtClaimsSet) {
-        var supportedKeyStores = SUPPORTED_ATTACK_POTENTIAL_RESISTANCE
-                .stream()
-                .map(AttackPotentialResistance::getValue)
-                .collect(Collectors.toSet());
-        var keyStorage = jwtClaimsSet.getClaim(CLAIM_KEY_STORAGE);
-        if (!(keyStorage instanceof List)) {
+        var attestedKeyStores = extractAttestedKeyStorage(jwtClaimsSet);
+
+        // Keep only the values that are both attested and supported.
+        // Works on a copy, because retainAll() would otherwise modify SUPPORTED_KEY_STORES.
+        Set<String> matchingKeyStores = new HashSet<>(SUPPORTED_KEY_STORES);
+        matchingKeyStores.retainAll(attestedKeyStores);
+
+        if (matchingKeyStores.isEmpty()) {
+            var supportedValues = SUPPORTED_KEY_STORES.stream().sorted().collect(Collectors.joining(", "));
+            throw new IllegalArgumentException("No supported key_storage found. Only supporting: " + supportedValues);
+        }
+
+        return matchingKeyStores.stream().map(AttackPotentialResistance::parse).toList();
+    }
+
+    /**
+     * Reads the key_storage claim, i.e. the attack potential resistances attested by the wallet.
+     * The claim must be a JSON array (its presence is already enforced via REQUIRED_ATTESTATION_CLAIMS).
+     */
+    private static Set<String> extractAttestedKeyStorage(JWTClaimsSet jwtClaimsSet) {
+        if (!(jwtClaimsSet.getClaim(CLAIM_KEY_STORAGE) instanceof List<?> keyStorage)) {
             throw new IllegalArgumentException("list of attested key_storage is required");
         }
-        // Intersection of provided and supported
-        supportedKeyStores.retainAll(((List<?>) keyStorage)
-                .stream()
+        return keyStorage.stream()
                 .map(Object::toString)
-                .toList());
-        if (supportedKeyStores.isEmpty()) {
-            throw new IllegalArgumentException("No Supported key_storage found. Only Supporting " + String.join(", ", supportedKeyStores));
-        }
-        return supportedKeyStores.stream().map(AttackPotentialResistance::parse).toList();
+                .collect(Collectors.toSet());
     }
 
     /**

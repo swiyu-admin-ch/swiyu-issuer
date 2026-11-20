@@ -92,6 +92,30 @@ class AttestationJwtTest {
     }
 
     @Test
+    void parseJwt_withUnsupportedKeyStorage_messageListsSupportedKeyStorages() throws JOSEException {
+        var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
+                .keyID(signingKey.getKeyID())
+                .type(new JOSEObjectType("key-attestation+jwt"))
+                .customParam("profile_version", SwissProfileVersions.ISSUANCE_PROFILE_VERSION)
+                .build(),
+                new JWTClaimsSet.Builder()
+                        .issuer(DEFAULT_ISSUER)
+                        .issueTime(new Date())
+                        .expirationTime(Date.from(Instant.now().plusSeconds(5 * 60)))
+                        .claim("attested_keys", List.of(signingKey.toPublicJWK().toJSONObject()))
+                        .claim("key_storage", List.of("unsupported_key_storage"))
+                        .build());
+        attestation.sign(new ECDSASigner(signingKey));
+        var parsedJwt = attestation.serialize();
+
+        var exception = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> AttestationJwt.parseJwt(parsedJwt, true));
+        assertThat(exception.getMessage())
+                .contains(AttackPotentialResistance.ISO_18045_ENHANCED_BASIC.getValue())
+                .contains(AttackPotentialResistance.ISO_18045_HIGH.getValue());
+    }
+
+    @Test
     void parseJwt_withMissingProfileVersionHeader_throwsIllegalArgumentException() throws JOSEException {
         var attestation = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256)
                 .keyID(signingKey.getKeyID())
