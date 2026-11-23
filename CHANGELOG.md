@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Removed Error Callbacks. These were only triggered in the case that the Holder Key Binding was invalid.
+- Removed Error Callbacks. These were only triggered in the case that the Holder Key Binding was invalid. `(#1394)`
   These callbacks could be abused by malicious attackers to create a flood of messages to the Business Issuer. `(#1394)`
 
 ## [5.1.0] - 2026-11-10
