@@ -1,12 +1,10 @@
 package ch.admin.bj.swiyu.issuer.service.webhook;
 
 import ch.admin.bj.swiyu.issuer.common.exception.JsonException;
-import ch.admin.bj.swiyu.issuer.domain.callback.CallbackEventTrigger;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.ClientAgentInfo;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOffer;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialOfferStatusType;
 import ch.admin.bj.swiyu.issuer.domain.credentialoffer.CredentialStatusManagementType;
-import ch.admin.bj.swiyu.issuer.dto.callback.CallbackErrorEventTypeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -23,18 +21,6 @@ import java.util.UUID;
 public class EventProducerService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final ObjectMapper objectMapper;
-
-    public void produceErrorEvent(String errorMessage,
-                                  CallbackErrorEventTypeDto oauthTokenExpired,
-                                  CredentialOffer credentialOffer) {
-        var errorEvent = new ErrorEvent(
-                errorMessage,
-                oauthTokenExpired,
-                credentialOffer.getId(),
-                CallbackEventTrigger.CREDENTIAL_OFFER
-        );
-        applicationEventPublisher.publishEvent(errorEvent);
-    }
 
     /**
      * Publishes a management state change event for a credential management state transition.

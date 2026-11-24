@@ -623,13 +623,13 @@ Errors which concern the issuing process also create callbacks.
 
 Callback Object Structure
 
-| Field             | Description                                                                                                            |
-|-------------------|------------------------------------------------------------------------------------------------------------------------|
-| subject_id        | ID of the element the callback is about. For now the management id of the credential                                   |
-| event_type        | VC_STATUS_CHANGED or ISSUANCE_ERROR                                                                                    |
-| event             | The new VC state if event_type is VC_STATUS_CHANGED. If ISSUANCE_ERROR one of OAUTH_TOKEN_EXPIRED or KEY_BINDING_ERROR |
-| event_description | Human readable details.                                                                                                |
-| timestamp         | timestamp the event occurred. Can differ from the time it is sent.                                                     |
+| Field             | Description                                                                                                                 |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| subject_id        | ID of the element the callback is about. For now the management id of the credential                                        |
+| event_type        | VC_STATUS_CHANGED, VC_DEFERRED or ISSUANCE_ERROR                                                                            |
+| event             | The new VC state if event_type is VC_STATUS_CHANGED. If ISSUANCE_ERROR currently only STATUS_LIST_UPDATE_FAILED is possible |
+| event_description | Human readable details.                                                                                                     |
+| timestamp         | timestamp the event occurred. Can differ from the time it is sent.                                                          |
 
 #### Credential Renewal Call
 
