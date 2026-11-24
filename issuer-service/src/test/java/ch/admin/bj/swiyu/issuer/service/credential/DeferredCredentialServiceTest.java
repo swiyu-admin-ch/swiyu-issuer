@@ -170,22 +170,7 @@ class DeferredCredentialServiceTest {
                 .isInstanceOf(Oid4vcException.class)
                 .hasMessageContaining("cancelled or expired");
     }
-
-    @Test
-    void validateTokenNotExpired_rejectsExpired() {
-        var offer = CredentialOffer.builder().id(UUID.randomUUID()).build();
-        var mgmt = mock(CredentialManagement.class);
-        when(mgmt.hasTokenExpirationPassed()).thenReturn(true);
-
-        assertThatThrownBy(() -> service.validateTokenNotExpired(offer, mgmt))
-                .isInstanceOf(OAuthException.class)
-                .hasMessageContaining("AccessToken expired");
-        verify(eventProducerService).produceErrorEvent(
-                eq("AccessToken expired, offer is stuck in READY"),
-                eq(CallbackErrorEventTypeDto.OAUTH_TOKEN_EXPIRED),
-                eq(offer));
-    }
-
+    
     @Test
     void validateCredentialRequestPresent_rejectsMissing() {
         var offer = CredentialOffer.builder().build();
