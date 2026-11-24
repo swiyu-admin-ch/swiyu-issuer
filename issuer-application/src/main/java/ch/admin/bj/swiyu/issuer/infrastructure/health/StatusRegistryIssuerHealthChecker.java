@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.issuer.infrastructure.health;
 
 import ch.admin.bj.swiyu.issuer.common.config.SwiyuProperties;
+import ch.admin.bj.swiyu.issuer.common.logging.ResponseBodyLogFormatter;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +83,8 @@ public class StatusRegistryIssuerHealthChecker extends CachedHealthChecker {
                 throw new IllegalStateException("Server returned 5xx: " + response.getStatusCode());
             }
         } catch (HttpStatusCodeException e) {
+            log.warn("Status registry endpoint {} responded with {}", url,
+                    ResponseBodyLogFormatter.describe(e));
             if (e.getStatusCode().is4xxClientError()) {
                 return;
             }
