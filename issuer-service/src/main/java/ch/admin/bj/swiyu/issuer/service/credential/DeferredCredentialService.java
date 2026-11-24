@@ -41,6 +41,7 @@ public class DeferredCredentialService {
 
     /**
      * Issues a deferred credential using the OID4VCI 2.0 flow.
+     * Caller must have made sure that they still wish to create the credential - e.g. the offer is not expired.
      *
      * @param deferredCredentialRequest request payload containing transaction and credential parameters
      * @param accessToken               access token authorizing issuance for the transaction

@@ -50,6 +50,7 @@ public class CredentialEnvelopeService {
 
     /**
      * Builds and returns a OID4VCI 1.0 style credential envelope.
+     * Caller must make sure that the offer state is valid (not expired)
      */
     public CredentialEnvelopeDto createCredentialEnvelopeDto(CredentialOffer credentialOffer,
                                                              CredentialRequestClass credentialRequest,
