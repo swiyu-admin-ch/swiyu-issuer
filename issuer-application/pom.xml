@@ -114,7 +114,7 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
-            <version>1.17.2</version>
+            <version>1.18.0</version>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -250,7 +250,7 @@
         <dependency>
             <groupId>org.mock-server</groupId>
             <artifactId>mockserver-client-java</artifactId>
-            <version>5.15.0</version>
+            <version>9.4.0</version>
             <scope>test</scope>
         </dependency>
         <!-- FIX [https://security.snyk.io/vuln/SNYK-JAVA-COMGOOGLEGUAVA-20825054 from mockserver-client-java -->

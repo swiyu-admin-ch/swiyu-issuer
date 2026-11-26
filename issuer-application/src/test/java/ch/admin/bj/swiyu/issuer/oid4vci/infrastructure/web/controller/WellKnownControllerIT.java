@@ -14,6 +14,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.CredentialOfferTestHelper;
 import ch.admin.bj.swiyu.issuer.service.trustregistry.TrustStatementCacheService;
+import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URIBuilder;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
@@ -21,7 +22,6 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -177,8 +177,8 @@ class WellKnownControllerIT {
                 .getContentAsString(), CredentialWithDeeplinkResponseDto.class));
         var deeplink = createCredentialOfferResponse.getOfferDeeplink();
         var parsedDeeplink = assertDoesNotThrow(() -> new URI(deeplink));
-        var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
-        var credentialOffer = offerQuery.getFirst();
+
+        var credentialOffer = new URIBuilder(parsedDeeplink).getFirstQueryParam("credential_offer");
         JsonNode node = assertDoesNotThrow(() -> objectMapper.readTree(credentialOffer.getValue()));
         var tenantId = node.get("credential_issuer").asString().split("http://localhost:8080")[1];
 
@@ -226,8 +226,7 @@ class WellKnownControllerIT {
                 .getContentAsString(), CredentialWithDeeplinkResponseDto.class));
         var deeplink = createCredentialOfferResponse.getOfferDeeplink();
         var parsedDeeplink = assertDoesNotThrow(() -> new URI(deeplink));
-        var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
-        var credentialOffer = offerQuery.getFirst();
+        var credentialOffer = new URIBuilder(parsedDeeplink).getFirstQueryParam("credential_offer");
         JsonNode node = assertDoesNotThrow(() -> objectMapper.readTree(credentialOffer.getValue()));
         var tenantId = node.get("credential_issuer").asString().split("http://localhost:8080")[1];
 
