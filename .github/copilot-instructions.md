@@ -35,7 +35,11 @@ asked.
         - Spring Cloud Kubernetes Config (`spring-cloud-starter-kubernetes-fabric8-config`, in `issuer-application`
           only)
         - Spring Cloud Bootstrap (`spring-cloud-starter-bootstrap`, in `issuer-application` only)
-        - **`spring-boot-starter-restclient`** and **`spring-boot-starter-webclient`** (`issuer-application` only): since Spring Boot 4.1, `RestClientAutoConfiguration` (providing the `RestClient.Builder` bean) was split out of `spring-boot-autoconfigure` into its own starter and is no longer pulled in transitively via `spring-boot-starter-web`. Required explicitly because `swiyu-did-resolver-adapter`'s `DidResolverWebClientConfiguration` depends on a `RestClient.Builder` bean. Do not remove.
+        - **`spring-boot-starter-restclient`** and **`spring-boot-starter-webclient`** (`issuer-application` only):
+          since Spring Boot 4.1, `RestClientAutoConfiguration` (providing the `RestClient.Builder` bean) was split out
+          of `spring-boot-autoconfigure` into its own starter and is no longer pulled in transitively via
+          `spring-boot-starter-web`. Required explicitly because `swiyu-did-resolver-adapter`'s
+          `DidResolverWebClientConfiguration` depends on a `RestClient.Builder` bean. Do not remove.
         - **Spring Statemachine 4.0.2** – used in `issuer-service` to drive the credential offer / issuance lifecycle.
         - Note: `spring-webflux` is a direct dependency of `issuer-service` (used by `WebClient` and reactive
           utilities), but the `spring-boot-starter-webflux` starter is **not** used — the web layer is Spring MVC.
@@ -49,7 +53,12 @@ asked.
         - PostgreSQL-specific overrides: `issuer-application/src/main/resources/db/migration/postgres`
 
 - **Important Libraries**
-    - **Lombok** (`org.projectlombok:lombok`, marked optional) for reducing boilerplate; must be kept on a JDK-25-compatible release (≥ 1.18.42). In both module `pom.xml`s, the `maven-compiler-plugin`'s `annotationProcessorPaths` is restricted explicitly to the Lombok artifact only (instead of the full compile classpath) — this was required to avoid intermittent AST-transformation failures for a subset of classes when compiling the whole module in one pass under JDK 25. Do not remove this restriction or add other processors to the same path without re-testing a full `mvn clean package`.
+    - **Lombok** (`org.projectlombok:lombok`, marked optional) for reducing boilerplate; must be kept on a
+      JDK-25-compatible release (≥ 1.18.42). In both module `pom.xml`s, the `maven-compiler-plugin`'s
+      `annotationProcessorPaths` is restricted explicitly to the Lombok artifact only (instead of the full compile
+      classpath) — this was required to avoid intermittent AST-transformation failures for a subset of classes when
+      compiling the whole module in one pass under JDK 25. Do not remove this restriction or add other processors to the
+      same path without re-testing a full `mvn clean package`.
     - **Nimbus JOSE + JWT** (`10.8`) for JWT/JOSE processing
     - **Bouncy Castle** (`bcprov-jdk18on`, `bcpkix-jdk18on`, both `1.84`) for cryptographic support
     - **Authlete SD-JWT** (`com.authlete:sd-jwt`, `1.7`) for SD-JWT handling
@@ -84,7 +93,7 @@ asked.
         - JUnit Jupiter integration
         - PostgreSQL container support
         - MockServer container support
-    - **MockServer** (`mockserver-client-java`, `5.15.0`) for HTTP stubbing in integration tests
+    - **MockServer** (`mockserver-client-java`, `9.4.0`) for HTTP stubbing in integration tests
     - **ArchUnit** (`archunit-junit5`, `1.4.1`) for architecture rules and package/layer validation
 
 - **Build Quality / Verification Tooling**
@@ -281,8 +290,8 @@ asked.
 
 ### Mapping Between Layers
 
-- **Rule:** Mapping between HTTP/API DTOs, service models, and domain objects is done with **explicit mapper classes** (
-  annotated `@Service`), not with ad-hoc conversion inside controllers.
+- **Rule:** Mapping between HTTP/API DTOs, service models, and domain objects is done with **explicit mapper classes**
+  (annotated `@Service`), not with ad-hoc conversion inside controllers.
 - **Rule:** Prefer the existing manual mapping approach used in classes such as:
     - `CredentialMapper` (in `issuer-application` `..infrastructure.web..`)
     - `CredentialOfferMapper` (in `..service..`)
@@ -340,8 +349,8 @@ generating or modifying tests.
   path" and critical connection errors (e.g., DB down).
 - **Rule:** Do not start the entire application context just to test the connection between two specific components.
   Prefer Spring Boot slice tests (`@WebMvcTest`, `@DataJpaTest`, `@JdbcTest`) where possible.
-- **Rule:** When a real PostgreSQL is required, use Testcontainers; when stubbing outbound HTTP, use MockServer (
-  Testcontainers + `mockserver-client-java`).
+- **Rule:** When a real PostgreSQL is required, use Testcontainers; when stubbing outbound HTTP, use MockServer
+  (Testcontainers + `mockserver-client-java`).
 - **Mandatory Documentation:** Every Integration Test must have Javadoc explaining:
     1. *What* is tested and *why*.
     2. Boundary conditions (initial data state).
@@ -372,13 +381,13 @@ generating or modifying tests.
 - **Rule:** Always call `Mockito.reset(spy)` at the start of `@BeforeEach` whenever the spy is re-stubbed in individual
   tests.
     - Reason: Spring Boot does **not** reset `@MockitoSpyBean` beans between tests. Without an explicit reset, stubs set
-      in one test (e.g. `isRenewalFlowEnabled() → false`) remain active in subsequent tests, causing non-deterministic (
-      flaky) failures depending on JUnit's execution order.
+      in one test (e.g. `isRenewalFlowEnabled() → false`) remain active in subsequent tests, causing non-deterministic
+      (flaky) failures depending on JUnit's execution order.
 
 ## 6. Agent Workflow & Communication
 
-- **Iterative Approach for Complex Tasks:** For large features or multi-file refactorings, briefly outline your plan (
-  affected files, key steps) and immediately provide the code for the **first logical step**.
+- **Iterative Approach for Complex Tasks:** For large features or multi-file refactorings, briefly outline your plan
+  (affected files, key steps) and immediately provide the code for the **first logical step**.
 - **Step-by-Step Execution:** For larger plans, pause after the first step and wait for my feedback before generating
   the rest of the implementation.
 - **Direct Code Generation:** For single-file changes, bug fixes, or clear instructions, generate the code solutions
