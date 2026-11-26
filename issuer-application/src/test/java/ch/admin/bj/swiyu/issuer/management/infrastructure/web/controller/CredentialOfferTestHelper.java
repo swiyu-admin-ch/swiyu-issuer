@@ -4,9 +4,9 @@ import ch.admin.bj.swiyu.issuer.domain.credentialoffer.*;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.statuslist.TokenStatusList;
+import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URIBuilder;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
@@ -14,7 +14,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -78,8 +77,7 @@ public class CredentialOfferTestHelper {
                 .getContentAsString(), CredentialWithDeeplinkResponseDto.class));
         var deeplink = createCredentialOfferResponse.getOfferDeeplink();
         var parsedDeeplink = assertDoesNotThrow(() -> new URI(deeplink));
-        var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
-        var credentialOffer = offerQuery.getFirst();
+        var credentialOffer = new URIBuilder(parsedDeeplink).getFirstQueryParam("credential_offer");
         var parsedOffer = assertDoesNotThrow(
                 () -> objectMapper.readValue(credentialOffer.getValue(), Map.class));
         return assertDoesNotThrow(() -> new URI(parsedOffer.get("credential_issuer").toString()).getPath());
