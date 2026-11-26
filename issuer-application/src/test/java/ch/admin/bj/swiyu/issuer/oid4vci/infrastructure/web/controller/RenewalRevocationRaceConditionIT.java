@@ -91,7 +91,7 @@ class RenewalRevocationRaceConditionIT {
 
     @Container
     static MockServerContainer mockServerContainer = new MockServerContainer(
-            DockerImageName.parse("mockserver/mockserver:5.15.0"));
+            DockerImageName.parse("mockserver/mockserver:9.4.0"));
 
     static MockServerClient mockServerClient;
 

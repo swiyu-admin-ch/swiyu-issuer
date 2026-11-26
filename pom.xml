@@ -38,7 +38,7 @@
         <nimbus-jose-jwt.version>10.10</nimbus-jose-jwt.version>
         <bouncycastle.version>1.87</bouncycastle.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
-        <springdoc-openapi-starter-webmvc-ui.version>3.2.0</springdoc-openapi-starter-webmvc-ui.version>
+        <springdoc-openapi-starter-webmvc-ui.version>3.2.1</springdoc-openapi-starter-webmvc-ui.version>
         <openapi-generator-maven-plugin.version>7.27.0</openapi-generator-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <primus-jce.version>2.4.4</primus-jce.version>
@@ -53,21 +53,21 @@
         <spring-cloud-starter-bootstrap.version>5.1.0</spring-cloud-starter-bootstrap.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
-        <generic-java-lib.version>3.3.0</generic-java-lib.version>
+        <generic-java-lib.version>3.4.0</generic-java-lib.version>
         <pact.version>4.7.7</pact.version>
         <!-- Fixes various SNYK-JAVA-IONETTY errors -->
         <netty.version>4.2.18.Final</netty.version>
         <!-- Fixes various SNYK-JAVA-ORGAPACHETOMCATEMBED -->
         <tomcat.version>11.0.27</tomcat.version>
         <!-- Fixes CVE-2026-13006 -->
-        <logback-core.version>1.6.7</logback-core.version>
+        <logback-core.version>1.6.8</logback-core.version>
 
         <!-- Fixes CVE-2026-89425 -->
         <jackson.version>2.23.0</jackson.version>
         <jackson-annotations.version>2.23</jackson-annotations.version>
         <jackson-core.version>2.23.0</jackson-core.version>
         <jackson3.version>3.3.0</jackson3.version>
-        <postgres.version>42.7.14</postgres.version>
+        <postgres.version>42.7.15</postgres.version>
     </properties>
 
     <dependencyManagement>

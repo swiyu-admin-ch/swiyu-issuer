@@ -20,7 +20,7 @@ import ch.admin.bj.swiyu.issuer.dto.statuslist.StatusListDto;
 import ch.admin.bj.swiyu.issuer.management.infrastructure.web.controller.StatusListTestHelper;
 import ch.admin.bj.swiyu.issuer.service.statusregistry.StatusRegistryTokenService;
 import ch.admin.bj.swiyu.issuer.util.DemonstratingProofOfPossessionTestUtil;
-import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
+import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URIBuilder;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.crypto.ECDHEncrypter;
@@ -30,7 +30,6 @@ import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import io.netty.handler.codec.base64.Base64Decoder;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -84,7 +83,7 @@ class BlackboxIT {
     private static final String CREDENTIAL_MANAGEMENT_BASE_URL = "/management/api/credentials";
     @Container
     static MockServerContainer mockServerContainer = new MockServerContainer(
-            DockerImageName.parse("mockserver/mockserver:5.15.0")
+            DockerImageName.parse("mockserver/mockserver:9.4.0")
     );
     static MockServerClient mockServerClient;
     protected StatusListTestHelper statusListTestHelper;
@@ -234,10 +233,8 @@ class BlackboxIT {
         var parsedDeeplink = assertDoesNotThrow(() -> new URI(deeplink));
         assertThat(parsedDeeplink.getScheme()).as("The swiyu wallet expects the deeplink to have the correct scheme")
                 .isEqualTo("swiyu");
-        var offerQuery = URLEncodedUtils.parse(parsedDeeplink, StandardCharsets.UTF_8);
-        var credentialOffer = offerQuery.getFirst();
-        assertThat(credentialOffer.getName()).as("Offer has the value credential_offer")
-                .isEqualTo("credential_offer");
+        var credentialOffer = new URIBuilder(parsedDeeplink).getFirstQueryParam("credential_offer");
+        assertThat(credentialOffer).isNotNull().as("Offer has the value credential_offer");
 
         // For more details what to see in the offer see 4.1.1 Credential Offer Parameters
         // https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-4.1.1
@@ -340,7 +337,7 @@ class BlackboxIT {
         var holderBindingKeys = IntStream.range(0, issuerMetadata.getIssuanceBatchSize())
                 .boxed()
                 .map(i -> signingKey("HolderBindingKey#%s".formatted(
-                                i)))
+                        i)))
                 .toList();
         var holderEncryptionKeys = encryptionKey("HolderEncryptionKey");
 

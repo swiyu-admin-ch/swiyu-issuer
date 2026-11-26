@@ -2193,8 +2193,6 @@ components:
     OAuthToken:
       type: object
       properties:
-        scope:
-          type: string
         access_token:
           type: string
         refresh_token:
@@ -2204,6 +2202,8 @@ components:
         expires_in:
           type: integer
           format: int64
+        scope:
+          type: string
       required:
       - access_token
     OauthAccessTokenRequest:

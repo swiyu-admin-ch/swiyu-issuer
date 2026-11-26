@@ -79,7 +79,7 @@ class RenewalFlowIT {
     public static final String TEST_BUSINESS_ISSUER_CREDENTIAL_RENEWAL_ENDPOINT = "/test/credential-renewal/endpoint";
     @Container
     static MockServerContainer mockServerContainer = new MockServerContainer(
-            DockerImageName.parse("mockserver/mockserver:5.15.0"));
+            DockerImageName.parse("mockserver/mockserver:9.4.0"));
 
     static MockServerClient mockServerClient;
     private final ApiClient mockApiClient = Mockito.mock(ApiClient.class);
