@@ -454,7 +454,7 @@ public class CredentialManagementService {
         }
         // Revalidate Date Span
         validationService.validateOfferedCredentialValiditySpan(offer.getCredentialValidUntil(), offer.getCredentialValidFrom());
-        
+
         persistenceService.saveCredentialOffer(offer);
 
         return toUpdateStatusResponseDto(offer);
@@ -517,7 +517,9 @@ public class CredentialManagementService {
         } else if (update.getCredentialSubjectData() != null) {
             offerData = CredentialOffer.readOfferDataMap(update.getCredentialSubjectData());
         }
-        validateNewOfferData(offer, offerData);
+        if (offerData != null) {
+            validateNewOfferData(offer, offerData);
+        }
         return offerData;
     }
 
