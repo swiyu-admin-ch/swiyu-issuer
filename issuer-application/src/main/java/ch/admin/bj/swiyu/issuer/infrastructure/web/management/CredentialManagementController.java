@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -128,7 +129,7 @@ public class CredentialManagementController {
     }
 
     @Timed
-    @PatchMapping("v2/{credentialManagementId}")
+    @PatchMapping(value = "v2/{credentialManagementId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Update the status of an offer or the verifiable credential associated with the id. This is only for deferred flows. The status is set to ready for issuance",
             responses = {
                     @ApiResponse(

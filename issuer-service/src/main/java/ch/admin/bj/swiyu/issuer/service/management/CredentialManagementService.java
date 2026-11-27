@@ -452,6 +452,9 @@ public class CredentialManagementService {
         if (update.getCredentialValidUntil() != null) {
             offer.setCredentialValidUntil(update.getCredentialValidUntil());
         }
+        // Revalidate Date Span
+        validationService.validateOfferedCredentialValiditySpan(offer.getCredentialValidUntil(), offer.getCredentialValidFrom());
+        
         persistenceService.saveCredentialOffer(offer);
 
         return toUpdateStatusResponseDto(offer);
@@ -509,10 +512,10 @@ public class CredentialManagementService {
 
     private Map<String, Object> loadOfferDataUpdate(CredentialOffer offer, UpdateCredentialOfferRequestDto update) {
         Map<String, Object> offerData = null;
-        if (update.getCredentialSubjectData() != null) {
-            offerData = CredentialOffer.readOfferDataMap(update.getCredentialSubjectData());
-        } else if (update.getCredentialSubjectDataJwt() != null) {
+        if (update.getCredentialSubjectDataJwt() != null) {
             offerData = CredentialOffer.readOfferDataJWTDataIntegrityProtected(update.getCredentialSubjectDataJwt());
+        } else if (update.getCredentialSubjectData() != null) {
+            offerData = CredentialOffer.readOfferDataMap(update.getCredentialSubjectData());
         }
         validateNewOfferData(offer, offerData);
         return offerData;

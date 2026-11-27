@@ -751,6 +751,7 @@ class CredentialManagementServiceTest {
         }).when(stateService).markOfferAsReady(any());
 
         var update = UpdateCredentialOfferRequestDto.builder()
+                .ready(true)
                 .build();
 
         UpdateStatusResponseDto response = credentialService.updateOfferData(mgmt.getId(), update);

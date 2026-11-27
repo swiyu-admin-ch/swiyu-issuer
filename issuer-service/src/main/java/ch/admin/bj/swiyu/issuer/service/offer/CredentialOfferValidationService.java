@@ -201,6 +201,18 @@ public class CredentialOfferValidationService {
      */
     public void validateOfferedCredentialValiditySpan(@Valid CreateCredentialOfferRequestDto credentialOffer) {
         var validUntil = credentialOffer.getCredentialValidUntil();
+        var validFrom = credentialOffer.getCredentialValidFrom();
+        validateOfferedCredentialValiditySpan(validUntil, validFrom);
+    }
+
+    /**
+     * Validates the validity span of the offered credential.
+     *
+     * @param validUntil the exp - expiry date of the credential, must be in the future
+     * @param validFrom  the nbf - not before date of the credential. Must be before the expiry date
+     * @throws BadRequestException if the validity span is invalid
+     */
+    public void validateOfferedCredentialValiditySpan(Instant validUntil, Instant validFrom) {
         if (validUntil == null) {
             return;
         }
@@ -209,7 +221,6 @@ public class CredentialOfferValidationService {
                     "Credential is already expired (would only be valid until %s, server time is %s)"
                             .formatted(validUntil, Instant.now()));
         }
-        var validFrom = credentialOffer.getCredentialValidFrom();
         if (validFrom != null && validFrom.isAfter(validUntil)) {
             throw new BadRequestException(
                     "Credential would never be valid - Valid from %s until %s"
