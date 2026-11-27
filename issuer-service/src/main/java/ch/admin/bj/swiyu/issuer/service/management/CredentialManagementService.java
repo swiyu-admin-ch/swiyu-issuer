@@ -12,6 +12,7 @@ import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.UpdateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
@@ -26,14 +27,17 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -414,6 +418,31 @@ public class CredentialManagementService {
         return entity;
     }
 
+    @Transactional
+    public UpdateStatusResponseDto updateOfferData(@NotNull UUID credentialManagementId, @Valid UpdateCredentialOfferRequestDto update) {
+        CredentialOffer offer = loadCredentialOfferForUpdate(credentialManagementId);
+        Map<String, Object> offerData = loadOfferDataUpdate(offer, update);
+
+        if (CollectionUtils.isEmpty(offerData) && CollectionUtils.isEmpty(offer.getOfferData()) && update.isReady()) {
+            throw new BadRequestException("Credential Offer can only be set ready if data has been provided");
+        }
+        if (update.isReady()) {
+            stateService.markOfferAsReady(offer);
+        }
+        if (!CollectionUtils.isEmpty(offerData)) {
+            offer.setOfferData(offerData);
+        }
+        if (update.getCredentialValidFrom() != null) {
+            offer.setCredentialValidFrom(update.getCredentialValidFrom());
+        }
+        if (update.getCredentialValidUntil() != null) {
+            offer.setCredentialValidUntil(update.getCredentialValidUntil());
+        }
+        persistenceService.saveCredentialOffer(offer);
+
+        return toUpdateStatusResponseDto(offer);
+    }
+
     /**
      * Update the offer data for a deferred credential.
      *
@@ -442,6 +471,40 @@ public class CredentialManagementService {
     @Transactional
     public UpdateStatusResponseDto updateOfferDataForDeferred(@NotNull UUID credentialManagementId,
                                                               Object unparsedOfferData) {
+        var storedCredentialOffer = loadCredentialOfferForUpdate(credentialManagementId);
+        Object rawOfferData = parseOfferData(unparsedOfferData);
+
+        // check if offerData matches the expected metadata claims
+        var offerData = readOfferData(rawOfferData, false);
+        validateNewOfferData(storedCredentialOffer, offerData);
+
+        // update the offer data
+        stateService.markOfferAsReady(storedCredentialOffer);
+        storedCredentialOffer.setOfferData(offerData);
+        persistenceService.saveCredentialOffer(storedCredentialOffer);
+
+        return toUpdateStatusResponseDto(storedCredentialOffer);
+    }
+
+    private void validateNewOfferData(CredentialOffer storedCredentialOffer, Map<String, Object> offerData) {
+        var credentialOfferMetadata = storedCredentialOffer.getMetadataCredentialSupportedId().getFirst();
+        var credentialConfig = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
+
+        validationService.validateCredentialRequestOfferData(offerData, true, credentialConfig);
+    }
+
+    private Map<String, Object> loadOfferDataUpdate(CredentialOffer offer, UpdateCredentialOfferRequestDto update) {
+        Map<String, Object> offerData = null;
+        if (update.getCredentialSubjectData() != null) {
+            offerData = CredentialOffer.readOfferDataMap(update.getCredentialSubjectData());
+        } else if (update.getCredentialSubjectDataJwt() != null) {
+            offerData = CredentialOffer.readOfferDataJWTDataIntegrityProtected(update.getCredentialSubjectDataJwt());
+        }
+        validateNewOfferData(offer, offerData);
+        return offerData;
+    }
+
+    private @NonNull CredentialOffer loadCredentialOfferForUpdate(UUID credentialManagementId) {
         var mgmt = getCredentialManagementWithExpirationCheck(credentialManagementId);
         var storedCredentialOffer = mgmt.getCredentialOffers().stream()
                 .filter(CredentialOffer::isDeferredOffer)
@@ -454,21 +517,7 @@ public class CredentialManagementService {
             throw new BadRequestException(
                     "Credential is either not deferred or has an incorrect status, cannot update offer data");
         }
-        Object rawOfferData = parseOfferData(unparsedOfferData);
-
-        // check if offerData matches the expected metadata claims
-        var offerData = readOfferData(rawOfferData, false);
-        var credentialOfferMetadata = storedCredentialOffer.getMetadataCredentialSupportedId().getFirst();
-        var credentialConfig = issuerMetadata.getCredentialConfigurationById(credentialOfferMetadata);
-
-        validationService.validateCredentialRequestOfferData(offerData, true, credentialConfig);
-
-        // update the offer data
-        stateService.markOfferAsReady(storedCredentialOffer);
-        storedCredentialOffer.setOfferData(offerData);
-        persistenceService.saveCredentialOffer(storedCredentialOffer);
-
-        return toUpdateStatusResponseDto(storedCredentialOffer);
+        return storedCredentialOffer;
     }
 
     /**

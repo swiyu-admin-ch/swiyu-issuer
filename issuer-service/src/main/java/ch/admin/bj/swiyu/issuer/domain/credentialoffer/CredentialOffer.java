@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -133,7 +132,7 @@ public class CredentialOffer {
      */
     @Column(name = "tx_code")
     private String txCode;
-    
+
     /**
      * Number of retries the wallet attempted to provide the correct tx_code
      */
@@ -141,7 +140,7 @@ public class CredentialOffer {
     private int txCodeRetries;
 
     /**
-     * Description with reminder for the wallet to display to the holder where to find the tx_code. 
+     * Description with reminder for the wallet to display to the holder where to find the tx_code.
      * eg: Sent by SMS
      */
     @Column(name = "tx_code_description")
@@ -194,7 +193,7 @@ public class CredentialOffer {
      */
     public static Map<String, Object> readOfferData(Object offerData, Boolean isDeferred) {
         if (offerData instanceof String string) {
-            return readOfferDataString(string);
+            return readOfferDataJWTDataIntegrityProtected(string);
         } else if (offerData instanceof Map<?, ?>) {
             return readOfferDataMap((Map<?, ?>) offerData);
         } else if (Boolean.TRUE.equals(isDeferred)) {
@@ -205,9 +204,9 @@ public class CredentialOffer {
     }
 
     /**
-     * Data Integrity Protected Data
+     * Bring the Data Integrity Protected Offer Data into the standardized offer data form for later processing
      */
-    private static Map<String, Object> readOfferDataString(String offerData) {
+    public static Map<String, Object> readOfferDataJWTDataIntegrityProtected(String offerData) {
         var metadata = new LinkedHashMap<String, Object>();
 
         metadata.put("data", offerData);
@@ -216,7 +215,10 @@ public class CredentialOffer {
         return metadata;
     }
 
-    private static Map<String, Object> readOfferDataMap(Map<?, ?> offerData) {
+    /**
+     * Bring the credential subject data into the standardized offer data form for later processing
+     */
+    public static Map<String, Object> readOfferDataMap(Map<?, ?> offerData) {
         var metadata = new LinkedHashMap<String, Object>();
 
         var mapper = new ObjectMapper();
