@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Status updates now persist and flush the local status list before synchronizing it
+  with the status registry. A database error therefore aborts the operation before the registry is touched, and a
+  registry error rolls the local changes back. The success callback is only emitted after the transaction commits this
+  prevents inconsistent local and remote states. (EIDOMNI-830)
+
 ### Removed
 
 - Removed Error Callbacks. These were only triggered in the case that the Holder Key Binding was invalid. `(#1394)`

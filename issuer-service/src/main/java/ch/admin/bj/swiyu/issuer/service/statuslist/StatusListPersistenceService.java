@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
  * <p>
  * This service handles the low-level operations of updating status bits in token status lists,
  * persisting changes to the database, and optionally publishing updates to the external registry.
+ * Local changes are always written to the database before they are published, so database failures
+ * abort the operation before the registry is updated and registry failures roll the local changes back.
  * </p>
  */
 @Slf4j
@@ -95,6 +97,13 @@ public class StatusListPersistenceService {
     /**
      * Updates the token status lists by setting the given bit for the credential offer statuses provided.
      *
+     * <p>The local state is written and flushed to the database <em>before</em> the external status registry is
+     * updated. This ordering guarantees that:</p>
+     * <ul>
+     *   <li>a database error aborts the operation before any remote state is changed, and</li>
+     *   <li>a registry error fails the transactional operation, rolling back the local changes.</li>
+     * </ul>
+     *
      * @param offerStatus set of the credential offer status containing the status list reference to be updated
      * @param bit         the status bit to set (VALID, REVOKE, or SUSPEND)
      * @return the updated status lists
@@ -117,14 +126,27 @@ public class StatusListPersistenceService {
             }
         }
 
-        List<StatusList> updated = statusListIds.entrySet()
+        List<UpdatedStatusList> updated = statusListIds.entrySet()
                 .stream()
                 .map(statusListEntry -> updateStatusList(bit, statusListsById.get(statusListEntry.getKey()), statusListEntry.getValue()))
                 .toList();
 
+        // Write the local state first. Flushing here surfaces database errors before the remote registry is
+        // touched, so a failed write can never leave the registry with data that does not exist locally.
         // One repository call instead of save() per status list
-        statusListRepository.saveAll(updated);
-        return updated;
+        statusListRepository.saveAllAndFlush(updated.stream()
+                .map(UpdatedStatusList::statusList)
+                .toList());
+
+        // Only synchronize the registry once the local changes are written. If a registry update fails, the
+        // exception fails the surrounding transaction and the database changes above are rolled back.
+        if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
+            updated.forEach(statusList -> publishToRegistry(statusList.statusList(), statusList.token()));
+        }
+
+        return updated.stream()
+                .map(UpdatedStatusList::statusList)
+                .toList();
     }
 
     /**
@@ -146,11 +168,15 @@ public class StatusListPersistenceService {
     /**
      * Updates a single already-loaded status list by applying {@code bit} to all {@code affectedIndexes}.
      *
+     * <p>This method only mutates the in-memory state. Persisting and publishing to the registry are the
+     * responsibility of the caller so that the local database is always written before the remote registry.</p>
+     *
      * @param bit             the status bit to apply (VALID, REVOKE, or SUSPEND)
+     * @param statusList      the status list to update
      * @param affectedIndexes the indexes within the status list to update
-     * @return the updated {@link StatusList}
+     * @return the updated status list and its token
      */
-    private StatusList updateStatusList(TokenStatusListBit bit, StatusList statusList, List<Integer> affectedIndexes) {
+    private UpdatedStatusList updateStatusList(TokenStatusListBit bit, StatusList statusList, List<Integer> affectedIndexes) {
         var statusListBits = (Integer) statusList.getConfig().get(BITS_FIELD_NAME);
         StatusListValidator.requireBitSupported(statusListBits, bit, statusList.getUri());
 
@@ -161,10 +187,7 @@ public class StatusListPersistenceService {
                 token.setStatus(index, bit.getBitNumber());
             }
             statusList.setStatusZipped(token.getStatusListData());
-            if (!applicationProperties.isAutomaticStatusListSynchronizationDisabled()) {
-                publishToRegistry(statusList, token);
-            }
-            return statusList;
+            return new UpdatedStatusList(statusList, token);
         } catch (IOException e) {
             log.error("Failed to load status list {}", statusList.getId(), e);
             throw new ConfigurationException(String.format("Failed to load status list %s", statusList.getId()), e);
@@ -180,5 +203,11 @@ public class StatusListPersistenceService {
     public void publishToRegistry(StatusList statusListEntity, TokenStatusList token) {
         SignedJWT jwt = signingService.buildSignedStatusListJwt(statusListEntity, token);
         statusRegistryClient.updateStatusListEntry(statusListEntity, jwt.serialize());
+    }
+
+    /**
+     * Helper record: A status list together with the token whose bits have been updated but not yet published.
+     */
+    private record UpdatedStatusList(StatusList statusList, TokenStatusList token) {
     }
 }

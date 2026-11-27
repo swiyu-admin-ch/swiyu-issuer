@@ -158,7 +158,11 @@ public class StatusListOrchestrator {
             throw new ConfigurationException(e.getMessage(), e);
         }
 
-        mergeAndPersistConfigurationOverrideIfPresent(overrideDto, statusList);
+        mergeConfigurationOverrideIfPresent(overrideDto, statusList);
+
+        // Persist local changes before publishing, so a database failure cannot leave the registry ahead of the
+        // local state. A registry failure rolls the transaction (and the flush above) back.
+        statusListRepository.saveAndFlush(statusList);
 
         statusListPersistenceService.publishToRegistry(statusList, token);
 
@@ -166,13 +170,11 @@ public class StatusListOrchestrator {
                 statusList.getMaxLength() - credentialOfferStatusRepository.countByStatusListId(statusList.getId()));
     }
 
-    private void mergeAndPersistConfigurationOverrideIfPresent(@Nullable ConfigurationOverrideDto overrideDto, StatusList statusList) {
+    private void mergeConfigurationOverrideIfPresent(@Nullable ConfigurationOverrideDto overrideDto, StatusList statusList) {
         if (overrideDto != null) {
             var mergedOverride = mergeConfigurationOverride(statusList.getConfigurationOverride(),
                     toConfigurationOverride(overrideDto));
             statusList.setConfigurationOverride(mergedOverride);
-            // Persist local changes (status + optional override) before publishing.
-            statusListRepository.save(statusList);
         }
     }
 
