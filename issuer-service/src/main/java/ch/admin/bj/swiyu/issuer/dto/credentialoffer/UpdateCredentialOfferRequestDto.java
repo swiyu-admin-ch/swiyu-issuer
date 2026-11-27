@@ -20,6 +20,7 @@ import java.util.Map;
 @Schema(name = "UpdateCredentialOfferRequestV2", description = "Update credential offer, mostly used in deferred flow.")
 public class UpdateCredentialOfferRequestDto {
 
+    @Builder.Default
     @JsonProperty(value = "deferred_offer_ready", defaultValue = "true")
     @Schema(description = """
             Sets deferred offers to ready as part of the update.
