@@ -507,6 +507,41 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UpdateStatusResponse"
+  /management/api/credentials/v2/{credentialManagementId}:
+    patch:
+      tags:
+      - Credential API
+      summary: Update the status of an offer or the verifiable credential associated
+        with the id. This is only for deferred flows. The status is set to ready for
+        issuance
+      operationId: updateCredentialForDeferredFlowV2
+      parameters:
+      - name: credentialManagementId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCredentialOfferRequestV2"
+        required: true
+      responses:
+        "200":
+          description: Credential status updated
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UpdateStatusResponse"
+        "400":
+          description: Bad request due to user content or internal call to external
+            service like statuslist
+          content:
+            '*/*':
+              schema:
+                type: string
   /oid4vci/vct/{metadataKey}:
     get:
       tags:
@@ -2439,6 +2474,48 @@ components:
           format: int32
           default: 6
           description: Integer specifying the length of the Transaction Code.
+    UpdateCredentialOfferRequestV2:
+      type: object
+      description: "Update credential offer, mostly used in deferred flow."
+      properties:
+        deferred_offer_ready:
+          type: boolean
+          description: |
+            Sets deferred offers to ready as part of the update.
+            For the state to be ready credential subject data must have been provided at some point in the process.
+        credential_subject_data:
+          type: object
+          additionalProperties: true
+          description: |2
+                User data to be written in the verifiable credential.
+                Will replace previously provided user data.
+          example:
+            lastName: Example
+            firstName: Edward
+        credential_subject_data_jwt:
+          type: string
+          description: |2
+                User data to be written in the verifiable credential as a JWT, for ensuring data integrity.
+                Will replace previously provided user data.
+                JWT must be signed by one of the keys in JWKS_ALLOWLIST.
+                NOTE: If both credential_subject_data AND credential_subject_data_jwt are set, credential_subject_data_jwt will be used
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsYXN0TmFtZSI6IkV4YW1wbGUiLCJmaXJzdE5hbWUiOiJFZHdhcmQiLCJkYXRlT2ZCaXJ0aCI6IjEuMS4xOTcwIn0.2VMjj1RpJ7jUjn1SJHDwwzqx3kygn88UxSsG5j1uXG8
+        credential_valid_until:
+          type:
+          - string
+          - "null"
+          format: date-time
+          description: Setting for until when the VC shall be valid. XMLSchema dateTimeStamp
+            https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
+          example: 2010-01-01T19:23:24Z
+        credential_valid_from:
+          type:
+          - string
+          - "null"
+          format: date-time
+          description: Setting for from when the VC shall be valid. XMLSchema dateTimeStamp
+            https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp
+          example: 2010-01-01T18:23:24Z
     UpdateCredentialStatusRequestType:
       type: string
       description: |2

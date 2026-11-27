@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequest
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.TransactionCodeConfigDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.UpdateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.CredentialStatusTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
@@ -24,15 +25,13 @@ import ch.admin.bj.swiyu.issuer.service.offer.CredentialOfferValidationService;
 import ch.admin.bj.swiyu.issuer.service.persistence.CredentialPersistenceService;
 import ch.admin.bj.swiyu.issuer.service.statuslist.StatusListOrchestrator;
 import com.google.gson.JsonParser;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.net.URIBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.*;
 import org.mockito.Mockito;
 import tools.jackson.databind.ObjectMapper;
 
@@ -43,6 +42,7 @@ import java.util.stream.Stream;
 
 import static java.time.Instant.now;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -65,6 +65,7 @@ class CredentialManagementServiceTest {
     private static final String TEST_STATUS_LIST_URI = "https://localhost:8080/status";
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String SOME_DESCRIPTION = "Description where to find the tx_code provided by business issuers";
+    private static final String METADATA_CONFIG_ID = "test-metadata";
 
     private final Map<String, Object> offerData = Map.of("hello", "world");
     private final ObjectMapper mapper = new ObjectMapper();
@@ -620,6 +621,235 @@ class CredentialManagementServiceTest {
     }
 
     /**
+     * Verifies that supplied credential subject data is converted into the stored offer data
+     * representation and persisted without marking the offer ready.
+     *
+     * <p>Expectation: the offer data is replaced by the {@code {"data": "<json>"}} structure,
+     * {@link CredentialStateService#markOfferAsReady(CredentialOffer)} is not called (because
+     * {@code ready == false}) and the persisted offer is reflected in the response.</p>
+     */
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"{\"previous\": \"data\"}"})
+    void updateOfferData_shouldApplyCredentialSubjectData_andPersist_withoutMarkingReady(String initialData) {
+        var initData = Optional.ofNullable(initialData).map(d -> objectMapper.readValue(d, Map.class)).orElseGet(() -> null);
+        var deferredOffer = createDeferredCredentialOffer(initData);
+        var mgmt = deferredOffer.getCredentialManagement();
+
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
+
+        var update = UpdateCredentialOfferRequestDto.builder()
+                .ready(false)
+                .credentialSubjectData(Map.of("hello", "world"))
+                .build();
+
+        UpdateStatusResponseDto response = credentialService.updateOfferData(mgmt.getId(), update);
+
+        assertThat(deferredOffer.getOfferData())
+                .as("Credential subject data is stored in the standardized offer data shape")
+                .containsEntry("data", "{\"hello\":\"world\"}")
+                .doesNotContainKey("data_integrity");
+        verify(stateService, never()).markOfferAsReady(any());
+        verify(persistenceService, times(1)).saveCredentialOffer(deferredOffer);
+        assertThat(response.getId()).isEqualTo(deferredOffer.getId());
+        assertThat(response.getCredentialStatus()).isEqualTo(CredentialStatusTypeDto.DEFERRED);
+    }
+
+    /**
+     * Verifies that {@link CredentialManagementService#updateOfferData(UUID, UpdateCredentialOfferRequestDto)}
+     * rejects an update when the management has no deferred offer.
+     *
+     * <p>Expectation: a {@link BadRequestException} is raised and nothing is marked ready or persisted.</p>
+     */
+    @ParameterizedTest
+    @EnumSource(value = CredentialOfferStatusType.class, names = {"INIT", "OFFERED", "CANCELLED", "IN_PROGRESS", "READY", "ISSUED", "REQUESTED", "EXPIRED"})
+    void updateOfferData_shouldThrow_whenStateIsNotDeferred(CredentialOfferStatusType offerState) {
+        var nonDeferredOffer = createDeferredCredentialOffer(Map.of("Foo", "Bar"));
+        nonDeferredOffer.setCredentialOfferStatusJustForTestUsage(offerState);
+        var mgmt = nonDeferredOffer.getCredentialManagement();
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId()))
+                .thenReturn(mgmt);
+
+        var update = UpdateCredentialOfferRequestDto.builder()
+                .ready(true)
+                .credentialSubjectData(Map.of("hello", "world"))
+                .build();
+
+        assertThatThrownBy(() -> credentialService.updateOfferData(mgmt.getId(), update))
+                .isInstanceOf(BadRequestException.class)
+                .as("Should hint towards status being incorrect")
+                .hasMessageContaining("incorrect status");
+        verify(stateService, never()).markOfferAsReady(any());
+        verify(persistenceService, never()).saveCredentialOffer(any());
+    }
+
+    /**
+     * Verifies that an offer cannot be marked ready when neither the update nor the stored
+     * offer contain any offer data.
+     *
+     * <p>Expectation: a {@link BadRequestException} is raised before any state change or persistence.</p>
+     */
+    @Test
+    void updateOfferData_shouldThrow_whenMarkedReadyWithoutAnyOfferData() {
+        var deferredOffer = createDeferredCredentialOffer(null);
+        var mgmt = deferredOffer.getCredentialManagement();
+
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
+
+        var update = UpdateCredentialOfferRequestDto.builder()
+                .ready(true)
+                .build();
+
+        assertThatThrownBy(() -> credentialService.updateOfferData(mgmt.getId(), update))
+                .isInstanceOf(BadRequestException.class)
+                .as("Should hint towards data needing to be provided")
+                .hasMessageContaining("only be set ready if data has been provided");
+        verify(stateService, never()).markOfferAsReady(any());
+        verify(persistenceService, never()).saveCredentialOffer(any());
+    }
+
+    /**
+     * Verifies that a JWT protected credential subject is stored along with its
+     * {@code data_integrity} marker.
+     */
+    @Test
+    void updateOfferData_shouldStoreJwtProtectedData_whenJwtIsProvided() {
+        var deferredOffer = createDeferredCredentialOffer(null);
+        var mgmt = deferredOffer.getCredentialManagement();
+
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
+
+        String jwt = "eyJhbGciOiJIUzI1NiJ9.eyJjbGFpbSI6InZhbHVlIn0.signature";
+        var update = UpdateCredentialOfferRequestDto.builder()
+                .credentialSubjectDataJwt(jwt)
+                .build();
+
+        credentialService.updateOfferData(mgmt.getId(), update);
+
+        assertThat(deferredOffer.getOfferData())
+                .containsEntry("data", jwt)
+                .containsEntry("data_integrity", "jwt");
+        verify(persistenceService, times(1)).saveCredentialOffer(deferredOffer);
+    }
+
+    /**
+     * Verifies that requesting {@code ready} marks the deferred offer as ready and that the
+     * resulting status is returned to the caller.
+     */
+    @Test
+    void updateOfferData_shouldMarkOfferAsReady_andReturnReadyStatus() {
+        Map<String, Object> storedData = Map.of("data", Map.of("existing", "value"));
+        var deferredOffer = createDeferredCredentialOffer(storedData);
+        var mgmt = deferredOffer.getCredentialManagement();
+
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
+        // Mock state service logic
+        doAnswer(invocation -> {
+            invocation.getArgument(0, CredentialOffer.class)
+                    .setCredentialOfferStatusJustForTestUsage(CredentialOfferStatusType.READY);
+            return null;
+        }).when(stateService).markOfferAsReady(any());
+
+        var update = UpdateCredentialOfferRequestDto.builder()
+                .ready(true)
+                .build();
+
+        UpdateStatusResponseDto response = credentialService.updateOfferData(mgmt.getId(), update);
+
+        verify(stateService, times(1)).markOfferAsReady(deferredOffer);
+        assertThat(deferredOffer.getOfferData())
+                .as("Existing offer data must not be changed when only the status changes")
+                .isEqualTo(storedData);
+        verify(persistenceService, times(1)).saveCredentialOffer(deferredOffer);
+        assertThat(response.getId()).isEqualTo(deferredOffer.getId());
+        assertThat(response.getCredentialStatus()).isEqualTo(CredentialStatusTypeDto.READY);
+    }
+
+    /**
+     * Verifies that the credential validity timestamps are applied when present and left
+     * untouched when absent.
+     */
+    @Test
+    void updateOfferData_shouldApplyCredentialValidityTimestamps() {
+        Map<String, Object> storedData = Map.of("data", Map.of("existing", "value"));
+        var deferredOffer = createDeferredCredentialOffer(storedData);
+        var mgmt = deferredOffer.getCredentialManagement();
+
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
+
+        Instant validFrom = Instant.parse("2026-01-01T00:00:00Z");
+        Instant validUntil = Instant.parse("2027-01-01T00:00:00Z");
+        var update = UpdateCredentialOfferRequestDto.builder()
+                .credentialValidFrom(validFrom)
+                .credentialValidUntil(validUntil)
+                .build();
+
+        credentialService.updateOfferData(mgmt.getId(), update);
+
+        assertThat(deferredOffer.getCredentialValidFrom()).isEqualTo(validFrom);
+        assertThat(deferredOffer.getCredentialValidUntil()).isEqualTo(validUntil);
+        assertThat(deferredOffer.getOfferData())
+                .as("Existing offer data must not be altered when only the validity changed")
+                .isEqualTo(storedData);
+        verify(persistenceService, times(1)).saveCredentialOffer(deferredOffer);
+    }
+
+    /**
+     * Verifies that the incoming offer data is validated against the credential configuration
+     * referenced by the offer's first metadata id.
+     */
+    @Test
+    void updateOfferData_shouldValidateOfferDataAgainstConfiguredMetadata() {
+        var deferredOffer = createDeferredCredentialOffer(null);
+        var mgmt = deferredOffer.getCredentialManagement();
+
+        var credConfig = mock(CredentialConfiguration.class);
+        when(issuerMetadata.getCredentialConfigurationById("test-metadata")).thenReturn(credConfig);
+
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
+
+        var update = UpdateCredentialOfferRequestDto.builder()
+                .credentialSubjectData(Map.of("hello", "world"))
+                .build();
+
+        credentialService.updateOfferData(mgmt.getId(), update);
+
+        verify(issuerMetadata).getCredentialConfigurationById("test-metadata");
+        verify(validationService, times(1)).validateCredentialRequestOfferData(
+                argThat(data -> data != null && "{\"hello\":\"world\"}".equals(data.get("data"))),
+                eq(true),
+                same(credConfig));
+    }
+
+    /**
+     * Verifies that a validation failure aborts the update before any state change or
+     * persistence happens.
+     */
+    @Test
+    void updateOfferData_shouldPropagateValidationFailure_andNotPersist() {
+        var deferredOffer = createDeferredCredentialOffer(null);
+        var mgmt = deferredOffer.getCredentialManagement();
+
+        var credConfig = mock(CredentialConfiguration.class);
+        when(issuerMetadata.getCredentialConfigurationById(anyString())).thenReturn(credConfig);
+        doThrow(new BadRequestException("Invalid credential claims"))
+                .when(validationService).validateCredentialRequestOfferData(anyMap(), eq(true), eq(credConfig));
+
+        when(persistenceService.findCredentialManagementByIdForUpdate(mgmt.getId())).thenReturn(mgmt);
+
+        var update = UpdateCredentialOfferRequestDto.builder()
+                .credentialSubjectData(Map.of("hello", "world"))
+                .build();
+
+        var exception = assertThrows(BadRequestException.class,
+                () -> credentialService.updateOfferData(mgmt.getId(), update));
+
+        assertThat(exception.getMessage()).isEqualTo("Invalid credential claims");
+        verify(stateService, never()).markOfferAsReady(any());
+        verify(persistenceService, never()).saveCredentialOffer(any());
+    }
+
+    /**
      * Test for {@link CredentialManagementService#createInitialCredentialOfferForRenewal(CredentialManagement)}.
      *
      * <p>Expectation:</p>
@@ -773,6 +1003,32 @@ class CredentialManagementServiceTest {
         // We'll test the real behavior: terminal offers do not get re-expired.
         assertDoesNotThrow(() -> credentialService.getCredentialOfferInformationWithExpirationCheck(mgmt.getId()));
         verify(stateService, never()).expireOfferAndPublish(any());
+    }
+
+    /**
+     * Creates a real (non-mocked) deferred offer attached to its own credential management so
+     * that {@link CredentialManagementService#updateOfferData(UUID, UpdateCredentialOfferRequestDto)}
+     * can mutate it.
+     */
+    private CredentialOffer createDeferredCredentialOffer(Map<String, Object> storedOfferData) {
+        var deferredOffer = CredentialOffer.builder()
+                .id(UUID.randomUUID())
+                .credentialStatus(CredentialOfferStatusType.DEFERRED)
+                .credentialMetadata(new CredentialOfferMetadata(true, null, null))
+                .metadataCredentialSupportedId(List.of("test-metadata"))
+                .offerData(storedOfferData)
+                .offerExpirationTimestamp(Instant.now().plusSeconds(3600).getEpochSecond())
+                .deferredOfferValiditySeconds(3600)
+                .build();
+
+        var mgmt = CredentialManagement.builder()
+                .id(UUID.randomUUID())
+                .credentialManagementStatus(CredentialStatusManagementType.INIT)
+                .credentialOffers(Set.of(deferredOffer))
+                .build();
+        deferredOffer.setCredentialManagement(mgmt);
+
+        return deferredOffer;
     }
 
     private CredentialOffer createCredentialOffer(CredentialOfferStatusType statusType, long offerExpirationTimestamp, Map<String, Object> offerData) {

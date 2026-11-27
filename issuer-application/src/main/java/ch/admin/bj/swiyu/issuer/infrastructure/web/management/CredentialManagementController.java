@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.issuer.dto.CredentialManagementDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CreateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialInfoResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialoffer.CredentialWithDeeplinkResponseDto;
+import ch.admin.bj.swiyu.issuer.dto.credentialoffer.UpdateCredentialOfferRequestDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.StatusResponseDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateCredentialStatusRequestTypeDto;
 import ch.admin.bj.swiyu.issuer.dto.credentialofferstatus.UpdateStatusResponseDto;
@@ -18,6 +19,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -124,6 +126,26 @@ public class CredentialManagementController {
     public UpdateStatusResponseDto updateCredentialForDeferredFlow(@PathVariable UUID credentialManagementId, @RequestBody String credentialOffer) {
 
         return this.credentialManagementService.updateOfferDataForDeferred(credentialManagementId, credentialOffer);
+    }
+
+    @Timed
+    @PatchMapping(value = "v2/{credentialManagementId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Update the status of an offer or the verifiable credential associated with the id. This is only for deferred flows. The status is set to ready for issuance",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Credential status updated",
+                            content = @Content(schema = @Schema(implementation = UpdateStatusResponseDto.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Bad request due to user content or internal call to external service like statuslist",
+                            content = @Content(schema = @Schema(implementation = Object.class))
+                    )
+            }
+    )
+    public UpdateStatusResponseDto updateCredentialForDeferredFlowV2(@PathVariable UUID credentialManagementId, @Valid @RequestBody UpdateCredentialOfferRequestDto update) {
+        return this.credentialManagementService.updateOfferData(credentialManagementId, update);
     }
 
     @Timed
