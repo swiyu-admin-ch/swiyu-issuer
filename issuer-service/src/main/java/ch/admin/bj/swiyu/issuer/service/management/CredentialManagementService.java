@@ -37,7 +37,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -418,6 +417,21 @@ public class CredentialManagementService {
         return entity;
     }
 
+    /**
+     * Updates the deferred offer of the given management under a write lock. Optionally
+     * <ul>
+     *     <li>validates and applies new credential subject data</li>
+     *     <li>updates / applies credential validity bounds</li>
+     *     <li>marks the deferred offer ready</li>
+     * </ul>
+     *
+     * @param credentialManagementId the management whose deferred offer is updated
+     * @param update                 new subject data (plain or JWT), ready flag, credential validity
+     * @return the offer id and its resulting status
+     * @throws ResourceNotFoundException if the management does not exist
+     * @throws BadRequestException       if no offer is {@code DEFERRED}, the data is invalid, or the
+     *                                   offer is set ready without any data
+     */
     @Transactional
     public UpdateStatusResponseDto updateOfferData(@NotNull UUID credentialManagementId, @Valid UpdateCredentialOfferRequestDto update) {
         CredentialOffer offer = loadCredentialOfferForUpdate(credentialManagementId);
